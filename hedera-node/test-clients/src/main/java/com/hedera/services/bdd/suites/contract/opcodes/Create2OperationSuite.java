@@ -145,6 +145,8 @@ public class Create2OperationSuite extends HapiSuite {
     private static final String RETURNER = "Returner";
     private static final String CALL_RETURNER = "callReturner";
     private static final String ADMIN_KEY = "adminKey";
+    private static final String ENTITY_MEMO = "JUST DO IT";
+    private static final String DELETED_CREATE_2_LOG = "Deleted the deployed CREATE2 contract using HAPI";
 
     public static void main(String... args) {
         new Create2OperationSuite().runSuiteSync();
@@ -358,7 +360,6 @@ public class Create2OperationSuite extends HapiSuite {
         final var salt = BigInteger.valueOf(42);
         final var adminKey = ADMIN_KEY;
         final var replAdminKey = "replAdminKey";
-        final var entityMemo = "JUST DO IT";
         final var customAutoRenew = 7776001L;
         final var autoRenewAccountID = "autoRenewAccount";
         final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
@@ -378,7 +379,7 @@ public class Create2OperationSuite extends HapiSuite {
                         contractCreate(contract)
                                 .payingWith(GENESIS)
                                 .adminKey(adminKey)
-                                .entityMemo(entityMemo)
+                                .entityMemo(ENTITY_MEMO)
                                 .autoRenewSecs(customAutoRenew)
                                 .autoRenewAccountId(autoRenewAccountID)
                                 .via(CREATE_2_TXN)
@@ -421,7 +422,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 .sending(tcValue)),
                         sourcing(() ->
                                 contractDelete(expectedCreate2Address.get()).signedBy(DEFAULT_PAYER, adminKey)),
-                        logIt("Deleted the deployed CREATE2 contract using HAPI"),
+                        logIt(DELETED_CREATE_2_LOG),
                         sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
@@ -497,7 +498,6 @@ public class Create2OperationSuite extends HapiSuite {
         final var creation = CREATION;
         final var salt = BigInteger.valueOf(42);
         final var adminKey = ADMIN_KEY;
-        final var entityMemo = "JUST DO IT";
         final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
         final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
         final AtomicReference<String> hollowCreationAddress = new AtomicReference<>();
@@ -521,7 +521,7 @@ public class Create2OperationSuite extends HapiSuite {
                         contractCreate(contract)
                                 .payingWith(GENESIS)
                                 .adminKey(adminKey)
-                                .entityMemo(entityMemo)
+                                .entityMemo(ENTITY_MEMO)
                                 .via(CREATE_2_TXN)
                                 .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
@@ -576,7 +576,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 .sending(tcValue)),
                         sourcing(() ->
                                 contractDelete(expectedCreate2Address.get()).signedBy(DEFAULT_PAYER, adminKey)),
-                        logIt("Deleted the deployed CREATE2 contract using HAPI"),
+                        logIt(DELETED_CREATE_2_LOG),
                         // Now create a hollow account at the desired address
                         cryptoTransfer((spec, b) -> {
                                     final var defaultPayerId = spec.registry().getAccountID(DEFAULT_PAYER);
@@ -666,7 +666,6 @@ public class Create2OperationSuite extends HapiSuite {
         final var creation = CREATION;
         final var salt = BigInteger.valueOf(42);
         final var adminKey = ADMIN_KEY;
-        final var entityMemo = "JUST DO IT";
         final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
         final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
         final AtomicReference<String> hollowCreationAddress = new AtomicReference<>();
@@ -680,7 +679,7 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("CanMergeCreate2ChildWithHollowAccount")
+        return propertyPreservingHapiSpec("CanMergeCreate2MultipleCreatesWithHollowAccount")
                 .preserving(LAZY_CREATION_ENABLED)
                 .given(
                         overriding(LAZY_CREATION_ENABLED, TRUE),
@@ -690,7 +689,7 @@ public class Create2OperationSuite extends HapiSuite {
                         contractCreate(contract)
                                 .payingWith(GENESIS)
                                 .adminKey(adminKey)
-                                .entityMemo(entityMemo)
+                                .entityMemo(ENTITY_MEMO)
                                 .gas(10_000_000L)
                                 .via(CREATE_2_TXN)
                                 .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))),
@@ -746,7 +745,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 .sending(tcValue)),
                         sourcing(() ->
                                 contractDelete(expectedCreate2Address.get()).signedBy(DEFAULT_PAYER, adminKey)),
-                        logIt("Deleted the deployed CREATE2 contract using HAPI"),
+                        logIt(DELETED_CREATE_2_LOG),
                         // Now create a hollow account at the desired address
                         cryptoTransfer((spec, b) -> {
                                     final var defaultPayerId = spec.registry().getAccountID(DEFAULT_PAYER);
