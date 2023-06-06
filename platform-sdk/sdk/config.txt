@@ -123,6 +123,8 @@ swirld, 123
 #
 # Then list one member per line. For each member, list these, separated by commas
 # (after the word "address" at the start):
+#         node id             - a nonnegative integer that uniquely identifies a node
+#                               (From top to bottom, the ids must be in ascending order but can skip numbers.)
 #         nickname            - a short version of the member's name
 #         full name           - the member's name
 #         weight              - a nonnegative integer that weights the consensus voting
