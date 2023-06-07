@@ -35,7 +35,7 @@ import java.util.function.Function;
 /** A builder for {@link ConsensusTestOrchestrator} instances */
 public class OrchestratorBuilder {
     private int numberOfNodes = 4;
-    private WeightGenerator stakeGenerator = BALANCED;
+    private WeightGenerator weightGenerator = BALANCED;
     private long seed = 0;
     private int totalEventNum = 10_000;
     private Function<List<Long>, List<EventSource<?>>> eventSourceBuilder = EventSourceFactory::newStandardEventSources;
@@ -65,7 +65,7 @@ public class OrchestratorBuilder {
 
     public OrchestratorBuilder setTestInput(final TestInput testInput) {
         numberOfNodes = testInput.numberOfNodes();
-        stakeGenerator = testInput.weightGenerator();
+        weightGenerator = testInput.weightGenerator();
         seed = testInput.seed();
         totalEventNum = testInput.eventsToGenerate();
         return this;
@@ -93,7 +93,7 @@ public class OrchestratorBuilder {
         final long shuffler1Seed = random.nextLong();
         final long shuffler2Seed = random.nextLong();
 
-        final List<Long> weights = stakeGenerator.getWeights(weightSeed, numberOfNodes);
+        final List<Long> weights = weightGenerator.getWeights(weightSeed, numberOfNodes);
         final List<EventSource<?>> eventSources = eventSourceBuilder.apply(weights);
         for (final EventSource<?> eventSource : eventSources) {
             eventSourceConfigurator.accept(eventSource);

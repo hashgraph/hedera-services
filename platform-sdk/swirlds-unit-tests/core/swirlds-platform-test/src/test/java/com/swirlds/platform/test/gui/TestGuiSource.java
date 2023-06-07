@@ -28,16 +28,18 @@ import com.swirlds.platform.test.consensus.TestIntake;
 import com.swirlds.platform.test.event.EventUtils;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.test.framework.ResourceLoader;
-import java.awt.FlowLayout;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.util.Random;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
+import java.awt.FlowLayout;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.util.Random;
 
 class TestGuiSource {
     final StandardGraphGenerator graphGenerator;
@@ -107,7 +109,8 @@ class TestGuiSource {
                 intake.reset();
                 ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
                 final Path ssPath = ResourceLoader.getFile("version-5-state.swh.bin");
-                final SignedState state = SignedStateFileReader.readSignedStateOnly(ssPath);
+                final SignedState state = SignedStateFileReader.readSignedStateOnly(
+                        TestPlatformContextBuilder.create().build(), ssPath);
                 EventUtils.convertEvents(state);
                 intake.loadFromSignedState(state);
                 ConsensusUtils.loadEventsIntoGenerator(state, graphGenerator, new Random());

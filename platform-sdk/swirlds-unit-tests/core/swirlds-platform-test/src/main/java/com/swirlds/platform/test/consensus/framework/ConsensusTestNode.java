@@ -85,8 +85,9 @@ public class ConsensusTestNode {
         return consensusTestNode;
     }
 
-    @SuppressWarnings("unused") // this will be used when adding a migration test
-    private void loadSignedState(final SignedState signedState) {
+	public void loadSignedState(final SignedState signedState) {
+        eventEmitter.reset();
+        intake.reset();
         ConsensusUtils.loadEventsIntoGenerator(signedState, eventEmitter.getGraphGenerator(), random);
         intake.loadFromSignedState(signedState);
     }

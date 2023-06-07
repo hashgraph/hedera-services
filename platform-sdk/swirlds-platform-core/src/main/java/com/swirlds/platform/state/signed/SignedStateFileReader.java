@@ -158,18 +158,20 @@ public final class SignedStateFileReader {
      * @return the signed state read
      * @throws IOException if any problem occurs while reading
      */
-    public static SignedState readSignedStateOnly(final Path stateFile) throws IOException {
+    public static SignedState readSignedStateOnly(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final Path stateFile) throws IOException {
         checkSignedStatePath(stateFile);
 
         return deserializeAndDebugOnFailure(
                 () -> new BufferedInputStream(new FileInputStream(stateFile.toFile())),
                 (final MerkleDataInputStream in) -> {
                     readAndCheckVersion(in);
-                    return null;
-                    // TODO needs platform context
-                    //                    return new SignedState(
-                    //                            in.readMerkleTree(stateFile.getParent(),
-                    //                                    MAX_MERKLE_NODES_IN_STATE));
+                    return new SignedState(
+                            platformContext,
+                            in.readMerkleTree(stateFile.getParent(),
+                                    MAX_MERKLE_NODES_IN_STATE),
+                            "SignedStateFileReader.readSignedStateOnly()");
                 });
     }
 
@@ -179,7 +181,7 @@ public final class SignedStateFileReader {
      * @param stateFile the path to check
      * @throws IOException if the path is not valid
      */
-    private static void checkSignedStatePath(final Path stateFile) throws IOException {
+    private static void checkSignedStatePath(@NonNull final Path stateFile) throws IOException {
         if (!exists(stateFile)) {
             throw new IOException("File " + stateFile.toAbsolutePath() + " does not exist!");
         }
@@ -194,7 +196,7 @@ public final class SignedStateFileReader {
      * @param in the stream to read from
      * @throws IOException if the version is invalid
      */
-    private static void readAndCheckVersion(final MerkleDataInputStream in) throws IOException {
+    private static void readAndCheckVersion(@NonNull final MerkleDataInputStream in) throws IOException {
         final byte versionByte = in.readByte();
         if (versionByte != VERSIONED_FILE_BYTE) {
             throw new IOException("File is not versioned -- data corrupted or is an unsupported legacy state");

@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.platform.event.EventConstants;
+import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
 import com.swirlds.platform.test.consensus.framework.validation.Validations;
 import com.swirlds.platform.test.event.generator.GraphGenerator;
@@ -49,6 +50,10 @@ public class ConsensusTestOrchestrator {
         currentSequence += numEvents;
         nodes.forEach(node -> node.getEventEmitter().setCheckpoint(currentSequence));
         nodes.forEach(node -> node.addEvents(numEvents));
+    }
+
+    public void loadSignedState(final SignedState signedState){
+        nodes.forEach(node -> node.loadSignedState(signedState));
     }
 
     /** Generates all events defined in the input */

@@ -22,7 +22,11 @@ import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createCli
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createPartitionedOtherParentAffinityMatrix;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createShunnedNodeOtherParentAffinityMatrix;
 
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestOrchestrator;
 import com.swirlds.platform.test.consensus.framework.OrchestratorBuilder;
 import com.swirlds.platform.test.consensus.framework.TestInput;
@@ -30,12 +34,19 @@ import com.swirlds.platform.test.consensus.framework.Util;
 import com.swirlds.platform.test.consensus.framework.validation.EventRatioValidation;
 import com.swirlds.platform.test.consensus.framework.validation.Validations;
 import com.swirlds.platform.test.event.DynamicValue;
+import com.swirlds.platform.test.event.EventUtils;
 import com.swirlds.platform.test.event.emitter.PriorityEventEmitter;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.event.source.EventSource;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
 import com.swirlds.platform.test.event.source.StandardEventSource;
+import com.swirlds.test.framework.ResourceLoader;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -513,5 +524,15 @@ public final class ConsensusTestDefinitions {
         orchestrator.generateEvents(0.5);
         orchestrator.validateAndClear(
                 Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
+    }
+
+    public static void loadStateWithEvents() throws URISyntaxException, ConstructableRegistryException, IOException {
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        final Path ssPath = ResourceLoader.getFile("mainnet-version-5.swh.bin");
+        final SignedState state = SignedStateFileReader.readSignedStateOnly(
+                TestPlatformContextBuilder.create().build(), ssPath);
+
+        System.out.println(state.getAddressBook().getSize());
+        EventUtils.convertEvents(state);
     }
 }
