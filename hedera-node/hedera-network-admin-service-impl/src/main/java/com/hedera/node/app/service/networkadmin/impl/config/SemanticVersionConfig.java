@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.grpc;
+package com.hedera.node.app.service.networkadmin.impl.config;
 
-import io.grpc.netty.NettyServerBuilder;
-import java.io.FileNotFoundException;
-import javax.net.ssl.SSLException;
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.config.api.ConfigData;
+import com.swirlds.config.api.ConfigProperty;
 
-public interface NettyBuilderFactory {
-    NettyServerBuilder builderFor(int port, boolean tlsSupport) throws FileNotFoundException, SSLException;
-}
+@ConfigData("version")
+public record SemanticVersionConfig(
+        @ConfigProperty(defaultValue = "0.0.0") SemanticVersion services,
+        @ConfigProperty(defaultValue = "0.0.0") SemanticVersion hapi) {}
