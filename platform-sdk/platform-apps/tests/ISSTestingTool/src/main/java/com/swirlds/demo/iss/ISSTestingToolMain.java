@@ -16,6 +16,8 @@
 
 package com.swirlds.demo.iss;
 
+import static com.swirlds.logging.LogMarker.STARTUP;
+
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -23,81 +25,33 @@ import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
-import com.swirlds.platform.ParameterProvider;
+import com.swirlds.config.api.ConfigurationBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Random;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * <p>
  * An application that can be made to ISS in controllable ways.
- * </p>
- *
  * <p>
- * Arguments:
- * <ol>
- * <li>
- * Integer value, the network wide TPS (not TPS per node!)
- * </li>
- * <li>
- * <p>
- * A description of the desired ISS behavior.
- * </p>
- * <p>
- * One or more descriptions of an ISS is formatted like this:
- * </p>
- * <pre>
- * 1234:0,1+2+3
- * </pre>
- * <p>
- * The first number is a time, in seconds, after genesis, when the ISS will be triggered. Here
- * the ISS will be triggered 1234 seconds after genesis (measured by consensus time).
- * </p>
- * <p>
- * The time MUST be followed by a ":".
- * </p>
- * <p>
- * Next is a "-" separated list of ISS partitions. Each ISS partition will agree with other nodes in the same
- * partition, and disagree with any node not in the partition. In this example, node 0 is in an ISS partition by
- * itself, and nodes 1 2 and 3 are in a partition together. Nodes in the same partition should be separated by
- * a "+" symbol.
- * </p>
- * <p>
- * A few more examples:
- * </p>
- * <ul>
- * <li>
- * "60:0-1-2-3": 60 seconds after the app is started, all nodes disagree with all other nodes
- * </li>
- * <li>
- * "600:0+1-2+3": 10 minutes after start, the network splits in half. 0 and 1 agree, 2 and 3 agree.
- * </li>
- * <li>
- * "120:0+1-2+3-4+5+6": a seven node network. The ISS is triggered 120 seconds after start. Nodes 0 and 1
- * agree with each other, nodes 2 and 3 agree with each other, and nodes 4 5 and 6 agree with each other.
- * </li>
- * </ul>
- *
- * <p>
- * Multiple ISS events can be scheduled during the same test run. Each ISS event is its own argument, and should
- * be formatted in the same way.
- * </p>
- *
- * <p>
- * If multiple ISS events are scheduled, it's important that they be arranged in chronological order
- * in the argument. Breaking this rule may cause undefined behavior.
- * </p>
- *
- * </li>
- * </ol>
+ * A log error can also be scheduled to be written. This is useful because it's' possible that not all nodes learn
+ * about an ISS, since nodes stop gossiping when they detect the ISS. Slow nodes may not detect the ISS before their
+ * peers stop gossiping. Therefore, we can validate that a scheduled log error doesn't occur, due to consensus coming to
+ * a halt, even if an ISS isn't detected.
  */
 public class ISSTestingToolMain implements SwirldMain {
+    private static final Logger logger = LogManager.getLogger(ISSTestingToolMain.class);
 
     private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
     private Platform platform;
 
-    private int transactionsPerSecond;
-
-    public ISSTestingToolMain() {}
+    /**
+     * Constructor
+     */
+    public ISSTestingToolMain() {
+        logger.info(STARTUP.getMarker(), "constructor called in Main.");
+    }
 
     /**
      * {@inheritDoc}
@@ -107,15 +61,6 @@ public class ISSTestingToolMain implements SwirldMain {
         this.platform = platform;
 
         platform.getNotificationEngine().register(IssListener.class, this::issListener);
-
-        parseArguments(ParameterProvider.getInstance().getParameters());
-    }
-
-    private void parseArguments(final String[] args) {
-        if (args.length == 0) {
-            throw new IllegalArgumentException("Expected 1 or more arguments. See javadocs for details.");
-        }
-        transactionsPerSecond = Integer.parseInt(args[0]);
     }
 
     /**
@@ -130,7 +75,10 @@ public class ISSTestingToolMain implements SwirldMain {
      */
     @Override
     public void run() {
-        new TransactionGenerator(new Random(), platform, transactionsPerSecond).start();
+        final ISSTestingToolConfig testingToolConfig =
+                platform.getContext().getConfiguration().getConfigData(ISSTestingToolConfig.class);
+
+        new TransactionGenerator(new Random(), platform, testingToolConfig.transactionsPerSecond()).start();
     }
 
     /**
@@ -147,5 +95,13 @@ public class ISSTestingToolMain implements SwirldMain {
     @Override
     public BasicSoftwareVersion getSoftwareVersion() {
         return softwareVersion;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void updateConfigurationBuilder(@NonNull final ConfigurationBuilder configurationBuilder) {
+        configurationBuilder.withConfigDataType(ISSTestingToolConfig.class);
     }
 }
