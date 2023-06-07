@@ -50,7 +50,7 @@ class NetworkServiceImplTest {
     }
 
     @Test
-    void registersExpectedSchemaForMonoAdapter() {
+    void registersExpectedSchema() {
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
         final var subject = new NetworkServiceImpl();
