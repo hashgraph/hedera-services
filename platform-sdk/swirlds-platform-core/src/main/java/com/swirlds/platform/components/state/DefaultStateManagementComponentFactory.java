@@ -21,7 +21,7 @@ import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.PlatformStatus;
+import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;

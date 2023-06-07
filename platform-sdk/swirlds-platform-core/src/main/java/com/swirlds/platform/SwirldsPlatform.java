@@ -49,7 +49,7 @@ import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformStatus;
+import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;

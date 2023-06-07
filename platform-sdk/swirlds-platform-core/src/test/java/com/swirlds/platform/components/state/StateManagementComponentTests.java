@@ -32,7 +32,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.PlatformStatus;
+import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
