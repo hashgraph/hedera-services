@@ -22,10 +22,16 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.KEY;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -72,6 +78,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaCreateOperationExternalizerTest {
+    static final Address PRETEND_CONTRACT_ADDRESS = Address.ALTBN128_ADD;
+    private static final ContractID lastAllocated = IdUtils.asContract("0.0.1234");
+    private static final EntityId autoRenewId = new EntityId(0, 0, 8);
+    private static final JKey nonEmptyKey = MiscUtils.asFcKeyUnchecked(Key.newBuilder()
+            .setEd25519(ByteString.copyFrom("01234567890123456789012345678901".getBytes()))
+            .build());
+
     @Mock
     private SyntheticTxnFactory syntheticTxnFactory;
 
@@ -102,16 +115,7 @@ class HederaCreateOperationExternalizerTest {
     @Mock
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
 
-    private static final ContractID lastAllocated = IdUtils.asContract("0.0.1234");
-
-    private static final EntityId autoRenewId = new EntityId(0, 0, 8);
-
-    private static final JKey nonEmptyKey = MiscUtils.asFcKeyUnchecked(Key.newBuilder()
-            .setEd25519(ByteString.copyFrom("01234567890123456789012345678901".getBytes()))
-            .build());
     private HederaCreateOperationExternalizer subject;
-
-    static final Address PRETEND_CONTRACT_ADDRESS = Address.ALTBN128_ADD;
 
     @BeforeEach
     void setUp() {
@@ -238,7 +242,6 @@ class HederaCreateOperationExternalizerTest {
         // then:
         verify(creator)
                 .createSuccessfulSyntheticRecord(eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
-        verify(updater).reclaimLatestContractId();
         verify(updater.trackingAccounts()).set(hollowAccountId, IS_SMART_CONTRACT, true);
         verify(updater.trackingAccounts()).set(hollowAccountId, KEY, STANDIN_CONTRACT_ID_KEY);
         verify(updater.trackingAccounts()).set(hollowAccountId, ETHEREUM_NONCE, 1L);
@@ -278,7 +281,6 @@ class HederaCreateOperationExternalizerTest {
         // then:
         verify(creator)
                 .createSuccessfulSyntheticRecord(eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
-        verify(updater).reclaimLatestContractId();
         verify(updater.trackingAccounts()).set(hollowAccountId, IS_SMART_CONTRACT, true);
         verify(updater.trackingAccounts()).set(hollowAccountId, KEY, STANDIN_CONTRACT_ID_KEY);
         verify(updater.trackingAccounts()).set(hollowAccountId, ETHEREUM_NONCE, 1L);
