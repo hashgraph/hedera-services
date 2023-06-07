@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.test.handlers;
+package com.hedera.node.app.service.token.impl.test.handlers.util;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 
@@ -36,7 +36,7 @@ public class ParityTestBase {
     protected TokenID token = TokenID.newBuilder().tokenNum(1).build();
 
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         readableAccountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
         writableAccountStore = SigReqAdapterUtils.wellKnownWritableAccountStoreAt();
         readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
