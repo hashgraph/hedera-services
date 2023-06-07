@@ -50,7 +50,6 @@ import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.threading.framework.internal.AbstractBlockingQueue;
 import com.swirlds.common.threading.framework.internal.QueueThreadMetrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.config.api.Configuration;
@@ -80,7 +79,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -893,48 +891,6 @@ class QueueThreadTests {
         assertThat(queueThread).isEmpty();
         assertThat(maxSizeMetric.get()).isEqualTo(70);
         assertThat(minSizeMetric.get()).isZero();
-    }
-
-    /**
-     * This queue implementation allows us to artificially cause poll() to block.
-     */
-    private static class ControllableQueue extends AbstractBlockingQueue<Integer> {
-        private final ReentrantLock pollLock = new ReentrantLock();
-        private final AtomicInteger pollBlockedCount = new AtomicInteger(0);
-
-        public ControllableQueue() {
-            super(new LinkedBlockingQueue<>());
-        }
-
-        @Override
-        public synchronized Integer poll(long timeout, TimeUnit unit) throws InterruptedException {
-            pollBlockedCount.incrementAndGet();
-            pollLock.lock();
-            pollLock.unlock();
-            pollBlockedCount.decrementAndGet();
-            return super.poll(timeout, unit);
-        }
-
-        /**
-         * Cause poll() to block forever on all threads.
-         */
-        public synchronized void blockPolling() {
-            pollLock.lock();
-        }
-
-        /**
-         * Allow poll() to proceed.
-         */
-        public void unblockPolling() {
-            pollLock.unlock();
-        }
-
-        /**
-         * Get the number of threads currently waiting to acquire the poll lock.
-         */
-        public int getPollBlockedCount() {
-            return pollBlockedCount.get();
-        }
     }
 
     @Test
