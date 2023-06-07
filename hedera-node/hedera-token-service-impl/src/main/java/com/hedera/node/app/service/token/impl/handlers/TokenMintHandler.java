@@ -35,7 +35,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.validators.TokenMintBurnWipeOpsValidator;
+import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -55,10 +55,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenMintHandler extends BaseTokenHandler implements TransactionHandler {
-    private final TokenMintBurnWipeOpsValidator validator;
+    private final TokenSupplyChangeOpsValidator validator;
 
     @Inject
-    public TokenMintHandler(final TokenMintBurnWipeOpsValidator validator) {
+    public TokenMintHandler(final TokenSupplyChangeOpsValidator validator) {
         this.validator = validator;
     }
 
@@ -81,7 +81,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         requireNonNull(txn);
         final var op = txn.tokenMintOrThrow();
         validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
-        validator.pureChecks(op.metadata().size(), op.amount(), INVALID_TOKEN_MINT_AMOUNT);
+        //        validator.pureChecks(op.metadata().size(), op.amount(), INVALID_TOKEN_MINT_AMOUNT);
     }
 
     @Override

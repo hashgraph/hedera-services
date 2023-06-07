@@ -30,12 +30,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
+import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 class TokenMintHandlerParityTest extends ParityTestBase {
-    private final TokenMintHandler subject = new TokenMintHandler();
+    @Mock
+    private ConfigProvider configProvider;
+
+    private TokenSupplyChangeOpsValidator validator = new TokenSupplyChangeOpsValidator(configProvider);
+    private final TokenMintHandler subject = new TokenMintHandler(validator);
 
     @Test
     void tokenMintWithSupplyKeyedTokenScenario() throws PreCheckException {
