@@ -83,6 +83,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
@@ -156,6 +157,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                 repeatedTokenIdsAreAutomaticallyConsolidated(),
                 activeContractInFrameIsVerifiedWithoutNeedForSignature(),
                 hapiTransferFromForFungibleToken(),
+                hapiTransferFromForFungibleTokenToSystemAccountsFails(),
                 hapiTransferFromForNFT(),
                 cryptoTransferNFTsWithCustomFeesMixedScenario(),
                 hapiTransferFromForNFTWithCustomFeesWithoutApproveFails(),
@@ -343,6 +345,84 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                 .contractCallResult(htsPrecompileResult()
                                                         .forFunction(FunctionType.HAPI_TRANSFER_FROM)
                                                         .withStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE)))));
+    }
+
+    private HapiSpec hapiTransferFromForFungibleTokenToSystemAccountsFails() {
+        final var UPPER_BOUND_SYSTEM_ADDRESS = 750L;
+        final var ZERO_ADDRESS = 0L;
+        final var NON_EXISTING_SYSTEM_ADDRESS = 345L;
+
+        final var theSpender = "spender";
+        final var allowance = 10L;
+        return defaultHapiSpec("hapiTransferFromForFungibleToken")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
+                        cryptoCreate(theSpender).maxAutomaticTokenAssociations(5),
+                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .initialSupply(10L)
+                                .maxSupply(1000L)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(OWNER),
+                        uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
+                        contractCreate(HTS_TRANSFER_FROM_CONTRACT),
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, HTS_TRANSFER_FROM_CONTRACT, allowance)
+                                .signedBy(DEFAULT_PAYER, OWNER)
+                                .fee(ONE_HBAR),
+                        getAccountDetails(OWNER)
+                                .payingWith(GENESIS)
+                                .has(accountDetailsWith()
+                                        .tokenAllowancesContaining(
+                                                FUNGIBLE_TOKEN, HTS_TRANSFER_FROM_CONTRACT, allowance)))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        // transfer to system account 0.0.750 upper bound
+                        contractCall(
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(AccountID.newBuilder()
+                                                .setAccountNum(UPPER_BOUND_SYSTEM_ADDRESS)
+                                                .build())),
+                                        BigInteger.valueOf(allowance / 2))
+                                .gas(100_000_00L)
+                                .payingWith(GENESIS)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        // transfer to system account 0.0.451
+                        contractCall(
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(AccountID.newBuilder()
+                                                .setAccountNum(NON_EXISTING_SYSTEM_ADDRESS)
+                                                .build())),
+                                        BigInteger.valueOf(allowance / 2))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        // transfer to system account 0.0.0 lower bound
+                        contractCall(
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(AccountID.newBuilder()
+                                                .setAccountNum(ZERO_ADDRESS)
+                                                .build())),
+                                        BigInteger.valueOf(allowance / 2))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then();
     }
 
     private HapiSpec hapiTransferFromForNFT() {

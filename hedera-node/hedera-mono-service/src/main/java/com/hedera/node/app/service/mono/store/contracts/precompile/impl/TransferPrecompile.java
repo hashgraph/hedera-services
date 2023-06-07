@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalseOrRevert;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
@@ -33,6 +34,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -248,6 +250,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final Map<ByteString, EntityNum> completedLazyCreates = new HashMap<>();
         for (int i = 0, n = changes.size(); i < n; i++) {
             final var change = changes.get(i);
+            validateFalseOrRevert(isSystemAccountDetected(change), CONTRACT_REVERT_EXECUTED);
+
             final var units = change.getAggregatedUnits();
             if (change.hasAlias()) {
                 replaceAliasWithId(change, changes, completedLazyCreates);
@@ -835,5 +839,10 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         // ownership change to approval-based authorization, but the synthetic CryptoTransfer op doesn't
         // have a matching ownership change in its token transfer list
         log.error(CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN, switchedChange, opBuilder);
+    }
+
+    private boolean isSystemAccountDetected(final BalanceChange change) {
+        final var address = change.getAccount().asEvmAddress();
+        return address.numberOfLeadingZeroBytes() >= 18 && Integer.compareUnsigned(address.getInt(16), 750) <= 0;
     }
 }
