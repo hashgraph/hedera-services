@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.test.event.emitter;
 
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.generator.GraphGenerator;
 import java.util.List;
@@ -58,7 +60,9 @@ public class PriorityEventEmitter extends BufferingEventEmitter<PriorityEventEmi
     public IndexedEvent emitEvent() {
         // Emit the next event from the highest priority node, if possible. If not possible, try the next priority node.
         // Repeat in priority order until an event can be emitted.
-        for (final int nodeId : nodePriorities) {
+        for (final int nodeIndex : nodePriorities) {
+            final AddressBook addressBook = getGraphGenerator().getAddressBook();
+            final NodeId nodeId = addressBook.getNodeId(nodeIndex);
             attemptToGenerateEventFromNode(nodeId);
             if (isReadyToEmitEvent(nodeId)) {
                 eventEmittedFromBuffer();
