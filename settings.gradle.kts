@@ -134,6 +134,7 @@ dependencyResolutionManagement {
             val jacksonVersion = "2.13.3"
             val log4jVersion = "2.17.1"
             val mockitoVersion = "4.6.1"
+
             val swirldsVersion = "0.39.0-alpha.3"
             val systemStubsVersion = "2.0.2"
             val testContainersVersion = "1.17.2"
@@ -165,12 +166,15 @@ dependencyResolutionManagement {
             version("com.swirlds.virtualmap", swirldsVersion)
             version("dagger", daggerVersion)
             version("dagger.compiler", daggerVersion)
+
             version("headlong", "6.1.1")
             version("info.picocli", "4.6.3")
             version("io.github.classgraph", "4.8.65")
+
             version("io.helidon.grpc.client", helidonVersion)
             version("io.helidon.grpc.core", helidonVersion)
             version("io.helidon.grpc.server", helidonVersion)
+
             version("javax.inject", "1")
             version("net.i2p.crypto.eddsa", "0.3.0")
             version("org.antlr.antlr4.runtime", "4.11.1")
