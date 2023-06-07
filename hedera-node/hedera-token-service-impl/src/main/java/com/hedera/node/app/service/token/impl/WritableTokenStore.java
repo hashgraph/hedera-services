@@ -22,7 +22,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -59,13 +58,6 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
     public void put(@NonNull final Token token) {
         Objects.requireNonNull(token);
         tokenState.put(EntityNum.fromLong(token.tokenNumber()), Objects.requireNonNull(token));
-    }
-
-    /**
-     * Commits the changes to the underlying data storage.
-     */
-    public void commit() {
-        ((WritableKVStateBase) tokenState).commit();
     }
 
     /**

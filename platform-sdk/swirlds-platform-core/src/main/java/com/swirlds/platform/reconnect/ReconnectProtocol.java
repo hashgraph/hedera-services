@@ -84,7 +84,7 @@ public class ReconnectProtocol implements Protocol {
     @Override
     public boolean shouldInitiate() {
         // if this neighbor has not told me I have fallen behind, I will not reconnect with him
-        if (!fallenBehindManager.shouldReconnectFrom(peerId.id())) {
+        if (!fallenBehindManager.shouldReconnectFrom(peerId)) {
             return false;
         }
 
@@ -118,7 +118,7 @@ public class ReconnectProtocol implements Protocol {
             logger.info(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} due to lack of a fully signed state",
-                    peerId.id());
+                    peerId);
             return false;
         }
 
@@ -128,7 +128,7 @@ public class ReconnectProtocol implements Protocol {
             logger.warn(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} " + "due to lack of an initialized signed state.",
-                    peerId.id());
+                    peerId);
             return false;
         } else if (!teacherState.get().isComplete()) {
             // this is only possible if signed state manager violates its contractual obligations
@@ -139,12 +139,12 @@ public class ReconnectProtocol implements Protocol {
                     "Rejecting reconnect request from node {} due to lack of a fully signed state."
                             + " The signed state manager attempted to provide a state that was not"
                             + " fully signed, which should not be possible.",
-                    peerId.id());
+                    peerId);
             return false;
         }
 
         // Check if a reconnect with the learner is permitted by the throttle.
-        final boolean reconnectPermittedByThrottle = teacherThrottle.initiateReconnect(peerId.id());
+        final boolean reconnectPermittedByThrottle = teacherThrottle.initiateReconnect(peerId);
         if (reconnectPermittedByThrottle) {
             initiatedBy = InitiatedBy.PEER;
             return true;
@@ -209,8 +209,8 @@ public class ReconnectProtocol implements Protocol {
                             threadManager,
                             connection,
                             reconnectSocketTimeout,
-                            connection.getSelfId().id(),
-                            connection.getOtherId().id(),
+                            connection.getSelfId(),
+                            connection.getOtherId(),
                             state.get().getRound(),
                             fallenBehindManager::hasFallenBehind,
                             reconnectMetrics)

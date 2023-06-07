@@ -33,7 +33,7 @@ import java.util.Random;
 
 public class GossipEventBuilder {
     private Random random;
-    private long creatorId;
+    private NodeId creatorId;
     private Instant timestamp;
     private int numberOfTransactions;
     private int transactionSize;
@@ -48,7 +48,7 @@ public class GossipEventBuilder {
 
     public GossipEventBuilder setDefaults() {
         random = new Random();
-        creatorId = 0;
+        creatorId = NodeId.FIRST_NODE_ID;
         timestamp = Instant.ofEpochMilli(1588771316678L);
         numberOfTransactions = 0;
         transactionSize = 4;
@@ -64,7 +64,7 @@ public class GossipEventBuilder {
         return this;
     }
 
-    public GossipEventBuilder setCreatorId(final long creatorId) {
+    public GossipEventBuilder setCreatorId(final NodeId creatorId) {
         this.creatorId = creatorId;
         return this;
     }
@@ -118,7 +118,7 @@ public class GossipEventBuilder {
                 : otherParent != null ? otherParent.getGeneration() : -1;
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
-                new NodeId(creatorId),
+                creatorId,
                 selfParentGen,
                 otherParentGen,
                 selfParent != null ? selfParent.getHashedData().getHash() : null,

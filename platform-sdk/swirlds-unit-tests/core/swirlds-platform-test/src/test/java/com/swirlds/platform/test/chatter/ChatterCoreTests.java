@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.test.chatter;
 
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.config.api.Configuration;
@@ -35,7 +35,6 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -48,7 +47,6 @@ public class ChatterCoreTests {
      * window.
      */
     @Test
-    @Tag(TIME_CONSUMING)
     void loadFromSignedStateTest() {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("chatter.futureGenerationLimit", "100")
@@ -59,8 +57,8 @@ public class ChatterCoreTests {
         final ChatterCore<GossipEvent> chatterCore = new ChatterCore<>(
                 OSTime.getInstance(), GossipEvent.class, (m) -> {}, chatterConfig, (id, l) -> {}, new NoOpMetrics());
 
-        chatterCore.newPeerInstance(0L, e -> {});
-        chatterCore.newPeerInstance(1L, e -> {});
+        chatterCore.newPeerInstance(new NodeId(0L), e -> {});
+        chatterCore.newPeerInstance(new NodeId(1L), e -> {});
 
         final GossipEventBuilder builder = GossipEventBuilder.builder().setRandom(random);
 

@@ -21,6 +21,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.time.Time;
 import com.swirlds.platform.gossip.chatter.protocol.MessageHandler;
 import com.swirlds.platform.gossip.chatter.protocol.MessageProvider;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.function.BiConsumer;
 
@@ -44,11 +45,12 @@ public class HeartbeatSendReceive implements MessageProvider, MessageHandler<Hea
      * 		the interval at which to send heartbeats
      */
     public HeartbeatSendReceive(
-            final Time time,
-            final long peerId,
-            final BiConsumer<NodeId, Long> pingConsumer,
-            final Duration heartbeatInterval) {
+            @NonNull final Time time,
+            @NonNull final NodeId peerId,
+            @NonNull final BiConsumer<NodeId, Long> pingConsumer,
+            @NonNull final Duration heartbeatInterval) {
         this.responder = new HeartbeatResponder();
+        // Checks for NonNull are performed by the HeartbeatSender constructor.
         this.sender = new HeartbeatSender(peerId, pingConsumer, heartbeatInterval, time);
     }
 

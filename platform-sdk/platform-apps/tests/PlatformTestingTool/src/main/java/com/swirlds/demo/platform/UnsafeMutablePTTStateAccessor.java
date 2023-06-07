@@ -16,6 +16,7 @@
 
 package com.swirlds.demo.platform;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +33,7 @@ public final class UnsafeMutablePTTStateAccessor {
     /**
      * A map is used to be compatible with running multiple PTT nodes in the same JVM.
      */
-    private final Map<Long /* node ID */, PlatformTestingToolState> states = new HashMap<>();
+    private final Map<NodeId, PlatformTestingToolState> states = new HashMap<>();
 
     private static final UnsafeMutablePTTStateAccessor INSTANCE = new UnsafeMutablePTTStateAccessor();
 
@@ -53,7 +54,7 @@ public final class UnsafeMutablePTTStateAccessor {
      * @param nodeId the node ID
      * @param state  the state
      */
-    public synchronized void setMutableState(final long nodeId, final PlatformTestingToolState state) {
+    public synchronized void setMutableState(final NodeId nodeId, final PlatformTestingToolState state) {
         state.reserve();
         final PlatformTestingToolState previousState = states.put(nodeId, state);
         if (previousState != null) {
@@ -69,7 +70,7 @@ public final class UnsafeMutablePTTStateAccessor {
      * @param nodeId the node ID
      * @return the state, or a wrapper around null
      */
-    public synchronized AutoCloseableWrapper<PlatformTestingToolState> getUnsafeMutableState(final long nodeId) {
+    public synchronized AutoCloseableWrapper<PlatformTestingToolState> getUnsafeMutableState(final NodeId nodeId) {
         final PlatformTestingToolState state = states.get(nodeId);
         if (state == null) {
             return new AutoCloseableWrapper<>(null, () -> {});

@@ -37,7 +37,6 @@ import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.test.consensus.ConsensusUtils;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.event.source.StandardEventSource;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,12 +46,10 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 class OrphanEventsIntakeTest {
     @Test
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void eventConsensus() {
         final int numNodes = 10;
         final int numEvents = 10_000;

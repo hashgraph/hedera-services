@@ -32,7 +32,7 @@ import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
-import com.hedera.node.app.service.token.impl.test.handlers.TokenHandlerTestBase;
+import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
