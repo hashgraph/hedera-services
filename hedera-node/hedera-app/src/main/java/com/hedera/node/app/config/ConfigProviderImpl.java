@@ -133,7 +133,7 @@ public class ConfigProviderImpl implements ConfigProvider {
         addConfigData(builder);
         addConverter(builder);
         addValidators(builder);
-        final boolean useGenesis = Objects.equals(initTrigger, InitTrigger.GENESIS);
+        final boolean useGenesis = initTrigger == InitTrigger.GENESIS;
         addFileSources(builder, useGenesis);
         final Configuration config = builder.build();
         configuration = new VersionedConfigImpl(config, 0);

@@ -23,7 +23,6 @@ import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.InitTrigger;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -77,7 +76,7 @@ class ConfigProviderImplTest {
         final String value = configuration.getValue("bar.test");
 
         // then
-        if (Objects.equals(initTrigger, InitTrigger.GENESIS)) {
+        if (initTrigger == InitTrigger.GENESIS) {
             assertThat(value).isEqualTo("genesis");
         } else {
             assertThat(value).isEqualTo("456");
