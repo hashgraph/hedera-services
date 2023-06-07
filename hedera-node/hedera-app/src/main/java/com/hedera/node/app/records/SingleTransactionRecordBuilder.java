@@ -317,6 +317,15 @@ public class SingleTransactionRecordBuilder
         return accountID;
     }
 
+    /**
+     * @deprecated this method is only used temporarily during the migration
+     */
+    @Deprecated(forRemoval = true)
+    @Nullable
+    public TokenID tokenID() {
+        return tokenID;
+    }
+
     public SingleTransactionRecordBuilder fileID(FileID fileID) {
         this.fileID = fileID;
         return this;

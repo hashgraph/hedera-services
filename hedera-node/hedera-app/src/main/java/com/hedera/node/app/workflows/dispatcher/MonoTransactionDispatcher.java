@@ -17,9 +17,10 @@
 package com.hedera.node.app.workflows.dispatcher;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
+import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -80,14 +81,16 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     public void dispatchHandle(@NonNull final HandleContext context) {
         final var txBody = context.body();
         switch (txBody.data().kind()) {
+            /* ------------------ topic -------------------------- */
             case CONSENSUS_CREATE_TOPIC -> dispatchConsensusCreateTopic(context);
             case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(context);
             case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(context);
             case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(context);
+            /* ------------------ crypto -------------------------- */
             case CRYPTO_CREATE_ACCOUNT -> dispatchCryptoCreate(context);
             case CRYPTO_DELETE -> dispatchCryptoDelete(context);
             case CRYPTO_UPDATE_ACCOUNT -> dispatchCryptoUpdate(context);
-            case FREEZE -> dispatchFreeze(context);
+            /* ------------------ token -------------------------- */
             case TOKEN_ASSOCIATE -> dispatchTokenAssociate(context);
             case TOKEN_FREEZE -> dispatchTokenFreeze(context);
             case TOKEN_UNFREEZE -> dispatchTokenUnfreeze(context);
@@ -95,7 +98,11 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case TOKEN_REVOKE_KYC -> dispatchTokenRevokeKycFromAccount(context);
             case TOKEN_PAUSE -> dispatchTokenPause(context);
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(context);
+            case TOKEN_CREATION -> dispatchTokenCreate(context);
             case TOKEN_FEE_SCHEDULE_UPDATE -> dispatchTokenFeeScheduleUpdate(context);
+            /* ------------------ admin -------------------------- */
+            case FREEZE -> dispatchFreeze(context);
+            /* ------------------ util -------------------------- */
             case UTIL_PRNG -> dispatchPrng(context);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
@@ -290,9 +297,9 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     private void finishUtilPrng(@NonNull final HandleContext handleContext) {
         final var recordBuilder = handleContext.recordBuilder(SingleTransactionRecordBuilder.class);
         final var entropy = recordBuilder.entropy();
-        if (entropy.kind() == EntropyOneOfType.PRNG_NUMBER) {
+        if (entropy.kind() == TransactionRecord.EntropyOneOfType.PRNG_NUMBER) {
             sideEffectsTracker.trackRandomNumber((Integer) entropy.value());
-        } else if (entropy.kind() == EntropyOneOfType.PRNG_BYTES) {
+        } else if (entropy.kind() == TransactionRecord.EntropyOneOfType.PRNG_BYTES) {
             sideEffectsTracker.trackRandomBytes(PbjConverter.asBytes((Bytes) entropy.value()));
         }
     }
@@ -307,5 +314,20 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     private void finishTokenFeeScheduleUpdate(@NonNull final HandleContext handleContext) {
         final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
         requireNonNull(tokenStore).commit();
+    }
+
+    private void dispatchTokenCreate(@NonNull final HandleContext handleContext) {
+        requireNonNull(handleContext);
+        final var handler = handlers.tokenCreateHandler();
+        handler.handle(handleContext);
+        finishTokenCreate(handleContext);
+    }
+
+    protected void finishTokenCreate(@NonNull final HandleContext handleContext) {
+        // If token can't be created, due to the usage of a price regime, throw an exception
+        validateTrue(usageLimits.areCreatableTokens(1), MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+
+        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
+        tokenStore.commit();
     }
 }

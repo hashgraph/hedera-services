@@ -56,7 +56,23 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TargetNetworkPrep extends HapiSuite {
+public class  protected final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
+        .spender(spenderId)
+        .owner(ownerId)
+        .amount(10L)
+        .build();
+protected final TokenAllowance tokenAllowance = TokenAllowance.newBuilder()
+        .spender(spenderId)
+        .amount(10L)
+        .tokenId(fungibleTokenId)
+        .owner(ownerId)
+        .build();
+protected final NftAllowance nftAllowance = NftAllowance.newBuilder()
+        .spender(spenderId)
+        .owner(ownerId)
+        .tokenId(nonFungibleTokenId)
+        .serialNumbers(List.of(1L, 2L))
+        .build(); extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TargetNetworkPrep.class);
     public static final int SYSTEM_ENTITY_EXPIRY = 1812637686;
 
