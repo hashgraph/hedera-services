@@ -49,11 +49,11 @@ import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.threading.framework.QueueThread;
@@ -1028,7 +1028,7 @@ public class SwirldsPlatform implements Platform, Startable {
             } else if (gossip.hasFallenBehind()) {
                 newStatus = PlatformStatus.BEHIND;
             } else if (freezeManager.isFreezeStarted()) {
-                newStatus = PlatformStatus.MAINTENANCE;
+                newStatus = PlatformStatus.FREEZING;
             } else if (freezeManager.isFreezeComplete()) {
                 newStatus = PlatformStatus.FREEZE_COMPLETE;
             } else {

@@ -53,9 +53,9 @@ import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListene
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -841,7 +841,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         // set isActive
         isActive = newStatus == PlatformStatus.ACTIVE;
 
-        if (newStatus == PlatformStatus.MAINTENANCE) {
+        if (newStatus == PlatformStatus.FREEZING) {
             logger.trace(LOGM_DEMO_INFO, "ENTERING MAINTENANCE!");
             logger.trace(
                     LOGM_DEMO_INFO,

@@ -19,53 +19,81 @@ package com.swirlds.common.system.platformstatus;
 import com.swirlds.common.UniqueId;
 
 /**
- * The status of the Platform, indicating whether all is normal, or if it has some problem, such as being disconnected,
- * or not having the latest state.
+ * The status of the Platform
+ * <p>
+ * NOTE: not all of these statuses can currently be reached. The status state machine is still under development. In
+ * such cases, the documentation will indicate that the status is "not in use"
+ *
  */
 public enum PlatformStatus implements UniqueId {
     /**
-     * The Platform is starting up.
+     * The platform is starting up
      */
     STARTING_UP(1),
     /**
-     * The platform is replaying events from the preconsensus event stream.
-     * (Not yet in use)
-     */
-    REPLAYING_EVENTS(7),
-    /**
-     * The platform has starting up or has finished reconnecting, and is now ready to rejoin the network.
-     * (Not yet in use)
-     */
-    READY(8),
-    /**
-     * All is normal: the Platform is running, connected, and gossiping.
+     * The platform is gossiping, creating events, and accepting app transactions
      */
     ACTIVE(2),
     /**
-     * The Platform is not currently connected to any other computers on the network
+     * The platform is not currently connected to any other computers on the network
      */
     DISCONNECTED(3),
     /**
-     * The Platform does not have the latest state, and needs to reconnect
+     * The Platform does not have the latest state, and needs to reconnect. The platform is not gossiping.
      */
     BEHIND(4),
     /**
-     * The Platform is undergoing maintenance
+     * A freeze timestamp has been crossed, and the platform is in the process of freezing. The platform is gossiping
+     * and creating events, but not accepting app transactions
      */
-    MAINTENANCE(5),
+    FREEZING(5),
     /**
-     * The Platform has stopped handling consensus transactions in preparation for a freeze
+     * The platform has been frozen, and is idle
      */
-    FREEZE_COMPLETE(6);
+    FREEZE_COMPLETE(6),
+    /**
+     * The platform is replaying events from the preconsensus event stream
+     * <p>
+     * NOTE: not in use
+     */
+    REPLAYING_EVENTS(7),
+    /**
+     * The platform has just started, and is observing the network. The platform is gossiping, but will not produce
+     * events.
+     * <p>
+     * NOTE: not in use
+     */
+    OBSERVING(8),
+    /**
+     * The platform has started up or has finished reconnecting, and is now ready to rejoin the network. The platform is
+     * gossiping and producing events, but not yet accepting app transactions.
+     * <p>
+     * NOTE: not in use
+     */
+    CHECKING(9),
+    /**
+     * The platform has just finished reconnecting. The platform is gossiping, but is waiting to write a state to disk
+     * before producing events or accepting app transactions.
+     * <p>
+     * NOTE: not in use
+     */
+    RECONNECT_COMPLETE(10),
+    /**
+     * The platform has encountered a failure, and is unable to continue. The platform is idle
+     * <p>
+     * NOTE: not in use
+     */
+    CATASTROPHIC_FAILURE(11);
 
-    /** unique ID */
+    /**
+     * Unique ID of the enum value
+     */
     private final int id;
 
     /**
      * Constructs an enum instance
      *
-     * @param id
-     * 		unique ID of the instance
+     * @param id unique ID of the instance
      */
     PlatformStatus(final int id) {
         this.id = id;

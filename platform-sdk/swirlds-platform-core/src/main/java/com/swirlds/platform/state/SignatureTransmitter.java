@@ -68,8 +68,8 @@ public final class SignatureTransmitter {
         Objects.requireNonNull(stateHash);
 
         final PlatformStatus platformStatus = getPlatformStatus.get();
-        if (platformStatus != PlatformStatus.ACTIVE && platformStatus != PlatformStatus.MAINTENANCE) {
-            // Only send transactions if the platform is in ACTIVE or MAINTENANCE state.
+        if (platformStatus != PlatformStatus.ACTIVE && platformStatus != PlatformStatus.FREEZING) {
+            // Only send transactions if the platform is in ACTIVE or FREEZING state.
             return;
         }
 
