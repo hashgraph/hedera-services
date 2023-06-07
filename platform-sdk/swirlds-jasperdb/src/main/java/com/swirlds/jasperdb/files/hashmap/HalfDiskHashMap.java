@@ -28,12 +28,12 @@ import com.swirlds.jasperdb.Snapshotable;
 import com.swirlds.jasperdb.collections.LongList;
 import com.swirlds.jasperdb.collections.LongListDisk;
 import com.swirlds.jasperdb.collections.LongListOffHeap;
+import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.jasperdb.files.DataFileCollection;
 import com.swirlds.jasperdb.files.DataFileCollection.LoadedDataCallback;
 import com.swirlds.jasperdb.files.DataFileReader;
-import com.swirlds.jasperdb.settings.JasperDbSettings;
-import com.swirlds.jasperdb.settings.JasperDbSettingsFactory;
 import com.swirlds.virtualmap.VirtualKey;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -41,6 +41,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.LongSummaryStatistics;
+import java.util.Objects;
 import java.util.concurrent.Semaphore;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
@@ -144,16 +145,20 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
      */
     public HalfDiskHashMap(
             final long mapSize,
-            final KeySerializer<K> keySerializer,
-            final Path storeDir,
-            final String storeName,
-            final String legacyStoreName,
-            final boolean preferDiskBasedIndexes)
+            @NonNull final KeySerializer<K> keySerializer,
+            @NonNull final Path storeDir,
+            @NonNull final String storeName,
+            @NonNull final String legacyStoreName,
+            final boolean preferDiskBasedIndexes,
+            @NonNull final JasperDbConfig config)
             throws IOException {
-        final JasperDbSettings settings = JasperDbSettingsFactory.get();
+        Objects.requireNonNull(keySerializer);
+        Objects.requireNonNull(storeDir);
+        Objects.requireNonNull(legacyStoreName);
+        Objects.requireNonNull(config);
 
         this.mapSize = mapSize;
-        this.storeName = storeName;
+        this.storeName = Objects.requireNonNull(storeName);
         Path indexFile = storeDir.resolve(storeName + BUCKET_INDEX_FILENAME_SUFFIX);
         // create bucket serializer
         this.bucketSerializer = new BucketSerializer<>(keySerializer);
@@ -194,7 +199,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
                         + "] because metadata file is missing");
             }
             // load or rebuild index
-            final boolean forceIndexRebuilding = settings.isIndexRebuildingEnforced();
+            final boolean forceIndexRebuilding = config.indexRebuildingEnforced();
             if (Files.exists(indexFile) && !forceIndexRebuilding) {
                 bucketIndexToBucketLocation =
                         preferDiskBasedIndexes ? new LongListDisk(indexFile) : new LongListOffHeap(indexFile);
