@@ -36,11 +36,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class ContractCreateV1SecurityModelSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractCreateV1SecurityModelSuite.class);
 
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
-    public static final String PARENT_INFO = "parentInfo";
 
     public static void main(String... args) {
         new ContractCreateV1SecurityModelSuite().runSuiteSync();

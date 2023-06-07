@@ -66,6 +66,7 @@ import org.apache.logging.log4j.Logger;
 // since they use admin keys, which are held by the txn payer.
 // In the case of an eth txn, we revoke the payers keys and the txn would fail.
 // The only way an eth account to create a token is the admin key to be of a contractId type.
+@SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CreatePrecompileV1SecurityModelSuite.class);
 
@@ -74,7 +75,6 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
     public static final String ACCOUNT_TO_ASSOCIATE = "account3";
     public static final String ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
     public static final String FALSE = "false";
-    public static final String CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE = "createTokenWithAllCustomFeesAvailable";
     private static final long GAS_TO_OFFER = 1_000_000L;
     public static final long AUTO_RENEW_PERIOD = 8_000_000L;
     public static final String TOKEN_SYMBOL = "tokenSymbol";
@@ -88,7 +88,6 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
     public static final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
     public static final String ED25519KEY = "ed25519key";
     public static final String ECDSA_KEY = "ecdsa";
-    public static final String EXISTING_TOKEN = "EXISTING_TOKEN";
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
     public static final String EXPLICIT_CREATE_RESULT = "Explicit create result is {}";
     private static final String CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION = "createNFTTokenWithKeysAndExpiry";

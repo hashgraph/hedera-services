@@ -66,7 +66,6 @@ import org.json.JSONTokener;
 
 public class Utils {
     public static final String RESOURCE_PATH = "src/main/resource/contract/contracts/%1$s/%1$s%2$s";
-    private static final String CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS = "contracts.maxNumWithHapiSigsAccess";
 
     public static final String UNIQUE_CLASSPATH_RESOURCE_TPL = "contract/contracts/%s/%s";
     private static final Logger log = LogManager.getLogger(Utils.class);

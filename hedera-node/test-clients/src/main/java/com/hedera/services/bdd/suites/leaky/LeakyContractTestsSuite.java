@@ -226,6 +226,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+@SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class LeakyContractTestsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LeakyContractTestsSuite.class);
     public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1 = "contracts.maxRefundPercentOfGasLimit";
