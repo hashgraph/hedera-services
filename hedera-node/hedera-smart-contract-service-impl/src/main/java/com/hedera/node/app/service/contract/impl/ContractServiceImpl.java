@@ -36,6 +36,7 @@ public final class ContractServiceImpl implements ContractService {
     private static final SemanticVersion CURRENT_VERSION =
             SemanticVersion.newBuilder().minor(34).build();
     public static final String STORAGE_KEY = "STORAGE";
+    public static final String BYTECODE_KEY = "BYTECODE";
 
     @Override
     public void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry) {

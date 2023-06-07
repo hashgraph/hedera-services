@@ -22,7 +22,6 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -38,7 +37,7 @@ import java.util.Optional;
  */
 public class ReadableFileStoreImpl extends FileStore implements ReadableFileStore {
     /** The underlying data storage class that holds the file data. */
-    private final ReadableKVState<EntityNum, File> fileState;
+    private final ReadableKVState<FileID, File> fileState;
 
     /**
      * Create a new {@link ReadableFileStoreImpl} instance.
@@ -62,6 +61,6 @@ public class ReadableFileStoreImpl extends FileStore implements ReadableFileStor
     }
 
     public @Nullable Optional<File> getFileLeaf(@Nullable FileID id) {
-        return Optional.ofNullable(fileState.get(EntityNum.fromFileId(id)));
+        return Optional.ofNullable(fileState.get(id));
     }
 }

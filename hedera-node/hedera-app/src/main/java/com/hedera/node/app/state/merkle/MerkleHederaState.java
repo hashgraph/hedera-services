@@ -346,7 +346,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         return this;
     }
 
-    <K extends Comparable<K>, V> void putServiceStateIfAbsent(@NonNull final StateMetadata<K, V> md) {
+    <K, V> void putServiceStateIfAbsent(@NonNull final StateMetadata<K, V> md) {
         throwIfImmutable();
         Objects.requireNonNull(md);
         final var stateMetadata = services.computeIfAbsent(md.serviceName(), k -> new HashMap<>());
@@ -363,8 +363,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
      *                                  it doesn't have a label, or if the label isn't right.
      */
-    <K extends Comparable<K>, V> void putServiceStateIfAbsent(
-            @NonNull final StateMetadata<K, V> md, @NonNull final MerkleNode node) {
+    <K, V> void putServiceStateIfAbsent(@NonNull final StateMetadata<K, V> md, @NonNull final MerkleNode node) {
 
         // Validate the inputs
         throwIfImmutable();
