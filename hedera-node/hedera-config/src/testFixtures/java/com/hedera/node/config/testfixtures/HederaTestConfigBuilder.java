@@ -36,6 +36,7 @@ import com.hedera.node.config.converter.SidecarTypeConverter;
 import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A builder for creating {@link TestConfigBuilder} instances for testing.
@@ -50,6 +51,7 @@ public final class HederaTestConfigBuilder {
      *
      * @return the new {@link TestConfigBuilder} instance
      */
+    @NonNull
     public static TestConfigBuilder create() {
         return create(true);
     }
@@ -63,6 +65,7 @@ public final class HederaTestConfigBuilder {
      *                         {@code com.swirlds} should automatically be registered
      * @return the new {@link TestConfigBuilder} instance
      */
+    @NonNull
     public static TestConfigBuilder create(boolean registerAllTypes) {
         return new TestConfigBuilder(registerAllTypes)
                 .withConverter(new AccountIDConverter())
@@ -91,6 +94,7 @@ public final class HederaTestConfigBuilder {
      *
      * @return a new {@link Configuration} instance
      */
+    @NonNull
     public static Configuration createConfig() {
         return createConfig(true);
     }
@@ -104,6 +108,7 @@ public final class HederaTestConfigBuilder {
      *                         {@code com.swirlds} should automatically be registered.
      * @return a new {@link Configuration} instance
      */
+    @NonNull
     public static Configuration createConfig(boolean registerAllTypes) {
         return create(registerAllTypes).getOrCreateConfig();
     }
