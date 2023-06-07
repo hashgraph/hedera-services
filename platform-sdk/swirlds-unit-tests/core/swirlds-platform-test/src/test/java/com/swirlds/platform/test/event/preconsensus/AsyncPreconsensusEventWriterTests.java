@@ -538,6 +538,7 @@ class AsyncPreconsensusEventWriterTests {
         }
 
         writer2.beginStreamingNewEvents();
+        writer2.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
 
         final Set<EventImpl> rejectedEvents2 = new HashSet<>();
         for (final EventImpl event : events2) {

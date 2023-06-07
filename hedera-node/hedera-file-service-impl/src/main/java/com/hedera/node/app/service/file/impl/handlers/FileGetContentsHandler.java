@@ -29,9 +29,8 @@ import com.hedera.hapi.node.file.FileGetContentsQuery;
 import com.hedera.hapi.node.file.FileGetContentsResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.base.FileQueryBase;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,12 +44,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FileGetContentsHandler extends FileQueryBase {
-    private final NetworkInfo networkInfo;
 
     @Inject
-    public FileGetContentsHandler(@NonNull final NetworkInfo networkInfo) {
-        this.networkInfo = requireNonNull(networkInfo);
-    }
+    public FileGetContentsHandler() {}
 
     @Override
     public @NonNull QueryHeader extractHeader(@NonNull final Query query) {
@@ -78,7 +74,7 @@ public class FileGetContentsHandler extends FileQueryBase {
     public @NonNull Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
         requireNonNull(header);
         final var query = context.query();
-        final var fileStore = context.createStore(ReadableFileStoreImpl.class);
+        final var fileStore = context.createStore(ReadableFileStore.class);
         final var op = query.fileGetContentsOrThrow();
         final var responseBuilder = FileGetContentsResponse.newBuilder();
         final var file = op.fileIDOrElse(FileID.DEFAULT);
@@ -100,7 +96,7 @@ public class FileGetContentsHandler extends FileQueryBase {
      * @return the content about the file
      */
     private @Nullable Optional<FileContents> contentFile(
-            @NonNull final FileID fileID, @NonNull final ReadableFileStoreImpl fileStore) {
+            @NonNull final FileID fileID, @NonNull final ReadableFileStore fileStore) {
         final var meta = fileStore.getFileMetadata(fileID);
         if (meta == null) {
             return Optional.empty();

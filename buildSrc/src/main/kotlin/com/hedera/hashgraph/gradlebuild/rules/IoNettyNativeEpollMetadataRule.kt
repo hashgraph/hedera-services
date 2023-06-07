@@ -10,9 +10,10 @@ abstract class IoNettyNativeEpollMetadataRule : ComponentMetadataRule {
         val version = context.details.id.version
         context.details.allVariants {
             withFiles {
-                // Always pick 'linux-x86_64' by default
+                // Always pick 'linux-x86_64' and 'linux-aarch_64' by default
                 removeAllFiles()
                 addFile("$name-$version-linux-x86_64.jar")
+                addFile("$name-$version-linux-aarch_64.jar")
             }
         }
     }
