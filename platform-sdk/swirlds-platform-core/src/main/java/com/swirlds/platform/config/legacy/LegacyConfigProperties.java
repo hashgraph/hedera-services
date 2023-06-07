@@ -57,6 +57,9 @@ public class LegacyConfigProperties {
 
     @NonNull
     public AddressBook getAddressBook() {
+        if (addressBook == null) {
+            return new AddressBook();
+        }
         return addressBook.copy();
     }
 
