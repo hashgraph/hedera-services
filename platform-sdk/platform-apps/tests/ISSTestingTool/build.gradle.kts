@@ -15,12 +15,13 @@
  */
 
 plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.application")
+    id("com.swirlds.platform.conventions")
+    id("com.swirlds.platform.application")
 }
 
 dependencies {
-  // Individual Dependencies
-  implementation(project(":swirlds-platform-core"))
-  implementation(libs.bundles.logging.impl)
+    // Individual Dependencies
+    implementation(project(":swirlds-platform-core"))
+    implementation(libs.bundles.logging.impl)
+    compileOnly(libs.spotbugs.annotations)
 }
