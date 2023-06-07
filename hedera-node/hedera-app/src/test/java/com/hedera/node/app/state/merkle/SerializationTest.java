@@ -33,6 +33,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
+import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -41,7 +42,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
 class SerializationTest extends MerkleTestBase {
@@ -49,10 +49,10 @@ class SerializationTest extends MerkleTestBase {
     private Configuration config;
 
     @BeforeEach
-    void setUp(@TempDir final Path tempDir) {
+    void setUp() throws IOException {
         setupConstructableRegistry();
 
-        this.dir = tempDir;
+        this.dir = TemporaryFileBuilder.buildTemporaryDirectory();
         this.config = Mockito.mock(Configuration.class);
         final var hederaConfig = Mockito.mock(HederaConfig.class);
         lenient().when(config.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
