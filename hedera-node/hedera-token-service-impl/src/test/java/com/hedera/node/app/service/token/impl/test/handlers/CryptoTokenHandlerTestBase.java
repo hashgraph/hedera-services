@@ -212,7 +212,7 @@ public class CryptoTokenHandlerTestBase {
 
     @BeforeEach
     public void setUp() {
-        configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        configuration = HederaTestConfigBuilder.createConfig();
         tokensConfig = configuration.getConfigData(TokensConfig.class);
         givenValidAccount();
         givenValidFungibleToken();

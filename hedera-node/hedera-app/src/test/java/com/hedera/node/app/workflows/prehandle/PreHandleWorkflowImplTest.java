@@ -76,22 +76,21 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     private static final long DEFAULT_CONFIG_VERSION = 1L;
 
     /**
-     * We use a mocked dispatcher, so it is easy to fake out interaction between the workflow and some
-     * "hypothetical" transaction handlers.
+     * We use a mocked dispatcher, so it is easy to fake out interaction between the workflow and some "hypothetical"
+     * transaction handlers.
      */
     @Mock
     private TransactionDispatcher dispatcher;
 
     /**
-     * We use a mocked transaction checker, so it is easy to fake out the success or failure of the
-     * transaction checker.
+     * We use a mocked transaction checker, so it is easy to fake out the success or failure of the transaction
+     * checker.
      */
     @Mock
     private TransactionChecker transactionChecker;
 
     /**
-     * We use a mocked signature verifier, so it is easy to fake out the success or failure of signature
-     * verification.
+     * We use a mocked signature verifier, so it is easy to fake out the success or failure of signature verification.
      */
     @Mock
     private SignatureVerifier signatureVerifier;
@@ -131,8 +130,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                         Collections.emptyMap()));
         storeFactory = new ReadableStoreFactory(fakeHederaState);
 
-        final var config =
-                new VersionedConfigImpl(new HederaTestConfigBuilder(false).getOrCreateConfig(), DEFAULT_CONFIG_VERSION);
+        final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(false), DEFAULT_CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(config);
 
         workflow = new PreHandleWorkflowImpl(
@@ -147,7 +145,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     /** Null arguments are not permitted to the constructor. */
     @Test
     @DisplayName("Null constructor args throw NPE")
-    @SuppressWarnings("DataFlowIssue") // Suppress the warning about null args
+    @SuppressWarnings("DataFlowIssue")
+    // Suppress the warning about null args
     void nullConstructorArgsTest() {
         assertThatThrownBy(() -> new PreHandleWorkflowImpl(
                         null,
@@ -177,7 +176,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     /** Null arguments are not permitted to the preHandle method */
     @Test
     @DisplayName("Null pre-handle args throw NPE")
-    @SuppressWarnings("DataFlowIssue") // Suppress the warning about null args
+    @SuppressWarnings("DataFlowIssue")
+    // Suppress the warning about null args
     void nullPreHandleArgsTest() {
         final List<Transaction> list = List.of(new SwirldTransaction(new byte[10]));
         final var transactions = list.stream();
@@ -211,8 +211,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     }
 
     /**
-     * This suite of tests verifies that should we encounter unexpected failures in our code, we will still behave
-     * in a safe and consistent way.
+     * This suite of tests verifies that should we encounter unexpected failures in our code, we will still behave in a
+     * safe and consistent way.
      */
     @Nested
     @DisplayName("Handling of exceptions caused by bugs in our code")
@@ -234,9 +234,9 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
 
         /**
          * Maybe some random exception happens during pre handle. This is <b>definitely</b> not expected. But if it
-         * does, we should still behave in a safe and consistent way. We should fail with "UNKNOWN", and will be
-         * retried again during handle. Should it happen again in handle, the node will likely ISS and restart and
-         * reconnect, which is a perfectly acceptable outcome.
+         * does, we should still behave in a safe and consistent way. We should fail with "UNKNOWN", and will be retried
+         * again during handle. Should it happen again in handle, the node will likely ISS and restart and reconnect,
+         * which is a perfectly acceptable outcome.
          */
         @Test
         @DisplayName("Unknown failure due to random exception during handling leads to \"unknown\" failure response")
@@ -255,9 +255,9 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     }
 
     /**
-     * Due diligence tests cover scenarios where a possibly dishonest or broken node sends transactions to other
-     * nodes that it shouldn't have sent. For example, if the protobuf bytes cannot even be parsed, then the node has
-     * not performed its due diligence and should be charged for this waste of resources.
+     * Due diligence tests cover scenarios where a possibly dishonest or broken node sends transactions to other nodes
+     * that it shouldn't have sent. For example, if the protobuf bytes cannot even be parsed, then the node has not
+     * performed its due diligence and should be charged for this waste of resources.
      */
     @Nested
     @DisplayName("Due-diligence tests")
@@ -265,16 +265,15 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     final class DueDiligenceTests implements Scenarios {
 
         /**
-         * A dishonest node may send, in an event, a transaction that cannot be parsed. It might just
-         * be random bytes. Or no bytes. Or too many bytes. In all of those cases, we should immediately
-         * terminate with a {@link PreHandleResult} that as a response code, a payer for the node that sent the
-         * transaction.
+         * A dishonest node may send, in an event, a transaction that cannot be parsed. It might just be random bytes.
+         * Or no bytes. Or too many bytes. In all of those cases, we should immediately terminate with a
+         * {@link PreHandleResult} that as a response code, a payer for the node that sent the transaction.
          *
          * <p>Or, after successfully parsing the transaction from protobuf bytes, we perform a whole set of syntactic
-         * checks on the transaction using the {@link TransactionChecker}. We don't need to verify every possible
-         * bad transaction here (since the tests for {@link TransactionChecker} do that). If **any** failure happens
-         * due to a syntactic check, we should immediately terminate with a {@link PreHandleResult} that has the
-         * response code of the failure and the payer should be node (as it failed due-diligence checks).
+         * checks on the transaction using the {@link TransactionChecker}. We don't need to verify every possible bad
+         * transaction here (since the tests for {@link TransactionChecker} do that). If **any** failure happens due to
+         * a syntactic check, we should immediately terminate with a {@link PreHandleResult} that has the response code
+         * of the failure and the payer should be node (as it failed due-diligence checks).
          *
          * <p>Both cases look the same to the handler.
          */
@@ -317,12 +316,11 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         }
 
         /**
-         * It may be that when the transaction is pre-handled, it refers to an account that does not yet exist.
-         * This may happen because the transaction is bad, or it may happen because we do not yet have an account
-         * object (maybe another in-flight transaction will create it). But every node as part of its due-diligence
-         * has to verify the payer signature on the transaction prior to submitting the transaction to the network.
-         * So if the payer account does not exist, then the node failed due-diligence and should pay for the
-         * transaction.
+         * It may be that when the transaction is pre-handled, it refers to an account that does not yet exist. This may
+         * happen because the transaction is bad, or it may happen because we do not yet have an account object (maybe
+         * another in-flight transaction will create it). But every node as part of its due-diligence has to verify the
+         * payer signature on the transaction prior to submitting the transaction to the network. So if the payer
+         * account does not exist, then the node failed due-diligence and should pay for the transaction.
          */
         @Test
         @DisplayName("Fail pre-handle because the payer account cannot be found")
@@ -346,11 +344,11 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         }
 
         /**
-         * The transaction submitted by the user may simply be missing the payer signature. Maybe the payer in
-         * the transaction is a valid account ID, and maybe the account exists, but maybe the payer never signed
-         * the transaction. In that case, the node failed due diligence again and should pay for the transaction.
-         * True, a transaction that would put the proper key on the account may be in-flight, but we never should
-         * have gotten to this point if the node had performed proper due-diligence.
+         * The transaction submitted by the user may simply be missing the payer signature. Maybe the payer in the
+         * transaction is a valid account ID, and maybe the account exists, but maybe the payer never signed the
+         * transaction. In that case, the node failed due diligence again and should pay for the transaction. True, a
+         * transaction that would put the proper key on the account may be in-flight, but we never should have gotten to
+         * this point if the node had performed proper due-diligence.
          */
         @Test
         @DisplayName("Payer signature is invalid")
@@ -499,8 +497,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     }
 
     /**
-     * Tests the normal happy path. A transaction is valid, the payer account exists, and all verification tests
-     * pass. 🎉
+     * Tests the normal happy path. A transaction is valid, the payer account exists, and all verification tests pass.
+     * 🎉
      */
     @Nested
     @DisplayName("Happy Path Tests")

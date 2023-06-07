@@ -86,7 +86,7 @@ class FileSystemDeleteHandlerTest extends FileHandlerTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
-        final var configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        final var configuration = HederaTestConfigBuilder.createConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(configuration);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
     }

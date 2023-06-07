@@ -53,7 +53,7 @@ class IngestComponentTest {
 
     @BeforeEach
     void setUp() {
-        final Configuration configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        final Configuration configuration = HederaTestConfigBuilder.createConfig();
         final PlatformContext platformContext = mock(PlatformContext.class);
         when(platformContext.getConfiguration()).thenReturn(configuration);
         when(platform.getContext()).thenReturn(platformContext);

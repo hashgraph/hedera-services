@@ -113,7 +113,7 @@ class NetworkGetVersionInfoHandlerTest {
         final var query = validQuery();
         given(context.query()).willReturn(query);
 
-        final Configuration config = new HederaTestConfigBuilder().getOrCreateConfig();
+        final Configuration config = HederaTestConfigBuilder.createConfig();
         given(context.configuration()).willReturn(config);
 
         final var response = subject.findResponse(context, responseHeader);
@@ -132,7 +132,7 @@ class NetworkGetVersionInfoHandlerTest {
         final var query = validQuery();
         given(context.query()).willReturn(query);
 
-        final Configuration config = new HederaTestConfigBuilder().getOrCreateConfig();
+        final Configuration config = HederaTestConfigBuilder.createConfig();
         given(context.configuration()).willReturn(config);
 
         final NetworkGetVersionInfoResponse op =

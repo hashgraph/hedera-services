@@ -85,7 +85,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         commonSetUp();
         subject = new ConsensusSubmitMessageHandler();
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("consensus.message.maxBytesAllowed", 100)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
@@ -208,7 +208,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusHandlerTestBase {
         final var txn = newSubmitMessageTxn(topicEntityNum, Arrays.toString(TxnUtils.randomUtf8Bytes(2000)));
         given(handleContext.body()).willReturn(txn);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("consensus.message.maxBytesAllowed", 5)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);

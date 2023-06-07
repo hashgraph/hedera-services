@@ -5,5 +5,5 @@ module com.hedera.node.config.test.fixtures {
     requires com.hedera.node.config;
     requires com.github.spotbugs.annotations;
     requires com.swirlds.common;
-    requires com.swirlds.test.framework;
+    requires transitive com.swirlds.test.framework;
 }

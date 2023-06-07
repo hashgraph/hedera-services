@@ -188,7 +188,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
 
         final var config =
-                new HederaTestConfigBuilder().withValue("ledger.id", "0x03").getOrCreateConfig();
+                HederaTestConfigBuilder.create().withValue("ledger.id", "0x03").getOrCreateConfig();
         given(context.configuration()).willReturn(config);
 
         final var response = subject.findResponse(context, responseHeader);
@@ -211,7 +211,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
 
         final var config =
-                new HederaTestConfigBuilder().withValue("ledger.id", "0x03").getOrCreateConfig();
+                HederaTestConfigBuilder.create().withValue("ledger.id", "0x03").getOrCreateConfig();
         given(context.configuration()).willReturn(config);
 
         final var response = subject.findResponse(context, responseHeader);

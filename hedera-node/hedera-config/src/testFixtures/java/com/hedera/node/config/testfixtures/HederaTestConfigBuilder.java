@@ -34,6 +34,7 @@ import com.hedera.node.config.converter.ScaleFactorConverter;
 import com.hedera.node.config.converter.SemanticVersionConverter;
 import com.hedera.node.config.converter.SidecarTypeConverter;
 import com.hedera.node.config.validation.EmulatesMapValidator;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 
 /**
@@ -43,29 +44,67 @@ public final class HederaTestConfigBuilder {
 
     private HederaTestConfigBuilder() {}
 
+    /**
+     * Creates a new {@link TestConfigBuilder} instance that has automatically registered all config records that are
+     * part of the base packages {@code com.hedera} or {@code com.swirlds}.
+     *
+     * @return the new {@link TestConfigBuilder} instance
+     */
     public static TestConfigBuilder create() {
-        return new TestConfigBuilder();
+        return create(true);
     }
 
+    /**
+     * Creates a new {@link TestConfigBuilder} instance. If the {@code registerAllTypes} param is true all config
+     * records that are part of the base packages {@code com.hedera} or {@code com.swirlds} are automatically
+     * registered. If false, no config record is registered.
+     *
+     * @param registerAllTypes defines if all config records that are part of the base packages {@code com.hedera} or
+     *                         {@code com.swirlds} should automatically be registered
+     * @return the new {@link TestConfigBuilder} instance
+     */
     public static TestConfigBuilder create(boolean registerAllTypes) {
         return new TestConfigBuilder(registerAllTypes)
+                .withConverter(new AccountIDConverter())
+                .withConverter(new BytesConverter())
                 .withConverter(new CongestionMultipliersConverter())
+                .withConverter(new ContractIDConverter())
                 .withConverter(new EntityScaleFactorsConverter())
                 .withConverter(new EntityTypeConverter())
+                .withConverter(new FileIDConverter())
+                .withConverter(new HederaFunctionalityConverter())
+                .withConverter(new KeyValuePairConverter())
                 .withConverter(new KnownBlockValuesConverter())
                 .withConverter(new LegacyContractIdActivationsConverter())
                 .withConverter(new MapAccessTypeConverter())
+                .withConverter(new ProfileConverter())
                 .withConverter(new RecomputeTypeConverter())
                 .withConverter(new ScaleFactorConverter())
-                .withConverter(new AccountIDConverter())
-                .withConverter(new ContractIDConverter())
-                .withConverter(new FileIDConverter())
-                .withConverter(new HederaFunctionalityConverter())
-                .withConverter(new ProfileConverter())
-                .withConverter(new SidecarTypeConverter())
-                .withConverter(new KeyValuePairConverter())
-                .withConverter(new BytesConverter())
                 .withConverter(new SemanticVersionConverter())
+                .withConverter(new SidecarTypeConverter())
                 .withValidator(new EmulatesMapValidator());
+    }
+
+    /**
+     * Creates a new {@link Configuration} instance that has automatically registered all config records that are part
+     * of the base packages {@code com.hedera} or {@code com.swirlds}.
+     *
+     * @return a new {@link Configuration} instance
+     */
+    public static Configuration createConfig() {
+        return createConfig(true);
+    }
+
+    /**
+     * Creates a new {@link Configuration} instance. If the {@code registerAllTypes} param is true all config records
+     * that are part of the base packages {@code com.hedera} or {@code com.swirlds} are automatically registered. If
+     * false, no config record is registered.
+     *
+     * @param registerAllTypes defines if all config records that are part of the base packages {@code com.hedera} or
+     *                         {@code com.swirlds} should automatically be registered.
+     * @return a new {@link Configuration} instance
+     */
+    public static Configuration createConfig(boolean registerAllTypes) {
+        return create(registerAllTypes).getOrCreateConfig();
     }
 }
