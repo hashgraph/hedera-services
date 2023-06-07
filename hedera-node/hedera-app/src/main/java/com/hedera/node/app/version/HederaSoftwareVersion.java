@@ -86,7 +86,7 @@ public class HederaSoftwareVersion implements SoftwareVersion {
 
     @Override
     public int compareTo(SoftwareVersion softwareVersion) {
-        return 0;
+        return Integer.compare(getVersion(), softwareVersion.getVersion());
     }
 
     @Override
