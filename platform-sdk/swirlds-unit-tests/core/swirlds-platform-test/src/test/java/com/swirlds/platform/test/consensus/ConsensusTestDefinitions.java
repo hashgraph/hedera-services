@@ -528,7 +528,7 @@ public final class ConsensusTestDefinitions {
 
     public static void loadStateWithEvents() throws URISyntaxException, ConstructableRegistryException, IOException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-        final Path ssPath = ResourceLoader.getFile("mainnet-version-5.swh.bin");
+        final Path ssPath = ResourceLoader.getFile("modified-mainnet-state.swh.bin");
         final SignedState state = SignedStateFileReader.readSignedStateOnly(
                 TestPlatformContextBuilder.create().build(), ssPath);
 
