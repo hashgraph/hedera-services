@@ -51,4 +51,8 @@ public class BaseCryptoHandler {
             throw new IllegalStateException("StakedIdOneOfType is not set");
         }
     }
+
+    public static AccountID asAccount(long num) {
+        return AccountID.newBuilder().accountNum(num).build();
+    }
 }
