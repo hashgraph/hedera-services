@@ -28,7 +28,7 @@ spotless {
     // optional: limit format enforcement to just the files changed by this feature branch
     ratchetFrom("origin/develop")
 
-    format("misc", {
+    format("misc") {
         // define the files to apply `misc` to
         target("*.gradle", "*.md", ".gitignore")
 
@@ -36,9 +36,9 @@ spotless {
         trimTrailingWhitespace()
         indentWithSpaces()
         endWithNewline()
-    })
+    }
 
-    format("actionYaml", {
+    format("actionYaml") {
         target(".github/workflows/*.yaml")
         /*
         * Prettier requires NodeJS and NPM installed; however, the NodeJS Gradle plugin and Spotless do not yet
@@ -73,5 +73,5 @@ spotless {
             ##${"\n\n"}
         """.trimIndent(), "(name)"
         ).updateYearWithLatest(true)
-    })
+    }
 }
