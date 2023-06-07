@@ -48,17 +48,6 @@ public class ReadableNftStoreImpl implements ReadableNftStore {
     @Nullable
     public Nft get(@NonNull final UniqueTokenId id) {
         requireNonNull(id);
-        return getNftLeaf(id);
-    }
-
-    /**
-     * Returns the NFT leaf for the given nftId. If the token and its serial doesn't exist returns {@code
-     * null}
-     *
-     * @param nftId given token Id and its serial number
-     * @return Nft leaf for the given unique token Id
-     */
-    private Nft getNftLeaf(final UniqueTokenId nftId) {
         return nftState.get(nftId);
     }
 }
