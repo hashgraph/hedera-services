@@ -31,6 +31,7 @@ import com.hedera.node.config.converter.MapAccessTypeConverter;
 import com.hedera.node.config.converter.ProfileConverter;
 import com.hedera.node.config.converter.RecomputeTypeConverter;
 import com.hedera.node.config.converter.ScaleFactorConverter;
+import com.hedera.node.config.converter.SemanticVersionConverter;
 import com.hedera.node.config.converter.SidecarTypeConverter;
 import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.swirlds.common.config.ConfigUtils;
@@ -87,6 +88,7 @@ public class HederaTestConfigBuilder {
                 .withConverter(new SidecarTypeConverter())
                 .withConverter(new KeyValuePairConverter())
                 .withConverter(new BytesConverter())
+                .withConverter(new SemanticVersionConverter())
                 .withValidator(new EmulatesMapValidator());
     }
 

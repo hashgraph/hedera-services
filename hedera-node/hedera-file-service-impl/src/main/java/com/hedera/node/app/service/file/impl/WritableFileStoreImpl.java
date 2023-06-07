@@ -17,16 +17,14 @@
 package com.hedera.node.app.service.file.impl;
 
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
+import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -38,7 +36,7 @@ import java.util.Set;
  */
 public class WritableFileStoreImpl extends ReadableFileStoreImpl {
     /** The underlying data storage class that holds the file data. */
-    private final WritableKVState<EntityNum, File> filesState;
+    private final WritableKVState<FileID, File> filesState;
 
     /**
      * Create a new {@link WritableFileStoreImpl} instance.
@@ -47,7 +45,7 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
      */
     public WritableFileStoreImpl(@NonNull final WritableStates states) {
         super(states);
-        this.filesState = Objects.requireNonNull(states.get(BLOBS_KEY));
+        this.filesState = requireNonNull(states.get(BLOBS_KEY));
     }
 
     /**
@@ -57,15 +55,7 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
      * @param file - the file to be mapped onto a new {@link MerkleTopic} and persisted.
      */
     public void put(@NonNull final File file) {
-        filesState.put(EntityNum.fromLong(Objects.requireNonNull(file).fileNumber()), file);
-    }
-
-    /**
-     * Commits the changes to the underlying data storage. TODO: Not sure if the stores have
-     * responsibility of committing the changes. This might change in the future.
-     */
-    public void commit() {
-        if (filesState instanceof WritableKVStateBase) ((WritableKVStateBase) filesState).commit();
+        filesState.put(asFileId(requireNonNull(file).fileNumber()), file);
     }
 
     /**
@@ -74,8 +64,8 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
      *
      * @param fileNum - the number of the file to be retrieved.
      */
-    public @Nullable Optional<File> get(final long fileNum) {
-        final var file = filesState.get(EntityNum.fromLong(fileNum));
+    public @NonNull Optional<File> get(final long fileNum) {
+        final var file = filesState.get(asFileId(fileNum));
         return Optional.ofNullable(file);
     }
 
@@ -85,8 +75,8 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
      *
      * @param fileNum - the number of the file to be retrieved.
      */
-    public @Nullable Optional<File> getForModify(final long fileNum) {
-        final var file = filesState.getForModify(EntityNum.fromLong(fileNum));
+    public @NonNull Optional<File> getForModify(final long fileNum) {
+        final var file = filesState.getForModify(asFileId(fileNum));
         return Optional.ofNullable(file);
     }
 
@@ -104,7 +94,7 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
      *
      * @return the set of files modified in existing state
      */
-    public @NonNull Set<EntityNum> modifiedFiles() {
+    public @NonNull Set<FileID> modifiedFiles() {
         return filesState.modifiedKeys();
     }
 
@@ -114,6 +104,11 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
      * @param fileNum - the number of the file to be removed from state.
      */
     public void removeFile(final long fileNum) {
-        filesState.remove(EntityNum.fromLong(fileNum));
+        filesState.remove(asFileId(fileNum));
+    }
+
+    // In the future we need to add shard/realm into this method, based on the shard/realm config values
+    private FileID asFileId(final long fileNum) {
+        return FileID.newBuilder().fileNum(fileNum).build();
     }
 }
