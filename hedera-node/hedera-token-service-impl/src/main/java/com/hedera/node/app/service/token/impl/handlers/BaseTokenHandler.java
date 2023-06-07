@@ -5,21 +5,19 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -31,7 +29,6 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class BaseTokenHandler {
@@ -45,13 +42,14 @@ public class BaseTokenHandler {
      * @param tokenStore the token store
      * @param tokenRelationStore the token relation store
      */
-    protected void mintFungible(@NonNull final Token token,
-                             @NonNull final TokenRelation treasuryRel,
-                             final long amount,
-                             final boolean isMintOnTokenCreation,
-                             @NonNull final WritableAccountStore accountStore,
-                             @NonNull final WritableTokenStore tokenStore,
-                             @NonNull final WritableTokenRelationStore tokenRelationStore) {
+    protected void mintFungible(
+            @NonNull final Token token,
+            @NonNull final TokenRelation treasuryRel,
+            final long amount,
+            final boolean isMintOnTokenCreation,
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final WritableTokenStore tokenStore,
+            @NonNull final WritableTokenRelationStore tokenRelationStore) {
         requireNonNull(token);
         requireNonNull(treasuryRel);
 
@@ -62,7 +60,8 @@ public class BaseTokenHandler {
         if (!isMintOnTokenCreation) {
             validateTrue(token.supplyKey() != null, TOKEN_HAS_NO_SUPPLY_KEY);
         }
-        changeSupply(token, treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT, accountStore, tokenStore, tokenRelationStore);
+        changeSupply(
+                token, treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT, accountStore, tokenStore, tokenRelationStore);
     }
 
     /**
@@ -84,12 +83,19 @@ public class BaseTokenHandler {
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenStore tokenStore,
             @NonNull final WritableTokenRelationStore tokenRelationStore) {
+        requireNonNull(token);
+        requireNonNull(treasuryRel);
+        requireNonNull(invalidSupplyCode);
 
-        validateTrue(treasuryRel.accountNumber() == token.treasuryAccountNumber()
-                        && token.tokenNumber() == treasuryRel.tokenNumber(), FAIL_INVALID);
+        validateTrue(
+                treasuryRel.accountNumber() == token.treasuryAccountNumber()
+                        && token.tokenNumber() == treasuryRel.tokenNumber(),
+                FAIL_INVALID);
         final long newTotalSupply = token.totalSupply() + amount;
 
         // validate that the new total supply is not negative after mint or burn or wipe
+        // FUTURE - All these checks that return FAIL_INVALID probably should end up in a
+        // finalize method in token service to validate everything before we commit
         validateTrue(newTotalSupply >= 0, invalidSupplyCode);
 
         if (token.supplyType() == TokenSupplyType.FINITE) {

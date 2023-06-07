@@ -22,8 +22,6 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-import java.util.Optional;
-
 /**
  * Provides read-only methods for getting underlying data for working with TokenRelations.
  *

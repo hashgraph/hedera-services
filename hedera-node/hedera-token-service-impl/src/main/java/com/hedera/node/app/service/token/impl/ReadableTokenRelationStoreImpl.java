@@ -25,10 +25,8 @@ import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Objects;
 
 /**
@@ -57,7 +55,7 @@ public class ReadableTokenRelationStoreImpl implements ReadableTokenRelationStor
     public TokenRelation get(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {
         requireNonNull(accountId);
         requireNonNull(tokenId);
-        
+
         if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return null;
 
         return Objects.requireNonNull(readableTokenRelState)

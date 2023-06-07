@@ -5,17 +5,19 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.service.token.impl.validators;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -23,27 +25,23 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Inject;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.IntFunction;
-
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import javax.inject.Inject;
 
 public class TokenMintBurnWipeOpsValidator {
     private ConfigProvider configProvider;
+
     @Inject
     public TokenMintBurnWipeOpsValidator(@NonNull final ConfigProvider configProvider) {
         this.configProvider = configProvider;
     }
 
-    public void pureChecks( final int nftCount,
-                            final long fungibleCount,
-                            final ResponseCodeEnum invalidTokenAmountError) throws PreCheckException {
+    public void pureChecks(final int nftCount, final long fungibleCount, final ResponseCodeEnum invalidTokenAmountError)
+            throws PreCheckException {
         validateFalsePreCheck(nftCount > 0 && fungibleCount > 0, INVALID_TRANSACTION_BODY);
-        validateFalsePreCheck(fungibleCount < 0 , invalidTokenAmountError);
+        validateFalsePreCheck(fungibleCount < 0, invalidTokenAmountError);
     }
     /**
      * Validate the token operations mint/wipe/burn given the attributes of the transaction.
@@ -112,5 +110,4 @@ public class TokenMintBurnWipeOpsValidator {
         }
         return OK;
     }
-
 }
