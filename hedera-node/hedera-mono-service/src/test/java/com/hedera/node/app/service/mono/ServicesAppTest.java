@@ -39,7 +39,7 @@ import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.context.properties.ScreenedNodeFileProps;
 import com.hedera.node.app.service.mono.grpc.GrpcStarter;
-import com.hedera.node.app.service.mono.grpc.NettyGrpcServerManager;
+import com.hedera.node.app.service.mono.grpc.HelidonGrpcServerManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.node.app.service.mono.ledger.backing.BackingAccounts;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
@@ -162,7 +162,7 @@ class ServicesAppTest {
         assertTrue(maybeRecoveredStateListener.isPresent());
         assertThat(maybeRecoveredStateListener.get(), instanceOf(ExportingRecoveredStateListener.class));
         assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
-        assertThat(subject.grpc(), instanceOf(NettyGrpcServerManager.class));
+        assertThat(subject.grpc(), instanceOf(HelidonGrpcServerManager.class));
         assertThat(subject.platformStatus(), instanceOf(CurrentPlatformStatus.class));
         assertThat(subject.accountsExporter(), instanceOf(ToStringAccountsExporter.class));
         assertThat(subject.balancesExporter(), instanceOf(SignedStateBalancesExporter.class));

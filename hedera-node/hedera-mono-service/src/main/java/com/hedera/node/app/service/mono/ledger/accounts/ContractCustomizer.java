@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.KEY;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.MEMO;
+import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.denotesImmutableEntity;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -136,7 +137,10 @@ public class ContractCustomizer {
     public void customize(
             final AccountID id, final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
         accountCustomizer.customize(id, ledger);
-        final var newKey = (cryptoAdminKey == null)
+        // A CREATE2 operation that is finalizing a hollow account can itself create children in its spawned
+        // CONTRACT_CREATION message; if we didn't have the second check here for denotesImmutableEntity(),
+        // the children would _inherit_ empty key lists, and be incorrectly interpreted as hollow accounts
+        final var newKey = (cryptoAdminKey == null || denotesImmutableEntity(cryptoAdminKey))
                 ? new JContractIDKey(id.getShardNum(), id.getRealmNum(), id.getAccountNum())
                 : cryptoAdminKey;
         ledger.set(id, KEY, newKey);

@@ -78,7 +78,7 @@ public class CounterAdapter extends AbstractMetricAdapter {
             counter.inc(newValue - oldValue);
         } else {
             throwArgNull(nodeId, "nodeId");
-            final Counter.Child child = counter.labels(Long.toString(nodeId.id()));
+            final Counter.Child child = counter.labels(nodeId.toString());
             final double oldValue = child.get();
             child.inc(newValue - oldValue);
         }

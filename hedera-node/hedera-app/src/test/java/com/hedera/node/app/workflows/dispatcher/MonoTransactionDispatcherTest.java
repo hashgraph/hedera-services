@@ -488,7 +488,6 @@ class MonoTransactionDispatcherTest {
                 .consensusCreateTopic(ConsensusCreateTopicTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableTopicStore);
 
         final var topicID = TopicID.newBuilder().topicNum(666L).build();
         final var recordBuilder = mock(SingleTransactionRecordBuilder.class);
@@ -498,7 +497,6 @@ class MonoTransactionDispatcherTest {
         dispatcher.dispatchHandle(handleContext);
 
         verify(txnCtx).setCreated(PbjConverter.fromPbj(topicID));
-        verify(writableTopicStore).commit();
     }
 
     @Test
@@ -507,7 +505,6 @@ class MonoTransactionDispatcherTest {
                 .consensusUpdateTopic(ConsensusUpdateTopicTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableTopicStore);
 
         dispatcher.dispatchHandle(handleContext);
 
@@ -520,8 +517,6 @@ class MonoTransactionDispatcherTest {
                 .consensusDeleteTopic(ConsensusDeleteTopicTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableTopicStore);
-
         dispatcher.dispatchHandle(handleContext);
 
         verifyNoInteractions(txnCtx);
@@ -533,7 +528,6 @@ class MonoTransactionDispatcherTest {
                 .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableTopicStore);
 
         final var newRunningHash = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
         final var recordBuilder = mock(SingleTransactionRecordBuilder.class);
@@ -551,11 +545,8 @@ class MonoTransactionDispatcherTest {
                 .tokenGrantKyc(TokenGrantKycTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableTokenRelStore).commit();
     }
 
     @Test
@@ -564,11 +555,8 @@ class MonoTransactionDispatcherTest {
                 .tokenRevokeKyc(TokenRevokeKycTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableTokenRelStore).commit();
     }
 
     @Test
@@ -577,14 +565,8 @@ class MonoTransactionDispatcherTest {
                 .tokenAssociate(TokenAssociateTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableAccountStore).commit();
-        // We don't commit anything to the token store, so no verify() here for that mock
-        verify(writableTokenRelStore).commit();
     }
 
     @Test
@@ -593,11 +575,8 @@ class MonoTransactionDispatcherTest {
                 .tokenFreeze(TokenFreezeAccountTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableTokenRelStore).commit();
     }
 
     @Test
@@ -606,11 +585,8 @@ class MonoTransactionDispatcherTest {
                 .tokenUnfreeze(TokenUnfreezeAccountTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableTokenRelStore).commit();
     }
 
     @Test
@@ -619,11 +595,8 @@ class MonoTransactionDispatcherTest {
                 .tokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableTokenStore).commit();
     }
 
     @Test
@@ -632,11 +605,8 @@ class MonoTransactionDispatcherTest {
                 .tokenPause(TokenPauseTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableTokenStore).commit();
     }
 
     @Test
@@ -645,11 +615,8 @@ class MonoTransactionDispatcherTest {
                 .tokenUnpause(TokenUnpauseTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableTokenStore).commit();
     }
 
     @Test
@@ -658,7 +625,6 @@ class MonoTransactionDispatcherTest {
                 .cryptoCreateAccount(CryptoCreateTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         final var accountID = AccountID.newBuilder().accountNum(666L).build();
         final var recordBuilder = mock(SingleTransactionRecordBuilder.class);
@@ -669,7 +635,6 @@ class MonoTransactionDispatcherTest {
         dispatcher.dispatchHandle(handleContext);
 
         verify(txnCtx).setCreated(PbjConverter.fromPbj(accountID));
-        verify(writableAccountStore).commit();
     }
 
     @Test
@@ -678,11 +643,8 @@ class MonoTransactionDispatcherTest {
                 .cryptoUpdateAccount(CryptoUpdateTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         dispatcher.dispatchHandle(handleContext);
-
-        verify(writableAccountStore).commit();
     }
 
     @Test
@@ -692,10 +654,8 @@ class MonoTransactionDispatcherTest {
                 .build();
 
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         dispatcher.dispatchHandle(handleContext);
-        verify(writableAccountStore).commit();
     }
 
     @Test
@@ -726,7 +686,6 @@ class MonoTransactionDispatcherTest {
         assertThatThrownBy(() -> dispatcher.dispatchHandle(handleContext)).isInstanceOf(HandleException.class);
 
         verify(txnCtx, never()).setCreated(any(com.hederahashgraph.api.proto.java.AccountID.class));
-        verify(writableAccountStore, never()).commit();
     }
 
     @Test

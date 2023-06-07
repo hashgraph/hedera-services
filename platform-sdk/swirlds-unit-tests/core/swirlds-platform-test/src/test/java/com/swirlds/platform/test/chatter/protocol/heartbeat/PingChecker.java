@@ -18,18 +18,20 @@ package com.swirlds.platform.test.chatter.protocol.heartbeat;
 
 import com.swirlds.common.system.NodeId;
 import java.time.Duration;
+import java.util.Objects;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.Assertions;
 
 /**
  * Used by {@link HeartbeatTest} to verify that ping has been updated correctly
  */
 class PingChecker {
-    private final long expectedPeerId;
+    private final NodeId expectedPeerId;
     private Duration expectedPing;
     private int numUpdates;
 
-    public PingChecker(final long expectedPeerId) {
-        this.expectedPeerId = expectedPeerId;
+    public PingChecker(@NonNull final NodeId expectedPeerId) {
+        this.expectedPeerId = Objects.requireNonNull(expectedPeerId, "expectedPeerId must not be null");
         clear();
     }
 
@@ -39,7 +41,7 @@ class PingChecker {
 
     public void checkPing(final NodeId nodeId, final long pingNanos) {
         numUpdates++;
-        Assertions.assertTrue(nodeId.id() == expectedPeerId);
+        Assertions.assertEquals(nodeId, expectedPeerId);
         Assertions.assertEquals(expectedPing.toNanos(), pingNanos);
     }
 

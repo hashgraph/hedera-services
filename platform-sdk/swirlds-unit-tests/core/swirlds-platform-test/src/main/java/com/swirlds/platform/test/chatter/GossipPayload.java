@@ -17,6 +17,8 @@
 package com.swirlds.platform.test.chatter;
 
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A gossip message intended for another node.
@@ -26,4 +28,4 @@ import com.swirlds.common.io.SelfSerializable;
  * @param destination
  * 		the ID of the node where this payload will be sent
  */
-public record GossipPayload(SelfSerializable payload, long destination) {}
+public record GossipPayload(@NonNull SelfSerializable payload, @NonNull NodeId destination) {}
