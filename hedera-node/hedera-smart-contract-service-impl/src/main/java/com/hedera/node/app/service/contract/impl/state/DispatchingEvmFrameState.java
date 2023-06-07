@@ -19,17 +19,19 @@ package com.hedera.node.app.service.contract.impl.state;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EVM_ADDRESS_LENGTH_AS_LONG;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniUInt256;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
 import com.hedera.node.app.spi.meta.bni.Scope;
 import com.hedera.node.app.spi.state.WritableKVState;
@@ -57,6 +59,7 @@ import org.hyperledger.besu.evm.code.CodeFactory;
  * TODO - get a little further to clarify DI strategy, then bring back a code cache.
  */
 public class DispatchingEvmFrameState implements EvmFrameState {
+    private static final Key HOLLOW_ACCOUNT_KEY = Key.newBuilder().keyList(KeyList.DEFAULT).build();
     private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
 
     @SuppressWarnings("java:S6418")
@@ -184,6 +187,19 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         }
     }
 
+    @Override
+    public boolean isHollowAccount(@NonNull final Address address) {
+        final var number = maybeMissingNumberOf(address, dispatch);
+        if (number == MISSING_ENTITY_NUMBER) {
+            return false;
+        }
+        final var account = dispatch.getAccount(number);
+        if (account == null) {
+            return false;
+        }
+        return HOLLOW_ACCOUNT_KEY.equals(account.key());
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -197,7 +213,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      */
     @Override
     public @Nullable EvmAccount getMutableAccount(@NonNull final Address address) {
-        final var number = ConversionUtils.maybeMissingNumberOf(address, dispatch);
+        final var number = maybeMissingNumberOf(address, dispatch);
         if (number == MISSING_ENTITY_NUMBER) {
             return null;
         }

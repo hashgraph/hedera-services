@@ -54,6 +54,8 @@ public interface EvmFrameState {
                 scope.writableContractState().get(ContractServiceImpl.BYTECODE_KEY));
     }
 
+    boolean isHollowAccount(@NonNull Address address);
+
     /**
      * Returns the read-only account with the given address, or {@code null} if the account is missing,
      * deleted, or expired; or if this get() used the account's "long zero" address and not is priority

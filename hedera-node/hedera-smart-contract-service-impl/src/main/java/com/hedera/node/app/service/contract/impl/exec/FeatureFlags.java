@@ -23,5 +23,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * Provides feature flags used to customize behavior of Hedera {@link org.hyperledger.besu.evm.operation.Operation} overrides.
  */
 public interface FeatureFlags {
+    boolean isCreate2Enabled(@NonNull MessageFrame frame);
     boolean isImplicitCreationEnabled(@NonNull MessageFrame frame);
 }

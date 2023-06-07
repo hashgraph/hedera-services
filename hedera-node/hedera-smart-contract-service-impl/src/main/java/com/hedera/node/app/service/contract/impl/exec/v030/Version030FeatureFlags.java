@@ -26,10 +26,15 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * The initial implementation of {@link FeatureFlags} from v0.30; lazy creation never enabled.
  */
 @Singleton
-public class DisabledFeatureFlags implements FeatureFlags {
+public class Version030FeatureFlags implements FeatureFlags {
     @Inject
-    public DisabledFeatureFlags() {
+    public Version030FeatureFlags() {
         // Dagger
+    }
+
+    @Override
+    public boolean isCreate2Enabled(@NonNull MessageFrame frame) {
+        return false;
     }
 
     @Override

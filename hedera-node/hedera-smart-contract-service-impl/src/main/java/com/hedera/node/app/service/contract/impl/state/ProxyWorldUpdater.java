@@ -104,6 +104,49 @@ public class ProxyWorldUpdater implements WorldUpdater {
         this.evmFrameState = evmFrameStateFactory.createIn(scope);
     }
 
+    // --- Some Hedera-specific methods ---
+
+    /**
+     * Returns whether this address refers to a hollow account (i.e. a lazy-created account that
+     * has not yet been completed as either an EOA with a cryptographic key, or a contract created
+     * with CREATE2.)
+     *
+     * @param address the address to check
+     * @return whether the address refers to a hollow account
+     */
+    public boolean isHollowAccount(@NonNull final Address address) {
+        return evmFrameState.isHollowAccount(address);
+    }
+
+    /**
+     * Given the possibly zero address of the recipient of a {@code CONTRACT_CREATION} message,
+     * sets up the {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete
+     * the creation of the new account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)};
+     * returns the "long-zero" address to be assigned to the new account.
+     *
+     * @param receiver the address of the recipient of a {@code CONTRACT_CREATION} message, zero if a top-level message
+     * @return the "long-zero" address to be assigned to the new account
+     */
+    public Address setupCreate(@NonNull final Address receiver) {
+        setupPendingCreation(receiver, null);
+        return requireNonNull(pendingCreation).address();
+    }
+
+    /**
+     * Given the possibly zero address of the recipient of a {@code CONTRACT_CREATION} message,
+     * and the EIP-1014 address computed by an in-progress {@code CREATE2} operation, sets up the
+     * {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete the creation of
+     * the new account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
+     *
+     * <p>Does not return anything, as the {@code CREATE2} address is already known.
+     *
+     * @param receiver the address of the recipient of a {@code CONTRACT_CREATION} message, zero if a top-level message
+     * @param alias the EIP-1014 address computed by an in-progress {@code CREATE2} operation
+     */
+    public void setupCreate2(@NonNull final Address receiver, @NonNull final Address alias) {
+        setupPendingCreation(receiver, alias);
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -118,35 +161,6 @@ public class ProxyWorldUpdater implements WorldUpdater {
     @Override
     public EvmAccount getAccount(@NonNull final Address address) {
         return evmFrameState.getMutableAccount(address);
-    }
-
-    /**
-     * Given the possibly zero address of the recipient of a {@code CONTRACT_CREATION} message,
-     * sets up the {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete
-     * the creation of the new account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)};
-     * returns the "long-zero" address to be assigned to the new account.
-     *
-     * @param origin the address of the recipient of a {@code CONTRACT_CREATION} message, zero if a top-level message
-     * @return the "long-zero" address to be assigned to the new account
-     */
-    public Address setupCreate(@NonNull final Address origin) {
-        setupPendingCreation(origin, null);
-        return requireNonNull(pendingCreation).address();
-    }
-
-    /**
-     * Given the possibly zero address of the recipient of a {@code CONTRACT_CREATION} message,
-     * and the EIP-1014 address computed by an in-progress {@code CREATE2} operation, sets up the
-     * {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete the creation of
-     * the new account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
-     *
-     * <p>Does not return anything, as the {@code CREATE2} address is already known.
-     *
-     * @param origin the address of the recipient of a {@code CONTRACT_CREATION} message, zero if a top-level message
-     * @param alias the EIP-1014 address computed by an in-progress {@code CREATE2} operation
-     */
-    public void setupCreate2(@NonNull final Address origin, @NonNull final Address alias) {
-        setupPendingCreation(origin, alias);
     }
 
     /**
@@ -218,11 +232,9 @@ public class ProxyWorldUpdater implements WorldUpdater {
      * Returns the accounts that have been touched (i.e., created or maybe mutated but <i>not</i> deleted)
      * within the scope of this updater.
      *
-     * <p>We may not need this; only used in Besu by
+     * <p>TODO - we may not need this; only used in Besu by
      * {@code AbstractMessageProcessor.clearAccumulatedStateBesidesGasAndOutput()}, which seems to be in
      * response to unwinding side-effects of an Ethereum consensus bug.
-     *
-     * <p>TODO - revisit whether this is needed.
      *
      * @return the accounts that have been touched
      */
@@ -264,13 +276,13 @@ public class ProxyWorldUpdater implements WorldUpdater {
         return pendingNumber;
     }
 
-    private void setupPendingCreation(@NonNull final Address origin, @Nullable final Address alias) {
+    private void setupPendingCreation(@NonNull final Address receiver, @Nullable final Address alias) {
         final var number = scope.dispatch().peekNextEntityNumber();
-        final long parentNumber = Address.ZERO.equals(requireNonNull(origin))
+        final long parentNumber = Address.ZERO.equals(requireNonNull(receiver))
                 ? scope.payerAccountNumber()
-                : maybeMissingNumberOf(origin, scope.dispatch());
+                : maybeMissingNumberOf(receiver, scope.dispatch());
         if (parentNumber == MISSING_ENTITY_NUMBER) {
-            throw new IllegalStateException("Claimed origin " + origin + " has no Hedera account number");
+            throw new IllegalStateException("Claimed receiver " + receiver + " has no Hedera account number");
         }
         pendingCreation = new PendingCreation(alias == null ? asLongZeroAddress(number) : alias, number, parentNumber);
     }

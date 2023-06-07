@@ -92,6 +92,13 @@ class ProxyWorldUpdaterTest {
     }
 
     @Test
+    void delegatesHollowCheck() {
+        given(evmFrameState.isHollowAccount(ALTBN128_ADD)).willReturn(true);
+
+        assertTrue(subject.isHollowAccount(ALTBN128_ADD));
+    }
+
+    @Test
     void getsMutableAccount() {
         given(evmFrameState.getMutableAccount(ALTBN128_ADD)).willReturn(mutableAccount);
 

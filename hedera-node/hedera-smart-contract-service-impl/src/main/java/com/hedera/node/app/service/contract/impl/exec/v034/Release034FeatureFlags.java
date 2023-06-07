@@ -29,9 +29,14 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 /**
  * The v0.34+ implementation of {@link FeatureFlags}; lazy creation enabled if config says so.
  */
-public class ContextualFeatureFlags implements FeatureFlags {
+public class Release034FeatureFlags implements FeatureFlags {
     @Override
-    public boolean isImplicitCreationEnabled(@NonNull MessageFrame frame) {
+    public boolean isCreate2Enabled(@NonNull final MessageFrame frame) {
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
+    public boolean isImplicitCreationEnabled(@NonNull final MessageFrame frame) {
         final Configuration config = Objects.requireNonNull(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE));
         return config.getConfigData(AutoCreationConfig.class).enabled()
                 && config.getConfigData(LazyCreationConfig.class).enabled();

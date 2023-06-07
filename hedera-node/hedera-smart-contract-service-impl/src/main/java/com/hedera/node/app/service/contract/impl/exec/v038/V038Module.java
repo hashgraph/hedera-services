@@ -25,7 +25,7 @@ import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomBalanceOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomChainIdOperation;
-import com.hedera.node.app.service.contract.impl.exec.v034.ContextualFeatureFlags;
+import com.hedera.node.app.service.contract.impl.exec.v034.Release034FeatureFlags;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -109,7 +109,7 @@ public interface V038Module {
 
     @Binds
     @ServicesV038
-    FeatureFlags bindFeatureFlags(ContextualFeatureFlags featureFlags);
+    FeatureFlags bindFeatureFlags(Release034FeatureFlags featureFlags);
 
     @Binds
     @ServicesV038

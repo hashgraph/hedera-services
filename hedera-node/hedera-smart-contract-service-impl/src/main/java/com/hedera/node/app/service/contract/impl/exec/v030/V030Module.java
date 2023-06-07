@@ -107,7 +107,7 @@ public interface V030Module {
 
     @Binds
     @ServicesV030
-    FeatureFlags bindFeatureFlags(DisabledFeatureFlags featureFlags);
+    FeatureFlags bindFeatureFlags(Version030FeatureFlags featureFlags);
 
     @Binds
     @ServicesV030

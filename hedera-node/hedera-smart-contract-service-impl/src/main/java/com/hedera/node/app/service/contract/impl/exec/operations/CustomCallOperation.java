@@ -28,6 +28,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.FixedStack;
@@ -49,6 +50,9 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
  * the call the {@link MessageCallProcessor} makes to {@link Dispatch#transferValue(long, long, long, VerificationStrategy)}.
  */
 public class CustomCallOperation extends CallOperation {
+    private static final Operation.OperationResult UNDERFLOW_RESPONSE =
+            new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
+
     private final FeatureFlags featureFlags;
     private final AddressChecks addressChecks;
 
@@ -71,8 +75,7 @@ public class CustomCallOperation extends CallOperation {
             }
             return super.execute(frame, evm);
         } catch (final FixedStack.UnderflowException ignore) {
-            // Copy Besu's AbstractCallOperation, returning 0 gas cost on underflow
-            return new OperationResult(0L, INSUFFICIENT_STACK_ITEMS);
+            return UNDERFLOW_RESPONSE;
         }
     }
 

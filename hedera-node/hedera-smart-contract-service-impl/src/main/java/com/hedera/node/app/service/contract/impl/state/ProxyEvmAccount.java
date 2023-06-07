@@ -104,4 +104,9 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
     public void setStorageValue(@NonNull final UInt256 key, @NonNull final UInt256 value) {
         state.setStorageValue(number, key, value);
     }
+
+    // --- Hedera-specific methods ---
+    public boolean isHollow() {
+        throw new AssertionError("Not implemented");
+    }
 }

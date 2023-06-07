@@ -19,15 +19,19 @@ package com.hedera.node.app.service.contract.impl.test.state;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniUInt256;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
@@ -293,6 +297,24 @@ class DispatchingEvmFrameStateTest {
     @Test
     void returnsNullForMissingAlias() {
         assertNull(subject.getAccount(EVM_ADDRESS));
+    }
+
+    @Test
+    void missingAliasIsNotHollow() {
+        assertFalse(subject.isHollowAccount(EVM_ADDRESS));
+    }
+
+    @Test
+    void missingAccountIsNotHollow() {
+        given(dispatch.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe()))).willReturn(new EntityNumber(ACCOUNT_NUM));
+        assertFalse(subject.isHollowAccount(EVM_ADDRESS));
+    }
+
+    @Test
+    void extantAccountIsHollowOnlyIfHasAnEmptyKey() {
+        given(dispatch.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe()))).willReturn(new EntityNumber(ACCOUNT_NUM));
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM).key(Key.newBuilder().keyList(KeyList.DEFAULT)));
+        assertTrue(subject.isHollowAccount(EVM_ADDRESS));
     }
 
     @Test

@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.v030;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.node.app.service.contract.impl.exec.v030.DisabledFeatureFlags;
+import com.hedera.node.app.service.contract.impl.exec.v030.Version030FeatureFlags;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,11 +26,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class DisabledFeatureFlagsTest {
+class Version030FeatureFlagsTest {
     @Mock
     private MessageFrame frame;
 
-    private DisabledFeatureFlags subject = new DisabledFeatureFlags();
+    private Version030FeatureFlags subject = new Version030FeatureFlags();
 
     @Test
     void everythingIsDisabled() {

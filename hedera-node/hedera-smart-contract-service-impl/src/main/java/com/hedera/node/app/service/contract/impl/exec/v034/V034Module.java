@@ -108,7 +108,7 @@ public interface V034Module {
 
     @Binds
     @ServicesV034
-    FeatureFlags bindFeatureFlags(ContextualFeatureFlags featureFlags);
+    FeatureFlags bindFeatureFlags(Release034FeatureFlags featureFlags);
 
     @Binds
     @ServicesV034
