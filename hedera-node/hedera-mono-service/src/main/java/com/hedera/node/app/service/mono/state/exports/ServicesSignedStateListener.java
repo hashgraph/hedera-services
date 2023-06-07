@@ -23,12 +23,15 @@ import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateNotification;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class ServicesSignedStateListener implements NewSignedStateListener {
-
+    private static final Logger log = LogManager.getLogger(ServicesSignedStateListener.class);
     private final CurrentPlatformStatus currentPlatformStatus;
     private final BalancesExporter balancesExporter;
     private final NodeId nodeId;
@@ -51,6 +54,7 @@ public class ServicesSignedStateListener implements NewSignedStateListener {
         }
         final var at = notice.getConsensusTimestamp();
         if (balancesExporter.isTimeToExport(at)) {
+            log.info("Exporting balances at {} from round {}.", at, notice.getRound());
             balancesExporter.exportBalancesFrom(signedState, at, nodeId);
         }
     }

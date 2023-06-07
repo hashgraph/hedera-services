@@ -135,6 +135,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
             nextExportTime = getFirstExportTime(now, exportPeriod);
         }
         if (!now.isBefore(nextExportTime)) {
+            log.info("Next Export time is at {}.", nextExportTime);
             nextExportTime = nextExportTime.plusSeconds(exportPeriod);
             return true;
         }
