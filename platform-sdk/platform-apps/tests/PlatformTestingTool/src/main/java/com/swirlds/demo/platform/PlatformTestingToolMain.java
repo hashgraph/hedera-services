@@ -842,7 +842,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         isActive = newStatus == PlatformStatus.ACTIVE;
 
         if (newStatus == PlatformStatus.FREEZING) {
-            logger.trace(LOGM_DEMO_INFO, "ENTERING MAINTENANCE!");
+            logger.trace(LOGM_DEMO_INFO, "ENTERING FREEZING!");
             logger.trace(
                     LOGM_DEMO_INFO,
                     "total submitted transactions: {}, FCM Transactions: {}",

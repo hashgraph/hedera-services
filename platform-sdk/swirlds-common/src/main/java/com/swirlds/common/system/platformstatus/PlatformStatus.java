@@ -27,15 +27,17 @@ import com.swirlds.common.UniqueId;
  */
 public enum PlatformStatus implements UniqueId {
     /**
-     * The platform is starting up
+     * The platform is starting up.
      */
     STARTING_UP(1),
     /**
-     * The platform is gossiping, creating events, and accepting app transactions
+     * The platform is gossiping, creating events, and accepting app transactions.
      */
     ACTIVE(2),
     /**
-     * The platform is not currently connected to any other computers on the network
+     * The platform is not currently connected to any other computers on the network.
+     * <p>
+     * NOTE: This is still in use, but will be retired once the status state machine is complete.
      */
     DISCONNECTED(3),
     /**
@@ -44,21 +46,21 @@ public enum PlatformStatus implements UniqueId {
     BEHIND(4),
     /**
      * A freeze timestamp has been crossed, and the platform is in the process of freezing. The platform is gossiping
-     * and creating events, but not accepting app transactions
+     * and creating events, but not accepting app transactions.
      */
     FREEZING(5),
     /**
-     * The platform has been frozen, and is idle
+     * The platform has been frozen, and is idle.
      */
     FREEZE_COMPLETE(6),
     /**
-     * The platform is replaying events from the preconsensus event stream
+     * The platform is replaying events from the preconsensus event stream.
      * <p>
      * NOTE: not in use
      */
     REPLAYING_EVENTS(7),
     /**
-     * The platform has just started, and is observing the network. The platform is gossiping, but will not produce
+     * The platform has just started, and is observing the network. The platform is gossiping, but will not create
      * events.
      * <p>
      * NOTE: not in use
@@ -66,20 +68,20 @@ public enum PlatformStatus implements UniqueId {
     OBSERVING(8),
     /**
      * The platform has started up or has finished reconnecting, and is now ready to rejoin the network. The platform is
-     * gossiping and producing events, but not yet accepting app transactions.
+     * gossiping and creating events, but not yet accepting app transactions.
      * <p>
      * NOTE: not in use
      */
     CHECKING(9),
     /**
      * The platform has just finished reconnecting. The platform is gossiping, but is waiting to write a state to disk
-     * before producing events or accepting app transactions.
+     * before creating events or accepting app transactions.
      * <p>
      * NOTE: not in use
      */
     RECONNECT_COMPLETE(10),
     /**
-     * The platform has encountered a failure, and is unable to continue. The platform is idle
+     * The platform has encountered a failure, and is unable to continue. The platform is idle.
      * <p>
      * NOTE: not in use
      */
