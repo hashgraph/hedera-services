@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.ledger.accounts;
 
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.getStakedId;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
@@ -81,6 +82,20 @@ class ContractCustomizerTest {
         verify(ledger).set(eq(newContractId), eq(KEY), captor.capture());
         final var keyUsed = captor.getValue();
         assertTrue(JKey.equalUpToDecodability(immutableKey, keyUsed));
+    }
+
+    @Test
+    void usesContractIdKeyIfInheritingFromJustCompletedHollowAccount() {
+        final var captor = ArgumentCaptor.forClass(JKey.class);
+
+        subject = new ContractCustomizer(EMPTY_KEY, accountCustomizer);
+
+        subject.customize(newContractId, ledger);
+
+        verify(accountCustomizer).customize(newContractId, ledger);
+        verify(ledger).set(eq(newContractId), eq(KEY), captor.capture());
+        final var keyUsed = captor.getValue();
+        assertFalse(JKey.denotesImmutableEntity(keyUsed));
     }
 
     @Test
