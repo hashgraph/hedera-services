@@ -34,6 +34,7 @@ import javax.inject.Singleton;
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#TRANSACTION_GET_RECEIPT}.
  */
+// use RecordCache for this
 @Singleton
 public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
     @Inject

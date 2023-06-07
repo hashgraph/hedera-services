@@ -208,7 +208,7 @@ public class LegacySyncGossip extends AbstractGossip {
                     .setPriority(Thread.NORM_PRIORITY)
                     .setNodeId(selfId)
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
-                    .setOtherNodeId(otherId.id())
+                    .setOtherNodeId(otherId)
                     .setThreadName("listener")
                     .setWork(new Listener(protocolHandlers, connectionManagers.getManager(otherId, false)))
                     .build());
@@ -219,7 +219,7 @@ public class LegacySyncGossip extends AbstractGossip {
                     .setNodeId(selfId)
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setThreadName("heartbeat")
-                    .setOtherNodeId(otherId.id())
+                    .setOtherNodeId(otherId)
                     .setWork(new HeartbeatSender(
                             otherId, sharedConnectionLocks, networkMetrics, PlatformConstructor.settingsProvider()))
                     .build());
@@ -298,6 +298,7 @@ public class LegacySyncGossip extends AbstractGossip {
     @Override
     protected FallenBehindManagerImpl buildFallenBehindManager() {
         return new FallenBehindManagerImpl(
+                addressBook,
                 selfId,
                 topology.getConnectionGraph(),
                 updatePlatformStatus,

@@ -50,7 +50,7 @@ public class EmergencySignedStateValidatorTests {
                 .setSize(NUM_NODES)
                 .setAverageWeight(WEIGHT_PER_NODE)
                 .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(true)
+                .setSequentialIds(false)
                 .build();
     }
 
@@ -136,8 +136,9 @@ public class EmergencySignedStateValidatorTests {
     @Test
     void validLaterState() {
         final Random random = RandomUtils.getRandomPrintSeed();
-        final List<NodeId> majorityWeightNodes =
-                IntStream.range(0, NUM_NODES - 1).mapToObj(NodeId::new).toList();
+        final List<NodeId> majorityWeightNodes = IntStream.range(0, NUM_NODES - 1)
+                .mapToObj(index -> addressBook.getNodeId(index))
+                .toList();
 
         final SignedState laterState = new RandomSignedStateGenerator()
                 .setAddressBook(addressBook)

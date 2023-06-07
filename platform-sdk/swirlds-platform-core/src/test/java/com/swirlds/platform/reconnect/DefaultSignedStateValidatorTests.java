@@ -34,7 +34,6 @@ import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -46,7 +45,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -233,12 +231,12 @@ class DefaultSignedStateValidatorTests {
     @ParameterizedTest
     @MethodSource({"staticNodeParams", "randomizedNodeParams"})
     @DisplayName("Signed State Validation")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testSignedStateValidationRandom(final String desc, final List<Node> nodes, final List<Node> signingNodes) {
+        final Map<NodeId, Long> nodeWeights = nodes.stream().collect(Collectors.toMap(Node::id, Node::weight));
         addressBook = new RandomAddressBookGenerator()
-                .setSize(nodes.size())
-                .setCustomWeightGenerator(id -> nodes.get((int) id).weight)
-                .setSequentialIds(true)
+                .setNodeIds(nodeWeights.keySet())
+                .setCustomWeightGenerator(nodeWeights::get)
+                .setSequentialIds(false)
                 .build();
 
         validator = new DefaultSignedStateValidator();
@@ -343,7 +341,7 @@ class DefaultSignedStateValidatorTests {
     }
 
     /**
-     * A record representing a simple node that holds its id, amount of weight, and if is signs states with a valid
+     * A record representing a simple node that holds its id, amount of weight, and if it signs states with a valid
      * signature.
      */
     private record Node(NodeId id, long weight, boolean validSignature) {
