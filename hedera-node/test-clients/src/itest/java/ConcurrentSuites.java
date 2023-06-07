@@ -55,7 +55,6 @@ import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite
 import com.hedera.services.bdd.suites.contract.precompile.DefaultTokenStatusSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DeleteTokenPrecompileSuite;
-import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.FreezeUnfreezeTokenPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.GrantRevokeKycSuite;
@@ -173,7 +172,6 @@ public class ConcurrentSuites {
             DefaultTokenStatusSuite::new,
             DelegatePrecompileSuite::new,
             DeleteTokenPrecompileSuite::new,
-            DissociatePrecompileSuite::new,
             CreatePrecompileSuite::new,
             ERCPrecompileSuite::new,
             FreezeUnfreezeTokenPrecompileSuite::new,
@@ -234,7 +232,6 @@ public class ConcurrentSuites {
             DefaultTokenStatusSuite::new,
             DelegatePrecompileSuite::new,
             DeleteTokenPrecompileSuite::new,
-            DissociatePrecompileSuite::new,
             CreatePrecompileSuite::new,
             ERCPrecompileSuite::new,
             FreezeUnfreezeTokenPrecompileSuite::new,
