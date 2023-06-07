@@ -35,6 +35,7 @@ import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
 import com.hedera.node.config.converter.ProfileConverter;
 import com.hedera.node.config.converter.RecomputeTypeConverter;
 import com.hedera.node.config.converter.ScaleFactorConverter;
+import com.hedera.node.config.converter.SemanticVersionConverter;
 import com.hedera.node.config.converter.SidecarTypeConverter;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
@@ -235,7 +236,8 @@ public class ConfigProviderImpl implements ConfigProvider {
                 .withConverter(new ProfileConverter())
                 .withConverter(new SidecarTypeConverter())
                 .withConverter(new KeyValuePairConverter())
-                .withConverter(new BytesConverter());
+                .withConverter(new BytesConverter())
+                .withConverter(new SemanticVersionConverter());
     }
 
     @NonNull

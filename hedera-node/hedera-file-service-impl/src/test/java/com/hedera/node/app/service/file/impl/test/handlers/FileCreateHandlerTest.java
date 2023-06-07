@@ -47,7 +47,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -215,7 +214,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         assertEquals(keys, actualFile.keys());
         assertEquals(1_234_567L, actualFile.expirationTime());
         assertEquals(contentsBytes, actualFile.contents());
-        assertEquals(fileEntityNum.longValue(), actualFile.fileNumber());
+        assertEquals(fileId.fileNum(), actualFile.fileNumber());
         assertFalse(actualFile.deleted());
         verify(recordBuilder).fileID(FileID.newBuilder().fileNum(1_234L).build());
         assertTrue(fileStore.get(1234L).isPresent());
@@ -245,7 +244,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         assertEquals(keys, actualFile.keys());
         assertEquals(1_234_567L, actualFile.expirationTime());
         assertEquals(contentsBytes, actualFile.contents());
-        assertEquals(fileEntityNum.longValue(), actualFile.fileNumber());
+        assertEquals(fileId.fileNum(), actualFile.fileNumber());
         assertFalse(actualFile.deleted());
         verify(recordBuilder).fileID(FileID.newBuilder().fileNum(1_234L).build());
         assertTrue(fileStore.get(1234L).isPresent());
@@ -295,7 +294,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         given(handleContext.body()).willReturn(txBody);
         final var writableState = writableFileStateWithOneKey();
 
-        given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableState);
+        given(writableStates.<FileID, File>get(FILES)).willReturn(writableState);
         final var fileStore = new WritableFileStoreImpl(writableStates);
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(fileStore);
 
