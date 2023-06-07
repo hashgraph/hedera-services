@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMI
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hedera.node.app.service.token.impl.util.IdConvenienceUtils.isValidTokenNum;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -59,7 +60,7 @@ import org.slf4j.LoggerFactory;
  * HederaFunctionality#TOKEN_ASSOCIATE_TO_ACCOUNT}.
  */
 @Singleton
-public class TokenAssociateToAccountHandler extends TokenHandlerHelper implements TransactionHandler {
+public class TokenAssociateToAccountHandler implements TransactionHandler {
     private static final Logger log = LoggerFactory.getLogger(TokenAssociateToAccountHandler.class);
 
     @Inject

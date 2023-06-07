@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.util;
 
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockStates;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockStates;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;

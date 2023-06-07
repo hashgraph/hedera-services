@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.test.handlers;
+package com.hedera.node.app.service.token.impl.test.util;
 
-import static com.hedera.node.app.service.token.impl.handlers.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -29,7 +29,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.handlers.ContextualRetriever;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.AutoRenewConfig;
@@ -42,7 +42,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ContextualRetrieverTest {
+class TokenHandlerHelperTest {
     private static final AccountID ACCT_2300 =
             AccountID.newBuilder().accountNum(2300L).build();
     private static final TokenID TOKEN_ID_45 = TokenID.newBuilder().tokenNum(45).build();
@@ -64,14 +64,14 @@ class ContextualRetrieverTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void account_getIfUsable_nullArg() {
-        Assertions.assertThatThrownBy(() -> ContextualRetriever.getIfUsable(null, accountStore, expiryValidator))
+        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(null, accountStore, expiryValidator))
                 .isInstanceOf(NullPointerException.class);
 
         final var acctId = ACCT_2300;
-        Assertions.assertThatThrownBy(() -> ContextualRetriever.getIfUsable(acctId, null, expiryValidator))
+        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(acctId, null, expiryValidator))
                 .isInstanceOf(NullPointerException.class);
 
-        Assertions.assertThatThrownBy(() -> ContextualRetriever.getIfUsable(acctId, accountStore, null))
+        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(acctId, accountStore, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -79,7 +79,7 @@ class ContextualRetrieverTest {
     void account_getIfUsable_nullAccount() {
         BDDMockito.given(accountStore.getAccountById(notNull())).willReturn(null);
 
-        Assertions.assertThatThrownBy(() -> ContextualRetriever.getIfUsable(ACCT_2300, accountStore, expiryValidator))
+        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
     }
@@ -93,7 +93,7 @@ class ContextualRetrieverTest {
                         .deleted(true)
                         .build());
 
-        Assertions.assertThatThrownBy(() -> ContextualRetriever.getIfUsable(ACCT_2300, accountStore, expiryValidator))
+        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.ACCOUNT_DELETED));
     }
@@ -109,7 +109,7 @@ class ContextualRetrieverTest {
                         .expiredAndPendingRemoval(true)
                         .build());
 
-        Assertions.assertThatThrownBy(() -> ContextualRetriever.getIfUsable(ACCT_2300, accountStore, expiryValidator))
+        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
@@ -125,7 +125,7 @@ class ContextualRetrieverTest {
                         .expiredAndPendingRemoval(true)
                         .build());
 
-        Assertions.assertThatThrownBy(() -> ContextualRetriever.getIfUsable(ACCT_2300, accountStore, expiryValidator))
+        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL));
     }
@@ -143,7 +143,7 @@ class ContextualRetrieverTest {
         BDDMockito.given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
                 .willReturn(ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
-        Assertions.assertThatThrownBy(() -> ContextualRetriever.getIfUsable(ACCT_2300, accountStore, expiryValidator))
+        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
@@ -161,7 +161,7 @@ class ContextualRetrieverTest {
         BDDMockito.given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
                 .willReturn(ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL);
 
-        Assertions.assertThatThrownBy(() -> ContextualRetriever.getIfUsable(ACCT_2300, accountStore, expiryValidator))
+        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL));
     }
@@ -180,7 +180,7 @@ class ContextualRetrieverTest {
         BDDMockito.given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
                 .willReturn(ResponseCodeEnum.OK);
 
-        final var result = ContextualRetriever.getIfUsable(ACCT_2300, accountStore, expiryValidator);
+        final var result = TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator);
         Assertions.assertThat(result).isNotNull();
     }
 
@@ -198,14 +198,14 @@ class ContextualRetrieverTest {
         BDDMockito.given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
                 .willReturn(ResponseCodeEnum.OK);
 
-        final var result = ContextualRetriever.getIfUsable(ACCT_2300, accountStore, expiryValidator);
+        final var result = TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator);
         Assertions.assertThat(result).isNotNull();
     }
 
     @SuppressWarnings("DataFlowIssue")
     @Test
     void token_getIfUsable_nullArg() {
-        Assertions.assertThatThrownBy(() -> ContextualRetriever.getIfUsable(null, tokenStore))
+        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(null, tokenStore))
                 .isInstanceOf(NullPointerException.class);
 
         Assertions.assertThatThrownBy(() -> getIfUsable(TOKEN_ID_45, null)).isInstanceOf(NullPointerException.class);

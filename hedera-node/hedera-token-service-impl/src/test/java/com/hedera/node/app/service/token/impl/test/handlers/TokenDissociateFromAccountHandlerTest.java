@@ -29,8 +29,8 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockStates;
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockWritableStates;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockStates;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockWritableStates;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenDissociateScenarios.TOKEN_DISSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET;
@@ -66,9 +66,9 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
+import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
-import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -176,14 +176,13 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
 
         @Test
         void rejectsExpiredAccount() {
-            // Create and commit an account that is expired
+            // Create an account that is expired
             final var accountNumber = 12345L;
             writableAccountStore.put(Account.newBuilder()
                     .accountNumber(accountNumber)
                     .expiredAndPendingRemoval(true)
                     .deleted(false)
                     .build());
-            writableAccountStore.commit();
 
             // Create the context and transaction
             final var context = mockContext();
@@ -198,14 +197,13 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
 
         @Test
         void rejectsDeletedAccount() {
-            // Create and commit an account that is deleted
+            // Create an account that is deleted
             final var accountNumber = 53135;
             writableAccountStore.put(Account.newBuilder()
                     .accountNumber(accountNumber)
                     .expiredAndPendingRemoval(false)
                     .deleted(true)
                     .build());
-            writableAccountStore.commit();
 
             // Create the context and transaction
             final var context = mockContext();
@@ -243,7 +241,6 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
                     .accountNumber(ACCOUNT_1339.accountNumOrThrow())
                     .tokenNumber(TOKEN_555_ID.tokenNum())
                     .build());
-            writableTokenRelStore.commit();
 
             // Create the context and transaction
             final var context = mockContext();
@@ -269,7 +266,6 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
                     .accountNumber(ACCOUNT_1339.accountNumOrThrow())
                     .tokenNumber(TOKEN_555_ID.tokenNum())
                     .build());
-            writableTokenRelStore.commit();
 
             // Create the context and transaction
             final var context = mockContext();
@@ -294,7 +290,6 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
                     .tokenNumber(TOKEN_555_ID.tokenNum())
                     .frozen(true)
                     .build());
-            writableTokenRelStore.commit();
 
             // Create the context and transaction
             final var context = mockContext();
@@ -321,7 +316,6 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
                     .tokenNumber(TOKEN_555_ID.tokenNum())
                     .balance(1L)
                     .build());
-            writableTokenRelStore.commit();
 
             // Create the context and transaction
             final var context = mockContext();
@@ -335,7 +329,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
 
         @Test
         void rejectsAccountThatStillOwnsUnexpiredFungibleUnits() {
-            // @todo('6864'): implement when token expiry is implemented
+            // @future('6864'): implement when token expiry is implemented
         }
 
         @Test
@@ -361,18 +355,13 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
                     .accountNumber(ACCOUNT_1339.accountNumOrThrow())
                     .tokenNumber(TOKEN_555_ID.tokenNum())
                     .build());
-            writableTokenRelStore.commit();
 
             // Create the context and transaction
             final var context = mockContext();
             final var txn = newDissociateTxn(ACCOUNT_1339, List.of(TOKEN_555_ID));
             given(context.body()).willReturn(txn);
 
-            // Run the subject's handle method
             subject.handle(context);
-            // Commit the updated account and/or token rel, so we can retrieve and verify the values
-            writableAccountStore.commit();
-            writableTokenRelStore.commit();
 
             // Verify the account is in its expected state
             final var savedAcct = writableAccountStore.get(ACCOUNT_1339);
@@ -409,18 +398,13 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
                     .accountNumber(ACCOUNT_1339.accountNumOrThrow())
                     .tokenNumber(TOKEN_555_ID.tokenNum())
                     .build());
-            writableTokenRelStore.commit();
 
             // Create the context and transaction
             final var context = mockContext();
             final var txn = newDissociateTxn(ACCOUNT_1339, List.of(TOKEN_555_ID));
             given(context.body()).willReturn(txn);
 
-            // Run the subject's handle method
             subject.handle(context);
-            // Commit the updated account and/or token rel, so we can retrieve and verify the values
-            writableAccountStore.commit();
-            writableTokenRelStore.commit();
 
             // Verify the account is in its expected state
             final var savedAcct = writableAccountStore.get(ACCOUNT_1339);
@@ -480,18 +464,13 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
                     .tokenNumber(TOKEN_555_ID.tokenNum())
                     .balance(2000L)
                     .build());
-            writableTokenRelStore.commit();
 
             // Create the context and transaction
             final var context = mockContext();
             final var txn = newDissociateTxn(ACCOUNT_1339, List.of(TOKEN_555_ID));
             given(context.body()).willReturn(txn);
 
-            // Run the subject's handle method
             subject.handle(context);
-            // Commit the updated account and/or token rel, so we can retrieve and verify the values
-            writableAccountStore.commit();
-            writableTokenRelStore.commit();
 
             // Verify the account is in its expected state
             final var savedAcct = writableAccountStore.get(ACCOUNT_1339);
@@ -573,18 +552,13 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
                     .previousToken(TOKEN_555_ID.tokenNum())
                     .nextToken(-1) // end of the account's token list
                     .build());
-            writableTokenRelStore.commit();
 
             // Create the context and transaction
             final var context = mockContext();
             final var txn = newDissociateTxn(ACCOUNT_1339, List.of(token444Id, TOKEN_555_ID, TOKEN_666_ID));
             given(context.body()).willReturn(txn);
 
-            // Run the subject's handle method
             subject.handle(context);
-            // Commit the updated account and/or token rel, so we can retrieve and verify the values
-            writableAccountStore.commit();
-            writableTokenRelStore.commit();
 
             // Verify the account is in its expected state
             final var savedAcct = writableAccountStore.get(ACCOUNT_1339);

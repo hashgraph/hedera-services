@@ -35,6 +35,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.util.TokenRelListCalculator;
 import com.hedera.node.app.service.token.impl.validators.TokenListChecks;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -206,7 +207,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
             @NonNull final WritableTokenRelationStore tokenRelStore,
             @NonNull final ExpiryValidator expiryValidator) {
         // Check that the account is usable
-        final var acct = ContextualRetriever.getIfUsable(accountId, accountStore, expiryValidator);
+        final var acct = TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator);
 
         // Construct the dissociation for each token ID
         final var dissociations = new ArrayList<Dissociation>();
@@ -242,7 +243,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         // just to get the compiler not to complain about the method params not being used...
         log.info("TODO tokenIsExpired | token: {}, consensusNow: {}", token, consensusNow);
 
-        // @todo('6864'): identify expired tokens
+        // @future('6864'): identify expired tokens
         // This method will need to identify a token that is expired or a token that is "detached", i.e. expired but
         // still within its grace period
         return false;
