@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.chatter.protocol.heartbeat;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatMessage;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatSendReceive;
@@ -26,7 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class HeartbeatTest {
-    private final long peerId = 1;
+    private final NodeId peerId = new NodeId(1L);
     private final PingChecker pingChecker = new PingChecker(peerId);
     private final Duration heartbeatInterval = Duration.ofSeconds(1);
     private final FakeTime time = new FakeTime();

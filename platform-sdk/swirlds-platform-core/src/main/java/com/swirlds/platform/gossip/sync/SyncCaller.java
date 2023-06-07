@@ -42,6 +42,7 @@ import com.swirlds.platform.reconnect.ReconnectUtils;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
@@ -131,8 +132,8 @@ public class SyncCaller implements Runnable {
         while (true) { // loop forever until the user quits the browser
             try {
                 // choose a member at random, and sync with them
-                final long otherId = callRequestSync();
-                if (otherId >= 0) { // successful sync
+                final NodeId otherId = callRequestSync();
+                if (otherId != null) { // successful sync
                     failedAttempts = 0;
                 } else {
                     failedAttempts++;
@@ -158,15 +159,16 @@ public class SyncCaller implements Runnable {
     }
 
     /**
-     * Chose another member at random, request a sync with them, and perform one sync if they accept the request. A -1
+     * Chose another member at random, request a sync with them, and perform one sync if they accept the request. A null
      * is returned if the sync did not happen for some reason, such as the chosen member wasn't connected, or had a
      * communication error, or was already syncing by calling self, or the lock was still held by the heartbeat thread,
      * or some other reason.
      *
-     * @return member ID of the member the attempted sync was with, or -1 if no sync happened
+     * @return member ID of the member the attempted sync was with, or null if no sync happened
      */
-    private int callRequestSync() {
-        int otherId = -1; // the ID of the member that I am syncing with now
+    @Nullable
+    private NodeId callRequestSync() {
+        NodeId otherId = null; // the ID of the member that I am syncing with now
         try { // catch any exceptions, log them, and ignore them
             if (syncManager.hasFallenBehind()) {
                 // we will not sync if we have fallen behind
@@ -175,11 +177,11 @@ public class SyncCaller implements Runnable {
                     final boolean reconnected = doReconnect();
                     // if reconnect failed, we will start over
                     if (!reconnected) {
-                        return -1;
+                        return null;
                     }
                     // if reconnect succeeded, we should continue with a sync
                 } else {
-                    return -1;
+                    return null;
                 }
                 logger.debug(
                         RECONNECT.getMarker(),
@@ -190,7 +192,7 @@ public class SyncCaller implements Runnable {
 
             // check with sync manager for any reasons not to sync
             if (!syncManager.shouldInitiateSync()) {
-                return -1;
+                return null;
             }
 
             if (addressBook.getSize() == 1 && callerNumber == 0) {
@@ -208,22 +210,22 @@ public class SyncCaller implements Runnable {
                 // "other")
                 Thread.sleep(50);
                 // selfId assumed to be main
-                return selfId.getIdAsInt(); // say that self just "synced" with self, and created an event for it
+                return selfId; // say that self just "synced" with self, and created an event for it
             }
 
             if (addressBook.getSize() <= 1) { // if there is no one to sync with, don't sync
-                return -1;
+                return null;
             }
 
             // the sync manager will tell us who we need to call
-            final List<Long> nodeList = syncManager.getNeighborsToCall();
+            final List<NodeId> nodeList = syncManager.getNeighborsToCall();
 
             // the array is sorted in ascending or from highest to lowest priority, so we go through the array and
             // try to
             // call each node until we are successful
             boolean syncAccepted = false;
-            for (final Long aLong : nodeList) {
-                otherId = aLong.intValue();
+            for (final NodeId nodeId : nodeList) {
+                otherId = nodeId;
                 // otherId is now the member to call
 
                 logger.debug(SYNC_START.getMarker(), "{} about to call {} (connection looks good)", selfId, otherId);
@@ -235,7 +237,7 @@ public class SyncCaller implements Runnable {
                     }
 
                     try (final MaybeLockedResource<ConnectionManager> resource =
-                            sharedConnectionLocks.tryLockConnection(new NodeId(otherId))) {
+                            sharedConnectionLocks.tryLockConnection(otherId)) {
                         if (!resource.isLockAcquired()) {
                             continue;
                         }
@@ -295,7 +297,7 @@ public class SyncCaller implements Runnable {
             if (syncAccepted) {
                 return otherId;
             } else {
-                return -1;
+                return null;
             }
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -306,7 +308,7 @@ public class SyncCaller implements Runnable {
                     otherId,
                     e);
 
-            return -1;
+            return null;
         } catch (final Exception e) {
             logger.error(
                     EXCEPTION.getMarker(),
@@ -314,7 +316,7 @@ public class SyncCaller implements Runnable {
                     selfId,
                     otherId,
                     e);
-            return -1;
+            return null;
         }
     }
 
@@ -330,7 +332,7 @@ public class SyncCaller implements Runnable {
         // and consensus round queue (q2) are empty during reconnect
         reconnectHelper.prepareForReconnect();
 
-        final List<Long> reconnectNeighbors = syncManager.getNeighborsForReconnect();
+        final List<NodeId> reconnectNeighbors = syncManager.getNeighborsForReconnect();
         logger.info(
                 RECONNECT.getMarker(),
                 "{} has fallen behind, will try to reconnect with {}",
@@ -340,40 +342,40 @@ public class SyncCaller implements Runnable {
         return doReconnect(reconnectNeighbors);
     }
 
-    private boolean doReconnect(final List<Long> reconnectNeighbors) {
+    private boolean doReconnect(final List<NodeId> reconnectNeighbors) {
 
         final ReconnectPeerInfoPayload peerInfo = new ReconnectPeerInfoPayload();
 
-        for (final Long neighborId : reconnectNeighbors) {
+        for (final NodeId neighborId : reconnectNeighbors) {
             // try to get the lock, it should be available if we have fallen behind
             try (final MaybeLockedResource<ConnectionManager> resource =
-                    sharedConnectionLocks.tryLockConnection(new NodeId(neighborId))) {
+                    sharedConnectionLocks.tryLockConnection(neighborId)) {
                 if (!resource.isLockAcquired()) {
-                    peerInfo.addPeerInfo(neighborId, "failed to acquire lock, blocked by heartbeat thread");
+                    peerInfo.addPeerInfo(neighborId.id(), "failed to acquire lock, blocked by heartbeat thread");
                     continue;
                 }
                 final Connection conn = resource.getResource().getConnection();
                 if (conn == null || !conn.connected()) {
                     // if we're not connected, try someone else
-                    peerInfo.addPeerInfo(neighborId, "peer unreachable, unable to establish connection");
+                    peerInfo.addPeerInfo(neighborId.id(), "peer unreachable, unable to establish connection");
                     continue;
                 }
                 if (!ReconnectUtils.isNodeReadyForReconnect(conn)) {
                     // The other node was unwilling to help this node to reconnect or the connection was broken
-                    peerInfo.addPeerInfo(neighborId, "peer declined request to reconnect");
+                    peerInfo.addPeerInfo(neighborId.id(), "peer declined request to reconnect");
                     continue;
                 }
                 try (final ReservedSignedState reservedState =
                         reconnectHelper.receiveSignedState(conn, signedStateValidator)) {
 
                     if (reservedState.isNull()) {
-                        peerInfo.addPeerInfo(neighborId, "no signed state received");
+                        peerInfo.addPeerInfo(neighborId.id(), "no signed state received");
                         continue;
                     }
                     return reconnectHelper.loadSignedState(reservedState.get());
                 }
             } catch (final Exception e) {
-                peerInfo.addPeerInfo(neighborId, "exception occurred: " + e.getMessage());
+                peerInfo.addPeerInfo(neighborId.id(), "exception occurred: " + e.getMessage());
                 // if we failed to receive a state from this node, we will try the next one
             }
         }

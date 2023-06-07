@@ -76,7 +76,7 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
      * The ID of the other node if this thread is responsible for a task associated with a
      * particular node.
      */
-    private Long otherNodeId;
+    private NodeId otherNodeId;
 
     /**
      * The thread group that will contain new threads.
@@ -326,7 +326,7 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
             } else {
                 parts.add("? to");
             }
-            parts.add(Long.toString(otherNodeId));
+            parts.add(otherNodeId.toString());
         }
 
         if (useThreadNumbers) {
@@ -565,7 +565,8 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
     /**
      * Get the node ID of the other node (if created threads will be dealing with a task related to a specific node).
      */
-    public Long getOtherNodeId() {
+    @NonNull
+    public NodeId getOtherNodeId() {
         return otherNodeId;
     }
 
@@ -576,8 +577,9 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
      * @return this object
      */
     @SuppressWarnings("unchecked")
-    public C setOtherNodeId(final Long otherNodeId) {
+    public C setOtherNodeId(@NonNull final NodeId otherNodeId) {
         throwIfImmutable();
+        Objects.requireNonNull(otherNodeId, "otherNodeId must not be null");
 
         this.otherNodeId = otherNodeId;
         return (C) this;

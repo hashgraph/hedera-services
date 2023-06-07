@@ -18,14 +18,17 @@ package com.swirlds.platform.test.chatter.simulator;
 
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.test.chatter.GossipPayload;
 import com.swirlds.platform.test.chatter.SimulatedChatter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,9 +40,9 @@ import java.util.stream.Collectors;
  */
 public class SimulatedNode {
 
-    final long selfId;
+    final NodeId selfId;
     final int nodeCount;
-    final Set<Long> nodeIds;
+    final Set<NodeId> nodeIds;
     final Duration timeStep;
     /**
      * If true then print extra stuff to the console.
@@ -62,7 +65,7 @@ public class SimulatedNode {
     /**
      * A list of all currently connected destinations.
      */
-    private final List<Long> connectedDestinations;
+    private final List<NodeId> connectedDestinations;
 
     private long lastPurgedRound = -1;
     private final AtomicReference<Instant> currentTime = new AtomicReference<>();
@@ -70,30 +73,28 @@ public class SimulatedNode {
     /**
      * Create a new simulated node.
      *
-     * @param selfId
-     * 		the ID of the node
-     * @param seed
-     * 		a seed for this node's random number generator
+     * @param selfId the ID of the node
+     * @param seed   a seed for this node's random number generator
      */
     public SimulatedNode(
-            final GossipSimulationBuilder builder,
-            final long selfId,
+            @NonNull final GossipSimulationBuilder builder,
+            @NonNull final NodeId selfId,
             final long seed,
-            final SimulatedNetwork network,
-            final EventTracker eventTracker,
-            final Supplier<Long> roundProvider) {
+            @NonNull final SimulatedNetwork network,
+            @NonNull final EventTracker eventTracker,
+            @NonNull final Supplier<Long> roundProvider) {
+        Objects.requireNonNull(builder, "builder must not be null");
+        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
+        this.random = new Random(seed);
+        this.network = Objects.requireNonNull(network, "network must not be null");
+        this.roundProvider = Objects.requireNonNull(roundProvider, "roundProvider must not be null");
 
         this.debugEnabled = builder.isDebugEnabled();
-
-        this.selfId = selfId;
         this.nodeCount = builder.getNodeCount();
         this.timeStep = builder.getTimeStep();
 
-        this.random = new Random(seed);
-        this.network = network;
-
         this.nodeIds = new HashSet<>();
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : builder.getAddressBook().getNodeIdSet()) {
             nodeIds.add(nodeId);
         }
 
@@ -102,12 +103,11 @@ public class SimulatedNode {
         this.averageEventsPerSecond = builder.getAverageEventsCreatedPerSecond(selfId);
         this.averageEventSize = builder.getAverageEventSizeInBytes();
         this.eventSizeStandardDeviation = builder.getEventSizeInBytesStandardDeviation();
-        this.roundProvider = roundProvider;
 
         this.eventTracker = eventTracker;
 
         connectedDestinations = nodeIds.stream()
-                .filter(d -> d != selfId)
+                .filter(d -> !Objects.equals(d, selfId))
                 .filter(d -> network.isDestinationConnected(selfId, d))
                 .collect(Collectors.toList());
     }
@@ -119,8 +119,7 @@ public class SimulatedNode {
     /**
      * Simulate one step in the simulation. Send and receive a bunch of messages, and possibly generate an event.
      *
-     * @param now
-     * 		the current (simulated) time
+     * @param now the current (simulated) time
      */
     public void simulateOneStep(final Instant now) {
         currentTime.set(now);
@@ -172,15 +171,14 @@ public class SimulatedNode {
     /**
      * Send some messages to the network.
      *
-     * @param now
-     * 		the current time
+     * @param now the current time
      */
     private void sendMessages(final Instant now) {
-        final List<Long> destinations = new ArrayList<>(connectedDestinations);
+        final List<NodeId> destinations = new ArrayList<>(connectedDestinations);
         while (network.isOutgoingCapacityAvailable(selfId) && !destinations.isEmpty()) {
             // pick a random destination
             final int destinationIndex = random.nextInt(destinations.size());
-            final Long destination = connectedDestinations.get(destinationIndex);
+            final NodeId destination = connectedDestinations.get(destinationIndex);
 
             if (!network.isDestinationAvailable(selfId, destination)) {
                 // no more capacity for this destination

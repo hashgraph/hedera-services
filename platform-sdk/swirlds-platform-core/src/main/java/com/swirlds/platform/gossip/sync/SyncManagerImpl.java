@@ -161,9 +161,9 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
      * @return a list of neighbors
      */
     @Override
-    public List<Long> getNeighborsToCall() {
+    public List<NodeId> getNeighborsToCall() {
         // if there is an indication we might have fallen behind, calling nodes to establish this takes priority
-        List<Long> list = getNeededForFallenBehind();
+        List<NodeId> list = getNeededForFallenBehind();
         if (list != null) {
             return list;
         }
@@ -178,14 +178,14 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
             final NodeId neighborId = addressBook.getNodeId(neighbor);
 
             // don't add duplicated nodes here
-            if (list.contains(neighborId.id())) {
+            if (list.contains(neighborId)) {
                 continue;
             }
 
             // we try to call a neighbor in the bottom 1/3 by number of events created in the latest round, if
             // we fail to find one after 10 tries, we just call the last neighbor we find
             if (criticalQuorum.isInCriticalQuorum(neighborId) || i == MAXIMUM_NEIGHBORS_TO_QUERY - 1) {
-                list.add(neighborId.id());
+                list.add(neighborId);
             }
         }
 
@@ -271,7 +271,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     }
 
     @Override
-    public List<Long> getNeededForFallenBehind() {
+    public List<NodeId> getNeededForFallenBehind() {
         return fallenBehindManager.getNeededForFallenBehind();
     }
 
@@ -287,12 +287,12 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
      * {@inheritDoc}
      */
     @Override
-    public List<Long> getNeighborsForReconnect() {
+    public List<NodeId> getNeighborsForReconnect() {
         return fallenBehindManager.getNeighborsForReconnect();
     }
 
     @Override
-    public boolean shouldReconnectFrom(final Long peerId) {
+    public boolean shouldReconnectFrom(final NodeId peerId) {
         return fallenBehindManager.shouldReconnectFrom(peerId);
     }
 
