@@ -46,8 +46,8 @@ public class ReadableNftStoreImpl implements ReadableNftStore {
 
     @Override
     @Nullable
-    public Nft get(@NonNull final UniqueTokenId id) {
-        requireNonNull(id);
+    public Nft get(@NonNull final UniqueTokenId nftId) {
+        requireNonNull(nftId);
         return nftState.get(nftId);
     }
 }
