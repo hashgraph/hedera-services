@@ -17,6 +17,8 @@
 package com.swirlds.platform.test.chatter;
 
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface PayloadHandler {
     /**
@@ -27,5 +29,5 @@ public interface PayloadHandler {
      * @param sender
      * 		the node that sent the payload
      */
-    void handlePayload(SelfSerializable payload, long sender);
+    void handlePayload(@NonNull SelfSerializable payload, @NonNull NodeId sender);
 }

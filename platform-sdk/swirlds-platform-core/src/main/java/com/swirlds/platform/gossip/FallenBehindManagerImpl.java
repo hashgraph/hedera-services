@@ -21,12 +21,14 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.network.RandomGraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -35,16 +37,16 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FallenBehindManagerImpl implements FallenBehindManager, EventCreationRule {
     /** a set of all neighbors of this node */
-    private final HashSet<Long> allNeighbors;
+    private final HashSet<NodeId> allNeighbors;
     /** the number of neighbors we have */
     private final int numNeighbors;
     /** set of neighbors who report that this node has fallen behind */
-    private final HashSet<Long> reportFallenBehind;
+    private final HashSet<NodeId> reportFallenBehind;
     /**
      * set of neighbors that have not yet reported that we have fallen behind, only exists if someone reports we have
      * fallen behind. This Set is made from a ConcurrentHashMap, so it needs no synchronization
      */
-    private final Set<Long> notYetReportFallenBehind;
+    private final Set<NodeId> notYetReportFallenBehind;
     /** Called on any fallen behind status change */
     private final Runnable notifyPlatform;
     /** Called when the status becomes fallen behind */
@@ -55,22 +57,24 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
     volatile int numReportFallenBehind;
 
     public FallenBehindManagerImpl(
+            @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final RandomGraph connectionGraph,
             @NonNull final Runnable notifyPlatform,
             @NonNull final Runnable fallenBehindCallback,
             @NonNull final ReconnectConfig config) {
-        ArgumentUtils.throwArgNull(selfId, "selfId");
-        ArgumentUtils.throwArgNull(connectionGraph, "connectionGraph");
+        Objects.requireNonNull(addressBook, "addressBook");
+        Objects.requireNonNull(selfId, "selfId");
+        Objects.requireNonNull(connectionGraph, "connectionGraph");
 
         notYetReportFallenBehind = ConcurrentHashMap.newKeySet();
         reportFallenBehind = new HashSet<>();
         allNeighbors = new HashSet<>();
         /* an array with all the neighbor ids */
-        final int[] neighbors = connectionGraph.getNeighbors(selfId.getIdAsInt());
+        final int[] neighbors = connectionGraph.getNeighbors(addressBook.getIndexOfNodeId(selfId));
         numNeighbors = neighbors.length;
         for (final int neighbor : neighbors) {
-            allNeighbors.add((long) neighbor);
+            allNeighbors.add(addressBook.getNodeId(neighbor));
         }
         this.notifyPlatform = ArgumentUtils.throwArgNull(notifyPlatform, "notifyPlatform");
         this.fallenBehindCallback = ArgumentUtils.throwArgNull(fallenBehindCallback, "fallenBehindCallback");
@@ -80,14 +84,14 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
     @Override
     public synchronized void reportFallenBehind(final NodeId id) {
         final boolean previouslyFallenBehind = hasFallenBehind();
-        if (reportFallenBehind.add(id.id())) {
+        if (reportFallenBehind.add(id)) {
             if (numReportFallenBehind == 0) {
                 // we have received the first indication that we have fallen behind, so we need to check with other
                 // nodes to confirm
                 notYetReportFallenBehind.addAll(allNeighbors);
             }
             // we don't need to check with this node
-            notYetReportFallenBehind.remove(id.id());
+            notYetReportFallenBehind.remove(id);
             numReportFallenBehind++;
             if (!previouslyFallenBehind && hasFallenBehind()) {
                 notifyPlatform.run();
@@ -97,11 +101,11 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
     }
 
     @Override
-    public List<Long> getNeededForFallenBehind() {
+    public List<NodeId> getNeededForFallenBehind() {
         if (notYetReportFallenBehind.isEmpty()) {
             return null;
         }
-        final List<Long> ret = new ArrayList<>(notYetReportFallenBehind);
+        final List<NodeId> ret = new ArrayList<>(notYetReportFallenBehind);
         Collections.shuffle(ret);
         return ret;
     }
@@ -112,14 +116,14 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
     }
 
     @Override
-    public synchronized List<Long> getNeighborsForReconnect() {
-        final List<Long> ret = new ArrayList<>(reportFallenBehind);
+    public synchronized List<NodeId> getNeighborsForReconnect() {
+        final List<NodeId> ret = new ArrayList<>(reportFallenBehind);
         Collections.shuffle(ret);
         return ret;
     }
 
     @Override
-    public boolean shouldReconnectFrom(final Long peerId) {
+    public boolean shouldReconnectFrom(final NodeId peerId) {
         if (!hasFallenBehind()) {
             return false;
         }

@@ -260,14 +260,19 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
-     * Get the index within the address book of a given node ID.
+     * Get the index within the address book of a given node ID.  Check that the addressbook {@link #contains(NodeId)}
+     * the node ID to avoid throwing an exception.
      *
      * @param id the node's ID
      * @return the index of the node ID within the address book
+     * @throws NoSuchElementException if the node ID does not exist in the address book.
      */
     public int getIndexOfNodeId(@NonNull final NodeId id) {
         Objects.requireNonNull(id, "nodeId is null");
-        return nodeIndices.get(id);
+        if (!addresses.containsKey(id)) {
+            throw new NoSuchElementException("no address with id " + id + " exists");
+        }
+        return nodeIndices.getOrDefault(id, -1);
     }
 
     /**

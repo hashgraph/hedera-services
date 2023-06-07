@@ -24,7 +24,6 @@ import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -47,19 +46,8 @@ public class ReadableNftStoreImpl implements ReadableNftStore {
 
     @Override
     @Nullable
-    public Nft get(@NonNull final UniqueTokenId id) {
-        requireNonNull(id);
-        return getNftLeaf(id);
-    }
-
-    /**
-     * Returns the NFT leaf for the given nftId. If the token and its serial doesn't exist returns {@code
-     * null}
-     *
-     * @param nftId given token Id and its serial number
-     * @return Nft leaf for the given unique token Id
-     */
-    private Nft getNftLeaf(final UniqueTokenId nftId) {
+    public Nft get(@NonNull final UniqueTokenId nftId) {
+        requireNonNull(nftId);
         return nftState.get(nftId);
     }
 }

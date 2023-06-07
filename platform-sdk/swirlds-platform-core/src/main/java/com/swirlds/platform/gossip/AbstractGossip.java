@@ -153,7 +153,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         eventObserverDispatcher.addObserver(criticalQuorum);
 
         topology = new StaticTopology(
-                selfId, addressBook.getSize(), settings.getNumConnections(), unidirectionalConnectionsEnabled());
+                addressBook, selfId, settings.getNumConnections(), unidirectionalConnectionsEnabled());
 
         final SocketFactory socketFactory = PlatformConstructor.socketFactory(
                 crypto.getKeysAndCerts(), platformContext.getConfiguration().getConfigData(CryptoConfig.class));

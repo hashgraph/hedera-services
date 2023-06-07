@@ -29,6 +29,8 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#UNCHECKED_SUBMIT}.
+ * <p>
+ * All logic related to this handler is implemented in the handle workflow.
  */
 @Singleton
 public class NetworkUncheckedSubmitHandler implements TransactionHandler {
