@@ -132,6 +132,7 @@ dependencyResolutionManagement {
             val daggerVersion = "2.42"
             val eclipseCollectionsVersion = "10.4.0"
             val helidonVersion = "3.0.2"
+            val ioGrpcVersionForProtocCodeGen = "1.55.1"
             val jacksonVersion = "2.13.3"
             val log4jVersion = "2.17.1"
             val mockitoVersion = "4.6.1"
@@ -201,6 +202,7 @@ dependencyResolutionManagement {
             version("org.slf4j", "2.0.3")
             version("org.testcontainers", testContainersVersion)
             version("org.testcontainers.junit.jupiter", testContainersVersion)
+            version("grpc.protobuf", ioGrpcVersionForProtocCodeGen)
             version("tuweni.bytes", tuweniVersion)
             version("tuweni.units", tuweniVersion)
             version("uk.org.webcompere.systemstubs.core", systemStubsVersion)
