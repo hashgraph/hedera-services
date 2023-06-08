@@ -33,10 +33,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.WritableNftStore;
-import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.*;
 import com.hedera.node.app.service.token.impl.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -116,12 +113,14 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         } else {
             final var nftStore = context.writableStore(WritableNftStore.class);
             // validate resources exist for minting nft
-            validateTrue(nftStore.sizeOfState() + 1 < maxAllowedMints, MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
+            final var meta = op.metadata();
+            validateTrue(
+                    nftStore.sizeOfState() + meta.size() < maxAllowedMints, MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
             // mint nft
             final var mintedSerials = mintNonFungible(
                     token,
                     treasuryRel,
-                    op.metadata(),
+                    meta,
                     context.consensusNow(),
                     accountStore,
                     tokenStore,
