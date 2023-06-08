@@ -50,6 +50,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -100,6 +101,7 @@ public class ContractCreateSuite extends HapiSuite {
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
     public static final String PARENT_INFO = "parentInfo";
     private static final long GAS_TO_OFFER = 300_000L;
+    private static final String CONTRACTS_NONCES_EXTERNALIZATION_ENABLED = "contracts.nonces.externalization.enabled";
 
     public static void main(String... args) {
         new ContractCreateSuite().runSuiteAsync();
@@ -620,13 +622,16 @@ public class ContractCreateSuite extends HapiSuite {
 
     private HapiSpec contractCreateNoncesExternalizationHappyPath() {
         final var contract = "NoncesExternalization";
-        final var contractCreateFn = "deployContract";
+        final var contractCreateTxn = "contractCreateTxn";
 
         return defaultHapiSpec("ContractCreateNoncesExternalizationHappyPath")
-                .given(uploadInitCode(contract), contractCreate(contract).via(contractCreateFn))
+                .given(
+                        overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
+                        uploadInitCode(contract),
+                        contractCreate(contract).via(contractCreateTxn))
                 .when()
                 .then(withOpContext((spec, opLog) -> {
-                    HapiGetTxnRecord op = getTxnRecord(contractCreateFn)
+                    HapiGetTxnRecord op = getTxnRecord(contractCreateTxn)
                             .hasPriority(recordWith()
                                     .contractWithIdHasContractNonces(
                                             spec.registry().getContractId(contract), 4L));
