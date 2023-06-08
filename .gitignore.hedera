@@ -2,7 +2,7 @@
 *.pem
 !hedera-node/test-clients/src/main/resource/genesis.pem
 !hedera-node/test-clients/yahcli/localhost/keys/*.pem
-!hapi-utils/src/test/resources/vectors/genesis.pem
+!app-hapi-utils/src/test/resources/vectors/genesis.pem
 !hedera-node/data/onboard/devGenesisKeypair.pem
 *.pass
 !hedera-node/test-clients/yahcli/localhost/keys/*.pass
@@ -59,16 +59,16 @@ hedera-node/test-clients/yahcli/assets/*.jar
 !hedera-node/test-clients/yahcli/run/test/local/*.sh
 
 *.json
-!hapi-fees/src/main/resources/*.json
-!hapi-fees/src/test/resources/*.json
-!hapi-utils/src/test/resources/bootstrap/*.json
-!hapi-utils/src/test/resources/sysfiles/*.json
-!hedera-node/hedera-mono-service/src/test/resources/fees/feeSchedules.json
-!hedera-node/hedera-mono-service/src/test/resources/legacyAccounts.json
-!hedera-node/hedera-mono-service/src/test/resources/bootstrap/*.json
-!hedera-node/hedera-mono-service/src/main/resources/*.json
-!hedera-node/hedera-mono-service/src/test/resources/testfiles/expiry-throttle.json
-!hedera-node/hedera-mono-service/src/test/resources/R4FeeSchedule.json
+!app-hapi-fees/src/main/resources/*.json
+!app-hapi-fees/src/test/resources/*.json
+!app-hapi-utils/src/test/resources/bootstrap/*.json
+!app-hapi-utils/src/test/resources/sysfiles/*.json
+!hedera-node/app-service-mono/src/test/resources/fees/feeSchedules.json
+!hedera-node/app-service-mono/src/test/resources/legacyAccounts.json
+!hedera-node/app-service-mono/src/test/resources/bootstrap/*.json
+!hedera-node/app-service-mono/src/main/resources/*.json
+!hedera-node/app-service-mono/src/test/resources/testfiles/expiry-throttle.json
+!hedera-node/app-service-mono/src/test/resources/R4FeeSchedule.json
 !hedera-node/configuration/**/*.json
 !hedera-node/test-clients/src/main/resource/FeeSchedule.json
 !hedera-node/test-clients/src/main/resource/testSystemFiles/*.json
@@ -76,7 +76,7 @@ hedera-node/test-clients/yahcli/assets/*.jar
 .circleci/*.yml-excerpt
 hedera-node/data/jasperdb/
 hedera-node/temp/
-hedera-node/hedera-mono-service/temp/
+hedera-node/app-service-mono/temp/
 hedera-node/swirlds-tmp/
 hedera-node/hedera-mono-service/swirlds-tmp/
 hedera-node/*.csv
@@ -105,9 +105,9 @@ hedera-node/data/jdb/
 hedera-node/output/
 hedera-node/target/
 hedera-node/src/test/resources/diskFs
-hedera-node/hedera-mono-service/src/test/resources/diskFs
+hedera-node/app-service-mono/src/test/resources/diskFs
 hedera-node/src/test/resources/upgrade
-hedera-node/hedera-mono-service/src/test/resources/upgrade
+hedera-node/app-service-mono/src/test/resources/upgrade
 hedera-node/forensics
 hedera-node/pgdata
 hedera-node/temp

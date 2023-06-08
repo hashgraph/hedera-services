@@ -28,7 +28,7 @@ plugins {
 }
 
 javaModuleDependencies {
-    versionsFromConsistentResolution(":hedera-node:node-app")
+    versionsFromConsistentResolution(":app")
 
     moduleNameToGA.put("com.hedera.hashgraph.protobuf.java.api", "com.hedera.hashgraph:hedera-protobuf-java-api")
     moduleNameToGA.put("com.hedera.pbj.runtime", "com.hedera.pbj:pbj-runtime")

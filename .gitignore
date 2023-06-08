@@ -1046,10 +1046,10 @@ platform-sdk/sdk/metricsDoc.tsv
 # Temporary Test Folders (Poorly Behaved Tests)
 **/swirlds-tmp
 swirlds-platform-core/data/**
-hedera-node/cli-clients/testFile
-hedera-node/hedera-mono-service/src/test/resources/balance*/**
-hedera-node/hedera-mono-service/temp/**
-hedera-node/hedera-mono-service/swirlds-sst-tmp/**
+hedera-node/services-cli/testFile
+hedera-node/app-service-mono/src/test/resources/balance*/**
+hedera-node/app-service-mono/temp/**
+hedera-node/app-service-mono/swirlds-sst-tmp/**
 
 # Test Files (Poorly Behaved Tests)
 *.json.gz
@@ -1058,6 +1058,12 @@ saved.txt
 ### Hedera Node Files
 hedera-node/hapi/hedera-protobufs
 hedera-node/hapi/checkouts.bin
+!hedera-node/**/src/test/resources/**/*.crt
+!hedera-node/**/src/test/resources/**/*.pem
+!hedera-node/**/src/test/resources/**/*.pfx
+!hedera-node/**/src/test/resources/**/*.rcd.gz
+!hedera-node/**/src/test/resources/**/*.swh
+!hedera-node/**/src/test/resources/**/*.zip
 
 # Do not ignore the files required by the Platform Core tests
 !platform-sdk/**/src/test/resources/**/*.jar

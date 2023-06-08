@@ -36,60 +36,15 @@ includeBuild(".") // https://github.com/gradlex-org/java-module-dependencies/iss
 
 include(":hedera-node")
 
-include(":node-app-service-network-admin", "hedera-network-admin-service")
-
-include(":node-app-service-network-admin-impl", "hedera-network-admin-service-impl")
-
-include(":node-app-service-consensus", "hedera-consensus-service")
-
-include(":node-app-service-consensus-impl", "hedera-consensus-service-impl")
-
-include(":node-app-service-file", "hedera-file-service")
-
-include(":node-app-service-file-impl", "hedera-file-service-impl")
-
-include(":node-app-service-schedule", "hedera-schedule-service")
-
-include(":node-app-service-schedule-impl", "hedera-schedule-service-impl")
-
-include(":node-app-service-contract", "hedera-smart-contract-service")
-
-include(":node-app-service-contract-impl", "hedera-smart-contract-service-impl")
-
-include(":node-app-service-token", "hedera-token-service")
-
-include(":node-app-service-token-impl", "hedera-token-service-impl")
-
-include(":node-app-service-util", "hedera-util-service")
-
-include(":node-app-service-util-impl", "hedera-util-service-impl")
-
-include(":node-app-hapi-utils", "hapi-utils")
-
-include(":node-app-hapi-fees", "hapi-fees")
-
-include(":node-hapi", "hapi")
-
-include(":node-config", "hedera-config")
-
-include(":node-app", "hedera-app")
-
-include(":node-app-spi", "hedera-app-spi")
-
-include(":node-app-service-evm", "hedera-evm")
-
-include(":node-app-service-evm-impl", "hedera-evm-impl")
-
-include(":node-app-service-mono", "hedera-mono-service")
-
-include(":services-cli", "cli-clients")
-
-include(":hedera-node:test-clients")
-
-fun include(name: String, path: String) {
-    include(":hedera-node$name")
-    project(":hedera-node$name").projectDir = File(rootDir, "hedera-node/$path")
-}
+// Include every folder in 'hedera-node' that contains a build script as Gradle subproject
+File(rootDir, "hedera-node")
+    .listFiles()
+    ?.filter { File(it, "build.gradle.kts").exists() }
+    ?.forEach {
+        val projectName = ":${it.name}"
+        include(projectName)
+        project(projectName).projectDir = it
+    }
 
 // Enable Gradle Build Scan
 gradleEnterprise {
