@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelp
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.contract.impl.exec.v030.SystemAgnosticAddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.v030.Version030AddressChecks;
 import java.util.Map;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
@@ -34,7 +34,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class SystemAgnosticAddressChecksTest {
+class Version030AddressChecksTest {
     @Mock
     private PrecompiledContract mockHtsPrecompile;
 
@@ -53,11 +53,11 @@ class SystemAgnosticAddressChecksTest {
     @Mock
     private Account account;
 
-    private SystemAgnosticAddressChecks subject;
+    private Version030AddressChecks subject;
 
     @BeforeEach
     void setUp() {
-        subject = new SystemAgnosticAddressChecks(Map.of(
+        subject = new Version030AddressChecks(Map.of(
                 Address.fromHexString("0x167"), mockHtsPrecompile,
                 Address.fromHexString("0x168"), mockRatesPrecompile,
                 Address.fromHexString("0x169"), mockPrngPrecompile));

@@ -59,7 +59,8 @@ import org.hyperledger.besu.evm.code.CodeFactory;
  * TODO - get a little further to clarify DI strategy, then bring back a code cache.
  */
 public class DispatchingEvmFrameState implements EvmFrameState {
-    private static final Key HOLLOW_ACCOUNT_KEY = Key.newBuilder().keyList(KeyList.DEFAULT).build();
+    private static final Key HOLLOW_ACCOUNT_KEY =
+            Key.newBuilder().keyList(KeyList.DEFAULT).build();
     private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
 
     @SuppressWarnings("java:S6418")
@@ -198,6 +199,11 @@ public class DispatchingEvmFrameState implements EvmFrameState {
             return false;
         }
         return HOLLOW_ACCOUNT_KEY.equals(account.key());
+    }
+
+    @Override
+    public void finalizeHollowAccount(@NonNull final Address address) {
+        dispatch.finalizeHollowAccountAsContract(tuweniToPbjBytes(address));
     }
 
     /**

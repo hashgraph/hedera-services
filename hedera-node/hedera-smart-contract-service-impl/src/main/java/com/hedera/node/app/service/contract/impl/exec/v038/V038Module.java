@@ -25,7 +25,9 @@ import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomBalanceOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomChainIdOperation;
-import com.hedera.node.app.service.contract.impl.exec.v034.Release034FeatureFlags;
+import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreate2Operation;
+import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreateOperation;
+import com.hedera.node.app.service.contract.impl.exec.v034.Version034FeatureFlags;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -109,11 +111,11 @@ public interface V038Module {
 
     @Binds
     @ServicesV038
-    FeatureFlags bindFeatureFlags(Release034FeatureFlags featureFlags);
+    FeatureFlags bindFeatureFlags(Version034FeatureFlags featureFlags);
 
     @Binds
     @ServicesV038
-    AddressChecks bindAddressChecks(SystemAwareAddressChecks addressChecks);
+    AddressChecks bindAddressChecks(Version038AddressChecks addressChecks);
 
     @Provides
     @IntoSet
@@ -138,5 +140,20 @@ public interface V038Module {
             @ServicesV038 @NonNull final FeatureFlags featureFlags,
             @ServicesV038 @NonNull final AddressChecks addressChecks) {
         return new CustomCallOperation(featureFlags, gasCalculator, addressChecks);
+    }
+
+    @Provides
+    @IntoSet
+    @ServicesV038
+    static Operation provideCreateOperation(@NonNull final GasCalculator gasCalculator) {
+        return new CustomCreateOperation(gasCalculator);
+    }
+
+    @Provides
+    @IntoSet
+    @ServicesV038
+    static Operation provideCreate2Operation(
+            @NonNull final GasCalculator gasCalculator, @ServicesV038 @NonNull final FeatureFlags featureFlags) {
+        return new CustomCreate2Operation(gasCalculator, featureFlags);
     }
 }

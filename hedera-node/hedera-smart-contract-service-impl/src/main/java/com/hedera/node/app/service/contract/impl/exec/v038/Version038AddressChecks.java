@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.v038;
 
-import com.hedera.node.app.service.contract.impl.exec.v030.SystemAgnosticAddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.v030.Version030AddressChecks;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import javax.inject.Inject;
@@ -31,11 +31,11 @@ import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
  * {@link AbstractMessageProcessor} behavior to treat system addresses below 0.0.750 as special.
  */
 @Singleton
-public class SystemAwareAddressChecks extends SystemAgnosticAddressChecks {
+public class Version038AddressChecks extends Version030AddressChecks {
     private static final int NUM_SYSTEM_ACCOUNTS = 750;
 
     @Inject
-    public SystemAwareAddressChecks(@NonNull Map<Address, PrecompiledContract> hederaPrecompiles) {
+    public Version038AddressChecks(@NonNull Map<Address, PrecompiledContract> hederaPrecompiles) {
         super(hederaPrecompiles);
     }
 

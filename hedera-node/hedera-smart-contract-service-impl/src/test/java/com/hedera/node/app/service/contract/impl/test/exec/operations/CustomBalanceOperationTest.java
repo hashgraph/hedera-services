@@ -32,7 +32,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.operation.Operation;
-import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,9 +51,6 @@ class CustomBalanceOperationTest {
 
     @Mock
     private EVM evm;
-
-    @Mock
-    private WorldUpdater worldUpdater;
 
     private CustomBalanceOperation subject;
 

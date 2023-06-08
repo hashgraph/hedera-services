@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.state;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniUInt256;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -105,6 +106,13 @@ class DispatchingEvmFrameStateTest {
         subject.setNonce(ACCOUNT_NUM, 1234);
 
         verify(dispatch).setNonce(ACCOUNT_NUM, 1234);
+    }
+
+    @Test
+    void dispatchesToFinalizeHollowAccount() {
+        subject.finalizeHollowAccount(EVM_ADDRESS);
+
+        verify(dispatch).finalizeHollowAccountAsContract(tuweniToPbjBytes(EVM_ADDRESS));
     }
 
     @Test

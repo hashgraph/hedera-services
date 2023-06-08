@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.contract.impl.exec.v034.Release034FeatureFlags;
+import com.hedera.node.app.service.contract.impl.exec.v034.Version034FeatureFlags;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
@@ -30,11 +30,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class Release034FeatureFlagsTest {
+class Version034FeatureFlagsTest {
     @Mock
     private MessageFrame frame;
 
-    private Release034FeatureFlags subject = new Release034FeatureFlags();
+    private Version034FeatureFlags subject = new Version034FeatureFlags();
 
     @Test
     void implicitCreationEnabledIfLazyAndAutoCreationBothEnabled() {

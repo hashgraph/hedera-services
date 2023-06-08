@@ -14,16 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec;
+package com.hedera.node.app.service.contract.impl.exec.utils;
 
+import static com.hedera.node.app.service.contract.impl.exec.TransactionProcessor.CONFIG_CONTEXT_VARIABLE;
+import static java.util.Objects.requireNonNull;
+
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Predicate;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-/**
- * Provides feature flags used to customize behavior of Hedera {@link org.hyperledger.besu.evm.operation.Operation} overrides.
- */
-public interface FeatureFlags {
-    boolean isCreate2Enabled(@NonNull MessageFrame frame);
+public class FrameUtils {
+    public static @NonNull Configuration configOf(@NonNull final MessageFrame frame) {
+        return requireNonNull(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE));
+    }
 
-    boolean isImplicitCreationEnabled(@NonNull MessageFrame frame);
+    public static boolean testConfigOf(
+            @NonNull final MessageFrame frame, @NonNull final Predicate<Configuration> test) {
+        return test.test(configOf(frame));
+    }
 }

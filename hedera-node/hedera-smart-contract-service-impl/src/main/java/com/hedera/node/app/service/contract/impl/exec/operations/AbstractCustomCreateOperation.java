@@ -1,6 +1,27 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
+import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -13,10 +34,6 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
-
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 public abstract class AbstractCustomCreateOperation extends AbstractOperation {
     private static final int MAX_STACK_DEPTH = 1024;
@@ -34,11 +51,40 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
         super(opcode, name, stackItemsConsumed, stackItemsProduced, gasCalculator);
     }
 
+    /**
+     * Returns true if this operation is enabled for the given frame.
+     *
+     * @param frame the frame running the operation
+     * @return true if enabled
+     */
     protected abstract boolean isEnabled(@NonNull MessageFrame frame);
 
+    /**
+     * Returns the gas cost of this operation for the given frame.
+     *
+     * @param frame the frame running the operation
+     * @return the gas cost
+     */
     protected abstract long cost(@NonNull MessageFrame frame);
 
-    protected abstract Address setupPendingCreation(@NonNull final MessageFrame frame);
+    /**
+     * Sets up the pending creation for this operation and returns the address to be used
+     * as receiver of the child {@code CONTRACT_CREATION} message; or null if the creation
+     * should be aborted.
+     *
+     * @param frame the frame running the operation (and possibly spawning the child CONTRACT_CREATION)
+     * @return the address for the child message, or null if the creation should be aborted
+     */
+    protected abstract @Nullable Address setupPendingCreation(@NonNull final MessageFrame frame);
+
+    /**
+     * Called when the child {@code CONTRACT_CREATION} message has completed successfully,
+     * used to give specializations the chance to do any Hedera-specific logic.
+     *
+     * @param frame the frame running the successful operation
+     * @param createdAddress the address of the newly created contract
+     */
+    protected abstract void onSuccess(@NonNull MessageFrame frame, @NonNull Address createdAddress);
 
     @Override
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
@@ -56,7 +102,8 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
             return new Operation.OperationResult(cost, INSUFFICIENT_GAS);
         }
         final var value = Wei.wrap(frame.getStackItem(0));
-        final var account = frame.getWorldUpdater().getAccount(frame.getRecipientAddress()).getMutable();
+        final var account =
+                frame.getWorldUpdater().getAccount(frame.getRecipientAddress()).getMutable();
         frame.clearReturnData();
         if (value.compareTo(account.getBalance()) > 0 || frame.getMessageStackDepth() >= MAX_STACK_DEPTH) {
             fail(frame);
@@ -66,20 +113,13 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
         return new Operation.OperationResult(cost, null);
     }
 
-    private void fail(@NonNull final MessageFrame frame) {
-        final var inputOffset = clampedToLong(frame.getStackItem(1));
-        final var inputSize = clampedToLong(frame.getStackItem(2));
-        frame.readMutableMemory(inputOffset, inputSize);
-        frame.popStackItems(getStackItemsConsumed());
-        frame.pushStackItem(UInt256.ZERO);
-    }
-
     private void spawnChildMessage(@NonNull final MessageFrame frame) {
         // Calculate memory cost prior to expansion
         final var cost = cost(frame);
         frame.decrementRemainingGas(cost);
 
-        final var account = frame.getWorldUpdater().getAccount(frame.getRecipientAddress()).getMutable();
+        final var account =
+                frame.getWorldUpdater().getAccount(frame.getRecipientAddress()).getMutable();
         account.incrementNonce();
 
         final var value = Wei.wrap(frame.getStackItem(0));
@@ -88,11 +128,10 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
         final var inputData = frame.readMemory(inputOffset, inputSize);
         final var contractAddress = setupPendingCreation(frame);
 
-        // TODO - fail if lazy creation without enabled flag
-//        if (createOperationExternalizer.shouldFailBasedOnLazyCreation(frame, contractAddress)) {
-//            fail(frame);
-//            return;
-//        }
+        if (contractAddress == null) {
+            fail(frame);
+            return;
+        }
 
         final var childGasStipend = gasCalculator().gasAvailableForChildCreate(frame.getRemainingGas());
         frame.decrementRemainingGas(childGasStipend);
@@ -122,6 +161,14 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
         frame.setState(MessageFrame.State.CODE_SUSPENDED);
     }
 
+    private void fail(@NonNull final MessageFrame frame) {
+        final var inputOffset = clampedToLong(frame.getStackItem(1));
+        final var inputSize = clampedToLong(frame.getStackItem(2));
+        frame.readMutableMemory(inputOffset, inputSize);
+        frame.popStackItems(getStackItemsConsumed());
+        frame.pushStackItem(UInt256.ZERO);
+    }
+
     private void complete(@NonNull final MessageFrame frame, @NonNull final MessageFrame childFrame) {
         frame.setState(MessageFrame.State.CODE_EXECUTING);
         frame.incrementRemainingGas(childFrame.getRemainingGas());
@@ -131,8 +178,9 @@ public abstract class AbstractCustomCreateOperation extends AbstractOperation {
         frame.popStackItems(getStackItemsConsumed());
         if (childFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
             frame.mergeWarmedUpFields(childFrame);
-            frame.pushStackItem(Words.fromAddress(childFrame.getContractAddress()));
-            // TODO - complete lazy creation if applicable
+            final var creation = childFrame.getContractAddress();
+            frame.pushStackItem(Words.fromAddress(creation));
+            onSuccess(frame, creation);
         } else {
             frame.setReturnData(childFrame.getOutputData());
             frame.pushStackItem(UInt256.ZERO);

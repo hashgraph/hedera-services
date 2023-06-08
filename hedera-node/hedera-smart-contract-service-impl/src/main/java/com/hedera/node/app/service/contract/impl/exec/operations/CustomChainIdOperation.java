@@ -16,10 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.exec.TransactionProcessor.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 
 import com.hedera.node.config.data.ContractsConfig;
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes32;
@@ -48,9 +47,9 @@ public class CustomChainIdOperation extends AbstractOperation {
         if (frame.getRemainingGas() < cost) {
             return new OperationResult(cost, ExceptionalHaltReason.INSUFFICIENT_GAS);
         }
-        final Configuration config = Objects.requireNonNull(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE));
-        final var contractsConfig = config.getConfigData(ContractsConfig.class);
-        final var chainId = Bytes32.fromHexStringLenient(Integer.toString(contractsConfig.chainId(), 16));
+        final var chainIdAsInt =
+                configOf(frame).getConfigData(ContractsConfig.class).chainId();
+        final var chainId = Bytes32.fromHexStringLenient(Integer.toString(chainIdAsInt, 16));
         frame.pushStackItem(chainId);
         return new OperationResult(cost, null);
     }

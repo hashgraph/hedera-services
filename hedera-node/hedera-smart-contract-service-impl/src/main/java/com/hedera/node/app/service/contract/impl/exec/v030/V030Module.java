@@ -25,6 +25,8 @@ import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomBalanceOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomChainIdOperation;
+import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreate2Operation;
+import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreateOperation;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -111,7 +113,7 @@ public interface V030Module {
 
     @Binds
     @ServicesV030
-    AddressChecks bindAddressChecks(SystemAgnosticAddressChecks addressChecks);
+    AddressChecks bindAddressChecks(Version030AddressChecks addressChecks);
 
     @Provides
     @IntoSet
@@ -136,5 +138,20 @@ public interface V030Module {
             @ServicesV030 @NonNull final FeatureFlags featureFlags,
             @ServicesV030 @NonNull final AddressChecks addressChecks) {
         return new CustomCallOperation(featureFlags, gasCalculator, addressChecks);
+    }
+
+    @Provides
+    @IntoSet
+    @ServicesV030
+    static Operation provideCreateOperation(@NonNull final GasCalculator gasCalculator) {
+        return new CustomCreateOperation(gasCalculator);
+    }
+
+    @Provides
+    @IntoSet
+    @ServicesV030
+    static Operation provideCreate2Operation(
+            @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final FeatureFlags featureFlags) {
+        return new CustomCreate2Operation(gasCalculator, featureFlags);
     }
 }

@@ -54,7 +54,18 @@ public interface EvmFrameState {
                 scope.writableContractState().get(ContractServiceImpl.BYTECODE_KEY));
     }
 
+    /**
+     * Returns whether the account with the given address is a "hollow account"; that is, an account
+     * created by a value transfer to a 20-byte alias, without an explicit cryptographic key given.
+     */
     boolean isHollowAccount(@NonNull Address address);
+
+    /**
+     * Given an address that is a "hollow account", finalizes the account as a contract.
+     *
+     * @param address the address of the hollow account to finalize
+     */
+    void finalizeHollowAccount(@NonNull Address address);
 
     /**
      * Returns the read-only account with the given address, or {@code null} if the account is missing,

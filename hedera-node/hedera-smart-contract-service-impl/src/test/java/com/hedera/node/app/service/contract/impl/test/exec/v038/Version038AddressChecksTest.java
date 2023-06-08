@@ -19,13 +19,13 @@ package com.hedera.node.app.service.contract.impl.test.exec.v038;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.contract.impl.exec.v038.SystemAwareAddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.v038.Version038AddressChecks;
 import java.util.Map;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
-class SystemAwareAddressChecksTest {
-    private SystemAwareAddressChecks subject = new SystemAwareAddressChecks(Map.of());
+class Version038AddressChecksTest {
+    private Version038AddressChecks subject = new Version038AddressChecks(Map.of());
 
     @Test
     void onlyBelow750IsSystem() {

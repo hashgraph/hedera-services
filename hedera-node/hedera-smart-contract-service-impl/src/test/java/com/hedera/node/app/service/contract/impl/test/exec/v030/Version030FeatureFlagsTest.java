@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.v030;
 
+import static com.hedera.node.app.service.contract.impl.exec.TransactionProcessor.CONFIG_CONTEXT_VARIABLE;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.v030.Version030FeatureFlags;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,5 +38,14 @@ class Version030FeatureFlagsTest {
     @Test
     void everythingIsDisabled() {
         assertFalse(subject.isImplicitCreationEnabled(frame));
+    }
+
+    @Test
+    void create2FeatureFlagWorks() {
+        final var config = new HederaTestConfigBuilder()
+                .withValue("contracts.allowCreate2", false)
+                .getOrCreateConfig();
+        given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);
+        assertFalse(subject.isCreate2Enabled(frame));
     }
 }

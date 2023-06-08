@@ -1,6 +1,27 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -15,19 +36,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Deque;
-
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.given;
-
 @ExtendWith(MockitoExtension.class)
 public class CreateOperationTestBase {
     protected static final long VALUE = 123_456L;
     protected static final long GAS_COST = 1_234L;
     protected static final long CHILD_STIPEND = 1_000_000L;
     protected static final Wei GAS_PRICE = Wei.of(1000L);
-    protected static final Bytes INITCODE = Bytes.wrap(new byte[]{1, 2, 3, 4, 5});
+    protected static final Bytes INITCODE = Bytes.wrap(new byte[] {1, 2, 3, 4, 5});
     protected static final Address RECIEVER_ADDRESS = Address.BLAKE2B_F_COMPRESSION;
     protected static final Address NEW_CONTRACT_ADDRESS = Address.BLS12_MAP_FP2_TO_G2;
     protected static final Address ORIGINATOR_ADDRESS = Address.BLS12_G1ADD;
@@ -35,18 +50,25 @@ public class CreateOperationTestBase {
 
     @Mock
     protected EVM evm;
+
     @Mock
     protected BlockValues blockValues;
+
     @Mock
     protected MessageFrame frame;
+
     @Mock
     protected GasCalculator gasCalculator;
+
     @Mock
     protected ProxyWorldUpdater worldUpdater;
+
     @Mock
     protected EvmAccount receiver;
+
     @Mock
     protected MutableAccount mutableReceiver;
+
     @Mock
     protected Deque<MessageFrame> stack;
 
@@ -62,7 +84,11 @@ public class CreateOperationTestBase {
     }
 
     protected void givenSpawnPrereqs() {
-        given(frame.stackSize()).willReturn(3);
+        givenSpawnPrereqs(3);
+    }
+
+    protected void givenSpawnPrereqs(final int stackSize) {
+        given(frame.stackSize()).willReturn(stackSize);
         given(frame.getStackItem(anyInt())).willReturn(Bytes.ofUnsignedLong(1));
         given(frame.getRemainingGas()).willReturn(GAS_COST);
         given(frame.getStackItem(0)).willReturn(Bytes.ofUnsignedLong(VALUE));

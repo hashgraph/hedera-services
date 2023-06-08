@@ -28,5 +28,9 @@ public interface AddressChecks {
 
     boolean isSystemAccount(@NonNull Address address);
 
+    default boolean isMissing(@NonNull Address address, @NonNull MessageFrame frame) {
+        return !isSystemAccount(address) && !isPresent(address, frame);
+    }
+
     boolean isHederaPrecompile(@NonNull Address address);
 }

@@ -1,23 +1,45 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
+
+import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.assertSameResult;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreate2Operation;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
-import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.assertSameResult;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-
 class CustomCreate2OperationTest extends CreateOperationTestBase {
-    private static final Bytes SALT = Bytes.fromHexString("0x2a");
+    private static final MutableBytes MUTABLE_INITCODE = MutableBytes.wrap(new byte[] {0x01, 0x02, 0x03});
+    private static final Address EIP_1014_ADDRESS = Address.fromHexString("5a86fe448f4811ccf76b71a442aa2e5849168ee8");
 
     @Mock
     private FeatureFlags featureFlags;
@@ -36,27 +58,47 @@ class CustomCreate2OperationTest extends CreateOperationTestBase {
     }
 
     @Test
-    void failsWhenMatchingHollowAccountExistsAndLazyCreationDisabled() {
-        given(featureFlags.isCreate2Enabled(frame)).willReturn(true);
-        given(frame.stackSize()).willReturn(4);
-        given(frame.getRemainingGas()).willReturn(GAS_COST);
+    void failsWhenPendingContractIsHollowAccountAndLazyCreationDisabled() {
+        givenSpawnPrereqs(4);
         given(gasCalculator.create2OperationGasCost(frame)).willReturn(GAS_COST);
         given(frame.getStackItem(0)).willReturn(Bytes.ofUnsignedLong(VALUE));
-        given(frame.getRecipientAddress()).willReturn(RECIEVER_ADDRESS);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.getAccount(RECIEVER_ADDRESS)).willReturn(receiver);
-        given(receiver.getMutable()).willReturn(mutableReceiver);
-        given(mutableReceiver.getBalance()).willReturn(Wei.of(VALUE));
-        given(frame.getMessageStackDepth()).willReturn(1023);
-        given(frame.getStackItem(anyInt())).willReturn(Bytes.ofUnsignedLong(1));
-
-//        given(worldUpdater.setupCreate2(RECIEVER_ADDRESS);
+        given(frame.readMemory(anyLong(), anyLong())).willReturn(INITCODE);
+        given(frame.readMutableMemory(anyLong(), anyLong())).willReturn(MUTABLE_INITCODE);
+        given(featureFlags.isCreate2Enabled(frame)).willReturn(true);
+        given(worldUpdater.isHollowAccount(EIP_1014_ADDRESS)).willReturn(true);
 
         final var expected = new Operation.OperationResult(GAS_COST, null);
         assertSameResult(expected, subject.execute(frame, evm));
 
-        verify(frame).readMutableMemory(1L, 1L);
-        verify(frame).popStackItems(3);
+        verify(worldUpdater, never()).setupCreate2(RECIEVER_ADDRESS, EIP_1014_ADDRESS);
+        verify(frame).popStackItems(4);
         verify(frame).pushStackItem(UInt256.ZERO);
+        verify(featureFlags).isImplicitCreationEnabled(frame);
+    }
+
+    @Test
+    void finalizesHollowAccountWhenPendingContractIsHollowAccountAndLazyCreationEnabled() {
+        final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
+        givenBuilderPrereqs();
+        givenSpawnPrereqs(4);
+        given(gasCalculator.create2OperationGasCost(frame)).willReturn(GAS_COST);
+        given(frame.getStackItem(0)).willReturn(Bytes.ofUnsignedLong(VALUE));
+        given(frame.readMemory(anyLong(), anyLong())).willReturn(INITCODE);
+        given(frame.readMutableMemory(anyLong(), anyLong())).willReturn(MUTABLE_INITCODE);
+        given(featureFlags.isCreate2Enabled(frame)).willReturn(true);
+        given(worldUpdater.isHollowAccount(EIP_1014_ADDRESS)).willReturn(true);
+        given(featureFlags.isImplicitCreationEnabled(frame)).willReturn(true);
+
+        final var expected = new Operation.OperationResult(GAS_COST, null);
+        assertSameResult(expected, subject.execute(frame, evm));
+
+        verify(worldUpdater).setupCreate2(RECIEVER_ADDRESS, EIP_1014_ADDRESS);
+
+        verify(stack).addFirst(frameCaptor.capture());
+        final var childFrame = frameCaptor.getValue();
+        childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
+        childFrame.notifyCompletion();
+        verify(frame).pushStackItem(Words.fromAddress(EIP_1014_ADDRESS));
+        verify(worldUpdater).finalizeHollowAccount(EIP_1014_ADDRESS);
     }
 }

@@ -105,7 +105,6 @@ public class ProxyWorldUpdater implements WorldUpdater {
     }
 
     // --- Some Hedera-specific methods ---
-
     /**
      * Returns whether this address refers to a hollow account (i.e. a lazy-created account that
      * has not yet been completed as either an EOA with a cryptographic key, or a contract created
@@ -147,6 +146,18 @@ public class ProxyWorldUpdater implements WorldUpdater {
         setupPendingCreation(receiver, alias);
     }
 
+    /**
+     * Finalizes the creation of a hollow account as a contract created via CREATE2. This step doesn't
+     * exist in Besu because there contracts are just normal accounts with code; but in Hedera, there
+     * are a few other properties that need to be set to "convert" an account into a contract.
+     *
+     * @param alias the hollow account to be finalized as a contract
+     */
+    public void finalizeHollowAccount(@NonNull final Address alias) {
+        throw new AssertionError("Not implemented");
+    }
+
+    // --- The Besu WorldUpdater interface ---
     /**
      * {@inheritDoc}
      */

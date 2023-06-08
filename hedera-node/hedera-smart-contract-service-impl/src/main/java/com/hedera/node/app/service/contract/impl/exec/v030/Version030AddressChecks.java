@@ -29,11 +29,11 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  * The initial implementation of {@link AddressChecks} from v0.30; did not have a concept of system accounts.
  */
 @Singleton
-public class SystemAgnosticAddressChecks implements AddressChecks {
+public class Version030AddressChecks implements AddressChecks {
     private final int[] precompileAccountNumbers;
 
     @Inject
-    public SystemAgnosticAddressChecks(@NonNull final Map<Address, PrecompiledContract> hederaPrecompiles) {
+    public Version030AddressChecks(@NonNull final Map<Address, PrecompiledContract> hederaPrecompiles) {
         precompileAccountNumbers = new int[hederaPrecompiles.size()];
         int i = 0;
         for (final var iter = hederaPrecompiles.keySet().iterator(); iter.hasNext(); ) {
