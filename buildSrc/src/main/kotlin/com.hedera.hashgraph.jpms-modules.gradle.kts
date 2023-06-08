@@ -65,6 +65,7 @@ dependencies.components {
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-netty")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-protobuf")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-protobuf-lite")
+    withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-services")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-stub")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-testing")
 
