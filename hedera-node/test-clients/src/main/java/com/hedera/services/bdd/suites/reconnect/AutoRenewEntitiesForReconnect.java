@@ -32,6 +32,8 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices;
+import com.hedera.services.bdd.suites.tools.annotation.BddPrerequisiteSpec;
+import com.hedera.services.bdd.suites.tools.annotation.BddPrerequisiteSpec.Scope;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -104,6 +106,7 @@ public class AutoRenewEntitiesForReconnect extends HapiSuite {
      *
      * @return a {@link HapiSpec} to do some crypto transfer transactions before reconnect
      */
+    @BddPrerequisiteSpec(Scope.SUITE)
     public static HapiSpec runTransfersBeforeReconnect() {
         return defaultHapiSpec("runTransfersBeforeReconnect")
                 .given()

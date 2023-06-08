@@ -42,6 +42,8 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.tools.annotation.BddPrerequisiteSpec;
+import com.hedera.services.bdd.suites.tools.annotation.BddPrerequisiteSpec.Scope;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -71,6 +73,7 @@ public class TargetNetworkPrep extends HapiSuite {
         return List.of(ensureSystemStateAsExpectedWithSystemDefaultFiles());
     }
 
+    @BddPrerequisiteSpec(Scope.GLOBAL)
     private HapiSpec ensureSystemStateAsExpectedWithSystemDefaultFiles() {
         final var emptyKey =
                 Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();

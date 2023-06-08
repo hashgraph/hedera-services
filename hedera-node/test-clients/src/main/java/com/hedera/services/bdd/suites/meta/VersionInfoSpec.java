@@ -21,8 +21,8 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.BddTestNameDoesNotMatchMethodName;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.tools.annotation.BddTestNameDoesNotMatchMethodName;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;

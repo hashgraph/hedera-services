@@ -23,9 +23,9 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Sets;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
-import com.hedera.services.bdd.suites.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.perf.crypto.AbstractCryptoTransferLoadTest;
+import com.hedera.services.bdd.suites.tools.annotation.BddMethodIsNotATest;
 import com.hedera.services.bdd.suites.utils.CallStack;
 import com.hedera.services.bdd.suites.utils.CallStack.Towards;
 import com.hedera.services.bdd.suites.utils.CallStack.WithLineNumbers;
@@ -38,7 +38,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map.Entry;
@@ -94,6 +93,41 @@ public class HapiTestRegistrar {
         public String name() {
             return method.getName();
         }
+
+        @NonNull
+        public String nameWithoutSuffix() {
+            return stripSuffixes(name());
+        }
+
+        static Collection<String> specSuffixes = Set.of("_Eth", "WithLongTermEnabled");
+
+        @NonNull
+        static String stripSuffixes(@NonNull String s) {
+            final var sb = new StringBuilder(s);
+
+            Change changed = Change.HAS;
+            while (changed == Change.HAS) {
+                changed = Change.HAS_NOT;
+                for (final var suffix : specSuffixes) {
+                    changed = stripSuffix(sb, suffix);
+                    if (changed == Change.HAS) break;
+                }
+            }
+            return sb.toString();
+        }
+
+        enum Change {
+            HAS,
+            HAS_NOT
+        };
+
+        @NonNull
+        static Change stripSuffix(@NonNull final StringBuilder sb, @NonNull final String suffix) {
+            final int i = sb.lastIndexOf(suffix);
+            if (i < 0 || i + suffix.length() < sb.length()) return Change.HAS_NOT;
+            sb.setLength(i);
+            return Change.HAS;
+        }
     }
 
     Multimap<String, RegisteredSuite> suites = createMultimap(250);
@@ -120,6 +154,7 @@ public class HapiTestRegistrar {
         final var dump = callStack.dump(WithLineNumbers.YES);
 
         final var method = getSpecMethodFromStack(callStack);
+        final var methodName = method.getName();
         final var methodKlass = method.getDeclaringClass();
         final var methodKlassName = methodKlass.getSimpleName();
         final var regSpec = new RegisteredSpec(spec, method, currentSuiteKind, dump);
@@ -183,6 +218,7 @@ public class HapiTestRegistrar {
     public void analyzeRegistry(
             @NonNull final Optional<ManifestFile> manifest,
             @NonNull final Optional<IgnoresFile> ignores,
+            final boolean removeErrorSuites,
             @NonNull Collection<String> suitesInError) {
         final var sb = new StringBuilder(10000);
 
@@ -242,9 +278,10 @@ public class HapiTestRegistrar {
                 final var r = reflection.getClassesFromNames(ignoresFile.suitesWithNoSpecs());
                 r.onOk(swns::removeAll);
             });
-            {
+            if (removeErrorSuites) {
                 final var packagesWithSuites = reflection.getPackagesUnder(hapiSuiteRootPackageName);
-                final var r = reflection.getClassesFromSimpleNames(suitesInError, hapiSuiteRootPackageName, packagesWithSuites);
+                final var r = reflection.getClassesFromSimpleNames(
+                        suitesInError, hapiSuiteRootPackageName, packagesWithSuites);
                 r.onOk(swns::removeAll);
             }
             if (!swns.isEmpty()) {

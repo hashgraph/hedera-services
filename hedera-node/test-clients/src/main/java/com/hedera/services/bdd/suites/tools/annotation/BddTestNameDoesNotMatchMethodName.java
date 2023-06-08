@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites;
+package com.hedera.services.bdd.suites.tools.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

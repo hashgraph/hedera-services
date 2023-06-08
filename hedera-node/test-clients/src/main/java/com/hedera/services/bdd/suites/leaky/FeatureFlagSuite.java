@@ -57,6 +57,8 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.FeatureFlags;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.tools.annotation.BddPrerequisiteSpec;
+import com.hedera.services.bdd.suites.tools.annotation.BddPrerequisiteSpec.Scope;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -77,6 +79,7 @@ public class FeatureFlagSuite extends HapiSuite {
                 enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting());
     }
 
+    @BddPrerequisiteSpec(Scope.GLOBAL)
     private HapiSpec disableAllFeatureFlagsAndConfirmNotSupported() {
         return defaultHapiSpec("disableAllFeatureFlagsAndConfirmNotSupported")
                 .given(overridingAllOf(FeatureFlags.FEATURE_FLAGS.allDisabled()))
@@ -88,6 +91,7 @@ public class FeatureFlagSuite extends HapiSuite {
                         confirmHollowAccountCreationNotSupported()));
     }
 
+    @BddPrerequisiteSpec(Scope.GLOBAL)
     private HapiSpec enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting() {
         return defaultHapiSpec("enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting")
                 .given()

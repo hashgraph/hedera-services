@@ -67,6 +67,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.tools.annotation.BddSpecTransformer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1522,6 +1523,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                         .overridingProps(Map.of(SCHEDULING_LONG_TERM_ENABLED, DEFAULT_LONG_TERM_ENABLED)));
     }
 
+    @BddSpecTransformer
     public static List<HapiSpec> withAndWithoutLongTermEnabled(Supplier<List<HapiSpec>> getSpecs) {
         List<HapiSpec> list = new ArrayList<>();
         list.add(disableLongTermScheduledTransactions());
@@ -1534,6 +1536,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
         return list;
     }
 
+    @BddSpecTransformer
     public static List<HapiSpec> withAndWithoutLongTermEnabled(Function<Boolean, List<HapiSpec>> getSpecs) {
         List<HapiSpec> list = new ArrayList<>();
         list.add(disableLongTermScheduledTransactions());

@@ -14,14 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites;
+package com.hedera.services.bdd.suites.tools.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Used in BDD suites to mark methods that, though returning `HapiSpec`, are not themselves test methods. */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface BddMethodIsNotATest {}
+public @interface BddPrerequisiteSpec {
+    public enum Scope {
+        GLOBAL,
+        SUITE
+    };
+
+    Scope value() default Scope.GLOBAL;
+}

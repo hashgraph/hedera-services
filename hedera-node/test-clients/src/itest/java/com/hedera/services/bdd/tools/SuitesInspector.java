@@ -32,14 +32,18 @@ import com.hedera.services.bdd.tools.impl.SuiteSearcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -117,6 +121,9 @@ public class SuitesInspector implements Callable<Integer> {
             names = {"-m", "--manifest", "--manifest-file"},
             description = "File containing manifest of all suites and specs")
     Optional<Path> manifestPath;
+
+    @Option(names = {"--remove-error-suites"})
+    public boolean removeErrorSuites;
 
     @Option(
             names = {"-v", "--verbose"},
@@ -369,7 +376,7 @@ public class SuitesInspector implements Callable<Integer> {
     }
 
     @NonNull
-    String getSuiteFromError(@NonNull final String message) {
+    static String getSuiteFromError(@NonNull final String message) {
         final var m = Pattern.compile("^.* from suite (\\S+) [(].*$").matcher(message);
         if (m.find()) return m.group(1);
         throw new IllegalStateException("suite name missing in message where it was expected");
@@ -382,7 +389,7 @@ public class SuitesInspector implements Callable<Integer> {
         final var errors = results.getRight();
         final var suitesInError = errors.stream()
                 .filter(s -> s.contains("tests from suite"))
-                .map(this::getSuiteFromError)
+                .map(SuitesInspector::getSuiteFromError)
                 .toList();
 
         if (!errors.isEmpty()) {
@@ -392,7 +399,7 @@ public class SuitesInspector implements Callable<Integer> {
             System.out.printf("no errors while instantiating specs%n");
         }
 
-        registrar.doPostRegistration().analyzeRegistry(manifest, ignores, suitesInError);
+        registrar.doPostRegistration().analyzeRegistry(manifest, ignores, removeErrorSuites, suitesInError);
 
         final var searchedSuiteClasses = new SuiteSearcher().getAllHapiSuiteSubclasses();
 
@@ -431,16 +438,23 @@ public class SuitesInspector implements Callable<Integer> {
                 .distinct()
                 .toList();
 
+        System.out.printf("%n-------%n%n");
         System.out.printf("direct   suite names: %s%n", directSuiteNames);
+        System.out.printf("%n-------%n%n");
         System.out.printf("registry suite names: %s%n", registrySuiteNames);
 
-        final var suitesInRegistryButNotDirect =
-                Sets.difference(Set.copyOf(registrySuiteNames), Set.copyOf(directSuiteNames));
+        final var suitesInRegistryButNotDirect = Sets.difference(
+                        Set.copyOf(registrySuiteNames), Set.copyOf(directSuiteNames))
+                .copyInto(new HashSet<>(registrySuiteNames.size() + directSuiteNames.size()));
+        if (removeErrorSuites) suitesInRegistryButNotDirect.removeAll(suitesInError);
+
         final var suitesDirectButNotInRegistry =
                 Sets.difference(Set.copyOf(directSuiteNames), Set.copyOf(registrySuiteNames));
 
-        System.out.printf("suites in registry but not direct:%n%s%n", suitesInRegistryButNotDirect);
-        System.out.printf("suites direct but not in registry:%n%s%n", suitesDirectButNotInRegistry);
+        if (!suitesInRegistryButNotDirect.isEmpty())
+            System.out.printf("*** suites in registry but not direct:%n%s%n", suitesInRegistryButNotDirect);
+        if (!suitesDirectButNotInRegistry.isEmpty())
+            System.out.printf("*** suites direct but not in registry:%n%s%n", suitesDirectButNotInRegistry);
 
         final var directSpecNames = tests.stream()
                 .map(t -> t.suite().name() + '.' + t.spec().getName())
@@ -471,8 +485,15 @@ public class SuitesInspector implements Callable<Integer> {
         System.out.printf("%n-------%n%n");
         System.out.printf("registry spec names: %s%n", registrySpecNames);
 
-        final var specsInRegistryButNotDirect =
-                Sets.difference(Set.copyOf(registrySpecNames), Set.copyOf(directSpecNames));
+        Set<String> specsInRegistryButNotDirect = Sets.difference(
+                        Set.copyOf(registrySpecNames), Set.copyOf(directSpecNames))
+                .copyInto(new HashSet<>(registrySpecNames.size() + directSpecNames.size()));
+        if (removeErrorSuites) {
+            final Predicate<String> anyOfPrefixes = startsWithAnyOfPredicate(suitesInError);
+            specsInRegistryButNotDirect = specsInRegistryButNotDirect.stream()
+                    .filter(s -> !anyOfPrefixes.test(s))
+                    .collect(Collectors.toSet());
+        }
         final var specsDirectButNotInRegistry =
                 Sets.difference(Set.copyOf(directSpecNames), Set.copyOf(registrySpecNames));
 
@@ -508,22 +529,44 @@ public class SuitesInspector implements Callable<Integer> {
         final var suitesFromSearchButNotFromRegistry = Sets.difference(suiteNamesFromSearch, suiteNamesInRegistry);
 
         System.out.printf("%n-------%n%n");
-        System.out.printf(
-                "*** %d suites in registry but not found in search: %s%n",
-                suitesInRegistryButNotFromSearch.size(),
-                suitesInRegistryButNotFromSearch.stream()
-                        .sorted()
-                        .toList()
-                        .toString()
-                        .replace(", ", "\n"));
-        System.out.printf(
-                "*** %d suites found in search but not in registry: %s%n",
-                suitesFromSearchButNotFromRegistry.size(),
-                suitesFromSearchButNotFromRegistry.stream()
-                        .sorted()
-                        .toList()
-                        .toString()
-                        .replace(", ", "\n"));
+        if (!suitesInRegistryButNotFromSearch.isEmpty())
+            System.out.printf(
+                    "*** %d suites in registry but not found in search: %s%n",
+                    suitesInRegistryButNotFromSearch.size(),
+                    suitesInRegistryButNotFromSearch.stream()
+                            .sorted()
+                            .toList()
+                            .toString()
+                            .replace(", ", "\n"));
+        if (!suitesFromSearchButNotFromRegistry.isEmpty())
+            System.out.printf(
+                    "*** %d suites found in search but not in registry: %s%n",
+                    suitesFromSearchButNotFromRegistry.size(),
+                    suitesFromSearchButNotFromRegistry.stream()
+                            .sorted()
+                            .toList()
+                            .toString()
+                            .replace(", ", "\n"));
+    }
+
+    // returns a predicate that tests if a string starts with a value
+    static Predicate<String> startsWithPredicate(@NonNull final String prefix) {
+        return s -> s.startsWith(prefix);
+    }
+
+    // returns a predicate that tests if _any_ of the predicates supplied returns true on the given object
+    @SafeVarargs
+    static <T> Predicate<T> anyPredicateMatchesPredicate(@NonNull final Predicate<T>... predicates) {
+        return s -> Arrays.stream(predicates).anyMatch(p -> p.test(s));
+    }
+
+    @SuppressWarnings("unchecked")
+    static Predicate<String> startsWithAnyOfPredicate(@NonNull final Collection<String> prefixes) {
+        final var prefixPredicates = (Predicate<String>[]) prefixes.stream()
+                .map(String::toLowerCase)
+                .map(SuitesInspector::startsWithPredicate)
+                .toArray(Predicate[]::new);
+        return anyPredicateMatchesPredicate(prefixPredicates);
     }
 
     void doSuiteSearch() {

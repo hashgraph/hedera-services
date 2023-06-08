@@ -75,9 +75,9 @@ class CallStackTest {
     @Test
     void getTest() {
         final var sut = getKnownTestStackLimitedTo(5);
-        softly.assertThat(sut.dump(sut.get(0), WithLineNumbers.NO))
+        softly.assertThat(CallStack.dump(sut.get(0), WithLineNumbers.NO))
                 .isEqualTo("com.hedera.services.bdd.suites.utils.CallStack.grabFrames");
-        softly.assertThat(sut.dump(sut.get(4), WithLineNumbers.NO))
+        softly.assertThat(CallStack.dump(sut.get(4), WithLineNumbers.NO))
                 .isEqualTo("com.hedera.services.bdd.suites.utils.CallStackTest$L3.knownLevel3");
 
         softly.assertThatExceptionOfType(IndexOutOfBoundsException.class).isThrownBy(() -> sut.get(-1));
@@ -114,7 +114,7 @@ class CallStackTest {
     }
 
     @NonNull
-    Predicate<StackFrame> getPartialMethodNameMatcher(@NonNull final String name) {
+    static Predicate<StackFrame> getPartialMethodNameMatcher(@NonNull final String name) {
         return sf -> sf.getMethodName().contains(name);
     }
 
@@ -203,10 +203,10 @@ class CallStackTest {
     CallStack knownTestStackLimitedToKlass;
 
     String knownLevel1(@NonNull final String sl1) {
-        return knownLevel2(823).toString() + sl1;
+        return knownLevel2().toString() + sl1;
     }
 
-    Integer knownLevel2(final int n) {
+    Integer knownLevel2() {
         final var l3 = new L3();
         return l3.knownLevel3("xray");
     }
