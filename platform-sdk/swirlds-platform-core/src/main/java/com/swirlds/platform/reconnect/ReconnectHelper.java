@@ -121,8 +121,8 @@ public class ReconnectHelper {
         logger.info(RECONNECT.getMarker(), () -> new ReconnectStartPayload(
                         "Starting reconnect in role of the receiver.",
                         true,
-                        conn.getSelfId().getIdAsInt(),
-                        conn.getOtherId().getIdAsInt(),
+                        conn.getSelfId().id(),
+                        conn.getOtherId().id(),
                         lastCompleteRoundSupplier.getAsLong())
                 .toString());
 
@@ -135,8 +135,8 @@ public class ReconnectHelper {
         logger.info(RECONNECT.getMarker(), () -> new ReconnectFinishPayload(
                         "Finished reconnect in the role of the receiver.",
                         true,
-                        conn.getSelfId().getIdAsInt(),
-                        conn.getOtherId().getIdAsInt(),
+                        conn.getSelfId().id(),
+                        conn.getOtherId().id(),
                         lastRoundReceived)
                 .toString());
 

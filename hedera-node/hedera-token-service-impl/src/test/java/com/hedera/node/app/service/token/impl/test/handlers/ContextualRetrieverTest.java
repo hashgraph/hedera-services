@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.node.app.service.token.impl.handlers.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.mockito.ArgumentMatchers.notNull;
 
@@ -23,7 +24,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.handlers.ContextualRetriever;
 import com.hedera.node.app.spi.workflows.HandleException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -42,18 +42,16 @@ class ContextualRetrieverTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void getIfUsable_nullArg() {
-        Assertions.assertThatThrownBy(() -> ContextualRetriever.getIfUsable(null, tokenStore))
-                .isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() -> getIfUsable(null, tokenStore)).isInstanceOf(NullPointerException.class);
 
-        Assertions.assertThatThrownBy(() -> ContextualRetriever.getIfUsable(TOKEN_ID_45, null))
-                .isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() -> getIfUsable(TOKEN_ID_45, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void getIfUsable_nullToken() {
         BDDMockito.given(tokenStore.get(notNull())).willReturn(null);
 
-        Assertions.assertThatThrownBy(() -> ContextualRetriever.getIfUsable(TOKEN_ID_45, tokenStore))
+        Assertions.assertThatThrownBy(() -> getIfUsable(TOKEN_ID_45, tokenStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_TOKEN_ID));
     }
@@ -67,7 +65,7 @@ class ContextualRetrieverTest {
                         .paused(false)
                         .build());
 
-        Assertions.assertThatThrownBy(() -> ContextualRetriever.getIfUsable(TOKEN_ID_45, tokenStore))
+        Assertions.assertThatThrownBy(() -> getIfUsable(TOKEN_ID_45, tokenStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.TOKEN_WAS_DELETED));
     }
@@ -81,7 +79,7 @@ class ContextualRetrieverTest {
                         .paused(true)
                         .build());
 
-        Assertions.assertThatThrownBy(() -> ContextualRetriever.getIfUsable(TOKEN_ID_45, tokenStore))
+        Assertions.assertThatThrownBy(() -> getIfUsable(TOKEN_ID_45, tokenStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.TOKEN_IS_PAUSED));
     }
@@ -95,7 +93,7 @@ class ContextualRetrieverTest {
                         .paused(false)
                         .build());
 
-        final var result = ContextualRetriever.getIfUsable(TOKEN_ID_45, tokenStore);
+        final var result = getIfUsable(TOKEN_ID_45, tokenStore);
         Assertions.assertThat(result).isNotNull();
     }
 }
