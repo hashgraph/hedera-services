@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.utils;
+package com.hedera.services.bdd.tools.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.services.bdd.suites.utils.CallStack.WithLineNumbers;
+import com.hedera.services.bdd.tools.impl.CallStack.WithLineNumbers;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.StackWalker.StackFrame;
 import java.util.List;
@@ -42,15 +42,15 @@ class CallStackTest {
         final var expected =
                 """
             stack (depth captured: 9)
-             0: com.hedera.services.bdd.suites.utils.CallStack.grabFrames
-             1: com.hedera.services.bdd.suites.utils.CallStackTest$L5.knownLevel6
-             2: com.hedera.services.bdd.suites.utils.CallStackTest$L3.knownLevel5
-             3: com.hedera.services.bdd.suites.utils.CallStackTest$L4.knownLevel4
-             4: com.hedera.services.bdd.suites.utils.CallStackTest$L3.knownLevel3
-             5: com.hedera.services.bdd.suites.utils.CallStackTest.knownLevel2
-             6: com.hedera.services.bdd.suites.utils.CallStackTest.knownLevel1
-             7: com.hedera.services.bdd.suites.utils.CallStackTest.getKnownTestStackLimitedTo
-             8: com.hedera.services.bdd.suites.utils.CallStackTest.dumpTest
+             0: com.hedera.services.bdd.tools.impl.CallStack.grabFrames
+             1: com.hedera.services.bdd.tools.impl.CallStackTest$L5.knownLevel6
+             2: com.hedera.services.bdd.tools.impl.CallStackTest$L3.knownLevel5
+             3: com.hedera.services.bdd.tools.impl.CallStackTest$L4.knownLevel4
+             4: com.hedera.services.bdd.tools.impl.CallStackTest$L3.knownLevel3
+             5: com.hedera.services.bdd.tools.impl.CallStackTest.knownLevel2
+             6: com.hedera.services.bdd.tools.impl.CallStackTest.knownLevel1
+             7: com.hedera.services.bdd.tools.impl.CallStackTest.getKnownTestStackLimitedTo
+             8: com.hedera.services.bdd.tools.impl.CallStackTest.dumpTest
              """;
         final var sut = getKnownTestStackLimitedTo(9);
         final var actual = sut.dump(WithLineNumbers.NO); // Not easy to test with `WithLineNumbers.YES`
@@ -76,9 +76,9 @@ class CallStackTest {
     void getTest() {
         final var sut = getKnownTestStackLimitedTo(5);
         softly.assertThat(CallStack.dump(sut.get(0), WithLineNumbers.NO))
-                .isEqualTo("com.hedera.services.bdd.suites.utils.CallStack.grabFrames");
+                .isEqualTo("com.hedera.services.bdd.tools.impl.CallStack.grabFrames");
         softly.assertThat(CallStack.dump(sut.get(4), WithLineNumbers.NO))
-                .isEqualTo("com.hedera.services.bdd.suites.utils.CallStackTest$L3.knownLevel3");
+                .isEqualTo("com.hedera.services.bdd.tools.impl.CallStackTest$L3.knownLevel3");
 
         softly.assertThatExceptionOfType(IndexOutOfBoundsException.class).isThrownBy(() -> sut.get(-1));
         softly.assertThatExceptionOfType(IndexOutOfBoundsException.class).isThrownBy(() -> sut.get(5));

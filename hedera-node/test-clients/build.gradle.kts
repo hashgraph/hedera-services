@@ -30,7 +30,8 @@ tasks.test {
     // We should maybe remove them from src/test into src/eet,
     // so it can be part of an eet test task instead. See issue #3412
     // (https://github.com/hashgraph/hedera-services/issues/3412).
-    exclude("**/*")
+    include("com/hedera/services/bdd/suites/**")
+    include("com/hedera/services/bdd/tools/**")
 }
 
 configurations { evaluationDependsOn(":hedera-node:node-app-hapi-fees") }
@@ -68,6 +69,7 @@ dependencies {
         implementation(gav("com.github.docker.java.api"))
         implementation(gav("com.github.spotbugs.annotations"))
         implementation(gav("grpc.netty"))
+        implementation(gav("io.github.classgraph"))
         implementation(gav("io.grpc"))
         implementation(gav("io.netty.handler"))
         implementation(gav("org.apache.commons.lang3"))
@@ -84,12 +86,23 @@ dependencies {
         itestImplementation(gav("org.testcontainers"))
         itestImplementation(gav("org.testcontainers.junit.jupiter"))
         itestImplementation(project(":hedera-node:node-hapi"))
+        itestImplementation(gav("com.github.spotbugs.annotations"))
         itestImplementation(gav("org.junit.jupiter.api"))
+        itestImplementation(gav("org.junit.jupiter.api"))
+        itestImplementation(gav("org.junitpioneer"))
+        itestImplementation(gav("org.assertj.core"))
+        itestImplementation(gav("io.github.classgraph"))
 
         eetImplementation(project(path))
         eetImplementation(gav("org.junit.jupiter.api"))
         eetImplementation(gav("org.testcontainers"))
         eetImplementation(gav("org.testcontainers.junit.jupiter"))
+
+        testImplementation(project(path))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.junitpioneer"))
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("io.github.classgraph"))
     }
 }
 

@@ -30,6 +30,7 @@ import com.hedera.services.bdd.tools.impl.JsonFileLoader;
 import com.hedera.services.bdd.tools.impl.SuiteProvider;
 import com.hedera.services.bdd.tools.impl.SuiteSearcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import io.github.classgraph.ClassGraphException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -401,7 +402,7 @@ public class SuitesInspector implements Callable<Integer> {
 
         registrar.doPostRegistration().analyzeRegistry(manifest, ignores, removeErrorSuites, suitesInError);
 
-        final var searchedSuiteClasses = new SuiteSearcher().getAllHapiSuiteSubclasses();
+        final var searchedSuiteClasses = new SuiteSearcher().getAllHapiSuiteConcreteSubclasses();
 
         // Debugging code to make sure we're getting all tests - counts are different - no conceth
         // via registry:     89 suites, 879 specs
@@ -523,7 +524,7 @@ public class SuitesInspector implements Callable<Integer> {
                 .map(Class::getName)
                 .collect(Collectors.toSet());
         final var suiteNamesFromSearch =
-                searchedSuiteClasses.getLeft().stream().map(Class::getName).collect(Collectors.toSet());
+                searchedSuiteClasses.stream().map(Class::getName).collect(Collectors.toSet());
 
         final var suitesInRegistryButNotFromSearch = Sets.difference(suiteNamesInRegistry, suiteNamesFromSearch);
         final var suitesFromSearchButNotFromRegistry = Sets.difference(suiteNamesFromSearch, suiteNamesInRegistry);
@@ -570,14 +571,17 @@ public class SuitesInspector implements Callable<Integer> {
     }
 
     void doSuiteSearch() {
-        final var suiteKlasses = new SuiteSearcher().getAllHapiSuiteSubclasses();
-        System.out.printf("%d suites found by search%n", suiteKlasses.getLeft().size());
-        if (!suiteKlasses.getRight().isEmpty()) {
-            System.out.printf("%d errors found:%n", suiteKlasses.getRight().size());
-            for (final var err : suiteKlasses.getRight()) System.out.printf("   %s%n", err);
+        List<Class<?>> suiteKlasses;
+        try {
+            final var searcher = new SuiteSearcher();
+            suiteKlasses = searcher.getAllHapiSuiteConcreteSubclasses();
+        } catch (final ClassGraphException ex) {
+            System.err.printf("*** Error while scanning for BDD suites and methods: %s%n", ex);
+            return;
         }
+        System.out.printf("%d suites found by search%n", suiteKlasses.size());
         for (final var suiteName :
-                suiteKlasses.getLeft().stream().map(Class::getName).sorted().toList()) {
+                suiteKlasses.stream().map(Class::getName).sorted().toList()) {
             System.out.printf("  %s%n", suiteName);
         }
     }

@@ -16,23 +16,22 @@
 
 package com.hedera.services.bdd.tools.impl;
 
+import static com.hedera.services.bdd.tools.impl.SuiteRepoParameters.hapiAbstractSuiteBases;
+import static com.hedera.services.bdd.tools.impl.SuiteRepoParameters.hapiSuiteRootPackageName;
 import static java.util.Map.Entry.comparingByKey;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Sets;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.perf.crypto.AbstractCryptoTransferLoadTest;
 import com.hedera.services.bdd.suites.tools.annotation.BddMethodIsNotATest;
-import com.hedera.services.bdd.suites.utils.CallStack;
-import com.hedera.services.bdd.suites.utils.CallStack.Towards;
-import com.hedera.services.bdd.suites.utils.CallStack.WithLineNumbers;
 import com.hedera.services.bdd.tools.SuiteKind;
 import com.hedera.services.bdd.tools.SuitesInspector;
 import com.hedera.services.bdd.tools.SuitesInspector.IgnoresFile;
 import com.hedera.services.bdd.tools.SuitesInspector.ManifestFile;
+import com.hedera.services.bdd.tools.impl.CallStack.Towards;
+import com.hedera.services.bdd.tools.impl.CallStack.WithLineNumbers;
 import com.swirlds.common.AutoCloseableNonThrowing;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -119,7 +118,7 @@ public class HapiTestRegistrar {
         enum Change {
             HAS,
             HAS_NOT
-        };
+        }
 
         @NonNull
         static Change stripSuffix(@NonNull final StringBuilder sb, @NonNull final String suffix) {
@@ -296,17 +295,13 @@ public class HapiTestRegistrar {
         if (!sb.isEmpty()) System.err.print(sb);
     }
 
-    static final String hapiSuiteRootPackageName = "com.hedera.services.bdd.suites";
-    static final Set<Class<?>> hapiSuiteBases =
-            Set.of(HapiSuite.class, LoadTest.class, AbstractCryptoTransferLoadTest.class);
-
     /** Given a stack trace which is calling out to us when creating a `HapiSuite` get the suite class */
     @NonNull
     static Class<?> getSuiteClassFromStack(@NonNull final CallStack callStack) {
         // Look for _deepest_ `HapiSuite` frame on stack (should be method `<init>`) - suite class is one frame
         // deeper than that
         final var hapiSuiteFrame = callStack.getTopmostFrameOfAnyOfTheseClassesSatisfying(
-                hapiSuiteBases, sf -> sf.getMethodName().equals("<init>"));
+                hapiAbstractSuiteBases, sf -> sf.getMethodName().equals("<init>"));
         var targetSuiteFrame =
                 hapiSuiteFrame.orElseThrow(() -> new IllegalStateException("HapiSuite.<init> frame not found"));
         while (true) {
@@ -316,7 +311,7 @@ public class HapiTestRegistrar {
                 throw new IllegalStateException("Cannot find most derived suite class from HapiSuite");
             }
             final var targetSuiteFrameClass = targetSuiteFrame.getDeclaringClass();
-            if (!hapiSuiteBases.contains(targetSuiteFrameClass)) return targetSuiteFrameClass;
+            if (!hapiAbstractSuiteBases.contains(targetSuiteFrameClass)) return targetSuiteFrameClass;
         }
     }
 

@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.tools.annotation;
 
-import com.hedera.services.bdd.suites.tools.annotation.BddPrerequisiteSpec.Scope;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -24,6 +23,4 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface BddSpecTransformer {
-    Scope value() default Scope.GLOBAL;
-}
+public @interface BddSpecTransformer {}

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.tools.impl;
+package com.hedera.services.bdd.tools.impl;
 
 /* This code adapted from https://github.com/favware/java-result, by https://favware.tech,
   released under the MIT license as follows:

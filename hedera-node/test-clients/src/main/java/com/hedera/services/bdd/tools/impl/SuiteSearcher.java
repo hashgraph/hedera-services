@@ -17,53 +17,124 @@
 package com.hedera.services.bdd.tools.impl;
 
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.tools.annotation.BddPrerequisiteSpec;
+import com.swirlds.common.AutoCloseableNonThrowing;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import io.github.classgraph.AnnotationEnumValue;
 import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ClassGraphException;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
+import io.github.classgraph.ScanResult;
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.commons.lang3.tuple.Pair;import org.assertj.core.api.SoftAssertions;
-import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
-import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
-import org.junit.jupiter.api.Test;
-import org.assertj.core.api.SoftAssertions;
-import org.junit.jupiter.api.extension.ExtendWith;
-
+import java.util.Optional;
+import java.util.function.Supplier;
 
 /** Uses the classgraph library to search for `HapiSuite`s and other interesting things relevant to `SuitesInspector */
-public class SuiteSearcher {
+public class SuiteSearcher implements AutoCloseableNonThrowing {
+
+    Optional<ScanResult> scanResult = Optional.empty();
+
+    /* Caller do the scan before attempting to get any information */
+    public void doScan() {
+        if (scanResult.isEmpty())
+            scanResult = Optional.of(new ClassGraph()
+                    .whitelistJars(SuiteRepoParameters.hapiSuiteContainingJars)
+                    .whitelistPackages(SuiteRepoParameters.hapiSuiteRootPackageName)
+                    .enableClassInfo()
+                    .ignoreClassVisibility()
+                    .enableMethodInfo()
+                    .ignoreMethodVisibility()
+                    .enableAnnotationInfo()
+                    .disableRuntimeInvisibleAnnotations()
+                    .enableInterClassDependencies()
+                    .initializeLoadedClasses()
+                    .scan()); // can throw ClassGraphException (derived from IllegalArgumentException)
+    }
+
+    @Override
+    public void close() {
+        scanResult.ifPresent(ScanResult::close);
+        scanResult = Optional.empty();
+    }
+
+    @NonNull
+    Optional<ScanResult> getScan() {
+        doScan();
+        return scanResult;
+    }
+
+    Supplier<IllegalStateException> scanInvalid =
+            () -> new IllegalStateException("Classgraph scan invalid (must have thrown an exception when scanning)");
 
     /* Search repo (i.e., jars) looking for all concrete subclasses of `HapiSuite` */
-    public Pair<List<Class<?>>, List<String>> getAllHapiSuiteConcreteSubclasses() {
+    @NonNull
+    public List<Class<?>> getAllHapiSuiteConcreteSubclasses() {
+        doScan();
         return getFilteredHapiSuiteSubclasses(ci -> !ci.isAbstract());
     }
 
     /* Search repo (i.e., jars) looking for all abstract subclasses of `HapiSuite` */
-    public Pair<List<Class<?>>, List<String>> getAllHapiSuiteAbstractSubclasses() {
+    @NonNull
+    public List<Class<?>> getAllHapiSuiteAbstractSubclasses() {
+        doScan();
         final var subclasses = getFilteredHapiSuiteSubclasses(ClassInfo::isAbstract);
-        final var hapiSuiteSubclasses = new ArrayList<Class<?>>(1 + subclasses.getLeft().size());
+        final var hapiSuiteSubclasses = new ArrayList<Class<?>>(1 + subclasses.size());
         hapiSuiteSubclasses.add(HapiSuite.class);
-        hapiSuiteSubclasses.addAll(subclasses.getLeft());
-        return Pair.of(hapiSuiteSubclasses, subclasses.getRight());
+        hapiSuiteSubclasses.addAll(subclasses);
+        return hapiSuiteSubclasses;
     }
 
-     Pair<List<Class<?>>, List<String>> getFilteredHapiSuiteSubclasses(@NonNull final ClassInfoList.ClassInfoFilter filter) {
-        try (final var scanResult = new ClassGraph()
-                .whitelistJars(SuiteRepoParameters.hapiSuiteContainingJars
-                )
-                .whitelistPackages(SuiteRepoParameters.hapiSuiteRootPackageName)
-                .scan()) {
-            return Pair.of(
-                    scanResult
-                            .getSubclasses(HapiSuite.class.getName())
-                            .filter(filter)
-                            .loadClasses(),
-                    List.of());
-        } catch (final ClassGraphException ex) {
-            return Pair.of(
-                    List.of(), List.of("*** exception getting classgraph then getting classes: %s%n".formatted(ex)));
-        }
+    @NonNull
+    List<Class<?>> getFilteredHapiSuiteSubclasses(@NonNull final ClassInfoList.ClassInfoFilter filter) {
+        return getScan()
+                .orElseThrow(scanInvalid)
+                .getSubclasses(HapiSuite.class.getName())
+                .filter(filter)
+                .loadClasses();
+    }
+
+    public record AnnotatedMethod(
+            @NonNull String annotationSimpleName,
+            @NonNull String klassName,
+            @NonNull String methodSimpleName,
+            @NonNull Optional<BddPrerequisiteSpec.Scope> scope) {}
+
+    /** find all methods with a given annotation */
+    @NonNull
+    public List<AnnotatedMethod> getAllBddAnnotatedMethods(@NonNull final Class<? extends Annotation> annotation) {
+        final var klassesOfInterest =
+                getScan().orElseThrow(scanInvalid).getClassesWithMethodAnnotation(annotation.getName());
+        final var methodsOfInterest = klassesOfInterest.stream()
+                .flatMap(ci -> ci.getDeclaredMethodInfo().stream())
+                .filter(mi -> mi.hasAnnotation(annotation.getName()))
+                .toList();
+        return methodsOfInterest.stream()
+                .map(mi -> {
+                    final var klassName = mi.getClassInfo().getName();
+                    final var methodName = getSimpleName(mi.getName());
+                    Optional<BddPrerequisiteSpec.Scope> scope = Optional.empty();
+
+                    final var annotationInfo = mi.getAnnotationInfo(annotation.getName());
+                    final var annotationParameters = annotationInfo.getParameterValues();
+                    if (!annotationParameters.isEmpty()) {
+                        final var annotationParam = annotationParameters.get(0);
+                        if (annotationParam.getValue() instanceof AnnotationEnumValue scopeParam) {
+                            final var scopeValue = scopeParam.loadClassAndReturnEnumValue();
+                            scope = Optional.ofNullable((BddPrerequisiteSpec.Scope) scopeValue);
+                        }
+                    }
+
+                    return new AnnotatedMethod(annotation.getSimpleName(), klassName, methodName, scope);
+                })
+                .distinct()
+                .toList();
+    }
+
+    @NonNull
+    String getSimpleName(@NonNull final String name) {
+        final var pieces = name.split("[.]");
+        return pieces[pieces.length - 1];
     }
 }
