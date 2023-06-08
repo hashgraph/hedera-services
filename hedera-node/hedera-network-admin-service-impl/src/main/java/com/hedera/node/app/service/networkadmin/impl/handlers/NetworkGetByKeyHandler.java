@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -33,6 +34,9 @@ import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#GET_BY_KEY}.
+ * <p>
+ * This network service call has been deprecated. Because protobufs promise backwards compatibility,
+ * we cannot remove it. However, it should not be used.
  */
 @Singleton
 public class NetworkGetByKeyHandler extends PaidQueryHandler {
@@ -57,13 +61,14 @@ public class NetworkGetByKeyHandler extends PaidQueryHandler {
     @Override
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+        throw new PreCheckException(NOT_SUPPORTED);
     }
 
     @Override
     public Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
+        // this code should never be executed, as validate() should fail before we get here
         requireNonNull(context);
         requireNonNull(header);
-        throw new UnsupportedOperationException("Not implemented");
+        throw new UnsupportedOperationException("Not supported");
     }
 }

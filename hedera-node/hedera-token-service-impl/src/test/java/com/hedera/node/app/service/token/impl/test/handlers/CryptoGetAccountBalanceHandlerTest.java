@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.node.app.service.token.impl.test.handlers.CryptoTokenHandlerTestBase.TOKEN_RELS;
-import static com.hedera.node.app.service.token.impl.test.handlers.TokenHandlerTestBase.TOKENS;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKENS;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKEN_RELS;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -51,6 +51,7 @@ import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountBalanceHandler;
+import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;

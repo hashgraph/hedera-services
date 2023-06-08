@@ -230,8 +230,7 @@ public class SimpleSimulatedGossip {
     private void printSentBy(@NonNull final StringBuilder sb) {
         for (final Entry<NodeId, Deque<GossipMessage>> entry : sentBy.entrySet()) {
             final Deque<GossipMessage> queue = entry.getValue();
-            sb.append(String.format(
-                    "Messages sent by %s (%s messages)%n", entry.getKey().id(), queue.size()));
+            sb.append(String.format("Messages sent by %s (%s messages)%n", entry.getKey(), queue.size()));
             for (final GossipMessage msg : queue) {
                 sb.append("\t").append(msg).append("\n");
             }
@@ -242,8 +241,7 @@ public class SimpleSimulatedGossip {
     private void printDelivered(@NonNull final StringBuilder sb) {
         for (final Entry<NodeId, Deque<GossipMessage>> entry : delivered.entrySet()) {
             final Deque<GossipMessage> queue = entry.getValue();
-            sb.append(String.format(
-                    "Messages delivered to %s (%s messages)%n", entry.getKey().id(), queue.size()));
+            sb.append(String.format("Messages delivered to %s (%s messages)%n", entry.getKey(), queue.size()));
             for (final GossipMessage msg : queue) {
                 sb.append("\t").append(msg).append("\n");
             }
@@ -254,8 +252,7 @@ public class SimpleSimulatedGossip {
     private void printInTransit(@NonNull final StringBuilder sb) {
         for (final Entry<NodeId, Deque<Payload>> entry : inTransit.entrySet()) {
             final Deque<Payload> queue = entry.getValue();
-            sb.append(String.format(
-                    "Messages in transit to %s (%s messages)%n", entry.getKey().id(), queue.size()));
+            sb.append(String.format("Messages in transit to %s (%s messages)%n", entry.getKey(), queue.size()));
             for (final Payload payload : queue) {
                 sb.append("\t").append(payload).append("\n");
             }

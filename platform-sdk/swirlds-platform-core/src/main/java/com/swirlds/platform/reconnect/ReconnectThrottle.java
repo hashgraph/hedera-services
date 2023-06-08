@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 
 import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -45,12 +46,12 @@ public class ReconnectThrottle {
      * A map from node IDs to reconnect times. Nodes not in this map have either never reconnected or have reconnected
      * only in the distant past.
      */
-    private final HashMap<Long, Instant> lastReconnectTime;
+    private final HashMap<NodeId, Instant> lastReconnectTime;
 
     /**
      * The node that is currently reconnecting, or null of no node is currently reconnecting.
      */
-    private Long reconnectingNode;
+    private NodeId reconnectingNode;
 
     /**
      * A method used to get the current time. Useful to have for debugging.
@@ -85,7 +86,7 @@ public class ReconnectThrottle {
      * @param nodeId the ID of the node that is behind and needs to reconnect
      * @return true if the reconnect can proceed, false if reconnect is disallowed by policy
      */
-    public synchronized boolean initiateReconnect(final long nodeId) {
+    public synchronized boolean initiateReconnect(final NodeId nodeId) {
         if (reconnectingNode != null) {
             logger.info(
                     RECONNECT.getMarker(),

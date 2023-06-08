@@ -22,8 +22,6 @@ import static com.swirlds.merkledb.files.DataFileCommon.createDataFilePath;
 import static com.swirlds.merkledb.files.DataFileCommon.getLockFilePath;
 
 import com.swirlds.merkledb.serialize.DataItemSerializer;
-import com.swirlds.merkledb.settings.MerkleDbSettings;
-import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.BufferOverflowException;
@@ -51,12 +49,6 @@ import sun.misc.Unsafe;
  * @param <D> Data item type
  */
 public final class DataFileWriter<D> {
-    /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
-     * application classes that might instantiate a data source, the {@link MerkleDbSettingsFactory}
-     * holder will have been configured by the time this static initializer runs.
-     */
-    private static final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
 
     /** Mapped buffer size */
     private static final int MMAP_BUF_SIZE = PAGE_SIZE * 1024 * 4;

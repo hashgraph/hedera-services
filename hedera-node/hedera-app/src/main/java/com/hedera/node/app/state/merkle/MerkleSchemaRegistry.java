@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.state.merkle;
 
+import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.SemanticVersionComparator;
+import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.*;
 import com.hedera.node.app.state.merkle.MerkleHederaState.MerkleWritableStates;
@@ -34,6 +36,7 @@ import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
@@ -41,7 +44,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.nio.file.Path;
 import java.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,7 +57,7 @@ import org.apache.logging.log4j.Logger;
  * a {@link SemanticVersion}.
  *
  * <p>The Hedera application then calls {@link #migrate(MerkleHederaState, SemanticVersion,
- * SemanticVersion)} on each {@link MerkleSchemaRegistry} instance, supplying it the application
+ * SemanticVersion, Configuration)} on each {@link MerkleSchemaRegistry} instance, supplying it the application
  * version number and the newly created (or deserialized) but not yet hashed copy of the {@link
  * MerkleHederaState}. The registry determines which {@link Schema}s to apply, possibly taking
  * multiple migration steps, to transition the merkle tree from its current version to the final
@@ -66,8 +68,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
 
     /** The name of the service using this registry. */
     private final String serviceName;
-    /** The location on disk where we should store on-disk state */
-    private final Path storageDir;
     /** The registry to use when deserializing from saved states */
     private final ConstructableRegistry constructableRegistry;
     /** The ordered set of all schemas registered by the service */
@@ -78,15 +78,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      *
      * @param constructableRegistry The {@link ConstructableRegistry} to register states with for
      *     deserialization
-     * @param storageDir A storage directory to store all virtual map data
      * @param serviceName The name of the service using this registry.
      */
     public MerkleSchemaRegistry(
-            @NonNull final ConstructableRegistry constructableRegistry,
-            @Nullable final Path storageDir,
-            @NonNull final String serviceName) {
+            @NonNull final ConstructableRegistry constructableRegistry, @NonNull final String serviceName) {
         this.constructableRegistry = Objects.requireNonNull(constructableRegistry);
-        this.storageDir = storageDir;
         this.serviceName = StateUtils.validateStateKey(Objects.requireNonNull(serviceName));
     }
 
@@ -99,7 +95,10 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     public SchemaRegistry register(@NonNull Schema schema) {
         schemas.remove(schema);
         schemas.add(Objects.requireNonNull(schema));
-        logger.debug("Registering schema v{} for service {} ", schema.getVersion(), serviceName);
+        logger.debug(
+                "Registering schema {} for service {} ",
+                () -> HapiUtils.toString(schema.getVersion()),
+                () -> serviceName);
 
         // Any states being created, need to be registered for deserialization
         schema.statesToCreate().forEach(def -> {
@@ -120,14 +119,17 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param previousVersion The version of state loaded from disk. Possibly null.
      * @param currentVersion The current version. Never null. Must be newer than {@code
      *     previousVersion}.
+     * @param config The system configuration to use at the time of migration
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     public void migrate(
             @NonNull final MerkleHederaState hederaState,
             @Nullable final SemanticVersion previousVersion,
-            @NonNull final SemanticVersion currentVersion) {
+            @NonNull final SemanticVersion currentVersion,
+            @NonNull final Configuration config) {
         Objects.requireNonNull(hederaState);
         Objects.requireNonNull(currentVersion);
+        Objects.requireNonNull(config);
 
         // If the previous and current versions are the same, then we have no need to migrate
         // to achieve the correct merkle tree version. All we need to do is register with
@@ -152,8 +154,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             return;
         }
 
+        // Figure out which schemas need to be applied based on the previous and current versions, and then for each
+        // of those schemas, create the new states and remove the old states and migrate the data.
         final var schemasToApply = computeApplicableSchemas(previousVersion, currentVersion);
         for (final var schema : schemasToApply) {
+            // Now we can migrate the schema and then commit all the changes
             // We just have one merkle tree -- the just-loaded working tree -- to work from.
             // We get a ReadableStates for everything in the current tree, but then wrap
             // it with a FilteredReadableStates that is locked into exactly the set of states
@@ -194,10 +199,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                     new OnDiskValueSerializer(md),
                                     false));
 
-                    if (storageDir != null) {
-                        ds.storageDir(storageDir);
-                    }
-
+                    // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
+                    // PREFER_DISK_BASED_INDICES = false
                     final var label = StateUtils.computeLabel(serviceName, stateKey);
                     hederaState.putServiceStateIfAbsent(md, new VirtualMap<>(label, ds));
                 }
@@ -211,8 +214,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             remainingStates.removeAll(statesToRemove);
             final var newStates = new FilteredWritableStates(writeableStates, remainingStates);
 
-            // Now we can migrate the schema and then commit all the changes
-            schema.migrate(previousStates, newStates);
+            final var migrationContext = new MigrationContextImpl(previousStates, newStates, config);
+            schema.migrate(migrationContext);
             if (writeableStates instanceof MerkleWritableStates mws) {
                 mws.commit();
             }
@@ -274,8 +277,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @return true if both are null, or if both have the same version number
      */
     private boolean isSameVersion(@Nullable final SemanticVersion a, @Nullable final SemanticVersion b) {
-        return (a == null && b == null)
-                || (a != null && b != null && SemanticVersionComparator.INSTANCE.compare(a, b) == 0);
+        return (a == null && b == null) || (a != null && b != null && SEMANTIC_VERSION_COMPARATOR.compare(a, b) == 0);
     }
 
     private boolean isBetween(
@@ -312,7 +314,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // If the comparison yields the first argument as being before
         // or matching the second argument, then we return true because
         // the condition we're testing for holds.
-        return SemanticVersionComparator.INSTANCE.compare(maybeBefore, maybeAfter) <= 0;
+        return SEMANTIC_VERSION_COMPARATOR.compare(maybeBefore, maybeAfter) <= 0;
     }
 
     /**

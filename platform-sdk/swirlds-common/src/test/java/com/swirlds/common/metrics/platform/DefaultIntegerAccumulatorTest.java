@@ -248,4 +248,19 @@ class DefaultIntegerAccumulatorTest {
         assertThat(accumulator.toString())
                 .contains(CATEGORY, NAME, DESCRIPTION, UNIT, FORMAT, Metric.DataType.INT.toString(), "42");
     }
+
+    @Test
+    void testResetValue() {
+        // given
+        final IntegerAccumulator.Config config = new IntegerAccumulator.Config(CATEGORY, NAME).withInitialValue(42);
+        final IntegerAccumulator accumulator = new DefaultIntegerAccumulator(config);
+        accumulator.update(5);
+
+        // when
+        accumulator.reset();
+
+        // then
+        assertEquals(42, accumulator.get(), "Value should be 42");
+        assertEquals(42, accumulator.get(VALUE), "Value should be 42");
+    }
 }
