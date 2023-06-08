@@ -17,6 +17,7 @@
 package com.hedera.node.config;
 
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * The ConfigProvider interface is used to provide the configuration. This interface can be seen as the "config
@@ -30,5 +31,6 @@ public interface ConfigProvider {
      *
      * @return the configuration
      */
+    @NonNull
     VersionedConfiguration getConfiguration();
 }

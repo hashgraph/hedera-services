@@ -23,7 +23,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -61,14 +60,6 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
                 .put(
                         EntityNumPair.fromLongs(tokenRelation.accountNumber(), tokenRelation.tokenNumber()),
                         Objects.requireNonNull(tokenRelation));
-    }
-
-    /**
-     * Commits the changes to the underlying data storage
-     */
-    public void commit() {
-        requireNonNull(tokenRelState);
-        ((WritableKVStateBase<EntityNumPair, TokenRelation>) tokenRelState).commit();
     }
 
     /**

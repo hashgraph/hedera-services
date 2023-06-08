@@ -32,6 +32,7 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
@@ -265,6 +266,11 @@ public class SwirldsPlatform implements Platform, Startable {
     private final Gossip gossip;
 
     /**
+     * Allows files to be deleted, and potentially recovered later for debugging.
+     */
+    private final RecycleBin recycleBin;
+
+    /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
      * @param platformContext          the context for this platform
@@ -279,6 +285,7 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param genesisStateBuilder      used to construct a genesis state if no suitable state from disk can be found
      * @param loadedSignedState        used to initialize the loaded state
      * @param emergencyRecoveryManager used in emergency recovery.
+     * @param softwareUpgrade          if true this is a software upgrade, if false then this is just a restart
      */
     SwirldsPlatform(
             @NonNull final PlatformContext platformContext,
@@ -290,7 +297,8 @@ public class SwirldsPlatform implements Platform, Startable {
             @NonNull final SoftwareVersion appVersion,
             @NonNull final Supplier<SwirldState> genesisStateBuilder,
             @NonNull final ReservedSignedState loadedSignedState,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
+            final boolean softwareUpgrade) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
         final Time time = OSTime.getInstance();
@@ -327,6 +335,15 @@ public class SwirldsPlatform implements Platform, Startable {
                 "PlatformStatus", Metrics.PLATFORM_CATEGORY, PlatformStatus.values(), currentPlatformStatus::get));
 
         registerAddressBookMetrics(metrics, initialAddressBook, selfId);
+
+        try {
+            recycleBin = new RecycleBin(platformContext.getConfiguration(), selfId);
+            if (softwareUpgrade) {
+                recycleBin.clear();
+            }
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Failed to initialize recycle bin", e);
+        }
 
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
 
@@ -969,7 +986,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final PreConsensusEventFileManager fileManager;
         try {
-            fileManager = new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), selfId.id());
+            fileManager = new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), selfId);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }

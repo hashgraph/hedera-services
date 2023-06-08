@@ -18,12 +18,16 @@ package com.swirlds.platform.test.chatter.simulator;
 
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Random;
 
@@ -38,13 +42,13 @@ public class SimulatedNetwork {
     private final boolean debugEnabled;
 
     /**
-     * The total number of nodes.
+     * The address book to use for nodes.
      */
-    private final int nodeCount;
+    private final AddressBook addressBook;
 
     /**
-     * Messages that need to be sent but have not yet been put "on the wire". These
-     * messages will be sent in a later time step.
+     * Messages that need to be sent but have not yet been put "on the wire". These messages will be sent in a later
+     * time step.
      */
     private final Map<SourceDestinationPair, Deque<SimulatedMessage>> messagesToBeSent;
 
@@ -61,7 +65,7 @@ public class SimulatedNetwork {
     /**
      * Messages that have been fully received and can be utilized at any time by the receiver.
      */
-    private final Map<Long /* receiver ID */, Deque<SimulatedMessage>> messagesReceived;
+    private final Map<NodeId /* receiver ID */, Deque<SimulatedMessage>> messagesReceived;
 
     /**
      * The duration of a single time step.
@@ -76,12 +80,12 @@ public class SimulatedNetwork {
     /**
      * The outgoing bandwidth of each node in bytes/timestep.
      */
-    private final Map<Long, Long> outgoingBandwidth = new HashMap<>();
+    private final Map<NodeId, Long> outgoingBandwidth = new HashMap<>();
 
     /**
      * The incoming bandwidth of each node in bytes/timestep.
      */
-    private final Map<Long, Long> incomingBandwidth = new HashMap<>();
+    private final Map<NodeId, Long> incomingBandwidth = new HashMap<>();
 
     /**
      * The latency between each node pair.
@@ -91,7 +95,7 @@ public class SimulatedNetwork {
     /**
      * For each node, the outgoing latency that has been used for the current time step.
      */
-    private final Map<Long, Long> outgoingBandwidthUsed = new HashMap<>();
+    private final Map<NodeId, Long> outgoingBandwidthUsed = new HashMap<>();
 
     /**
      * Maximum number of messages in incoming buffer, more than this number will cause connection to throttle.
@@ -116,27 +120,26 @@ public class SimulatedNetwork {
     /**
      * Create a new simulated network.
      *
-     * @param builder
-     * 		contains configuration information for the network.
+     * @param builder contains configuration information for the network.
      */
     public SimulatedNetwork(final GossipSimulationBuilder builder) {
         debugEnabled = builder.isDebugEnabled();
-        nodeCount = builder.getNodeCount();
+        addressBook = Objects.requireNonNull(builder.getAddressBook(), "addressBook must not be null");
 
-        messagesToBeSent = setupNodePairMap(nodeCount);
-        messagesInTransit = setupNodePairMap(nodeCount);
-        transmittedMessages = setupNodePairMap(nodeCount);
-        messagesReceived = setupNodeMap(nodeCount);
+        messagesToBeSent = setupNodePairMap(addressBook);
+        messagesInTransit = setupNodePairMap(addressBook);
+        transmittedMessages = setupNodePairMap(addressBook);
+        messagesReceived = setupNodeMap(addressBook);
 
         this.timeStep = builder.getTimeStep();
 
-        for (long source = 0; source < nodeCount; source++) {
+        for (final NodeId source : addressBook.getNodeIdSet()) {
             outgoingBandwidth.put(source, (long)
                     (builder.getOutgoingBandwidth(source) * timeStep.toNanos() * NANOSECONDS_TO_SECONDS));
             incomingBandwidth.put(source, (long)
                     (builder.getIncomingBandwidth(source) * timeStep.toNanos() * NANOSECONDS_TO_SECONDS));
-            for (long destination = 0; destination < nodeCount; destination++) {
-                if (source != destination) {
+            for (final NodeId destination : addressBook.getNodeIdSet()) {
+                if (!Objects.equals(source, destination)) {
                     final SourceDestinationPair pair = new SourceDestinationPair(source, destination);
                     pairwiseLatency.put(pair, builder.getLatency(source, destination));
                     dropProbabilityMap.put(pair, builder.getDropProbability(source, destination));
@@ -145,7 +148,7 @@ public class SimulatedNetwork {
             }
         }
 
-        statistics = new SimulatedNetworkStatistics(nodeCount, timeStep, incomingBandwidth, outgoingBandwidth);
+        statistics = new SimulatedNetworkStatistics(addressBook, timeStep, incomingBandwidth, outgoingBandwidth);
 
         incomingMessageQueueSize = builder.getIncomingMessageQueueSize();
 
@@ -155,24 +158,24 @@ public class SimulatedNetwork {
     /**
      * Build a map with a queue for each node.
      */
-    private static Map<Long, Deque<SimulatedMessage>> setupNodeMap(final int nodeCount) {
-        final Map<Long, Deque<SimulatedMessage>> map = new HashMap<>();
-
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+    private static Map<NodeId, Deque<SimulatedMessage>> setupNodeMap(@NonNull final AddressBook addressBook) {
+        final Map<NodeId, Deque<SimulatedMessage>> map = new HashMap<>();
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             map.put(nodeId, new LinkedList<>());
         }
-
         return map;
     }
 
     /**
      * Build a map with a queue for each pair of nodes (excluding self pairs).
      */
-    private static Map<SourceDestinationPair, Deque<SimulatedMessage>> setupNodePairMap(final int nodeCount) {
+    private static Map<SourceDestinationPair, Deque<SimulatedMessage>> setupNodePairMap(
+            @NonNull final AddressBook addressBook) {
         final Map<SourceDestinationPair, Deque<SimulatedMessage>> map = new HashMap<>();
-        for (long source = 0; source < nodeCount; source++) {
-            for (long destination = 0; destination < nodeCount; destination++) {
-                if (source == destination) {
+
+        for (final NodeId source : addressBook.getNodeIdSet()) {
+            for (final NodeId destination : addressBook.getNodeIdSet()) {
+                if (Objects.equals(source, destination)) {
                     continue;
                 }
                 map.put(new SourceDestinationPair(source, destination), new LinkedList<>());
@@ -184,12 +187,11 @@ public class SimulatedNetwork {
     /**
      * Check if there is outgoing capacity that is available for a particular node in this time step.
      *
-     * @param nodeId
-     * 		the node that wants to send a message
+     * @param nodeId the node that wants to send a message
      * @return true if there is still available bandwidth in this time step
      */
-    public boolean isOutgoingCapacityAvailable(final long nodeId) {
-        final long bandwidth = outgoingBandwidth.get(nodeId);
+    public boolean isOutgoingCapacityAvailable(@NonNull final NodeId nodeId) {
+        final long bandwidth = outgoingBandwidth.get(Objects.requireNonNull(nodeId, "nodeId must not be null"));
         final long utilizedBandwidth = outgoingBandwidthUsed.get(nodeId);
         final long remainingBandwidth = bandwidth - utilizedBandwidth;
 
@@ -199,26 +201,26 @@ public class SimulatedNetwork {
     /**
      * Check if a destination is connected to a source.
      *
-     * @param source
-     * 		the sender ID
-     * @param destination
-     * 		the receiver ID
+     * @param source      the sender ID
+     * @param destination the receiver ID
      * @return true if there is a connection that allows messages to flow from the source to the destination
      */
-    public boolean isDestinationConnected(final long source, final long destination) {
+    public boolean isDestinationConnected(@NonNull final NodeId source, @NonNull final NodeId destination) {
+        Objects.requireNonNull(source, "source must not be null");
+        Objects.requireNonNull(destination, "destination must not be null");
         return connectionStatus.get(new SourceDestinationPair(source, destination));
     }
 
     /**
      * Check if a destination is currently available for messages to be sent to in the current time step.
      *
-     * @param source
-     * 		the source of the message
-     * @param destination
-     * 		the destination of the message
+     * @param source      the source of the message
+     * @param destination the destination of the message
      * @return true if the source can send to the destination
      */
-    public boolean isDestinationAvailable(final long source, final long destination) {
+    public boolean isDestinationAvailable(@NonNull final NodeId source, @NonNull final NodeId destination) {
+        Objects.requireNonNull(source, "source must not be null");
+        Objects.requireNonNull(destination, "destination must not be null");
         final SourceDestinationPair pair = new SourceDestinationPair(source, destination);
 
         if (!connectionStatus.get(pair)) {
@@ -233,8 +235,7 @@ public class SimulatedNetwork {
     /**
      * Send a message.
      *
-     * @param message
-     * 		the message to be sent
+     * @param message the message to be sent
      */
     public void send(final SimulatedMessage message) {
         if (debugEnabled) {
@@ -244,8 +245,8 @@ public class SimulatedNetwork {
 
         statistics.captureSendStatistics(message);
 
-        final long source = message.getSource();
-        final long destination = message.getDestination();
+        final NodeId source = message.getSource();
+        final NodeId destination = message.getDestination();
 
         final long bandwidth = outgoingBandwidth.get(source);
         final long utilizedBandwidth = outgoingBandwidthUsed.get(source);
@@ -274,34 +275,31 @@ public class SimulatedNetwork {
     /**
      * Check if there are any messages available for a given node.
      *
-     * @param nodeId
-     * 		the destination node
+     * @param nodeId the destination node
      * @return true if there are available messages
      */
-    public boolean hasMessages(final long nodeId) {
+    public boolean hasMessages(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         return !messagesReceived.get(nodeId).isEmpty();
     }
 
     /**
      * Get the next available message for a node
      *
-     * @param nodeId
-     * 		the destination node
+     * @param nodeId the destination node
      * @return the next message
-     * @throws java.util.NoSuchElementException
-     * 		if there is no available message
+     * @throws java.util.NoSuchElementException if there is no available message
      */
-    public SimulatedMessage nextMessage(final long nodeId) {
+    public SimulatedMessage nextMessage(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         return messagesReceived.get(nodeId).remove();
     }
 
     /**
      * Simulate one time step.
      *
-     * @param random
-     * 		a source of randomness
-     * @param now
-     * 		the current time, system should simulate up until "now"
+     * @param random a source of randomness
+     * @param now    the current time, system should simulate up until "now"
      */
     public void simulateOneStep(final Random random, final Instant now) {
         this.now = now;
@@ -317,7 +315,7 @@ public class SimulatedNetwork {
      * Reset bandwidth usage in preparation for the next step.
      */
     private void resetBandwidthUsage() {
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             outgoingBandwidthUsed.put(nodeId, 0L);
         }
     }
@@ -325,12 +323,11 @@ public class SimulatedNetwork {
     /**
      * Simulate the traversal of the message over the network.
      *
-     * @param random
-     * 		a source of randomness
+     * @param random a source of randomness
      */
     private void simulateTraversal(final Random random) {
-        for (long source = 0; source < nodeCount; source++) {
-            for (long destination = 0; destination < nodeCount; destination++) {
+        for (final NodeId source : addressBook.getNodeIdSet()) {
+            for (final NodeId destination : addressBook.getNodeIdSet()) {
                 if (source == destination) {
                     continue;
                 }
@@ -369,8 +366,8 @@ public class SimulatedNetwork {
      * Simulate the receiver of a message reading it out of a socket.
      */
     private void simulateDelivery() {
-        for (long source = 0; source < nodeCount; source++) {
-            for (long destination = 0; destination < nodeCount; destination++) {
+        for (final NodeId source : addressBook.getNodeIdSet()) {
+            for (final NodeId destination : addressBook.getNodeIdSet()) {
                 if (source == destination) {
                     continue;
                 }
@@ -405,13 +402,12 @@ public class SimulatedNetwork {
     }
 
     /**
-     * Called when one time step has finished and the next is starting. Attempt to send any messages in the queue
-     * that were not able to be sent in the previous step.
+     * Called when one time step has finished and the next is starting. Attempt to send any messages in the queue that
+     * were not able to be sent in the previous step.
      */
     private void sendEnqueuedMessages() {
-        for (long source = 0; source < nodeCount; source++) {
-            for (long destination = 0; destination < nodeCount; destination++) {
-
+        for (final NodeId source : addressBook.getNodeIdSet()) {
+            for (final NodeId destination : addressBook.getNodeIdSet()) {
                 final SourceDestinationPair pair = new SourceDestinationPair(source, destination);
                 final Queue<SimulatedMessage> messageQueue = messagesToBeSent.get(pair);
                 if (messageQueue == null) {

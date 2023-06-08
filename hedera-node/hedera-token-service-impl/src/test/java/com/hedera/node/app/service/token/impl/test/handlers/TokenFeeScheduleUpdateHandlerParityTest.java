@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
+import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -51,7 +52,7 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
     private CustomFeesValidator customFeeValidator;
 
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         super.setUp();
         customFeeValidator = new CustomFeesValidator();
         subject = new TokenFeeScheduleUpdateHandler(customFeeValidator);

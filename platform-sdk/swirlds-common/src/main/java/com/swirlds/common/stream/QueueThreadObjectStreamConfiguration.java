@@ -250,7 +250,8 @@ public class QueueThreadObjectStreamConfiguration<T extends RunningHashable> {
     /**
      * Set the node ID of the other node (if created threads will be dealing with a task related to a specific node).
      */
-    public long getOtherNodeId() {
+    @NonNull
+    public NodeId getOtherNodeId() {
         return queueThreadConfiguration.getOtherNodeId();
     }
 
@@ -259,7 +260,8 @@ public class QueueThreadObjectStreamConfiguration<T extends RunningHashable> {
      *
      * @return this object
      */
-    public QueueThreadObjectStreamConfiguration<T> setOtherNodeId(final long otherNodeId) {
+    public QueueThreadObjectStreamConfiguration<T> setOtherNodeId(@NonNull final NodeId otherNodeId) {
+        Objects.requireNonNull(otherNodeId, "otherNodeId must not be null");
         queueThreadConfiguration.setOtherNodeId(otherNodeId);
         return this;
     }

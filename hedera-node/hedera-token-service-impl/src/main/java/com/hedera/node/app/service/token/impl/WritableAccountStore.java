@@ -23,7 +23,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -78,12 +77,6 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     public void putAlias(@NonNull final String alias, final long accountNum) {
         Objects.requireNonNull(alias);
         aliases.put(alias, AccountID.newBuilder().accountNum(accountNum).build());
-    }
-
-    /** Commits the changes to the underlying data storage. */
-    public void commit() {
-        ((WritableKVStateBase<?, ?>) accountState).commit();
-        ((WritableKVStateBase<?, ?>) aliases).commit();
     }
 
     /**

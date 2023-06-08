@@ -152,7 +152,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 .setPriority(Thread.NORM_PRIORITY)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
-                .setOtherNodeId(selfId.id())
+                .setOtherNodeId(selfId)
                 .setThreadName("SingleNodeNetworkSync")
                 .setHangingThreadPeriod(hangingThreadDuration)
                 .setWork(
@@ -197,6 +197,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
     @Override
     protected FallenBehindManagerImpl buildFallenBehindManager() {
         return new FallenBehindManagerImpl(
+                addressBook,
                 selfId,
                 topology.getConnectionGraph(),
                 updatePlatformStatus,

@@ -122,20 +122,11 @@ class SchemaTest extends StateTestBase {
     }
 
     @Test
-    @DisplayName("passing null previous states to migrate throws NPE")
-    void nullPreviousStatesThrows() {
-        final var schema1 = new TestSchema(1);
-        final var newStates = new MapWritableStates(Collections.emptyMap());
-        //noinspection DataFlowIssue
-        assertThatThrownBy(() -> schema1.migrate(null, newStates)).isInstanceOf(NullPointerException.class);
-    }
-
-    @Test
-    @DisplayName("passing null new states to migrate throws NPE")
+    @DisplayName("passing null context to migrate throws NPE")
     void nullNewStatesThrows() {
         final var schema1 = new TestSchema(1);
         final var prevStates = new MapWritableStates(Collections.emptyMap());
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> schema1.migrate(prevStates, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> schema1.migrate(null)).isInstanceOf(NullPointerException.class);
     }
 }

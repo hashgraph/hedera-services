@@ -18,13 +18,15 @@ package com.swirlds.virtualmap.internal.pipeline;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
-import com.swirlds.virtualmap.VirtualMapSettings;
-import com.swirlds.virtualmap.VirtualMapSettingsFactory;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
@@ -34,7 +36,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
 
     private static final long CLASS_ID = 0x37cc269627e18eb6L;
 
-    private static final VirtualMapSettings settings = VirtualMapSettingsFactory.get();
+    private static final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
 
     private boolean shouldBeFlushed;
     private boolean merged;
@@ -71,7 +73,8 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
     private volatile boolean releaseInIsDetached;
 
     public DummyVirtualRoot() {
-        this.pipeline = new VirtualPipeline();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        pipeline = new VirtualPipeline(configuration.getConfigData(VirtualMapConfig.class));
         flushLatch = new CountDownLatch(1);
         mergeLatch = new CountDownLatch(1);
 
@@ -177,7 +180,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
         if (shouldBeFlushed) {
             return true;
         }
-        final long flushThreshold = settings.getCopyFlushThreshold();
+        final long flushThreshold = config.copyFlushThreshold();
         return (flushThreshold > 0) && (estimatedSize() >= flushThreshold);
     }
 
@@ -200,7 +203,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
         if (flushed) {
             throw new IllegalStateException("copy is already flushed");
         }
-        if (!shouldBeFlushed && (estimatedSize < settings.getCopyFlushThreshold())) {
+        if (!shouldBeFlushed && (estimatedSize < config.copyFlushThreshold())) {
             throw new IllegalStateException("copy should not be flushed");
         }
         if (!hashed) {
@@ -246,7 +249,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
     }
 
     private static boolean shouldBeFlushed(DummyVirtualRoot copy) {
-        final long copyFlushThreshold = settings.getCopyFlushThreshold();
+        final long copyFlushThreshold = config.copyFlushThreshold();
         return (copy.shouldBeFlushed()) || ((copyFlushThreshold > 0) && (copy.estimatedSize() >= copyFlushThreshold));
     }
 
