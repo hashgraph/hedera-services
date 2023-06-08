@@ -17,9 +17,9 @@
 package com.swirlds.common.system.platformstatus;
 
 /**
- * An enum representing events that can occur which may have an impact on the {@link PlatformStatus}
+ * An enum representing things that can occur which may have an impact on the {@link PlatformStatus}
  */
-public enum PlatformStatusEvent {
+public enum PlatformStatusAction {
     /**
      * Replay of events from the PreconsensusEventStream has started.
      */

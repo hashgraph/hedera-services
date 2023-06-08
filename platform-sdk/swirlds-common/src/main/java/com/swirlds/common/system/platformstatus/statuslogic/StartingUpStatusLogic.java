@@ -18,7 +18,7 @@ package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
-import com.swirlds.common.system.platformstatus.PlatformStatusEvent;
+import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.time.Time;
 import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,13 +47,13 @@ public class StartingUpStatusLogic extends AbstractStatusLogic {
      */
     @Nullable
     @Override
-    public PlatformStatus processStatusEvent(@NonNull final PlatformStatusEvent event) {
-        return switch (event) {
+    public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
+        return switch (action) {
             case STARTED_REPLAYING_EVENTS -> PlatformStatus.REPLAYING_EVENTS;
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
             case TIME_ELAPSED -> null;
             default -> {
-                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusEventLog(event));
+                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusActionLog(action));
                 yield null;
             }
         };

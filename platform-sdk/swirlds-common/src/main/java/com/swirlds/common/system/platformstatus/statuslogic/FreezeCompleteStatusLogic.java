@@ -18,7 +18,7 @@ package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
-import com.swirlds.common.system.platformstatus.PlatformStatusEvent;
+import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.time.Time;
 import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,9 +47,9 @@ public class FreezeCompleteStatusLogic extends AbstractStatusLogic {
      */
     @Nullable
     @Override
-    public PlatformStatus processStatusEvent(@NonNull PlatformStatusEvent event) {
+    public PlatformStatus processStatusAction(@NonNull PlatformStatusAction action) {
         // nothing should be happening if a freeze is complete
-        logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusEventLog(event));
+        logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusActionLog(action));
         return null;
     }
 

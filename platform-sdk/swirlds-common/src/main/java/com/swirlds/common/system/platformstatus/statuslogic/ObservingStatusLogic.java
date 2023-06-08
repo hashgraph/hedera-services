@@ -18,7 +18,7 @@ package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
-import com.swirlds.common.system.platformstatus.PlatformStatusEvent;
+import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.time.Time;
 import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -53,8 +53,8 @@ public class ObservingStatusLogic extends AbstractStatusLogic {
      */
     @Nullable
     @Override
-    public PlatformStatus processStatusEvent(@NonNull final PlatformStatusEvent event) {
-        return switch (event) {
+    public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
+        return switch (action) {
             case FREEZE_PERIOD_ENTERED -> {
                 freezePeriodEntered = true;
                 yield null;
@@ -77,7 +77,7 @@ public class ObservingStatusLogic extends AbstractStatusLogic {
                 }
             }
             default -> {
-                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusEventLog(event));
+                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusActionLog(action));
                 yield null;
             }
         };

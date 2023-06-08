@@ -75,16 +75,16 @@ public class PlatformStatusStateMachine {
     }
 
     /**
-     * Process a platform status event.
+     * Process a platform status action.
      * <p>
      * Repeated calls of this method cause the platform state machine to be traversed
      *
-     * @param event the event to process
+     * @param action the action to process
      */
-    public void processEvent(@NonNull final PlatformStatusEvent event) {
-        Objects.requireNonNull(event);
+    public void processStatusAction(@NonNull final PlatformStatusAction action) {
+        Objects.requireNonNull(action);
 
-        final PlatformStatus newStatus = currentStatusLogic.processStatusEvent(event);
+        final PlatformStatus newStatus = currentStatusLogic.processStatusAction(action);
 
         // null means status hasn't changed
         if (newStatus == null) {

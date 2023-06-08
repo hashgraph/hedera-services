@@ -18,7 +18,7 @@ package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
-import com.swirlds.common.system.platformstatus.PlatformStatusEvent;
+import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.time.Time;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -51,8 +51,8 @@ public class ReconnectCompleteStatusLogic extends AbstractStatusLogic {
      */
     @Nullable
     @Override
-    public PlatformStatus processStatusEvent(@NonNull final PlatformStatusEvent event) {
-        return switch (event) {
+    public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
+        return switch (action) {
             case FREEZE_PERIOD_ENTERED -> {
                 freezePeriodEntered = true;
                 yield null;
@@ -68,7 +68,7 @@ public class ReconnectCompleteStatusLogic extends AbstractStatusLogic {
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
             case TIME_ELAPSED -> null;
             default -> {
-                logger.error(getUnexpectedStatusEventLog(event));
+                logger.error(getUnexpectedStatusActionLog(action));
                 yield null;
             }
         };

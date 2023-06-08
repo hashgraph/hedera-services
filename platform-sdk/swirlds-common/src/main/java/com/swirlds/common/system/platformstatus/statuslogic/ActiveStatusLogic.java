@@ -18,7 +18,7 @@ package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
-import com.swirlds.common.system.platformstatus.PlatformStatusEvent;
+import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.time.Time;
 import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -57,8 +57,8 @@ public class ActiveStatusLogic extends AbstractStatusLogic {
      */
     @Nullable
     @Override
-    public PlatformStatus processStatusEvent(@NonNull final PlatformStatusEvent event) {
-        return switch (event) {
+    public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
+        return switch (action) {
             case OWN_EVENT_REACHED_CONSENSUS -> {
                 // record the time an own event reached consensus, resetting the timer that would trigger a transition
                 // to CHECKING
@@ -81,7 +81,7 @@ public class ActiveStatusLogic extends AbstractStatusLogic {
                 }
             }
             default -> {
-                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusEventLog(event));
+                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusActionLog(action));
                 yield null;
             }
         };

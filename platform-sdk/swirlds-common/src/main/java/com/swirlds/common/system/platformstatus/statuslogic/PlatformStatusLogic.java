@@ -17,7 +17,7 @@
 package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
-import com.swirlds.common.system.platformstatus.PlatformStatusEvent;
+import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -27,16 +27,16 @@ import java.time.Instant;
  */
 public interface PlatformStatusLogic {
     /**
-     * Process a status event.
+     * Process a status action.
      * <p>
-     * If the input event causes a status transition, then this method will return the new status. Otherwise, a return
-     * value of null indicates that the input event didn't cause a status transition
+     * If the input action causes a status transition, then this method will return the new status. Otherwise, a return
+     * value of null indicates that the input action didn't cause a status transition
      *
-     * @param event the status event that has occurred
-     * @return the new status if the input event caused a status transition, otherwise null
+     * @param action the status action that has occurred
+     * @return the new status if the input action caused a status transition, otherwise null
      */
     @Nullable
-    PlatformStatus processStatusEvent(@NonNull final PlatformStatusEvent event);
+    PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action);
 
     /**
      * Get the status that this logic is for.
@@ -55,12 +55,12 @@ public interface PlatformStatusLogic {
     Instant getStatusStartTime();
 
     /**
-     * Get the log message to use when an unexpected status event is received.
+     * Get the log message to use when an unexpected status action is received.
      *
-     * @param event the unexpected status event
-     * @return the log message to use when an unexpected status event is received
+     * @param action the unexpected status action
+     * @return the log message to use when an unexpected status action is received
      */
-    default String getUnexpectedStatusEventLog(@NonNull final PlatformStatusEvent event) {
-        return "Received unexpected status event %s with current status of %s".formatted(event, getStatus());
+    default String getUnexpectedStatusActionLog(@NonNull final PlatformStatusAction action) {
+        return "Received unexpected status action %s with current status of %s".formatted(action, getStatus());
     }
 }

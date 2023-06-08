@@ -18,7 +18,7 @@ package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
-import com.swirlds.common.system.platformstatus.PlatformStatusEvent;
+import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.time.Time;
 import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,13 +47,13 @@ public class BehindStatusLogic extends AbstractStatusLogic {
      */
     @Nullable
     @Override
-    public PlatformStatus processStatusEvent(@NonNull final PlatformStatusEvent event) {
-        return switch (event) {
+    public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
+        return switch (action) {
             case RECONNECT_COMPLETE -> PlatformStatus.RECONNECT_COMPLETE;
             case STATE_WRITTEN_TO_DISK, TIME_ELAPSED -> null;
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
             default -> {
-                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusEventLog(event));
+                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusActionLog(action));
                 yield null;
             }
         };
