@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -36,6 +37,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -46,6 +48,7 @@ import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -89,20 +92,20 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         final var op = context.body().tokenMintOrThrow();
+        final var tokenId = context.body().tokenMintOrThrow().tokenOrThrow();
 
         validateSemantics(context);
-        final var tokenId = context.body().tokenMintOrThrow().tokenOrThrow();
 
         final var tokenStore = context.writableStore(WritableTokenStore.class);
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var accountStore = context.writableStore(WritableAccountStore.class);
-
+        // validate token exists
         final var token = tokenStore.get(tokenId);
         validateTrue(token != null, INVALID_TOKEN_ID);
-
+        // get the config needed for validation
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var maxAllowedMints = tokensConfig.nftsMaxAllowedMints();
-
+        // validate treasury relation exists
         final var treasuryRel = tokenRelStore.get(
                 AccountID.newBuilder().accountNum(token.treasuryAccountNumber()).build(), tokenId);
         validateTrue(treasuryRel != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
@@ -112,10 +115,11 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             mintFungible(token, treasuryRel, op.amount(), false, accountStore, tokenStore, tokenRelStore);
         } else {
             final var nftStore = context.writableStore(WritableNftStore.class);
-            // If
+            // validate resources exist for minting nft
             validateTrue(nftStore.sizeOfState() + 1 < maxAllowedMints, MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
-
-            mintNonFungible(
+            // mint nft
+            final var mintedSerials = mintNonFungible(
+                    token,
                     treasuryRel,
                     op.metadata(),
                     context.consensusNow(),
@@ -123,9 +127,17 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
                     tokenStore,
                     tokenRelStore,
                     nftStore);
+            final var recordBuilder = context.recordBuilder(TokenMintRecordBuilder.class);
+
+            recordBuilder.serialNumbers(mintedSerials);
+            // TODO: Need to build transfer ownership from list to transfer NFT to treasury
         }
     }
 
+    /**
+     * Validates the semantics of the token mint transaction that involve state or config.
+     * @param context - the handle context of the token mint transaction
+     */
     private void validateSemantics(final HandleContext context) {
         requireNonNull(context);
         final var op = context.body().tokenMintOrThrow();
@@ -133,15 +145,21 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
     }
 
     /**
-     * Minting unique tokens creates new instances of the given base unique token. Increments the
-     * serial number of the given base unique token, and assigns each of the numbers to each new
-     * unique token instance.
+     * Minting nfts creates new instances of the given non-fungible token. Increments the
+     * serial number of the given base unique token, and increments total owned nfts of the
+     * non-fungible token.
      *
-     * @param treasuryRel   - the relationship between the treasury account and the token
-     * @param metadata      - a list of user-defined metadata, related to the nft instances.
-     * @param consensusTime - the consensus time of the token mint transaction
+     * @param token
+     * @param treasuryRel   - the treasury relation of the token
+     * @param metadata      - the metadata of the nft to be minted
+     * @param consensusTime - the consensus time of the transaction
+     * @param accountStore  - the account store
+     * @param tokenStore    - the token store
+     * @param tokenRelStore - the token relation store
+     * @param nftStore      - the nft store
      */
-    private void mintNonFungible(
+    private List<Long> mintNonFungible(
+            final Token token,
             @NonNull final TokenRelation treasuryRel,
             @NonNull final List<Bytes> metadata,
             @NonNull final Instant consensusTime,
@@ -152,27 +170,35 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var metadataCount = metadata.size();
         validateFalse(metadata.isEmpty(), INVALID_TOKEN_MINT_METADATA);
 
+        // validate token number from treasury relation
         final var tokenId = asToken(treasuryRel.tokenNumber());
-        final var token = tokenStore.get(tokenId);
-        validateTrue(token != null, INVALID_TOKEN_ID);
+        validateTrue(treasuryRel.tokenNumber() == token.tokenNumber(), FAIL_INVALID);
 
+        // get the treasury account
         final var treasuryAccount = accountStore.get(asAccount(treasuryRel.accountNumber()));
         validateTrue(treasuryAccount != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
+        // get the latest serial number minted for the token
         var currentSerialNumber = token.lastUsedSerialNumber();
         validateTrue((currentSerialNumber + metadataCount) <= MAX_NUM_ALLOWED, SERIAL_NUMBER_LIMIT_REACHED);
 
+        // Change the supply on token
         changeSupply(token, treasuryRel, metadataCount, FAIL_INVALID, accountStore, tokenStore, tokenRelStore);
 
+        final var mintedSerials = new ArrayList<Long>();
+
+        // for each serial number minted increment serial numbers and create new unique token
         for (final var meta : metadata) {
             currentSerialNumber++;
             // The default sentinel account is used (0.0.0) to represent unique tokens owned by the treasury
             final var uniqueToken =
                     buildNewlyMintedNft(treasuryAccount, consensusTime, tokenId, meta, currentSerialNumber);
             nftStore.put(uniqueToken);
-            addMintedSerialsToRecord();
+            // all minted serials should be added to the receipt
+            mintedSerials.add(currentSerialNumber);
         }
-
+        // Update last used serial number and number of owned nfts and put the updated token and treasury
+        // into the store
         final var copyToken = token.copyBuilder();
         final var copyTreasury = treasuryAccount.copyBuilder();
 
@@ -181,10 +207,19 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
         tokenStore.put(copyToken.build());
         accountStore.put(copyTreasury.build());
+
+        return mintedSerials;
     }
 
-    private void addMintedSerialsToRecord() {}
-
+    /**
+     * Builds a new unique token when minting a non-fungible token.
+     * @param treasuryAccount - the treasury account
+     * @param consensusTime - the consensus time of the transaction
+     * @param tokenId - the token id
+     * @param meta - the metadata of the nft
+     * @param currentSerialNumber - the current serial number of the nft
+     * @return - the newly built nft
+     */
     private Nft buildNewlyMintedNft(
             @NonNull final Account treasuryAccount,
             @NonNull final Instant consensusTime,
