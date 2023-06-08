@@ -90,6 +90,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.ObjIntConsumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -130,8 +131,9 @@ public class ConfigProviderImpl implements ConfigProvider {
      * configuration. This should only be true if the node is starting from genesis.
      */
     @Inject
-    public ConfigProviderImpl(@GenesisUsage final Boolean useGenesisSource) {
-        final var builder = newConfigurationBuilder();
+    public ConfigProviderImpl(@GenesisUsage @Nullable final Boolean useGenesisSource) {
+        requireNonNull(useGenesisSource);
+        final var builder = createConfigurationBuilder();
         addFileSources(builder, useGenesisSource);
         final Configuration config = builder.build();
         configuration = new AtomicReference<>(new VersionedConfigImpl(config, 0));
@@ -150,7 +152,7 @@ public class ConfigProviderImpl implements ConfigProvider {
      */
     public void update(@NonNull final Bytes propertyFileContent) {
         try (final var ignoredLock = updateLock.lock()) {
-            final var builder = newConfigurationBuilder();
+            final var builder = createConfigurationBuilder();
             addFileSources(builder, false);
             addByteSource(builder, propertyFileContent);
             final Configuration config = builder.build();
@@ -159,7 +161,7 @@ public class ConfigProviderImpl implements ConfigProvider {
         }
     }
 
-    private ConfigurationBuilder newConfigurationBuilder() {
+    private ConfigurationBuilder createConfigurationBuilder() {
         return ConfigurationBuilder.create()
                 .withSource(new PropertyConfigSource(SEMANTIC_VERSION_PROPERTIES_DEFAULT_PATH, 500))
                 .withConfigDataType(AccountsConfig.class)
@@ -238,20 +240,20 @@ public class ConfigProviderImpl implements ConfigProvider {
 
         if (useGenesisSource) {
             try {
-                load(builder, GENESIS_PROPERTIES_PATH_ENV, GENESIS_PROPERTIES_DEFAULT_PATH, 400);
+                addFileSource(builder, GENESIS_PROPERTIES_PATH_ENV, GENESIS_PROPERTIES_DEFAULT_PATH, 400);
             } catch (final Exception e) {
                 throw new IllegalStateException("Can not create config source for genesis properties", e);
             }
         }
 
         try {
-            load(builder, APPLICATION_PROPERTIES_PATH_ENV, APPLICATION_PROPERTIES_DEFAULT_PATH, 100);
+            addFileSource(builder, APPLICATION_PROPERTIES_PATH_ENV, APPLICATION_PROPERTIES_DEFAULT_PATH, 100);
         } catch (final Exception e) {
             throw new IllegalStateException("Can not create config source for application properties", e);
         }
     }
 
-    private void load(
+    private void addFileSource(
             @NonNull final ConfigurationBuilder builder,
             @NonNull final String envName,
             @NonNull final String defaultPath,
