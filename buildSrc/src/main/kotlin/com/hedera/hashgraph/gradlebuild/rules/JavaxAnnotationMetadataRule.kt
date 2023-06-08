@@ -3,14 +3,13 @@ package com.hedera.hashgraph.gradlebuild.rules
 import org.gradle.api.artifacts.ComponentMetadataContext
 import org.gradle.api.artifacts.ComponentMetadataRule
 
-abstract class HederaProtobufJavaApiMetadataRule : ComponentMetadataRule {
+abstract class JavaxAnnotationMetadataRule : ComponentMetadataRule {
 
     override fun execute(context: ComponentMetadataContext) {
         context.details.allVariants {
             withDependencies {
-                removeAll { it.name == "grpc-testing" }
-                removeAll { it.name == "javax.annotation-api" }
-                add("com.github.spotbugs:spotbugs-annotations:4.7.3")
+                // because of the split package, 'javax.annotation' libraries always need to go together
+                add("javax.annotation:javax.annotation-api:1.3.2")
             }
         }
     }

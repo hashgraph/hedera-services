@@ -94,7 +94,6 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.internal.SubSetting;
-import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -362,11 +361,6 @@ public class Settings {
      */
     private boolean gossipWithDifferentVersions = GOSSIP_WITH_DIFFERENT_VERSIONS_DEFAULT_VALUE;
 
-    /**
-     * Settings controlling VirtualMap.
-     */
-    private VirtualMapSettingsImpl virtualMap = new VirtualMapSettingsImpl();
-
     private Settings() {}
 
     public static Settings getInstance() {
@@ -387,8 +381,6 @@ public class Settings {
         SettingsCommon.logStack = getInstance().isLogStack();
         SettingsCommon.showInternalStats = getInstance().isShowInternalStats();
         SettingsCommon.verboseStatistics = getInstance().isVerboseStatistics();
-
-        VirtualMapSettingsFactory.configure(getInstance().getVirtualMap());
     }
 
     /**
@@ -859,10 +851,6 @@ public class Settings {
 
     public int getMaxTransactionCountPerEvent() {
         return maxTransactionCountPerEvent;
-    }
-
-    public VirtualMapSettingsImpl getVirtualMap() {
-        return virtualMap;
     }
 
     public String getCsvOutputFolder() {
