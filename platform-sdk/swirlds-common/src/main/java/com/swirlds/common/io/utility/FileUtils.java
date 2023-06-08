@@ -104,12 +104,11 @@ public final class FileUtils {
     }
 
     /**
-     * Recursively delete a directory and all files contained in this directory. If there is a problem deleting a file
+     * Delete a directory and all files contained in this directory. If there is a problem deleting a file
      * or subdirectory, no more files or directories are attempted to be deleted.
      *
      * @param directoryToBeDeleted the directory to be deleted
      */
-    @SuppressWarnings("resource")
     public static void deleteDirectory(final Path directoryToBeDeleted) throws IOException {
         if (Files.isDirectory(directoryToBeDeleted)) {
             try (final Stream<Path> list = Files.list(directoryToBeDeleted)) {
@@ -135,7 +134,6 @@ public final class FileUtils {
 
         try {
             deleteDirectory(directoryToBeDeleted);
-            logger.info(STATE_TO_DISK.getMarker(), "successfully deleted directory {}", directoryToBeDeleted);
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "failed to delete directory {}", directoryToBeDeleted);
             throw e;

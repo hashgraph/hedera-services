@@ -25,7 +25,7 @@ import java.time.Duration;
 /**
  * An object capable of writing preconsensus events to disk.
  */
-public interface PreConsensusEventWriter extends Startable, Stoppable {
+public interface PreconsensusEventWriter extends Startable, Stoppable {
 
     /**
      * Prior to this method being called, all events added to the preconsensus event stream are assumed to be events

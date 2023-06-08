@@ -27,6 +27,7 @@ import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddr
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
 import com.swirlds.base.state.Startable;
+import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -93,13 +94,14 @@ import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
-import com.swirlds.platform.event.preconsensus.AsyncPreConsensusEventWriter;
-import com.swirlds.platform.event.preconsensus.NoOpPreConsensusEventWriter;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.AsyncPreconsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.NoOpPreconsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventReplayWorkflow;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
-import com.swirlds.platform.event.preconsensus.SyncPreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
 import com.swirlds.platform.event.validation.EventValidator;
@@ -181,8 +183,9 @@ public class SwirldsPlatform implements Platform, Startable {
      * Hashgraph Event graph. Used for gossiping.
      */
     private final ShadowGraph shadowGraph;
-    /** The last status of the platform that was determined, is null until the platform starts up */
-    private final AtomicReference<PlatformStatus> currentPlatformStatus = new AtomicReference<>(null);
+    /** The last status of the platform that was determined */
+    private final AtomicReference<PlatformStatus> currentPlatformStatus =
+            new AtomicReference<>(PlatformStatus.STARTING_UP);
     /**
      * the object used to calculate consensus. it is volatile because the whole object is replaced when reading a state
      * from disk or getting it through reconnect
@@ -206,12 +209,19 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     private final long diskStateRound;
     /**
+     * If a state was loaded from disk, this is the minimum generation non-ancient for that round. If starting from a
+     * genesis state, this is 0.
+     */
+    private final long initialMinimumGenerationNonAncient;
+    /**
      * If a state was loaded from disk, this will have the hash of that state.
      */
     private final Hash diskStateHash;
 
     private final StateManagementComponent stateManagementComponent;
+    private final EventTaskDispatcher eventTaskDispatcher;
     private final QueueThread<EventIntakeTask> intakeQueue;
+    private final QueueThread<ReservedSignedState> stateHashSignQueue;
     private final EventLinker eventLinker;
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
     private final ConsensusRoundHandler consensusRoundHandler;
@@ -256,9 +266,14 @@ public class SwirldsPlatform implements Platform, Startable {
     private final PlatformContext platformContext;
 
     /**
-     * Writes pre-consensus events to disk.
+     * Can be used to read preconsensus event files from disk.
      */
-    private final PreConsensusEventWriter preConsensusEventWriter;
+    private final PreconsensusEventFileManager preconsensusEventFileManager;
+
+    /**
+     * Writes preconsensus events to disk.
+     */
+    private final PreconsensusEventWriter preconsensusEventWriter;
 
     /**
      * Responsible for transmitting and receiving events from the network.
@@ -366,7 +381,8 @@ public class SwirldsPlatform implements Platform, Startable {
         final AppCommunicationComponent appCommunicationComponent =
                 wiring.wireAppCommunicationComponent(notificationEngine);
 
-        preConsensusEventWriter = components.add(buildPreConsensusEventWriter());
+        preconsensusEventFileManager = buildPreconsensusEventFileManager();
+        preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
 
         stateManagementComponent = wiring.wireStateManagementComponent(
                 PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
@@ -376,7 +392,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 txn -> this.createSystemTransaction(txn, true),
                 this::haltRequested,
                 appCommunicationComponent,
-                preConsensusEventWriter,
+                preconsensusEventWriter,
                 currentPlatformStatus::get);
         wiring.registerComponents(components);
 
@@ -394,14 +410,6 @@ public class SwirldsPlatform implements Platform, Startable {
         components.add(new Shutdown());
 
         final Settings settings = Settings.getInstance();
-
-        // if this setting is 0 or less, there is no startup freeze
-        if (settings.getFreezeSecondsAfterStartup() > 0) {
-            final Instant startUpEventFrozenEndTime =
-                    Instant.now().plusSeconds(settings.getFreezeSecondsAfterStartup());
-            startUpEventFrozenManager.setStartUpEventFrozenEndTime(startUpEventFrozenEndTime);
-            logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
-        }
 
         final Address address = getSelfAddress();
         final String eventStreamManagerName;
@@ -427,10 +435,17 @@ public class SwirldsPlatform implements Platform, Startable {
         if (loadedSignedState.isNotNull()) {
             diskStateHash = loadedSignedState.get().getState().getHash();
             diskStateRound = loadedSignedState.get().getRound();
+            initialMinimumGenerationNonAncient = loadedSignedState
+                    .get()
+                    .getState()
+                    .getPlatformState()
+                    .getPlatformData()
+                    .getMinimumGenerationNonAncient();
             startedFromGenesis = false;
         } else {
             diskStateHash = null;
             diskStateRound = -1;
+            initialMinimumGenerationNonAncient = 0;
             startedFromGenesis = true;
         }
 
@@ -439,10 +454,9 @@ public class SwirldsPlatform implements Platform, Startable {
         try (loadedState.signedStateFromDisk) {
             final SignedState signedStateFromDisk = loadedState.signedStateFromDisk.getNullable();
 
-            // Queue thread that stores and handles signed states that need to be hashed and have signatures collected.
-            final QueueThread<ReservedSignedState> stateHashSignQueueThread = PlatformConstructor.stateHashSignQueue(
+            stateHashSignQueue = PlatformConstructor.stateHashSignQueue(
                     threadManager, selfId, stateManagementComponent::newSignedStateFromTransactions, metrics);
-            stateHashSignQueueThread.start();
+            stateHashSignQueue.start();
 
             final State stateToLoad;
             if (signedStateFromDisk != null) {
@@ -490,8 +504,8 @@ public class SwirldsPlatform implements Platform, Startable {
                     swirldStateManager,
                     new ConsensusHandlingMetrics(metrics, time),
                     eventStreamManager,
-                    stateHashSignQueueThread,
-                    preConsensusEventWriter::waitUntilDurable,
+                    stateHashSignQueue,
+                    preconsensusEventWriter::waitUntilDurable,
                     freezeManager::freezeStarted,
                     stateManagementComponent::roundAppliedToState,
                     appVersion));
@@ -513,18 +527,18 @@ public class SwirldsPlatform implements Platform, Startable {
                     (PreConsensusEventObserver) event -> {
                         sequencer.assignStreamSequenceNumber(event);
                         abortAndThrowIfInterrupted(
-                                preConsensusEventWriter::writeEvent,
+                                preconsensusEventWriter::writeEvent,
                                 event,
                                 "Interrupted while attempting to enqueue preconsensus event for writing");
                     },
                     (ConsensusRoundObserver) round -> {
                         abortAndThrowIfInterrupted(
-                                preConsensusEventWriter::setMinimumGenerationNonAncient,
+                                preconsensusEventWriter::setMinimumGenerationNonAncient,
                                 round.getGenerations().getMinGenerationNonAncient(),
                                 "Interrupted while attempting to enqueue change in minimum generation non-ancient");
 
                         abortAndThrowIfInterrupted(
-                                preConsensusEventWriter::requestFlush,
+                                preconsensusEventWriter::requestFlush,
                                 "Interrupted while requesting preconsensus event flush");
                     });
 
@@ -534,6 +548,7 @@ public class SwirldsPlatform implements Platform, Startable {
             eventLinker = buildEventLinker(isDuplicateChecks);
 
             final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
+
             final EventIntake eventIntake = new EventIntake(
                     selfId,
                     eventLinker,
@@ -560,7 +575,7 @@ public class SwirldsPlatform implements Platform, Startable {
             /* validates events received from gossip */
             final EventValidator eventValidator = new EventValidator(eventValidators, eventIntake::addUnlinkedEvent);
 
-            final EventTaskDispatcher taskDispatcher = new EventTaskDispatcher(
+            eventTaskDispatcher = new EventTaskDispatcher(
                     time,
                     eventValidator,
                     eventCreator,
@@ -610,7 +625,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     swirldStateManager,
                     startedFromGenesis,
                     stateManagementComponent,
-                    taskDispatcher::dispatchTask,
+                    eventTaskDispatcher::dispatchTask,
                     eventObserverDispatcher,
                     eventMapper,
                     eventIntakeMetrics,
@@ -873,8 +888,8 @@ public class SwirldsPlatform implements Platform, Startable {
             consensusRoundHandler.loadDataFromSignedState(signedState, true);
 
             try {
-                preConsensusEventWriter.registerDiscontinuity();
-                preConsensusEventWriter.setMinimumGenerationNonAncient(signedState
+                preconsensusEventWriter.registerDiscontinuity();
+                preconsensusEventWriter.setMinimumGenerationNonAncient(signedState
                         .getState()
                         .getPlatformState()
                         .getPlatformData()
@@ -973,27 +988,34 @@ public class SwirldsPlatform implements Platform, Startable {
     }
 
     /**
-     * Build the pre-consensus event writer.
+     * Build the preconsensus event file manager.
      */
     @NonNull
-    private PreConsensusEventWriter buildPreConsensusEventWriter() {
-        final PreConsensusEventStreamConfig preConsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
-
-        if (!preConsensusEventStreamConfig.enableStorage()) {
-            return new NoOpPreConsensusEventWriter();
-        }
-
-        final PreConsensusEventFileManager fileManager;
+    private PreconsensusEventFileManager buildPreconsensusEventFileManager() {
         try {
-            fileManager = new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), selfId);
+            return new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), selfId);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }
+    }
 
-        final PreConsensusEventWriter syncWriter = new SyncPreConsensusEventWriter(platformContext, fileManager);
+    /**
+     * Build the preconsensus event writer.
+     */
+    @NonNull
+    private PreconsensusEventWriter buildPreconsensusEventWriter(
+            @NonNull final PreconsensusEventFileManager fileManager) {
 
-        return new AsyncPreConsensusEventWriter(platformContext, threadManager, syncWriter);
+        final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
+                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
+
+        if (!preconsensusEventStreamConfig.enableStorage()) {
+            return new NoOpPreconsensusEventWriter();
+        }
+
+        final PreconsensusEventWriter syncWriter = new SyncPreconsensusEventWriter(platformContext, fileManager);
+
+        return new AsyncPreconsensusEventWriter(platformContext, threadManager, syncWriter);
     }
 
     /**
@@ -1001,9 +1023,25 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     @Override
     public void start() {
-
         components.start();
 
+        sendStartupNotifications();
+
+        metrics.start();
+
+        replayPreconsensusEvents();
+        configureStartupEventFreeze();
+        gossip.start();
+
+        // in case of a single node network, the platform status update will not be triggered by connections, so it
+        // needs to be triggered now
+        checkPlatformStatus();
+    }
+
+    /**
+     * Send notifications that can only be sent after components have been started.
+     */
+    private void sendStartupNotifications() {
         if (!startedFromGenesis) {
             // If we loaded from disk then call the appropriate dispatch. This dispatch
             // must wait until after components have been started.
@@ -1013,23 +1051,49 @@ public class SwirldsPlatform implements Platform, Startable {
             notificationEngine.dispatch(
                     StateLoadedFromDiskCompleteListener.class, new StateLoadedFromDiskNotification());
         }
+    }
 
-        metrics.start();
+    /**
+     * If configured to do so, replay preconsensus events.
+     */
+    private void replayPreconsensusEvents() {
+        final boolean enableReplay = platformContext
+                .getConfiguration()
+                .getConfigData(PreconsensusEventStreamConfig.class)
+                .enableReplay();
+        if (!enableReplay) {
+            setPlatformStatus(PlatformStatus.READY);
+        } else {
+            PreconsensusEventReplayWorkflow.replayPreconsensusEvents(
+                    platformContext,
+                    threadManager,
+                    OSTime.getInstance(),
+                    preconsensusEventFileManager,
+                    preconsensusEventWriter,
+                    eventTaskDispatcher,
+                    intakeQueue,
+                    consensusRoundHandler,
+                    stateHashSignQueue,
+                    stateManagementComponent,
+                    currentPlatformStatus::get,
+                    this::setPlatformStatus,
+                    initialMinimumGenerationNonAncient);
+        }
+    }
 
-        // FUTURE WORK: validate that status is still STARTING_UP (sanity check until we refactor platform status)
-        // FUTURE WORK: set platform status REPLAYING_EVENTS
-        // FUTURE WORK: replay the preconsensus event stream
-        // FUTURE WORK: validate that status is still REPLAYING_EVENTS (sanity check until we refactor platform status)
-        abortAndThrowIfInterrupted(
-                preConsensusEventWriter::beginStreamingNewEvents,
-                "interrupted while attempting to begin streaming new preconsensus events");
-        // FUTURE WORK: set platform status READY
-
-        gossip.start();
-
-        // in case of a single node network, the platform status update will not be triggered by connections, so it
-        // needs to be triggered now
-        checkPlatformStatus();
+    /**
+     * We don't want to create events right after starting up. Configure that pause in event creation.
+     */
+    private void configureStartupEventFreeze() {
+        final int freezeSecondsAfterStartup = platformContext
+                .getConfiguration()
+                .getConfigData(BasicConfig.class)
+                .freezeSecondsAfterStartup();
+        if (freezeSecondsAfterStartup > 0) {
+            final Instant startUpEventFrozenEndTime = Instant.now().plusSeconds(freezeSecondsAfterStartup);
+            startUpEventFrozenManager.setStartUpEventFrozenEndTime(startUpEventFrozenEndTime);
+            logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
+        }
     }
 
     /**
@@ -1039,30 +1103,33 @@ public class SwirldsPlatform implements Platform, Startable {
         final int numNodes = initialAddressBook.getSize();
 
         synchronized (currentPlatformStatus) {
-            final PlatformStatus newStatus;
             if (numNodes > 1 && gossip.activeConnectionNumber() == 0) {
-                newStatus = PlatformStatus.DISCONNECTED;
+                setPlatformStatus(PlatformStatus.DISCONNECTED);
             } else if (gossip.hasFallenBehind()) {
-                newStatus = PlatformStatus.BEHIND;
+                setPlatformStatus(PlatformStatus.BEHIND);
             } else if (freezeManager.isFreezeStarted()) {
-                newStatus = PlatformStatus.MAINTENANCE;
+                setPlatformStatus(PlatformStatus.MAINTENANCE);
             } else if (freezeManager.isFreezeComplete()) {
-                newStatus = PlatformStatus.FREEZE_COMPLETE;
+                setPlatformStatus(PlatformStatus.FREEZE_COMPLETE);
             } else {
-                newStatus = PlatformStatus.ACTIVE;
+                setPlatformStatus(PlatformStatus.ACTIVE);
             }
+        }
+    }
 
-            final PlatformStatus oldStatus = currentPlatformStatus.getAndSet(newStatus);
-            if (oldStatus != newStatus) {
-                logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                                "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
-                        .toString());
+    /**
+     * Change the current platform status.
+     * @param newStatus the new platform status
+     */
+    private void setPlatformStatus(@NonNull final PlatformStatus newStatus) {
+        final PlatformStatus oldStatus = currentPlatformStatus.getAndSet(newStatus);
+        if (oldStatus != newStatus) {
+            logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
+                            "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
+                    .toString());
 
-                logger.info(PLATFORM_STATUS.getMarker(), "Platform status changed to: {}", newStatus.toString());
-
-                notificationEngine.dispatch(
-                        PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newStatus));
-            }
+            notificationEngine.dispatch(
+                    PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newStatus));
         }
     }
 
