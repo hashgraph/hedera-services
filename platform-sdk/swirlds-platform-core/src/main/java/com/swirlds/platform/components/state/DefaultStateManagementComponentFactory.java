@@ -187,7 +187,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
             addLine(errors, "fatalErrorConsumer must not be null");
         }
         if (preconsensusEventWriter == null) {
-            addLine(errors, "preConsensusEventWriter must not be null");
+            addLine(errors, "preconsensusEventWriter must not be null");
         }
         if (!errors.isEmpty()) {
             throw new IllegalStateException("Unable to build StateManagementComponent:\n" + errors);
