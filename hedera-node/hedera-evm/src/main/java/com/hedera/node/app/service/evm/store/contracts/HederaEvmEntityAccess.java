@@ -26,6 +26,10 @@ public interface HederaEvmEntityAccess {
 
     long getBalance(Address address);
 
+    default long getNonce(Address address) {
+        return 0;
+    }
+
     boolean isTokenAccount(Address address);
 
     ByteString alias(Address address);

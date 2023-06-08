@@ -31,4 +31,6 @@ import org.hyperledger.besu.datatypes.Address;
 public interface UpdateAccountTracker {
 
     void setBalance(final Address accountAddess, final long balance);
+
+    void setNonce(Address address, long nonce);
 }

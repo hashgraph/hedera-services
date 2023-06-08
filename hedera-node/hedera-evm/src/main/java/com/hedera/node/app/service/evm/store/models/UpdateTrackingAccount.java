@@ -141,6 +141,9 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     @Override
     public void setNonce(final long nonce) {
         this.nonce = nonce;
+        if (updateAccountTracker != null) {
+            updateAccountTracker.setNonce(address, nonce);
+        }
     }
 
     @Override

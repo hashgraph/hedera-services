@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.store;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 import com.hedera.node.app.service.evm.store.UpdateAccountTracker;
@@ -43,6 +44,13 @@ public class UpdateAccountTrackerImpl implements UpdateAccountTracker {
     public void setBalance(Address accountAddress, final long balance) {
         if (trackingAccounts != null) {
             trackingAccounts.set(accountIdFromEvmAddress(accountAddress), BALANCE, balance);
+        }
+    }
+
+    @Override
+    public void setNonce(Address accountAddress, long nonce) {
+        if (trackingAccounts != null) {
+            trackingAccounts.set(accountIdFromEvmAddress(accountAddress), ETHEREUM_NONCE, nonce);
         }
     }
 

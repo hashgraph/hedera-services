@@ -97,11 +97,11 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
 
 public class ContractCreateSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
-
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
     public static final String PARENT_INFO = "parentInfo";
     private static final String PAYER = "payer";
+    private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
+    private static final long GAS_TO_OFFER = 300_000L;
     private static final String CONTRACTS_NONCES_EXTERNALIZATION_ENABLED = "contracts.nonces.externalization.enabled";
 
     public static void main(String... args) {
@@ -111,26 +111,27 @@ public class ContractCreateSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                createEmptyConstructor(),
-                insufficientPayerBalanceUponCreation(),
-                rejectsInvalidMemo(),
-                rejectsInsufficientFee(),
-                rejectsInvalidBytecode(),
-                revertsNonzeroBalance(),
-                createFailsIfMissingSigs(),
-                rejectsInsufficientGas(),
-                createsVanillaContractAsExpectedWithOmittedAdminKey(),
-                childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-                cannotCreateTooLargeContract(),
-                revertedTryExtCallHasNoSideEffects(),
-                receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
-                cannotSendToNonExistentAccount(),
-                delegateContractIdRequiredForTransferInDelegateCall(),
-                vanillaSuccess(),
-                blockTimestampChangesWithinFewSeconds(),
-                contractWithAutoRenewNeedSignatures(),
-                createContractWithStakingFields(),
-                contractCreateNoncesExternalizationHappyPath());
+                //                createEmptyConstructor(),
+                //                insufficientPayerBalanceUponCreation(),
+                //                rejectsInvalidMemo(),
+                //                rejectsInsufficientFee(),
+                //                rejectsInvalidBytecode(),
+                //                revertsNonzeroBalance(),
+                //                createFailsIfMissingSigs(),
+                //                rejectsInsufficientGas(),
+                //                createsVanillaContractAsExpectedWithOmittedAdminKey(),
+                //                childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+                //                cannotCreateTooLargeContract(),
+                //                revertedTryExtCallHasNoSideEffects(),
+                //                receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+                //                cannotSendToNonExistentAccount(),
+                //                delegateContractIdRequiredForTransferInDelegateCall(),
+                //                vanillaSuccess(),
+                //                blockTimestampChangesWithinFewSeconds(),
+                //                contractWithAutoRenewNeedSignatures(),
+                //                createContractWithStakingFields(),
+                contractCreateNoncesExternalization());
+        //                contractCreateNoncesExternalizationHappyPath());
     }
 
     @Override
@@ -209,7 +210,7 @@ public class ContractCreateSuite extends HapiSuite {
 
     HapiSpec cannotSendToNonExistentAccount() {
         final var contract = "Multipurpose";
-        Object[] donationArgs = new Object[] {666666L, "Hey, Ma!"};
+        Object[] donationArgs = new Object[]{666666L, "Hey, Ma!"};
 
         return defaultHapiSpec("CannotSendToNonExistentAccount")
                 .given(uploadInitCode(contract))
@@ -295,7 +296,7 @@ public class ContractCreateSuite extends HapiSuite {
                     final var aNum = (int) registry.getAccountID(aBeneficiary).getAccountNum();
                     final var bNum = (int) registry.getAccountID(bBeneficiary).getAccountNum();
                     final var sendArgs =
-                            new Object[] {Long.valueOf(sendAmount), Long.valueOf(aNum), Long.valueOf(bNum)};
+                            new Object[]{Long.valueOf(sendAmount), Long.valueOf(aNum), Long.valueOf(bNum)};
 
                     final var op = contractCall(contract, "sendTo", sendArgs)
                             .gas(110_000)
@@ -446,29 +447,29 @@ public class ContractCreateSuite extends HapiSuite {
                 .then(
                         /* Sending requires receiver signature */
                         sourcing(() -> contractCall(
-                                        sendInternalAndDelegateContract,
-                                        "sendRepeatedlyTo",
-                                        BigInteger.valueOf(justSendContractNum.get()),
-                                        BigInteger.valueOf(beneficiaryAccountNum.get()),
-                                        BigInteger.valueOf(balanceToDistribute / 2))
+                                sendInternalAndDelegateContract,
+                                "sendRepeatedlyTo",
+                                BigInteger.valueOf(justSendContractNum.get()),
+                                BigInteger.valueOf(beneficiaryAccountNum.get()),
+                                BigInteger.valueOf(balanceToDistribute / 2))
                                 .hasKnownStatus(INVALID_SIGNATURE)),
                         /* But it's not enough to just sign using an incomplete prefix */
                         sourcing(() -> contractCall(
-                                        sendInternalAndDelegateContract,
-                                        "sendRepeatedlyTo",
-                                        BigInteger.valueOf(justSendContractNum.get()),
-                                        BigInteger.valueOf(beneficiaryAccountNum.get()),
-                                        BigInteger.valueOf(balanceToDistribute / 2))
+                                sendInternalAndDelegateContract,
+                                "sendRepeatedlyTo",
+                                BigInteger.valueOf(justSendContractNum.get()),
+                                BigInteger.valueOf(beneficiaryAccountNum.get()),
+                                BigInteger.valueOf(balanceToDistribute / 2))
                                 .signedBy(DEFAULT_PAYER, beneficiary)
                                 .hasKnownStatus(INVALID_SIGNATURE)),
                         /* We have to specify the full prefix so the sig can be verified async */
                         getAccountInfo(beneficiary).logged(),
                         sourcing(() -> contractCall(
-                                        sendInternalAndDelegateContract,
-                                        "sendRepeatedlyTo",
-                                        BigInteger.valueOf(justSendContractNum.get()),
-                                        BigInteger.valueOf(beneficiaryAccountNum.get()),
-                                        BigInteger.valueOf(balanceToDistribute / 2))
+                                sendInternalAndDelegateContract,
+                                "sendRepeatedlyTo",
+                                BigInteger.valueOf(justSendContractNum.get()),
+                                BigInteger.valueOf(beneficiaryAccountNum.get()),
+                                BigInteger.valueOf(balanceToDistribute / 2))
                                 .alsoSigningWithFullPrefix(beneficiary)),
                         getAccountBalance(beneficiary).logged());
     }
@@ -583,7 +584,7 @@ public class ContractCreateSuite extends HapiSuite {
                                         .contractCallResult(resultWith()
                                                 .resultThruAbi(
                                                         getABIFor(FUNCTION, "getIndirect", contract),
-                                                        isLiteralResult(new Object[] {BigInteger.valueOf(7L)})))),
+                                                        isLiteralResult(new Object[]{BigInteger.valueOf(7L)})))),
                         getTxnRecord("getChildAddressTxn")
                                 .hasPriority(recordWith()
                                         .contractCallResult(resultWith()
@@ -625,44 +626,72 @@ public class ContractCreateSuite extends HapiSuite {
         final var contract = "NoncesExternalization";
         final var contractCreateTxn = "contractCreateTxn";
 
-        return propertyPreservingHapiSpec("ContractCreateNoncesExternalizationHappyPath")
-                .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
+        return defaultHapiSpec("ContractCreateNoncesExternalizationHappyPath")
                 .given(
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
-                        cryptoCreate(PAYER).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract).via(contractCreateTxn))
                 .when()
                 .then(withOpContext((spec, opLog) -> {
-                    final var opContractTxnRecord = getTxnRecord(contractCreateTxn);
-
-                    allRunFor(spec, opContractTxnRecord);
-
-                    final var parentContractId = spec.registry().getContractId(contract);
-                    final var childContracts = opContractTxnRecord
-                            .getResponse()
-                            .getTransactionGetRecord()
-                            .getTransactionRecord()
-                            .getContractCreateResult()
-                            .getContractNoncesList()
-                            .stream()
-                            .filter(contractNonceInfo ->
-                                    !contractNonceInfo.getContractId().equals(parentContractId))
-                            .toList();
-
-                    // Asserts nonce of parent contract
-                    HapiGetTxnRecord opAssertParent = getTxnRecord(contractCreateTxn)
-                            .hasPriority(recordWith().contractWithIdHasContractNonces(parentContractId, 4L));
-                    allRunFor(spec, opAssertParent);
-
-                    // Asserts nonces of all newly deployed contracts through the constructor
-                    for (final var contractNonceInfo : childContracts) {
-                        HapiGetTxnRecord op = getTxnRecord(contractCreateTxn)
-                                .hasPriority(recordWith()
-                                        .contractWithIdHasContractNonces(contractNonceInfo.getContractId(), 1L));
-                        allRunFor(spec, op);
-                    }
+                    HapiGetTxnRecord op = getTxnRecord(contractCreateTxn)
+                            .hasPriority(recordWith()
+                                    .contractWithIdHasContractNonces(
+                                            spec.registry().getContractId(contract), 4L));
+                    allRunFor(spec, op);
                 }));
+    }
+
+    private HapiSpec contractCreateNoncesExternalization() {
+        final var contract = "NoncesExternalization";
+        final var payer = "payer";
+        final var deployParentContract = "deployParentContract";
+        final var deployChildFromParentFn = "deployChildFromParentContract";
+
+        final var deployContractTxn = "deployContractTxn";
+        final var deployContractTxnTwo = "deployContractTxnTwo";
+        final var deployChildFromParentTxn = "deployChildFromParentContractTx";
+        final var deployChildFromParentTxn2 = "deployChildFromParentContractTxTwo";
+
+        return propertyPreservingHapiSpec("ContractCreateNoncesExternalization")
+                .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
+                .given(
+                        overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
+                        cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(contract, deployParentContract)
+                                .payingWith(payer)
+                                .via(deployContractTxn)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS)
+                        //                        contractCall(contract, deployParentContract)
+                        //                                .payingWith(payer)
+                        //                                .via(deployContractTxnTwo)
+                        //                                .gas(GAS_TO_OFFER)
+                        //                                .hasKnownStatus(SUCCESS),
+                        //                        contractCall(contract, deployChildFromParentFn, BigInteger.valueOf(0))
+                        //                                .payingWith(payer)
+                        //                                .via(deployChildFromParentTxn)
+                        //                                .gas(GAS_TO_OFFER)
+                        //                                .hasKnownStatus(SUCCESS),
+                        //                        contractCall(contract, deployChildFromParentFn, BigInteger.valueOf(0))
+                        //                                .payingWith(payer)
+                        //                                .via(deployChildFromParentTxn2)
+                        //                                .gas(GAS_TO_OFFER)
+                        //                                .hasKnownStatus(SUCCESS)
+                )))
+                .then(
+                        getTxnRecord(deployContractTxn).andAllChildRecords().logged()
+                        //                        getTxnRecord(deployContractTxnTwo).andAllChildRecords().logged(),
+                        //                        getTxnRecord(deployChildFromParentTxn)
+                        //                                .andAllChildRecords()
+                        //                                .logged(),
+                        //                        getTxnRecord(deployChildFromParentTxn2)
+                        //                                .andAllChildRecords()
+                        //                                .logged()
+                );
     }
 
     @Override

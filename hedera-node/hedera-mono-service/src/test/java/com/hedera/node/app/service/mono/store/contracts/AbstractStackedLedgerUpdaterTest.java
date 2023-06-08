@@ -98,7 +98,6 @@ class AbstractStackedLedgerUpdaterTest {
 
     private WorldLedgers ledgers;
     private MockLedgerWorldUpdater wrapped;
-
     private AbstractStackedLedgerUpdater<HederaWorldState, Account> subject;
 
     @BeforeEach
@@ -177,6 +176,7 @@ class AbstractStackedLedgerUpdaterTest {
     @SuppressWarnings("unchecked")
     void doesntAdjustBalanceOfProxyTokenAccountWrapper() {
         final var proxyAccountWrapper = mock(UpdateTrackingAccount.class);
+        ledgers.accounts().create(aAccount);
         given(proxyAccountWrapper.wrappedAccountIsTokenProxy()).willReturn(true);
         given(proxyAccountWrapper.getAddress()).willReturn(aAddress);
         subject.getUpdatedAccounts().put(aAddress, proxyAccountWrapper);

@@ -100,6 +100,11 @@ public class MutableEntityAccess implements EntityAccess {
     }
 
     @Override
+    public long getNonce(final Address address) {
+        return ledger.getNonce(accountIdFromEvmAddress(address));
+    }
+
+    @Override
     public boolean isExtant(final Address address) {
         return ledger.exists(accountIdFromEvmAddress(address));
     }

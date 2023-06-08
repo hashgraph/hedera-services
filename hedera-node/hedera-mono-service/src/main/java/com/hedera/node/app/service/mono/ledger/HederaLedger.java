@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.ledger;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
@@ -224,6 +225,10 @@ public class HederaLedger {
         } else {
             return NO_ACTIVE_TXN_CHANGE_SET;
         }
+    }
+
+    public long getNonce(final AccountID id) {
+        return (long) accountsLedger.get(id, ETHEREUM_NONCE);
     }
 
     /* -- CURRENCY MANIPULATION -- */
