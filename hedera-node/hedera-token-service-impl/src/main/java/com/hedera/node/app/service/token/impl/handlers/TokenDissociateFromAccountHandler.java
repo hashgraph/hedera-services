@@ -135,7 +135,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                     validateFalse(token.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE, ACCOUNT_STILL_OWNS_NFTS);
                     // If the fungible token is NOT expired, then we throw an exception because we
                     // can only dissociate tokens with a zero balance by this time in the code
-                    // @todo('6864'): uncomment when token expiry is implemented
+                    // @future('6864'): uncomment when token expiry is implemented
                     // validateTrue(tokenIsExpired, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 
                     // If the fungible common token is expired, we automatically transfer the
@@ -241,7 +241,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
 
     private boolean tokenIsExpired(final Token token, final Instant consensusNow) {
         // just to get the compiler not to complain about the method params not being used...
-        log.info("TODO tokenIsExpired | token: {}, consensusNow: {}", token, consensusNow);
+        log.info("tokenIsExpired | token: {}, consensusNow: {}", token, consensusNow);
 
         // @future('6864'): identify expired tokens
         // This method will need to identify a token that is expired or a token that is "detached", i.e. expired but
