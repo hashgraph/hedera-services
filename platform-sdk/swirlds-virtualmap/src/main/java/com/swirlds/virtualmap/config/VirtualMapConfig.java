@@ -96,7 +96,6 @@ public record VirtualMapConfig(
         @ConfigProperty(defaultValue = "2") int preferredFlushQueueSize,
         @ConfigProperty(defaultValue = "200ms") Duration flushThrottleStepSize,
         @ConfigProperty(defaultValue = "5s") Duration maximumFlushThrottlePeriod) {
-
     private static final double UNIT_FRACTION_PERCENT = 100.0;
 
     public ConfigViolation virtualMapWarningIntervalValidation(final Configuration configuration) {
