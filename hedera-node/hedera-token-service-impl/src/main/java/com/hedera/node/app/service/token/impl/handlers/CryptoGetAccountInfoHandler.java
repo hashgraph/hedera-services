@@ -192,6 +192,14 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
             @NonNull final TokensConfig tokensConfig,
             @NonNull final LedgerConfig ledgerConfig,
             @NonNull final RewardCalculator rewardCalculator) {
+        requireNonNull(accountID);
+        requireNonNull(accountStore);
+        requireNonNull(tokenStore);
+        requireNonNull(tokenRelationStore);
+        requireNonNull(readableStakingInfoStore);
+        requireNonNull(tokensConfig);
+        requireNonNull(ledgerConfig);
+        requireNonNull(rewardCalculator);
         final var account = accountStore.getAccountById(accountID);
         if (account == null) {
             return Optional.empty();
@@ -231,6 +239,10 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
             @NonNull final Account account,
             @NonNull final ReadableTokenStore readableTokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelationStore) {
+        requireNonNull(account);
+        requireNonNull(tokenConfig);
+        requireNonNull(readableTokenStore);
+        requireNonNull(tokenRelationStore);
         final var ret = new ArrayList<TokenRelationship>();
         var tokenNum = account.headTokenNumber();
         int count = 0;
