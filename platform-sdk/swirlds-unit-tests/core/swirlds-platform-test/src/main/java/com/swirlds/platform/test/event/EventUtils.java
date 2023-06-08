@@ -67,15 +67,16 @@ public abstract class EventUtils {
      * @param signedState the state where events are stored
      */
     public static void convertEvents(final SignedState signedState) {
-        final IndexedEvent[] indexedEvents = Arrays.stream(signedState
-                        .getState()
-                        .getPlatformState()
-                        .getPlatformData()
-                        .getEvents())
-                .map(IndexedEvent::new)
-                .toArray(IndexedEvent[]::new);
-        State.linkParents(indexedEvents);
-        signedState.getState().getPlatformState().getPlatformData().setEvents(indexedEvents);
+        final EventImpl[] events = signedState
+                .getState()
+                .getPlatformState()
+                .getPlatformData()
+                .getEvents();
+        for (int i = 0; i < events.length; i++) {
+            final IndexedEvent ie = new IndexedEvent(events[i]);
+            events[i] = ie;
+        }
+        State.linkParents(events);
     }
 
     /**

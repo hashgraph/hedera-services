@@ -337,21 +337,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Set the events stored in this state.
-     *
-     * @param events an array of events
-     * @return this object
-     */
-    @Deprecated
-    public PlatformData setEvents(final EventImpl[] events) {
-        this.events = events;
-        if (events != null && events.length > 0) {
-            setLastTransactionTimestamp(events[events.length - 1].getLastTransTime());
-        }
-        return this;
-    }
-
-    /**
      * Get the consensus timestamp for this state, defined as the timestamp of the first transaction that was applied in
      * the round that created the state.
      *

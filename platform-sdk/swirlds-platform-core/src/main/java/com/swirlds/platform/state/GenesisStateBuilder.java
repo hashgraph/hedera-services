@@ -51,7 +51,6 @@ public final class GenesisStateBuilder {
         platformData.setRound(0);
         platformData.setNumEventsCons(0);
         platformData.setHashEventsCons(null);
-        platformData.setEvents(new EventImpl[0]);
         platformData.setMinGenInfo(List.of());
         platformData.setLastTransactionTimestamp(Instant.ofEpochSecond(0L));
         platformData.setEpochHash(null);

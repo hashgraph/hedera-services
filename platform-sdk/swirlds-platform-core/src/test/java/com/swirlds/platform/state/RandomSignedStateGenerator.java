@@ -58,7 +58,6 @@ public class RandomSignedStateGenerator {
     private Long numEventsCons;
     private Hash hashEventsCons;
     private AddressBook addressBook;
-    private EventImpl[] events;
     private Instant consensusTimestamp;
     private Boolean freezeState = false;
     private List<MinGenInfo> minGenInfo;
@@ -114,7 +113,6 @@ public class RandomSignedStateGenerator {
             stateInstance.setSwirldState(swirldState);
             PlatformState platformState = new PlatformState();
             final PlatformData platformData = new PlatformData();
-            platformData.setEvents(new EventImpl[0]);
             platformData.setMinGenInfo(List.of());
             platformState.setPlatformData(platformData);
             stateInstance.setPlatformState(platformState);
@@ -141,13 +139,6 @@ public class RandomSignedStateGenerator {
             hashEventsConsInstance = randomHash(random);
         } else {
             hashEventsConsInstance = hashEventsCons;
-        }
-
-        final EventImpl[] eventsInstance;
-        if (events == null) {
-            eventsInstance = new EventImpl[] {};
-        } else {
-            eventsInstance = events;
         }
 
         final Instant consensusTimestampInstance;
@@ -195,7 +186,6 @@ public class RandomSignedStateGenerator {
                 .setRound(roundInstance)
                 .setNumEventsCons(numEventsConsInstance)
                 .setHashEventsCons(hashEventsConsInstance)
-                .setEvents(eventsInstance)
                 .setConsensusTimestamp(consensusTimestampInstance)
                 .setMinGenInfo(minGenInfoInstance)
                 .setCreationSoftwareVersion(softwareVersionInstance)
@@ -321,16 +311,6 @@ public class RandomSignedStateGenerator {
      */
     public RandomSignedStateGenerator setAddressBook(final AddressBook addressBook) {
         this.addressBook = addressBook;
-        return this;
-    }
-
-    /**
-     * Set the events contained within the state.
-     *
-     * @return this object
-     */
-    public RandomSignedStateGenerator setEvents(final EventImpl[] events) {
-        this.events = events;
         return this;
     }
 

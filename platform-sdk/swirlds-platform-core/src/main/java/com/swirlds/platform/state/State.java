@@ -25,11 +25,12 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.internal.EventImpl;
-import java.util.HashMap;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+
+import java.util.HashMap;
 
 /**
  * The root of the merkle tree holding the state of the Swirlds ledger.
@@ -103,7 +104,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
             case ChildIndices.SWIRLD_STATE:
                 return true;
             case ChildIndices.PLATFORM_STATE:
-                return childClassId == PlatformState.CLASS_ID || childClassId == LegacyPlatformState.CLASS_ID;
+                return childClassId == PlatformState.CLASS_ID;
             case ChildIndices.DUAL_STATE:
                 return childClassId == DualStateImpl.CLASS_ID;
             default:
