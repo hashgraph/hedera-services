@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hapi.utils;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.hapi.utils.CommonUtils.functionOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
@@ -316,5 +317,12 @@ class CommonUtilsTest {
                     .findFirst()
                     .get();
         }
+    }
+
+    @Test
+    void getExpectEvmAddress() {
+        final var address = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 123};
+        final var evmAddress = asEvmAddress(123L);
+        assertArrayEquals(address, evmAddress);
     }
 }

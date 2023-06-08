@@ -26,15 +26,14 @@ import static com.hedera.hapi.node.base.TokenFreezeStatus.FREEZE_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenFreezeStatus.FROZEN;
 import static com.hedera.hapi.node.base.TokenKycStatus.GRANTED;
 import static com.hedera.hapi.node.base.TokenKycStatus.KYC_NOT_APPLICABLE;
+import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
 import static com.hedera.node.app.spi.key.KeyUtils.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.swirlds.common.utility.CommonUtils.hex;
-import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -66,7 +65,6 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -153,8 +151,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
                         }
 
                         @Override
-                        public long estimatePendingRewards(
-                                Account account, @org.jetbrains.annotations.Nullable StakingNodeInfo stakingNodeInfo) {
+                        public long estimatePendingRewards(Account account, @Nullable StakingNodeInfo stakingNodeInfo) {
                             return 0;
                         }
                     }); // remove this when we have a real reward calculator
@@ -281,21 +278,15 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
 
     private String getContractAccountId(Account account, final Bytes alias) {
         if (alias.toByteArray().length == EVM_ADDRESS_SIZE) {
-            return CommonUtils.hex(alias.toByteArray());
+            return hex(alias.toByteArray());
         }
         // If we can recover an Ethereum EOA address from the account key, we should return that
         final var evmAddress = tryAddressRecovery(account.key(), EthSigsUtils::recoverAddressFromPubKey);
         if (evmAddress != null && evmAddress.length == EVM_ADDRESS_LEN) {
             return Bytes.wrap(evmAddress).toHex();
         } else {
-            return CommonUtils.hex(asEvmAddress(account.accountNumber()));
+            return hex(asEvmAddress(account.accountNumber()));
         }
-    }
-
-    private static byte[] asEvmAddress(final long num) {
-        final byte[] evmAddress = new byte[20];
-        arraycopy(Longs.toByteArray(num), 0, evmAddress, 12, 8);
-        return evmAddress;
     }
 
     public static byte[] tryAddressRecovery(@Nullable final Key key, final UnaryOperator<byte[]> addressRecovery) {

@@ -24,8 +24,7 @@ import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Default implementation of {@link ReadableStakingInfoStore}
@@ -45,7 +44,7 @@ public class ReadableStakingInfoStoreImpl implements ReadableStakingInfoStore {
 
     @Nullable
     @Override
-    public StakingNodeInfo get(@NotNull final AccountID nodeId) {
+    public StakingNodeInfo get(@NonNull final AccountID nodeId) {
         return getStakingInfoLeaf(nodeId);
     }
 
