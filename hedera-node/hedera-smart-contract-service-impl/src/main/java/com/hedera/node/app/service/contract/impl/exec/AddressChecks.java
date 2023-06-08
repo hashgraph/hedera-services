@@ -69,16 +69,6 @@ public interface AddressChecks {
     }
 
     /**
-     *
-     * @param address
-     * @param frame
-     * @return
-     */
-    default boolean isNeitherNonUserNorPresent(@NonNull Address address, @NonNull MessageFrame frame) {
-        return !isNonUserAccount(address) && !isPresent(address, frame);
-    }
-
-    /**
      * Returns {@code true} if the given address is a Hedera precompile.
      *
      * @param address the address to check
