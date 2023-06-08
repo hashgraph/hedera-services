@@ -21,10 +21,12 @@ import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.SyncLock;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -40,7 +42,7 @@ public class SimultaneousSyncThrottle {
 
     private final int maxListenerSyncs;
     /** lock per each other member, each one is used by all caller threads and the listener thread */
-    private final Map<Long, SyncLock> simSyncThrottleLock;
+    private final Map<NodeId, SyncLock> simSyncThrottleLock;
 
     private static final RunningAverageMetric.Config AVG_SIM_SYNCS_CONFIG = new RunningAverageMetric.Config(
                     PLATFORM_CATEGORY, "simSyncs")
@@ -79,7 +81,9 @@ public class SimultaneousSyncThrottle {
      * @return an Autocloseable lock that provides information on whether the lock was acquired or not, and unlocks if
      * previously locked on close()
      */
-    public MaybeLocked trySync(final long nodeId, final boolean isOutbound) {
+    @NonNull
+    public MaybeLocked trySync(@NonNull final NodeId nodeId, final boolean isOutbound) {
+        Objects.requireNonNull(nodeId, "nodeId");
         // if trying to do an inbound sync, check the max value
         if (!isOutbound && numListenerSyncs.get() > maxListenerSyncs) {
             return MaybeLocked.NOT_ACQUIRED;
@@ -88,7 +92,7 @@ public class SimultaneousSyncThrottle {
         return simSyncThrottleLock.computeIfAbsent(nodeId, this::newSyncLock).tryLock(isOutbound);
     }
 
-    private SyncLock newSyncLock(final long nodeId) {
+    private SyncLock newSyncLock(@NonNull final NodeId nodeId) {
         return new SyncLock(this::incrementSyncCount, this::decrementSyncCount);
     }
 

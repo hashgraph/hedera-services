@@ -40,7 +40,6 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
-import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
@@ -77,7 +76,6 @@ final class ReconnectTest {
 
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Successfully reconnects multiple times and stats are updated")
     void statsTrackSuccessfulReconnect() throws IOException, InterruptedException {
         final int numberOfReconnects = 11;
@@ -106,7 +104,7 @@ final class ReconnectTest {
                 .setAverageWeight(weightPerNode)
                 .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
-                .setSequentialIds(true)
+                .setSequentialIds(false)
                 .build();
 
         try (final PairedStreams pairedStreams = new PairedStreams()) {
@@ -160,8 +158,8 @@ final class ReconnectTest {
             final ReconnectMetrics reconnectMetrics)
             throws IOException {
 
-        final long selfId = 0;
-        final long otherId = 3;
+        final NodeId selfId = new NodeId(0);
+        final NodeId otherId = new NodeId(3);
         final long lastRoundReceived = 100;
         return new ReconnectTeacher(
                 getStaticThreadManager(),

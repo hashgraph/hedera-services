@@ -22,6 +22,9 @@ import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongBinaryOperator;
+import java.util.function.LongSupplier;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -29,14 +32,18 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  */
 public class DefaultLongAccumulator extends DefaultMetric implements LongAccumulator {
 
-    private final java.util.concurrent.atomic.LongAccumulator container;
-    private final long initialValue;
+    private final AtomicLong container;
+    private final LongBinaryOperator accumulator;
+    private final LongSupplier initializer;
 
     public DefaultLongAccumulator(final LongAccumulator.Config config) {
         super(config);
-        this.container =
-                new java.util.concurrent.atomic.LongAccumulator(config.getAccumulator(), config.getInitialValue());
-        this.initialValue = config.getInitialValue();
+        final long initialValue = config.getInitialValue();
+        final LongSupplier configInitializer = config.getInitializer();
+
+        this.accumulator = config.getAccumulator();
+        this.initializer = configInitializer != null ? configInitializer : () -> initialValue;
+        this.container = new AtomicLong(this.initializer.getAsLong());
     }
 
     /**
@@ -44,7 +51,7 @@ public class DefaultLongAccumulator extends DefaultMetric implements LongAccumul
      */
     @Override
     public long getInitialValue() {
-        return initialValue;
+        return initializer.getAsLong();
     }
 
     /**
@@ -52,7 +59,7 @@ public class DefaultLongAccumulator extends DefaultMetric implements LongAccumul
      */
     @Override
     public List<SnapshotEntry> takeSnapshot() {
-        return List.of(new SnapshotEntry(VALUE, container.getThenReset()));
+        return List.of(new SnapshotEntry(VALUE, container.getAndSet(initializer.getAsLong())));
     }
 
     /**
@@ -68,7 +75,15 @@ public class DefaultLongAccumulator extends DefaultMetric implements LongAccumul
      */
     @Override
     public void update(final long other) {
-        container.accumulate(other);
+        container.accumulateAndGet(other, accumulator);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void reset() {
+        container.set(initializer.getAsLong());
     }
 
     /**
@@ -78,7 +93,6 @@ public class DefaultLongAccumulator extends DefaultMetric implements LongAccumul
     public String toString() {
         return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                 .appendSuper(super.toString())
-                .append("initialValue", initialValue)
                 .append("value", get())
                 .toString();
     }

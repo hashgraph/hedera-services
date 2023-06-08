@@ -17,6 +17,8 @@
 package com.swirlds.platform.gossip;
 
 import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 public interface FallenBehindManager {
@@ -40,7 +42,8 @@ public interface FallenBehindManager {
      *
      * @return a list of node IDs, or null if there is no indication we have fallen behind
      */
-    List<Long> getNeededForFallenBehind();
+    @Nullable
+    List<NodeId> getNeededForFallenBehind();
 
     /**
      * Have enough nodes reported that they don't have events we need, and that we have fallen behind?
@@ -54,7 +57,8 @@ public interface FallenBehindManager {
      *
      * @return a list of neighbor IDs
      */
-    List<Long> getNeighborsForReconnect();
+    @Nullable
+    List<NodeId> getNeighborsForReconnect();
 
     /**
      * Should I attempt a reconnect with this neighbor?
@@ -63,7 +67,7 @@ public interface FallenBehindManager {
      * 		the ID of the neighbor
      * @return true if I should attempt a reconnect
      */
-    boolean shouldReconnectFrom(Long peerId);
+    boolean shouldReconnectFrom(@NonNull NodeId peerId);
 
     /**
      * @return the number of nodes that have told us we have fallen behind

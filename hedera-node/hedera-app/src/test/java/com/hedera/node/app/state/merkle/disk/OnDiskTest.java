@@ -17,6 +17,7 @@
 package com.hedera.node.app.state.merkle.disk;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
 
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -24,10 +25,12 @@ import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.merkle.MerkleTestBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.StateUtils;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
@@ -40,6 +43,7 @@ import java.nio.file.Path;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 /**
  * A variety of robust tests for the on-disk merkle data structure, especially including
@@ -56,6 +60,7 @@ class OnDiskTest extends MerkleTestBase {
     private StateDefinition<AccountID, Account> def;
     private StateMetadata<AccountID, Account> md;
     private VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> virtualMap;
+    private Configuration config;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -93,6 +98,10 @@ class OnDiskTest extends MerkleTestBase {
                         false));
 
         virtualMap = new VirtualMap<>(StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), builder);
+
+        this.config = Mockito.mock(Configuration.class);
+        final var hederaConfig = Mockito.mock(HederaConfig.class);
+        lenient().when(config.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
     }
 
     <K extends Comparable<K>, V> VirtualMap<OnDiskKey<K>, OnDiskValue<V>> copyHashAndFlush(
@@ -141,7 +150,7 @@ class OnDiskTest extends MerkleTestBase {
 
         // Before we can read the data back, we need to register the data types
         // I plan to deserialize.
-        final var r = new MerkleSchemaRegistry(registry, storageDir, SERVICE_NAME);
+        final var r = new MerkleSchemaRegistry(registry, SERVICE_NAME);
         r.register(schema);
 
         // read it back now as our map and validate the data come back fine

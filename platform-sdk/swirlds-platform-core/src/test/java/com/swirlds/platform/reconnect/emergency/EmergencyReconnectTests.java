@@ -20,7 +20,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -94,7 +93,7 @@ public class EmergencyReconnectTests {
         ConstructableRegistry.getInstance().registerConstructables("");
 
         when(trueFuture.get()).thenReturn(true);
-        when(reconnectThrottle.initiateReconnect(anyLong())).thenReturn(true);
+        when(reconnectThrottle.initiateReconnect(any())).thenReturn(true);
 
         if (executor.isMutable()) {
             executor.start();
@@ -308,7 +307,7 @@ public class EmergencyReconnectTests {
                 .setAverageWeight(100L)
                 .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
-                .setSequentialIds(true)
+                .setSequentialIds(false)
                 .build();
     }
 

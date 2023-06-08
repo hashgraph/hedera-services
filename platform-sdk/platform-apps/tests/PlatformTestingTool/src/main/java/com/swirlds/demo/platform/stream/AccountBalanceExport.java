@@ -18,6 +18,7 @@ package com.swirlds.demo.platform.stream;
 
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
@@ -53,7 +54,7 @@ public class AccountBalanceExport {
     private static final String lineSperator = "line.separator";
 
     private final long exportPeriodSec;
-    private final HashMap<String, Long> nodeAccounts;
+    private final HashMap<String, NodeId> nodeAccounts;
 
     private Instant previousTimestamp = null;
 
@@ -61,10 +62,9 @@ public class AccountBalanceExport {
         this.exportPeriodSec = exportPeriodSec;
 
         this.nodeAccounts = new HashMap<>();
-        for (long i = 0; i < addressBook.getSize(); i++) {
-            Address address = addressBook.getAddress(i);
+        for (final Address address : addressBook) {
             // memo contains the node accountID string
-            this.nodeAccounts.put(address.getMemo(), i);
+            this.nodeAccounts.put(address.getMemo(), address.getNodeId());
         }
     }
 

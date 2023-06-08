@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
@@ -35,9 +36,11 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.serdes.EntityNumCodec;
 import com.hedera.node.app.service.token.impl.serdes.StringCodec;
+import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.config.data.BootstrapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -56,7 +59,7 @@ public class TokenServiceImpl implements TokenService {
     public static final String PAYER_RECORDS_KEY = "PAYER_RECORDS";
 
     @Override
-    public void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry) {
+    public void registerSchemas(@NonNull SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(tokenSchema());
     }
@@ -74,6 +77,31 @@ public class TokenServiceImpl implements TokenService {
                         onDiskNftsDef(),
                         onDiskTokenRelsDef(),
                         payerRecordsDef());
+            }
+
+            @Override
+            public void migrate(@NonNull MigrationContext ctx) {
+                // TBD Verify this is correct. We need to preload all the special accounts
+                final var accounts = ctx.newStates().get(ACCOUNTS_KEY);
+                final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
+                final var superUserKeyBytes = bootstrapConfig.genesisPublicKey();
+                if (superUserKeyBytes.length() != 32) {
+                    throw new IllegalStateException("'" + superUserKeyBytes + "' is not a possible Ed25519 public key");
+                }
+                final var superUserKey =
+                        Key.newBuilder().ed25519(superUserKeyBytes).build();
+
+                try {
+                    accounts.put(
+                            AccountID.newBuilder().accountNum(2).build(),
+                            Account.newBuilder()
+                                    .accountNumber(2)
+                                    .key(superUserKey)
+                                    .declineReward(true)
+                                    .build());
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to create account 0.0.2");
+                }
             }
         };
     }
