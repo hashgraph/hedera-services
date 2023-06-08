@@ -18,11 +18,15 @@ package com.swirlds.platform.test.chatter;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.sequence.Shiftable;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.PeerMessageException;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 public class ChatterWrapper implements SimulatedChatter {
     final ChatterCore<ChatterEvent> core;
@@ -39,7 +43,9 @@ public class ChatterWrapper implements SimulatedChatter {
     }
 
     @Override
-    public void handlePayload(final SelfSerializable payload, final long sender) {
+    public void handlePayload(@NonNull final SelfSerializable payload, @NonNull final NodeId sender) {
+        Objects.requireNonNull(payload, "payload must not be null");
+        Objects.requireNonNull(sender, "sender must not be null");
         try {
             core.getPeerInstance(sender).inputHandler().handleMessage(payload);
         } catch (final PeerMessageException e) {
@@ -48,8 +54,11 @@ public class ChatterWrapper implements SimulatedChatter {
     }
 
     @Override
+    @Nullable
     public GossipPayload generatePayload(
-            final Instant now, final boolean underutilizedNetwork, final long destination) {
+            @NonNull final Instant now, final boolean underutilizedNetwork, @NonNull final NodeId destination) {
+        Objects.requireNonNull(now, "now must not be null");
+        Objects.requireNonNull(destination, "destination must not be null");
         final SelfSerializable message =
                 core.getPeerInstance(destination).outputAggregator().getMessage();
         if (message == null) {

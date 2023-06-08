@@ -21,7 +21,6 @@ import static com.hedera.node.app.spi.fixtures.Scenarios.BOB;
 import static com.hedera.node.app.spi.fixtures.Scenarios.CAROL;
 import static com.hedera.node.app.spi.fixtures.Scenarios.ERIN;
 import static com.hedera.node.app.spi.fixtures.Scenarios.NODE_1;
-import static com.hedera.node.app.spi.fixtures.Scenarios.STAKING_REWARD_ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,12 +35,9 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.records.RecordManager;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -49,14 +45,11 @@ import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
-import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -90,10 +83,6 @@ class HandleWorkflowTest extends AppTestBase {
     private static final Instant CONSENSUS_NOW = Instant.parse("2000-01-01T00:00:00Z");
 
     private static final long CONFIG_VERSION = 11L;
-
-    private static final String ACCOUNTS_KEY = "ACCOUNTS";
-    private static final String ALIASES_KEY = "ALIASES";
-    public static final String ALICE_ALIAS = "Alice Alias";
 
     private static final PreHandleResult OK_RESULT = createPreHandleResult(Status.SO_FAR_SO_GOOD, ResponseCodeEnum.OK);
 
@@ -152,34 +141,11 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private SwirldTransaction platformTxn;
 
-    @Mock(strictness = LENIENT)
-    private HederaState state;
-
-    private MapWritableKVState<EntityNumVirtualKey, Account> accountsState;
-
-    private MapWritableKVState<String, EntityNumValue> aliasesState;
-
     private HandleWorkflow workflow;
 
     @BeforeEach
     void setup() {
-        accountsState = new MapWritableKVState<>(
-                ACCOUNTS_KEY,
-                Map.of(
-                        EntityNumVirtualKey.fromLong(ALICE.accountID().accountNumOrThrow()),
-                        ALICE.account(),
-                        EntityNumVirtualKey.fromLong(ERIN.accountID().accountNumOrThrow()),
-                        ERIN.account(),
-                        EntityNumVirtualKey.fromLong(
-                                STAKING_REWARD_ACCOUNT.accountID().accountNumOrThrow()),
-                        STAKING_REWARD_ACCOUNT.account()));
-        aliasesState = new MapWritableKVState<>(ALIASES_KEY, Map.of());
-        final var writableStates = MapWritableStates.builder()
-                .state(accountsState)
-                .state(aliasesState)
-                .build();
-        when(state.createReadableStates(TokenService.NAME)).thenReturn(writableStates);
-        when(state.createWritableStates(TokenService.NAME)).thenReturn(writableStates);
+        setupStandardStates();
 
         when(platformTxn.getConsensusTimestamp()).thenReturn(CONSENSUS_NOW);
         when(platformTxn.getMetadata()).thenReturn(OK_RESULT);
@@ -356,7 +322,7 @@ class HandleWorkflowTest extends AppTestBase {
         // then
         final var alice = aliasesState.get(ALICE_ALIAS);
         assertThat(alice).isNotNull();
-        assertThat(alice.num()).isEqualTo(ALICE.account().accountNumber());
+        assertThat(alice.accountNum()).isEqualTo(ALICE.account().accountNumber());
         // TODO: Check that record was created
     }
 
@@ -445,7 +411,7 @@ class HandleWorkflowTest extends AppTestBase {
             // then
             final var alice = aliasesState.get(ALICE_ALIAS);
             assertThat(alice).isNotNull();
-            assertThat(alice.num()).isEqualTo(ALICE.account().accountNumber());
+            assertThat(alice.accountNum()).isEqualTo(ALICE.account().accountNumber());
             // TODO: Check that record was created
         }
 

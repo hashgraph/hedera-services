@@ -535,7 +535,7 @@ class AddressBookStoreTests {
 
         // Force all nodes to have zero weight
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setCustomWeightGenerator(nodeId -> 0)
+                .setCustomWeightGenerator(nodeId -> 0L)
                 .build();
 
         assertThrows(

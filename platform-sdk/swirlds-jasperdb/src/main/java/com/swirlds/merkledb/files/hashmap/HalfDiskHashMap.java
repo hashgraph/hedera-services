@@ -24,18 +24,18 @@ import static com.swirlds.merkledb.files.DataFileCommon.formatSizeBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
 import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.Units;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
 import com.swirlds.merkledb.collections.LongListOffHeap;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
 import com.swirlds.merkledb.files.DataFileReader;
 import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.merkledb.settings.MerkleDbSettings;
-import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -131,11 +131,11 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     private Thread writingThread;
 
     /** MerkleDb settings */
-    private static final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
+    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
 
     /** Executor for parallel bucket reads/updates in {@link #endWriting()} */
     private static final ExecutorService flushExecutor = Executors.newFixedThreadPool(
-            settings.getNumHalfDiskHashMapFlushThreads(),
+            config.getNumHalfDiskHashMapFlushThreads(),
             new ThreadConfiguration(getStaticThreadManager())
                     .setComponent(MERKLEDB_COMPONENT)
                     .setThreadName("HalfDiskHashMap Flushing")
@@ -211,7 +211,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
                         + "] because metadata file is missing");
             }
             // load or rebuild index
-            final boolean forceIndexRebuilding = settings.isIndexRebuildingEnforced();
+            final boolean forceIndexRebuilding = config.indexRebuildingEnforced();
             if (Files.exists(indexFile) && !forceIndexRebuilding) {
                 bucketIndexToBucketLocation =
                         preferDiskBasedIndexes ? new LongListDisk(indexFile) : new LongListOffHeap(indexFile);
@@ -547,12 +547,12 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
         logger.info(
                 MERKLE_DB.getMarker(),
                 """
-				HalfDiskHashMap Stats {
-					mapSize = {}
-					minimumBuckets = {}
-					numOfBuckets = {}
-					GOOD_AVERAGE_BUCKET_ENTRY_COUNT = {}
-				}""",
+                        HalfDiskHashMap Stats {
+                        	mapSize = {}
+                        	minimumBuckets = {}
+                        	numOfBuckets = {}
+                        	GOOD_AVERAGE_BUCKET_ENTRY_COUNT = {}
+                        }""",
                 mapSize,
                 minimumBuckets,
                 numOfBuckets,

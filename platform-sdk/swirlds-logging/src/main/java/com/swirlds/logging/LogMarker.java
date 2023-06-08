@@ -63,11 +63,6 @@ public enum LogMarker {
     INVALID_EVENT_ERROR(LogMarkerType.ERROR),
 
     /**
-     * to distinguish JVM pauses from other issues
-     */
-    JVM_PAUSE_WARN(LogMarkerType.WARNING),
-
-    /**
      * logs events related to the startup of the application
      */
     STARTUP(LogMarkerType.INFO),

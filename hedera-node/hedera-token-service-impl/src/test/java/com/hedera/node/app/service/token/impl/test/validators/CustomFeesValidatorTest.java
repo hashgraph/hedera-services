@@ -36,7 +36,7 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.test.handlers.CryptoTokenHandlerTestBase;
+import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import java.util.ArrayList;
@@ -54,7 +54,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @BeforeEach
     public void commonSetUp() {
         super.setUp();
-        refreshStoresWithEntitiesInWritable();
+        refreshWritableStores();
     }
 
     @Test
@@ -123,7 +123,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("royalty fee can be set for non fungible unique tokens")
     void royaltyFeeForNonFungibleTokenSucceeds() {
-        refreshStoresWithEntitiesInWritable();
+        refreshWritableStores();
         final List<CustomFee> feeWithRoyalty = new ArrayList<>();
         feeWithRoyalty.add(withRoyaltyFee(royaltyFee));
         assertThatNoException()
@@ -157,7 +157,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("royalty fee for NFTs will fail if the denominating token is missing")
     void royaltyFeeFailsFungibleDenom() {
-        refreshStoresWithEntitiesInWritable();
+        refreshWritableStores();
         final List<CustomFee> feeWithRoyalty = new ArrayList<>();
         final var nftDenom = royaltyFee
                 .copyBuilder()
@@ -179,7 +179,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void missingTokenAssociationForRoyaltyFeeFails() {
-        refreshStoresWithEntitiesInWritable();
+        refreshWritableStores();
         readableTokenRelState = emptyReadableTokenRelsStateBuilder().build();
         given(readableStates.<EntityNumPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
         readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates);
@@ -212,7 +212,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("fixed fee can be set for non fungible unique tokens")
     void fixedFeeIsAllowedForNonFungibleToken() {
-        refreshStoresWithEntitiesInWritable();
+        refreshWritableStores();
         final List<CustomFee> feeWithFixed = new ArrayList<>();
         feeWithFixed.add(withFixedFee(fixedFee));
         assertThatNoException()
@@ -261,7 +261,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("token denomination should be fungible common for fixed fee")
     void validateTokenDenominationForFixedFee() {
-        refreshStoresWithEntitiesInWritable();
+        refreshWritableStores();
         final var newFee = fixedFee.copyBuilder()
                 .denominatingTokenId(TokenID.newBuilder()
                         .tokenNum(nonFungibleTokenNum.longValue())

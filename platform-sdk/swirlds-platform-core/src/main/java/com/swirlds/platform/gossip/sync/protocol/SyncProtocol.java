@@ -142,9 +142,9 @@ public class SyncProtocol implements Protocol {
      * @return true if the peer is needed for fallen behind, else false
      */
     private boolean peerNeededForFallenBehind() {
-        final List<Long> neededForFallenBehind = fallenBehindManager.getNeededForFallenBehind();
+        final List<NodeId> neededForFallenBehind = fallenBehindManager.getNeededForFallenBehind();
 
-        return neededForFallenBehind != null && neededForFallenBehind.contains(peerId.id());
+        return neededForFallenBehind != null && neededForFallenBehind.contains(peerId);
     }
 
     /**
