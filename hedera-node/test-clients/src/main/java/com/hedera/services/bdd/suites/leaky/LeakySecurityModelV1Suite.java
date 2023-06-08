@@ -23,7 +23,9 @@ import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationV1Securit
 import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileV1SecurityModelSuite;
+import com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsV1SecurityModelSuite;
+import com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileV1SecurityModelSuite;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -47,7 +49,9 @@ public class LeakySecurityModelV1Suite extends HapiSuite {
                 new CryptoTransferHTSV1SecurityModelSuite(),
                 new DissociatePrecompileV1SecurityModelSuite(),
                 new Create2OperationV1SecurityModelSuite(),
-                new MixedHTSPrecompileTestsV1SecurityModelSuite());
+                new MixedHTSPrecompileTestsV1SecurityModelSuite(),
+                new TokenUpdatePrecompileV1SecurityModelSuite(),
+                new LazyCreateThroughPrecompileV1SecurityModelSuite());
     }
 
     @Override

@@ -28,6 +28,7 @@ import static java.lang.System.arraycopy;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
@@ -47,12 +48,15 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -323,5 +327,31 @@ public class Utils {
 
     public static Instant asInstant(final Timestamp timestamp) {
         return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
+    }
+
+    public static Address[] nCopiesOfSender(final int n, final Address mirrorAddr) {
+        return Collections.nCopies(n, mirrorAddr).toArray(Address[]::new);
+    }
+
+    public static Address[] nNonMirrorAddressFrom(final int n, final long m) {
+        return LongStream.range(m, m + n).mapToObj(Utils::nonMirrorAddrWith).toArray(Address[]::new);
+    }
+
+    public static Address headlongFromHexed(final String addr) {
+        return Address.wrap(Address.toChecksumAddress("0x" + addr));
+    }
+
+    public static Address mirrorAddrWith(final long num) {
+        return Address.wrap(
+                Address.toChecksumAddress(new BigInteger(1, HapiPropertySource.asSolidityAddress(0, 0, num))));
+    }
+
+    public static Address nonMirrorAddrWith(final long num) {
+        return nonMirrorAddrWith(666, num);
+    }
+
+    public static Address nonMirrorAddrWith(final long seed, final long num) {
+        return Address.wrap(Address.toChecksumAddress(
+                new BigInteger(1, HapiPropertySource.asSolidityAddress((int) seed, seed, num))));
     }
 }
