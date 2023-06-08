@@ -976,4 +976,84 @@ class QueueThreadTests {
 
         queue.stop();
     }
+
+    @Test
+    @DisplayName("Idle Callback Test")
+    void idleCallbackTest() throws InterruptedException {
+        final AtomicBoolean error = new AtomicBoolean(false);
+
+        final AtomicBoolean idleCallbackPermitted = new AtomicBoolean(false);
+        final AtomicBoolean idleCallbackCalled = new AtomicBoolean(false);
+        final Runnable idleCallback = () -> {
+            if (idleCallbackPermitted.get()) {
+                idleCallbackCalled.set(true);
+            } else {
+                error.set(true);
+            }
+        };
+
+        final QueueThread<Runnable> queue = new QueueThreadConfiguration<Runnable>(getStaticThreadManager())
+                .setThreadName("test")
+                .setIdleCallback(idleCallback)
+                .setHandler(Runnable::run)
+                .setWaitForWorkDuration(Duration.ofMillis(1))
+                .build();
+
+        final CountDownLatch latch1 = new CountDownLatch(1);
+        final CountDownLatch latch2 = new CountDownLatch(1);
+        final CountDownLatch latch3 = new CountDownLatch(1);
+
+        queue.add(() -> {
+            try {
+                latch1.await();
+            } catch (final InterruptedException ignored) {
+                error.set(true);
+                Thread.currentThread().interrupt();
+            }
+        });
+        queue.add(() -> {
+            try {
+                latch2.await();
+            } catch (final InterruptedException ignored) {
+                error.set(true);
+                Thread.currentThread().interrupt();
+            }
+        });
+        queue.add(() -> {
+            try {
+                latch3.await();
+            } catch (final InterruptedException ignored) {
+                error.set(true);
+                Thread.currentThread().interrupt();
+            }
+        });
+        queue.start();
+
+        // The queue should be call the idle callback during this time,
+        // but give it some time to do bad things if it's going to do bad things.
+        MILLISECONDS.sleep(10);
+
+        latch1.countDown();
+
+        // The queue should be call the idle callback during this time,
+        // but give it some time to do bad things if it's going to do bad things.
+        MILLISECONDS.sleep(10);
+
+        latch2.countDown();
+
+        // The queue should be call the idle callback during this time,
+        // but give it some time to do bad things if it's going to do bad things.
+        MILLISECONDS.sleep(10);
+
+        // Once job 3 is permitted to complete, we expect for the idle callback to be invoked shortly afterwards.
+        idleCallbackPermitted.set(true);
+
+        latch3.countDown();
+
+        assertEventuallyTrue(idleCallbackCalled::get, Duration.ofSeconds(1), "Idle callback was not called");
+
+        queue.stop();
+
+        assertFalse(error.get());
+    }
 }
