@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -624,7 +625,8 @@ public class ContractCreateSuite extends HapiSuite {
         final var contract = "NoncesExternalization";
         final var contractCreateTxn = "contractCreateTxn";
 
-        return defaultHapiSpec("ContractCreateNoncesExternalizationHappyPath")
+        return propertyPreservingHapiSpec("ContractCreateNoncesExternalizationHappyPath")
+                .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
                 .given(
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
                         uploadInitCode(contract),
