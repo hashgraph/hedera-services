@@ -85,7 +85,11 @@ public enum PlatformStatus implements UniqueId {
      * <p>
      * NOTE: not in use
      */
-    CATASTROPHIC_FAILURE(11);
+    CATASTROPHIC_FAILURE(11),
+    /**
+     * The platform is done gossiping, and is in the process of writing a final freeze state to disk.
+     */
+    SAVING_FREEZE_STATE(12);
 
     /**
      * Unique ID of the enum value

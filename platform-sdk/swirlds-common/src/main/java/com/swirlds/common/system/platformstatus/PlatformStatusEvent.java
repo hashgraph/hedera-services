@@ -19,7 +19,7 @@ package com.swirlds.common.system.platformstatus;
 /**
  * An enum representing events that can occur which may have an impact on the {@link PlatformStatus}
  */
-public enum StatusEvent {
+public enum PlatformStatusEvent {
     /**
      * Replay of events from the PreconsensusEventStream has started.
      */
@@ -51,5 +51,9 @@ public enum StatusEvent {
     /**
      * Something has happened that the platform can't recover from.
      */
-    CATASTROPHIC_FAILURE
+    CATASTROPHIC_FAILURE,
+    /**
+     * An amount of time has elapsed.
+     */
+    TIME_ELAPSED
 }
