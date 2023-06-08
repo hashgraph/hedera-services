@@ -371,10 +371,6 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
         contractNonces.put(contractId, contractNonce);
     }
 
-    public void setContractNonces(Map<ContractID, Long> contractNonces) {
-        this.contractNonces = contractNonces;
-    }
-
     @VisibleForTesting
     List<InProgressChildRecord> precedingChildRecords() {
         return precedingChildRecords;

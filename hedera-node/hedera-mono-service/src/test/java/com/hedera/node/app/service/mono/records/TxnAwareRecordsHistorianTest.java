@@ -124,27 +124,27 @@ class TxnAwareRecordsHistorianTest {
             .setReceipt(TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build());
     private final ExpirableTxnRecord.Builder jFinalRecord = finalRecord;
     private final ExpirableTxnRecord payerRecord = finalRecord.build();
-    private static final Map<ContractID, Long> contractNonces = new HashMap<>() {
+    private static final Map<ContractID, Long> expectedContractNonces = new HashMap<>() {
         {
             put(
                     ContractID.newBuilder()
-                            .setShardNum(2L)
-                            .setRealmNum(3L)
-                            .setContractNum(4L)
+                            .setShardNum(1L)
+                            .setRealmNum(2L)
+                            .setContractNum(3L)
                             .build(),
                     1L);
-            put(
-                    ContractID.newBuilder()
-                            .setShardNum(3L)
-                            .setRealmNum(4L)
-                            .setContractNum(5L)
-                            .build(),
-                    2L);
             put(
                     ContractID.newBuilder()
                             .setShardNum(4L)
                             .setRealmNum(5L)
                             .setContractNum(6L)
+                            .build(),
+                    2L);
+            put(
+                    ContractID.newBuilder()
+                            .setShardNum(7L)
+                            .setRealmNum(8L)
+                            .setContractNum(9L)
                             .build(),
                     3L);
         }
@@ -188,7 +188,6 @@ class TxnAwareRecordsHistorianTest {
         subject = new TxnAwareRecordsHistorian(
                 recordCache, txnCtx, consensusTimeTracker, dynamicProperties, handleThrottling);
         subject.setCreator(creator);
-        subject.setContractNonces(contractNonces);
     }
 
     @Test
@@ -628,6 +627,28 @@ class TxnAwareRecordsHistorianTest {
 
         final var topLevelRecord = contractCreateAndCallResult();
 
+        subject.updateContractNonces(
+                ContractID.newBuilder()
+                        .setShardNum(1L)
+                        .setRealmNum(2L)
+                        .setContractNum(3L)
+                        .build(),
+                1L);
+        subject.updateContractNonces(
+                ContractID.newBuilder()
+                        .setShardNum(4L)
+                        .setRealmNum(5L)
+                        .setContractNum(6L)
+                        .build(),
+                2L);
+        subject.updateContractNonces(
+                ContractID.newBuilder()
+                        .setShardNum(7L)
+                        .setRealmNum(8L)
+                        .setContractNum(9L)
+                        .build(),
+                3L);
+
         given(txnCtx.recordSoFar()).willReturn(topLevelRecord);
         given(creator.saveExpiringRecord(effPayer, topLevelRecord.build(), nows, submittingMember))
                 .willReturn(topLevelRecord.build());
@@ -659,9 +680,9 @@ class TxnAwareRecordsHistorianTest {
         assertEquals(topLevelNow, topLevelRso.getTimestamp());
 
         if (funcName.equals(ContractCreate)) {
-            assertEquals(topLevelRecord.getContractCreateResult().getContractNonces(), contractNonces);
+            assertEquals(topLevelRecord.getContractCreateResult().getContractNonces(), expectedContractNonces);
         } else if (funcName.equals(ContractCall)) {
-            assertEquals(topLevelRecord.getContractCallResult().getContractNonces(), contractNonces);
+            assertEquals(topLevelRecord.getContractCallResult().getContractNonces(), expectedContractNonces);
         }
     }
 
@@ -702,7 +723,7 @@ class TxnAwareRecordsHistorianTest {
 
         final byte[] evmAddress = Address.BLAKE2B_F_COMPRESSION.toArray();
         final List<EntityId> createdContractIds =
-                List.of(new EntityId(2L, 3L, 4L), new EntityId(3L, 4L, 5L), new EntityId(4L, 5L, 6L));
+                List.of(new EntityId(1L, 2L, 3L), new EntityId(4L, 5L, 6L), new EntityId(7L, 8L, 9L));
         final List<ContractID> grpcCreatedContractIds =
                 createdContractIds.stream().map(EntityId::toGrpcContractId).toList();
 
