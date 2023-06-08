@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.TokenFreezeStatus.FREEZE_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenKycStatus.KYC_NOT_APPLICABLE;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKENS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKEN_RELS;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
@@ -40,6 +41,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.AccountInfo;
@@ -54,6 +56,7 @@ import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountInfoHandler;
@@ -82,12 +85,12 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     @Mock
     private Token token1, token2, token3;
     @Mock
-    private ReadableStates readableStates1, readableStates2, readableStates3;
+    private ReadableStates readableStates1, readableStates2, readableStates3, readableStates4;
 
     private CryptoGetAccountInfoHandler subject;
 
     @Mock
-    private ReadableStakingInfoStore readableStakingInfoStore;
+    private StakingNodeInfo stakingNodeInfo;
 
     @BeforeEach
     public void setUp() {
@@ -120,7 +123,6 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("Validate query is successful with valid account")
     void validatesQueryWhenValidAccount() {
-        givenValidAccount(accountNum);
         readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates);
@@ -210,10 +212,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("fail FAIL_INVALID test")
     void getsCorrectResponseHeadIfAccountInfoNotFound() {
-        givenValidAccount(accountNum);
-        final var responseHeader = ResponseHeader.newBuilder()
-                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
-                .build();
+        final var responseHeader = getOkResponse();
 
         final var readableAccounts = MapReadableKVState.<AccountID, Account>builder(ACCOUNTS)
                 .value(id, account)
@@ -230,6 +229,12 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(readableStates3.<EntityNumPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRel);
         final var readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates3);
+
+        final var readableStakingNodes = MapReadableKVState.<AccountID, StakingNodeInfo>builder(STAKING_INFO_KEY)
+                .value(id, stakingNodeInfo)
+                .build();
+        given(readableStates4.<AccountID, StakingNodeInfo>get(STAKING_INFO_KEY)).willReturn(readableStakingNodes);
+        final var readableStakingInfoStore = new ReadableStakingInfoStoreImpl(readableStates4);
 
         final var query = createCryptoGetInfoQuery(4);
         when(context.query()).thenReturn(query);
@@ -252,11 +257,10 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("OK response is correctly handled in findResponse")
     void getsResponseIfOkResponse() {
-        givenValidAccount(accountNum);
-        final var responseHeader = ResponseHeader.newBuilder()
-                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
-                .build();
+        final var responseHeader = getOkResponse();
         final var expectedInfo = getExpectedAccountInfo();
+
+        account = account.copyBuilder().stakedNumber(-1).declineReward(false).build();
 
         final var readableAccounts = MapReadableKVState.<AccountID, Account>builder(ACCOUNTS)
                 .value(id, account)
@@ -289,6 +293,12 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         given(readableStates3.<EntityNumPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRel);
         final var readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates3);
 
+        final var readableStakingNodes = MapReadableKVState.<AccountID, StakingNodeInfo>builder(STAKING_INFO_KEY)
+                .value(id, stakingNodeInfo)
+                .build();
+        given(readableStates4.<AccountID, StakingNodeInfo>get(STAKING_INFO_KEY)).willReturn(readableStakingNodes);
+        final var readableStakingInfoStore = new ReadableStakingInfoStoreImpl(readableStates4);
+
         final var query = createCryptoGetInfoQuery(accountNum);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(ReadableAccountStore);
@@ -311,11 +321,10 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("check multiple token relations list")
     void checkMulitpleTokenRelations() {
-        givenValidAccount(accountNum);
-        final var responseHeader = ResponseHeader.newBuilder()
-                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
-                .build();
+        final var responseHeader = getOkResponse();
         final var expectedInfo = getExpectedAccountInfos();
+
+        account = account.copyBuilder().stakedNumber(-1).declineReward(false).build();
 
         final var readableAccounts = MapReadableKVState.<AccountID, Account>builder(ACCOUNTS)
                 .value(id, account)
@@ -375,6 +384,12 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(readableStates3.<EntityNumPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRel);
         final var readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates3);
+
+        final var readableStakingNodes = MapReadableKVState.<AccountID, StakingNodeInfo>builder(STAKING_INFO_KEY)
+                .value(id, stakingNodeInfo)
+                .build();
+        given(readableStates4.<AccountID, StakingNodeInfo>get(STAKING_INFO_KEY)).willReturn(readableStakingNodes);
+        final var readableStakingInfoStore = new ReadableStakingInfoStoreImpl(readableStates4);
 
         final var query = createCryptoGetInfoQuery(accountNum);
         when(context.query()).thenReturn(query);
@@ -455,9 +470,12 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     }
 
     private StakingInfo getExpectedStakingInfo() {
-        final var stakingInfo = StakingInfo.newBuilder().declineReward(true).stakedToMe(1_234L);
-
-        return stakingInfo.build();
+        return StakingInfo.newBuilder()
+                .declineReward(false)
+                .stakedToMe(1_234L)
+                .stakedNodeId(0)
+                .stakePeriodStart(Timestamp.newBuilder().seconds(0))
+                .build();
     }
 
     private List<TokenRelationship> getExpectedTokenRelationships() {
@@ -509,5 +527,11 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .build();
 
         return Query.newBuilder().cryptoGetInfo(data).build();
+    }
+
+    private ResponseHeader getOkResponse() {
+        return ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .build();
     }
 }
