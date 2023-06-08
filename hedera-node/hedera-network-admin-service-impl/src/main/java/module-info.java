@@ -15,7 +15,6 @@ module com.hedera.node.app.service.network.admin.impl {
     requires com.github.spotbugs.annotations;
     requires org.apache.logging.log4j;
     requires com.hedera.node.app.service.token;
-    requires com.hedera.node.config;
     requires com.google.common;
 
     provides com.hedera.node.app.service.networkadmin.FreezeService with
