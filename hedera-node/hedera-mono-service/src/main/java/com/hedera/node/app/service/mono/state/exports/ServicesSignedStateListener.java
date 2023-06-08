@@ -25,9 +25,12 @@ import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateNotification;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class ServicesSignedStateListener implements NewSignedStateListener {
+    private static final Logger log = LogManager.getLogger(ServicesSignedStateListener.class);
 
     private final CurrentPlatformStatus currentPlatformStatus;
     private final BalancesExporter balancesExporter;
@@ -45,6 +48,11 @@ public class ServicesSignedStateListener implements NewSignedStateListener {
 
     @Override
     public void notify(final NewSignedStateNotification notice) {
+        log.info(
+                "ServicesSignedStateListener.notify() id #{} called in thread {}",
+                System.identityHashCode(this),
+                Thread.currentThread().getName());
+
         final ServicesState signedState = notice.getSwirldState();
         if (currentPlatformStatus.get() == FREEZE_COMPLETE) {
             signedState.logSummary();

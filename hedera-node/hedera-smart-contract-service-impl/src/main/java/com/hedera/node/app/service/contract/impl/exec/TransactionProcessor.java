@@ -23,6 +23,12 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
+/**
+ * Will be modeled after the Besu {@code MainnetTransactionProcessor}, so that all four HAPI
+ * contract operations ({@code ContractCall}, {@code ContractCreate}, {@code EthereumTransaction},
+ * {@code ContractCallLocal}) will all reduce to a relatively straightforward call to a
+ * {@link TransactionProcessor#processTransaction(WorldUpdater)} method.
+ */
 public class TransactionProcessor {
     public static final String CONFIG_CONTEXT_VARIABLE = "contractsConfig";
 

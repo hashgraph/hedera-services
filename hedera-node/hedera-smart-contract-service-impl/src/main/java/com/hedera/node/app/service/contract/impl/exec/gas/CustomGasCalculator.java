@@ -18,4 +18,8 @@ package com.hedera.node.app.service.contract.impl.exec.gas;
 
 import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 
+/**
+ * Need to clean up and refactor {@link com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22}
+ * to get its price and exchange rate from the transaction's {@link com.hedera.node.app.spi.meta.bni.Scope}.
+ */
 public class CustomGasCalculator extends LondonGasCalculator {}

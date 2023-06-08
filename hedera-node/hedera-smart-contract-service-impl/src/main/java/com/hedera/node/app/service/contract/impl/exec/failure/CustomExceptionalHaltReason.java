@@ -18,7 +18,13 @@ package com.hedera.node.app.service.contract.impl.exec.failure;
 
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
+/**
+ * Some {@link ExceptionalHaltReason}s that are not part of the Besu core.
+ */
 public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
+    /**
+     * An EVM operation referenced an account that does not exist.
+     */
     MISSING_ADDRESS("Invalid account reference");
 
     private final String description;

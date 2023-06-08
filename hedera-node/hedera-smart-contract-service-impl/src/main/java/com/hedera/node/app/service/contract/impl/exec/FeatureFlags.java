@@ -23,7 +23,20 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * Provides feature flags used to customize behavior of Hedera {@link org.hyperledger.besu.evm.operation.Operation} overrides.
  */
 public interface FeatureFlags {
+    /**
+     * Whether the {@code CREATE2} operation should be enabled for the given {@code frame}.
+     *
+     * @param frame the {@link MessageFrame} to check
+     * @return whether {@code CREATE2} should be enabled
+     */
     boolean isCreate2Enabled(@NonNull MessageFrame frame);
 
+    /**
+     * Whether "implicit creation" of accounts via sending value or targeting a {@code CREATE2} to an EIP-1014 address
+     * should be enabled for the given {@code frame}.
+     *
+     * @param frame the {@link MessageFrame} to check
+     * @return whether implicit creation should be enabled
+     */
     boolean isImplicitCreationEnabled(@NonNull MessageFrame frame);
 }

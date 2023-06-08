@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.EIP_1014_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.PRECOMPILE_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.REQUIRED_GAS;
 import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.SYSTEM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.assertSameResult;
@@ -103,17 +102,6 @@ class CustomCallOperationTest {
         given(frame.isStatic()).willReturn(true);
 
         final var expected = new Operation.OperationResult(REQUIRED_GAS, ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
-        final var actual = subject.execute(frame, evm);
-
-        assertSameResult(expected, actual);
-    }
-
-    @Test
-    void withPrecompileContinuesAsExpected() {
-        given(frame.getStackItem(1)).willReturn(PRECOMPILE_ADDRESS);
-        given(addressChecks.isHederaPrecompile(PRECOMPILE_ADDRESS)).willReturn(true);
-
-        final var expected = new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         final var actual = subject.execute(frame, evm);
 
         assertSameResult(expected, actual);

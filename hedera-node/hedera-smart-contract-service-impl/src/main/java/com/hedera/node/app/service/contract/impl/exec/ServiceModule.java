@@ -19,8 +19,12 @@ package com.hedera.node.app.service.contract.impl.exec;
 import static java.util.Map.entry;
 
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV030;
+import com.hedera.node.app.service.contract.impl.annotations.ServicesV034;
+import com.hedera.node.app.service.contract.impl.annotations.ServicesV038;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.v030.V030Module;
+import com.hedera.node.app.service.contract.impl.exec.v034.V034Module;
+import com.hedera.node.app.service.contract.impl.exec.v038.V038Module;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -32,7 +36,13 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
-@Module(includes = {V030Module.class})
+/**
+ * Provides bindings for the {@link TransactionProcessor} implementations used by each
+ * version of the Hedera EVM, along with infrastructure like the {@link GasCalculator}
+ * and Hedera {@link PrecompiledContract} instances that have not changed since the
+ * first EVM version we explicitly support (which is {@code v0.30}).
+ */
+@Module(includes = {V030Module.class, V034Module.class, V038Module.class})
 public interface ServiceModule {
     @Binds
     @Singleton
@@ -44,7 +54,10 @@ public interface ServiceModule {
     @Provides
     @Singleton
     static Map<String, TransactionProcessor> provideTransactionProcessors(
-            @ServicesV030 @NonNull final TransactionProcessor v030Processor) {
-        return Map.ofEntries(entry("v0.30", v030Processor));
+            @ServicesV030 @NonNull final TransactionProcessor v030Processor,
+            @ServicesV034 @NonNull final TransactionProcessor v034Processor,
+            @ServicesV038 @NonNull final TransactionProcessor v038Processor) {
+        return Map.ofEntries(
+                entry("v0.30", v030Processor), entry("v0.34", v034Processor), entry("v0.38", v038Processor));
     }
 }

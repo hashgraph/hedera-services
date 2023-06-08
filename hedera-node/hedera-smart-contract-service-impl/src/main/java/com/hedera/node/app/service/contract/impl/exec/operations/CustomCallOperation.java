@@ -83,9 +83,9 @@ public class CustomCallOperation extends CallOperation {
         if (impliesLazyCreation(frame, toAddress) && featureFlags.isImplicitCreationEnabled(frame)) {
             return false;
         }
-        // We don't want to check if system accounts or precompiles are present, since message call
-        // processors should give them special treatment
-        return !addressChecks.isSystemAccount(toAddress) && !addressChecks.isHederaPrecompile(toAddress);
+        // We don't want to check if system accounts are "present", since they aren't; but message call
+        // processors will fail in more legible ways than we can here
+        return !addressChecks.isSystemAccount(toAddress);
     }
 
     private boolean impliesLazyCreation(@NonNull final MessageFrame frame, @NonNull final Address toAddress) {
