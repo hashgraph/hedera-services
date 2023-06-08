@@ -80,7 +80,7 @@ class HashgraphGuiTest {
                 107,
                 Instant.parse("2020-05-06T13:21:56.689025Z"));
 
-        final StandardGraphGenerator graphGenerator = new StandardGraphGenerator(seed, generateSources(numNodes));
+        final StandardGraphGenerator graphGenerator = new StandardGraphGenerator(seed, TestGuiSource.generateSources(numNodes));
         final TestIntake intake = new TestIntake(graphGenerator.getAddressBook());
         intake.loadSnapshot(snapshot);
 
@@ -90,14 +90,6 @@ class HashgraphGuiTest {
                 new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
 
         HashgraphGuiRunner.runHashgraphGui(guiSource, controls(intake, graphGenerator));
-    }
-
-    public static List<EventSource<?>> generateSources(final int numNetworkNodes) {
-        final List<EventSource<?>> list = new LinkedList<>();
-        for (long i = 0; i < numNetworkNodes; i++) {
-            list.add(new StandardEventSource(true));
-        }
-        return list;
     }
 
     @Deprecated(forRemoval = true)

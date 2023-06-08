@@ -123,4 +123,8 @@ public class ConsensusTestNode {
     public ConsensusOutput getOutput() {
         return intake.getOutput();
     }
+
+    public TestIntake getIntake() {
+        return intake;
+    }
 }

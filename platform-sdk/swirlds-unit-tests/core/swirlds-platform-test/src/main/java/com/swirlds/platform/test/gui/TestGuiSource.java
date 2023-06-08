@@ -26,7 +26,10 @@ import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.test.consensus.ConsensusUtils;
 import com.swirlds.platform.test.consensus.TestIntake;
 import com.swirlds.platform.test.event.EventUtils;
+import com.swirlds.platform.test.event.generator.GraphGenerator;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
+import com.swirlds.platform.test.event.source.EventSource;
+import com.swirlds.platform.test.event.source.StandardEventSource;
 import com.swirlds.test.framework.ResourceLoader;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 
@@ -39,19 +42,27 @@ import java.awt.FlowLayout;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 
-class TestGuiSource {
-    final StandardGraphGenerator graphGenerator;
-    final TestIntake intake;
-    final HashgraphGuiSource guiSource;
+public class TestGuiSource {
+    private final GraphGenerator<?> graphGenerator;
+    private final TestIntake intake;
+    private final HashgraphGuiSource guiSource;
 
     public TestGuiSource(final long seed, final int numNodes) {
-        graphGenerator = new StandardGraphGenerator(seed, HashgraphGuiTest.generateSources(numNodes));
+        graphGenerator = new StandardGraphGenerator(seed, generateSources(numNodes));
 
         intake = new TestIntake(graphGenerator.getAddressBook());
 
         guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
+    }
+
+    public TestGuiSource(final GraphGenerator<?> graphGenerator, final TestIntake intake) {
+        this.graphGenerator = graphGenerator;
+        this.intake = intake;
+        this.guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());;
     }
 
     public void runGui() {
@@ -129,5 +140,13 @@ class TestGuiSource {
         controls.add(loadSS);
 
         return controls;
+    }
+
+    public static List<EventSource<?>> generateSources(final int numNetworkNodes) {
+        final List<EventSource<?>> list = new LinkedList<>();
+        for (long i = 0; i < numNetworkNodes; i++) {
+            list.add(new StandardEventSource(true));
+        }
+        return list;
     }
 }

@@ -17,10 +17,13 @@
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.platform.event.EventConstants;
+import com.swirlds.platform.gui.hashgraph.internal.FinalShadowgraphGuiSource;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
 import com.swirlds.platform.test.consensus.framework.validation.Validations;
 import com.swirlds.platform.test.event.generator.GraphGenerator;
+import com.swirlds.platform.test.gui.TestGuiSource;
+
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -50,6 +53,15 @@ public class ConsensusTestOrchestrator {
         currentSequence += numEvents;
         nodes.forEach(node -> node.getEventEmitter().setCheckpoint(currentSequence));
         nodes.forEach(node -> node.addEvents(numEvents));
+    }
+
+    @SuppressWarnings("unused") // useful for debugging
+    public void runGui(){
+        final ConsensusTestNode node = nodes.stream().findAny().orElseThrow();
+        new TestGuiSource(
+                node.getEventEmitter().getGraphGenerator(),
+                node.getIntake()
+        ).runGui();
     }
 
     public void loadSignedState(final SignedState signedState){

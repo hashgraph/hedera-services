@@ -536,8 +536,6 @@ public final class ConsensusTestDefinitions {
                 TestPlatformContextBuilder.create().build(), ssPath);
         EventUtils.convertEvents(state);
 
-        System.out.println(state.getAddressBook().getSize());
-
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
         orchestrator.loadSignedState(state);
