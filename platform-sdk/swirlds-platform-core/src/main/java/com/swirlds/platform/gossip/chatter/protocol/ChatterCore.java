@@ -44,6 +44,7 @@ import com.swirlds.platform.gossip.chatter.protocol.processing.ProcessingTimeSen
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
@@ -71,7 +72,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
     private final MessageOutput<E> selfEventOutput;
     private final MessageOutput<E> otherEventOutput;
     private final MessageOutput<EventDescriptor> hashOutput;
-    private final Map<Long, PeerInstance> peerInstances;
+    private final Map<NodeId, PeerInstance> peerInstances;
 
     private final CountPerSecond msgsPerSecRead;
     private final CountPerSecond msgsPerSecWrit;
@@ -132,7 +133,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
      * @param peerId       the peer's ID
      * @param eventHandler a handler that will send the event outside of chatter
      */
-    public void newPeerInstance(final long peerId, final MessageHandler<E> eventHandler) {
+    public void newPeerInstance(final NodeId peerId, final MessageHandler<E> eventHandler) {
 
         final PeerGossipState state = new PeerGossipState(config.futureGenerationLimit());
         final CommunicationState communicationState = new CommunicationState();
@@ -191,7 +192,8 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
      * @param id the ID of the peer
      * @return the instance responsible for all communication with a peer
      */
-    public PeerInstance getPeerInstance(final long id) {
+    @Nullable
+    public PeerInstance getPeerInstance(@Nullable final NodeId id) {
         return peerInstances.get(id);
     }
 

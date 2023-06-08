@@ -32,6 +32,7 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
@@ -41,7 +42,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -82,7 +82,7 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
         subject = new FileDeleteHandler();
 
         writableFileState = writableFileStateWithOneKey();
-        given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
+        given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
         final var configuration = new HederaTestConfigBuilder().getOrCreateConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(configuration);
@@ -122,7 +122,7 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
         writableFileState = emptyWritableFileState();
-        given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
+        given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
@@ -141,7 +141,7 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
         file = new File(fileId.fileNum(), expirationTime, null, Bytes.wrap(contents), memo, false);
 
         writableFileState = writableFileStateWithOneKey();
-        given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
+        given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
@@ -158,7 +158,7 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
     void handleWorksAsExpected() {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
-        final var existingFile = writableStore.get(fileEntityNum.longValue());
+        final var existingFile = writableStore.get(fileId.fileNum());
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
 
@@ -167,7 +167,7 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         subject.handle(handleContext);
 
-        final var changedFile = writableStore.get(fileEntityNum.longValue());
+        final var changedFile = writableStore.get(fileId.fileNum());
 
         assertTrue(changedFile.isPresent());
         assertTrue(changedFile.get().deleted());
