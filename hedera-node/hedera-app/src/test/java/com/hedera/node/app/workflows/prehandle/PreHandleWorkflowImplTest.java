@@ -38,7 +38,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
@@ -125,12 +124,9 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                 Map.of(
                         "ACCOUNTS",
                         Map.of(
-                                EntityNumVirtualKey.fromLong(ALICE.accountID().accountNumOrThrow()), ALICE.account(),
-                                EntityNumVirtualKey.fromLong(ERIN.accountID().accountNumOrThrow()), ERIN.account(),
-                                EntityNumVirtualKey.fromLong(STAKING_REWARD_ACCOUNT
-                                                .accountID()
-                                                .accountNumOrThrow()),
-                                        STAKING_REWARD_ACCOUNT.account()),
+                                ALICE.accountID(), ALICE.account(),
+                                ERIN.accountID(), ERIN.account(),
+                                STAKING_REWARD_ACCOUNT.accountID(), STAKING_REWARD_ACCOUNT.account()),
                         "ALIASES",
                         Collections.emptyMap()));
         storeFactory = new ReadableStoreFactory(fakeHederaState);

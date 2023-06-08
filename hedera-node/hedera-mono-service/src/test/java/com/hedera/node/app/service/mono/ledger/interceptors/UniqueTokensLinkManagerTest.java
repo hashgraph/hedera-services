@@ -44,7 +44,9 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.ResponsibleVMapUser;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkledb.MerkleDb;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -86,6 +88,12 @@ class UniqueTokensLinkManagerTest extends ResponsibleVMapUser {
                 () -> MerkleMapLike.from(tokens),
                 () -> virtualUniqueTokens,
                 bootstrapProperties);
+    }
+
+    @AfterEach
+    void shutDown() {
+        // Use a different data source for each test. Assume MerkleDb is used by default for tests
+        MerkleDb.setDefaultPath(null);
     }
 
     @Test

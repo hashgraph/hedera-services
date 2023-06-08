@@ -18,6 +18,7 @@ package com.swirlds.platform.gossip.sync;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 public interface SyncManager {
@@ -25,9 +26,10 @@ public interface SyncManager {
 
     boolean shouldInitiateSync();
 
-    List<Long> getNeighborsToCall();
+    @NonNull
+    List<NodeId> getNeighborsToCall();
 
-    boolean shouldCreateEvent(NodeId otherId, boolean oneNodeFallenBehind, int eventsRead, int eventsWritten);
+    boolean shouldCreateEvent(@NonNull NodeId otherId, boolean oneNodeFallenBehind, int eventsRead, int eventsWritten);
 
     boolean shouldCreateEvent(final SyncResult info);
 }

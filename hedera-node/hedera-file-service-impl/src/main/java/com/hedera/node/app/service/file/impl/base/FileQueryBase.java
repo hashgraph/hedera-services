@@ -25,7 +25,7 @@ import static com.hedera.node.app.spi.validation.Validations.mustExist;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseType;
-import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -50,7 +50,7 @@ public abstract class FileQueryBase extends PaidQueryHandler {
 
     protected void validateFileExistence(@Nullable FileID fileID, @NonNull final QueryContext context)
             throws PreCheckException {
-        final var fileStore = Objects.requireNonNull(context).createStore(ReadableFileStoreImpl.class);
+        final var fileStore = Objects.requireNonNull(context).createStore(ReadableFileStore.class);
         final var file = fileStore.getFileMetadata(fileID);
         mustExist(file, INVALID_FILE_ID);
         if (file.deleted()) {

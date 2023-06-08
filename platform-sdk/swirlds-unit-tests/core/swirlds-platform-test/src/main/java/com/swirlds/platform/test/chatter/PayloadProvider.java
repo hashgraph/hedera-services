@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.test.chatter;
 
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 public interface PayloadProvider {
@@ -30,5 +33,6 @@ public interface PayloadProvider {
      * 		the destination to generate a payload for
      * @return a payload to send, or null if no payload should be sent right now
      */
-    GossipPayload generatePayload(Instant now, boolean underutilizedNetwork, long destination);
+    @Nullable
+    GossipPayload generatePayload(@NonNull Instant now, boolean underutilizedNetwork, @NonNull NodeId destination);
 }

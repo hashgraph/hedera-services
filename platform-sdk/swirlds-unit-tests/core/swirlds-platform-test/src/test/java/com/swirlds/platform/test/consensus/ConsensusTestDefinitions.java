@@ -979,11 +979,11 @@ public final class ConsensusTestDefinitions {
         final Random random = new Random(seed);
 
         final List<Long> nodeWeights = weightGenerator.getWeights(seed, numberOfNodes);
-
+        final AtomicInteger index = new AtomicInteger(0);
         final AddressBook ab = new RandomAddressBookGenerator(random)
                 .setSequentialIds(true)
                 .setSize(numberOfNodes)
-                .setCustomWeightGenerator(id -> nodeWeights.get((int) id))
+                .setCustomWeightGenerator(id -> nodeWeights.get(index.getAndIncrement()))
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .build();
 
@@ -1087,10 +1087,11 @@ public final class ConsensusTestDefinitions {
         final Random random = initRandom(seedToUse);
 
         final List<Long> nodeWeights = weightGenerator.getWeights(seedToUse, numberOfNodes);
+        final AtomicInteger index = new AtomicInteger(0);
         final AddressBook ab = new RandomAddressBookGenerator(random)
                 .setSequentialIds(true)
                 .setSize(numberOfNodes)
-                .setCustomWeightGenerator(id -> nodeWeights.get((int) id))
+                .setCustomWeightGenerator(id -> nodeWeights.get(index.getAndIncrement()))
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .build();
 

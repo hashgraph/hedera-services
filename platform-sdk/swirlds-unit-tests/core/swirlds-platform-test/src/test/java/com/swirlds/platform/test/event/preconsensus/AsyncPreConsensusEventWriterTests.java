@@ -36,6 +36,7 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.RandomUtils;
@@ -180,7 +181,7 @@ class AsyncPreConsensusEventWriterTests {
         }
 
         final PreConsensusEventFileManager reader =
-                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
 
         // Verify that the events were written correctly
         final PreConsensusEventMultiFileIterator eventsIterator = reader.getEventIterator(0, fixDiscontinuities);
@@ -275,7 +276,7 @@ class AsyncPreConsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(buildContext(), OSTime.getInstance(), 0);
+                new PreConsensusEventFileManager(buildContext(), OSTime.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new AsyncPreConsensusEventWriter(
@@ -358,7 +359,8 @@ class AsyncPreConsensusEventWriterTests {
 
         final FakeTime time = new FakeTime(Duration.ofMillis(1));
 
-        final PreConsensusEventFileManager fileManager = new PreConsensusEventFileManager(platformContext, time, 0);
+        final PreConsensusEventFileManager fileManager =
+                new PreConsensusEventFileManager(platformContext, time, new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer = new AsyncPreConsensusEventWriter(
@@ -468,7 +470,7 @@ class AsyncPreConsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreConsensusEventFileManager fileManager1 =
-                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer1 = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer1 = new AsyncPreConsensusEventWriter(
@@ -516,7 +518,7 @@ class AsyncPreConsensusEventWriterTests {
         }
 
         final PreConsensusEventFileManager fileManager2 =
-                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
         final PreconsensusEventStreamSequencer sequencer2 = new PreconsensusEventStreamSequencer();
         final PreConsensusEventWriter writer2 = new AsyncPreConsensusEventWriter(
                 platformContext,
@@ -538,6 +540,7 @@ class AsyncPreConsensusEventWriterTests {
         }
 
         writer2.beginStreamingNewEvents();
+        writer2.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
 
         final Set<EventImpl> rejectedEvents2 = new HashSet<>();
         for (final EventImpl event : events2) {

@@ -113,17 +113,6 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
     }
 
     /**
-     * get numeric part of ID and cast to an Integer
-     *
-     * @return the numeric part of this ID, cast to an integer
-     * @deprecated use {@link #id()} instead.
-     */
-    @Deprecated(since = "0.39.0", forRemoval = true)
-    public int getIdAsInt() {
-        return (int) id;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @NonNull
