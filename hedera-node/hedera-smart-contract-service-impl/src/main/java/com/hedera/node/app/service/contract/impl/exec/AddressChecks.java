@@ -51,8 +51,8 @@ public interface AddressChecks {
      * Returns {@code true} if the given address is a non-user account (i.e. a long-zero address for an entity
      * id up to {@code 0.0.1000}).
      *
-     * @param address
-     * @return
+     * @param address the address to check
+     * @return whether the address is a non-user account
      */
     boolean isNonUserAccount(@NonNull Address address);
 
