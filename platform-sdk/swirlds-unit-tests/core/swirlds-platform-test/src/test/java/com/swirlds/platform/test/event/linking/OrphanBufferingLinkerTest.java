@@ -21,7 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
@@ -55,6 +57,51 @@ import org.mockito.Mockito;
 class OrphanBufferingLinkerTest {
 
     public static final int GENERATIONS_STORED = 100_000;
+
+    /**
+     * Builds graph below:
+     *
+     * <pre>
+     * 3  4
+     * | /|
+     * 2  |
+     * | \|
+     * 0  1
+     * </pre>
+     */
+    private static List<GossipEvent> buildGraph(final Random r) {
+        final GossipEvent e0 = EventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(new NodeId(1))
+                .buildGossipEvent();
+        final GossipEvent e1 = EventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(new NodeId(2))
+                .buildGossipEvent();
+        final GossipEvent e2 = EventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(new NodeId(1))
+                .setSelfParent(e0)
+                .setOtherParent(e1)
+                .buildGossipEvent();
+        final GossipEvent e3 = EventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(new NodeId(1))
+                .setSelfParent(e2)
+                .buildGossipEvent();
+        final GossipEvent e4 = EventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(new NodeId(2))
+                .setSelfParent(e1)
+                .setOtherParent(e2)
+                .buildGossipEvent();
+        System.out.println("e0 " + EventStrings.toShortString(e0));
+        System.out.println("e1 " + EventStrings.toShortString(e1));
+        System.out.println("e2 " + EventStrings.toShortString(e2));
+        System.out.println("e3 " + EventStrings.toShortString(e3));
+        System.out.println("e4 " + EventStrings.toShortString(e4));
+        return List.of(e0, e1, e2, e3, e4);
+    }
 
     /**
      * Tests graph below:

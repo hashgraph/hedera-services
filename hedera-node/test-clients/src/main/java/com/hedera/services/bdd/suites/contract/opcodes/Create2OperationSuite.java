@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -67,6 +68,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.aliasContractIdKey;
 import static com.hedera.services.bdd.suites.contract.Utils.aliasDelegateContractKey;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
@@ -106,7 +108,10 @@ import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -128,21 +133,23 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class Create2OperationSuite extends HapiSuite {
 
-    private static final Logger LOG = LogManager.getLogger(Create2OperationSuite.class);
-    private static final String CREATION = "creation";
     public static final String GET_BYTECODE = "getBytecode";
     public static final String DEPLOY = "deploy";
-    private static final String CREATE_2_TXN = "create2Txn";
-    private static final String SWISS = "swiss";
     public static final String SALT = "aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011";
-    private static final String RETURNER = "Returner";
-    private static final String CALL_RETURNER = "callReturner";
     public static final String RETURNER_REPORTED_LOG_MESSAGE = "Returner reported {} when called with mirror address";
     public static final String CONTRACT_REPORTED_LOG_MESSAGE = "Contract reported TestContract initcode is {} bytes";
     public static final String CONTRACT_REPORTED_ADDRESS_MESSAGE = "Contract reported address results {}";
     public static final String EXPECTED_CREATE2_ADDRESS_MESSAGE = "  --> Expected CREATE2 address is {}";
-    private static final String ADMIN_KEY = "adminKey";
     public static final String GET_ADDRESS = "getAddress";
+    private static final Logger LOG = LogManager.getLogger(Create2OperationSuite.class);
+    private static final String CREATION = "creation";
+    private static final String CREATE_2_TXN = "create2Txn";
+    private static final String SWISS = "swiss";
+    private static final String RETURNER = "Returner";
+    private static final String CALL_RETURNER = "callReturner";
+    private static final String ADMIN_KEY = "adminKey";
+    private static final String ENTITY_MEMO = "JUST DO IT";
+    private static final String DELETED_CREATE_2_LOG = "Deleted the deployed CREATE2 contract using HAPI";
 
     public static void main(String... args) {
         new Create2OperationSuite().runSuiteSync();
@@ -176,7 +183,8 @@ public class Create2OperationSuite extends HapiSuite {
                 canAssociateInConstructor(),
                 childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor(),
                 /* --- HIP 583 --- */
-                canMergeCreate2ChildWithHollowAccount());
+                canMergeCreate2ChildWithHollowAccount(),
+                canMergeCreate2MultipleCreatesWithHollowAccount());
     }
 
     @SuppressWarnings("java:S5669")
@@ -291,11 +299,12 @@ public class Create2OperationSuite extends HapiSuite {
                                 .nodePayment(ONE_HBAR)))
                 .then(
                         inParallel(IntStream.range(0, timesToFail)
-                                .mapToObj(i -> sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get())
-                                        .payingWith(GENESIS)
-                                        .gas(4_000_000L)
-                                        .sending(tcValue)
-                                        .via(creation)))
+                                .mapToObj(i -> sourcing(
+                                        () -> contractCall(contract, DEPLOY, testContractInitcode.get(), BigInteger.ONE)
+                                                .payingWith(GENESIS)
+                                                .gas(4_000_000L)
+                                                .sending(tcValue)
+                                                .via(creation)))
                                 .toArray(HapiSpecOperation[]::new)),
                         sourcing(() -> cryptoCreate("nextUp")
                                 .exposingCreatedIdTo(id -> LOG.info(
@@ -354,7 +363,6 @@ public class Create2OperationSuite extends HapiSuite {
         final var salt = BigInteger.valueOf(42);
         final var adminKey = ADMIN_KEY;
         final var replAdminKey = "replAdminKey";
-        final var entityMemo = "JUST DO IT";
         final var customAutoRenew = 7776001L;
         final var autoRenewAccountID = "autoRenewAccount";
         final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
@@ -374,7 +382,7 @@ public class Create2OperationSuite extends HapiSuite {
                         contractCreate(contract)
                                 .payingWith(GENESIS)
                                 .adminKey(adminKey)
-                                .entityMemo(entityMemo)
+                                .entityMemo(ENTITY_MEMO)
                                 .autoRenewSecs(customAutoRenew)
                                 .autoRenewAccountId(autoRenewAccountID)
                                 .via(CREATE_2_TXN)
@@ -392,16 +400,8 @@ public class Create2OperationSuite extends HapiSuite {
                                 })
                                 .payingWith(GENESIS)
                                 .nodePayment(ONE_HBAR)),
-                        sourcing(() -> contractCallLocal(contract, GET_ADDRESS, testContractInitcode.get(), salt)
-                                .exposingTypedResultsTo(results -> {
-                                    LOG.info(CONTRACT_REPORTED_ADDRESS_MESSAGE, results);
-                                    final var expectedAddrBytes = (Address) results[0];
-                                    final var hexedAddress = hex(Bytes.fromHexString(expectedAddrBytes.toString())
-                                            .toArray());
-                                    LOG.info(EXPECTED_CREATE2_ADDRESS_MESSAGE, hexedAddress);
-                                    expectedCreate2Address.set(hexedAddress);
-                                })
-                                .payingWith(GENESIS)),
+                        sourcing(() -> setExpectedCreate2Address(
+                                contract, salt, expectedCreate2Address, testContractInitcode)),
                         // https://github.com/hashgraph/hedera-services/issues/2867 - cannot
                         // re-create same address
                         sourcing(() -> contractCall(contract, "wronglyDeployTwice", testContractInitcode.get(), salt)
@@ -417,7 +417,7 @@ public class Create2OperationSuite extends HapiSuite {
                                 .sending(tcValue)),
                         sourcing(() ->
                                 contractDelete(expectedCreate2Address.get()).signedBy(DEFAULT_PAYER, adminKey)),
-                        logIt("Deleted the deployed CREATE2 contract using HAPI"),
+                        logIt(DELETED_CREATE_2_LOG),
                         sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
@@ -493,7 +493,6 @@ public class Create2OperationSuite extends HapiSuite {
         final var creation = CREATION;
         final var salt = BigInteger.valueOf(42);
         final var adminKey = ADMIN_KEY;
-        final var entityMemo = "JUST DO IT";
         final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
         final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
         final AtomicReference<String> hollowCreationAddress = new AtomicReference<>();
@@ -517,7 +516,7 @@ public class Create2OperationSuite extends HapiSuite {
                         contractCreate(contract)
                                 .payingWith(GENESIS)
                                 .adminKey(adminKey)
-                                .entityMemo(entityMemo)
+                                .entityMemo(ENTITY_MEMO)
                                 .via(CREATE_2_TXN)
                                 .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
@@ -539,13 +538,7 @@ public class Create2OperationSuite extends HapiSuite {
                         mintToken(
                                 NFT_INFINITE_SUPPLY_TOKEN,
                                 List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            ftId.set(registry.getTokenID(A_TOKEN));
-                            nftId.set(registry.getTokenID(NFT_INFINITE_SUPPLY_TOKEN));
-                            partyId.set(registry.getAccountID(PARTY));
-                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                        }))
+                        setIdentifiers(ftId, nftId, partyId, partyAlias))
                 .when(
                         sourcing(() -> contractCallLocal(
                                         contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
@@ -556,50 +549,17 @@ public class Create2OperationSuite extends HapiSuite {
                                 })
                                 .payingWith(GENESIS)
                                 .nodePayment(ONE_HBAR)),
-                        sourcing(() -> contractCallLocal(contract, GET_ADDRESS, testContractInitcode.get(), salt)
-                                .exposingTypedResultsTo(results -> {
-                                    LOG.info(CONTRACT_REPORTED_ADDRESS_MESSAGE, results);
-                                    final var expectedAddrBytes = (Address) results[0];
-                                    final var hexedAddress = hex(Bytes.fromHexString(expectedAddrBytes.toString())
-                                            .toArray());
-                                    LOG.info(EXPECTED_CREATE2_ADDRESS_MESSAGE, hexedAddress);
-                                    expectedCreate2Address.set(hexedAddress);
-                                })
-                                .payingWith(GENESIS)),
+                        sourcing(() -> setExpectedCreate2Address(
+                                contract, salt, expectedCreate2Address, testContractInitcode)),
                         sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
                                 .sending(tcValue)),
                         sourcing(() ->
                                 contractDelete(expectedCreate2Address.get()).signedBy(DEFAULT_PAYER, adminKey)),
-                        logIt("Deleted the deployed CREATE2 contract using HAPI"),
+                        logIt(DELETED_CREATE_2_LOG),
                         // Now create a hollow account at the desired address
-                        cryptoTransfer((spec, b) -> {
-                                    final var defaultPayerId = spec.registry().getAccountID(DEFAULT_PAYER);
-                                    b.setTransfers(TransferList.newBuilder()
-                                                    .addAccountAmounts(aaWith(
-                                                            ByteString.copyFrom(
-                                                                    CommonUtils.unhex(expectedCreate2Address.get())),
-                                                            +ONE_HBAR))
-                                                    .addAccountAmounts(aaWith(defaultPayerId, -ONE_HBAR)))
-                                            .addTokenTransfers(TokenTransferList.newBuilder()
-                                                    .setToken(ftId.get())
-                                                    .addTransfers(aaWith(partyAlias.get(), -500))
-                                                    .addTransfers(aaWith(
-                                                            ByteString.copyFrom(
-                                                                    CommonUtils.unhex(expectedCreate2Address.get())),
-                                                            +500)))
-                                            .addTokenTransfers(TokenTransferList.newBuilder()
-                                                    .setToken(nftId.get())
-                                                    .addNftTransfers(ocWith(
-                                                            accountId(partyAlias.get()),
-                                                            accountId(ByteString.copyFrom(
-                                                                    CommonUtils.unhex(expectedCreate2Address.get()))),
-                                                            1L)));
-                                })
-                                .signedBy(DEFAULT_PAYER, PARTY)
-                                .fee(ONE_HBAR)
-                                .via(creation),
+                        lazyCreateAccount(creation, expectedCreate2Address, ftId, nftId, partyAlias),
                         getTxnRecord(creation)
                                 .andAllChildRecords()
                                 .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))),
@@ -642,17 +602,120 @@ public class Create2OperationSuite extends HapiSuite {
                                 .logged()),
                         sourcing(
                                 () -> getContractBytecode(mergedAliasAddr.get()).isNonEmpty()),
-                        sourcing(() -> contractCallLocal(contract, GET_ADDRESS, testContractInitcode.get(), salt)
-                                .exposingTypedResultsTo(results -> {
-                                    LOG.info(CONTRACT_REPORTED_ADDRESS_MESSAGE, results);
-                                    final var addrBytes = (Address) results[0];
-                                    final var hexedAddress = hex(Bytes.fromHexString(addrBytes.toString())
-                                            .toArray());
-                                    LOG.info(EXPECTED_CREATE2_ADDRESS_MESSAGE, hexedAddress);
+                        sourcing(() ->
+                                assertCreate2Address(contract, salt, expectedCreate2Address, testContractInitcode)));
+    }
 
-                                    assertEquals(expectedCreate2Address.get(), hexedAddress);
+    @SuppressWarnings("java:S5960")
+    private HapiSpec canMergeCreate2MultipleCreatesWithHollowAccount() {
+        final var tcValue = 1_234L;
+        final var contract = "Create2MultipleCreates";
+        final var creation = CREATION;
+        final var salt = BigInteger.valueOf(42);
+        final var adminKey = ADMIN_KEY;
+        final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
+        final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
+        final AtomicReference<String> hollowCreationAddress = new AtomicReference<>();
+        final AtomicReference<String> mergedAliasAddr = new AtomicReference<>();
+        final AtomicReference<String> mergedMirrorAddr = new AtomicReference<>();
+        final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+
+        final var initialTokenSupply = 1000;
+        final AtomicReference<TokenID> ftId = new AtomicReference<>();
+        final AtomicReference<TokenID> nftId = new AtomicReference<>();
+        final AtomicReference<AccountID> partyId = new AtomicReference<>();
+        final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("CanMergeCreate2MultipleCreatesWithHollowAccount")
+                .preserving(LAZY_CREATION_ENABLED)
+                .given(
+                        overriding(LAZY_CREATION_ENABLED, TRUE),
+                        newKeyNamed(adminKey),
+                        newKeyNamed(MULTI_KEY),
+                        uploadInitCode(contract),
+                        contractCreate(contract)
+                                .payingWith(GENESIS)
+                                .adminKey(adminKey)
+                                .entityMemo(ENTITY_MEMO)
+                                .gas(10_000_000L)
+                                .via(CREATE_2_TXN)
+                                .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))),
+                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
+                        tokenCreate(A_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .supplyType(FINITE)
+                                .initialSupply(initialTokenSupply)
+                                .maxSupply(10L * initialTokenSupply)
+                                .treasury(PARTY)
+                                .via(TOKEN_A_CREATE),
+                        tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(0)
+                                .treasury(PARTY)
+                                .via(NFT_CREATE),
+                        mintToken(
+                                NFT_INFINITE_SUPPLY_TOKEN,
+                                List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
+                        setIdentifiers(ftId, nftId, partyId, partyAlias))
+                .when(
+                        sourcing(() -> contractCallLocal(
+                                        contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
+                                .exposingTypedResultsTo(results -> {
+                                    final var tcInitcode = (byte[]) results[0];
+                                    testContractInitcode.set(tcInitcode);
+                                    LOG.info(CONTRACT_REPORTED_LOG_MESSAGE, tcInitcode.length);
                                 })
-                                .payingWith(GENESIS)));
+                                .payingWith(GENESIS)
+                                .nodePayment(ONE_HBAR)),
+                        sourcing(() -> setExpectedCreate2Address(
+                                contract, salt, expectedCreate2Address, testContractInitcode)),
+                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(4_000_000L)
+                                .sending(tcValue)),
+                        sourcing(() ->
+                                contractDelete(expectedCreate2Address.get()).signedBy(DEFAULT_PAYER, adminKey)),
+                        logIt(DELETED_CREATE_2_LOG),
+                        // Now create a hollow account at the desired address
+                        lazyCreateAccount(creation, expectedCreate2Address, ftId, nftId, partyAlias),
+                        getTxnRecord(creation)
+                                .andAllChildRecords()
+                                .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))),
+                        sourcing(() ->
+                                getAccountInfo(hollowCreationAddress.get()).logged()))
+                .then(
+                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                                .payingWith(GENESIS)
+                                .gas(10_000_000L)
+                                .sending(tcValue)
+                                .via(CREATE_2_TXN)),
+                        captureChildCreate2MetaFor(
+                                3,
+                                2,
+                                "Merged deployed contract with hollow account",
+                                CREATE_2_TXN,
+                                mergedMirrorAddr,
+                                mergedAliasAddr),
+                        sourcing(() -> getContractInfo(mergedAliasAddr.get())
+                                .has(contractWith()
+                                        .numKvPairs(4)
+                                        .hasStandinContractKey()
+                                        .maxAutoAssociations(2)
+                                        .hasAlreadyUsedAutomaticAssociations(2)
+                                        .memo(LAZY_MEMO)
+                                        .balance(ONE_HBAR + tcValue))
+                                .hasToken(relationshipWith(A_TOKEN).balance(500))
+                                .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN)
+                                        .balance(1))
+                                .logged()),
+                        sourcing(
+                                () -> getContractBytecode(mergedAliasAddr.get()).isNonEmpty()),
+                        sourcing(() ->
+                                assertCreate2Address(contract, salt, expectedCreate2Address, testContractInitcode)),
+                        cryptoCreate("confirmingNoEntityIdCollision"));
     }
 
     @SuppressWarnings("java:S5669")
@@ -726,8 +789,10 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> childMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor")
+        return propertyPreservingHapiSpec("childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor")
+                .preserving("contracts.maxNumWithHapiSigsAccess")
                 .given(
+                        overriding("contracts.maxNumWithHapiSigsAccess", "10_000_000"),
                         newKeyNamed(multiKey),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(ft)
@@ -738,6 +803,8 @@ public class Create2OperationSuite extends HapiSuite {
                         .gas(2_000_000)
                         .adminKey(multiKey)
                         .payingWith(GENESIS)
+                        .sigMapPrefixes(uniqueWithFullPrefixesFor(GENESIS, multiKey))
+                        .signedBy(GENESIS, multiKey)
                         .exposingNumTo(n -> childMirrorAddr.set("0.0." + (n + 1)))
                         .via(creationAndAssociation)))
                 .then(sourcing(() -> getContractInfo(childMirrorAddr.get()).logged()));
@@ -1229,5 +1296,86 @@ public class Create2OperationSuite extends HapiSuite {
                             mirrorResult,
                             "Internal calls with mirror address should not be" + " possible for aliased contracts");
                 }));
+    }
+
+    private HapiContractCallLocal setExpectedCreate2Address(
+            String contract,
+            BigInteger salt,
+            AtomicReference<String> expectedCreate2Address,
+            AtomicReference<byte[]> testContractInitcode) {
+        return contractCallLocal(contract, GET_ADDRESS, testContractInitcode.get(), salt)
+                .exposingTypedResultsTo(results -> {
+                    LOG.info(CONTRACT_REPORTED_ADDRESS_MESSAGE, results);
+                    final var expectedAddrBytes = (Address) results[0];
+                    final var hexedAddress = hex(
+                            Bytes.fromHexString(expectedAddrBytes.toString()).toArray());
+                    LOG.info(EXPECTED_CREATE2_ADDRESS_MESSAGE, hexedAddress);
+                    expectedCreate2Address.set(hexedAddress);
+                })
+                .payingWith(GENESIS);
+    }
+
+    private HapiCryptoTransfer lazyCreateAccount(
+            String creation,
+            AtomicReference<String> expectedCreate2Address,
+            AtomicReference<TokenID> ftId,
+            AtomicReference<TokenID> nftId,
+            AtomicReference<ByteString> partyAlias) {
+        return cryptoTransfer((spec, b) -> {
+                    final var defaultPayerId = spec.registry().getAccountID(DEFAULT_PAYER);
+                    b.setTransfers(TransferList.newBuilder()
+                                    .addAccountAmounts(aaWith(
+                                            ByteString.copyFrom(CommonUtils.unhex(expectedCreate2Address.get())),
+                                            +ONE_HBAR))
+                                    .addAccountAmounts(aaWith(defaultPayerId, -ONE_HBAR)))
+                            .addTokenTransfers(TokenTransferList.newBuilder()
+                                    .setToken(ftId.get())
+                                    .addTransfers(aaWith(partyAlias.get(), -500))
+                                    .addTransfers(aaWith(
+                                            ByteString.copyFrom(CommonUtils.unhex(expectedCreate2Address.get())),
+                                            +500)))
+                            .addTokenTransfers(TokenTransferList.newBuilder()
+                                    .setToken(nftId.get())
+                                    .addNftTransfers(ocWith(
+                                            accountId(partyAlias.get()),
+                                            accountId(ByteString.copyFrom(
+                                                    CommonUtils.unhex(expectedCreate2Address.get()))),
+                                            1L)));
+                })
+                .signedBy(DEFAULT_PAYER, PARTY)
+                .fee(ONE_HBAR)
+                .via(creation);
+    }
+
+    private HapiContractCallLocal assertCreate2Address(
+            String contract,
+            BigInteger salt,
+            AtomicReference<String> expectedCreate2Address,
+            AtomicReference<byte[]> testContractInitcode) {
+        return contractCallLocal(contract, GET_ADDRESS, testContractInitcode.get(), salt)
+                .exposingTypedResultsTo(results -> {
+                    LOG.info(CONTRACT_REPORTED_ADDRESS_MESSAGE, results);
+                    final var addrBytes = (Address) results[0];
+                    final var hexedAddress =
+                            hex(Bytes.fromHexString(addrBytes.toString()).toArray());
+                    LOG.info(EXPECTED_CREATE2_ADDRESS_MESSAGE, hexedAddress);
+
+                    assertEquals(expectedCreate2Address.get(), hexedAddress);
+                })
+                .payingWith(GENESIS);
+    }
+
+    private CustomSpecAssert setIdentifiers(
+            AtomicReference<TokenID> ftId,
+            AtomicReference<TokenID> nftId,
+            AtomicReference<AccountID> partyId,
+            AtomicReference<ByteString> partyAlias) {
+        return withOpContext((spec, opLog) -> {
+            final var registry = spec.registry();
+            ftId.set(registry.getTokenID(A_TOKEN));
+            nftId.set(registry.getTokenID(NFT_INFINITE_SUPPLY_TOKEN));
+            partyId.set(registry.getAccountID(PARTY));
+            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
+        });
     }
 }

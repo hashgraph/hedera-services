@@ -30,7 +30,9 @@ import com.swirlds.platform.test.event.source.EventSource;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A utility class for generating a graph of events.
@@ -139,11 +141,16 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     }
 
     private void buildAddressBook(final List<EventSource<?>> eventSources) {
+        final Map<NodeId, Long> weightMap = new HashMap<>();
+        for (final EventSource<?> eventSource : eventSources) {
+            weightMap.put(eventSource.getNodeId(), eventSource.getWeight());
+        }
+
         addressBook = new RandomAddressBookGenerator(getRandom())
-                .setSize(sources.size())
-                .setCustomWeightGenerator(id -> eventSources.get((int) id).getWeight())
+                .setNodeIds(weightMap.keySet())
+                .setCustomWeightGenerator(weightMap::get)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
-                .setSequentialIds(true)
+                .setSequentialIds(false)
                 .build();
     }
 
@@ -340,8 +347,8 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * 		The node that is creating the event.
      */
     private EventSource<?> getNextOtherParentSource(final long eventIndex, final EventSource<?> source) {
-        final List<Double> affinityVector = getOtherParentAffinityVector(
-                eventIndex, (int) source.getNodeId().id());
+        final List<Double> affinityVector =
+                getOtherParentAffinityVector(eventIndex, addressBook.getIndexOfNodeId(source.getNodeId()));
         final int nodeID = weightedChoice(getRandom(), affinityVector);
         return sources.get(nodeID);
     }

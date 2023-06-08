@@ -1,16 +1,21 @@
 import com.hedera.node.app.service.networkadmin.NetworkService;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 
-module com.hedera.node.app.service.networkadmin.impl {
-    requires transitive com.hedera.node.app.service.networkadmin;
+module com.hedera.node.app.service.network.admin.impl {
+    requires transitive com.hedera.node.app.service.mono;
+    requires transitive com.hedera.node.app.service.network.admin;
+    requires transitive com.hedera.node.app.spi;
+    requires transitive com.hedera.node.config;
+    requires transitive com.hedera.node.hapi;
+    requires transitive com.hedera.pbj.runtime;
+    requires transitive com.swirlds.common;
+    requires transitive com.swirlds.config;
+    requires transitive dagger;
+    requires transitive javax.inject;
     requires com.github.spotbugs.annotations;
-    requires dagger;
-    requires javax.inject;
-    requires com.hedera.pbj.runtime;
-    requires com.hedera.node.app.service.mono;
-    requires com.swirlds.common;
-    requires com.swirlds.config;
     requires org.apache.logging.log4j;
+    requires com.hedera.node.app.service.token;
+    requires com.google.common;
 
     provides com.hedera.node.app.service.networkadmin.FreezeService with
             FreezeServiceImpl;
@@ -18,11 +23,8 @@ module com.hedera.node.app.service.networkadmin.impl {
             com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 
     exports com.hedera.node.app.service.networkadmin.impl to
-            com.hedera.node.app,
-            com.hedera.node.app.service.networkadmin.impl.test;
+            com.hedera.node.app;
     exports com.hedera.node.app.service.networkadmin.impl.handlers;
     exports com.hedera.node.app.service.networkadmin.impl.codec;
-    exports com.hedera.node.app.service.networkadmin.impl.serdes to
-            com.hedera.node.app.service.networkadmin.impl.test;
     exports com.hedera.node.app.service.networkadmin.impl.config;
 }

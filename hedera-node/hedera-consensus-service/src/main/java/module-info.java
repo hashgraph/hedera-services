@@ -4,5 +4,6 @@ module com.hedera.node.app.service.consensus {
     uses com.hedera.node.app.service.consensus.ConsensusService;
 
     requires transitive com.hedera.node.app.spi;
+    requires transitive com.hedera.node.hapi;
     requires com.github.spotbugs.annotations;
 }

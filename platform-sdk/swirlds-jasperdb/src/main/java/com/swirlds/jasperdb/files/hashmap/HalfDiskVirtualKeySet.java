@@ -20,13 +20,16 @@ import static com.swirlds.jasperdb.files.DataFileCommon.deleteDirectoryAndConten
 
 import com.swirlds.common.bloom.BloomFilter;
 import com.swirlds.common.bloom.hasher.SelfSerializableBloomHasher;
+import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -60,37 +63,31 @@ public class HalfDiskVirtualKeySet<K extends VirtualKey> implements VirtualKeySe
      *
      * @param keySerializer
      * 		a method that serializes keys
-     * @param bloomFilterHashCount
-     * 		the number of hashes to include in the bloom filter
-     * @param bloomFilterSize
-     * 		the size of the bloom filter, in bits
-     * @param halfDiskHashMapSize
-     * 		the size of the half disk hash map
-     * @param maxUnflushedElements
-     * 		the maximum number of elements to keep in memory before flushing to the half disk hash map
+     * @param config
+     *      jasper db configuration object
      */
-    public HalfDiskVirtualKeySet(
-            final KeySerializer<K> keySerializer,
-            final int bloomFilterHashCount,
-            final long bloomFilterSize,
-            final long halfDiskHashMapSize,
-            final int maxUnflushedElements) {
+    public HalfDiskVirtualKeySet(@NonNull final KeySerializer<K> keySerializer, @NonNull final JasperDbConfig config) {
+        Objects.requireNonNull(keySerializer);
+        Objects.requireNonNull(config);
 
-        this.maxUnflushedElements = maxUnflushedElements;
-
+        this.maxUnflushedElements = config.keySetHalfDiskHashMapBuffer();
         unflushedData = new HashSet<>();
 
-        bloomFilter = new BloomFilter<>(bloomFilterHashCount, new SelfSerializableBloomHasher<>(), bloomFilterSize);
+        bloomFilter = new BloomFilter<>(
+                config.keySetBloomFilterHashCount(),
+                new SelfSerializableBloomHasher<>(),
+                config.keySetBloomFilterSizeInBytes());
 
         try {
             tempDir = Files.createTempDirectory(STORE_PREFIX).resolve("data");
             flushedData = new HalfDiskHashMap<>(
-                    halfDiskHashMapSize,
+                    config.keySetBloomFilterHashCount(),
                     keySerializer,
                     tempDir,
                     "halfdiskvirtualkeyset",
                     "halfDiskVirtualKeySet",
-                    false);
+                    false,
+                    config);
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }

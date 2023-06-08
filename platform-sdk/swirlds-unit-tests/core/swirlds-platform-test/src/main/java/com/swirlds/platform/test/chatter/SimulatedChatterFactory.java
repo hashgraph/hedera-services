@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.test.chatter;
 
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.function.Supplier;
 
@@ -29,8 +31,8 @@ public interface SimulatedChatterFactory {
      * 		is provided all new events received through chatter
      */
     SimulatedChatter build(
-            final long selfId,
-            final Iterable<Long> nodeIds,
-            final GossipEventObserver eventHandler,
-            final Supplier<Instant> now);
+            @NonNull final NodeId selfId,
+            @NonNull final Iterable<NodeId> nodeIds,
+            @NonNull final GossipEventObserver eventHandler,
+            @NonNull final Supplier<Instant> now);
 }

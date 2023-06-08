@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -122,15 +122,15 @@ public class ReconnectProtocolTests {
         final ReconnectController reconnectController = mock(ReconnectController.class);
         when(reconnectController.acquireLearnerPermit()).thenReturn(params.getsPermit);
 
-        final List<Long> neighborsForReconnect = LongStream.range(0L, 10L)
+        final List<NodeId> neighborsForReconnect = LongStream.range(0L, 10L)
                 .filter(id -> id != PEER_ID.id() || params.isReconnectNeighbor)
-                .boxed()
+                .mapToObj(NodeId::new)
                 .toList();
 
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.getNeighborsForReconnect()).thenReturn(neighborsForReconnect);
-        when(fallenBehindManager.shouldReconnectFrom(anyLong()))
-                .thenAnswer(a -> neighborsForReconnect.contains(a.getArgument(0, Long.class)));
+        when(fallenBehindManager.shouldReconnectFrom(any()))
+                .thenAnswer(a -> neighborsForReconnect.contains(a.getArgument(0, NodeId.class)));
 
         final ReconnectProtocol protocol = new ReconnectProtocol(
                 getStaticThreadManager(),
@@ -151,7 +151,7 @@ public class ReconnectProtocolTests {
     @MethodSource("acceptParams")
     void testShouldAccept(final AcceptParams params) {
         final ReconnectThrottle teacherThrottle = mock(ReconnectThrottle.class);
-        when(teacherThrottle.initiateReconnect(anyLong())).thenReturn(!params.teacherIsThrottled);
+        when(teacherThrottle.initiateReconnect(any())).thenReturn(!params.teacherIsThrottled);
 
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.hasFallenBehind()).thenReturn(params.selfIsBehind);
@@ -188,7 +188,7 @@ public class ReconnectProtocolTests {
     @Test
     void testPermitReleased() throws InterruptedException {
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
-        when(fallenBehindManager.shouldReconnectFrom(anyLong())).thenReturn(false);
+        when(fallenBehindManager.shouldReconnectFrom(any())).thenReturn(false);
 
         final ReconnectController reconnectController =
                 new ReconnectController(getStaticThreadManager(), mock(ReconnectHelper.class), () -> {});
@@ -293,7 +293,7 @@ public class ReconnectProtocolTests {
 
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.hasFallenBehind()).thenReturn(true);
-        when(fallenBehindManager.shouldReconnectFrom(anyLong())).thenReturn(true);
+        when(fallenBehindManager.shouldReconnectFrom(any())).thenReturn(true);
 
         final ReconnectProtocol protocol = new ReconnectProtocol(
                 getStaticThreadManager(),
@@ -316,7 +316,7 @@ public class ReconnectProtocolTests {
     @DisplayName("Aborted Teacher")
     void abortedTeacher() {
         final ReconnectThrottle reconnectThrottle = mock(ReconnectThrottle.class);
-        when(reconnectThrottle.initiateReconnect(anyLong())).thenReturn(true);
+        when(reconnectThrottle.initiateReconnect(any())).thenReturn(true);
         final ValueReference<Boolean> throttleReleased = new ValueReference<>(false);
         doAnswer(invocation -> {
                     assertFalse(throttleReleased.getValue(), "throttle should not be released twice");
@@ -362,7 +362,7 @@ public class ReconnectProtocolTests {
                     return null;
                 })
                 .when(reconnectThrottle)
-                .initiateReconnect(anyLong());
+                .initiateReconnect(any());
 
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
