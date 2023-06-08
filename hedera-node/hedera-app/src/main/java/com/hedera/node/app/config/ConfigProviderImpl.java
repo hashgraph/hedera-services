@@ -81,6 +81,7 @@ import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -90,7 +91,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.ObjIntConsumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

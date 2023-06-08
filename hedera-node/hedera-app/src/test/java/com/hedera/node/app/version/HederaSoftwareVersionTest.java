@@ -28,7 +28,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,7 +38,9 @@ final class HederaSoftwareVersionTest {
     private static final SemanticVersionConverter CONVERTER = new SemanticVersionConverter();
 
     @ParameterizedTest(name = "{0} {2} {1}")
-    @CsvSource(textBlock = """
+    @CsvSource(
+            textBlock =
+                    """
             0.0.1,       0.0.0,        >
             1.0.0,       0.0.10,       >
             0.0.0,       0.0.1,        <
@@ -71,7 +72,7 @@ final class HederaSoftwareVersionTest {
     @DisplayName("Sorting HederaSoftwareVersions")
     void sorting() {
         final var list = new ArrayList<HederaSoftwareVersion>();
-        for (int i = 0; i< 20; i++) {
+        for (int i = 0; i < 20; i++) {
             list.add(new HederaSoftwareVersion(semver("1.2." + i), semver("1.2." + i)));
         }
 
@@ -79,7 +80,7 @@ final class HederaSoftwareVersionTest {
         Collections.shuffle(list, rand);
         Collections.sort(list);
 
-        for (int i = 0; i< 20; i++) {
+        for (int i = 0; i < 20; i++) {
             assertThat(list.get(i).getHapiVersion().patch()).isEqualTo(i);
         }
     }

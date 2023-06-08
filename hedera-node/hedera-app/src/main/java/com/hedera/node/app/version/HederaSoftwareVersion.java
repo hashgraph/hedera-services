@@ -16,15 +16,14 @@
 
 package com.hedera.node.app.version;
 
+import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
-import java.util.Comparator;
-import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 
 /**
  * An implementation of {@link SoftwareVersion} which can be saved in state and holds information about the HAPI and
