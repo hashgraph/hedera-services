@@ -25,11 +25,8 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.test.consensus.TestIntake;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
-import com.swirlds.platform.test.event.source.EventSource;
-import com.swirlds.platform.test.event.source.StandardEventSource;
 import java.awt.FlowLayout;
 import java.time.Instant;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
 import javax.swing.JButton;
@@ -80,7 +77,8 @@ class HashgraphGuiTest {
                 107,
                 Instant.parse("2020-05-06T13:21:56.689025Z"));
 
-        final StandardGraphGenerator graphGenerator = new StandardGraphGenerator(seed, TestGuiSource.generateSources(numNodes));
+        final StandardGraphGenerator graphGenerator =
+                new StandardGraphGenerator(seed, TestGuiSource.generateSources(numNodes));
         final TestIntake intake = new TestIntake(graphGenerator.getAddressBook());
         intake.loadSnapshot(snapshot);
 

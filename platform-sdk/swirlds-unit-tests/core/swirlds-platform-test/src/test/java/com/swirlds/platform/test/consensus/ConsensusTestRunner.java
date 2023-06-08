@@ -17,10 +17,8 @@
 package com.swirlds.platform.test.consensus;
 
 import com.swirlds.platform.test.consensus.framework.TestInput;
-import org.junit.jupiter.api.function.ThrowingConsumer;
-
 import java.util.Random;
-import java.util.function.Consumer;
+import org.junit.jupiter.api.function.ThrowingConsumer;
 
 public class ConsensusTestRunner {
     private String description;
@@ -55,7 +53,6 @@ public class ConsensusTestRunner {
                 System.out.println("Running seed: " + seed);
 
                 test.accept(new TestInput(params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
-
             }
 
             for (int i = 0; i < iterations; i++) {

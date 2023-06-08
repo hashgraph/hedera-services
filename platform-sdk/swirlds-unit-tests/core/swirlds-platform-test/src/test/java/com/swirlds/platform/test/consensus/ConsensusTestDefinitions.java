@@ -43,7 +43,6 @@ import com.swirlds.platform.test.event.source.ForkingEventSource;
 import com.swirlds.platform.test.event.source.StandardEventSource;
 import com.swirlds.test.framework.ResourceLoader;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -520,7 +519,7 @@ public final class ConsensusTestDefinitions {
 
         // now both consensus objects should be in the same state
         // ConsensusUtils.checkGenerations(original.getConsensus(), reconnect.getConsensus(), true);
-        //TODO why is this commented out
+        // TODO why is this commented out
 
         orchestrator.clearOutput();
         orchestrator.generateEvents(0.5);

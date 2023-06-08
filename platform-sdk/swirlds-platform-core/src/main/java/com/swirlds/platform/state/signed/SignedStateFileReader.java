@@ -159,8 +159,7 @@ public final class SignedStateFileReader {
      * @throws IOException if any problem occurs while reading
      */
     public static SignedState readSignedStateOnly(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final Path stateFile) throws IOException {
+            @NonNull final PlatformContext platformContext, @NonNull final Path stateFile) throws IOException {
         checkSignedStatePath(stateFile);
 
         return deserializeAndDebugOnFailure(
@@ -169,8 +168,7 @@ public final class SignedStateFileReader {
                     readAndCheckVersion(in);
                     return new SignedState(
                             platformContext,
-                            in.readMerkleTree(stateFile.getParent(),
-                                    MAX_MERKLE_NODES_IN_STATE),
+                            in.readMerkleTree(stateFile.getParent(), MAX_MERKLE_NODES_IN_STATE),
                             "SignedStateFileReader.readSignedStateOnly()");
                 });
     }

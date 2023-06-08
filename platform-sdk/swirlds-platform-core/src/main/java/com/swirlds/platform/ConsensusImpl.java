@@ -224,7 +224,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
     public void loadFromSignedState(final SignedState signedState) {
         reset();
         migrationMode = true;
-        //TODO check state version and load snapshot if available
+        // TODO check state version and load snapshot if available
 
         // create all the rounds that we have events for
         rounds.loadFromMinGen(signedState.getMinGenInfo());
@@ -1022,22 +1022,18 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
             return x.getRoundCreated();
         }
 
-
         //
         // events older than all the judges in the latest decided round as well as consensus events
         // have a round of -infinity. this covers ancient events as well because the ancient
         // generation will always be older than the latest decided round generation
         // NOTE: during migration we just check for ancient, because we don't know the judges
         //
-        if (
-                (!migrationMode && rounds.isOlderThanDecidedRoundGeneration(x))
-                        || (migrationMode && ancient(x))
-                        || x.isConsensus()
-        ) {
+        if ((!migrationMode && rounds.isOlderThanDecidedRoundGeneration(x))
+                || (migrationMode && ancient(x))
+                || x.isConsensus()) {
             x.setRoundCreated(ConsensusConstants.ROUND_NEGATIVE_INFINITY);
             return ConsensusConstants.ROUND_NEGATIVE_INFINITY;
         }
-
 
         //
         // if this event has no parents, then it's the first round

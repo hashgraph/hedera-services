@@ -85,7 +85,7 @@ public class ConsensusTestNode {
         return consensusTestNode;
     }
 
-	public void loadSignedState(final SignedState signedState) {
+    public void loadSignedState(final SignedState signedState) {
         eventEmitter.reset();
         intake.reset();
         ConsensusUtils.loadEventsIntoGenerator(signedState, eventEmitter.getGraphGenerator(), random);

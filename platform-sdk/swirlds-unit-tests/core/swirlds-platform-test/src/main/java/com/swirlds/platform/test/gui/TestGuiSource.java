@@ -32,12 +32,6 @@ import com.swirlds.platform.test.event.source.EventSource;
 import com.swirlds.platform.test.event.source.StandardEventSource;
 import com.swirlds.test.framework.ResourceLoader;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
-
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.SpinnerNumberModel;
 import java.awt.FlowLayout;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -45,6 +39,11 @@ import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerNumberModel;
 
 public class TestGuiSource {
     private final GraphGenerator<?> graphGenerator;
@@ -62,7 +61,8 @@ public class TestGuiSource {
     public TestGuiSource(final GraphGenerator<?> graphGenerator, final TestIntake intake) {
         this.graphGenerator = graphGenerator;
         this.intake = intake;
-        this.guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());;
+        this.guiSource = new FinalShadowgraphGuiSource(intake.getShadowGraph(), graphGenerator.getAddressBook());
+        ;
     }
 
     public void runGui() {
