@@ -70,14 +70,10 @@ class OrphanBufferingLinkerTest {
      * </pre>
      */
     private static List<GossipEvent> buildGraph(final Random r) {
-        final GossipEvent e0 = EventBuilder.builder()
-                .setRandom(r)
-                .setCreatorId(new NodeId(1))
-                .buildGossipEvent();
-        final GossipEvent e1 = EventBuilder.builder()
-                .setRandom(r)
-                .setCreatorId(new NodeId(2))
-                .buildGossipEvent();
+        final GossipEvent e0 =
+                EventBuilder.builder().setRandom(r).setCreatorId(new NodeId(1)).buildGossipEvent();
+        final GossipEvent e1 =
+                EventBuilder.builder().setRandom(r).setCreatorId(new NodeId(2)).buildGossipEvent();
         final GossipEvent e2 = EventBuilder.builder()
                 .setRandom(r)
                 .setCreatorId(new NodeId(1))
