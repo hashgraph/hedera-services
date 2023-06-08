@@ -517,8 +517,10 @@ public final class ConsensusTestDefinitions {
         orchestrator.validate(
                 Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
         orchestrator.addReconnectNode();
+
         // now both consensus objects should be in the same state
         // ConsensusUtils.checkGenerations(original.getConsensus(), reconnect.getConsensus(), true);
+        //TODO why is this commented out
 
         orchestrator.clearOutput();
         orchestrator.generateEvents(0.5);
@@ -526,13 +528,22 @@ public final class ConsensusTestDefinitions {
                 Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
     }
 
-    public static void loadStateWithEvents() throws URISyntaxException, ConstructableRegistryException, IOException {
+    public static void migrationTest(final TestInput input)
+            throws URISyntaxException, ConstructableRegistryException, IOException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         final Path ssPath = ResourceLoader.getFile("modified-mainnet-state.swh.bin");
         final SignedState state = SignedStateFileReader.readSignedStateOnly(
                 TestPlatformContextBuilder.create().build(), ssPath);
+        EventUtils.convertEvents(state);
 
         System.out.println(state.getAddressBook().getSize());
-        EventUtils.convertEvents(state);
+
+        final ConsensusTestOrchestrator orchestrator =
+                OrchestratorBuilder.builder().setTestInput(input).build();
+        orchestrator.loadSignedState(state);
+
+        orchestrator.generateEvents(1);
+        orchestrator.validateAndClear(
+                Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
     }
 }

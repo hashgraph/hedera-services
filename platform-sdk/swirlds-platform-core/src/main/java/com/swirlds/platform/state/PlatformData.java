@@ -91,6 +91,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * the timestamp of the last transactions handled by this state
      */
+    //TODO this seems unused, should be removed
     private Instant lastTransactionTimestamp;
 
     /**

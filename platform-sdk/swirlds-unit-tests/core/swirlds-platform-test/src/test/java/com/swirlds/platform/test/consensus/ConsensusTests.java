@@ -273,12 +273,17 @@ class ConsensusTests {
                 .run();
     }
 
+    @ParameterizedTest
+    @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#migrationTestParams")
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Migration from a state with events to new consensus")
-    @Test
-    void migrationTest() throws ConstructableRegistryException, URISyntaxException, IOException {
-        ConsensusTestDefinitions.loadStateWithEvents();
+    void migrationTest(final ConsensusTestParams params) {
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::migrationTest)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
     }
 }

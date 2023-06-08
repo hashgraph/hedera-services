@@ -233,7 +233,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         }
 
         // The minTimestamp is just above the last transaction that has been handled
-        minTimestamp = ConsensusUtils.calcMinTimestampForNextEvent(signedState.getLastTransactionTimestamp());
+        minTimestamp = ConsensusUtils.calcMinTimestampForNextEvent(signedState.getConsensusTimestamp());
 
         logger.debug(
                 STARTUP.getMarker(),

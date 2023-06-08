@@ -167,4 +167,8 @@ public class ConsensusTestArgs {
                 Arguments.of(new ConsensusTestParams(10, RANDOM, RANDOM_WEIGHT_DESC)),
                 Arguments.of(new ConsensusTestParams(20, RANDOM, RANDOM_WEIGHT_DESC)));
     }
+
+    public static Stream<Arguments> migrationTestParams() {
+        return Stream.of(Arguments.of(new ConsensusTestParams(27, RANDOM, RANDOM_WEIGHT_DESC)));
+    }
 }

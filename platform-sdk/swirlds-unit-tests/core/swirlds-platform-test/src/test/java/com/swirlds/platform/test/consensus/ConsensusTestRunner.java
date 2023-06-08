@@ -17,13 +17,15 @@
 package com.swirlds.platform.test.consensus;
 
 import com.swirlds.platform.test.consensus.framework.TestInput;
+import org.junit.jupiter.api.function.ThrowingConsumer;
+
 import java.util.Random;
 import java.util.function.Consumer;
 
 public class ConsensusTestRunner {
     private String description;
     private ConsensusTestParams params;
-    private Consumer<TestInput> test;
+    private ThrowingConsumer<TestInput> test;
     private int iterations = 1;
     private int eventsToGenerate = 10_000;
 
@@ -36,7 +38,7 @@ public class ConsensusTestRunner {
         return this;
     }
 
-    public ConsensusTestRunner setTest(final Consumer<TestInput> test) {
+    public ConsensusTestRunner setTest(final ThrowingConsumer<TestInput> test) {
         this.test = test;
         return this;
     }
@@ -48,15 +50,21 @@ public class ConsensusTestRunner {
 
     public void run() {
         // TODO print description
-        for (final long seed : params.seeds()) {
-            System.out.println("Running seed: " + seed);
-            test.accept(new TestInput(params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
-        }
+        try {
+            for (final long seed : params.seeds()) {
+                System.out.println("Running seed: " + seed);
 
-        for (int i = 0; i < iterations; i++) {
-            final long seed = new Random().nextLong();
-            System.out.println("Running seed: " + seed);
-            test.accept(new TestInput(params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
+                test.accept(new TestInput(params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
+
+            }
+
+            for (int i = 0; i < iterations; i++) {
+                final long seed = new Random().nextLong();
+                System.out.println("Running seed: " + seed);
+                test.accept(new TestInput(params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
+            }
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
         }
     }
 }
