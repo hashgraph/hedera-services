@@ -23,11 +23,10 @@ import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateNotification;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class ServicesSignedStateListener implements NewSignedStateListener {
@@ -48,6 +47,10 @@ public class ServicesSignedStateListener implements NewSignedStateListener {
 
     @Override
     public void notify(final NewSignedStateNotification notice) {
+        log.info(
+                "ServicesSignedStateListener.notify() id #{} called in thread {}",
+                System.identityHashCode(this),
+                Thread.currentThread().getName());
         final ServicesState signedState = notice.getSwirldState();
         if (currentPlatformStatus.get() == FREEZE_COMPLETE) {
             signedState.logSummary();
