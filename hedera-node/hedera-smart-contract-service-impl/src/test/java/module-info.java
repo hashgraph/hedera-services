@@ -1,5 +1,4 @@
 module com.hedera.node.app.service.contract.impl.test {
-    requires com.hedera.hashgraph.protobuf.java.api;
     requires com.hedera.node.app.service.contract.impl;
     requires com.hedera.node.app.service.mono.test.fixtures;
     requires com.hedera.node.app.service.mono;
@@ -9,13 +8,8 @@ module com.hedera.node.app.service.contract.impl.test {
     requires org.assertj.core;
     requires org.junit.jupiter.api;
     requires org.mockito.junit.jupiter;
-    requires com.hedera.node.app.spi;
-    requires com.hedera.pbj.runtime;
-    requires org.hyperledger.besu.evm;
-    requires org.hyperledger.besu.datatypes;
-    requires tuweni.bytes;
-    requires tuweni.units;
     requires org.mockito;
+    requires tuweni.units;
 
     opens com.hedera.node.app.service.contract.impl.test to
             org.junit.platform.commons;

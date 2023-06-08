@@ -149,7 +149,7 @@ class ConfigProviderImplTest {
     }
 
     @Test
-    void testUpdateDoesNotUseApplicationProperties() {
+    void testUpdateDoesUseApplicationProperties() {
         // given
         final var configProvider = new ConfigProviderImpl(false);
         final Bytes bytes = Bytes.wrap(new byte[] {});
@@ -157,10 +157,13 @@ class ConfigProviderImplTest {
         // when
         configProvider.update(bytes);
         final VersionedConfiguration configuration = configProvider.getConfiguration();
+        final String value1 = configuration.getValue("foo.test");
+        final String value2 = configuration.getValue("bar.test");
 
         // then
         assertThat(configuration.getVersion()).isEqualTo(1);
-        assertThat(configuration.getPropertyNames().count()).isEqualTo(0);
+        assertThat(value1).isEqualTo("123");
+        assertThat(value2).isEqualTo("456");
     }
 
     @Test
@@ -175,7 +178,7 @@ class ConfigProviderImplTest {
 
         // then
         assertThat(configuration.getVersion()).isEqualTo(1);
-        assertThat(configuration.getPropertyNames().count()).isEqualTo(0);
+        assertThat(configuration.getValue("bar.test")).isNotEqualTo("genesis");
     }
 
     @Test
@@ -191,7 +194,6 @@ class ConfigProviderImplTest {
 
         // then
         assertThat(configuration.getVersion()).isEqualTo(1);
-        assertThat(configuration.getPropertyNames().count()).isEqualTo(1);
         assertThat(value).isEqualTo("789");
     }
 
@@ -214,7 +216,6 @@ class ConfigProviderImplTest {
 
         // then
         assertThat(configuration.getVersion()).isEqualTo(1);
-        assertThat(configuration.getPropertyNames().count()).isEqualTo(2);
         assertThat(value1).isEqualTo("789");
         assertThat(value2).isEqualTo("abc");
     }
