@@ -44,10 +44,12 @@ module com.hedera.node.hapi {
     exports com.hederahashgraph.api.proto.java;
     exports com.hederahashgraph.service.proto.java;
 
-    requires transitive com.google.protobuf;
     requires transitive com.hedera.pbj.runtime;
-    requires transitive io.helidon.grpc.core;
-    requires java.annotation;
+    requires transitive com.google.common;
+    requires transitive com.google.protobuf;
+    requires transitive grpc.stub;
+    requires transitive io.grpc;
     requires com.github.spotbugs.annotations;
+    requires grpc.protobuf;
     requires org.antlr.antlr4.runtime;
 }
