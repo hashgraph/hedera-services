@@ -50,7 +50,7 @@ class ChatterEventMapperTest {
         Assertions.assertEquals(
                 cr1gen10, mapper.getMostRecentEvent(creator1), "the event just added should be the most recent");
         Assertions.assertNull(mapper.getMostRecentEvent(creator2), "creator1 should not affect creator2");
-        
+
         final GossipEvent cr1gen5 =
                 EventBuilder.builder().setCreatorId(creator1).setGeneration(5).buildGossipEvent();
 
