@@ -13,6 +13,7 @@ module com.hedera.node.app.service.file.impl {
     requires com.swirlds.config;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
+    requires com.fasterxml.jackson.databind;
 
     provides com.hedera.node.app.service.file.FileService with
             FileServiceImpl;

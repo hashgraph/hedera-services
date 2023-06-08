@@ -21,8 +21,11 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.EnumSet;
 import java.util.function.DoubleBinaryOperator;
+import java.util.function.DoubleSupplier;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -103,6 +106,7 @@ public interface DoubleAccumulator extends Metric {
     final class Config extends MetricConfig<DoubleAccumulator, DoubleAccumulator.Config> {
 
         private final DoubleBinaryOperator accumulator;
+        private final DoubleSupplier initializer;
         private final double initialValue;
 
         /**
@@ -122,20 +126,23 @@ public interface DoubleAccumulator extends Metric {
         public Config(final String category, final String name) {
             super(category, name, FORMAT_11_3);
             this.accumulator = Double::max;
+            this.initializer = null;
             this.initialValue = 0.0;
         }
 
         private Config(
-                final String category,
-                final String name,
-                final String description,
-                final String unit,
-                final String format,
-                final DoubleBinaryOperator accumulator,
+                @NonNull final String category,
+                @NonNull final String name,
+                @NonNull final String description,
+                @NonNull final String unit,
+                @NonNull final String format,
+                @NonNull final DoubleBinaryOperator accumulator,
+                @Nullable final DoubleSupplier initializer,
                 final double initialValue) {
 
             super(category, name, description, unit, format);
             this.accumulator = throwArgNull(accumulator, "accumulator");
+            this.initializer = initializer;
             this.initialValue = initialValue;
         }
 
@@ -145,7 +152,14 @@ public interface DoubleAccumulator extends Metric {
         @Override
         public DoubleAccumulator.Config withDescription(final String description) {
             return new DoubleAccumulator.Config(
-                    getCategory(), getName(), description, getUnit(), getFormat(), getAccumulator(), getInitialValue());
+                    getCategory(),
+                    getName(),
+                    description,
+                    getUnit(),
+                    getFormat(),
+                    getAccumulator(),
+                    getInitializer(),
+                    getInitialValue());
         }
 
         /**
@@ -154,7 +168,14 @@ public interface DoubleAccumulator extends Metric {
         @Override
         public DoubleAccumulator.Config withUnit(final String unit) {
             return new DoubleAccumulator.Config(
-                    getCategory(), getName(), getDescription(), unit, getFormat(), getAccumulator(), getInitialValue());
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    unit,
+                    getFormat(),
+                    getAccumulator(),
+                    getInitializer(),
+                    getInitialValue());
         }
 
         /**
@@ -168,7 +189,14 @@ public interface DoubleAccumulator extends Metric {
          */
         public DoubleAccumulator.Config withFormat(final String format) {
             return new DoubleAccumulator.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), format, getAccumulator(), getInitialValue());
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    getUnit(),
+                    format,
+                    getAccumulator(),
+                    getInitializer(),
+                    getInitialValue());
         }
 
         /**
@@ -178,6 +206,16 @@ public interface DoubleAccumulator extends Metric {
          */
         public DoubleBinaryOperator getAccumulator() {
             return accumulator;
+        }
+
+        /**
+         * Getter of the {@code initializer}
+         *
+         * @return the initializer
+         */
+        @Nullable
+        public DoubleSupplier getInitializer() {
+            return initializer;
         }
 
         /**
@@ -192,7 +230,14 @@ public interface DoubleAccumulator extends Metric {
          */
         public DoubleAccumulator.Config withAccumulator(final DoubleBinaryOperator accumulator) {
             return new DoubleAccumulator.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), getFormat(), accumulator, getInitialValue());
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    getUnit(),
+                    getFormat(),
+                    accumulator,
+                    getInitializer(),
+                    getInitialValue());
         }
 
         /**
@@ -213,7 +258,36 @@ public interface DoubleAccumulator extends Metric {
          */
         public DoubleAccumulator.Config withInitialValue(final double initialValue) {
             return new DoubleAccumulator.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), getFormat(), getAccumulator(), initialValue);
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    getUnit(),
+                    getFormat(),
+                    getAccumulator(),
+                    getInitializer(),
+                    initialValue);
+        }
+
+        /**
+         * Fluent-style setter of the initial value.
+         * <p>
+         * If both {@code initializer} and {@code initialValue} are set, the {@code initialValue} is ignored
+         *
+         * @param initializer
+         * 		the initializer
+         * @return a new configuration-object with updated {@code initializer}
+         */
+        @NonNull
+        public DoubleAccumulator.Config withInitializer(@NonNull final DoubleSupplier initializer) {
+            return new DoubleAccumulator.Config(
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    getUnit(),
+                    getFormat(),
+                    getAccumulator(),
+                    throwArgNull(initializer, "initializer"),
+                    getInitialValue());
         }
 
         /**

@@ -23,14 +23,14 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
-import com.swirlds.merkledb.settings.MerkleDbSettings;
-import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestValue;
@@ -44,7 +44,6 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -58,37 +57,15 @@ import org.junit.jupiter.params.provider.MethodSource;
 @DisplayName("Virtual Map MerkleDB Reconnect Test")
 class VirtualMapMerkleDbReconnectTest extends VirtualMapMerkleDbReconnectTestBase {
 
-    private static MerkleDbSettings originalSettings;
-
     @BeforeAll
     static void beforeAll() throws Exception {
-        originalSettings = MerkleDbSettingsFactory.get();
-        MerkleDbSettingsFactory.configure(new TestMerkleDbSettings(originalSettings) {
-            @Override
-            public int getKeySetBloomFilterHashCount() {
-                return 10;
-            }
+        final Configuration config = new TestConfigBuilder()
+                .withValue("merkleDb.keySetBloomFilterSizeInBytes", 2 * MEBIBYTES_TO_BYTES * BYTES_TO_BITS)
+                .withValue("merkleDb.keySetHalfDiskHashMapSize", "10000")
+                .withValue("merkleDb.keySetHalfDiskHashMapBuffer", "1000")
+                .getOrCreateConfig();
 
-            @Override
-            public long getKeySetBloomFilterSizeInBytes() {
-                return 2 * MEBIBYTES_TO_BYTES * BYTES_TO_BITS;
-            }
-
-            @Override
-            public long getKeySetHalfDiskHashMapSize() {
-                return 10_000;
-            }
-
-            @Override
-            public int getKeySetHalfDiskHashMapBuffer() {
-                return 1_000;
-            }
-        });
-    }
-
-    @AfterAll
-    static void afterAll() {
-        MerkleDbSettingsFactory.configure(originalSettings);
+        ConfigurationHolder.getInstance().setConfiguration(config);
     }
 
     @Test
