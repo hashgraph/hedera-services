@@ -18,18 +18,18 @@ package com.swirlds.platform.test.chatter;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.test.chatter.simulator.GossipSimulation;
 import com.swirlds.platform.test.chatter.simulator.GossipSimulationBuilder;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -45,10 +45,10 @@ class GossipBenchmarksTests {
     /**
      * Get a list of a node's connections.
      */
-    private static List<Long> getConnections(final GossipSimulationBuilder builder, final long source) {
-        final List<Long> connectedNodes = new LinkedList<>();
-        for (long destination = 0; destination < builder.getNodeCount(); destination++) {
-            if (source == destination) {
+    private static List<NodeId> getConnections(final GossipSimulationBuilder builder, final NodeId source) {
+        final List<NodeId> connectedNodes = new LinkedList<>();
+        for (NodeId destination : builder.getAddressBook().getNodeIdSet()) {
+            if (Objects.equals(source, destination)) {
                 continue;
             }
 
@@ -79,15 +79,15 @@ class GossipBenchmarksTests {
     private static void limitConnections(
             final Random random, final GossipSimulationBuilder builder, final int desiredNumberOfConnections) {
 
-        for (long source = 0; source < builder.getNodeCount(); source++) {
+        for (final NodeId source : builder.getAddressBook().getNodeIdSet()) {
 
-            final List<Long> connectedNodes = getConnections(builder, source);
+            final List<NodeId> connectedNodes = getConnections(builder, source);
             Collections.shuffle(connectedNodes, random);
 
-            final Iterator<Long> iterator = connectedNodes.iterator();
+            final Iterator<NodeId> iterator = connectedNodes.iterator();
             while (connectedNodes.size() > desiredNumberOfConnections && iterator.hasNext()) {
 
-                final long destination = iterator.next();
+                final NodeId destination = iterator.next();
                 final int otherNodeConnectionCount =
                         getConnections(builder, destination).size();
 
@@ -106,7 +106,6 @@ class GossipBenchmarksTests {
 
     @ParameterizedTest
     @MethodSource("factories")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void test(final SimulatedChatterFactory chatterFactory) {
         final GossipSimulationBuilder builder = new GossipSimulationBuilder()
                 .setNodeCount(20)

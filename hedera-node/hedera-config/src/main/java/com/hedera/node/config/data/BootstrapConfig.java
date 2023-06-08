@@ -16,6 +16,7 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
@@ -26,7 +27,7 @@ public record BootstrapConfig(
         @ConfigProperty(
                         value = "genesisPublicKey",
                         defaultValue = "0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92")
-                String genesisPublicKey,
+                Bytes genesisPublicKey,
         @ConfigProperty(value = "hapiPermissions.path", defaultValue = "data/config/api-permission.properties")
                 String hapiPermissionsPath,
         @ConfigProperty(value = "networkProperties.path", defaultValue = "data/config/application.properties")

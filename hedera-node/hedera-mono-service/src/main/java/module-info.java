@@ -6,6 +6,7 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.state.submerkle to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app,
+            com.hedera.node.app.service.network.admin.impl,
             com.hedera.node.app.service.schedule.impl,
             com.hedera.node.app.service.schedule.impl.test,
             com.hedera.node.app.service.token.impl,
@@ -274,8 +275,6 @@ module com.hedera.node.app.service.mono {
     requires transitive com.swirlds.virtualmap;
     requires transitive dagger;
     requires transitive headlong;
-    requires transitive grpc.stub;
-    requires transitive io.grpc;
     requires transitive io.helidon.grpc.core;
     requires transitive io.helidon.grpc.server;
     requires transitive javax.inject;
@@ -292,8 +291,6 @@ module com.hedera.node.app.service.mono {
     requires com.swirlds.base;
     requires com.swirlds.logging;
     requires com.swirlds.platform;
-    requires io.netty.handler;
-    requires io.netty.transport;
     requires org.apache.commons.collections4;
     requires org.apache.commons.io;
     requires org.bouncycastle.provider;
