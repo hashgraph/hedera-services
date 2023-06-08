@@ -26,7 +26,7 @@ pluginManagement {
 }
 
 plugins {
-  id("com.gradle.enterprise").version("3.11.4")
+    id("com.gradle.enterprise").version("3.11.4")
     // Use GIT plugin to clone HAPI protobuf files
     // See documentation https://melix.github.io/includegit-gradle-plugin/latest/index.html
     id("me.champeau.includegit").version("0.1.6")
