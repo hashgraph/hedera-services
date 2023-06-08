@@ -16,13 +16,15 @@
 
 package com.swirlds.common.system.platformstatus;
 
+import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
+
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
 import com.swirlds.common.system.platformstatus.statuslogic.PlatformStatusLogic;
 import com.swirlds.common.system.platformstatus.statuslogic.StatusLogicFactory;
 import com.swirlds.common.time.Time;
-import com.swirlds.logging.LogMarker;
+import com.swirlds.logging.payloads.PlatformStatusPayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
@@ -91,12 +93,12 @@ public class PlatformStatusStateMachine {
             return;
         }
 
-        logger.info(
-                LogMarker.STARTUP.getMarker(),
-                "PlatformStatus changed to {}, after being in {} for {}",
-                newStatus,
-                currentStatusLogic.getStatus(),
-                Duration.between(currentStatusLogic.getStatusStartTime(), time.now()));
+        final String statusChangeMessage = "Platform status changed after %s"
+                .formatted(Duration.between(currentStatusLogic.getStatusStartTime(), time.now()));
+
+        logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
+                        statusChangeMessage, currentStatusLogic.getStatus().name(), newStatus.name())
+                .toString());
 
         notificationEngine.dispatch(
                 PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newStatus));

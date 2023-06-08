@@ -17,8 +17,8 @@
 package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
-import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.system.platformstatus.PlatformStatusAction;
+import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.time.Time;
 import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
