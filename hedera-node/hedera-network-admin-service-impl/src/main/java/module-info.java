@@ -5,6 +5,7 @@ module com.hedera.node.app.service.network.admin.impl {
     requires transitive com.hedera.node.app.service.mono;
     requires transitive com.hedera.node.app.service.network.admin;
     requires transitive com.hedera.node.app.spi;
+    requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.common;
@@ -14,7 +15,6 @@ module com.hedera.node.app.service.network.admin.impl {
     requires com.github.spotbugs.annotations;
     requires org.apache.logging.log4j;
     requires com.hedera.node.app.service.token;
-    requires com.hedera.node.config;
     requires com.google.common;
 
     provides com.hedera.node.app.service.networkadmin.FreezeService with
