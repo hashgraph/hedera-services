@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -90,6 +91,8 @@ public class Create2OperationV1SecurityModelSuite extends HapiSuite {
                         .gas(2_000_000)
                         .adminKey(multiKey)
                         .payingWith(GENESIS)
+                        .sigMapPrefixes(uniqueWithFullPrefixesFor(GENESIS, multiKey))
+                        .signedBy(GENESIS, multiKey)
                         .exposingNumTo(n -> childMirrorAddr.set("0.0." + (n + 1)))
                         .via(creationAndAssociation)))
                 .then(sourcing(() -> getContractInfo(childMirrorAddr.get()).logged()));
