@@ -35,8 +35,9 @@ import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.VersionedConfigImpl;
-import com.hedera.node.app.service.token.impl.*;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
@@ -341,7 +342,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void checksIfAllowancesExceedLimit() {
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("hedera.allowances.maxAccountLimit", 2)
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));

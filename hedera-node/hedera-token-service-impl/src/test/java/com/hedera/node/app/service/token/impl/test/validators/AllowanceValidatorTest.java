@@ -86,13 +86,13 @@ class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void checksFlagIfEnabled() {
-        final var trueConfig = new HederaTestConfigBuilder()
+        final var trueConfig = HederaTestConfigBuilder.create()
                 .withValue("hedera.allowances.isEnabled", true)
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(trueConfig, 1));
         assertThat(subject.isEnabled()).isTrue();
 
-        final var falseConfig = new HederaTestConfigBuilder()
+        final var falseConfig = HederaTestConfigBuilder.create()
                 .withValue("hedera.allowances.isEnabled", false)
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(falseConfig, 1));

@@ -62,7 +62,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     void notSupportedFails() {
         givenApproveAllowanceTxn(
                 payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("hedera.allowances.isEnabled", false)
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
@@ -77,7 +77,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
         // each serial number is considered as one allowance for nft allowances
         givenApproveAllowanceTxn(
                 payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("hedera.allowances.maxTransactionLimit", 1)
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
@@ -393,7 +393,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
         // each serial number is considered as one allowance
         givenApproveAllowanceTxn(
                 payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("hedera.allowances.maxTransactionLimit", 1)
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));

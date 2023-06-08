@@ -64,7 +64,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void notSupportedFails() {
         final var txn = cryptoDeleteAllowanceTransaction(payerId, ownerId, nonFungibleTokenId, List.of(1L, 2L));
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("hedera.allowances.isEnabled", false)
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
@@ -136,7 +136,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     void validatesTotalAllowancesInTxn() {
         // each serial number is considered as one allowance
         final var txn = cryptoDeleteAllowanceTransaction(payerId, ownerId, nonFungibleTokenId, List.of(1L, 2L));
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("hedera.allowances.maxTransactionLimit", 1)
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
