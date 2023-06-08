@@ -1014,6 +1014,10 @@ public class SyncTests {
         assertFalse(executor.getListener().getSynchronizerReturn());
     }
 
+    /**
+     * Tests that a sync works if one node has no events at all in the graph and also has a non-ancient generation that
+     * is not 0
+     */
     @Test
     void noEventsStartGeneration() throws Exception {
         final SyncTestParams params = new SyncTestParams(4, 0, 100, 0);
