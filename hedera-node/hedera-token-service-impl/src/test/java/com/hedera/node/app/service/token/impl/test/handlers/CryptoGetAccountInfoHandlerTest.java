@@ -50,6 +50,7 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
@@ -84,6 +85,9 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     private ReadableStates readableStates1, readableStates2, readableStates3;
 
     private CryptoGetAccountInfoHandler subject;
+
+    @Mock
+    private ReadableStakingInfoStore readableStakingInfoStore;
 
     @BeforeEach
     public void setUp() {
@@ -232,6 +236,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         when(context.createStore(ReadableAccountStore.class)).thenReturn(ReadableAccountStore);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
         when(context.createStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
+        when(context.createStore(ReadableStakingInfoStore.class)).thenReturn(readableStakingInfoStore);
 
         final var config = new HederaTestConfigBuilder()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
@@ -289,6 +294,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         when(context.createStore(ReadableAccountStore.class)).thenReturn(ReadableAccountStore);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
         when(context.createStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
+        when(context.createStore(ReadableStakingInfoStore.class)).thenReturn(readableStakingInfoStore);
 
         final var config = new HederaTestConfigBuilder()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
@@ -375,6 +381,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         when(context.createStore(ReadableAccountStore.class)).thenReturn(ReadableAccountStore);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
         when(context.createStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
+        when(context.createStore(ReadableStakingInfoStore.class)).thenReturn(readableStakingInfoStore);
 
         final var config = new HederaTestConfigBuilder()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
