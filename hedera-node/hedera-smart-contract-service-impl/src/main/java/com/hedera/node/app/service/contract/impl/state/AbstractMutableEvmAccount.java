@@ -69,7 +69,7 @@ public abstract class AbstractMutableEvmAccount implements MutableAccount, EvmAc
     /**
      * Besu uses this method to do zero-sum balance changes, but since the {@link ContractService} neither
      * owns account state nor is aware of receiver signature requirements, it's more sensible to require
-     * message call processors to use {@link Dispatch#transferValue(long, long, long, VerificationStrategy)}.
+     * message call processors to use {@link Dispatch#transferWithReceiverSigCheck(long, long, long, VerificationStrategy)}.
      *
      * @param value the amount to set
      * @throws UnsupportedOperationException always

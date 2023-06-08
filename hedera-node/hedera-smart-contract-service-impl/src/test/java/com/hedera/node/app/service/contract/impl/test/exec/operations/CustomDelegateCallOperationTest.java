@@ -76,7 +76,7 @@ class CustomDelegateCallOperationTest {
 
     @Test
     void rejectsMissingNonSystemAddress() {
-        doCallRealMethod().when(addressChecks).isMissing(any(), any());
+        doCallRealMethod().when(addressChecks).isNeitherSystemNorPresent(any(), any());
         givenWellKnownFrameWith(1L, Address.fromHexString("0x123"), 2L);
         final var expected = new Operation.OperationResult(123L, MISSING_ADDRESS);
         assertSameResult(expected, subject.execute(frame, evm));
@@ -84,7 +84,7 @@ class CustomDelegateCallOperationTest {
 
     @Test
     void permitsSystemAddress() {
-        doCallRealMethod().when(addressChecks).isMissing(any(), any());
+        doCallRealMethod().when(addressChecks).isNeitherSystemNorPresent(any(), any());
         given(addressChecks.isSystemAccount(Address.fromHexString("0x123"))).willReturn(true);
         givenWellKnownFrameWith(1L, Address.fromHexString("0x123"), 2L);
         given(frame.stackSize()).willReturn(6);

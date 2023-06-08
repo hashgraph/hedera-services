@@ -56,6 +56,11 @@ public class Version030AddressChecks implements AddressChecks {
     }
 
     @Override
+    public boolean isNonUserAccount(@NonNull final Address address) {
+        return false;
+    }
+
+    @Override
     public boolean isHederaPrecompile(@NonNull final Address address) {
         return address.numberOfLeadingZeroBytes() >= 18 && isPrecompile(address.getInt(16));
     }

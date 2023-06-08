@@ -25,7 +25,10 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
     /**
      * An EVM operation referenced an account that does not exist.
      */
-    MISSING_ADDRESS("Invalid account reference");
+    MISSING_ADDRESS("Invalid account reference"),
+    TOKEN_TREASURY_SELFDESTRUCT("Token treasury cannot be deleted"),
+    TOKEN_HOLDER_SELFDESTRUCT("Accounts still holding tokens cannot be deleted"),
+    SELFDESTRUCT_TO_SELF("Selfdestruct must give a different beneficiary");
 
     private final String description;
 

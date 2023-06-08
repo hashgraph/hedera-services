@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELFDESTRUCT_TO_SELF;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOKEN_HOLDER_SELFDESTRUCT;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOKEN_TREASURY_SELFDESTRUCT;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EVM_ADDRESS_LENGTH_AS_LONG;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
@@ -38,6 +42,7 @@ import com.hedera.node.app.spi.state.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -46,6 +51,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.code.CodeFactory;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 /**
  * An implementation of {@link EvmFrameState} that uses {@link WritableKVState}s to manage
@@ -160,6 +166,16 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     }
 
     @Override
+    public int getNumTreasuryTitles(final long number) {
+        return validatedAccount(number).numberTreasuryTitles();
+    }
+
+    @Override
+    public int getNumPositiveTokenBalances(final long number) {
+        return validatedAccount(number).numberPositiveBalances();
+    }
+
+    @Override
     public void setCode(final long number, @NonNull final Bytes code) {
         bytecode.put(new EntityNumber(number), new Bytecode(tuweniToPbjBytes(requireNonNull(code))));
     }
@@ -201,9 +217,37 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         return HOLLOW_ACCOUNT_KEY.equals(account.key());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void finalizeHollowAccount(@NonNull final Address address) {
         dispatch.finalizeHollowAccountAsContract(tuweniToPbjBytes(address));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Optional<ExceptionalHaltReason> tryToTrackDeletion(
+            @NonNull final Address deleted, @NonNull final Address beneficiary) {
+        if (deleted.equals(beneficiary)) {
+            return Optional.of(SELFDESTRUCT_TO_SELF);
+        }
+        final var beneficiaryAccount = getAccount(beneficiary);
+        if (beneficiaryAccount == null || beneficiaryAccount instanceof TokenEvmAccount) {
+            return Optional.of(MISSING_ADDRESS);
+        }
+        // Token addresses don't have bytecode that could run a selfdestruct, so this cast is safe
+        final var deletedAccount = (ProxyEvmAccount) requireNonNull(getAccount(deleted));
+        if (deletedAccount.numTreasuryTitles() > 0) {
+            return Optional.of(TOKEN_TREASURY_SELFDESTRUCT);
+        }
+        if (deletedAccount.numPositiveTokenBalances() > 0) {
+            return Optional.of(TOKEN_HOLDER_SELFDESTRUCT);
+        }
+        dispatch.trackDeletion(deletedAccount.number, ((ProxyEvmAccount) beneficiaryAccount).number);
+        return Optional.empty();
     }
 
     /**

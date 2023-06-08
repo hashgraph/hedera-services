@@ -20,6 +20,7 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.tuweni.bytes.Bytes;
@@ -35,6 +36,19 @@ import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 
+/**
+ * Implementation assistance for Hedera-customized create operations. Specializations must override methods to:
+ * <ol>
+ *     <li>Check if the create operation is disabled.</li>
+ *     <li>Compute the address for the new contract, and set up the create in the frame's {@link ProxyWorldUpdater}.</li>
+ *     <li>Do any Hedera-specific completion work needed when the spawned {@code CONTRACT_CREATION} succeeds.</li>
+ * </ol>
+ *
+ * <p>Note that unlike in Besu, it is possible for the second step that computes the new address to fail, since
+ * a {@code CREATE2} could reference an existing hollow account with lazy creation disabled. So this class also does
+ * a null-check after calling {@link AbstractCustomCreateOperation#setupPendingCreation(MessageFrame)}, and fails
+ * as appropriate.
+ */
 public abstract class AbstractCustomCreateOperation extends AbstractOperation {
     private static final int MAX_STACK_DEPTH = 1024;
     private static final Operation.OperationResult INVALID_RESPONSE =

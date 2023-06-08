@@ -40,13 +40,9 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
  * applies to a call, does no additional address checks. Otherwise, only allows calls to an
  * address that is either a Hedera precompile, a system address, or not missing.
  *
- * <p>(Of course any Hedera precompile address <i>is</i> a system address, but until v0.38
- * the {@link AddressChecks#isSystemAccount(Address)} check would always return false, so
- * we need to "split out" the more narrow check for precompiles for backward compatibility.)
- *
- * <p><b>IMPORTANT:</b> This operation no longer does checks for receiver signature
- * requirements when value is being transferred; those requirements will be enforced in
- * the call the {@link MessageCallProcessor} makes to {@link Dispatch#transferValue(long, long, long, VerificationStrategy)}.
+ * <p><b>IMPORTANT:</b> This operation no longer enforces for receiver signature requirements
+ * when value is being transferred; that will now happen in the call the {@link MessageCallProcessor}
+ * makes to {@link Dispatch#transferWithReceiverSigCheck(long, long, long, VerificationStrategy)}.
  */
 public class CustomCallOperation extends CallOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =
@@ -68,11 +64,8 @@ public class CustomCallOperation extends CallOperation {
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
             final var toAddress = to(frame);
-            final var toIsMissing = mustBePresent(frame, toAddress) && !addressChecks.isPresent(toAddress, frame);
-            if (toIsMissing) {
-                return new Operation.OperationResult(cost(frame), MISSING_ADDRESS);
-            }
-            return super.execute(frame, evm);
+            final var isMissing = mustBePresent(frame, toAddress) && !addressChecks.isPresent(toAddress, frame);
+            return isMissing ? new Operation.OperationResult(cost(frame), MISSING_ADDRESS) : super.execute(frame, evm);
         } catch (final FixedStack.UnderflowException ignore) {
             return UNDERFLOW_RESPONSE;
         }
@@ -83,8 +76,7 @@ public class CustomCallOperation extends CallOperation {
         if (impliesLazyCreation(frame, toAddress) && featureFlags.isImplicitCreationEnabled(frame)) {
             return false;
         }
-        // We don't want to check if system accounts are "present", since they aren't; but message call
-        // processors will fail in more legible ways than we can here
+        // Let system accounts through so the message call processor can fail in a more legible way
         return !addressChecks.isSystemAccount(toAddress);
     }
 

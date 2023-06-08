@@ -32,7 +32,7 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
  *
  * <p><b>IMPORTANT:</b> This operation no longer does checks for receiver signature
  * requirements when value is being transferred; those requirements will be enforced in
- * the call the {@link MessageCallProcessor} makes to {@link Dispatch#transferValue(long, long, long, VerificationStrategy)}.
+ * the call the {@link MessageCallProcessor} makes to {@link Dispatch#transferWithReceiverSigCheck(long, long, long, VerificationStrategy)}.
  */
 public class CustomCallCodeOperation extends CallCodeOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =

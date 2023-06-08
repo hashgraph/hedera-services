@@ -19,14 +19,15 @@ package com.hedera.node.app.service.contract.impl.test.exec.operations;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.assertSameResult;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomExtCodeHashOperation;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -70,15 +71,26 @@ class CustomExtCodeHashOperationTest {
 
     @Test
     void rejectsMissingNonSystemAddress() {
-        doCallRealMethod().when(addressChecks).isMissing(any(), any());
         givenWellKnownFrameWith(Address.fromHexString("0x123"));
         final var expected = new Operation.OperationResult(123L, MISSING_ADDRESS);
         assertSameResult(expected, subject.execute(frame, evm));
     }
 
     @Test
+    void hasSpecialBehaviorForNonUserAccount() {
+        given(addressChecks.isNonUserAccount(Address.fromHexString("0x123"))).willReturn(true);
+        given(frame.getStackItem(anyInt())).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
+        givenWellKnownFrameWith(Address.fromHexString("0x123"));
+        final var expected = new Operation.OperationResult(123L, null);
+        assertSameResult(expected, subject.execute(frame, evm));
+        verify(frame).popStackItem();
+        verify(frame).pushStackItem(UInt256.ZERO);
+    }
+
+    @Test
     void delegatesForPresentAddress() {
         givenWellKnownFrameWith(Address.fromHexString("0x123"));
+        given(addressChecks.isPresent(Address.fromHexString("0x123"), frame)).willReturn(true);
         given(frame.popStackItem()).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
         final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
         assertSameResult(expected, subject.execute(frame, evm));

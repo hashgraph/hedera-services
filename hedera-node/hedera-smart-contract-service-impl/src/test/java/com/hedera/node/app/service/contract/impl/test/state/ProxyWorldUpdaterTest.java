@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
+import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
@@ -96,6 +97,12 @@ class ProxyWorldUpdaterTest {
         given(evmFrameState.isHollowAccount(ALTBN128_ADD)).willReturn(true);
 
         assertTrue(subject.isHollowAccount(ALTBN128_ADD));
+    }
+
+    @Test
+    void delegatesHollowFinalization() {
+        subject.finalizeHollowAccount(EIP_1014_ADDRESS);
+        verify(evmFrameState).finalizeHollowAccount(EIP_1014_ADDRESS);
     }
 
     @Test

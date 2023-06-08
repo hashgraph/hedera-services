@@ -41,7 +41,7 @@ public class CustomBalanceOperation extends BalanceOperation {
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
             final var address = Words.toAddress(frame.getStackItem(0));
-            // Make system contracts invisible to EVM (added in v0.38)
+            // Make system contract balance invisible to EVM (added in v0.38)
             if (addressChecks.isSystemAccount(address)) {
                 frame.popStackItem();
                 frame.pushStackItem(UInt256.ZERO);

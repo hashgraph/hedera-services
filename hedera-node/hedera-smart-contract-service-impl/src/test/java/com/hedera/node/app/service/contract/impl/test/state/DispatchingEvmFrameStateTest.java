@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELFDESTRUCT_TO_SELF;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOKEN_HOLDER_SELFDESTRUCT;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOKEN_TREASURY_SELFDESTRUCT;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniUInt256;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
@@ -62,10 +66,13 @@ class DispatchingEvmFrameStateTest {
     private static final int REDIRECT_CODE_FIXED_PREFIX_LEN =
             "6080604052348015600f57600080fd5b506000610167905077618dc65e".length();
     private static final long ACCOUNT_NUM = 0x9abcdefabcdefbbbL;
+    private static final long BENEFICIARY_NUM = 0xdefdefL;
     private static final long TOKEN_NUM = 0xffffffffffffL;
     private static final Bytes SOME_OTHER_ALIAS = Bytes.wrap("<PRETEND>");
     private static final Address EVM_ADDRESS = Address.fromHexString("abcabcabcabcabcabeeeeeee9abcdefabcdefbbb");
     private static final Address LONG_ZERO_ADDRESS = Address.fromHexString("0000000000000000000000009abcdefabcdefbbb");
+    private static final Address BENEFICIARY_ADDRESS =
+            Address.fromHexString("0000000000000000000000000000000000defdef");
     private static final Address TOKEN_ADDRESS = Address.fromHexString("0000000000000000000000000000ffffffffffff");
     private static final Bytes SOME_PRETEND_CODE = Bytes.wrap("<NOT-REALLY-CODE>");
     private static final Bytecode SOME_PRETEND_BYTECODE =
@@ -273,6 +280,18 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
+    void returnsNumTreasuryTitlesIfPresent() {
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM).numberTreasuryTitles(1234));
+        assertEquals(1234, subject.getNumTreasuryTitles(ACCOUNT_NUM));
+    }
+
+    @Test
+    void returnsNumNonZeroBalancesIfPresent() {
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM).numberPositiveBalances(1234));
+        assertEquals(1234, subject.getNumPositiveTokenBalances(ACCOUNT_NUM));
+    }
+
+    @Test
     void returnsBalanceIfPresent() {
         final var value = Wei.of(1234);
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).tinybarBalance(1234));
@@ -294,6 +313,67 @@ class DispatchingEvmFrameStateTest {
     void returnsNullForExpired() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).expiredAndPendingRemoval(true));
         assertNull(subject.getAccount(LONG_ZERO_ADDRESS));
+    }
+
+    @Test
+    void missingAccountsCannotBeBeneficiaries() {
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM).expiredAndPendingRemoval(true));
+
+        final var reasonToHaltDeletion = subject.tryToTrackDeletion(EVM_ADDRESS, LONG_ZERO_ADDRESS);
+
+        assertTrue(reasonToHaltDeletion.isPresent());
+        assertEquals(MISSING_ADDRESS, reasonToHaltDeletion.get());
+    }
+
+    @Test
+    void deletedAccountCannotBeTokenTreasury() {
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM).numberTreasuryTitles(1));
+        givenWellKnownAccount(BENEFICIARY_NUM, accountWith(BENEFICIARY_NUM));
+
+        final var reasonToHaltDeletion = subject.tryToTrackDeletion(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS);
+
+        assertTrue(reasonToHaltDeletion.isPresent());
+        assertEquals(TOKEN_TREASURY_SELFDESTRUCT, reasonToHaltDeletion.get());
+    }
+
+    @Test
+    void deletedAccountCannotHaveTokenBalances() {
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM).numberPositiveBalances(1));
+        givenWellKnownAccount(BENEFICIARY_NUM, accountWith(BENEFICIARY_NUM));
+
+        final var reasonToHaltDeletion = subject.tryToTrackDeletion(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS);
+
+        assertTrue(reasonToHaltDeletion.isPresent());
+        assertEquals(TOKEN_HOLDER_SELFDESTRUCT, reasonToHaltDeletion.get());
+    }
+
+    @Test
+    void deletionsAreTracked() {
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM));
+        givenWellKnownAccount(BENEFICIARY_NUM, accountWith(BENEFICIARY_NUM));
+
+        final var reasonToHaltDeletion = subject.tryToTrackDeletion(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS);
+
+        assertTrue(reasonToHaltDeletion.isEmpty());
+        verify(dispatch).trackDeletion(ACCOUNT_NUM, BENEFICIARY_NUM);
+    }
+
+    @Test
+    void beneficiaryCannotBeSelf() {
+        final var reasonToHaltDeletion = subject.tryToTrackDeletion(EVM_ADDRESS, EVM_ADDRESS);
+
+        assertTrue(reasonToHaltDeletion.isPresent());
+        assertEquals(SELFDESTRUCT_TO_SELF, reasonToHaltDeletion.get());
+    }
+
+    @Test
+    void tokenAccountsCannotBeBeneficiaries() {
+        givenWellKnownToken();
+
+        final var reasonToHaltDeletion = subject.tryToTrackDeletion(EVM_ADDRESS, TOKEN_ADDRESS);
+
+        assertTrue(reasonToHaltDeletion.isPresent());
+        assertEquals(MISSING_ADDRESS, reasonToHaltDeletion.get());
     }
 
     @Test
@@ -370,7 +450,11 @@ class DispatchingEvmFrameStateTest {
     }
 
     private void givenWellKnownAccount(final Account.Builder builder) {
-        given(dispatch.getAccount(ACCOUNT_NUM)).willReturn(builder.build());
+        givenWellKnownAccount(ACCOUNT_NUM, builder);
+    }
+
+    private void givenWellKnownAccount(final long number, final Account.Builder builder) {
+        given(dispatch.getAccount(number)).willReturn(builder.build());
     }
 
     private void givenWellKnownToken() {

@@ -106,7 +106,11 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
     }
 
     // --- Hedera-specific methods ---
-    public boolean isHollow() {
-        throw new AssertionError("Not implemented");
+    public int numTreasuryTitles() {
+        return state.getNumTreasuryTitles(number);
+    }
+
+    public int numPositiveTokenBalances() {
+        return state.getNumPositiveTokenBalances(number);
     }
 }

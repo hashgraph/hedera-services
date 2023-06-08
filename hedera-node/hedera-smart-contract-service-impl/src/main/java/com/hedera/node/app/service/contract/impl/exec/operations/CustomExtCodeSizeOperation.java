@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -45,7 +46,13 @@ public class CustomExtCodeSizeOperation extends ExtCodeSizeOperation {
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
             final var address = Words.toAddress(frame.getStackItem(0));
-            if (addressChecks.isMissing(address, frame)) {
+            // Special behavior for long-zero addresses below 0.0.1001
+            if (addressChecks.isNonUserAccount(address)) {
+                frame.popStackItem();
+                frame.pushStackItem(UInt256.ZERO);
+                return new OperationResult(cost(true), null);
+            }
+            if (!addressChecks.isPresent(address, frame)) {
                 return new OperationResult(cost(true), MISSING_ADDRESS);
             }
             return super.execute(frame, evm);

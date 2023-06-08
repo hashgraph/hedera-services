@@ -1,0 +1,51 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.spi.meta.bni;
+
+import com.hedera.hapi.node.base.Key;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
+
+/**
+ * A {@link VerificationStrategy} that verifies signatures from a single active contract. This is the
+ * verification strategy used within the EVM to check receiver signature requirements.
+ */
+public class ActiveContractVerificationStrategy implements VerificationStrategy {
+    private final long activeNumber;
+    private final Bytes activeAddress;
+
+    public ActiveContractVerificationStrategy(final long activeNumber, @NonNull final Bytes activeAddress) {
+        this.activeNumber = activeNumber;
+        this.activeAddress = Objects.requireNonNull(activeAddress);
+    }
+
+    @Override
+    public Decision maybeVerifySignature(@NonNull final Key key, @NonNull final KeyRole keyRole) {
+        if (key.key().kind() == Key.KeyOneOfType.CONTRACT_ID) {
+            final var contractId = key.contractIDOrThrow();
+            if (contractId.hasContractNum() && contractId.contractNumOrThrow() == activeNumber) {
+                return Decision.VALID;
+            } else if (contractId.hasEvmAddress() && activeAddress.equals(contractId.evmAddress())) {
+                return Decision.VALID;
+            } else {
+                return Decision.INVALID;
+            }
+        }
+        return Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION;
+    }
+}

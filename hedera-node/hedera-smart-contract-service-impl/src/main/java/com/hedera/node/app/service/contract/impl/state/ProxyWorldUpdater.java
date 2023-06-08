@@ -35,6 +35,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 /**
@@ -106,6 +107,24 @@ public class ProxyWorldUpdater implements WorldUpdater {
 
     // --- Some Hedera-specific methods ---
     /**
+     * Tries to transfer the given amount from the sender to the recipient. The sender has already
+     * authorized this action, in the sense that it is the address that has initiated either a
+     * message call with value or a {@code selfdestruct}. The recipient, however, must still be
+     * checked for authorization based on the Hedera concept of receiver signature requirements.
+     *
+     * <p>Returns true if the receiver authorization and transfer succeeded, false otherwise.
+     *
+     * @param verifiedSender the sender of the transfer, already authorized
+     * @param recipient the recipient of the transfer, not yet authorized
+     * @param amount the amount to transfer
+     * @return whether the transfer succeeded
+     */
+    public boolean tryTransfer(
+            @NonNull final Address verifiedSender, @NonNull final Address recipient, @NonNull final long amount) {
+        throw new AssertionError("Not implemented");
+    }
+
+    /**
      * Returns whether this address refers to a hollow account (i.e. a lazy-created account that
      * has not yet been completed as either an EOA with a cryptographic key, or a contract created
      * with CREATE2.)
@@ -154,6 +173,19 @@ public class ProxyWorldUpdater implements WorldUpdater {
      * @param alias the hollow account to be finalized as a contract
      */
     public void finalizeHollowAccount(@NonNull final Address alias) {
+        evmFrameState.finalizeHollowAccount(alias);
+    }
+
+    /**
+     * Attempts to track the given deletion of an account with the designated beneficiary, returning an optional
+     * {@link ExceptionalHaltReason} to indicate whether the deletion could be successfully tracked.
+     *
+     * @param deleted the address of the account being deleted
+     * @param beneficiary the address of the beneficiary of the deletion
+     * @return an optional {@link ExceptionalHaltReason} with the reason deletion could not be tracked
+     */
+    public Optional<ExceptionalHaltReason> tryToTrackDeletion(
+            @NonNull final Address deleted, @NonNull final Address beneficiary) {
         throw new AssertionError("Not implemented");
     }
 

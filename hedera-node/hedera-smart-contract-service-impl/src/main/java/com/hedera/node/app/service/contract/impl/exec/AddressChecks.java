@@ -40,14 +40,21 @@ public interface AddressChecks {
 
     /**
      * Returns {@code true} if the given address is a system address (i.e. a long-zero address for an entity
-     * id up to {@code 0.0.750}). For almost all purposes system addresses are <b>not</b> really present,
-     * but after release v0.38 we changed some operations to "pretend" a system account is present, so we can
-     * fail later in a more legible way inside a message call processor.
+     * id up to {@code 0.0.750}).
      *
      * @param address the address to check
      * @return whether the address is a system address
      */
     boolean isSystemAccount(@NonNull Address address);
+
+    /**
+     * Returns {@code true} if the given address is a non-user account (i.e. a long-zero address for an entity
+     * id up to {@code 0.0.1000}).
+     *
+     * @param address
+     * @return
+     */
+    boolean isNonUserAccount(@NonNull Address address);
 
     /**
      * A convenience method to check if the given address is completely missing from the given frame. (I.e.,
@@ -57,8 +64,18 @@ public interface AddressChecks {
      * @param frame the frame to check
      * @return whether the address is missing from the frame
      */
-    default boolean isMissing(@NonNull Address address, @NonNull MessageFrame frame) {
+    default boolean isNeitherSystemNorPresent(@NonNull Address address, @NonNull MessageFrame frame) {
         return !isSystemAccount(address) && !isPresent(address, frame);
+    }
+
+    /**
+     *
+     * @param address
+     * @param frame
+     * @return
+     */
+    default boolean isNeitherNonUserNorPresent(@NonNull Address address, @NonNull MessageFrame frame) {
+        return !isNonUserAccount(address) && !isPresent(address, frame);
     }
 
     /**

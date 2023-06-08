@@ -21,6 +21,7 @@ import com.hedera.node.app.spi.meta.bni.Scope;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -28,6 +29,7 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 /**
  * Exposes the full Hedera state that may be read and changed <b>directly </b> from an EVM frame,
@@ -55,6 +57,21 @@ public interface EvmFrameState {
     }
 
     /**
+     * Tries to transfer the given amount from the sender to the recipient. The sender has already
+     * authorized this action, in the sense that it is the address that has initiated either a
+     * message call with value or a {@code selfdestruct}. The recipient, however, must still be
+     * checked for authorization based on the Hedera concept of receiver signature requirements.
+     *
+     * <p>Returns true if the receiver authorization and transfer succeeded, false otherwise.
+     *
+     * @param verifiedSender the sender of the transfer, already authorized
+     * @param recipient the recipient of the transfer, not yet authorized
+     * @param amount the amount to transfer
+     * @return whether the transfer succeeded
+     */
+    boolean tryTransfer(@NonNull Address verifiedSender, @NonNull Address recipient, @NonNull long amount);
+
+    /**
      * Returns whether the account with the given address is a "hollow account"; that is, an account
      * created by a value transfer to a 20-byte alias, without an explicit cryptographic key given.
      */
@@ -66,6 +83,16 @@ public interface EvmFrameState {
      * @param address the address of the hollow account to finalize
      */
     void finalizeHollowAccount(@NonNull Address address);
+
+    /**
+     * Attempts to track the given deletion of an account with the designated beneficiary, returning an optional
+     * {@link ExceptionalHaltReason} to indicate whether the deletion could be successfully tracked.
+     *
+     * @param deleted the address of the account being deleted
+     * @param beneficiary the address of the beneficiary of the deletion
+     * @return an optional {@link ExceptionalHaltReason} with the reason deletion could not be tracked
+     */
+    Optional<ExceptionalHaltReason> tryToTrackDeletion(@NonNull Address deleted, @NonNull Address beneficiary);
 
     /**
      * Returns the read-only account with the given address, or {@code null} if the account is missing,
@@ -149,6 +176,22 @@ public interface EvmFrameState {
      * @return the nonce
      */
     long getNonce(long number);
+
+    /**
+     * Returns the number of treasury titles for the account with the given number.
+     *
+     * @param number the account number
+     * @return the number of treasury titles
+     */
+    int getNumTreasuryTitles(long number);
+
+    /**
+     * Returns the number of positive token balances.
+     *
+     * @param number the account number
+     * @return the number of positive token balances
+     */
+    int getNumPositiveTokenBalances(long number);
 
     /**
      * Sets the nonce for the account with the given number.

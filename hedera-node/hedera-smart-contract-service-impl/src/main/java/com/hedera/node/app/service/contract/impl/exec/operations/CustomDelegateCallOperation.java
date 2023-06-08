@@ -31,8 +31,7 @@ import org.hyperledger.besu.evm.operation.DelegateCallOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 
 /**
- * A small customization of the Besu {@link DelegateCallOperation} that
- * checks for missing addresses before delegating the call.
+ * A customization of the Besu {@link DelegateCallOperation} that checks for missing addresses before delegating the call.
  */
 public class CustomDelegateCallOperation extends DelegateCallOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =
@@ -49,7 +48,7 @@ public class CustomDelegateCallOperation extends DelegateCallOperation {
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
             final var address = Words.toAddress(frame.getStackItem(0));
-            if (addressChecks.isMissing(address, frame)) {
+            if (addressChecks.isNeitherSystemNorPresent(address, frame)) {
                 return new OperationResult(cost(frame), MISSING_ADDRESS);
             }
             return super.execute(frame, evm);

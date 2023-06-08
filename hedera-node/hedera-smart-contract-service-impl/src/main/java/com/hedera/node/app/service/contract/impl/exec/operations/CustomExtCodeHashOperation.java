@@ -19,8 +19,10 @@ package com.hedera.node.app.service.contract.impl.exec.operations;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -30,6 +32,11 @@ import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 
+/**
+ * Customization of {@link ExtCodeHashOperation} that treats every long-zero address for an account
+ * below {@code 0.0.1001} as having a zero code hash; and otherwise requires the account to be
+ * present or halts the frame with {@link CustomExceptionalHaltReason#MISSING_ADDRESS}.
+ */
 public class CustomExtCodeHashOperation extends ExtCodeHashOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =
             new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
@@ -45,7 +52,14 @@ public class CustomExtCodeHashOperation extends ExtCodeHashOperation {
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
             final var address = Words.toAddress(frame.getStackItem(0));
-            if (addressChecks.isMissing(address, frame)) {
+            // Special behavior for long-zero addresses below 0.0.1001
+            if (addressChecks.isNonUserAccount(address)) {
+                frame.popStackItem();
+                frame.pushStackItem(UInt256.ZERO);
+                return new OperationResult(cost(true), null);
+            }
+            // Otherwise the address must be present
+            if (!addressChecks.isPresent(address, frame)) {
                 return new OperationResult(cost(true), MISSING_ADDRESS);
             }
             return super.execute(frame, evm);
