@@ -87,12 +87,6 @@ class WritableTokenRelationStoreTest {
     }
 
     @Test
-    void testCommit() {
-        subject.commit();
-        verify(tokenRelState).commit();
-    }
-
-    @Test
     void testGet() {
         final var tokenRelation = TokenRelation.newBuilder()
                 .tokenNumber(TOKEN_10)

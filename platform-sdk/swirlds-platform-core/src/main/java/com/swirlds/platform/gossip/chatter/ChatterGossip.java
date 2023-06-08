@@ -199,7 +199,7 @@ public class ChatterGossip extends AbstractGossip {
 
         // first create all instances because of thread safety
         for (final NodeId otherId : topology.getNeighbors()) {
-            chatterCore.newPeerInstance(otherId.id(), eventTaskCreator::addEvent);
+            chatterCore.newPeerInstance(otherId, eventTaskCreator::addEvent);
         }
 
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
@@ -214,7 +214,7 @@ public class ChatterGossip extends AbstractGossip {
         final ParallelExecutor parallelExecutor = new CachedPoolParallelExecutor(threadManager, "chatter");
         parallelExecutor.start();
         for (final NodeId otherId : topology.getNeighbors()) {
-            final PeerInstance chatterPeer = chatterCore.getPeerInstance(otherId.id());
+            final PeerInstance chatterPeer = chatterCore.getPeerInstance(otherId);
             final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
             shadowgraphExecutor.start();
             final ShadowGraphSynchronizer chatterSynchronizer = new ShadowGraphSynchronizer(
@@ -241,7 +241,7 @@ public class ChatterGossip extends AbstractGossip {
                     .setPriority(Thread.NORM_PRIORITY)
                     .setNodeId(selfId)
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
-                    .setOtherNodeId(otherId.id())
+                    .setOtherNodeId(otherId)
                     .setThreadName("ChatterReader")
                     .setHangingThreadPeriod(basicConfig.hangingThreadDuration())
                     .setWork(new NegotiatorThread(
@@ -374,6 +374,7 @@ public class ChatterGossip extends AbstractGossip {
     @Override
     protected FallenBehindManagerImpl buildFallenBehindManager() {
         return new FallenBehindManagerImpl(
+                addressBook,
                 selfId,
                 topology.getConnectionGraph(),
                 updatePlatformStatus,

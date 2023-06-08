@@ -123,7 +123,7 @@ public class EmergencyReconnectProtocol implements Protocol {
     @Override
     public boolean shouldAccept() {
         // if the throttle is initiated, we should call markReconnectFinished in teacher()
-        final boolean shouldAccept = teacherThrottle.initiateReconnect(peerId.id());
+        final boolean shouldAccept = teacherThrottle.initiateReconnect(peerId);
         if (shouldAccept) {
             initiatedBy = InitiatedBy.PEER;
         }

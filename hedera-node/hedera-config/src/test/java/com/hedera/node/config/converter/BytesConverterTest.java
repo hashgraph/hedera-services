@@ -54,6 +54,7 @@ class BytesConverterTest {
     @ParameterizedTest
     @ValueSource(
             strings = {
+                "",
                 "0x",
                 "0xaa",
                 "0x1234",
@@ -72,7 +73,7 @@ class BytesConverterTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", " ", "  ", "1", "123", "abc", "0xu", "0x1", "0x123", "0x12345"})
+    @ValueSource(strings = {" ", "  ", "1", "123", "abc", "0xu", "0x1", "0x123", "0x12345", " 0xaa", "0xaa "})
     void testInvalidValue(final String value) {
         // given
         final BytesConverter bytesConverter = new BytesConverter();

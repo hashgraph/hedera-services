@@ -24,9 +24,9 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockStates;
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockWritableStates;
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.wellKnownAliasState;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockStates;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockWritableStates;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.wellKnownAliasState;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT;
@@ -74,6 +74,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.STAKING_FUND;
 import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
@@ -84,7 +85,6 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
@@ -192,50 +192,47 @@ public class SigReqAdapterUtils {
                 mockWritableStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())));
     }
 
-    private static WritableKVState<EntityNumVirtualKey, Account> wrappedAccountState() {
-        final var destination = new HashMap<EntityNumVirtualKey, Account>();
+    private static WritableKVState<AccountID, Account> wrappedAccountState() {
+        final var destination = new HashMap<AccountID, Account>();
         destination.put(
-                EntityNumVirtualKey.fromLong(FIRST_TOKEN_SENDER.getAccountNum()),
+                toPbj(FIRST_TOKEN_SENDER),
                 toPbjAccount(FIRST_TOKEN_SENDER.getAccountNum(), FIRST_TOKEN_SENDER_KT.asPbjKey(), 10_000L));
         destination.put(
-                EntityNumVirtualKey.fromLong(SECOND_TOKEN_SENDER.getAccountNum()),
+                toPbj(SECOND_TOKEN_SENDER),
                 toPbjAccount(SECOND_TOKEN_SENDER.getAccountNum(), SECOND_TOKEN_SENDER_KT.asPbjKey(), 10_000L));
         destination.put(
-                EntityNumVirtualKey.fromLong(TOKEN_RECEIVER.getAccountNum()),
-                toPbjAccount(TOKEN_RECEIVER.getAccountNum(), TOKEN_WIPE_KT.asPbjKey(), 0L));
+                toPbj(TOKEN_RECEIVER), toPbjAccount(TOKEN_RECEIVER.getAccountNum(), TOKEN_WIPE_KT.asPbjKey(), 0L));
         destination.put(
-                EntityNumVirtualKey.fromLong(DEFAULT_NODE.getAccountNum()),
-                toPbjAccount(DEFAULT_NODE.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), 0L));
+                toPbj(DEFAULT_NODE), toPbjAccount(DEFAULT_NODE.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), 0L));
         destination.put(
-                EntityNumVirtualKey.fromLong(DEFAULT_PAYER.getAccountNum()),
+                toPbj(DEFAULT_PAYER),
                 toPbjAccount(DEFAULT_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(STAKING_FUND.getAccountNum()),
-                toPbjAccount(STAKING_FUND.getAccountNum(), toPbj(asKeyUnchecked(EMPTY_KEY)), 0L));
+                toPbj(STAKING_FUND), toPbjAccount(STAKING_FUND.getAccountNum(), toPbj(asKeyUnchecked(EMPTY_KEY)), 0L));
         destination.put(
-                EntityNumVirtualKey.fromLong(MASTER_PAYER.getAccountNum()),
+                toPbj(MASTER_PAYER),
                 toPbjAccount(MASTER_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(TREASURY_PAYER.getAccountNum()),
+                toPbj(TREASURY_PAYER),
                 toPbjAccount(TREASURY_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(NO_RECEIVER_SIG.getAccountNum()),
+                toPbj(NO_RECEIVER_SIG),
                 toPbjAccount(NO_RECEIVER_SIG.getAccountNum(), NO_RECEIVER_SIG_KT.asPbjKey(), DEFAULT_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(RECEIVER_SIG.getAccountNum()),
+                toPbj(RECEIVER_SIG),
                 toPbjAccount(RECEIVER_SIG.getAccountNum(), RECEIVER_SIG_KT.asPbjKey(), DEFAULT_BALANCE, true));
         destination.put(
-                EntityNumVirtualKey.fromLong(SYS_ACCOUNT.getAccountNum()),
+                toPbj(SYS_ACCOUNT),
                 toPbjAccount(SYS_ACCOUNT.getAccountNum(), SYS_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(MISC_ACCOUNT.getAccountNum()),
+                toPbj(MISC_ACCOUNT),
                 toPbjAccount(MISC_ACCOUNT.getAccountNum(), MISC_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(CUSTOM_PAYER_ACCOUNT.getAccountNum()),
+                toPbj(CUSTOM_PAYER_ACCOUNT),
                 toPbjAccount(
                         CUSTOM_PAYER_ACCOUNT.getAccountNum(), CUSTOM_PAYER_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(OWNER_ACCOUNT.getAccountNum()),
+                toPbj(OWNER_ACCOUNT),
                 toPbjAccount(
                         OWNER_ACCOUNT.getAccountNum(),
                         OWNER_ACCOUNT_KT.asPbjKey(),
@@ -245,7 +242,7 @@ public class SigReqAdapterUtils {
                         List.of(FUNGIBLE_TOKEN_ALLOWANCES),
                         List.of(NFT_ALLOWANCES)));
         destination.put(
-                EntityNumVirtualKey.fromLong(DELEGATING_SPENDER.getAccountNum()),
+                toPbj(DELEGATING_SPENDER),
                 toPbjAccount(
                         DELEGATING_SPENDER.getAccountNum(),
                         DELEGATING_SPENDER_KT.asPbjKey(),
@@ -255,17 +252,17 @@ public class SigReqAdapterUtils {
                         List.of(FUNGIBLE_TOKEN_ALLOWANCES),
                         List.of(NFT_ALLOWANCES)));
         destination.put(
-                EntityNumVirtualKey.fromLong(COMPLEX_KEY_ACCOUNT.getAccountNum()),
+                toPbj(COMPLEX_KEY_ACCOUNT),
                 toPbjAccount(COMPLEX_KEY_ACCOUNT.getAccountNum(), COMPLEX_KEY_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(TOKEN_TREASURY.getAccountNum()),
+                toPbj(TOKEN_TREASURY),
                 toPbjAccount(TOKEN_TREASURY.getAccountNum(), TOKEN_TREASURY_KT.asPbjKey(), DEFAULT_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(DILIGENT_SIGNING_PAYER.getAccountNum()),
+                toPbj(DILIGENT_SIGNING_PAYER),
                 toPbjAccount(
                         DILIGENT_SIGNING_PAYER.getAccountNum(), DILIGENT_SIGNING_PAYER_KT.asPbjKey(), DEFAULT_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(FROM_OVERLAP_PAYER.getAccountNum()),
+                toPbj(FROM_OVERLAP_PAYER),
                 toPbjAccount(FROM_OVERLAP_PAYER.getAccountNum(), FROM_OVERLAP_PAYER_KT.asPbjKey(), DEFAULT_BALANCE));
         return new MapWritableKVState<>(ACCOUNTS_KEY, destination);
     }

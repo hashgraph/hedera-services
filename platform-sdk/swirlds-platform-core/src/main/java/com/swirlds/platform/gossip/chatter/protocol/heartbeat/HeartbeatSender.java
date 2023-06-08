@@ -21,7 +21,9 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.time.Time;
 import com.swirlds.platform.gossip.chatter.protocol.MessageHandler;
 import com.swirlds.platform.gossip.chatter.protocol.MessageProvider;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -53,14 +55,14 @@ public class HeartbeatSender implements MessageProvider, MessageHandler<Heartbea
      * 		another), not absolute time (wall clock time)
      */
     public HeartbeatSender(
-            final long peerId,
-            final BiConsumer<NodeId, Long> pingConsumer,
-            final Duration heartbeatInterval,
-            final Time time) {
-        this.peerId = new NodeId(peerId);
-        this.pingConsumer = pingConsumer;
-        this.heartbeatInterval = heartbeatInterval;
-        this.time = time;
+            @NonNull final NodeId peerId,
+            @NonNull final BiConsumer<NodeId, Long> pingConsumer,
+            @NonNull final Duration heartbeatInterval,
+            @NonNull final Time time) {
+        this.peerId = Objects.requireNonNull(peerId, "peerId must not be null");
+        this.pingConsumer = Objects.requireNonNull(pingConsumer, "pingConsumer must not be null");
+        this.heartbeatInterval = Objects.requireNonNull(heartbeatInterval, "heartbeatInterval must not be null");
+        this.time = Objects.requireNonNull(time, "time must not be null");
         clear();
     }
 

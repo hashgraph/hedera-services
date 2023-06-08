@@ -20,7 +20,6 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.JVM_PAUSE_WARN;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserWindow;
@@ -575,7 +574,7 @@ public class Browser {
                     (pauseTimeMs, allocTimeMs) -> {
                         if (pauseTimeMs > Settings.getInstance().getJVMPauseReportMs()) {
                             logger.warn(
-                                    JVM_PAUSE_WARN.getMarker(),
+                                    EXCEPTION.getMarker(),
                                     "jvmPauseDetectorThread detected JVM paused for {} ms, allocation pause {} ms",
                                     pauseTimeMs,
                                     allocTimeMs);

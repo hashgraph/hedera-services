@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.test.chatter.simulator;
 
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /**
  * A pair containing the IDs of a source node and a destination node.
  *
@@ -24,4 +27,4 @@ package com.swirlds.platform.test.chatter.simulator;
  * @param destination
  * 		the destination node's ID
  */
-public record SourceDestinationPair(long source, long destination) {}
+public record SourceDestinationPair(@NonNull NodeId source, @NonNull NodeId destination) {}

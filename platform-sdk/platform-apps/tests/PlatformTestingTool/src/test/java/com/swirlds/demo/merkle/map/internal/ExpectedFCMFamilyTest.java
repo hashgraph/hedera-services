@@ -407,7 +407,7 @@ class ExpectedFCMFamilyTest {
         for (int i = 0; i < 10; i++) {
             MapKey key = new MapKey(1, 1, i);
             ExpectedValue value = new ExpectedValue(Crypto, null);
-            value.setLatestHandledStatus(new LifecycleStatus(HANDLED, Create, timestamp, 1));
+            value.setLatestHandledStatus(new LifecycleStatus(HANDLED, Create, timestamp, NODE_ID_ONE));
             expectedFCMFamily0.addEntityToExpectedMap(key, value);
         }
 
