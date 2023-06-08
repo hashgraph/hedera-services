@@ -231,7 +231,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
                         .tokenTypeNumber(tokenId.tokenNum())
                         .serialNumber(currentSerialNumber)
                         .build())
-                .ownerNumber(AccountID.DEFAULT.accountNum())
+                .ownerNumber(0L)
                 .mintTime(Timestamp.newBuilder()
                         .seconds(consensusTime.getEpochSecond())
                         .nanos(consensusTime.getNano())

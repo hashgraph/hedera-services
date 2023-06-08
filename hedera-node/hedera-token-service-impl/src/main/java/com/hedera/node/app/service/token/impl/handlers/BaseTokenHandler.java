@@ -114,10 +114,14 @@ public class BaseTokenHandler {
         final var copyTreasuryRel = treasuryRel.copyBuilder();
 
         if (treasuryRel.balance() == 0 && amount > 0) {
-            // for mint the treasury account has a balance increase
+            // On an account positive valances are incremented for newly added tokens.
+            // If treasury relation did mint any for this token till now, only then increment
+            // total positive balances on treasury account.
             copyTreasuryAccount.numberPositiveBalances(treasuryAccount.numberPositiveBalances() + 1);
         } else if (newTreasuryBalance == 0 && amount < 0) {
-            // for burn the treasury account has a balance decrease
+            // On an account positive valances are decremented for burning tokens completely.
+            // If treasury relation did not burn any for this token till now or if this burn makes the balance to 0,
+            // only then decrement total positive balances on treasury account.
             copyTreasuryAccount.numberPositiveBalances(treasuryAccount.numberPositiveBalances() - 1);
         }
 
