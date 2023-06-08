@@ -58,7 +58,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("PreconsensusEventReplayPipeline Tests")
-public class PreconsensusEventReplayPipelineTests {
+class PreconsensusEventReplayPipelineTests {
 
     /**
      * Build a transaction generator.

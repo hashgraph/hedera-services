@@ -36,7 +36,7 @@ class ChatterEventMapperTest {
         Assertions.assertNull(mapper.getMostRecentEvent(creator2), "initially it should be empty");
 
         final GossipEvent cr1gen1 = GossipEventBuilder.builder()
-                .setCreatorId(creator1.id())
+                .setCreatorId(creator1)
                 .setGeneration(1)
                 .buildEvent();
         mapper.mapEvent(cr1gen1);
@@ -45,7 +45,7 @@ class ChatterEventMapperTest {
         Assertions.assertNull(mapper.getMostRecentEvent(creator2), "creator1 should not affect creator2");
 
         final GossipEvent cr1gen10 = GossipEventBuilder.builder()
-                .setCreatorId(creator1.id())
+                .setCreatorId(creator1)
                 .setGeneration(10)
                 .buildEvent();
         mapper.mapEvent(cr1gen10);
@@ -54,7 +54,7 @@ class ChatterEventMapperTest {
         Assertions.assertNull(mapper.getMostRecentEvent(creator2), "creator1 should not affect creator2");
 
         final GossipEvent cr1gen5 = GossipEventBuilder.builder()
-                .setCreatorId(creator1.id())
+                .setCreatorId(creator1)
                 .setGeneration(5)
                 .buildEvent();
         mapper.mapEvent(cr1gen5);

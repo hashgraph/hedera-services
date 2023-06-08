@@ -17,8 +17,10 @@
 package com.hedera.node.app.service.networkadmin.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.service.networkadmin.impl.codec.MonoSpecialFilesAdapterCodec;
+import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -36,7 +38,7 @@ public final class FreezeServiceImpl implements FreezeService {
             SemanticVersion.newBuilder().minor(34).build();
 
     @Override
-    public void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry) {
+    public void registerSchemas(@NonNull SchemaRegistry registry) {
         registry.register(networkAdminSchema());
     }
 
@@ -47,6 +49,12 @@ public final class FreezeServiceImpl implements FreezeService {
             @SuppressWarnings("rawtypes")
             public Set<StateDefinition> statesToCreate() {
                 return Set.of(StateDefinition.singleton(UPGRADE_FILES_KEY, new MonoSpecialFilesAdapterCodec()));
+            }
+
+            @Override
+            public void migrate(@NonNull MigrationContext ctx) {
+                final var upgradeFilesState = ctx.newStates().getSingleton(UPGRADE_FILES_KEY);
+                upgradeFilesState.put(new MerkleSpecialFiles());
             }
         };
     }

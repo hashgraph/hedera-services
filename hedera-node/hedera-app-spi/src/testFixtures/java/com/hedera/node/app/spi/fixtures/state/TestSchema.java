@@ -17,9 +17,8 @@
 package com.hedera.node.app.spi.fixtures.state;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -48,8 +47,8 @@ public class TestSchema extends Schema {
     }
 
     @Override
-    public void migrate(@NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
-        super.migrate(previousStates, newStates);
+    public void migrate(@NonNull final MigrationContext ctx) {
+        super.migrate(ctx);
         if (onMigrate != null) {
             onMigrate.run();
         }

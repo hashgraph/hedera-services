@@ -31,6 +31,7 @@ import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.config.api.Configuration;
@@ -117,7 +118,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager =
-                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
@@ -173,7 +174,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager =
-                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
@@ -229,7 +230,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager =
-                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
@@ -302,7 +303,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager =
-                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
@@ -345,7 +346,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager =
-                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
@@ -403,7 +404,7 @@ class SyncPreconsensusEventWriterTests {
         final PlatformContext platformContext = buildContext();
 
         final PreconsensusEventFileManager fileManager =
-                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), 0);
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
         final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);

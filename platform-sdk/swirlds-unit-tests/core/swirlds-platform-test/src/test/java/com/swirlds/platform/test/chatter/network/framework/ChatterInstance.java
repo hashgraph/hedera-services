@@ -85,7 +85,7 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
                 continue;
             }
 
-            core.newPeerInstance(peerId, this.eventPipeline::addEvent);
+            core.newPeerInstance(new NodeId(peerId), this.eventPipeline::addEvent);
             peerIds.add(new NodeId(peerId));
         }
     }
@@ -160,7 +160,7 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
             if (peerId == selfId) {
                 continue;
             }
-            final PeerInstance peer = core.getPeerInstance(peerId.id());
+            final PeerInstance peer = core.getPeerInstance(peerId);
 
             SelfSerializable message = peer.outputAggregator().getMessage();
             while (message != null) {
@@ -184,9 +184,9 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
                 // Create a copy so that each node sets its own time received
                 final SimulatedChatterEvent eventCopy = event.copy();
                 eventCopy.setTimeReceived(time.now());
-                core.getPeerInstance(fromPeer.id()).inputHandler().handleMessage(eventCopy);
+                core.getPeerInstance(fromPeer).inputHandler().handleMessage(eventCopy);
             } else {
-                core.getPeerInstance(fromPeer.id()).inputHandler().handleMessage(msg);
+                core.getPeerInstance(fromPeer).inputHandler().handleMessage(msg);
             }
         } catch (PeerMessageException e) {
             throw new RuntimeException(e);

@@ -92,8 +92,8 @@ public class ChatterSyncProtocol implements Protocol {
      * @return true if we should sync with this neighbor
      */
     private boolean fallenBehindSync() {
-        final List<Long> notReportedFallenBehind = fallenBehindManager.getNeededForFallenBehind();
-        return notReportedFallenBehind == null || notReportedFallenBehind.contains(peerId.id());
+        final List<NodeId> notReportedFallenBehind = fallenBehindManager.getNeededForFallenBehind();
+        return notReportedFallenBehind == null || notReportedFallenBehind.contains(peerId);
     }
 
     @Override
