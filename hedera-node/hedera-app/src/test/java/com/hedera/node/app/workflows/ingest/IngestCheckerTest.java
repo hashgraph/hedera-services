@@ -36,7 +36,6 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -46,14 +45,11 @@ import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.solvency.SolvencyPreCheck;
 import com.hedera.node.app.spi.info.CurrentPlatformStatus;
-import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -77,18 +73,6 @@ class IngestCheckerTest extends AppTestBase {
     private static final SignatureMap MOCK_SIGNATURE_MAP =
             SignatureMap.newBuilder().build();
 
-    private static final EntityNum MOCK_PAYER_NUM = EntityNum.fromLong(666L);
-    private static final AccountID MOCK_PAYER_ID =
-            AccountID.newBuilder().accountNum(MOCK_PAYER_NUM.longValue()).build();
-    private static final AccountID MOCK_NODE_ACCOUNT_ID =
-            AccountID.newBuilder().accountNum(3L).build();
-
-    @Mock
-    private HederaState state;
-
-    @Mock(strictness = LENIENT)
-    NodeInfo nodeInfo;
-
     @Mock(strictness = LENIENT)
     CurrentPlatformStatus currentPlatformStatus;
 
@@ -111,13 +95,14 @@ class IngestCheckerTest extends AppTestBase {
 
     @BeforeEach
     void setUp() throws PreCheckException {
+        setupStandardStates();
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
 
         txBody = TransactionBody.newBuilder()
                 .uncheckedSubmit(UncheckedSubmitBody.newBuilder().build())
                 .transactionID(
-                        TransactionID.newBuilder().accountID(MOCK_PAYER_ID).build())
-                .nodeAccountID(MOCK_NODE_ACCOUNT_ID)
+                        TransactionID.newBuilder().accountID(ALICE.accountID()).build())
+                .nodeAccountID(nodeSelfAccountId)
                 .build();
         final var signedTx = SignedTransaction.newBuilder()
                 .bodyBytes(asBytes(TransactionBody.PROTOBUF, txBody))

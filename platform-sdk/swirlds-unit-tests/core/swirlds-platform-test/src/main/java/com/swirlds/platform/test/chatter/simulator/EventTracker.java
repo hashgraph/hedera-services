@@ -25,8 +25,10 @@ import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
 import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -34,6 +36,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * This class tracks events as they travel through the network.
@@ -109,8 +112,7 @@ public class EventTracker {
      * @param creationTime the time when the event was created
      */
     public void registerNewEvent(final ChatterEventDescriptor descriptor, final Instant creationTime) {
-        final TrackedEvent prev =
-                events.put(descriptor, new TrackedEvent(descriptor.getCreator().id(), creationTime));
+        final TrackedEvent prev = events.put(descriptor, new TrackedEvent(descriptor.getCreator(), creationTime));
 
         if (prev != null) {
             throw new IllegalStateException("new event registered multiple times");
@@ -124,7 +126,13 @@ public class EventTracker {
      * @param nodeId      the ID of the node that received the event
      * @param receiveTime the time when the event was received
      */
-    public void registerEvent(final EventDescriptor descriptor, final long nodeId, final Instant receiveTime) {
+    public void registerEvent(
+            @NonNull final EventDescriptor descriptor,
+            @NonNull final NodeId nodeId,
+            @NonNull final Instant receiveTime) {
+        Objects.requireNonNull(descriptor, "descriptor must not be null");
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(receiveTime, "receiveTime must not be null");
 
         final TrackedEvent trackedEvent = events.get(descriptor);
 
@@ -201,7 +209,7 @@ public class EventTracker {
 
         final List<String> values = new LinkedList<>();
         values.add(Long.toString(event.getCreationTime().toEpochMilli()));
-        values.add(Long.toString(event.getCreatorId()));
+        values.add(event.getCreatorId().toString());
 
         for (int i = 0; i < nodeCount; i++) {
             if (i >= times.size()) {

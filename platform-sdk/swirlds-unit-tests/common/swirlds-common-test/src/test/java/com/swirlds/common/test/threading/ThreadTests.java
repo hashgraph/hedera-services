@@ -350,7 +350,7 @@ class ThreadTests {
                 .setComponent("foo")
                 .setThreadName("bar")
                 .setNodeId(new NodeId(1234L))
-                .setOtherNodeId(4321L)
+                .setOtherNodeId(new NodeId(4321L))
                 .build();
         assertEquals("<foo: bar 1234 to 4321>", thread4.getName(), "unexpected thread name");
 
@@ -359,7 +359,7 @@ class ThreadTests {
                 .setComponent("foo")
                 .setThreadName("bar")
                 .setNodeId(new NodeId(1234L))
-                .setOtherNodeId(4321L)
+                .setOtherNodeId(new NodeId(4321L))
                 .buildFactory();
 
         assertEquals("<foo: bar 1234 to 4321 #0>", factory.newThread(null).getName(), "unexpected thread name");
@@ -484,7 +484,7 @@ class ThreadTests {
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
-                () -> configuration0.setOtherNodeId(0L),
+                () -> configuration0.setOtherNodeId(new NodeId(0L)),
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
@@ -534,7 +534,7 @@ class ThreadTests {
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
-                () -> configuration1.setOtherNodeId(0L),
+                () -> configuration1.setOtherNodeId(new NodeId(0L)),
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
@@ -584,7 +584,7 @@ class ThreadTests {
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
-                () -> configuration2.setOtherNodeId(0L),
+                () -> configuration2.setOtherNodeId(new NodeId(0L)),
                 "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,

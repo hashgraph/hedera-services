@@ -99,7 +99,7 @@ public class ReconnectLearnerThrottle {
     public void exitIfReconnectIsDisabled() {
         if (!config.active()) {
             logger.warn(STARTUP.getMarker(), () -> new UnableToReconnectPayload(
-                            "Node has fallen behind, reconnect is disabled, will die", selfId.getIdAsInt())
+                            "Node has fallen behind, reconnect is disabled, will die", selfId.id())
                     .toString());
             SystemExitUtils.exitSystem(SystemExitCode.BEHIND_RECONNECT_DISABLED);
         }
@@ -109,7 +109,7 @@ public class ReconnectLearnerThrottle {
                         < StartupTime.getTimeSinceStartup().toSeconds()) {
             logger.warn(STARTUP.getMarker(), () -> new UnableToReconnectPayload(
                             "Node has fallen behind, reconnect is disabled outside of time window, will die",
-                            selfId.getIdAsInt())
+                            selfId.id())
                     .toString());
             SystemExitUtils.exitSystem(SystemExitCode.BEHIND_RECONNECT_DISABLED);
         }

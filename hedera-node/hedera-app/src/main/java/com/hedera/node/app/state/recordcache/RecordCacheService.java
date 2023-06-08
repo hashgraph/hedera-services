@@ -45,12 +45,6 @@ public class RecordCacheService implements Service {
 
     /** {@inheritDoc} */
     @Override
-    public void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry) {
-        // No-op for now
-    }
-
-    /** {@inheritDoc} */
-    @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
         // This is the genesis schema for this service, and simply creates the queue state that stores the
         // transaction records.

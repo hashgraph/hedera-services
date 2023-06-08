@@ -986,7 +986,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final PreConsensusEventFileManager fileManager;
         try {
-            fileManager = new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), selfId.id());
+            fileManager = new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), selfId);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }

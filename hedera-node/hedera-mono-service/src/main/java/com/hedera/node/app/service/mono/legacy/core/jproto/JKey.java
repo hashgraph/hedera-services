@@ -46,6 +46,15 @@ public abstract class JKey implements HederaKey {
     private boolean forScheduledTxn = false;
 
     /**
+     * Returns whether the given key denotes an immutable entity. (I.e., is exactly an empty key list.)
+     * @param key the key to check
+     * @return whether the key denotes an immutable entity
+     */
+    public static boolean denotesImmutableEntity(@NonNull final JKey key) {
+        return key instanceof JKeyList keyList && keyList.isEmpty();
+    }
+
+    /**
      * Maps a proto Key to Jkey.
      *
      * @param key the proto Key to be converted
