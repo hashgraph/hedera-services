@@ -101,7 +101,8 @@ gradleEnterprise {
 
 // The HAPI API version to use for Protobuf sources. This can be a tag or branch
 // name from the hedera-protobufs GIT repo.
-val hapiProtoVersion = "add-pbj-types-for-state"
+val hapiProtoVersion = "0.40.0-blocks-state-SNAPSHOT"
+val hapiProtoBranchOrTag = "add-pbj-types-for-state" // hapiProtoVersion
 
 gitRepositories {
     checkoutsDirectory.set(File(rootDir, "hedera-node/hapi"))
@@ -110,7 +111,7 @@ gitRepositories {
     include("hedera-protobufs") {
         uri.set("https://github.com/hashgraph/hedera-protobufs.git")
         // HAPI repo version
-        tag.set(hapiProtoVersion)
+        tag.set(hapiProtoBranchOrTag)
         // do not load project from repo
         autoInclude.set(false)
     }
