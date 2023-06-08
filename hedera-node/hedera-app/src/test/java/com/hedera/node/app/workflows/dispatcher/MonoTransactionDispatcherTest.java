@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.dispatcher;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ABORT;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.workflows.dispatcher.MonoTransactionDispatcher.TYPE_NOT_SUPPORTED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -671,6 +672,21 @@ class MonoTransactionDispatcherTest {
         given(handleContext.body()).willReturn(txnBody);
 
         dispatcher.dispatchHandle(handleContext);
+
+        verifyNoInteractions(txnCtx);
+    }
+
+    @Test
+    void dispatchesNetworkUncheckedSubmitAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder())
+                .uncheckedSubmit(UncheckedSubmitBody.newBuilder().build())
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+
+        assertThatThrownBy(() -> dispatcher.dispatchHandle(handleContext))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(TYPE_NOT_SUPPORTED);
 
         verifyNoInteractions(txnCtx);
     }

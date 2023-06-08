@@ -6,6 +6,7 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.state.submerkle to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app,
+            com.hedera.node.app.service.network.admin.impl,
             com.hedera.node.app.service.schedule.impl,
             com.hedera.node.app.service.schedule.impl.test,
             com.hedera.node.app.service.token.impl,

@@ -32,7 +32,6 @@ open module com.swirlds.jasperdb {
     exports com.swirlds.merkledb.files;
     exports com.swirlds.merkledb.files.hashmap;
     exports com.swirlds.merkledb.serialize;
-    exports com.swirlds.merkledb.settings;
     exports com.swirlds.merkledb.utilities;
 
     requires com.swirlds.base;
