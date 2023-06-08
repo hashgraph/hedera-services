@@ -214,4 +214,18 @@ class DefaultLongAccumulatorTest {
         assertThat(accumulator.toString())
                 .contains(CATEGORY, NAME, DESCRIPTION, UNIT, FORMAT, Metric.DataType.INT.toString(), "42");
     }
+
+    @Test
+    void testResetValue() {
+        // given
+        final LongAccumulator.Config config = new LongAccumulator.Config(CATEGORY, NAME);
+        final LongAccumulator accumulator = new DefaultLongAccumulator(config);
+
+        // when
+        accumulator.update(42L);
+        accumulator.reset();
+
+        // then
+        assertEquals(0L, accumulator.get(), "Value should be 0");
+    }
 }
