@@ -1,6 +1,6 @@
 /** Provides the core interfaces for the Hedera EVM implementation. */
 module com.hedera.node.app.service.evm {
-    requires transitive com.hedera.hashgraph.protobuf.java.api;
+    requires transitive com.hedera.node.hapi;
     requires transitive com.github.benmanes.caffeine;
     requires transitive com.google.protobuf;
     requires transitive com.swirlds.common;
