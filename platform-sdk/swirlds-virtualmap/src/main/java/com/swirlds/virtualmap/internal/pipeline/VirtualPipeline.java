@@ -163,7 +163,7 @@ public class VirtualPipeline {
     private final AtomicBoolean workScheduled = new AtomicBoolean(false);
 
     /**
-     * The configuration for this pipeline. To prevent use static configuration calls, we pass it with the constructor.
+     * The configuration for this pipeline. To prevent using static configuration calls, we pass it with the constructor.
      */
     private final VirtualMapConfig config;
 
