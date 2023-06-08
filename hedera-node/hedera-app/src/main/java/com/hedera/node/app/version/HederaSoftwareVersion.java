@@ -20,8 +20,11 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.SoftwareVersion;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.util.Comparator;
+import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 
 /**
  * An implementation of {@link SoftwareVersion} which can be saved in state and holds information about the HAPI and
@@ -57,18 +60,6 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         return servicesVersion;
     }
 
-    // The software version can be null here because we use deserializedVersion as null
-    // on genesis initialization.
-    public boolean isAfter(@Nullable final SoftwareVersion other) {
-        return compareTo(other) > 0;
-    }
-
-    // The software version can be null here because we use deserializedVersion as null
-    // on genesis initialization.
-    public boolean isBefore(@Nullable final SoftwareVersion other) {
-        return compareTo(other) < 0;
-    }
-
     @Override
     public long getClassId() {
         return CLASS_ID;
@@ -85,8 +76,17 @@ public class HederaSoftwareVersion implements SoftwareVersion {
     }
 
     @Override
-    public int compareTo(SoftwareVersion softwareVersion) {
-        return Integer.compare(getVersion(), softwareVersion.getVersion());
+    public int compareTo(@NonNull final SoftwareVersion other) {
+        // If the other software version is a HederaSoftwareVersion, then we can compare them directly.
+        // If however, the other is null, or is not a HederaSoftwareVersion, then we will always sort
+        // it before this one.
+        if (other instanceof HederaSoftwareVersion hsv) {
+            final var hapiComparison = SEMANTIC_VERSION_COMPARATOR.compare(hapiVersion, hsv.hapiVersion);
+            if (hapiComparison != 0) return hapiComparison;
+            return SEMANTIC_VERSION_COMPARATOR.compare(servicesVersion, hsv.servicesVersion);
+        } else {
+            return 1;
+        }
     }
 
     @Override

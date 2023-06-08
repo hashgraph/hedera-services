@@ -26,6 +26,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -34,32 +38,50 @@ import org.junit.jupiter.params.provider.CsvSource;
 final class HederaSoftwareVersionTest {
     private static final SemanticVersionConverter CONVERTER = new SemanticVersionConverter();
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0} {2} {1}")
     @CsvSource(textBlock = """
-            0.0.1, 0.0.0
-            1.0.0, 0.0.10
+            0.0.1,       0.0.0,        >
+            1.0.0,       0.0.10,       >
+            0.0.0,       0.0.1,        <
+            0.0.10,      1.0.0,        <
+            0.0.0,       0.0.0,        =
+            1.2.3,       1.2.3-foo,    <
+            1.2.4,       1.2.3-foo,    >
+            1.2.2,       1.2.3-foo,    <
+            1.2.3,       1.2.3-foo+1,  <
+            1.2.4,       1.2.3-foo+1,  >
+            1.2.2,       1.2.3-foo+1,  <
+            1.2.3-foo+2, 1.2.3-foo+1,  >
+            1.2.3-bar+1, 1.2.3-foo+1,  <
             """)
-    @DisplayName("isAfter()")
-    void isAfter(@NonNull final String a, @NonNull final String b) {
+    @DisplayName("compareTo()")
+    void compareTo(@NonNull final String a, @NonNull final String b, final String expected) {
         final var versionA = new HederaSoftwareVersion(semver(a), semver(a));
         final var versionB = new HederaSoftwareVersion(semver(b), semver(b));
 
-        assertThat(versionA.isBefore(versionB)).isFalse();
-        assertThat(versionA.isAfter(versionB)).isTrue();
+        switch (expected) {
+            case "<" -> assertThat(versionA.compareTo(versionB)).isLessThan(0);
+            case "=" -> assertThat(versionA.compareTo(versionB)).isEqualTo(0);
+            case ">" -> assertThat(versionA.compareTo(versionB)).isGreaterThan(0);
+            default -> throw new IllegalArgumentException("Unknown expected value: " + expected);
+        }
     }
 
-    @ParameterizedTest
-    @CsvSource(textBlock = """
-            0.0.0, 0.0.1
-            0.0.10, 1.0.0
-            """)
-    @DisplayName("isBefore()")
-    void isBefore(@NonNull final String a, @NonNull final String b) {
-        final var versionA = new HederaSoftwareVersion(semver(a), semver(a));
-        final var versionB = new HederaSoftwareVersion(semver(b), semver(b));
+    @Test
+    @DisplayName("Sorting HederaSoftwareVersions")
+    void sorting() {
+        final var list = new ArrayList<HederaSoftwareVersion>();
+        for (int i = 0; i< 20; i++) {
+            list.add(new HederaSoftwareVersion(semver("1.2." + i), semver("1.2." + i)));
+        }
 
-        assertThat(versionA.isBefore(versionB)).isTrue();
-        assertThat(versionA.isAfter(versionB)).isFalse();
+        final var rand = new Random(3375);
+        Collections.shuffle(list, rand);
+        Collections.sort(list);
+
+        for (int i = 0; i< 20; i++) {
+            assertThat(list.get(i).getHapiVersion().patch()).isEqualTo(i);
+        }
     }
 
     @Test
