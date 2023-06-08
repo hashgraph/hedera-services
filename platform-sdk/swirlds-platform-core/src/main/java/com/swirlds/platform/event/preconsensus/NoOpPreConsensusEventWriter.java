@@ -72,6 +72,14 @@ public class NoOpPreConsensusEventWriter implements PreConsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
+    public void registerDiscontinuity() throws InterruptedException {
+        // no-op
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setMinimumGenerationToStore(final long minimumGenerationToStore) {
         // no-op
     }

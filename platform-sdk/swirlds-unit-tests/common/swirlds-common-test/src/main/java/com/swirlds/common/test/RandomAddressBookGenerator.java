@@ -26,14 +26,17 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.crypto.PreGeneratedPublicKeys;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import java.util.function.LongUnaryOperator;
+import java.util.Set;
+import java.util.function.Function;
 
 /**
  * A utility for generating a random address book.
@@ -44,6 +47,8 @@ public class RandomAddressBookGenerator {
      * All randomness comes from this.
      */
     private final Random random;
+
+    private final Set<NodeId> nodeIds = new HashSet<>();
 
     /**
      * The number of addresses to put into the address book.
@@ -115,7 +120,7 @@ public class RandomAddressBookGenerator {
     /**
      * Used to determine weight for each node. Overrides all other behaviors if set.
      */
-    private LongUnaryOperator customWeightGenerator;
+    private Function<NodeId, Long> customWeightGenerator;
 
     private NodeId previousNodeId = null;
 
@@ -238,7 +243,7 @@ public class RandomAddressBookGenerator {
         Objects.requireNonNull(nodeId, "NodeId must not be null");
 
         if (customWeightGenerator != null) {
-            return customWeightGenerator.applyAsLong(nodeId.id());
+            return customWeightGenerator.apply(nodeId);
         }
 
         final long unboundedWeight;
@@ -276,10 +281,14 @@ public class RandomAddressBookGenerator {
      * @return the input address book after it has been expanded
      */
     public AddressBook addToAddressBook(final AddressBook addressBook) {
-        setNextPossibleNodeId(addressBook.getNextNodeId().id());
+        setNextPossibleNodeId(addressBook.getNextNodeId());
 
-        for (int index = 0; index < size; index++) {
-            addressBook.add(buildNextAddress());
+        if (!nodeIds.isEmpty()) {
+            nodeIds.stream().sorted().forEach(nodeId -> addressBook.add(buildNextAddress(nodeId)));
+        } else {
+            for (int index = 0; index < size; index++) {
+                addressBook.add(buildNextAddress());
+            }
         }
 
         if (hashStrategy == HashStrategy.FAKE_HASH) {
@@ -317,9 +326,18 @@ public class RandomAddressBookGenerator {
      *
      * @return a random address
      */
-    @NonNull
     public Address buildNextAddress() {
-        final NodeId nodeId = getNextNodeId();
+        return buildNextAddress(null);
+    }
+
+    /**
+     * Build a random address using provided configuration. Address IS NOT automatically added to the address book.
+     *
+     * @return a random address
+     */
+    @NonNull
+    public Address buildNextAddress(@Nullable final NodeId suppliedNodeId) {
+        final NodeId nodeId = suppliedNodeId == null ? getNextNodeId() : suppliedNodeId;
         return addressWithRandomData(random, nodeId, getNextWeight(nodeId));
     }
 
@@ -341,6 +359,18 @@ public class RandomAddressBookGenerator {
      */
     public RandomAddressBookGenerator setSize(final int size) {
         this.size = size;
+        return this;
+    }
+
+    /**
+     * Set the node IDs of the address book.
+     *
+     * @return this object
+     */
+    public RandomAddressBookGenerator setNodeIds(@NonNull final Set<NodeId> nodeIds) {
+        Objects.requireNonNull(nodeIds, "NodeIds must not be null");
+        this.nodeIds.clear();
+        this.nodeIds.addAll(nodeIds);
         return this;
     }
 
@@ -367,7 +397,9 @@ public class RandomAddressBookGenerator {
      * </p>
      *
      * @return this object
+     * @deprecated for removal in 0.40.0; there is no alternative, addresses must be able to be non-sequential
      */
+    @Deprecated(forRemoval = true, since = "0.40.0")
     public RandomAddressBookGenerator setSequentialIds(final boolean sequentialIds) {
         this.sequentialIds = sequentialIds;
         return this;
@@ -419,7 +451,7 @@ public class RandomAddressBookGenerator {
      *
      * @return this object
      */
-    public RandomAddressBookGenerator setCustomWeightGenerator(final LongUnaryOperator customWeightGenerator) {
+    public RandomAddressBookGenerator setCustomWeightGenerator(final Function<NodeId, Long> customWeightGenerator) {
         this.customWeightGenerator = customWeightGenerator;
         return this;
     }
@@ -444,11 +476,12 @@ public class RandomAddressBookGenerator {
      * 		the next node ID that is considered when generating a random address
      * @return this object
      */
-    public RandomAddressBookGenerator setNextPossibleNodeId(final long nodeId) {
-        if (nodeId == 0) {
+    public RandomAddressBookGenerator setNextPossibleNodeId(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "NodeId must not be null");
+        if (Objects.equals(nodeId, NodeId.FIRST_NODE_ID)) {
             this.previousNodeId = null;
         } else {
-            this.previousNodeId = new NodeId(nodeId - 1);
+            this.previousNodeId = new NodeId(nodeId.id() - 1);
         }
         return this;
     }

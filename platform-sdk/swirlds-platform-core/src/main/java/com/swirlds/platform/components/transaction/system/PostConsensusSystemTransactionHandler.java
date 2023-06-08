@@ -16,8 +16,10 @@
 
 package com.swirlds.platform.components.transaction.system;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.platform.state.State;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Handles system transactions post-consensus
@@ -34,5 +36,5 @@ public interface PostConsensusSystemTransactionHandler<T extends SystemTransacti
      * @param nodeId      the id of the node which created the transaction
      * @param transaction the transaction being handled
      */
-    void handle(State state, long nodeId, T transaction);
+    void handle(@NonNull State state, @NonNull NodeId nodeId, @NonNull T transaction);
 }

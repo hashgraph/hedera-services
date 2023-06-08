@@ -16,29 +16,28 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.time.Time;
-import com.swirlds.common.utility.BinarySearch;
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.Units;
 import com.swirlds.common.utility.ValueReference;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.LongToIntFunction;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,7 +63,7 @@ public class PreConsensusEventFileManager {
     /**
      * The initial size of the ring buffer used to track event files.
      */
-    private static final int INITIAL_RING_BUFFER_SIZE = 1024 * 1024;
+    private static final int INITIAL_RING_BUFFER_SIZE = 1024;
 
     /**
      * Provides the wall clock time.
@@ -77,6 +76,12 @@ public class PreConsensusEventFileManager {
      * The root directory where event files are stored.
      */
     private final Path databaseDirectory;
+
+    /**
+     * The location where we will move files that are invalid due to a discontinuity. Better than deleting the files, in
+     * case the files end up being useful for debugging.
+     */
+    private final Path recycleBinDirectory;
 
     /**
      * Tracks all files currently on disk.
@@ -97,15 +102,16 @@ public class PreConsensusEventFileManager {
      * Instantiate an event file collection. Loads all event files in the specified directory.
      *
      * @param platformContext the platform context for this node
-     * @param time          provides wall clock time
-     * @param selfId        the ID of this node
+     * @param time            provides wall clock time
+     * @param selfId          the ID of this node
      */
     public PreConsensusEventFileManager(
-            @NonNull final PlatformContext platformContext, @NonNull final Time time, final long selfId)
+            @NonNull final PlatformContext platformContext, @NonNull final Time time, @NonNull final NodeId selfId)
             throws IOException {
 
-        throwArgNull(platformContext, "platformContext");
-        throwArgNull(time, "time");
+        Objects.requireNonNull(platformContext, "platformContext");
+        Objects.requireNonNull(time, "time");
+        Objects.requireNonNull(selfId, "selfId");
 
         final PreConsensusEventStreamConfig preConsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
@@ -116,10 +122,13 @@ public class PreConsensusEventFileManager {
 
         minimumRetentionPeriod = preConsensusEventStreamConfig.minimumRetentionPeriod();
 
-        this.databaseDirectory = stateConfig
-                .savedStateDirectory()
+        final Path savedStateDirectory = stateConfig.savedStateDirectory();
+
+        this.databaseDirectory = savedStateDirectory
                 .resolve(preConsensusEventStreamConfig.databaseDirectory())
-                .resolve(Long.toString(selfId));
+                .resolve(selfId.toString());
+
+        this.recycleBinDirectory = savedStateDirectory.resolve(preConsensusEventStreamConfig.recycleBinDirectory());
 
         if (!Files.exists(databaseDirectory)) {
             Files.createDirectories(databaseDirectory);
@@ -138,16 +147,20 @@ public class PreConsensusEventFileManager {
 
         // Measure the size of each file.
         for (final PreConsensusEventFile file : files) {
-            totalFileByteCount += Files.size(file.path());
+            totalFileByteCount += Files.size(file.getPath());
         }
 
         if (files.size() > 0) {
             metrics.getPreconsensusEventFileOldestGeneration()
-                    .set(files.getFirst().minimumGeneration());
+                    .set(files.getFirst().getMinimumGeneration());
             metrics.getPreconsensusEventFileYoungestGeneration()
-                    .set(files.getLast().maximumGeneration());
-            final Duration age = Duration.between(files.getFirst().timestamp(), time.now());
+                    .set(files.getLast().getMaximumGeneration());
+            final Duration age = Duration.between(files.getFirst().getTimestamp(), time.now());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
+        } else {
+            metrics.getPreconsensusEventFileOldestGeneration().set(NO_MINIMUM_GENERATION);
+            metrics.getPreconsensusEventFileYoungestGeneration().set(NO_MINIMUM_GENERATION);
+            metrics.getPreconsensusEventFileOldestSeconds().set(0);
         }
         updateFileSizeMetrics();
     }
@@ -183,18 +196,20 @@ public class PreConsensusEventFileManager {
         final ValueReference<Instant> previousTimestamp = new ValueReference<>();
 
         return descriptor -> {
-            fileSanityChecks(
-                    permitGaps,
-                    previousSequenceNumber,
-                    previousMinimumGeneration,
-                    previousMaximumGeneration,
-                    previousTimestamp,
-                    descriptor);
+            if (previousSequenceNumber.getValue() != -1) {
+                fileSanityChecks(
+                        permitGaps,
+                        previousSequenceNumber.getValue(),
+                        previousMinimumGeneration.getValue(),
+                        previousMaximumGeneration.getValue(),
+                        previousTimestamp.getValue(),
+                        descriptor);
+            }
 
-            previousSequenceNumber.setValue(descriptor.sequenceNumber());
-            previousMinimumGeneration.setValue(descriptor.minimumGeneration());
-            previousMaximumGeneration.setValue(descriptor.maximumGeneration());
-            previousTimestamp.setValue(descriptor.timestamp());
+            previousSequenceNumber.setValue(descriptor.getSequenceNumber());
+            previousMinimumGeneration.setValue(descriptor.getMinimumGeneration());
+            previousMaximumGeneration.setValue(descriptor.getMaximumGeneration());
+            previousTimestamp.setValue(descriptor.getTimestamp());
 
             // If the sequence number is good then add it to the collection of tracked files
             files.addLast(descriptor);
@@ -202,50 +217,51 @@ public class PreConsensusEventFileManager {
     }
 
     /**
-     * Do a sanity check on an event file parsed from disk. Throw if an irregularity is detected. Better to crash than
-     * to have an ISS due to improper event playback.
+     * Perform sanity checks on the properties of the next file in the sequence, to ensure that we maintain various
+     * invariants.
+     *
+     * @param permitGaps                if gaps are permitted in sequence number
+     * @param previousSequenceNumber    the sequence number of the previous file
+     * @param previousMinimumGeneration the minimum generation of the previous file
+     * @param previousMaximumGeneration the maximum generation of the previous file
+     * @param previousTimestamp         the timestamp of the previous file
+     * @param descriptor                the descriptor of the next file
+     * @throws IllegalStateException if any of the required invariants are violated by the next file
      */
     private static void fileSanityChecks(
             final boolean permitGaps,
-            @NonNull final ValueReference<Long> previousSequenceNumber,
-            @NonNull final ValueReference<Long> previousMinimumGeneration,
-            @NonNull final ValueReference<Long> previousMaximumGeneration,
-            @NonNull final ValueReference<Instant> previousTimestamp,
+            final long previousSequenceNumber,
+            final long previousMinimumGeneration,
+            final long previousMaximumGeneration,
+            @NonNull final Instant previousTimestamp,
             @NonNull final PreConsensusEventFile descriptor) {
 
         // Sequence number should always monotonically increase
-        if (!permitGaps
-                && previousSequenceNumber.getValue() != -1
-                && previousSequenceNumber.getValue() + 1 != descriptor.sequenceNumber()) {
+        if (!permitGaps && previousSequenceNumber + 1 != descriptor.getSequenceNumber()) {
             throw new IllegalStateException("Gap in pre-consensus event files detected! Previous sequence number was "
-                    + previousSequenceNumber.getValue() + ", next sequence number is " + descriptor.sequenceNumber());
-        }
-
-        // Maximum generation should never be less than minimum generation
-        if (descriptor.maximumGeneration() < descriptor.minimumGeneration()) {
-            throw new IllegalStateException(
-                    "File " + descriptor.path() + " has a maximum generation that is less than its minimum generation");
+                    + previousSequenceNumber + ", next sequence number is "
+                    + descriptor.getSequenceNumber());
         }
 
         // Sanity check on the minimum generation
-        if (descriptor.minimumGeneration() < previousMinimumGeneration.getValue()) {
-            throw new IllegalStateException("Minimum generation must never decrease, file " + descriptor.path()
+        if (descriptor.getMinimumGeneration() < previousMinimumGeneration) {
+            throw new IllegalStateException("Minimum generation must never decrease, file " + descriptor.getPath()
                     + " has a minimum generation that is less than the previous minimum generation of "
-                    + previousMinimumGeneration.getValue());
+                    + previousMinimumGeneration);
         }
 
         // Sanity check on the maximum generation
-        if (descriptor.maximumGeneration() < previousMaximumGeneration.getValue()) {
-            throw new IllegalStateException("Maximum generation must never decrease, file " + descriptor.path()
+        if (descriptor.getMaximumGeneration() < previousMaximumGeneration) {
+            throw new IllegalStateException("Maximum generation must never decrease, file " + descriptor.getPath()
                     + " has a maximum generation that is less than the previous maximum generation of "
-                    + previousMaximumGeneration.getValue());
+                    + previousMaximumGeneration);
         }
 
         // Sanity check on timestamp
-        if (previousTimestamp.getValue() != null && descriptor.timestamp().isBefore(previousTimestamp.getValue())) {
-            throw new IllegalStateException("Timestamp must never decrease, file " + descriptor.path()
+        if (descriptor.getTimestamp().isBefore(previousTimestamp)) {
+            throw new IllegalStateException("Timestamp must never decrease, file " + descriptor.getPath()
                     + " has a timestamp that is less than the previous timestamp of "
-                    + previousTimestamp.getValue());
+                    + previousTimestamp);
         }
     }
 
@@ -259,78 +275,149 @@ public class PreConsensusEventFileManager {
      * thread safe. Until then, don't use this iterator while events are being written.
      * </p>
      *
-     * @param minimumGeneration the desired minimum generation, iterator is guaranteed to walk over all files that may
-     *                          contain events with a generation greater or equal to this value. A value of
-     *                          {@link #NO_MINIMUM_GENERATION} will cause the returned iterator to walk over all
-     *                          available event files.
-     * @return an iterator that walks over event files in order
-     */
-    public @NonNull Iterator<PreConsensusEventFile> getFileIterator(final long minimumGeneration) {
-        return getFileIterator(minimumGeneration, false);
-    }
-
-    /**
-     * <p>
-     * Get an iterator that walks over all event files currently being tracked, in order.
-     * </p>
-     *
-     * <p>
-     * Note: this iterator is not thread safe when events are actively being written. A future task will be to make it
-     * thread safe. Until then, don't use this iterator while events are being written.
-     * </p>
-     *
-     * @param minimumGeneration        the desired minimum generation, iterator is guaranteed to walk over all files
-     *                                 that may contain events with a generation greater or equal to this value. A value
-     *                                 of {@link #NO_MINIMUM_GENERATION} will cause the returned iterator to walk over
-     *                                 all available event files.
-     * @param requireMinimumGeneration if true, then throw if data for the requested minimum generation is not available
-     *                                 in the event files. If false, then the iterator will walk over events starting at
-     *                                 the first generation on disk that is greater or equal to the requested minimum
-     *                                 generation.
+     * @param minimumGeneration  the desired minimum generation, iterator is guaranteed to walk over all files that may
+     *                           contain events with a generation greater or equal to this value. A value of
+     *                           {@link #NO_MINIMUM_GENERATION} will cause the returned iterator to walk over all
+     *                           available event files.
+     * @param fixDiscontinuities if true, any discontinuities after the requested minimum generation will be "fixed" by
+     *                           deleting all data following the first discontinuity.
      * @return an iterator that walks over event files in order
      */
     public @NonNull Iterator<PreConsensusEventFile> getFileIterator(
-            final long minimumGeneration, final boolean requireMinimumGeneration) {
+            final long minimumGeneration, final boolean fixDiscontinuities) {
 
+        // Edge case: we want all events regardless of generation
+        if (minimumGeneration == NO_MINIMUM_GENERATION) {
+            if (fixDiscontinuities) {
+                scanForDiscontinuities(0);
+            }
+            return files.iterator();
+        }
+
+        // Edge case: there are no files
         if (files.size() == 0) {
-            if (requireMinimumGeneration) {
-                throw new IllegalStateException("No event files are available, cannot iterate over events");
-            } else {
-                return Collections.emptyIterator();
+            logger.warn(STARTUP.getMarker(), "No preconsensus event files available");
+            return Collections.emptyIterator();
+        }
+
+        // Edge case: our first file comes after the requested starting generation
+        if (files.getFirst().getMinimumGeneration() >= minimumGeneration) {
+            // Unless we observe at least one file with a minimum generation less than the requested minimum,
+            // then we can't know for certain that we have all data for the requested minimum generation.
+            logger.warn(
+                    STARTUP.getMarker(),
+                    "The preconsensus event stream has insufficient data to guarantee that all events with the "
+                            + "requested generation of {} are present, the first file has a minimum generation of {}",
+                    minimumGeneration,
+                    files.getFirst().getMinimumGeneration());
+
+            if (fixDiscontinuities) {
+                scanForDiscontinuities(0);
+            }
+            return files.iterator();
+        }
+
+        // Edge case: all of our data comes before the requested starting generation
+        if (files.getLast().getMaximumGeneration() < minimumGeneration) {
+            logger.warn(
+                    STARTUP.getMarker(),
+                    "The preconsensus event stream has insufficient data to guarantee that "
+                            + "all events with the requested minimum generation of {} are present, "
+                            + "the last file has a maximum generation of {}",
+                    minimumGeneration,
+                    files.getLast().getMaximumGeneration());
+            return Collections.emptyIterator();
+        }
+
+        // Standard case: we need to stream data starting from a file somewhere in the middle of stream
+        final int fileCount = files.size();
+        for (int index = 0; index < fileCount; index++) {
+            final PreConsensusEventFile file = files.get(index);
+            if (file.getMaximumGeneration() >= minimumGeneration) {
+                // We have found the first file that may contain events at the requested generation.
+                if (fixDiscontinuities) {
+                    scanForDiscontinuities(index);
+                }
+                return files.iterator(index);
             }
         }
 
+        // It should not be possible to reach this point.
+        throw new IllegalStateException("Failed to find a file that may contain events at the requested generation");
+    }
+
+    /**
+     * Scan the event files starting at a specified index. If discontinuities are found at or after this index, perform
+     * necessary cleanup on the event stream.
+     *
+     * @param startingIndex the file index to start scanning at
+     */
+    private void scanForDiscontinuities(final int startingIndex) {
+        final int fileCount = files.size();
+        for (int index = startingIndex; index < fileCount; index++) {
+            final PreConsensusEventFile file = files.get(index);
+            if (file.marksDiscontinuity()) {
+                // We have found a discontinuity, remove this and all following files.
+                resolveDiscontinuity(index);
+                return;
+            }
+        }
+    }
+
+    /**
+     * Resolve a discontinuity at a specified index by deleting all files written after the discontinuity.
+     *
+     * @param indexOfDiscontinuity the file index of the discontinuity
+     */
+    private void resolveDiscontinuity(final int indexOfDiscontinuity) {
+
+        if (files.size() == 0) {
+            throw new IllegalStateException("The preconsensus event stream has no files, "
+                    + "there should not be any detected discontinuities.");
+        }
+
+        if (indexOfDiscontinuity == 0) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Discontinuity detected at beginning of preconsensus event stream, "
+                            + "unable to replay any events in the stream. "
+                            + "All events in the stream will be deleted. "
+                            + "first deleted file: {}, last file in stream: {}",
+                    files.get(indexOfDiscontinuity),
+                    files.getLast());
+        } else {
+            final PreConsensusEventFile lastUndeletedFile = files.get(indexOfDiscontinuity - 1);
+
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Discontinuity detected in preconsensus event stream, "
+                            + "unable to replay all events in the stream. "
+                            + "Events written to the stream after the discontinuity will be deleted. "
+                            + "Last undeleted file: {}, first deleted file: {}, last file in stream: {}",
+                    lastUndeletedFile,
+                    files.get(indexOfDiscontinuity),
+                    files.getLast());
+        }
+
         try {
-            // Returns the index of the last file with a maximum generation that is
-            // less than or equal to the minimum requested generation.
-            int index =
-                    (int) BinarySearch.search(0, files.size(), buildBinarySearchComparisonLambda(minimumGeneration));
+            Files.createDirectories(recycleBinDirectory);
 
-            // If there are multiple files in a row with the same maximum generation then the binary search
-            // may not land on the first file in the sequence. Shift to the left until the first file
-            // with the desired maximum generation is discovered.
-            while (index > 0 && files.get(index - 1).maximumGeneration() == minimumGeneration) {
-                index--;
+            // Delete files in reverse order, so that if we crash prior to finishing at least
+            // the stream does not have gaps in sequence numbers.
+            for (int index = files.size() - 1; index >= indexOfDiscontinuity; index--) {
+                files.removeLast().deleteFile(databaseDirectory, recycleBinDirectory);
             }
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to delete file after discontinuity", e);
+        }
 
-            // If there is no file with a maximum generation exactly matching the target generation
-            // then the file at the index may not have any relevant events. In that scenario, shifting
-            // to the right will guarantee that the first file returned by the iterator is a file that
-            // may contain events we are targeting.
-            if (files.get(index).maximumGeneration() < minimumGeneration) {
-                index++;
-            }
-
-            return files.iterator(index);
-        } catch (final NoSuchElementException e) {
-            if (requireMinimumGeneration && minimumGeneration != NO_MINIMUM_GENERATION) {
-                throw new IllegalStateException(
-                        "No event file contains data for the requested minimum generation: " + minimumGeneration, e);
-            } else {
-                // This exception will be thrown if the requested minimum generation is strictly less than the maximum
-                // generation in the oldest file. No big deal, just start iterating at the oldest file.
-                return files.iterator();
-            }
+        if (files.size() > 0) {
+            metrics.getPreconsensusEventFileOldestGeneration()
+                    .set(files.getFirst().getMinimumGeneration());
+        } else {
+            metrics.getPreconsensusEventFileOldestGeneration().set(NO_MINIMUM_GENERATION);
+            metrics.getPreconsensusEventFileYoungestGeneration().set(NO_MINIMUM_GENERATION);
+            metrics.getPreconsensusEventFileOldestSeconds().set(0);
         }
     }
 
@@ -344,26 +431,18 @@ public class PreConsensusEventFileManager {
      * thread safe. Until then, don't use this iterator while events are being written.
      * </p>
      *
-     * @param minimumGeneration the minimum generation, all events in the stream with this generation or higher are
-     *                          guaranteed to be returned by the iterator.
+     * @param minimumGeneration  the desired minimum generation, iterator is guaranteed to return all available events
+     *                           with a generation greater or equal to this value. No events with a smaller generation
+     *                           will be returned. A value of {@link #NO_MINIMUM_GENERATION} will cause the returned
+     *                           iterator to walk over all available events.
+     * @param fixDiscontinuities if true, any discontinuities after the requested minimum generation will be "fixed" by
+     *                           deleting all data following the first discontinuity.
      * @return an iterator that walks over events
      */
-    public @NonNull PreConsensusEventMultiFileIterator getEventIterator(final long minimumGeneration) {
-        return new PreConsensusEventMultiFileIterator(minimumGeneration, getFileIterator(minimumGeneration));
-    }
-
-    /**
-     * Build a function used to do a binary file search.
-     *
-     * @param minimumGeneration the minimum generation desired by the caller
-     * @return a function for finding a starting file guaranteed for the generation requested by the user
-     */
-    private @NonNull LongToIntFunction buildBinarySearchComparisonLambda(final long minimumGeneration) {
-        return (final long index) -> {
-            final PreConsensusEventFile file = files.get((int) index);
-            final long maxGenerationInFile = file.maximumGeneration();
-            return Long.compare(maxGenerationInFile, minimumGeneration);
-        };
+    public @NonNull PreConsensusEventMultiFileIterator getEventIterator(
+            final long minimumGeneration, final boolean fixDiscontinuities) {
+        return new PreConsensusEventMultiFileIterator(
+                minimumGeneration, getFileIterator(minimumGeneration, fixDiscontinuities));
     }
 
     /**
@@ -375,17 +454,33 @@ public class PreConsensusEventFileManager {
         if (files.size() == 0) {
             return 0;
         }
-        return files.getLast().sequenceNumber() + 1;
+        return files.getLast().getSequenceNumber() + 1;
     }
 
     /**
      * Create a new event file descriptor for the next event file, and start tracking it. (Note, this method doesn't
      * actually open the file, it just permits the file to be opened by the caller.)
      *
+     * @param minimumGeneration the minimum generation that can be stored in the file
+     * @param maximumGeneration the maximum generation that can be stored in the file
      * @return a new event file descriptor
      */
     public @NonNull PreConsensusEventFile getNextFileDescriptor(
             final long minimumGeneration, final long maximumGeneration) {
+        return getNextFileDescriptor(minimumGeneration, maximumGeneration, false);
+    }
+
+    /**
+     * Create a new event file descriptor for the next event file, and start tracking it. (Note, this method doesn't
+     * actually open the file, it just permits the file to be opened by the caller.)
+     *
+     * @param minimumGeneration the minimum generation that can be stored in the file
+     * @param maximumGeneration the maximum generation that can be stored in the file
+     * @param discontinuity     true if the file is being created due to a discontinuity in the event stream
+     * @return a new event file descriptor
+     */
+    public @NonNull PreConsensusEventFile getNextFileDescriptor(
+            final long minimumGeneration, final long maximumGeneration, final boolean discontinuity) {
 
         if (minimumGeneration > maximumGeneration) {
             throw new IllegalArgumentException("minimum generation must be less than or equal to maximum generation");
@@ -396,24 +491,14 @@ public class PreConsensusEventFileManager {
 
         if (files.size() == 0) {
             // This is the first file
-
             minimumGenerationForFile = minimumGeneration;
             maximumGenerationForFile = maximumGeneration;
-
         } else {
             // This is not the first file, min/max values are constrained to only increase
-
-            if (minimumGeneration < files.getLast().minimumGeneration()) {
-                minimumGenerationForFile = files.getLast().minimumGeneration();
-            } else {
-                minimumGenerationForFile = minimumGeneration;
-            }
-
-            if (maximumGeneration < files.getLast().maximumGeneration()) {
-                maximumGenerationForFile = files.getLast().maximumGeneration();
-            } else {
-                maximumGenerationForFile = maximumGeneration;
-            }
+            minimumGenerationForFile =
+                    Math.max(minimumGeneration, files.getLast().getMinimumGeneration());
+            maximumGenerationForFile =
+                    Math.max(maximumGeneration, files.getLast().getMaximumGeneration());
         }
 
         final PreConsensusEventFile descriptor = PreConsensusEventFile.of(
@@ -421,11 +506,24 @@ public class PreConsensusEventFileManager {
                 minimumGenerationForFile,
                 maximumGenerationForFile,
                 time.now(),
-                databaseDirectory);
+                databaseDirectory,
+                discontinuity);
+
+        if (files.size() > 0) {
+            // There are never enough sanity checks. This is the same sanity check that is run when we parse
+            // the files from disk, so if it doesn't pass now it's not going to pass when we read the files.
+            final PreConsensusEventFile previousFile = files.getLast();
+            fileSanityChecks(
+                    false,
+                    previousFile.getSequenceNumber(),
+                    previousFile.getMinimumGeneration(),
+                    previousFile.getMaximumGeneration(),
+                    previousFile.getTimestamp(),
+                    descriptor);
+        }
 
         files.addLast(descriptor);
-
-        metrics.getPreconsensusEventFileYoungestGeneration().set(descriptor.maximumGeneration());
+        metrics.getPreconsensusEventFileYoungestGeneration().set(descriptor.getMaximumGeneration());
 
         return descriptor;
     }
@@ -436,12 +534,11 @@ public class PreConsensusEventFileManager {
      * @param file the file that has been completely written
      */
     public void finishedWritingFile(@NonNull final PreConsensusEventMutableFile file) {
-
         final long previousFileHighestGeneration;
         if (files.size() == 1) {
             previousFileHighestGeneration = 0;
         } else {
-            previousFileHighestGeneration = files.get(files.size() - 2).maximumGeneration();
+            previousFileHighestGeneration = files.get(files.size() - 2).getMaximumGeneration();
         }
 
         // Compress the generational span of the file. Reduces overlap between files.
@@ -468,18 +565,18 @@ public class PreConsensusEventFileManager {
         final Instant minimumTimestamp = time.now().minus(minimumRetentionPeriod);
 
         while (files.size() > 0
-                && files.getFirst().maximumGeneration() < minimumGeneration
-                && files.getFirst().timestamp().isBefore(minimumTimestamp)) {
+                && files.getFirst().getMaximumGeneration() < minimumGeneration
+                && files.getFirst().getTimestamp().isBefore(minimumTimestamp)) {
 
             final PreConsensusEventFile file = files.removeFirst();
-            totalFileByteCount -= Files.size(file.path());
+            totalFileByteCount -= Files.size(file.getPath());
             file.deleteFile(databaseDirectory);
         }
 
         if (files.size() > 0) {
             metrics.getPreconsensusEventFileOldestGeneration()
-                    .set(files.getFirst().minimumGeneration());
-            final Duration age = Duration.between(files.getFirst().timestamp(), time.now());
+                    .set(files.getFirst().getMinimumGeneration());
+            final Duration age = Duration.between(files.getFirst().getTimestamp(), time.now());
             metrics.getPreconsensusEventFileOldestSeconds().set(age.toSeconds());
         }
         updateFileSizeMetrics();

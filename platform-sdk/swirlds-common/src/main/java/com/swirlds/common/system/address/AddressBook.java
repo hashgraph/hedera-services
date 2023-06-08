@@ -260,26 +260,19 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
-     * Find the ID for the member at a given index within the address book.
-     *
-     * @param index the index within the address book
-     * @return a node ID
-     * @deprecated use {@link #getNodeId(int)} instead
-     */
-    @Deprecated(since = "0.39.0", forRemoval = true)
-    public long getId(final int index) {
-        return getNodeId(index).id();
-    }
-
-    /**
-     * Get the index within the address book of a given node ID.
+     * Get the index within the address book of a given node ID.  Check that the addressbook {@link #contains(NodeId)}
+     * the node ID to avoid throwing an exception.
      *
      * @param id the node's ID
      * @return the index of the node ID within the address book
+     * @throws NoSuchElementException if the node ID does not exist in the address book.
      */
     public int getIndexOfNodeId(@NonNull final NodeId id) {
         Objects.requireNonNull(id, "nodeId is null");
-        return nodeIndices.get(id);
+        if (!addresses.containsKey(id)) {
+            throw new NoSuchElementException("no address with id " + id + " exists");
+        }
+        return nodeIndices.getOrDefault(id, -1);
     }
 
     /**
@@ -322,15 +315,21 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
-     * Get the address for the member with the given ID
+     * Get the address for the member with the given ID.  Use {@link #contains(NodeId)} to check for its existence and
+     * avoid an exception.
      *
      * @param id the member ID of the address to get
      * @return the address
+     * @throws NoSuchElementException if no address with the given ID exists
      */
-    @Nullable
+    @NonNull
     public Address getAddress(@NonNull final NodeId id) {
         Objects.requireNonNull(id, "NodeId is null");
-        return addresses.get(id);
+        final Address address = addresses.get(id);
+        if (address == null) {
+            throw new NoSuchElementException("no address with id " + id + " exists");
+        }
+        return address;
     }
 
     /**
@@ -400,9 +399,6 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
         Objects.requireNonNull(id, "NodeId is null");
         throwIfImmutable();
         final Address address = getAddress(id);
-        if (address == null) {
-            throw new NoSuchElementException("no address with ID " + id + " exists");
-        }
         if (weight < 0) {
             throw new IllegalArgumentException("weight must be nonnegative");
         }

@@ -152,11 +152,11 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 .setPriority(Thread.NORM_PRIORITY)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
-                .setOtherNodeId(selfId.id())
+                .setOtherNodeId(selfId)
                 .setThreadName("SingleNodeNetworkSync")
                 .setHangingThreadPeriod(hangingThreadDuration)
-                .setWork(new SingleNodeNetworkSync(
-                        updatePlatformStatus, eventTaskCreator::createEvent, () -> 0, selfId.id()))
+                .setWork(
+                        new SingleNodeNetworkSync(updatePlatformStatus, eventTaskCreator::createEvent, () -> 0, selfId))
                 .build();
 
         thingsToStart.add(syncProtocolThread);
@@ -187,7 +187,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
     @NonNull
     @Override
     protected CriticalQuorum buildCriticalQuorum() {
-        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId.id(), addressBook);
+        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId, addressBook);
     }
 
     /**
@@ -197,6 +197,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
     @Override
     protected FallenBehindManagerImpl buildFallenBehindManager() {
         return new FallenBehindManagerImpl(
+                addressBook,
                 selfId,
                 topology.getConnectionGraph(),
                 updatePlatformStatus,

@@ -18,28 +18,12 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Hedera Services API Utilities"
 
-configurations.all {
-  exclude("javax.annotation", "javax.annotation-api")
-
-  exclude("io.grpc", "grpc-core")
-  exclude("io.grpc", "grpc-context")
-  exclude("io.grpc", "grpc-api")
-  exclude("io.grpc", "grpc-testing")
-}
-
 dependencies {
-  annotationProcessor(libs.dagger.compiler)
+  javaModuleDependencies {
+    annotationProcessor(gav("dagger.compiler"))
 
-  api(project(":hedera-node:hedera-evm"))
-
-  implementation(libs.jackson)
-  implementation(libs.bundles.bouncycastle)
-  implementation(libs.bundles.logging)
-  implementation(libs.headlong)
-  implementation(libs.commons.codec)
-  implementation(libs.jna)
-  implementation(libs.javax.inject)
-  implementation(libs.dagger.api)
-
-  testImplementation(testLibs.bundles.testing)
+    testImplementation(gav("org.junit.jupiter.api"))
+    testImplementation(gav("org.junit.jupiter.params"))
+    testImplementation(gav("org.mockito"))
+  }
 }

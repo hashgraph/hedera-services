@@ -772,7 +772,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     private HapiSpec getInfoOnDeletedFungibleTokenWorks() {
-        return defaultHapiSpec("GetInfoOnDeletedFungibleTokenFails")
+        return defaultHapiSpec("getInfoOnDeletedFungibleTokenWorks")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -817,7 +817,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     private HapiSpec getInfoOnInvalidFungibleTokenFails() {
-        return defaultHapiSpec("GetInfoOnInvalidFungibleTokenFails")
+        return defaultHapiSpec("getInfoOnInvalidFungibleTokenFails")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -860,7 +860,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
 
     private HapiSpec getInfoOnDeletedNonFungibleTokenFails() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
-        return defaultHapiSpec("GetInfoOnDeletedNonFungibleTokenFails")
+        return defaultHapiSpec("getInfoOnDeletedNonFungibleTokenFails")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -902,7 +902,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
 
     private HapiSpec getInfoOnInvalidNonFungibleTokenFails() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
-        return defaultHapiSpec("GetInfoOnDeletedNonFungibleTokenFails")
+        return defaultHapiSpec("getInfoOnInvalidNonFungibleTokenFails")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
@@ -1076,7 +1076,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
 
     private HapiSpec happyPathUpdateTokenKeysAndReadLatestInformation() {
         final String TOKEN_INFO_AS_KEY = "TOKEN_INFO_CONTRACT_KEY";
-        return defaultHapiSpec("UpdateTokenKeysAndReadLatestInformation")
+        return defaultHapiSpec("happyPathUpdateTokenKeysAndReadLatestInformation")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),

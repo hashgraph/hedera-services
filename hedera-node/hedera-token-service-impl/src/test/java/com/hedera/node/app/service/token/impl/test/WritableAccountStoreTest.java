@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.test.handlers.CryptoHandlerTestBase;
+import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import java.util.Collections;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -103,8 +103,8 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
         // put, keeps the account in the modifications
         writableStore.put(account);
 
-        assertTrue(writableAccounts.contains(accountEntityNumVirtualKey));
-        final var writtenaccount = writableAccounts.get(accountEntityNumVirtualKey);
+        assertTrue(writableAccounts.contains(id));
+        final var writtenaccount = writableAccounts.get(id);
         assertThat(account).isEqualTo(writtenaccount);
     }
 
@@ -115,6 +115,7 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
         writableStore.put(account);
         assertThat(writableStore.sizeOfAccountState()).isEqualTo(1);
-        assertThat(writableStore.modifiedAccountsInState()).isEqualTo(Set.of(EntityNumVirtualKey.fromLong(3)));
+        assertThat(writableStore.modifiedAccountsInState())
+                .isEqualTo(Set.of(AccountID.newBuilder().accountNum(3).build()));
     }
 }

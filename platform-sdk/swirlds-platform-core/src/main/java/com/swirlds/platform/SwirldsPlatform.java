@@ -138,8 +138,8 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.Shutdown;
-import com.swirlds.platform.system.SystemExitReason;
-import com.swirlds.platform.system.SystemUtils;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.threading.PauseAndLoad;
 import com.swirlds.platform.util.PlatformComponents;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -716,7 +716,7 @@ public class SwirldsPlatform implements Platform, Startable {
             logger.error(EXCEPTION.getMarker(), "Saved state not loaded:", e);
             // if requireStateLoad is on, we exit. if not, we just log it
             if (Settings.getInstance().isRequireStateLoad()) {
-                SystemUtils.exitSystem(SystemExitReason.SAVED_STATE_NOT_LOADED);
+                SystemExitUtils.exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED);
             }
         }
         return new LoadedState(createNullReservation(), null);
@@ -855,6 +855,18 @@ public class SwirldsPlatform implements Platform, Startable {
 
             consensusRoundHandler.loadDataFromSignedState(signedState, true);
 
+            try {
+                preConsensusEventWriter.registerDiscontinuity();
+                preConsensusEventWriter.setMinimumGenerationNonAncient(signedState
+                        .getState()
+                        .getPlatformState()
+                        .getPlatformData()
+                        .getMinimumGenerationNonAncient());
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("interrupted while loading updating PCES after reconnect", e);
+            }
+
             // Notify any listeners that the reconnect has been completed
             notificationEngine.dispatch(
                     ReconnectCompleteListener.class,
@@ -957,7 +969,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final PreConsensusEventFileManager fileManager;
         try {
-            fileManager = new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), selfId.id());
+            fileManager = new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), selfId);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }

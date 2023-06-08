@@ -38,7 +38,7 @@ public interface ReadableTopicStore {
      * @return topic's metadata
      */
     @Nullable
-    public Topic getTopic(@Nullable final TopicID id);
+    public Topic getTopic(@NonNull final TopicID id);
 
     @NonNull
     Optional<Topic> getTopicLeaf(@NonNull TopicID id);

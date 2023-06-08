@@ -84,6 +84,8 @@ import com.swirlds.merkle.map.test.pta.TransactionRecord;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import java.io.File;
 import java.io.FileInputStream;
@@ -345,8 +347,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                     platform, Pair.of(submittedPayloadTriple.getLeft(), submittedPayloadTriple.getMiddle()));
             if (!success) { // if failed keep bytes payload try next time
                 try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                        UnsafeMutablePTTStateAccessor.getInstance()
-                                .getUnsafeMutableState(platform.getSelfId().id())) {
+                        UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
                     Thread.sleep(50);
                     final PlatformTestingToolState state = wrapper.get();
                     ExpectedMapUtils.modifySubmitStatus(state, false, isActive, submittedPayloadTriple, payloadConfig);
@@ -361,8 +362,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                 transactionSubmitted.increment();
                 transactionSubmitSpeedometer.update(1);
                 try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                        UnsafeMutablePTTStateAccessor.getInstance()
-                                .getUnsafeMutableState(platform.getSelfId().id())) {
+                        UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
                     final PlatformTestingToolState state = wrapper.get();
                     ExpectedMapUtils.modifySubmitStatus(state, true, isActive, submittedPayloadTriple, payloadConfig);
                 }
@@ -420,8 +420,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                     public void run() {
                         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
                                 UnsafeMutablePTTStateAccessor.getInstance()
-                                        .getUnsafeMutableState(
-                                                platform.getSelfId().id())) {
+                                        .getUnsafeMutableState(platform.getSelfId())) {
                             final PlatformTestingToolState state = wrapper.get();
                             if (state != null) {
                                 getCurrentTransactionStat(state);
@@ -539,8 +538,8 @@ public class PlatformTestingToolMain implements SwirldMain {
         registerReconnectCompleteListener();
 
         GuiPlatformAccessor.getInstance().setAbout(selfId, "Platform Testing Demo");
-        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper = UnsafeMutablePTTStateAccessor.getInstance()
-                .getUnsafeMutableState(platform.getSelfId().id())) {
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
             final PlatformTestingToolState state = wrapper.get();
 
             state.initControlStructures(this::handleMessageQuorum);
@@ -770,8 +769,8 @@ public class PlatformTestingToolMain implements SwirldMain {
         nftQueryController.launch();
 
         // reset interval timestamp before start generating transactions
-        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper = UnsafeMutablePTTStateAccessor.getInstance()
-                .getUnsafeMutableState(platform.getSelfId().id())) {
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
             final PlatformTestingToolState state = wrapper.get();
             state.resetLastFileTranFinishTimeStamp();
         }
@@ -895,8 +894,7 @@ public class PlatformTestingToolMain implements SwirldMain {
             Thread.sleep(3000);
             while (true) {
                 try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                        UnsafeMutablePTTStateAccessor.getInstance()
-                                .getUnsafeMutableState(platform.getSelfId().id())) {
+                        UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
                     final PlatformTestingToolState state = wrapper.get();
                     if (state != null) {
                         int randomId = random.nextInt(platform.getAddressBook().getSize());
@@ -946,8 +944,7 @@ public class PlatformTestingToolMain implements SwirldMain {
             rebuildExpirationQueue(platform);
 
             try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                    UnsafeMutablePTTStateAccessor.getInstance()
-                            .getUnsafeMutableState(platform.getSelfId().id())) {
+                    UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
                 final PlatformTestingToolState state = wrapper.get();
                 state.initControlStructures(this::handleMessageQuorum);
                 SyntheticBottleneckConfig.getActiveConfig()
@@ -962,8 +959,8 @@ public class PlatformTestingToolMain implements SwirldMain {
      * @param platform
      */
     private void rebuildExpirationQueue(Platform platform) {
-        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper = UnsafeMutablePTTStateAccessor.getInstance()
-                .getUnsafeMutableState(platform.getSelfId().id())) {
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
             final PlatformTestingToolState state = wrapper.get();
             state.rebuildExpirationQueue();
         }
@@ -994,8 +991,8 @@ public class PlatformTestingToolMain implements SwirldMain {
      * 		account entities and {@code Pair.getKey()} returns the first id to be used by smart contracts.
      */
     private Pair<Long, Long> extractFirstIdForEntitiesFromSavedState(final Platform platform) {
-        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper = UnsafeMutablePTTStateAccessor.getInstance()
-                .getUnsafeMutableState(platform.getSelfId().id())) {
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
 
             final PlatformTestingToolState state = wrapper.get();
 
@@ -1085,8 +1082,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     private void handleEnterValidation(final Instant consensusTime) {
         final Runnable fn = () -> {
             try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                    UnsafeMutablePTTStateAccessor.getInstance()
-                            .getUnsafeMutableState(platform.getSelfId().id())) {
+                    UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
                 final PlatformTestingToolState state = wrapper.get();
 
                 final String expectedMapFile =
@@ -1200,7 +1196,7 @@ public class PlatformTestingToolMain implements SwirldMain {
 
         if (currentConfig.isQuitJVMAfterTest()) {
             logger.info(LOGM_DEMO_QUORUM, "Terminating the JVM [ consensusTime = {} ]", consensusTime);
-            System.exit(0);
+            SystemExitUtils.exitSystem(SystemExitCode.NO_ERROR);
         }
     }
 
@@ -1215,8 +1211,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         ScheduledFuture<?> future = scheduledThreadPoolExecutor.scheduleAtFixedRate(
                 () -> {
                     try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
-                            UnsafeMutablePTTStateAccessor.getInstance()
-                                    .getUnsafeMutableState(platform.getSelfId().id())) {
+                            UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
                         // this watch is for counting the time cost in each query on current state
                         StopWatch watch = new StopWatch();
                         watch.start();

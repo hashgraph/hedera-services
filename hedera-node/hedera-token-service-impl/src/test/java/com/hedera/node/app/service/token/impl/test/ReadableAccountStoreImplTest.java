@@ -20,10 +20,10 @@ import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
-import com.hedera.node.app.service.token.impl.test.handlers.CryptoHandlerTestBase;
+import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,10 +42,8 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         subject = new ReadableAccountStoreImpl(readableStates);
     }
 
@@ -148,7 +146,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
     @Test
     void getsNullIfMissingAccount() {
         readableAccounts = emptyReadableAccountStateBuilder().build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         subject = new ReadableAccountStoreImpl(readableStates);
         readableStore = subject;
 

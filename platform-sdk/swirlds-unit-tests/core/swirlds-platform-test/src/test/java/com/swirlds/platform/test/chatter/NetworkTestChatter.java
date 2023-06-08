@@ -17,20 +17,24 @@
 package com.swirlds.platform.test.chatter;
 
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.test.chatter.simulator.SimulatedEvent;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Random;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class NetworkTestChatter implements SimulatedChatter {
-    private final long selfId;
+    private final NodeId selfId;
     private final int generateEveryMs;
     private final int payloadSizeInBytes;
     private Instant lastPayload = null;
 
-    public NetworkTestChatter(final long selfId, final int bytesPerSecond, final int generateEveryMs) {
-        this.selfId = selfId;
+    public NetworkTestChatter(@NonNull final NodeId selfId, final int bytesPerSecond, final int generateEveryMs) {
+        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
         this.generateEveryMs = generateEveryMs;
         System.out.println("bytesPerSecond " + bytesPerSecond);
         final int payloadsPerSec = 1000 / generateEveryMs;
@@ -50,18 +54,22 @@ public class NetworkTestChatter implements SimulatedChatter {
     public void shiftWindow(final long firstSequenceNumberInWindow) {}
 
     @Override
-    public void handlePayload(final SelfSerializable payload, final long sender) {}
+    public void handlePayload(@Nullable final SelfSerializable payload, @Nullable final NodeId sender) {}
 
     @Override
+    @Nullable
     public GossipPayload generatePayload(
-            final Instant now, final boolean underutilizedNetwork, final long destination) {
+            @NonNull final Instant now, final boolean underutilizedNetwork, @NonNull final NodeId destination) {
+        Objects.requireNonNull(now, "now must not be null");
+        Objects.requireNonNull(destination, "destination must not be null");
         if (lastPayload == null || Duration.between(lastPayload, now).toMillis() >= generateEveryMs) {
             if (lastPayload != null && Duration.between(lastPayload, now).toMillis() > 1) {
                 System.out.println(lastPayload + " to " + now);
             }
             lastPayload = now;
             return new GossipPayload(
-                    new SimulatedEvent(new Random(), selfId, destination, payloadSizeInBytes), destination);
+                    // The round value doesn't seem to matter, setting to -1.
+                    new SimulatedEvent(new Random(), selfId, -1, payloadSizeInBytes), destination);
         }
         return null;
     }

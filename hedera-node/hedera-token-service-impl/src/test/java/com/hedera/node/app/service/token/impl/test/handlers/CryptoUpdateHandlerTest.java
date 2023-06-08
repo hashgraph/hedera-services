@@ -57,11 +57,11 @@ import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
+import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -185,10 +185,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void cryptoUpdateUpdateAccountMissingFails() throws PreCheckException {
         final var txn = new CryptoUpdateBuilder().build();
-        readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates);
 
         given(waivers.isNewKeySignatureWaived(any(), any())).willReturn(true);
@@ -844,20 +842,20 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     private void updateReadableAccountStore(Map<Long, Account> accountsToAdd) {
         final var emptyStateBuilder = emptyReadableAccountStateBuilder();
         for (final var entry : accountsToAdd.entrySet()) {
-            emptyStateBuilder.value(EntityNumVirtualKey.fromLong(entry.getKey()), entry.getValue());
+            emptyStateBuilder.value(accountID(entry.getKey()), entry.getValue());
         }
         readableAccounts = emptyStateBuilder.build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates);
     }
 
     private void updateWritableAccountStore(Map<Long, Account> accountsToAdd) {
         final var emptyStateBuilder = emptyWritableAccountStateBuilder();
         for (final var entry : accountsToAdd.entrySet()) {
-            emptyStateBuilder.value(EntityNumVirtualKey.fromLong(entry.getKey()), entry.getValue());
+            emptyStateBuilder.value(accountID(entry.getKey()), entry.getValue());
         }
         writableAccounts = emptyStateBuilder.build();
-        given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
+        given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         writableStore = new WritableAccountStore(writableStates);
     }
 
