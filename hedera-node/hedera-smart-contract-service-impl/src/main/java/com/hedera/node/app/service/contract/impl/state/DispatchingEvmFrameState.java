@@ -225,6 +225,11 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         dispatch.finalizeHollowAccountAsContract(tuweniToPbjBytes(address));
     }
 
+    @Override
+    public boolean tryTransfer(@NonNull Address verifiedSender, @NonNull Address recipient, @NonNull long amount) {
+        throw new AssertionError("Not implemented");
+    }
+
     /**
      * {@inheritDoc}
      */
