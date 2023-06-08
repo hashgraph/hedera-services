@@ -77,11 +77,9 @@ public class HederaWorldState implements HederaMutableWorldState {
     private final List<ContractID> provisionalContractCreations = new LinkedList<>();
     private final GlobalDynamicProperties dynamicProperties;
     private final RecordsHistorian recordsHistorian;
-
+    private final CodeCache codeCache;
     // If non-null, the new contract customizations requested by the HAPI contractCreate sender
     private ContractCustomizer hapiSenderCustomizer;
-
-    private final CodeCache codeCache;
 
     @Inject
     public HederaWorldState(

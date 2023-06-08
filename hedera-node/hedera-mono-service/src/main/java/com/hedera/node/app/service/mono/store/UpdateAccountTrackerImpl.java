@@ -28,9 +28,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
- * Implementation of the {@link UpdateAccountTracker} that provides a concrete methods for storing the changed state
- * in the {@code trackingAccounts}
- * */
+ * Implementation of the {@link UpdateAccountTracker} that provides a concrete methods for storing the changed state in
+ * the {@code trackingAccounts}
+ */
 public class UpdateAccountTrackerImpl implements UpdateAccountTracker {
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts;
 
