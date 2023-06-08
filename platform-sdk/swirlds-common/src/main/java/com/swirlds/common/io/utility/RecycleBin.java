@@ -22,7 +22,7 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.locks.AutoClosableLock;
-import com.swirlds.common.threading.locks.internal.AutoLock;
+import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,13 +36,18 @@ import org.apache.logging.log4j.Logger;
 /**
  * This class provides the abstraction of deleting a file, but actually moves the file to a temporary location in case
  * the file becomes useful later for debugging.
+ * <p>
+ * Data moved to the recycle bin persist in the temporary location for an unspecified amount of time, perhaps even no
+ * time at all. Files in this temporary location may be deleted at any time without warning. It is never ok to write
+ * code that depends on the existence of files in this temporary location. Files in this temporary location should be
+ * treated as deleted by java code, and only used for debugging purposes.
  */
 public class RecycleBin {
 
     private static final Logger logger = LogManager.getLogger(RecycleBin.class);
 
     private final Path recycleBinPath;
-    private final AutoClosableLock lock = new AutoLock();
+    private final AutoClosableLock lock = Locks.createAutoLock();
 
     /**
      * Create a new recycle bin.
@@ -52,7 +57,6 @@ public class RecycleBin {
      * @throws IOException if the recycle bin directory could not be created
      */
     public RecycleBin(@NonNull final Configuration configuration, @NonNull final NodeId selfId) throws IOException {
-
         Objects.requireNonNull(selfId);
 
         final RecycleBinConfig recycleBinConfig = configuration.getConfigData(RecycleBinConfig.class);
@@ -63,16 +67,16 @@ public class RecycleBin {
     }
 
     /**
-     * Remove a file or directory tree from its current location and move it to a temporary location. The data will
-     * persist in the temporary location for an unspecified amount of time, perhaps even no time at all. Files in this
-     * temporary location may be deleted at any time without warning. It is never ok to write code that depends on the
-     * existence of files in this temporary location. Files in this temporary location should be treated as deleted by
-     * java code, and only used for debugging purposes.
+     * Remove a file or directory tree from its current location and move it to a temporary location.
+     * <p></p>
+     * Recycled data will persist in the temporary location for an unspecified amount of time, perhaps even no time at
+     * all. Files in this temporary location may be deleted at any time without warning. It is never ok to write code
+     * that depends on the existence of files in this temporary location. Files in this temporary location should be
+     * treated as deleted by java code, and only used for debugging purposes.
      *
      * @param path the file or directory to recycle
      */
     public void recycle(@NonNull final Path path) throws IOException {
-
         if (!Files.exists(path)) {
             logger.warn(EXCEPTION.getMarker(), "Cannot recycle non-existent file: {}", path);
             return;
