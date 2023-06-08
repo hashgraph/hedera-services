@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUti
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -81,7 +82,8 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         requireNonNull(txn);
         final var op = txn.tokenMintOrThrow();
         validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
-        //        validator.pureChecks(op.metadata().size(), op.amount(), INVALID_TOKEN_MINT_AMOUNT);
+        validateFalsePreCheck(!op.metadata().isEmpty() && op.amount() > 0, INVALID_TRANSACTION_BODY);
+        validateFalsePreCheck(op.amount() < 0, INVALID_TOKEN_MINT_AMOUNT);
     }
 
     @Override
@@ -127,6 +129,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
     private void validateSemantics(final HandleContext context) {
         requireNonNull(context);
         final var op = context.body().tokenMintOrThrow();
+        validator.validate(op.amount(), op.metadata());
     }
 
     /**
