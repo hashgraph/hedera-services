@@ -16,17 +16,28 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.node.app.service.mono.txns.token.TokenOpsValidator.validateTokenOpsWith;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.token.TokenBurnTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -54,6 +65,35 @@ public class TokenBurnHandler implements TransactionHandler {
         if (tokenMetadata.hasSupplyKey()) {
             context.requireKey(tokenMetadata.supplyKey());
         }
+    }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final var op = txn.tokenBurnOrThrow();
+        final var fungibleCount = op.amount();
+        final var serialNums = op.serialNumbers();
+
+        validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
+
+        // If a positive fungible amount is present, the NFT serial numbers must be empty
+        validateFalsePreCheck(fungibleCount > 0 && !serialNums.isEmpty(), INVALID_TRANSACTION_BODY);
+
+        validateFalsePreCheck(fungibleCount < 0, INVALID_TOKEN_BURN_AMOUNT);
+
+        // Validate the NFT serial numbers
+        if (fungibleCount < 1 && !serialNums.isEmpty()) {
+            for (final var serialNumber : op.serialNumbers()) {
+                validateTruePreCheck(serialNumber > 0, INVALID_NFT_ID);
+            }
+        }
+
+//        return validateTokenOpsWith(
+//                op.getSerialNumbersCount(),
+//                op.getAmount(),
+//                dynamicProperties.areNftsEnabled(),
+//                INVALID_TOKEN_BURN_AMOUNT,
+//                op.getSerialNumbersList(),
+//                validator::maxBatchSizeBurnCheck);
     }
 
     @Override
