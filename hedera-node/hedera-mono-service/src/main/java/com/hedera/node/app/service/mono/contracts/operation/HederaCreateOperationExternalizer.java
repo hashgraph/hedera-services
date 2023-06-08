@@ -169,6 +169,6 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
     }
 
     private void updateContractNonces(ContractID contractID, Long nonce) {
-        recordsHistorian.setContractNonces(contractID, nonce);
+        recordsHistorian.updateContractNonces(contractID, nonce);
     }
 }

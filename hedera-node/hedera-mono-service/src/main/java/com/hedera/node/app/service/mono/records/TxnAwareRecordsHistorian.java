@@ -367,8 +367,12 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
     }
 
     @Override
-    public void setContractNonces(ContractID contractId, Long contractNonce) {
+    public void updateContractNonces(ContractID contractId, Long contractNonce) {
         contractNonces.put(contractId, contractNonce);
+    }
+
+    public void setContractNonces(Map<ContractID, Long> contractNonces) {
+        this.contractNonces = contractNonces;
     }
 
     @VisibleForTesting

@@ -132,7 +132,7 @@ public class MockRecordsHistorian implements RecordsHistorian {
     }
 
     @Override
-    public void setContractNonces(ContractID contractId, Long contractNonce) {
+    public void updateContractNonces(ContractID contractId, Long contractNonce) {
         // No-op
     }
 

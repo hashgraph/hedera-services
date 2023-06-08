@@ -185,7 +185,7 @@ public interface RecordsHistorian {
      */
     void customizeSuccessor(Predicate<InProgressChildRecord> matcher, Consumer<InProgressChildRecord> customizer);
 
-    void setContractNonces(ContractID contractId, Long contractNonce);
+    void updateContractNonces(ContractID contractId, Long contractNonce);
 
     /**
      * Convenience method to get the {@link RunningHash} of the last record saved in this

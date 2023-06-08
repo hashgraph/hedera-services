@@ -368,11 +368,10 @@ public class EvmFnResult implements SelfSerializable {
         }
         if (!contractNonces.isEmpty()) {
             for (final var contractNonce : contractNonces.entrySet()) {
-                ContractNonceInfo contractNonceInfo = ContractNonceInfo.newBuilder()
+                grpc.addContractNonces(ContractNonceInfo.newBuilder()
                         .setContractId(contractNonce.getKey())
                         .setNonce(contractNonce.getValue())
-                        .build();
-                grpc.addContractNonces(contractNonceInfo);
+                        .build());
             }
         }
         if (evmAddress.length > 0) {

@@ -20,6 +20,8 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.TxnUtils.assertExhaustsResourceLimit;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
@@ -45,21 +47,25 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.stream.RecordStreamObject;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -73,8 +79,16 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.RunningHash;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.log.Log;
+import org.hyperledger.besu.evm.log.LogTopic;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -110,6 +124,31 @@ class TxnAwareRecordsHistorianTest {
             .setReceipt(TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build());
     private final ExpirableTxnRecord.Builder jFinalRecord = finalRecord;
     private final ExpirableTxnRecord payerRecord = finalRecord.build();
+    private static final Map<ContractID, Long> contractNonces = new HashMap<>() {
+        {
+            put(
+                    ContractID.newBuilder()
+                            .setShardNum(2L)
+                            .setRealmNum(3L)
+                            .setContractNum(4L)
+                            .build(),
+                    1L);
+            put(
+                    ContractID.newBuilder()
+                            .setShardNum(3L)
+                            .setRealmNum(4L)
+                            .setContractNum(5L)
+                            .build(),
+                    2L);
+            put(
+                    ContractID.newBuilder()
+                            .setShardNum(4L)
+                            .setRealmNum(5L)
+                            .setContractNum(6L)
+                            .build(),
+                    3L);
+        }
+    };
 
     {
         payerRecord.setExpiry(payerExpiry);
@@ -149,6 +188,7 @@ class TxnAwareRecordsHistorianTest {
         subject = new TxnAwareRecordsHistorian(
                 recordCache, txnCtx, consensusTimeTracker, dynamicProperties, handleThrottling);
         subject.setCreator(creator);
+        subject.setContractNonces(contractNonces);
     }
 
     @Test
@@ -572,6 +612,59 @@ class TxnAwareRecordsHistorianTest {
         verify(mockRecordBuilder, times(4)).revert();
     }
 
+    @Test
+    void constructsTopLevelAsExpectedWithContractsNoncesFromCreate() {
+        constructsTopLevelAsExpectedWithContractsNoncesTemplate(ContractCreate);
+    }
+
+    @Test
+    void constructsTopLevelAsExpectedWithContractsNoncesFromCall() {
+        constructsTopLevelAsExpectedWithContractsNoncesTemplate(ContractCall);
+    }
+
+    void constructsTopLevelAsExpectedWithContractsNoncesTemplate(HederaFunctionality funcName) {
+        givenTopLevelContext();
+        given(dynamicProperties.isContractsNoncesExternalizationEnabled()).willReturn(true);
+
+        final var topLevelRecord = contractCreateAndCallResult();
+
+        given(txnCtx.recordSoFar()).willReturn(topLevelRecord);
+        given(creator.saveExpiringRecord(effPayer, topLevelRecord.build(), nows, submittingMember))
+                .willReturn(topLevelRecord.build());
+
+        final var mockTxn = Transaction.getDefaultInstance();
+        given(accessor.getSignedTxnWrapper()).willReturn(mockTxn);
+
+        if (funcName.equals(ContractCreate)) {
+            given(accessor.getFunction()).willReturn(ContractCreate);
+        } else if (funcName.equals(ContractCall)) {
+            given(accessor.getFunction()).willReturn(ContractCall);
+        }
+
+        final var builtFinal = topLevelRecord.build();
+
+        subject.saveExpirableTransactionRecords();
+
+        verify(txnCtx).recordSoFar();
+        verify(recordCache)
+                .setPostConsensus(
+                        txnIdA, ResponseCodeEnum.valueOf(builtFinal.getReceipt().getStatus()), topLevelRecord.build());
+        verify(creator).saveExpiringRecord(effPayer, builtFinal, nows, submittingMember);
+        verify(consensusTimeTracker).setActualFollowingRecordsCount(0L);
+        // and:
+        final var topLevelRso = subject.getTopLevelRecord();
+        final var topLevel = topLevelRso.getExpirableTransactionRecord();
+        assertEquals(builtFinal, topLevel);
+        assertSame(mockTxn, topLevelRso.getTransaction());
+        assertEquals(topLevelNow, topLevelRso.getTimestamp());
+
+        if (funcName.equals(ContractCreate)) {
+            assertEquals(topLevelRecord.getContractCreateResult().getContractNonces(), contractNonces);
+        } else if (funcName.equals(ContractCall)) {
+            assertEquals(topLevelRecord.getContractCallResult().getContractNonces(), contractNonces);
+        }
+    }
+
     private void givenTopLevelContext() {
         givenTopLevelContextWith(txnIdA);
     }
@@ -601,5 +694,71 @@ class TxnAwareRecordsHistorianTest {
             final ExpirableTxnRecord.Builder builder, final TxnId expectedId, final byte[] expectedHash) {
         verify(builder).setTxnId(expectedId);
         verify(builder).setTxnHash(expectedHash);
+    }
+
+    private ExpirableTxnRecord.Builder contractCreateAndCallResult() {
+        final long gasUsed = 1_234;
+        final byte[] result = "abcdefgh".getBytes();
+
+        final byte[] evmAddress = Address.BLAKE2B_F_COMPRESSION.toArray();
+        final List<EntityId> createdContractIds =
+                List.of(new EntityId(2L, 3L, 4L), new EntityId(3L, 4L, 5L), new EntityId(4L, 5L, 6L));
+        final List<ContractID> grpcCreatedContractIds =
+                createdContractIds.stream().map(EntityId::toGrpcContractId).toList();
+
+        final Address recipient = EntityNum.fromLong(3L).toEvmAddress();
+
+        final var input = TransactionProcessingResult.successful(
+                besuLogs,
+                gasUsed,
+                0,
+                0,
+                Bytes.wrap(result),
+                recipient,
+                Collections.emptyMap(),
+                Collections.emptyList());
+        input.setCreatedContracts(grpcCreatedContractIds);
+
+        return ExpirableTxnRecord.newBuilder()
+                .setTxnId(TxnId.fromGrpc(txnIdA))
+                .setHbarAdjustments(initialTransfers)
+                .setMemo("This is different!")
+                .setContractCreateResult(EvmFnResult.fromCreate(input, evmAddress))
+                .setContractCallResult(EvmFnResult.fromCall(input))
+                .setReceipt(TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build());
+    }
+
+    private static final byte[][] topics = new byte[][] {
+        "alpha000000000000000000000000000".getBytes(),
+        "bravo000000000000000000000000000".getBytes(),
+        "charlie0000000000000000000000000".getBytes(),
+    };
+
+    private static final byte[][] otherTopics = new byte[][] {
+        "alpha999999999999999999999999999".getBytes(),
+        "bravo999999999999999999999999999".getBytes(),
+        "charlie9999999999999999999999999".getBytes(),
+    };
+
+    private static final byte[][] blooms = new byte[][] {
+        "tulip".getBytes(), "lily".getBytes(), "cynthia".getBytes(),
+    };
+
+    private static final byte[][] data = new byte[][] {
+        "one".getBytes(), "two".getBytes(), "three".getBytes(),
+    };
+    private static final Log aLog = besuLog(123L, data[0], topics);
+    private static final Log bLog = besuLog(456L, data[1], otherTopics);
+    private static final List<Log> besuLogs = List.of(aLog, bLog);
+
+    private static Log besuLog(final long num, byte[] data, byte[][] topics) {
+        final var logger = EntityNum.fromLong(num);
+        final var l = new Log(
+                logger.toEvmAddress(),
+                Bytes.wrap(data),
+                Arrays.stream(topics)
+                        .map(bytes -> LogTopic.of(Bytes.wrap(bytes)))
+                        .toList());
+        return l;
     }
 }
