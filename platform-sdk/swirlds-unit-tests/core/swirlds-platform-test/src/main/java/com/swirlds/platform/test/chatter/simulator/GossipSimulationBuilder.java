@@ -16,12 +16,19 @@
 
 package com.swirlds.platform.test.chatter.simulator;
 
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.platform.test.chatter.SimulatedChatter;
 import com.swirlds.platform.test.chatter.SimulatedChatterFactory;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
 
 /**
  * Configures and builds a {@link GossipSimulation}.
@@ -30,11 +37,11 @@ public class GossipSimulationBuilder {
     /**
      * Outgoing bandwidth values for individual nodes. Overrides the default.
      */
-    private final Map<Long, Long> outgoingBandwidthMap = new HashMap<>();
+    private final Map<NodeId, Long> outgoingBandwidthMap = new HashMap<>();
     /**
      * Incoming bandwidth values for individual nodes. Overrides the default.
      */
-    private final Map<Long, Long> incomingBandwidthMap = new HashMap<>();
+    private final Map<NodeId, Long> incomingBandwidthMap = new HashMap<>();
     /**
      * Latency between pairs of nodes. Overrides default.
      */
@@ -42,7 +49,7 @@ public class GossipSimulationBuilder {
     /**
      * The average event creation rate for individual nodes. Overrides the default.
      */
-    private final Map<Long, Double> averageEventsCreatedPerSecondMap = new HashMap<>();
+    private final Map<NodeId, Double> averageEventsCreatedPerSecondMap = new HashMap<>();
     /**
      * The probability that a message sent from a particular node to another will be dropped.
      * Overrides {@link #dropProbabilityDefault}
@@ -60,6 +67,10 @@ public class GossipSimulationBuilder {
      * The total number of nodes.
      */
     private int nodeCount = 4;
+    /**
+     * A random address book.
+     */
+    private AddressBook addressBook;
     /**
      * The default outgoing bandwidth of each node.
      */
@@ -133,8 +144,22 @@ public class GossipSimulationBuilder {
      *
      * @return the simulation
      */
+    @NonNull
     public GossipSimulation build() {
+        this.addressBook = new RandomAddressBookGenerator(new Random(seed))
+                .setSize(this.nodeCount)
+                .build();
         return new GossipSimulation(this);
+    }
+
+    /**
+     * Get the address book.  This value is null until build() is called.
+     *
+     * @return the address book. This value is null until build() is called.
+     */
+    @Nullable
+    public AddressBook getAddressBook() {
+        return addressBook;
     }
 
     /**
@@ -142,6 +167,7 @@ public class GossipSimulationBuilder {
      *
      * @return the time step
      */
+    @NonNull
     public Duration getTimeStep() {
         return timeStep;
     }
@@ -153,7 +179,8 @@ public class GossipSimulationBuilder {
      * 		the time step
      * @return this object
      */
-    public GossipSimulationBuilder setTimeStep(final Duration timeStep) {
+    public GossipSimulationBuilder setTimeStep(@NonNull final Duration timeStep) {
+        Objects.requireNonNull(timeStep, "timeStep must not be null");
         this.timeStep = timeStep;
         return this;
     }
@@ -174,6 +201,7 @@ public class GossipSimulationBuilder {
      * 		the total number of nodes
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setNodeCount(final int nodeCount) {
         this.nodeCount = nodeCount;
         return this;
@@ -186,6 +214,7 @@ public class GossipSimulationBuilder {
      * 		the default outgoing bandwidth
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setOutgoingBandwidthDefault(final int outgoingBandwidthDefault) {
         this.outgoingBandwidthDefault = outgoingBandwidthDefault;
         return this;
@@ -198,7 +227,7 @@ public class GossipSimulationBuilder {
      * 		the node ID in question
      * @return the outgoing bandwidth for the given node
      */
-    public long getOutgoingBandwidth(final Long nodeId) {
+    public long getOutgoingBandwidth(@Nullable final NodeId nodeId) {
         return outgoingBandwidthMap.getOrDefault(nodeId, outgoingBandwidthDefault);
     }
 
@@ -211,7 +240,9 @@ public class GossipSimulationBuilder {
      * 		the node's new bandwidth in bytes/second
      * @return this object
      */
-    public GossipSimulationBuilder setOutgoingBandwidth(final Long nodeId, final long outgoingBandwidth) {
+    @NonNull
+    public GossipSimulationBuilder setOutgoingBandwidth(@NonNull final NodeId nodeId, final long outgoingBandwidth) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         outgoingBandwidthMap.put(nodeId, outgoingBandwidth);
         return this;
     }
@@ -223,6 +254,7 @@ public class GossipSimulationBuilder {
      * 		bandwidth in bytes/second
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setIncomingBandwidthDefault(final long incomingBandwidthDefault) {
         this.incomingBandwidthDefault = incomingBandwidthDefault;
         return this;
@@ -235,7 +267,7 @@ public class GossipSimulationBuilder {
      * 		the destination node
      * @return the node's incoming bandwidth in bytes/second
      */
-    public long getIncomingBandwidth(final long nodeId) {
+    public long getIncomingBandwidth(@Nullable final NodeId nodeId) {
         return incomingBandwidthMap.getOrDefault(nodeId, incomingBandwidthDefault);
     }
 
@@ -248,7 +280,9 @@ public class GossipSimulationBuilder {
      * 		bandwidth in bytes/second
      * @return this object
      */
-    public GossipSimulationBuilder setIncomingBandwidth(final long nodeId, final long incomingBandwidth) {
+    @NonNull
+    public GossipSimulationBuilder setIncomingBandwidth(@NonNull final NodeId nodeId, final long incomingBandwidth) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         incomingBandwidthMap.put(nodeId, incomingBandwidth);
         return this;
     }
@@ -260,8 +294,9 @@ public class GossipSimulationBuilder {
      * 		the default value
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setAverageEventsCreatedPerSecondDefault(
-            final Double averageEventsCreatedPerSecondDefault) {
+            final double averageEventsCreatedPerSecondDefault) {
         this.averageEventsCreatedPerSecondDefault = averageEventsCreatedPerSecondDefault;
         return this;
     }
@@ -273,7 +308,7 @@ public class GossipSimulationBuilder {
      * 		the node in question
      * @return the average number of events created per second for a node
      */
-    public double getAverageEventsCreatedPerSecond(final long nodeId) {
+    public double getAverageEventsCreatedPerSecond(@Nullable final NodeId nodeId) {
         return averageEventsCreatedPerSecondMap.getOrDefault(nodeId, averageEventsCreatedPerSecondDefault);
     }
 
@@ -286,8 +321,10 @@ public class GossipSimulationBuilder {
      * 		the node's average number of events per second
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setAverageEventsCreatedPerSecond(
-            final long nodeId, final double averageEventsCreatedPerSecondAverage) {
+            @NonNull final NodeId nodeId, final double averageEventsCreatedPerSecondAverage) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         averageEventsCreatedPerSecondMap.put(nodeId, averageEventsCreatedPerSecondAverage);
         return this;
     }
@@ -308,6 +345,7 @@ public class GossipSimulationBuilder {
      * 		the average event size
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setAverageEventSizeInBytes(final double averageEventSizeInBytes) {
         this.averageEventSizeInBytes = averageEventSizeInBytes;
         return this;
@@ -329,6 +367,7 @@ public class GossipSimulationBuilder {
      * 		the standard deviation
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setEventSizeInBytesStandardDeviation(
             final double eventSizeInBytesStandardDeviation) {
         this.eventSizeInBytesStandardDeviation = eventSizeInBytesStandardDeviation;
@@ -351,6 +390,7 @@ public class GossipSimulationBuilder {
      * 		the seed
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setSeed(final long seed) {
         this.seed = seed;
         return this;
@@ -363,6 +403,7 @@ public class GossipSimulationBuilder {
      * 		the default latency
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setLatencyDefault(final Duration latencyDefault) {
         this.latencyDefault = latencyDefault;
         return this;
@@ -377,7 +418,10 @@ public class GossipSimulationBuilder {
      * 		the destination node for a message
      * @return the time required for a message to travel from the source to the destination
      */
-    public Duration getLatency(final Long source, final long destination) {
+    @NonNull
+    public Duration getLatency(@NonNull final NodeId source, @NonNull final NodeId destination) {
+        Objects.requireNonNull(source, "source must not be null");
+        Objects.requireNonNull(destination, "destination must not be null");
         return latencyMap.getOrDefault(new SourceDestinationPair(source, destination), latencyDefault);
     }
 
@@ -392,7 +436,11 @@ public class GossipSimulationBuilder {
      * 		the time required for a message to travel from the source to the destination
      * @return this object
      */
-    public GossipSimulationBuilder setLatency(final long source, final long destination, final Duration latency) {
+    @NonNull
+    public GossipSimulationBuilder setLatency(
+            @NonNull final NodeId source, @NonNull final NodeId destination, final Duration latency) {
+        Objects.requireNonNull(source, "source must not be null");
+        Objects.requireNonNull(destination, "destination must not be null");
         latencyMap.put(new SourceDestinationPair(source, destination), latency);
         return this;
     }
@@ -413,6 +461,7 @@ public class GossipSimulationBuilder {
      * 		true if debug mode should be enabled, false if it should be disabled
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setDebugEnabled(final boolean debugEnabled) {
         this.debugEnabled = debugEnabled;
         return this;
@@ -435,6 +484,7 @@ public class GossipSimulationBuilder {
      * 		the queue size
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setIncomingMessageQueueSize(final int incomingMessageQueueSize) {
         this.incomingMessageQueueSize = incomingMessageQueueSize;
         return this;
@@ -456,6 +506,7 @@ public class GossipSimulationBuilder {
      * 		true if CSV generation is enabled
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setCSVGenerationEnabled(final boolean csvGenerationEnabled) {
         this.csvGenerationEnabled = csvGenerationEnabled;
         return this;
@@ -466,6 +517,7 @@ public class GossipSimulationBuilder {
      *
      * @return the CSV file
      */
+    @NonNull
     public File getCSVFile() {
         return csvFile;
     }
@@ -477,8 +529,9 @@ public class GossipSimulationBuilder {
      * 		the CSV file
      * @return this object
      */
-    public GossipSimulationBuilder setCSVFile(final File csvFile) {
-        this.csvFile = csvFile;
+    @NonNull
+    public GossipSimulationBuilder setCSVFile(@NonNull final File csvFile) {
+        this.csvFile = Objects.requireNonNull(csvFile, "csvFile must not be null");
         return this;
     }
 
@@ -487,6 +540,7 @@ public class GossipSimulationBuilder {
      *
      * @return the period between time reports, if null then time is never reported
      */
+    @NonNull
     public Duration getTimeReportPeriod() {
         return timeReportPeriod;
     }
@@ -498,8 +552,9 @@ public class GossipSimulationBuilder {
      * 		the period between time reports, if null then time is never reported
      * @return this object
      */
-    public GossipSimulationBuilder setTimeReportPeriod(final Duration timeReportPeriod) {
-        this.timeReportPeriod = timeReportPeriod;
+    @NonNull
+    public GossipSimulationBuilder setTimeReportPeriod(@NonNull final Duration timeReportPeriod) {
+        this.timeReportPeriod = Objects.requireNonNull(timeReportPeriod, "timeReportPeriod must not be null");
         return this;
     }
 
@@ -510,6 +565,7 @@ public class GossipSimulationBuilder {
      * 		a probability as a fraction of 1.0
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setDropProbabilityDefault(final double dropProbabilityDefault) {
         this.dropProbabilityDefault = dropProbabilityDefault;
         return this;
@@ -526,8 +582,11 @@ public class GossipSimulationBuilder {
      * 		a probability as a fraction of 1.0
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setDropProbability(
-            final long source, final long destination, final double dropProbability) {
+            @NonNull final NodeId source, @NonNull final NodeId destination, final double dropProbability) {
+        Objects.requireNonNull(source, "source must not be null");
+        Objects.requireNonNull(destination, "destination must not be null");
         dropProbabilityMap.put(new SourceDestinationPair(source, destination), dropProbability);
         return this;
     }
@@ -541,7 +600,9 @@ public class GossipSimulationBuilder {
      * 		the receiving node
      * @return a probability as a fraction of 1.0
      */
-    public double getDropProbability(final long source, final long destination) {
+    public double getDropProbability(@NonNull final NodeId source, @NonNull final NodeId destination) {
+        Objects.requireNonNull(source, "source must not be null");
+        Objects.requireNonNull(destination, "destination must not be null");
         return dropProbabilityMap.getOrDefault(new SourceDestinationPair(source, destination), dropProbabilityDefault);
     }
 
@@ -561,6 +622,7 @@ public class GossipSimulationBuilder {
      * 		the thread count
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setThreadCount(final int threadCount) {
         this.threadCount = threadCount;
         return this;
@@ -573,6 +635,7 @@ public class GossipSimulationBuilder {
      * 		true = connected, false = disconnected
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setConnectionStatusDefault(final boolean connectionStatusDefault) {
         this.connectionStatusDefault = connectionStatusDefault;
         return this;
@@ -589,9 +652,11 @@ public class GossipSimulationBuilder {
      * 		true if the source can send a message to the destination
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setConnectionStatus(
-            final long source, final long destination, final boolean connectionStatus) {
-
+            @NonNull final NodeId source, @NonNull final NodeId destination, final boolean connectionStatus) {
+        Objects.requireNonNull(source, "source must not be null");
+        Objects.requireNonNull(destination, "destination must not be null");
         connectionStatusMap.put(new SourceDestinationPair(source, destination), connectionStatus);
         return this;
     }
@@ -605,7 +670,9 @@ public class GossipSimulationBuilder {
      * 		the destination of messages
      * @return true = connected, false = disconnected
      */
-    public boolean getConnectionStatus(final long source, final long destination) {
+    public boolean getConnectionStatus(@NonNull final NodeId source, @NonNull final NodeId destination) {
+        Objects.requireNonNull(source, "source must not be null");
+        Objects.requireNonNull(destination, "destination must not be null");
         return connectionStatusMap.getOrDefault(
                 new SourceDestinationPair(source, destination), connectionStatusDefault);
     }
@@ -613,6 +680,7 @@ public class GossipSimulationBuilder {
     /**
      * @return factory for constructing {@link SimulatedChatter} instances
      */
+    @NonNull
     public SimulatedChatterFactory getChatterFactory() {
         return chatterFactory;
     }
@@ -622,8 +690,9 @@ public class GossipSimulationBuilder {
      * 		factory for constructing {@link SimulatedChatter} instances
      * @return this object
      */
-    public GossipSimulationBuilder setChatterFactory(SimulatedChatterFactory chatterFactory) {
-        this.chatterFactory = chatterFactory;
+    @NonNull
+    public GossipSimulationBuilder setChatterFactory(@NonNull final SimulatedChatterFactory chatterFactory) {
+        this.chatterFactory = Objects.requireNonNull(chatterFactory, "chatterFactory must not be null");
         return this;
     }
 
@@ -639,6 +708,7 @@ public class GossipSimulationBuilder {
      * 		whether to run the simulation in a single thread
      * @return this object
      */
+    @NonNull
     public GossipSimulationBuilder setSingleThreaded(boolean singleThreaded) {
         this.singleThreaded = singleThreaded;
         return this;

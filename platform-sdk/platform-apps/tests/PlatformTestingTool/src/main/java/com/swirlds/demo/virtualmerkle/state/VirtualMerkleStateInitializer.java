@@ -69,8 +69,8 @@ public final class VirtualMerkleStateInitializer {
     public static void initStateChildren(
             Platform platform, final long nodeId, final VirtualMerkleConfig virtualMerkleConfig) {
 
-        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper = UnsafeMutablePTTStateAccessor.getInstance()
-                .getUnsafeMutableState(platform.getSelfId().id())) {
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
 
             final Path pathToJasperDBStorageDir =
                     Path.of(virtualMerkleConfig.getJasperDBStoragePath(), Long.toString(nodeId));

@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.test.handlers.TokenHandlerTestBase;
+import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
 import java.util.Collections;
 import java.util.Set;
 import org.junit.jupiter.api.Test;

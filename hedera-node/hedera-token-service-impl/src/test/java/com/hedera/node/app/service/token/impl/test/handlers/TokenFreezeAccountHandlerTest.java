@@ -50,6 +50,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenFreezeAccountHandler;
+import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -279,7 +280,8 @@ class TokenFreezeAccountHandlerTest {
         }
 
         private ReadableTokenStore.TokenMetadata tokenMetaWithFreezeKey(Key freezeKey) {
-            return new ReadableTokenStore.TokenMetadata(null, null, null, freezeKey, null, null, null, false, 25L);
+            return new ReadableTokenStore.TokenMetadata(
+                    null, null, null, freezeKey, null, null, null, null, false, 25L, 2);
         }
 
         private TransactionBody newFreezeTxn(TokenID token) {

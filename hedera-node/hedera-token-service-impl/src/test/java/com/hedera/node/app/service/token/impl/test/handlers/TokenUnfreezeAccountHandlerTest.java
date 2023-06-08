@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.txnFrom;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.txnFrom;
 import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicContextAssertions;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
@@ -274,7 +274,8 @@ class TokenUnfreezeAccountHandlerTest {
         }
 
         private ReadableTokenStore.TokenMetadata tokenMetaWithFreezeKey(Key freezeKey) {
-            return new ReadableTokenStore.TokenMetadata(null, null, null, freezeKey, null, null, null, false, 25L);
+            return new ReadableTokenStore.TokenMetadata(
+                    null, null, null, freezeKey, null, null, null, null, false, 25L, 2);
         }
 
         private TransactionBody newUnfreezeTxn(TokenID token) {

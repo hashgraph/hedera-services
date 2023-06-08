@@ -61,6 +61,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
+import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -331,7 +332,6 @@ class TokenAssociateToAccountHandlerTest {
                     .headTokenNumber(KNOWN_TOKEN_WITH_WIPE.getTokenNum())
                     .build());
 
-            writableAccountStore.commit();
             // put the pre-existing token rels into the rel store
             writableTokenRelStore.put(TokenRelation.newBuilder()
                     .accountNumber(newAcctNum)
@@ -345,7 +345,7 @@ class TokenAssociateToAccountHandlerTest {
                     .previousToken(KNOWN_TOKEN_WITH_WIPE.getTokenNum())
                     .balance(200)
                     .build());
-            writableTokenRelStore.commit();
+
             final var txn = TransactionBody.newBuilder()
                     .transactionID(
                             TransactionID.newBuilder().accountID(ACCOUNT_888).build())
@@ -432,7 +432,6 @@ class TokenAssociateToAccountHandlerTest {
                     .accountNumber(newAcctNum)
                     .headTokenNumber(TOKEN_300.tokenNum())
                     .build());
-            writableAccountStore.commit();
 
             final var txn = TransactionBody.newBuilder()
                     .transactionID(

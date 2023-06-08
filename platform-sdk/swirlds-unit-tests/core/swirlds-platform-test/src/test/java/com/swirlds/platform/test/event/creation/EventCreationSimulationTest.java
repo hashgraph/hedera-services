@@ -18,7 +18,6 @@ package com.swirlds.platform.test.event.creation;
 
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.FakeTime;
@@ -33,12 +32,10 @@ import com.swirlds.platform.test.simulated.config.NodeConfig;
 import com.swirlds.platform.test.simulated.config.NodeConfigBuilder;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -104,19 +101,17 @@ public class EventCreationSimulationTest {
     void simulateEventCreation(final EventCreationSimulationParams params) {
         final Random random = new Random(params.seed());
 
+        final Map<NodeId, NodeConfig> nodeConfigs = params.nodeConfigs();
+
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(params.numNodes())
+                .setNodeIds(nodeConfigs.keySet())
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
-                .setSequentialIds(true)
+                .setSequentialIds(false)
                 .build();
+
         final FakeTime time = new FakeTime();
         final TestIntake consensus = new TestIntake(addressBook, time);
-        final Set<NodeId> nodeIds = new HashSet<>(params.numNodes());
-        for (final Address address : addressBook) {
-            nodeIds.add(address.getNodeId());
-        }
-        final NetworkLatency latency = NetworkLatency.randomLatency(nodeIds, params.maxDelay(), random);
-        Map<NodeId, NodeConfig> nodeConfigs = params.nodeConfigs();
+        final NetworkLatency latency = NetworkLatency.randomLatency(nodeConfigs.keySet(), params.maxDelay(), random);
         for (final Entry<NodeId, NodeConfig> entry : nodeConfigs.entrySet()) {
             final NodeConfig nodeConfig = entry.getValue();
             if (!nodeConfig.customLatency().isZero()) {
@@ -126,18 +121,16 @@ public class EventCreationSimulationTest {
         final SimpleSimulatedGossip gossip = new SimpleSimulatedGossip(params.numNodes(), latency, time);
 
         final List<SimulatedEventCreationNode> nodes = new ArrayList<>();
-        int i = 0;
-        for (NodeConfig nodeConfig : params.nodeConfigs().values()) {
-            final NodeId selfId = new NodeId(i++);
+        for (final Entry<NodeId, NodeConfig> entry : nodeConfigs.entrySet()) {
             final SimulatedEventCreationNode node = new SimulatedEventCreationNode(
                     new BasicSoftwareVersion(1),
                     random,
                     time,
                     addressBook,
-                    List.of(e -> gossip.gossipPayload(GossipMessage.toAll(e, selfId)), consensus::addEvent),
-                    selfId,
+                    List.of(e -> gossip.gossipPayload(GossipMessage.toAll(e, entry.getKey())), consensus::addEvent),
+                    entry.getKey(),
                     h -> consensus.getShadowGraph().getEvent(h),
-                    nodeConfig);
+                    entry.getValue());
             nodes.add(node);
             gossip.setNode(node);
         }
