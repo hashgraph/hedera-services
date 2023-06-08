@@ -1,5 +1,4 @@
 module com.hedera.node.app.service.contract.impl.test {
-    requires com.hedera.hashgraph.protobuf.java.api;
     requires com.hedera.node.app.service.contract.impl;
     requires com.hedera.node.app.service.mono.test.fixtures;
     requires com.hedera.node.app.service.mono;

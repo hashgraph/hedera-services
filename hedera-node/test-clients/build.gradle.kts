@@ -26,10 +26,9 @@ description = "Hedera Services Test Clients for End to End Tests (EET)"
 tasks.jar { manifest { attributes("Automatic-Module-Name" to "com.hedera.node.app.testclient") } }
 
 tasks.test {
-    // Disable these EET tests from being executed as part of the gradle "test" task. We should
-    // maybe
-    // remove them
-    // from src/test into src/eet, so it can be part of an eet test task instead. See issue #3412
+    // Disable these EET tests from being executed as part of the gradle "test" task.
+    // We should maybe remove them from src/test into src/eet,
+    // so it can be part of an eet test task instead. See issue #3412
     // (https://github.com/hashgraph/hedera-services/issues/3412).
     exclude("**/*")
 }
@@ -49,7 +48,7 @@ dependencies {
         api(gav("com.fasterxml.jackson.annotation"))
         api(gav("com.google.common"))
         api(gav("com.google.protobuf"))
-        api(gav("com.hedera.hashgraph.protobuf.java.api"))
+        api(project(":hedera-node:node-hapi"))
         api(gav("com.swirlds.common"))
         api(gav("headlong"))
         api(gav("info.picocli"))
@@ -84,7 +83,7 @@ dependencies {
         itestImplementation(project(path))
         itestImplementation(gav("org.testcontainers"))
         itestImplementation(gav("org.testcontainers.junit.jupiter"))
-        itestImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
+        itestImplementation(project(":hedera-node:node-hapi"))
         itestImplementation(gav("org.junit.jupiter.api"))
 
         eetImplementation(project(path))

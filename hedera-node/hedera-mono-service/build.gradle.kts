@@ -46,7 +46,7 @@ dependencies {
         jmhImplementation(gav("com.github.spotbugs.annotations"))
         jmhImplementation(gav("com.google.common"))
         jmhImplementation(gav("com.google.protobuf"))
-        jmhImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
+        jmhImplementation(project(":hedera-node:node-hapi"))
         jmhImplementation(gav("com.swirlds.common"))
         jmhImplementation(gav("com.swirlds.fcqueue"))
         jmhImplementation(gav("com.swirlds.jasperdb"))
@@ -83,7 +83,7 @@ tasks.processResources {
     filesMatching("semantic-version.properties") {
         filter { line: String ->
             if (line.contains("hapi-proto.version")) {
-                "hapi.proto.version=" + libs.versions.com.hedera.hashgraph.protobuf.java.api.get()
+                "hapi.proto.version=" + libs.versions.hapi.proto.get()
             } else if (line.contains("project.version")) {
                 "hedera.services.version=" + project.version
             } else {

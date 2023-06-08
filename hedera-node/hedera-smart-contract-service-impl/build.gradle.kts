@@ -19,12 +19,11 @@ plugins { id("com.hedera.hashgraph.conventions") }
 description = "Default Hedera Smart Contract Service Implementation"
 
 dependencies {
-    testImplementation(project(mapOf("path" to ":hedera-node:node-config")))
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
-
         testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
         testImplementation(testFixtures(project(":hedera-node:node-config")))
+
         testRuntimeOnly(gav("org.mockito.inline"))
     }
 }
@@ -35,5 +34,6 @@ dependencyAnalysis.issues {
     onUnusedDependencies {
         exclude(":hedera-node:node-app-service-mono")
         exclude(":hedera-node:node-app-service-token")
+        exclude("org.apache.tuweni:tuweni-units")
     }
 }

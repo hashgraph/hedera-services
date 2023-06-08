@@ -29,7 +29,6 @@ dependencies {
         testImplementation(project(":hedera-node:node-app-service-consensus-impl"))
         testImplementation(project(":hedera-node:node-app-service-token"))
         testImplementation(gav("com.google.protobuf"))
-        testImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
         testImplementation(gav("com.swirlds.common"))
         testImplementation(gav("org.assertj.core"))
         testImplementation(gav("org.junit.jupiter.api"))

@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.conventions")
-    alias(libs.plugins.pbj)
+    id("com.hedera.hashgraph.hapi")
+    @Suppress("DSL_SCOPE_VIOLATION") alias(libs.plugins.pbj)
     `java-test-fixtures`
 }
 
@@ -24,12 +24,9 @@ description = "Hedera API"
 
 dependencies {
     javaModuleDependencies {
-        testImplementation(gav("com.google.protobuf"))
         // we depend on the protoc compiled hapi during test as we test our pbj generated code
-        // against
-        // it to make sure it is compatible
+        // against it to make sure it is compatible
         testImplementation(gav("com.google.protobuf.util"))
-        testImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
         testImplementation(gav("org.junit.jupiter.api"))
         testImplementation(gav("org.junit.jupiter.params"))
     }
@@ -39,6 +36,10 @@ dependencies {
 sourceSets {
     main {
         pbj {
+            srcDir("hedera-protobufs/services")
+            srcDir("hedera-protobufs/streams")
+        }
+        proto {
             srcDir("hedera-protobufs/services")
             srcDir("hedera-protobufs/streams")
         }
@@ -53,14 +54,20 @@ tasks.withType<Test>().configureEach {
     systemProperties["junit.jupiter.execution.parallel.mode.default"] = "concurrent"
     // limit amount of threads, so we do not use all CPU
     systemProperties["junit.jupiter.execution.parallel.config.dynamic.factor"] = "0.9"
-    // us parallel GC to keep up with high temporary garbage creation, and allow GC to use 40% of
-    // CPU
-    // if needed
+    // us parallel GC to keep up with high temporary garbage creation,
+    // and allow GC to use 40% of CPU if needed
     jvmArgs("-XX:+UseParallelGC", "-XX:GCTimeRatio=90")
     // Some also need more memory
     minHeapSize = "512m"
     maxHeapSize = "4096m"
 }
 
-// Add "hedera-protobufs" repository to clean task
-tasks.named("clean") { doLast { delete(projectDir.absolutePath + "hedera-protobufs") } }
+tasks.withType<com.hedera.pbj.compiler.PbjCompilerTask> {
+    doFirst {
+        // Clean output directories before generating new code
+        // TODO move this into
+        // 'pbj-core/pbj-compiler/src/main/java/com/hedera/pbj/compiler/PbjCompilerTask.java'
+        delete(javaMainOutputDirectory)
+        delete(javaTestOutputDirectory)
+    }
+}
