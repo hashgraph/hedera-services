@@ -35,10 +35,18 @@ import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Arrays;
+import java.util.List;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 
 class JKeyTest {
+    @Test
+    void onlyEmptyKeyListSignalsImmutableEntity() {
+        final var cryptoKey = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+        assertFalse(JKey.denotesImmutableEntity(cryptoKey));
+        assertFalse(JKey.denotesImmutableEntity(new JKeyList(List.of(cryptoKey))));
+        assertTrue(JKey.denotesImmutableEntity(new JKeyList(List.of())));
+    }
 
     @Test
     void positiveConvertKeyTest() {

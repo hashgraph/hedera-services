@@ -54,6 +54,9 @@ public class HgcaaLogValidator {
 
         private static final List<List<String>> PROBLEM_PATTERNS_TO_IGNORE = List.of(
                 List.of("active throttles, but", "Not performing a reset!"),
+                List.of(
+                        "Could not start Helidon gRPC with TLS support on port",
+                        "Resource on path: /opt/hedera/services/hedera.crt does not exist"),
                 List.of("Specified TLS cert 'hedera.crt' doesn't exist!"),
                 List.of("Could not start Netty with TLS support on port 50212"),
                 List.of("CryptoTransfer throughput congestion has no throttle buckets"),

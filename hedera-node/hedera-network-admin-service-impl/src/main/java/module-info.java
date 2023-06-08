@@ -11,7 +11,11 @@ module com.hedera.node.app.service.network.admin.impl {
     requires transitive com.swirlds.config;
     requires transitive dagger;
     requires transitive javax.inject;
+    requires com.hedera.node.app.service.evm;
+    requires com.hedera.node.app.service.token;
+    requires com.hedera.node.config;
     requires com.github.spotbugs.annotations;
+    requires com.google.common;
     requires org.apache.logging.log4j;
 
     provides com.hedera.node.app.service.networkadmin.FreezeService with

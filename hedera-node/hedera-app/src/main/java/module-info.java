@@ -1,5 +1,4 @@
 module com.hedera.node.app {
-    requires transitive com.hedera.hashgraph.protobuf.java.api;
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.consensus.impl;
     requires transitive com.hedera.node.app.service.consensus;

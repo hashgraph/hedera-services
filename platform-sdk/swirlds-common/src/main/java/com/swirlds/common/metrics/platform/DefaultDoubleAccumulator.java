@@ -20,8 +20,12 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.metrics.DoubleAccumulator;
+import com.swirlds.common.metrics.atomic.AtomicDouble;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.function.DoubleBinaryOperator;
+import java.util.function.DoubleSupplier;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -29,14 +33,18 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  */
 public class DefaultDoubleAccumulator extends DefaultMetric implements DoubleAccumulator {
 
-    private final java.util.concurrent.atomic.DoubleAccumulator container;
-    private final double initialValue;
+    private final AtomicDouble container;
+    private final DoubleBinaryOperator accumulator;
+    private final DoubleSupplier initializer;
 
-    public DefaultDoubleAccumulator(final Config config) {
+    public DefaultDoubleAccumulator(@NonNull final Config config) {
         super(config);
-        this.container =
-                new java.util.concurrent.atomic.DoubleAccumulator(config.getAccumulator(), config.getInitialValue());
-        this.initialValue = config.getInitialValue();
+        final double initialValue = config.getInitialValue();
+        final DoubleSupplier configInitializer = config.getInitializer();
+
+        this.accumulator = config.getAccumulator();
+        this.initializer = configInitializer != null ? configInitializer : () -> initialValue;
+        this.container = new AtomicDouble(this.initializer.getAsDouble());
     }
 
     /**
@@ -44,7 +52,7 @@ public class DefaultDoubleAccumulator extends DefaultMetric implements DoubleAcc
      */
     @Override
     public double getInitialValue() {
-        return initialValue;
+        return initializer.getAsDouble();
     }
 
     /**
@@ -52,7 +60,7 @@ public class DefaultDoubleAccumulator extends DefaultMetric implements DoubleAcc
      */
     @Override
     public List<SnapshotEntry> takeSnapshot() {
-        return List.of(new SnapshotEntry(VALUE, container.getThenReset()));
+        return List.of(new SnapshotEntry(VALUE, container.getAndSet(initializer.getAsDouble())));
     }
 
     /**
@@ -68,7 +76,12 @@ public class DefaultDoubleAccumulator extends DefaultMetric implements DoubleAcc
      */
     @Override
     public void update(final double other) {
-        container.accumulate(other);
+        container.accumulateAndGet(other, accumulator);
+    }
+
+    @Override
+    public void reset() {
+        container.set(initializer.getAsDouble());
     }
 
     /**
@@ -78,7 +91,6 @@ public class DefaultDoubleAccumulator extends DefaultMetric implements DoubleAcc
     public String toString() {
         return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                 .appendSuper(super.toString())
-                .append("initialValue", initialValue)
                 .append("value", get())
                 .toString();
     }
