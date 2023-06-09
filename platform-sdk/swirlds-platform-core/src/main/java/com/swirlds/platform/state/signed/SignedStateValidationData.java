@@ -24,19 +24,24 @@ import java.time.Instant;
 
 /**
  * Basic record object to carry information useful for signed state validation.
- * @param round the minimum round to be considered a valid state
- * @param numberOfConsensusEvents the count of all consensus events in history from an earlier state
- * @param consensusTimestamp The consensus timestamp from an earlier state
- * @param lastTransactionTimestamp The last transaction timestamp from an earlier state
- * @param addressBookHash The address book hash value for the current address book (mostly used for diagnostics).
- * @param consensusEventsRunningHash The running hash of the consensus event hashes throughout history
- * @param epochHash The epoch hash from an earlier state.
+ *
+ * @param round
+ * 		the minimum round to be considered a valid state
+ * @param numberOfConsensusEvents
+ * 		the count of all consensus events in history from an earlier state
+ * @param consensusTimestamp
+ * 		The consensus timestamp from an earlier state
+ * @param addressBookHash
+ * 		The address book hash value for the current address book (mostly used for diagnostics).
+ * @param consensusEventsRunningHash
+ * 		The running hash of the consensus event hashes throughout history
+ * @param epochHash
+ * 		The epoch hash from an earlier state.
  */
 public record SignedStateValidationData(
         long round,
         long numberOfConsensusEvents,
         Instant consensusTimestamp,
-        Instant lastTransactionTimestamp,
         Hash addressBookHash,
         Hash consensusEventsRunningHash,
         Hash epochHash) {
@@ -46,7 +51,6 @@ public record SignedStateValidationData(
                 that.getRound(),
                 that.getNumEventsCons(),
                 that.getConsensusTimestamp(),
-                that.getLastTransactionTimestamp(),
                 addressBook == null ? null : addressBook.getHash(),
                 that.getHashEventsCons(),
                 that.getEpochHash());
@@ -68,8 +72,6 @@ public record SignedStateValidationData(
                 .append(numberOfConsensusEvents)
                 .append(", consensus timestamp = ")
                 .append(consensusTimestamp)
-                .append(", last timestamp = ")
-                .append(lastTransactionTimestamp)
                 .append(", consensus Events running hash = ")
                 .append(consensusEventsRunningHash)
                 .append(", address book hash = ")

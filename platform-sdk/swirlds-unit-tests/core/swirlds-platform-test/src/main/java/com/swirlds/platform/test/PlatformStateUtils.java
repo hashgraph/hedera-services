@@ -60,8 +60,6 @@ public final class PlatformStateUtils {
         platformData.setConsensusTimestamp(randomInstant(random));
         platformData.setMinGenInfo(List.of());
 
-        platformState.getPlatformData().setLastTransactionTimestamp(randomInstant(random));
-
         final List<MinGenInfo> minGenInfo = new LinkedList<>();
         for (int index = 0; index < 10; index++) {
             minGenInfo.add(new MinGenInfo(random.nextLong(), random.nextLong()));

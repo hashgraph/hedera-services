@@ -468,15 +468,6 @@ public class SignedState implements SignedStateInfo {
     }
 
     /**
-     * Get the timestamp of the last transaction added to this state.
-     *
-     * @return the timestamp of the last transaction added to this state
-     */
-    public @NonNull Instant getLastTransactionTimestamp() {
-        return state.getPlatformState().getPlatformData().getLastTransactionTimestamp();
-    }
-
-    /**
      * Check if this is a state that needs to be eventually written to disk.
      *
      * @return true if this state eventually needs to be written to disk

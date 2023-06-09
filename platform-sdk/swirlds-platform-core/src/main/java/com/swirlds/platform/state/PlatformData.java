@@ -49,7 +49,12 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         public static final int ORIGINAL = 1;
         public static final int EPOCH_HASH = 2;
         public static final int ROUNDS_NON_ANCIENT = 3;
-        /** events and mingen are no longer part of the state, restart/reconnect now uses a snapshot */
+        /**
+         * - Events are no longer serialized, the field is kept for migration purposes
+         * - Mingen is no longer stored directly, its part of the snapshot
+         * - restart/reconnect now uses a snapshot
+         * - lastTransactionTimestamp is no longer stored directly, its part of the snapshot
+         * */
         public static final int CONSENSUS_SNAPSHOT = 4;
     }
 
@@ -87,12 +92,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * the minimum generation of famous witnesses per round
      */
     private List<MinGenInfo> minGenInfo;
-
-    /**
-     * the timestamp of the last transactions handled by this state
-     */
-    // TODO this seems unused, should be removed
-    private Instant lastTransactionTimestamp;
 
     /**
      * The version of the application software that was responsible for creating this state.
@@ -136,7 +135,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         if (that.minGenInfo != null) {
             this.minGenInfo = new ArrayList<>(that.minGenInfo);
         }
-        this.lastTransactionTimestamp = that.lastTransactionTimestamp;
         this.epochHash = that.epochHash;
         this.nextEpochHash = that.nextEpochHash;
         this.roundsNonAncient = that.roundsNonAncient;
@@ -177,7 +175,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
 
         out.writeInstant(consensusTimestamp);
 
-        out.writeInstant(lastTransactionTimestamp);
         out.writeSerializable(creationSoftwareVersion, true);
         out.writeSerializable(epochHash, false);
         out.writeInt(roundsNonAncient);
@@ -212,9 +209,11 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
             for (int i = 0; i < minGenInfoSize; i++) {
                 minGenInfo.add(new MinGenInfo(in.readLong(), in.readLong()));
             }
+
+            // previously this was the last transaction timestamp
+            in.readInstant();
         }
 
-        lastTransactionTimestamp = in.readInstant();
         creationSoftwareVersion = in.readSerializable();
 
         if (version >= ClassVersion.EPOCH_HASH) {
@@ -411,26 +410,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Get the timestamp of the last transaction that was applied during this round.
-     *
-     * @return a timestamp
-     */
-    public Instant getLastTransactionTimestamp() {
-        return lastTransactionTimestamp;
-    }
-
-    /**
-     * Set the timestamp of the last transaction that was applied during this round.
-     *
-     * @param lastTransactionTimestamp a timestamp
-     * @return this object
-     */
-    public PlatformData setLastTransactionTimestamp(final Instant lastTransactionTimestamp) {
-        this.lastTransactionTimestamp = lastTransactionTimestamp;
-        return this;
-    }
-
-    /**
      * Sets the epoch hash of this state.
      *
      * @param epochHash the epoch hash of this state
@@ -517,8 +496,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
                 .append(getNumEventsCons())
                 .append(", consensus timestamp = ")
                 .append(getConsensusTimestamp())
-                .append(", last timestamp = ")
-                .append(getLastTransactionTimestamp())
                 .append(", consensus Events running hash = ")
                 .append(getHashEventsCons())
                 .append(", address book hash = ")

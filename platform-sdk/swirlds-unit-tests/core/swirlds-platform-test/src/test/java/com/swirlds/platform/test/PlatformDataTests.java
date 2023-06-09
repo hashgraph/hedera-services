@@ -114,22 +114,6 @@ class PlatformDataTests {
     }
 
     @Test
-    @DisplayName("Last Timestamp Test")
-    void lastTimestampTest() {
-        final Random random = getRandomPrintSeed();
-        final PlatformData platformData = generateRandomPlatformData(random);
-
-        Instant lastTimestamp = null;
-        for (final EventImpl event : platformData.getEvents()) {
-            if (lastTimestamp == null || isGreaterThan(event.getLastTransTime(), lastTimestamp)) {
-                lastTimestamp = event.getLastTransTime();
-            }
-        }
-
-        assertEquals(lastTimestamp, platformData.getLastTransactionTimestamp(), "last timestamp incorrectly computed");
-    }
-
-    @Test
     @DisplayName("Update Epoch Hash Test")
     void updateEpochHashTest() {
         final Random random = getRandomPrintSeed();
