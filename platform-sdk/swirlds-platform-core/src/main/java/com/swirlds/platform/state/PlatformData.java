@@ -68,12 +68,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     private long round;
 
     /**
-     * how many consensus events have there been throughout all of history, up through the round received that this
-     * SignedState represents.
-     */
-    private long numEventsCons;//TODO this has also moved to the snapshot
-
-    /**
      * running hash of the hashes of all consensus events have there been throughout all of history, up through the
      * round received that this SignedState represents.
      */
@@ -128,7 +122,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     private PlatformData(final PlatformData that) {
         super(that);
         this.round = that.round;
-        this.numEventsCons = that.numEventsCons;
         this.hashEventsCons = that.hashEventsCons;
         if (that.events != null) {
             this.events = Arrays.copyOf(that.events, that.events.length);
@@ -174,7 +167,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeLong(round);
-        out.writeLong(numEventsCons);
         out.writeSerializable(hashEventsCons, false);
 
         out.writeInstant(consensusTimestamp);
@@ -191,7 +183,10 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         round = in.readLong();
-        numEventsCons = in.readLong();
+        if (version < ClassVersion.CONSENSUS_SNAPSHOT) {
+            // numEventsCons
+            in.readLong();
+        }
 
         hashEventsCons = in.readSerializable(false, Hash::new);
 
@@ -288,26 +283,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     public PlatformData setRound(final long round) {
         this.round = round;
-        return this;
-    }
-
-    /**
-     * Get the number of consensus events that have been applied to this state since the beginning of time.
-     *
-     * @return the number of handled consensus events
-     */
-    public long getNumEventsCons() {
-        return numEventsCons;
-    }
-
-    /**
-     * Set the number of consensus events that have been applied to this state since the beginning of time.
-     *
-     * @param numEventsCons the number of handled consensus events
-     * @return this object
-     */
-    public PlatformData setNumEventsCons(final long numEventsCons) {
-        this.numEventsCons = numEventsCons;
         return this;
     }
 
@@ -502,8 +477,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         return new StringBuilder()
                 .append("Round = ")
                 .append(getRound())
-                .append(", number of consensus events = ")
-                .append(getNumEventsCons())
                 .append(", consensus timestamp = ")
                 .append(getConsensusTimestamp())
                 .append(", consensus Events running hash = ")
@@ -530,7 +503,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
 
         return new EqualsBuilder()
                 .append(round, that.round)
-                .append(numEventsCons, that.numEventsCons)
                 .append(hashEventsCons, that.hashEventsCons)
                 .append(events, that.events)
                 .append(consensusTimestamp, that.consensusTimestamp)
@@ -555,7 +527,6 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
                 .append("round", round)
-                .append("numEventsCons", numEventsCons)
                 .append("hashEventsCons", hashEventsCons)
                 .append("events", events)
                 .append("consensusTimestamp", consensusTimestamp)

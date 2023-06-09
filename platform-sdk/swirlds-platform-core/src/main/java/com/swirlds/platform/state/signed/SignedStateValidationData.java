@@ -27,8 +27,6 @@ import java.time.Instant;
  *
  * @param round
  * 		the minimum round to be considered a valid state
- * @param numberOfConsensusEvents
- * 		the count of all consensus events in history from an earlier state
  * @param consensusTimestamp
  * 		The consensus timestamp from an earlier state
  * @param addressBookHash
@@ -40,7 +38,6 @@ import java.time.Instant;
  */
 public record SignedStateValidationData(
         long round,
-        long numberOfConsensusEvents,
         Instant consensusTimestamp,
         Hash addressBookHash,
         Hash consensusEventsRunningHash,
@@ -49,7 +46,6 @@ public record SignedStateValidationData(
     public SignedStateValidationData(final PlatformData that, final AddressBook addressBook) {
         this(
                 that.getRound(),
-                that.getNumEventsCons(),
                 that.getConsensusTimestamp(),
                 addressBook == null ? null : addressBook.getHash(),
                 that.getHashEventsCons(),
@@ -68,8 +64,6 @@ public record SignedStateValidationData(
         return new StringBuilder()
                 .append("Round = ")
                 .append(round)
-                .append(", number of consensus events = ")
-                .append(numberOfConsensusEvents)
                 .append(", consensus timestamp = ")
                 .append(consensusTimestamp)
                 .append(", consensus Events running hash = ")

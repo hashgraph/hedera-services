@@ -429,15 +429,6 @@ public class SignedState implements SignedStateInfo {
     }
 
     /**
-     * Get the number of consensus events in this state.
-     *
-     * @return the number of consensus events in this state
-     */
-    public long getNumEventsCons() {
-        return state.getPlatformState().getPlatformData().getNumEventsCons();
-    }
-
-    /**
      * Get information about the minimum generation in this round.
      *
      * @return the minimum generation of famous witnesses per round

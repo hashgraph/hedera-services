@@ -57,7 +57,6 @@ public final class PlatformStateUtils {
         platformState.setAddressBook(addressBook);
         platformData.setHashEventsCons(randomHash(random));
         platformData.setRound(random.nextLong());
-        platformData.setNumEventsCons(random.nextLong());
         platformData.setConsensusTimestamp(randomInstant(random));
 
         final List<MinGenInfo> minGenInfo = new LinkedList<>();

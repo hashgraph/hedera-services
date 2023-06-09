@@ -48,7 +48,6 @@ public final class GenesisStateBuilder {
 
         platformData.setCreationSoftwareVersion(appVersion);
         platformData.setRound(0);
-        platformData.setNumEventsCons(0);
         platformData.setHashEventsCons(null);
         platformData.setEpochHash(null);
         platformData.setConsensusTimestamp(Instant.ofEpochSecond(0L));

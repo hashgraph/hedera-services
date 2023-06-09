@@ -54,7 +54,6 @@ public class RandomSignedStateGenerator {
 
     private State state;
     private Long round;
-    private Long numEventsCons;
     private Hash hashEventsCons;
     private AddressBook addressBook;
     private Instant consensusTimestamp;
@@ -124,13 +123,6 @@ public class RandomSignedStateGenerator {
             roundInstance = round;
         }
 
-        final long numEventsConsInstance;
-        if (numEventsCons == null) {
-            numEventsConsInstance = Math.abs(random.nextLong());
-        } else {
-            numEventsConsInstance = numEventsCons;
-        }
-
         final Hash hashEventsConsInstance;
         if (hashEventsCons == null) {
             hashEventsConsInstance = randomHash(random);
@@ -171,7 +163,6 @@ public class RandomSignedStateGenerator {
                 .getPlatformState()
                 .getPlatformData()
                 .setRound(roundInstance)
-                .setNumEventsCons(numEventsConsInstance)
                 .setHashEventsCons(hashEventsConsInstance)
                 .setConsensusTimestamp(consensusTimestampInstance)
                 .setCreationSoftwareVersion(softwareVersionInstance)
@@ -267,16 +258,6 @@ public class RandomSignedStateGenerator {
      */
     public RandomSignedStateGenerator setRound(final long round) {
         this.round = round;
-        return this;
-    }
-
-    /**
-     * Set the number of events that have been applied to this state since genesis.
-     *
-     * @return this object
-     */
-    public RandomSignedStateGenerator setNumEventsCons(final long numEventsCons) {
-        this.numEventsCons = numEventsCons;
         return this;
     }
 

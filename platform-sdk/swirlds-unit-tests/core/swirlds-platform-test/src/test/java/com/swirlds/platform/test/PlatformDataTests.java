@@ -67,7 +67,6 @@ class PlatformDataTests {
 
         return new PlatformData()
                 .setRound(random.nextLong(randomBound))
-                .setNumEventsCons(random.nextLong(randomBound))
                 .setHashEventsCons(randomHash(random))
                 .setConsensusTimestamp(Instant.ofEpochSecond(random.nextInt(randomBound)))
                 .setCreationSoftwareVersion(new BasicSoftwareVersion(random.nextInt(randomBound)))

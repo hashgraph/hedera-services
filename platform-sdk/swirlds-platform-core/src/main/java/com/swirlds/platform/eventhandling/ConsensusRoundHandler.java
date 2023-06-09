@@ -96,9 +96,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      */
     private boolean savedStateInFreeze = false;
 
-    /** number of events that have had their transactions handled by stateCons so far. */
-    private final AtomicLong numEventsCons = new AtomicLong(0);
-
     /**
      * a RunningHash object which calculates running hash of all consensus events so far with their transactions handled
      * by stateCons
@@ -240,7 +237,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         // clear running Hash info
         eventsConsRunningHash = new RunningHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
-        numEventsCons.set(0);
 
         logger.info(RECONNECT.getMarker(), "consensus handler: ready for reconnect");
     }
@@ -267,8 +263,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     public void loadDataFromSignedState(final SignedState signedState, final boolean isReconnect) {
         // set initialHash of the RunningHash to be the hash loaded from signed state
         eventsConsRunningHash = new RunningHash(signedState.getHashEventsCons());
-
-        numEventsCons.set(signedState.getNumEventsCons());
 
         logger.info(
                 STARTUP.getMarker(),
@@ -361,10 +355,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         consensusTimingStat.setTimePoint(3);
 
-        // count events that have had all their transactions handled by stateCons
-        numEventsCons.updateAndGet(
-                prevValue -> prevValue + round.getConsensusEvents().size());
-
         consensusTimingStat.setTimePoint(4);
 
         for (final EventImpl event : round.getConsensusEvents()) {
@@ -429,7 +419,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 .getPlatformState()
                 .getPlatformData()
                 .setRound(round.getRoundNum())
-                .setNumEventsCons(numEventsCons.get())
                 .setHashEventsCons(runningHash)
                 .setConsensusTimestamp(round.getLastEvent().getLastTransTime())
                 .setCreationSoftwareVersion(softwareVersion)
