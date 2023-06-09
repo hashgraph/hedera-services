@@ -213,7 +213,9 @@ public abstract class AbstractLongList<C> implements LongList {
                 numLongsPerChunk = headerBuffer.getInt();
                 memoryChunkSize = numLongsPerChunk * Long.BYTES;
                 // skip the maxIndexThatCanBeStored field as it's no longer used
-                if (formatVersion == INITIAL_VERSION) headerBuffer.getLong();
+                if (formatVersion == INITIAL_VERSION) {
+                    headerBuffer.getLong();
+                }
 
                 maxLongs = headerBuffer.getLong();
                 if (formatVersion >= MIN_VALID_INDEX_SUPPORT_VERSION) {

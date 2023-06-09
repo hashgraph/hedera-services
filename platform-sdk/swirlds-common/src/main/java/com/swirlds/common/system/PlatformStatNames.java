@@ -24,7 +24,7 @@ public abstract class PlatformStatNames {
     public static final String TRANSACTIONS_HANDLED_PER_SECOND = "transH/sec";
     /** number of consensus events in queue waiting to be handled */
     public static final String CONSENSUS_QUEUE_SIZE = "consEvents";
-    /** number of pre-consensus events in queue waiting to be handled */
+    /** number of preconsensus events in queue waiting to be handled */
     public static final String PRE_CONSENSUS_QUEUE_SIZE = "preConsEvents";
     /** the number of creators that have more than one tip at the start of each sync */
     public static final String MULTI_TIPS_PER_SYNC = "multiTips/sync";

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin;
 
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -29,4 +30,11 @@ public interface ReadableRunningHashLeafStore {
      */
     @NonNull
     RunningHash getNMinusThreeRunningHash();
+
+    /**
+     * Get the current running hash from running hash leaf.
+     * @return the current running hash
+     */
+    @NonNull
+    Hash getRunningHash();
 }
