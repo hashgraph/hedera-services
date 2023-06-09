@@ -73,6 +73,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OV
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -83,6 +84,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -624,14 +626,48 @@ public class ContractCreateSuite extends HapiSuite {
     private HapiSpec contractCreateNoncesExternalizationHappyPath() {
         final var contract = "NoncesExternalization";
         final var contractCreateTxn = "contractCreateTxn";
+        final var payer = "payer";
+
+        final var getParentContractByInex = "getParentContractsByIndex";
+
+        final var firstContractTxn = "firstContractTxn";
+        final var secondContractTxn = "secondContractTxn";
+        final var thirdContractTxn = "thirdContractTxn";
+
+        final var firstContractId = new AtomicLong();
+        final var secondContractId = new AtomicLong();
+        final var thirdContractId = new AtomicLong();
 
         return propertyPreservingHapiSpec("ContractCreateNoncesExternalizationHappyPath")
                 .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
                 .given(
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
+                        cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract).via(contractCreateTxn))
-                .when()
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(contract, getParentContractByInex, BigInteger.valueOf(0L))
+                                .payingWith(payer)
+                                .via(firstContractTxn)
+                                .exposingResultTo(result -> {
+                                    final var addr = (Address) result[0];
+                                    firstContractId.set(addr.value().longValueExact());
+                                }),
+                        contractCall(contract, getParentContractByInex, BigInteger.valueOf(1L))
+                                .payingWith(payer)
+                                .via(secondContractTxn)
+                                .exposingResultTo(result -> {
+                                    final var addr = (Address) result[0];
+                                    secondContractId.set(addr.value().longValueExact());
+                                }),
+                        contractCall(contract, getParentContractByInex, BigInteger.valueOf(2L))
+                                .payingWith(payer)
+                                .via(thirdContractTxn)
+                                .exposingResultTo(result -> {
+                                    final var addr = (Address) result[0];
+                                    thirdContractId.set(addr.value().longValueExact());
+                                }))))
                 .then(withOpContext((spec, opLog) -> {
                     HapiGetTxnRecord op = getTxnRecord(contractCreateTxn)
                             .hasPriority(recordWith()
@@ -639,6 +675,14 @@ public class ContractCreateSuite extends HapiSuite {
                                             spec.registry().getContractId(contract), 4L));
                     allRunFor(spec, op);
                 }));
+    }
+
+    private ContractID buildContractIdFromAtomicLongAddress(AtomicLong address) {
+        return ContractID.newBuilder()
+                .setShardNum(0L)
+                .setRealmNum(0L)
+                .setContractNum(address.longValue())
+                .build();
     }
 
     @Override
