@@ -21,6 +21,7 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * A callback that is invoked when the state is initialized.
@@ -31,5 +32,5 @@ public interface OnStateInitialized {
             @NonNull Platform platform,
             @NonNull SwirldDualState dualState,
             @NonNull InitTrigger trigger,
-            @NonNull SoftwareVersion deserializedVersion);
+            @Nullable SoftwareVersion deserializedVersion);
 }

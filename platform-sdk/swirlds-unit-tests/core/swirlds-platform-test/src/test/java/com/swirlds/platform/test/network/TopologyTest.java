@@ -21,6 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticTopology;
@@ -28,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.IntStream;
@@ -113,15 +116,17 @@ class TopologyTest {
     @ParameterizedTest
     @MethodSource("fullyConnected")
     void testFullyConnectedUnidirectionalTopology(final int numNodes, final int numNeighbors, final long ignoredSeed) {
-        final NodeId outOfBoundsId = new NodeId(numNodes);
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator().setSize(numNodes).build();
+        final NodeId outOfBoundsId = addressBook.getNextNodeId();
 
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
-            final NodeId thisNodeId = new NodeId(thisNode);
-            final NetworkTopology topology = new StaticTopology(thisNodeId, numNodes, numNeighbors);
+            final NodeId thisNodeId = addressBook.getNodeId(thisNode);
+            final NetworkTopology topology = new StaticTopology(addressBook, thisNodeId, numNeighbors);
             final List<NodeId> neighbors = topology.getNeighbors();
             final List<NodeId> expected = IntStream.range(0, numNodes)
-                    .filter(i -> i != thisNodeId.getIdAsInt())
-                    .mapToObj(NodeId::new)
+                    .mapToObj(addressBook::getNodeId)
+                    .filter(node -> !Objects.equals(thisNodeId, node))
                     .toList();
             assertEquals(expected, neighbors, "all should be neighbors except me");
             for (final NodeId neighbor : neighbors) {

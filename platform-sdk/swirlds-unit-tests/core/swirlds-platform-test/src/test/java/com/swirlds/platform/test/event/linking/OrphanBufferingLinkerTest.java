@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
@@ -68,24 +69,28 @@ class OrphanBufferingLinkerTest {
      * </pre>
      */
     private static List<GossipEvent> buildGraph(final Random r) {
-        final GossipEvent e0 =
-                GossipEventBuilder.builder().setRandom(r).setCreatorId(1).buildEvent();
-        final GossipEvent e1 =
-                GossipEventBuilder.builder().setRandom(r).setCreatorId(2).buildEvent();
+        final GossipEvent e0 = GossipEventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(new NodeId(1))
+                .buildEvent();
+        final GossipEvent e1 = GossipEventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(new NodeId(2))
+                .buildEvent();
         final GossipEvent e2 = GossipEventBuilder.builder()
                 .setRandom(r)
-                .setCreatorId(1)
+                .setCreatorId(new NodeId(1))
                 .setSelfParent(e0)
                 .setOtherParent(e1)
                 .buildEvent();
         final GossipEvent e3 = GossipEventBuilder.builder()
                 .setRandom(r)
-                .setCreatorId(1)
+                .setCreatorId(new NodeId(1))
                 .setSelfParent(e2)
                 .buildEvent();
         final GossipEvent e4 = GossipEventBuilder.builder()
                 .setRandom(r)
-                .setCreatorId(2)
+                .setCreatorId(new NodeId(2))
                 .setSelfParent(e1)
                 .setOtherParent(e2)
                 .buildEvent();

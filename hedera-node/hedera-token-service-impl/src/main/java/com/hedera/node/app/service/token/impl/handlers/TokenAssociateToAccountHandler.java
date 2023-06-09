@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
  * HederaFunctionality#TOKEN_ASSOCIATE_TO_ACCOUNT}.
  */
 @Singleton
-public class TokenAssociateToAccountHandler implements TransactionHandler {
+public class TokenAssociateToAccountHandler extends TokenHandlerHelper implements TransactionHandler {
     private static final Logger log = LoggerFactory.getLogger(TokenAssociateToAccountHandler.class);
 
     @Inject
@@ -236,7 +236,7 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
         // Check that the given tokens exist and are usable
         final var tokens = new ArrayList<Token>();
         for (final TokenID tokenId : tokenIds) {
-            final var token = ContextualRetriever.getIfUsable(tokenId, tokenStore);
+            final var token = getIfUsable(tokenId, tokenStore);
             tokens.add(token);
         }
 

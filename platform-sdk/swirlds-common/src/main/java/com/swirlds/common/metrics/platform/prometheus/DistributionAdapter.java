@@ -84,9 +84,8 @@ public class DistributionAdapter extends AbstractMetricAdapter {
                         case STD_DEV -> "stddev";
                         default -> "mean";
                     };
-            final Gauge.Child child = adapterType == GLOBAL
-                    ? gauge.labels(valueType)
-                    : gauge.labels(Long.toString(nodeId.id()), valueType);
+            final Gauge.Child child =
+                    adapterType == GLOBAL ? gauge.labels(valueType) : gauge.labels(nodeId.toString(), valueType);
             child.set(((Number) entry.value()).doubleValue());
         }
     }

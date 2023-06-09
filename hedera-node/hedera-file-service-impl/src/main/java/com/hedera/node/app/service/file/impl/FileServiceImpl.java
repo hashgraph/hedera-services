@@ -16,45 +16,17 @@
 
 package com.hedera.node.app.service.file.impl;
 
-import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.service.file.impl.schemas.GenesisSchema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 
 /** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
 public final class FileServiceImpl implements FileService {
-    private static final long MAX_BLOBS = 50_000_000L;
-    private static final SemanticVersion CURRENT_VERSION =
-            SemanticVersion.newBuilder().minor(34).build();
     public static final String BLOBS_KEY = "FILES";
 
     @Override
-    public void registerMonoAdapterSchemas(@NonNull final SchemaRegistry registry) {
-        registerSchemas(registry);
-    }
-
-    @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(fileServiceSchema());
-    }
-
-    private Schema fileServiceSchema() {
-        return new Schema(CURRENT_VERSION) {
-            @NonNull
-            @Override
-            public Set<StateDefinition> statesToCreate() {
-                return Set.of(filesDef());
-            }
-        };
-    }
-
-    @NonNull
-    private static StateDefinition<FileID, File> filesDef() {
-        return StateDefinition.onDisk(BLOBS_KEY, FileID.PROTOBUF, File.PROTOBUF, Math.toIntExact(MAX_BLOBS));
+        registry.register(new GenesisSchema());
     }
 }
