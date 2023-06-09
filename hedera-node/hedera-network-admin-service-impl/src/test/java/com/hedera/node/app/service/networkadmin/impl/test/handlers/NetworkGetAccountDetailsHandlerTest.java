@@ -131,7 +131,6 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
 
         final var query = createEmptysQuery();
         given(context.query()).willReturn(query);
-        given(context.createStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
 
         assertThrowsPreCheck(() -> networkGetAccountDetailsHandler.validate(context), INVALID_ACCOUNT_ID);
     }

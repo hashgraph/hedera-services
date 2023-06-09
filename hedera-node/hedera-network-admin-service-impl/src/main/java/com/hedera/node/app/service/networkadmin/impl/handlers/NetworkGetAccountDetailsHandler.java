@@ -93,7 +93,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
 
     @Override
     public boolean requiresNodePayment(@NonNull ResponseType responseType) {
-        return responseType == ANSWER_ONLY || responseType == ANSWER_STATE_PROOF;
+        return ANSWER_ONLY == responseType || ANSWER_STATE_PROOF == responseType;
     }
 
     @Override
@@ -104,15 +104,15 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
     @Override
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
-        final var query = context.query();
+        final GetAccountDetailsQuery op = context.query().accountDetailsOrThrow();
+
+        // The Account ID must be specified
+        if (!op.hasAccountId()) throw new PreCheckException(INVALID_ACCOUNT_ID);
+
+        // The account must exist for that transaction ID
         final var accountStore = context.createStore(ReadableAccountStore.class);
-        final GetAccountDetailsQuery op = query.accountDetailsOrThrow();
-        if (op.hasAccountId()) {
-            final var accountMetadata = accountStore.getAccountById(op.accountIdOrElse(AccountID.DEFAULT));
-            mustExist(accountMetadata, INVALID_ACCOUNT_ID);
-        } else {
-            throw new PreCheckException(INVALID_ACCOUNT_ID);
-        }
+        final var accountMetadata = accountStore.getAccountById(op.accountIdOrThrow());
+        mustExist(accountMetadata, INVALID_ACCOUNT_ID);
     }
 
     @Override
@@ -137,10 +137,9 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
                     account, accountStore, tokensConfig, readableTokenStore, tokenRelationStore, ledgerConfig);
 
             if (optionalInfo.isEmpty()) {
-                final var updatedHeader = header.copyBuilder()
+                responseBuilder.header(header.copyBuilder()
                         .nodeTransactionPrecheckCode(FAIL_INVALID)
-                        .build();
-                responseBuilder.header(updatedHeader);
+                        .build());
             } else {
                 optionalInfo.ifPresent(responseBuilder::accountDetails);
             }

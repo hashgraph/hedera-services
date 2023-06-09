@@ -32,7 +32,6 @@ import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.hapi.node.transaction.TransactionGetReceiptQuery;
 import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.node.app.spi.records.RecordCache;
@@ -71,7 +70,7 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
 
     @Override
     public boolean requiresNodePayment(@NonNull ResponseType responseType) {
-        return responseType == ANSWER_ONLY || responseType == ANSWER_STATE_PROOF;
+        return ANSWER_ONLY == responseType || ANSWER_STATE_PROOF == responseType;
     }
 
     @Override
@@ -82,16 +81,15 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
     @Override
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
-        final var query = context.query();
+        final var op = context.query().transactionGetReceiptOrThrow();
+
+        // The transaction ID must be specified
+        if (!op.hasTransactionID()) throw new PreCheckException(INVALID_TRANSACTION_ID);
+
+        // The receipt must exist for that transaction ID
         final var recordCache = context.createStore(RecordCache.class);
-        final TransactionGetReceiptQuery transactionGetReceiptQuery = query.transactionGetReceiptOrThrow();
-        if (transactionGetReceiptQuery.hasTransactionID()) {
-            final var receipts =
-                    recordCache.getReceipt(transactionGetReceiptQuery.transactionIDOrElse(TransactionID.DEFAULT));
-            mustExist(receipts, INVALID_TRANSACTION_ID);
-        } else {
-            throw new PreCheckException(INVALID_TRANSACTION_ID);
-        }
+        final var receipt = recordCache.getReceipt(op.transactionIDOrThrow());
+        mustExist(receipt, INVALID_TRANSACTION_ID);
     }
 
     @Override
@@ -102,7 +100,7 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
         final var recordCache = context.createStore(RecordCache.class);
         final var transactionGetReceiptQuery = query.transactionGetReceiptOrThrow();
         final var responseBuilder = TransactionGetReceiptResponse.newBuilder();
-        final var transactionId = transactionGetReceiptQuery.transactionIDOrElse(TransactionID.DEFAULT);
+        final var transactionId = transactionGetReceiptQuery.transactionIDOrThrow();
 
         final var responseType =
                 transactionGetReceiptQuery.headerOrElse(QueryHeader.DEFAULT).responseType();
@@ -110,10 +108,9 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
             final var transactionReceiptPrimary = recordCache.getReceipt(transactionId);
             if (transactionReceiptPrimary == null) {
-                final var updatedHeader = header.copyBuilder()
+                responseBuilder.header(header.copyBuilder()
                         .nodeTransactionPrecheckCode(RECEIPT_NOT_FOUND)
-                        .build();
-                responseBuilder.header(updatedHeader);
+                        .build());
             } else {
                 responseBuilder.receipt(transactionReceiptPrimary);
                 if (transactionGetReceiptQuery.includeDuplicates()) {
