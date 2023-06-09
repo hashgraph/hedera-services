@@ -24,6 +24,7 @@ import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
 import com.hedera.node.app.spi.meta.bni.VerificationStrategy;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -34,8 +35,6 @@ import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.operation.CallOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
-
-import java.util.Objects;
 
 /**
  * A Hedera customization of {@link CallOperation} that, if lazy creation is enabled and

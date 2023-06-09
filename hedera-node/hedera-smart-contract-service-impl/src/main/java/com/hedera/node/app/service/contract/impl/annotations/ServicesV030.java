@@ -16,15 +16,15 @@
 
 package com.hedera.node.app.service.contract.impl.annotations;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Documented;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
 /**
  * Qualifies a binding for use with the {@code v0.30} Services EVM.
@@ -33,5 +33,4 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 @Documented
 @Qualifier
-public @interface ServicesV030 {
-}
+public @interface ServicesV030 {}

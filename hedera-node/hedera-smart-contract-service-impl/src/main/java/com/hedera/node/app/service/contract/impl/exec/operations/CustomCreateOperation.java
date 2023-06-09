@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.operations.CustomizedOpcodes.CREATE;
+
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-
-import static com.hedera.node.app.service.contract.impl.exec.operations.CustomizedOpcodes.CREATE;
 
 public class CustomCreateOperation extends AbstractCustomCreateOperation {
     public CustomCreateOperation(@NonNull final GasCalculator gasCalculator) {
