@@ -14,13 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.networkadmin.impl.config;
+package com.hedera.node.config.data;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
+/**
+ * The version information is provided as part of the build process and stored in a resource file within the JAR files
+ * of the application itself. Previously, these were stored with a slightly different name.
+ *
+ * @param servicesVersion The version of the services code itself
+ * @param hapiVersion The version of the supported HAPI
+ */
 @ConfigData("version")
-public record SemanticVersionConfig(
-        @ConfigProperty(defaultValue = "0.0.0") SemanticVersion services,
-        @ConfigProperty(defaultValue = "0.0.0") SemanticVersion hapi) {}
+public record VersionConfig(
+        @ConfigProperty(value = "services", defaultValue = "0.0.0") SemanticVersion servicesVersion,
+        @ConfigProperty(value = "hapi", defaultValue = "0.0.0") SemanticVersion hapiVersion) {}

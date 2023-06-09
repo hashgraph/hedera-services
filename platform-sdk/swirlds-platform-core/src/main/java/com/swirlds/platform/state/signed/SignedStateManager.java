@@ -27,6 +27,7 @@ import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsum
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -36,6 +37,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 /**
@@ -95,6 +98,18 @@ public class SignedStateManager implements SignedStateFinder {
     private final StateLacksSignaturesConsumer stateLacksSignaturesConsumer;
 
     /**
+     * The timestamp of the first state processed by this class since the last restart, or null if no state has been
+     * processed yet.
+     */
+    private final AtomicReference<Instant> firstStateTimestamp = new AtomicReference<>(null);
+
+    /**
+     * The round number of the first state processed by this class since the last restart, or -1 if no state has been
+     * processed yet.
+     */
+    private final AtomicLong firstStateRound = new AtomicLong(-1);
+
+    /**
      * Start empty, with no known signed states. The number of addresses in platform.hashgraph.getAddressBook() must not
      * change in the future. The addressBook must contain exactly the set of members who can sign the state. A signed
      * state is considered completed when it has signatures from a sufficient threshold of nodes.
@@ -150,8 +165,8 @@ public class SignedStateManager implements SignedStateFinder {
     }
 
     /**
-     * Get the latest immutable signed state. May be unhashed, may or may not have all required
-     * signatures. State is returned with a reservation.
+     * Get the latest immutable signed state. May be unhashed, may or may not have all required signatures. State is
+     * returned with a reservation.
      *
      * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
      *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
@@ -205,7 +220,7 @@ public class SignedStateManager implements SignedStateFinder {
     }
 
     /**
-     * Add a state. State may be ignored if it is too old..
+     * Add a state. State may be ignored if it is too old.
      *
      * @param signedState the signed state to add
      */
@@ -215,6 +230,13 @@ public class SignedStateManager implements SignedStateFinder {
         if (signedState.getState().getHash() == null) {
             throw new IllegalArgumentException(
                     "Unhashed state for round " + signedState.getRound() + " added to the signed state manager");
+        }
+
+        if (firstStateTimestamp.get() == null) {
+            firstStateTimestamp.set(
+                    signedState.getState().getPlatformState().getPlatformData().getConsensusTimestamp());
+            firstStateRound.set(
+                    signedState.getState().getPlatformState().getPlatformData().getRound());
         }
 
         // Double check that the signatures on this state are valid.
@@ -308,6 +330,28 @@ public class SignedStateManager implements SignedStateFinder {
     }
 
     /**
+     * Get the consensus timestamp of the first state ingested by the signed state manager. Useful for computing the
+     * total consensus time that this node has been operating for.
+     *
+     * @return the consensus timestamp of the first state ingested by the signed state manager, or null if no states
+     * have been ingested yet
+     */
+    @Nullable
+    public Instant getFirstStateTimestamp() {
+        return firstStateTimestamp.get();
+    }
+
+    /**
+     * Get the round of the first state ingested by the signed state manager. Useful for computing the total number of
+     * elapsed rounds since startup.
+     *
+     * @return the round of the first state ingested by the signed state manager, or -1 if no states have been ingested
+     */
+    public long getFirstStateRound() {
+        return firstStateRound.get();
+    }
+
+    /**
      * Get the earliest round that is permitted to be stored in this data structure.
      *
      * @return the earliest round permitted to be stored
@@ -384,8 +428,7 @@ public class SignedStateManager implements SignedStateFinder {
      * Get an unsigned state for a particular round, if it exists.
      *
      * @param round the round in question
-     * @return a signed state for a round, or a null reservation if a signed state for that round is
-     * not present
+     * @return a signed state for a round, or a null reservation if a signed state for that round is not present
      */
     private @NonNull ReservedSignedState getIncompleteState(final long round) {
         return incompleteStates.getAndReserve(round, "SignedStateManager.getIncompleteState()");

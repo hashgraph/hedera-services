@@ -19,10 +19,10 @@ package com.swirlds.platform.test.event.preconsensus;
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.RandomUtils.randomInstant;
 import static com.swirlds.common.test.io.FileManipulation.writeRandomBytes;
-import static com.swirlds.platform.event.preconsensus.PreConsensusEventFile.EVENT_FILE_SEPARATOR;
-import static com.swirlds.platform.event.preconsensus.PreConsensusEventFile.MAXIMUM_GENERATION_PREFIX;
-import static com.swirlds.platform.event.preconsensus.PreConsensusEventFile.MINIMUM_GENERATION_PREFIX;
-import static com.swirlds.platform.event.preconsensus.PreConsensusEventFile.SEQUENCE_NUMBER_PREFIX;
+import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.EVENT_FILE_SEPARATOR;
+import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.MAXIMUM_GENERATION_PREFIX;
+import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.MINIMUM_GENERATION_PREFIX;
+import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.SEQUENCE_NUMBER_PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventFile;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,8 +50,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-@DisplayName("PreConsensusEventFile Tests")
-class PreConsensusEventFileTests {
+@DisplayName("PreconsensusEventFile Tests")
+class PreconsensusEventFileTests {
 
     /**
      * Temporary directory provided by JUnit
@@ -75,27 +75,27 @@ class PreConsensusEventFileTests {
     void invalidParametersTest() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> PreConsensusEventFile.of(-1, 1, 2, Instant.now(), Path.of("foo"), false));
+                () -> PreconsensusEventFile.of(-1, 1, 2, Instant.now(), Path.of("foo"), false));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> PreConsensusEventFile.of(1, -1, 2, Instant.now(), Path.of("foo"), false));
+                () -> PreconsensusEventFile.of(1, -1, 2, Instant.now(), Path.of("foo"), false));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> PreConsensusEventFile.of(1, -2, -1, Instant.now(), Path.of("foo"), false));
+                () -> PreconsensusEventFile.of(1, -2, -1, Instant.now(), Path.of("foo"), false));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> PreConsensusEventFile.of(1, 1, -1, Instant.now(), Path.of("foo"), false));
+                () -> PreconsensusEventFile.of(1, 1, -1, Instant.now(), Path.of("foo"), false));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> PreConsensusEventFile.of(1, 2, 1, Instant.now(), Path.of("foo"), false));
+                () -> PreconsensusEventFile.of(1, 2, 1, Instant.now(), Path.of("foo"), false));
 
-        assertThrows(NullPointerException.class, () -> PreConsensusEventFile.of(1, 1, 2, null, Path.of("foo"), false));
+        assertThrows(NullPointerException.class, () -> PreconsensusEventFile.of(1, 1, 2, null, Path.of("foo"), false));
 
-        assertThrows(NullPointerException.class, () -> PreConsensusEventFile.of(1, 1, 2, Instant.now(), null, false));
+        assertThrows(NullPointerException.class, () -> PreconsensusEventFile.of(1, 1, 2, Instant.now(), null, false));
     }
 
     @Test
@@ -117,7 +117,7 @@ class PreConsensusEventFileTests {
                             + minimumGeneration + EVENT_FILE_SEPARATOR + MAXIMUM_GENERATION_PREFIX
                             + maximumGeneration + ".pces" + (discontinuity ? "D" : "");
 
-            final PreConsensusEventFile file = PreConsensusEventFile.of(
+            final PreconsensusEventFile file = PreconsensusEventFile.of(
                     sequenceNumber, minimumGeneration, maximumGeneration, timestamp, Path.of("foo/bar"), discontinuity);
 
             assertEquals(expectedName, file.getFileName());
@@ -148,7 +148,7 @@ class PreConsensusEventFileTests {
 
             assertEquals(
                     expectedPath,
-                    PreConsensusEventFile.of(
+                    PreconsensusEventFile.of(
                                     sequenceNumber,
                                     minimumGeneration,
                                     maximumGeneration,
@@ -175,10 +175,10 @@ class PreConsensusEventFileTests {
 
             final Path directory = Path.of("foo/bar/baz");
 
-            final PreConsensusEventFile expected = PreConsensusEventFile.of(
+            final PreconsensusEventFile expected = PreconsensusEventFile.of(
                     sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory, discontinuity);
 
-            final PreConsensusEventFile parsed = PreConsensusEventFile.of(expected.getPath());
+            final PreconsensusEventFile parsed = PreconsensusEventFile.of(expected.getPath());
 
             assertEquals(expected, parsed);
             assertEquals(sequenceNumber, parsed.getSequenceNumber());
@@ -193,25 +193,25 @@ class PreConsensusEventFileTests {
     @DisplayName("Invalid File Parsing Test")
     void invalidFileParsingTest() {
         // Invalid format
-        assertThrows(IOException.class, () -> PreConsensusEventFile.of(Path.of(";laksjdf;laksjdf")));
-        assertThrows(IOException.class, () -> PreConsensusEventFile.of(Path.of(".pces")));
-        assertThrows(IOException.class, () -> PreConsensusEventFile.of(Path.of("foobar.txt")));
-        assertThrows(IOException.class, () -> PreConsensusEventFile.of(Path.of("foobar.pces")));
-        assertThrows(IOException.class, () -> PreConsensusEventFile.of(Path.of("foobar.pcesD")));
+        assertThrows(IOException.class, () -> PreconsensusEventFile.of(Path.of(";laksjdf;laksjdf")));
+        assertThrows(IOException.class, () -> PreconsensusEventFile.of(Path.of(".pces")));
+        assertThrows(IOException.class, () -> PreconsensusEventFile.of(Path.of("foobar.txt")));
+        assertThrows(IOException.class, () -> PreconsensusEventFile.of(Path.of("foobar.pces")));
+        assertThrows(IOException.class, () -> PreconsensusEventFile.of(Path.of("foobar.pcesD")));
         assertThrows(
                 IOException.class,
-                () -> PreConsensusEventFile.of(Path.of("1997-0DERPT21+42+49.730Z_seq443_ming303_maxg884.pces")));
+                () -> PreconsensusEventFile.of(Path.of("1997-0DERPT21+42+49.730Z_seq443_ming303_maxg884.pces")));
         assertThrows(
                 IOException.class,
-                () -> PreConsensusEventFile.of(Path.of("1997-02-16T21+42+49.730Z_seq4DERP3_ming303_maxg884.pces")));
+                () -> PreconsensusEventFile.of(Path.of("1997-02-16T21+42+49.730Z_seq4DERP3_ming303_maxg884.pces")));
         assertThrows(
                 IOException.class,
-                () -> PreConsensusEventFile.of(Path.of("1997-02-16T21+42+49.730Z_seq443_ming303_maxg8DERP4.pces")));
+                () -> PreconsensusEventFile.of(Path.of("1997-02-16T21+42+49.730Z_seq443_ming303_maxg8DERP4.pces")));
 
         // Valid format, invalid data
         assertThrows(
                 IOException.class,
-                () -> PreConsensusEventFile.of(Path.of("1997-02-16T21+42+49.730Z_seq443_ming884_maxg303.pces")));
+                () -> PreconsensusEventFile.of(Path.of("1997-02-16T21+42+49.730Z_seq443_ming884_maxg303.pces")));
     }
 
     @SuppressWarnings("resource")
@@ -236,12 +236,12 @@ class PreConsensusEventFileTests {
         times.add(now.plus(Duration.ofDays(40)));
         times.add(now.plus(Duration.ofDays(400)));
 
-        final List<PreConsensusEventFile> files = new ArrayList<>();
+        final List<PreconsensusEventFile> files = new ArrayList<>();
         for (int index = 0; index < times.size(); index++) {
             final Instant timestamp = times.get(index);
             // We don't care about generations for this test
-            final PreConsensusEventFile file =
-                    PreConsensusEventFile.of(index, 0, 0, timestamp, testDirectory, random.nextBoolean());
+            final PreconsensusEventFile file =
+                    PreconsensusEventFile.of(index, 0, 0, timestamp, testDirectory, random.nextBoolean());
 
             writeRandomBytes(random, file.getPath(), 100);
             files.add(file);
@@ -249,10 +249,10 @@ class PreConsensusEventFileTests {
 
         // Delete the files in a random order.
         Collections.shuffle(files, random);
-        final Set<PreConsensusEventFile> deletedFiles = new HashSet<>();
-        for (final PreConsensusEventFile file : files) {
+        final Set<PreconsensusEventFile> deletedFiles = new HashSet<>();
+        for (final PreconsensusEventFile file : files) {
 
-            for (final PreConsensusEventFile fileToCheck : files) {
+            for (final PreconsensusEventFile fileToCheck : files) {
                 if (deletedFiles.contains(fileToCheck)) {
                     assertFalse(Files.exists(fileToCheck.getPath()));
                 } else {
@@ -301,12 +301,12 @@ class PreConsensusEventFileTests {
         times.add(now.plus(Duration.ofDays(40)));
         times.add(now.plus(Duration.ofDays(400)));
 
-        final List<PreConsensusEventFile> files = new ArrayList<>();
+        final List<PreconsensusEventFile> files = new ArrayList<>();
         for (int index = 0; index < times.size(); index++) {
             final Instant timestamp = times.get(index);
             // We don't care about generations for this test
-            final PreConsensusEventFile file =
-                    PreConsensusEventFile.of(index, 0, 0, timestamp, streamDirectory, random.nextBoolean());
+            final PreconsensusEventFile file =
+                    PreconsensusEventFile.of(index, 0, 0, timestamp, streamDirectory, random.nextBoolean());
 
             writeRandomBytes(random, file.getPath(), 100);
             files.add(file);
@@ -314,10 +314,10 @@ class PreConsensusEventFileTests {
 
         // Delete the files in a random order.
         Collections.shuffle(files, random);
-        final Set<PreConsensusEventFile> deletedFiles = new HashSet<>();
-        for (final PreConsensusEventFile file : files) {
+        final Set<PreconsensusEventFile> deletedFiles = new HashSet<>();
+        for (final PreconsensusEventFile file : files) {
 
-            for (final PreConsensusEventFile fileToCheck : files) {
+            for (final PreconsensusEventFile fileToCheck : files) {
                 if (deletedFiles.contains(fileToCheck)) {
                     assertFalse(Files.exists(fileToCheck.getPath()));
                 } else {
@@ -339,7 +339,7 @@ class PreConsensusEventFileTests {
         assertEquals(0, Files.list(streamDirectory).count());
 
         // All files should have been moved to the recycle directory
-        for (final PreConsensusEventFile file : files) {
+        for (final PreconsensusEventFile file : files) {
             assertTrue(Files.exists(recycleDirectory.resolve(file.getPath().getFileName())));
         }
     }
@@ -361,14 +361,14 @@ class PreConsensusEventFileTests {
             final long maximumGenerationA = random.nextLong(minimumGenerationA, minimumGenerationA + 100);
             final long maximumGenerationB = random.nextLong(minimumGenerationB, minimumGenerationB + 100);
 
-            final PreConsensusEventFile a = PreConsensusEventFile.of(
+            final PreconsensusEventFile a = PreconsensusEventFile.of(
                     sequenceA,
                     minimumGenerationA,
                     maximumGenerationA,
                     randomInstant(random),
                     directory,
                     random.nextBoolean());
-            final PreConsensusEventFile b = PreConsensusEventFile.of(
+            final PreconsensusEventFile b = PreconsensusEventFile.of(
                     sequenceB,
                     minimumGenerationB,
                     maximumGenerationB,
@@ -393,7 +393,7 @@ class PreConsensusEventFileTests {
             final long maximumGeneration = random.nextLong(minimumGeneration + 1, minimumGeneration + 1000);
             final Instant timestamp = RandomUtils.randomInstant(random);
 
-            final PreConsensusEventFile file = PreConsensusEventFile.of(
+            final PreconsensusEventFile file = PreconsensusEventFile.of(
                     sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory, false);
 
             // An event with a sequence number that is too small
@@ -426,7 +426,7 @@ class PreConsensusEventFileTests {
             final long maximumGeneration = random.nextLong(minimumGeneration + 1, minimumGeneration + 1000);
             final Instant timestamp = RandomUtils.randomInstant(random);
 
-            final PreConsensusEventFile file = PreConsensusEventFile.of(
+            final PreconsensusEventFile file = PreconsensusEventFile.of(
                     sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory, true);
 
             // An event with a sequence number that is too small
@@ -459,7 +459,7 @@ class PreConsensusEventFileTests {
         final boolean discontinuity = random.nextBoolean();
         final Instant timestamp = randomInstant(random);
 
-        final PreConsensusEventFile file = PreConsensusEventFile.of(
+        final PreconsensusEventFile file = PreconsensusEventFile.of(
                 sequenceNumber, minimumGeneration, maximumGeneration, timestamp, directory, discontinuity);
 
         assertThrows(IllegalArgumentException.class, () -> file.buildFileWithCompressedSpan(minimumGeneration - 1));
@@ -467,7 +467,7 @@ class PreConsensusEventFileTests {
 
         final long newMaximumGeneration = random.nextLong(minimumGeneration, maximumGeneration);
 
-        final PreConsensusEventFile compressedFile = file.buildFileWithCompressedSpan(newMaximumGeneration);
+        final PreconsensusEventFile compressedFile = file.buildFileWithCompressedSpan(newMaximumGeneration);
 
         assertEquals(sequenceNumber, compressedFile.getSequenceNumber());
         assertEquals(minimumGeneration, compressedFile.getMinimumGeneration());
