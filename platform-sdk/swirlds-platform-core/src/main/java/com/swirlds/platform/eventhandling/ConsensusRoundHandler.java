@@ -146,8 +146,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                     .withUnit("count");
 
     /**
-     * Instantiate, but don't start any threads yet. The Platform should first instantiate the {@link
-     * ConsensusRoundHandler}. Then the Platform should call start to start the queue thread.
+     * Instantiate, but don't start any threads yet. The Platform should first instantiate the
+     * {@link ConsensusRoundHandler}. Then the Platform should call start to start the queue thread.
      *
      * @param platformContext          contains various platform utilities
      * @param threadManager            responsible for creating and managing threads
@@ -245,6 +245,16 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      */
     public void stop() {
         queueThread.stop();
+    }
+
+    /**
+     * Blocks until the handling thread has handled all available work and is no longer busy. May block indefinitely if
+     * more work is continually added to the queue.
+     *
+     * @throws InterruptedException if interrupted while waiting
+     */
+    public void waitUntilNotBusy() throws InterruptedException {
+        queueThread.waitUntilNotBusy();
     }
 
     @Override
