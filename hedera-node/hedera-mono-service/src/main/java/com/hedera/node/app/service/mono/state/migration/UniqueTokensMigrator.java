@@ -60,6 +60,7 @@ public class UniqueTokensMigrator {
             final var newTokenValue = UniqueTokenValue.from(legacyToken);
             virtualMapRef.get().put(newTokenKey, newTokenValue);
             final int currentCount = count.incrementAndGet();
+            /*
             // Create a new virtual map copy every few tokens to make sure they can be flushed to disk
             if (currentCount % 10000 == 0) {
                 final VirtualMap<UniqueTokenKey, UniqueTokenValue> currentCopy = virtualMapRef.get();
@@ -67,6 +68,7 @@ public class UniqueTokensMigrator {
                 currentCopy.release();
                 // Future work: may need to wait until currentCopy is actually flushed to disk
             }
+            */
         });
 
         initializingState.setChild(StateChildIndices.UNIQUE_TOKENS, virtualMapRef.get());
