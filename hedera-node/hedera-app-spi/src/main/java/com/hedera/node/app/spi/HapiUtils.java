@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Query;
@@ -68,6 +69,14 @@ public class HapiUtils {
     /** A simple {@link Comparator} for {@link Timestamp}s. */
     public static final Comparator<Timestamp> TIMESTAMP_COMPARATOR =
             Comparator.comparingLong(Timestamp::seconds).thenComparingInt(Timestamp::nanos);
+
+    /** A {@link Comparator} for {@link SemanticVersion}s. */
+    public static final Comparator<SemanticVersion> SEMANTIC_VERSION_COMPARATOR = Comparator.comparingInt(
+                    SemanticVersion::major)
+            .thenComparingInt(SemanticVersion::minor)
+            .thenComparingInt(SemanticVersion::patch)
+            .thenComparing(SemanticVersion::pre)
+            .thenComparing(SemanticVersion::build);
 
     private HapiUtils() {}
 
@@ -216,5 +225,27 @@ public class HapiUtils {
             case TRANSACTION_GET_FAST_RECORD -> throw new UnknownHederaFunctionality();
             case UNSET -> throw new UnknownHederaFunctionality();
         };
+    }
+
+    /**
+     * Utility to convert a {@link SemanticVersion} into a nicely formatted String.
+     * @param version The version to convert
+     * @return The string representation
+     */
+    public static String toString(@NonNull final SemanticVersion version) {
+        var baseVersion = new StringBuilder("v");
+        baseVersion
+                .append(version.major())
+                .append(".")
+                .append(version.minor())
+                .append(".")
+                .append(version.patch());
+        if (version.pre() != null && !version.pre().isBlank()) {
+            baseVersion.append("-").append(version.pre());
+        }
+        if (version.build() != null && !version.build().isBlank()) {
+            baseVersion.append("+").append(version.build());
+        }
+        return baseVersion.toString();
     }
 }

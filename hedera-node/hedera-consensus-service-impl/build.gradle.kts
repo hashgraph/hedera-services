@@ -18,31 +18,22 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera Consensus Service Implementation"
 
-configurations.all {
-  exclude("javax.annotation", "javax.annotation-api")
-
-  exclude("io.grpc", "grpc-core")
-  exclude("io.grpc", "grpc-context")
-  exclude("io.grpc", "grpc-api")
-  exclude("io.grpc", "grpc-testing")
-}
-
 dependencies {
-  implementation(project(":hedera-node:hedera-config"))
-  annotationProcessor(libs.dagger.compiler)
-  api(project(":hedera-node:hapi"))
-  api(project(":hedera-node:hedera-consensus-service"))
-  api(project(":hedera-node:hapi"))
-  implementation(project(":hedera-node:hedera-mono-service"))
-  implementation(libs.bundles.di)
-  implementation(libs.pbj.runtime)
-  implementation(libs.swirlds.common)
-  testImplementation(testLibs.bundles.testing)
-  testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
-  testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
-  testImplementation(project(":hedera-node:hedera-token-service"))
-  testImplementation(project(":hedera-node:hedera-app"))
-  testImplementation(testLibs.mockito.inline)
-  testImplementation(libs.swirlds.test.framework)
-  testImplementation(testFixtures(project(":hedera-node:hedera-config")))
+    javaModuleDependencies {
+        annotationProcessor(gav("dagger.compiler"))
+
+        testImplementation(testFixtures(project(":hedera-node:node-app-service-mono")))
+        testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+        testImplementation(testFixtures(project(":hedera-node:node-config")))
+        testImplementation(project(":hedera-node:node-app"))
+        testImplementation(project(":hedera-node:node-app-service-consensus-impl"))
+        testImplementation(project(":hedera-node:node-app-service-token"))
+        testImplementation(gav("com.google.protobuf"))
+        testImplementation(gav("com.swirlds.common"))
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.mockito"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+        testRuntimeOnly(gav("org.mockito.inline"))
+    }
 }

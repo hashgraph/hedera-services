@@ -45,12 +45,12 @@ class WritableFileStoreImplTest extends FileHandlerTestBase {
     @Test
     void commitsFileChanges() {
         file = createFile();
-        assertFalse(writableFileState.contains(fileEntityNum));
+        assertFalse(writableFileState.contains(fileId));
 
         writableStore.put(file);
 
-        assertTrue(writableFileState.contains(fileEntityNum));
-        final var writtenTopic = writableFileState.get(fileEntityNum);
+        assertTrue(writableFileState.contains(fileId));
+        final var writtenTopic = writableFileState.get(fileId);
         assertEquals(file, writtenTopic);
     }
 
@@ -59,7 +59,7 @@ class WritableFileStoreImplTest extends FileHandlerTestBase {
         file = createFile();
         writableStore.put(file);
 
-        final var maybeReadFile = writableStore.get(fileEntityNum.longValue());
+        final var maybeReadFile = writableStore.get(fileId.fileNum());
 
         assertTrue(maybeReadFile.isPresent());
         final var readFile = maybeReadFile.get();
@@ -71,13 +71,13 @@ class WritableFileStoreImplTest extends FileHandlerTestBase {
         file = createFile();
         writableStore.put(file);
 
-        final var maybeReadFile = writableStore.get(fileEntityNum.longValue());
+        final var maybeReadFile = writableStore.get(fileId.fileNum());
 
         assertTrue(maybeReadFile.isPresent());
 
-        writableStore.removeFile(fileEntityNum.longValue());
+        writableStore.removeFile(fileId.fileNum());
 
-        final var readFile = writableStore.get(fileEntityNum.longValue());
+        final var readFile = writableStore.get(fileId.fileNum());
         assertEquals(readFile, Optional.empty());
     }
 }

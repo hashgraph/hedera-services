@@ -24,6 +24,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
@@ -155,6 +156,8 @@ public final class Hedera implements SwirldMain {
     private final CountDownLatch shutdownLatch = new CountDownLatch(1);
     /** The Hashgraph Platform. This is set during state initialization. */
     private Platform platform;
+    /** The configuration for this node */
+    private ConfigProviderImpl configProvider;
     /** Used to interface with the mono-service. */
     private StateChildrenProvider stateChildren;
 
@@ -233,8 +236,8 @@ public final class Hedera implements SwirldMain {
         for (final var entry : services.entrySet()) {
             final var serviceName = entry.getKey();
             final var service = entry.getValue();
-            final var registry = new MerkleSchemaRegistry(constructableRegistry, storageDir, serviceName);
-            service.registerMonoAdapterSchemas(registry);
+            final var registry = new MerkleSchemaRegistry(constructableRegistry, serviceName);
+            service.registerSchemas(registry);
             map.put(serviceName, new ServiceRegistration(serviceName, service, registry));
         }
 
@@ -334,8 +337,8 @@ public final class Hedera implements SwirldMain {
         final var currentVersion = PbjConverter.toPbj(version.getServices());
         logger.info("Migrating from version {} to {}", previousVersion, currentVersion);
         for (final var registration : serviceRegistry.values()) {
-            // TODO We should have metrics here to keep track of how long it takes to migrate each service
-            registration.registry.migrate(state, previousVersion, currentVersion);
+            // FUTURE We should have metrics here to keep track of how long it takes to migrate each service
+            registration.registry.migrate(state, previousVersion, currentVersion, configProvider.getConfiguration());
             logger.info("Migrated Service {}", registration.name);
         }
     }
@@ -543,6 +546,9 @@ public final class Hedera implements SwirldMain {
     private void genesis(@NonNull final MerkleHederaState state, @NonNull final SwirldDualState dualState) {
         logger.debug("Genesis Initialization");
 
+        logger.info("Initializing Configuration");
+        this.configProvider = new ConfigProviderImpl(true);
+
         // Create all the nodes in the merkle tree for all the services
         onMigrate(state, null);
 
@@ -657,6 +663,13 @@ public final class Hedera implements SwirldMain {
             @NonNull final SwirldDualState dualState,
             @NonNull final SerializableSemVers deserializedVersion) {
         logger.debug("Restart Initialization");
+
+        // This configuration is based on what is in state *RIGHT NOW*, before any possible upgrade. This is the config
+        // that must be passed to the migration methods.
+        // TODO: Actually, we should reinitialize the config on each step along the migration path, so we should pass
+        //       the config provider to the migration code and let it get the right version of config as it goes.
+        logger.info("Initializing Configuration");
+        this.configProvider = new ConfigProviderImpl(false);
 
         // Migrate to the most recent state, if needed
         final boolean upgrade = isUpgrade(version, deserializedVersion);

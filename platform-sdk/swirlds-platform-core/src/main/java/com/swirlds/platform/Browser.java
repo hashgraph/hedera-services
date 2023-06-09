@@ -20,7 +20,6 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.JVM_PAUSE_WARN;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserWindow;
@@ -32,7 +31,8 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowser
 import static com.swirlds.platform.state.address.AddressBookUtils.getOwnHostCount;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
-import static com.swirlds.platform.system.SystemExitReason.NODE_ADDRESS_MISMATCH;
+import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
+import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.config.BasicConfig;
@@ -51,6 +51,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.internal.ApplicationDefinition;
+import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
@@ -83,7 +84,7 @@ import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
@@ -105,8 +106,7 @@ import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
 import com.swirlds.platform.system.Shutdown;
-import com.swirlds.platform.system.SystemExitReason;
-import com.swirlds.platform.system.SystemUtils;
+import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.MetricsDocUtils;
@@ -178,6 +178,8 @@ public class Browser {
             //////////////////////""";
     // @formatter:on
 
+    final Shutdown shutdown = new Shutdown();
+
     /**
      * Prevent this class from being instantiated.
      */
@@ -227,9 +229,10 @@ public class Browser {
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(OSHealthCheckConfig.class)
                 .withConfigDataType(WiringConfig.class)
-                .withConfigDataType(PreConsensusEventStreamConfig.class)
+                .withConfigDataType(PreconsensusEventStreamConfig.class)
                 .withConfigDataType(SyncConfig.class)
-                .withConfigDataType(UptimeConfig.class);
+                .withConfigDataType(UptimeConfig.class)
+                .withConfigDataType(RecycleBinConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
@@ -573,7 +576,7 @@ public class Browser {
                     (pauseTimeMs, allocTimeMs) -> {
                         if (pauseTimeMs > Settings.getInstance().getJVMPauseReportMs()) {
                             logger.warn(
-                                    JVM_PAUSE_WARN.getMarker(),
+                                    EXCEPTION.getMarker(),
                                     "jvmPauseDetectorThread detected JVM paused for {} ms, allocation pause {} ms",
                                     pauseTimeMs,
                                     allocTimeMs);
@@ -649,7 +652,7 @@ public class Browser {
                 // We can't send a "real" dispatch, since the dispatcher will not have been started by the
                 // time this class is used.
                 final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
-                        Shutdown::immediateShutDown, Settings.getInstance().getEmergencyRecoveryFileLoadDir());
+                        shutdown::shutdown, Settings.getInstance().getEmergencyRecoveryFileLoadDir());
 
                 final ReservedSignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
                         platformContext,
@@ -689,7 +692,8 @@ public class Browser {
                         appVersion,
                         appMain::newState,
                         loadedSignedState,
-                        emergencyRecoveryManager);
+                        emergencyRecoveryManager,
+                        softwareUpgrade);
                 platforms.add(platform);
 
                 new InfoMember(infoSwirld, instanceNumber, platform);
@@ -744,7 +748,7 @@ public class Browser {
         // time this class is used.
         final SavedStateLoader savedStateLoader = new SavedStateLoader(
                 platformContext,
-                Shutdown::immediateShutDown,
+                shutdown::shutdown,
                 configAddressBook,
                 savedStateFiles,
                 appVersion,
@@ -755,7 +759,7 @@ public class Browser {
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Signed state not loaded from disk:", e);
             if (Settings.getInstance().isRequireStateLoad()) {
-                SystemUtils.exitSystem(SystemExitReason.SAVED_STATE_NOT_LOADED);
+                exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED);
             }
         }
         return createNullReservation();
@@ -794,7 +798,7 @@ public class Browser {
             logger.error(
                     EXCEPTION.getMarker(),
                     new NodeAddressMismatchPayload(Network.getInternalIPAddress(), externalIpAddress));
-            SystemUtils.exitSystem(NODE_ADDRESS_MISMATCH);
+            exitSystem(NODE_ADDRESS_MISMATCH);
         }
 
         // the thread for each Platform.run

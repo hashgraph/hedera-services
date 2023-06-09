@@ -23,8 +23,10 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -60,14 +62,17 @@ public class SimulatedEvent implements ChatterEvent {
      * @param size
      * 		the size of the event
      */
-    public SimulatedEvent(final Random random, final long creator, final long round, final int size) {
+    public SimulatedEvent(
+            @NonNull final Random random, @NonNull final NodeId creator, final long round, final int size) {
+        Objects.requireNonNull(random, "random must not be null");
+        Objects.requireNonNull(creator, "creator must not be null");
         this.data = new byte[size];
 
         final byte[] hashBytes = new byte[DigestType.SHA_384.digestLength()];
         random.nextBytes(hashBytes);
         final Hash hash = new Hash(hashBytes, DigestType.SHA_384);
 
-        this.descriptor = new ChatterEventDescriptor(hash, new NodeId(creator), round);
+        this.descriptor = new ChatterEventDescriptor(hash, creator, round);
     }
 
     /**

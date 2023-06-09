@@ -30,13 +30,13 @@ public class DummyHashgraph {
     public long lastRoundReceivedAllTransCons;
     public AddressBook addressBook;
 
-    DummyHashgraph(final NodeId selfId) {
+    DummyHashgraph(final int selfIndex) {
         eventIntakeQueueSize = 0;
         isInCriticalQuorum = new HashMap<>();
-        this.selfId = selfId;
         numUserTransEvents = 0;
         lastRoundReceivedAllTransCons = 0;
         addressBook = new RandomAddressBookGenerator().setSize(100).build();
+        this.selfId = addressBook.getNodeId(selfIndex);
     }
 
     int getEventIntakeQueueSize() {

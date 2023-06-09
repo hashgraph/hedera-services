@@ -32,11 +32,9 @@ public class BytesConverter implements ConfigConverter<Bytes> {
     public Bytes convert(@NonNull String value) throws IllegalArgumentException, NullPointerException {
         if (value == null) {
             throw new NullPointerException("BytesConverter cannot convert null value");
-        } else if (!value.startsWith("0x")) {
-            throw new IllegalArgumentException("Invalid format. Value must start with '0x': " + value);
         } else {
             try {
-                final var hex = value.substring(2);
+                final var hex = value.startsWith("0x") ? value.substring(2) : value;
                 final var bytes = unhex(hex);
                 return Bytes.wrap(bytes);
             } catch (final Exception e) {
