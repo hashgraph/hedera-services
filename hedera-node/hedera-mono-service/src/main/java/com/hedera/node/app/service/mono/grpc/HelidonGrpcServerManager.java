@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.grpc;
 
-import static com.hedera.node.app.service.mono.context.properties.Profile.DEV;
 import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
 import static java.util.Objects.requireNonNull;
 
@@ -26,11 +25,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.BindableService;
 import io.helidon.common.configurable.Resource;
 import io.helidon.common.configurable.ResourceException;
+import io.helidon.config.Config;
+import io.helidon.config.MapConfigSource;
 import io.helidon.grpc.core.GrpcTlsDescriptor;
 import io.helidon.grpc.server.GrpcRouting;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.grpc.server.GrpcServerConfiguration;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -87,20 +91,29 @@ public class HelidonGrpcServerManager implements GrpcServerManager {
         bindableServices.forEach(grpcRoutingBuilder::register);
 
         // Create the GRPC Server
-        final var activeProfile = nodeProperties.activeProfile();
-        final var nettyMode = (activeProfile == DEV) ? DEV : nodeProperties.nettyMode();
+        log.info("Configuring a Helidon gRPC server on port {} (TLS {})", port, (sslEnabled ? "ON" : "OFF"));
 
-        log.info(
-                "Configuring a Helidon gRPC server on port {} (TLS {}) for {} environment",
-                port,
-                (sslEnabled ? "ON" : "OFF"),
-                nettyMode);
-
-        final var configBuilder = GrpcServerConfiguration.builder().port(port);
+        final Config initialConfig =
+                Config.builder(getMapSource(nodeProperties)).build();
+        final var configBuilder =
+                GrpcServerConfiguration.builder().config(initialConfig).port(port);
+        /* Note:  We would like to set all of the following, but Helidon simply doesn't support it.
+                 keepAliveTime(nodeProperties.nettyProdKeepAliveTime(), TimeUnit.SECONDS)
+                 permitKeepAliveTime(nodeProperties.nettyProdKeepAliveTime(), TimeUnit.SECONDS)
+                 keepAliveTimeout(nodeProperties.nettyProdKeepAliveTimeout(), TimeUnit.SECONDS)
+                 maxConnectionAge(nodeProperties.nettyMaxConnectionAge(), TimeUnit.SECONDS)
+                 maxConnectionAgeGrace(nodeProperties.nettyMaxConnectionAgeGrace(), TimeUnit.SECONDS)
+                 maxConnectionIdle(nodeProperties.nettyMaxConnectionIdle(), TimeUnit.SECONDS)
+                 maxConcurrentCallsPerConnection(nodeProperties.nettyMaxConcurrentCalls())
+                 flowControlWindow(nodeProperties.nettyFlowControlWindow())
+        */
+        // Note: SSL enabled defaults to true, jdkSSL defaults to false.  jdkSSL, in particular,
+        //       should remain false unless specifically required to use the JDK internal TLS
+        //       implementation over the native TLS implementation.
         if (sslEnabled) {
             configBuilder.tlsConfig(GrpcTlsDescriptor.builder()
                     .enabled(sslEnabled)
-                    .jdkSSL(true)
+                    .jdkSSL(false)
                     .tlsCert(Resource.create(Path.of(nodeProperties.nettyTlsCrtPath())))
                     .tlsKey(Resource.create(Path.of(nodeProperties.nettyTlsKeyPath())))
                     .build());
@@ -133,6 +146,14 @@ public class HelidonGrpcServerManager implements GrpcServerManager {
         println.accept(logMessage("...done starting", sslEnabled, port, false));
 
         return grpcServer;
+    }
+
+    private MapConfigSource getMapSource(@NonNull final NodeLocalProperties nodeProperties) {
+        Objects.requireNonNull(nodeProperties, "Should not be possible; null passed for node properties.");
+        final Map<String, String> nodePropertiesMap = new HashMap<>(2);
+        nodePropertiesMap.put("native", "true");
+        nodePropertiesMap.put("port", Integer.toString(nodeProperties.port()));
+        return MapConfigSource.builder().map(nodePropertiesMap).build();
     }
 
     private void terminateOneServer(GrpcServer server, boolean tlsSupport, int port, Consumer<String> println) {
