@@ -22,6 +22,7 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.SoftwareVersion;
@@ -49,9 +50,6 @@ public class SavedStateLoader {
 
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(SavedStateLoader.class);
-    /** Current system settings */
-    private final Settings settings = Settings.getInstance();
-
     /** An array of saved states to consider for loading, ordered from newest to oldest */
     private final SavedStateInfo[] savedStateFiles;
 
@@ -254,9 +252,10 @@ public class SavedStateLoader {
     @NonNull
     private ReservedSignedState getRegularSavedStateToLoad(final long maxRound)
             throws IOException, SignedStateLoadingException {
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
         if (savedStateFiles == null || savedStateFiles.length == 0) {
-            if (settings.isRequireStateLoad()) {
+            if (stateConfig.requireStateLoad()) {
                 throw new SignedStateLoadingException("No saved states found on disk!");
             } else {
                 return createNullReservation();
@@ -267,7 +266,7 @@ public class SavedStateLoader {
             if (savedStateFile.round() <= maxRound) {
                 final SignedStateWithHashes stateWithHashes = readAndRehashState(platformContext, savedStateFile);
 
-                if (settings.isCheckSignedStateFromDisk()) {
+                if (stateConfig.checkSignedStateFromDisk()) {
                     evaluateLoadedStateHash(stateWithHashes, currentSoftwareVersion);
                 }
 
