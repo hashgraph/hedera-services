@@ -19,7 +19,6 @@ package com.swirlds.common.system.platformstatus.statuslogic;
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
@@ -29,13 +28,14 @@ public interface PlatformStatusLogic {
     /**
      * Process a status action.
      * <p>
-     * If the input action causes a status transition, then this method will return the new status. Otherwise, a return
-     * value of null indicates that the input action didn't cause a status transition
+     * If the input action causes a status transition, then this method will return the new status. Otherwise, it will
+     * return the same status as before processing the action.
      *
      * @param action the status action that has occurred
-     * @return the new status if the input action caused a status transition, otherwise null
+     * @return the status after processing the action. may be the same status as before processing
+     * @throws IllegalArgumentException if the input action is not expected in the current status
      */
-    @Nullable
+    @NonNull
     PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action);
 
     /**

@@ -20,18 +20,12 @@ import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.time.Time;
-import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#BEHIND BEHIND} status.
  */
 public class BehindStatusLogic extends AbstractStatusLogic {
-    private static final Logger logger = LogManager.getLogger(BehindStatusLogic.class);
-
     /**
      * Constructor
      *
@@ -45,17 +39,14 @@ public class BehindStatusLogic extends AbstractStatusLogic {
     /**
      * {@inheritDoc}
      */
-    @Nullable
+    @NonNull
     @Override
     public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
         return switch (action) {
             case RECONNECT_COMPLETE -> PlatformStatus.RECONNECT_COMPLETE;
-            case STATE_WRITTEN_TO_DISK, TIME_ELAPSED -> null;
+            case STATE_WRITTEN_TO_DISK, TIME_ELAPSED -> getStatus();
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
-            default -> {
-                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusActionLog(action));
-                yield null;
-            }
+            default -> throw new IllegalArgumentException(getUnexpectedStatusActionLog(action));
         };
     }
 

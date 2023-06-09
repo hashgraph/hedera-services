@@ -21,16 +21,11 @@ import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.time.Time;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#RECONNECT_COMPLETE RECONNECT_COMPLETE} status.
  */
 public class ReconnectCompleteStatusLogic extends AbstractStatusLogic {
-    private static final Logger logger = LogManager.getLogger(ReconnectCompleteStatusLogic.class);
-
     /**
      * Whether a freeze period has been entered
      */
@@ -49,13 +44,13 @@ public class ReconnectCompleteStatusLogic extends AbstractStatusLogic {
     /**
      * {@inheritDoc}
      */
-    @Nullable
+    @NonNull
     @Override
     public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
         return switch (action) {
             case FREEZE_PERIOD_ENTERED -> {
                 freezePeriodEntered = true;
-                yield null;
+                yield getStatus();
             }
             case STATE_WRITTEN_TO_DISK -> {
                 // always transition to a new status once a state has been written to disk
@@ -66,11 +61,8 @@ public class ReconnectCompleteStatusLogic extends AbstractStatusLogic {
                 }
             }
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
-            case TIME_ELAPSED -> null;
-            default -> {
-                logger.error(getUnexpectedStatusActionLog(action));
-                yield null;
-            }
+            case TIME_ELAPSED -> getStatus();
+            default -> throw new IllegalArgumentException(getUnexpectedStatusActionLog(action));
         };
     }
 

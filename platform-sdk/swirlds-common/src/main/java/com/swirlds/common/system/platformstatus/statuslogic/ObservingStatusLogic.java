@@ -20,19 +20,13 @@ import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.time.Time;
-import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#OBSERVING OBSERVING} status.
  */
 public class ObservingStatusLogic extends AbstractStatusLogic {
-    private static final Logger logger = LogManager.getLogger(ObservingStatusLogic.class);
-
     /**
      * Whether a freeze period has been entered
      */
@@ -51,23 +45,23 @@ public class ObservingStatusLogic extends AbstractStatusLogic {
     /**
      * {@inheritDoc}
      */
-    @Nullable
+    @NonNull
     @Override
     public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
         return switch (action) {
             case FREEZE_PERIOD_ENTERED -> {
                 freezePeriodEntered = true;
-                yield null;
+                yield getStatus();
             }
             case FALLEN_BEHIND -> PlatformStatus.BEHIND;
-            case STATE_WRITTEN_TO_DISK -> null;
+            case STATE_WRITTEN_TO_DISK -> getStatus();
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
             case TIME_ELAPSED -> {
                 if (Duration.between(getStatusStartTime(), getTime().now())
                                 .compareTo(getConfig().observingStatusDelay())
                         < 0) {
                     // if the wait period hasn't elapsed, then stay in this status
-                    yield null;
+                    yield getStatus();
                 }
 
                 if (freezePeriodEntered) {
@@ -76,10 +70,7 @@ public class ObservingStatusLogic extends AbstractStatusLogic {
                     yield PlatformStatus.CHECKING;
                 }
             }
-            default -> {
-                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusActionLog(action));
-                yield null;
-            }
+            default -> throw new IllegalArgumentException(getUnexpectedStatusActionLog(action));
         };
     }
 

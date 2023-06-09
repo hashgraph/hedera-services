@@ -16,6 +16,7 @@
 
 package com.swirlds.common.system.platformstatus;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 
 import com.swirlds.common.notification.NotificationEngine;
@@ -86,10 +87,16 @@ public class PlatformStatusStateMachine {
     public void processStatusAction(@NonNull final PlatformStatusAction action) {
         Objects.requireNonNull(action);
 
-        final PlatformStatus newStatus = currentStatusLogic.processStatusAction(action);
+        final PlatformStatus newStatus;
+        try {
+            newStatus = currentStatusLogic.processStatusAction(action);
+        } catch (final IllegalArgumentException e) {
+            logger.error(EXCEPTION.getMarker(), e.getMessage());
+            return;
+        }
 
-        // null means status hasn't changed
-        if (newStatus == null) {
+        // if status didn't change, there isn't anything to do
+        if (newStatus.equals(currentStatusLogic.getStatus())) {
             return;
         }
 

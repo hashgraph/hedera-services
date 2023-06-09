@@ -20,18 +20,12 @@ import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.time.Time;
-import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#REPLAYING_EVENTS REPLAYING_EVENTS} status.
  */
 public class ReplayingEventsStatusLogic extends AbstractStatusLogic {
-    private static final Logger logger = LogManager.getLogger(ReplayingEventsStatusLogic.class);
-
     /**
      * Whether a freeze period has been entered
      */
@@ -50,7 +44,7 @@ public class ReplayingEventsStatusLogic extends AbstractStatusLogic {
     /**
      * {@inheritDoc}
      */
-    @Nullable
+    @NonNull
     @Override
     public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
         return switch (action) {
@@ -64,14 +58,11 @@ public class ReplayingEventsStatusLogic extends AbstractStatusLogic {
             }
             case FREEZE_PERIOD_ENTERED -> {
                 freezePeriodEntered = true;
-                yield null;
+                yield getStatus();
             }
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
-            case TIME_ELAPSED -> null;
-            default -> {
-                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusActionLog(action));
-                yield null;
-            }
+            case TIME_ELAPSED -> getStatus();
+            default -> throw new IllegalArgumentException(getUnexpectedStatusActionLog(action));
         };
     }
 

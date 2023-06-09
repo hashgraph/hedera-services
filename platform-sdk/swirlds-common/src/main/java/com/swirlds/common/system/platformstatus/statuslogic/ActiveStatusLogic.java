@@ -20,20 +20,14 @@ import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.time.Time;
-import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#ACTIVE ACTIVE} status.
  */
 public class ActiveStatusLogic extends AbstractStatusLogic {
-    private static final Logger logger = LogManager.getLogger(ActiveStatusLogic.class);
-
     /**
      * The last time an own event was observed reaching consensus
      */
@@ -55,7 +49,7 @@ public class ActiveStatusLogic extends AbstractStatusLogic {
     /**
      * {@inheritDoc}
      */
-    @Nullable
+    @NonNull
     @Override
     public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
         return switch (action) {
@@ -63,11 +57,11 @@ public class ActiveStatusLogic extends AbstractStatusLogic {
                 // record the time an own event reached consensus, resetting the timer that would trigger a transition
                 // to CHECKING
                 lastTimeOwnEventReachedConsensus = getTime().now();
-                yield null;
+                yield getStatus();
             }
             case FREEZE_PERIOD_ENTERED -> PlatformStatus.FREEZING;
             case FALLEN_BEHIND -> PlatformStatus.BEHIND;
-            case STATE_WRITTEN_TO_DISK -> null;
+            case STATE_WRITTEN_TO_DISK -> getStatus();
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
             case TIME_ELAPSED -> {
                 if (Duration.between(lastTimeOwnEventReachedConsensus, getTime().now())
@@ -77,13 +71,10 @@ public class ActiveStatusLogic extends AbstractStatusLogic {
                     // CHECKING
                     yield PlatformStatus.CHECKING;
                 } else {
-                    yield null;
+                    yield getStatus();
                 }
             }
-            default -> {
-                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusActionLog(action));
-                yield null;
-            }
+            default -> throw new IllegalArgumentException(getUnexpectedStatusActionLog(action));
         };
     }
 

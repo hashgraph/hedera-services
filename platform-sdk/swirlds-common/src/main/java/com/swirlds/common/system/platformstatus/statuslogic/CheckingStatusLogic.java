@@ -20,18 +20,12 @@ import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.time.Time;
-import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#CHECKING CHECKING} status.
  */
 public class CheckingStatusLogic extends AbstractStatusLogic {
-    private static final Logger logger = LogManager.getLogger(CheckingStatusLogic.class);
-
     /**
      * Constructor
      *
@@ -45,19 +39,16 @@ public class CheckingStatusLogic extends AbstractStatusLogic {
     /**
      * {@inheritDoc}
      */
-    @Nullable
+    @NonNull
     @Override
     public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
         return switch (action) {
             case OWN_EVENT_REACHED_CONSENSUS -> PlatformStatus.ACTIVE;
             case FREEZE_PERIOD_ENTERED -> PlatformStatus.FREEZING;
             case FALLEN_BEHIND -> PlatformStatus.BEHIND;
-            case STATE_WRITTEN_TO_DISK, TIME_ELAPSED -> null;
+            case STATE_WRITTEN_TO_DISK, TIME_ELAPSED -> getStatus();
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
-            default -> {
-                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusActionLog(action));
-                yield null;
-            }
+            default -> throw new IllegalArgumentException(getUnexpectedStatusActionLog(action));
         };
     }
 

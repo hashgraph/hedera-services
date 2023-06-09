@@ -39,6 +39,7 @@ public enum PlatformStatus implements UniqueId {
      * <p>
      * NOTE: This is still in use, but will be retired once the status state machine is complete.
      */
+    @Deprecated(forRemoval = true)
     DISCONNECTED(3),
     /**
      * The Platform does not have the latest state, and needs to reconnect. The platform is not gossiping.

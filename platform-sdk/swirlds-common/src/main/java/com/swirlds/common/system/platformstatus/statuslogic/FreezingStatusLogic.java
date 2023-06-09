@@ -20,19 +20,13 @@ import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.time.Time;
-import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#FREEZING FREEZING} status.
  */
 public class FreezingStatusLogic extends AbstractStatusLogic {
-    private static final Logger logger = LogManager.getLogger(FreezingStatusLogic.class);
-
     /**
      * Constructor
      *
@@ -46,11 +40,11 @@ public class FreezingStatusLogic extends AbstractStatusLogic {
     /**
      * {@inheritDoc}
      */
-    @Nullable
+    @NonNull
     @Override
     public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
         return switch (action) {
-            case OWN_EVENT_REACHED_CONSENSUS -> null;
+            case OWN_EVENT_REACHED_CONSENSUS -> getStatus();
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
             case TIME_ELAPSED -> {
                 if (Duration.between(getStatusStartTime(), getTime().now())
@@ -59,13 +53,10 @@ public class FreezingStatusLogic extends AbstractStatusLogic {
                     // move to the saving freeze state status after the configured amount of time has elapsed
                     yield PlatformStatus.SAVING_FREEZE_STATE;
                 } else {
-                    yield null;
+                    yield getStatus();
                 }
             }
-            default -> {
-                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusActionLog(action));
-                yield null;
-            }
+            default -> throw new IllegalArgumentException(getUnexpectedStatusActionLog(action));
         };
     }
 
