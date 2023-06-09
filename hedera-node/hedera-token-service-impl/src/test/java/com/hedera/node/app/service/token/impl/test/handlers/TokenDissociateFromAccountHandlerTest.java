@@ -372,6 +372,8 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             Assertions.assertThat(savedAcct.headTokenNumber()).isEqualTo(-1);
             // Since the account had no auto-associated tokens, usedAutoAssociations should still be zero
             Assertions.assertThat(savedAcct.usedAutoAssociations()).isZero();
+            // Since the account had no positive balances, its number of positive balances should still be zero
+            Assertions.assertThat(savedAcct.numberPositiveBalances()).isZero();
             // Verify that the token rel was removed
             final var supposedlyDeletedTokenRel =
                     writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID).orElse(null);
@@ -415,6 +417,8 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             Assertions.assertThat(savedAcct.headTokenNumber()).isEqualTo(-1);
             // Since the account had no auto-associated tokens, auto associations should still be zero
             Assertions.assertThat(savedAcct.usedAutoAssociations()).isZero();
+            // Since the account had no positive balances, its number of positive balances should still be zero
+            Assertions.assertThat(savedAcct.numberPositiveBalances()).isZero();
             // Verify that the token rel was removed
             final var supposedlyDeletedTokenRel =
                     writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID).orElse(null);
@@ -431,6 +435,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
                     .headTokenNumber(TOKEN_555_ID.tokenNum())
                     .numberAssociations(1)
                     .usedAutoAssociations(0)
+                    .numberPositiveBalances(1)
                     .build();
             final var treasuryAccount = Account.newBuilder()
                     .accountNumber(ACCOUNT_2020.accountNumOrThrow())
@@ -481,6 +486,9 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             Assertions.assertThat(savedAcct.headTokenNumber()).isEqualTo(-1);
             // Since the account had no auto-associated tokens, auto associations should still be zero
             Assertions.assertThat(savedAcct.usedAutoAssociations()).isZero();
+            // Since the removed token rel had a positive balance, the account's number of positive balances should also
+            // be reduced
+            Assertions.assertThat(savedAcct.numberPositiveBalances()).isZero();
 
             // Verify the treasury account is in its expected state
             final var treasuryAcct = writableAccountStore.get(ACCOUNT_2020);
@@ -523,6 +531,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
                     .headTokenNumber(token444Id.tokenNum())
                     .numberAssociations(3)
                     .usedAutoAssociations(1) // We'll set up the active token rel as auto-associated
+                    .numberPositiveBalances(2)
                     .build();
             writableAccountStore = newWritableStoreWithAccounts(accountWithTokenRels);
 
@@ -569,6 +578,9 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             Assertions.assertThat(savedAcct.headTokenNumber()).isEqualTo(-1);
             // The active token, which is the only auto-associated token rel, should have been removed
             Assertions.assertThat(savedAcct.usedAutoAssociations()).isZero();
+            // Both token rels with positive balances should have been removed, so the account's number of positive
+            // balances should now be zero
+            Assertions.assertThat(savedAcct.numberPositiveBalances()).isZero();
 
             // Verify that the token rels were removed
             final var token444Rel =

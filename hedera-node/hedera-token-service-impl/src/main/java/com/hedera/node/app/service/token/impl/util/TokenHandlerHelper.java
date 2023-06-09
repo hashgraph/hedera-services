@@ -75,6 +75,7 @@ public class TokenHandlerHelper {
      * @param expiryValidator the {@link ExpiryValidator} to determine if the account is expired
      * @throws HandleException if any of the account conditions are not met
      */
+    @NonNull
     public static Account getIfUsable(
             @NonNull final AccountID accountId,
             @NonNull final ReadableAccountStore accountStore,
@@ -105,6 +106,7 @@ public class TokenHandlerHelper {
      * @param tokenStore the {@link ReadableTokenStore} to use for token retrieval
      * @throws HandleException if any of the token conditions are not met
      */
+    @NonNull
     public static Token getIfUsable(@NonNull final TokenID tokenId, @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(tokenId);
         requireNonNull(tokenStore);

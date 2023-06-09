@@ -103,13 +103,14 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         // Update the account and relevant token relations
         // Note: since we can't query an Account copyBuilder for current values, and since the account object is
         // undergoing an update (i.e. we can't accurately query account.numXYZs() at any arbitrary point during the
-        // following loop), we have to keep track of the aggregate number of NFTs, auto associations, and associations
-        // to remove from the account separate from the account object itself. Confusing, but we'll _add_ the number to
-        // subtract to each aggregating variable. The total subtraction for each variable will be done outside the
-        // dissociation loop
+        // following loop), we have to keep track of the aggregate number of NFTs, auto associations, associations, and
+        // positive balances to remove from the account separate from the account object itself. Confusing, but we'll
+        // _add_ the number to subtract to each aggregating variable. The total subtraction for each variable will be
+        // done outside the dissociation loop
         var numNftsToSubtract = 0;
         var numAutoAssociationsToSubtract = 0;
         var numAssociationsToSubtract = 0;
+        var numPositiveBalancesToSubtract = 0;
         final var account = validated.account();
         final var tokenRelsToRemove = new ArrayList<TokenRelation>();
         final var treasuryBalancesToUpdate = new ArrayList<TokenRelation>();
@@ -160,6 +161,10 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                 numAutoAssociationsToSubtract++;
             }
 
+            if (tokenRel.balance() != 0) {
+                numPositiveBalancesToSubtract++;
+            }
+
             numAssociationsToSubtract++;
         }
 
@@ -170,12 +175,13 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                 ? updatedTokenRels.updatedHeadTokenId()
                 : account.headTokenNumber();
 
-        // Update the account with the aggregate number of NFTs, auto associations, and associations to remove,
-        // as well as the new head token number
+        // Update the account with the aggregate number of NFTs, auto associations, associations, and positive balances
+        // to remove, as well as the new head token number
         final var updatedAcct = account.copyBuilder()
                 .numberOwnedNfts(account.numberOwnedNfts() - numNftsToSubtract)
                 .usedAutoAssociations(account.usedAutoAssociations() - numAutoAssociationsToSubtract)
                 .numberAssociations(account.numberAssociations() - numAssociationsToSubtract)
+                .numberPositiveBalances(account.numberPositiveBalances() - numPositiveBalancesToSubtract)
                 .headTokenNumber(newHeadTokenId)
                 .build();
 

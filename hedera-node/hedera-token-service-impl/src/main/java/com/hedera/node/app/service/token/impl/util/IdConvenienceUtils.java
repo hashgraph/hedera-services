@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.util;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public final class IdConvenienceUtils {
 
@@ -32,6 +33,7 @@ public final class IdConvenienceUtils {
      * @return the constructed {@code AccountID}
      * @throws IllegalArgumentException if the given account number is not valid
      */
+    @NonNull
     public static AccountID fromAccountNum(final long accountNum) {
         if (!isValidAccountNum(accountNum)) {
             throw new IllegalArgumentException("Account number must be positive");
@@ -46,6 +48,7 @@ public final class IdConvenienceUtils {
      * @return the constructed {@code TokenID}
      * @throws IllegalArgumentException if the given token number is not valid
      */
+    @NonNull
     public static TokenID fromTokenNum(final long tokenNum) {
         if (!isValidTokenNum(tokenNum)) {
             throw new IllegalArgumentException("Token number must be positive");

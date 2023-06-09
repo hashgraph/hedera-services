@@ -267,6 +267,19 @@ class TokenRelListCalculatorTest {
                                 .build());
     }
 
+    @Test
+    void removeTokenRels_selfPointingTokenRel() {
+        final var selfPointingTokenRel = LOCAL_TOKEN_REL_1
+                .copyBuilder()
+                .previousToken(TOKEN_NUMBER_1)
+                .nextToken(TOKEN_NUMBER_1)
+                .build();
+        final var result = subject.removeTokenRels(ACCT_2300, List.of(selfPointingTokenRel));
+        // Since the token rel points to itself, the calculation of the account's new head token number should loop
+        // until it maxes out at a safety boundary, at which point we should default to a head token number of -1
+        Assertions.assertThat(result.updatedHeadTokenId()).isEqualTo(-1);
+    }
+
     private static ReadableTokenRelationStore localTokenRelsStore() {
         final long acct2300 = ACCT_2300_ID.accountNumOrThrow();
         final var tokenRels = new HashMap<EntityNumPair, TokenRelation>();

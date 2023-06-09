@@ -42,8 +42,8 @@ public class TokenRelListCalculator {
 
     private final ReadableTokenRelationStore tokenRelStore;
 
-    public TokenRelListCalculator(ReadableTokenRelationStore tokenRelStore) {
-        this.tokenRelStore = tokenRelStore;
+    public TokenRelListCalculator(@NonNull final ReadableTokenRelationStore tokenRelStore) {
+        this.tokenRelStore = requireNonNull(tokenRelStore);
     }
 
     /**
@@ -56,6 +56,7 @@ public class TokenRelListCalculator {
      * to – or, in the case of the token rels to remove, removed from – their corresponding account
      * or token rel store objects</b>
      *
+     * <p>
      * <b>Removal Examples</b>
      * <p>
      * Assume that valid account A has head token number 1, and that the following list of token
@@ -164,11 +165,12 @@ public class TokenRelListCalculator {
 
         // Calculate the account's new head token number, given the token relations to delete
         final var updatedHeadTokenNum = calculateHeadTokenAfterDeletions(
-                currentHeadTokenNum, accountId, updatedTokenRels, tokenRelsToDeleteByTokenId);
+                currentHeadTokenNum, account, updatedTokenRels, tokenRelsToDeleteByTokenId);
 
         return new TokenRelsRemovalResult(updatedHeadTokenNum, updatedTokenRelsToKeep);
     }
 
+    @NonNull
     private List<TokenRelation> filterNullsAndDuplicates(final List<TokenRelation> tokenRelsToDelete) {
         // We could use a simple .stream() for this functionality, but don't do so in order to avoid the performance
         // overhead
@@ -195,6 +197,7 @@ public class TokenRelListCalculator {
      *                 relation account IDs must match this value)
      * @param tokenNumToLookup the token ID of the token relation to retrieve
      */
+    @Nullable
     private TokenRelation getInPriorityOrder(
             @NonNull final Map<Long, TokenRelation> updatedTokenRels,
             @NonNull final Map<Long, TokenRelation> tokenRelsToDeleteByTokenId,
@@ -252,22 +255,28 @@ public class TokenRelListCalculator {
 
     /**
      * Given an account's current head token number and a collection of token relations to remove,
-     * this method computes the expected new head token number for the account
+     * this method computes the expected new head token number for the account.
+     *
+     * <p>
+     * <b>Note:</b> if the given token rels are in an illegal state, a fallback value of -1 will be returned
      *
      * @param currentHeadTokenNum the account's current head token number, i.e. the head token number that may change
-     * @param accountId the account's ID
+     * @param account the account (object, not ID) that the token is related to
      * @param tokenRelsToDeleteByTokenId a map of token relations to delete, keyed by token ID for convenience of lookup
      * @return the new head token number for the account
      */
     private long calculateHeadTokenAfterDeletions(
             final long currentHeadTokenNum,
-            final AccountID accountId,
-            final Map<Long, TokenRelation> updatedTokenRels,
-            final Map<Long, TokenRelation> tokenRelsToDeleteByTokenId) {
+            @NonNull final Account account,
+            @NonNull final Map<Long, TokenRelation> updatedTokenRels,
+            @NonNull final Map<Long, TokenRelation> tokenRelsToDeleteByTokenId) {
+        final var accountId = IdConvenienceUtils.fromAccountNum(account.accountNumber());
+
         // Calculate the new head token number by walking the linked token rels until we find a token rel that is not in
         // the list of token rels to delete
-
         var currentTokenNum = currentHeadTokenNum;
+        // We use a safety counter to prevent infinite loops in case of a bug
+        var safetyCounter = 0;
         TokenRelation currentWalkedTokenRel;
         do {
             currentWalkedTokenRel = updatedTokenRels.containsKey(currentTokenNum)
@@ -294,12 +303,18 @@ public class TokenRelListCalculator {
                 // loop (since `currentWalkedTokenRel` is null)
                 currentTokenNum = -1;
             }
-        } while (currentWalkedTokenRel != null);
 
-        // At this point, `currentTokenNum` is either -1 (if we reached the end of the linked token rel pointers chain)
-        // or the token number of the first token rel that will NOT be deleted. In either case, this value is the
-        // account's new head token number
-        return currentTokenNum;
+            // Default to a null pointer (value of -1) for infinite looping cases
+            if (safetyCounter++ > account.numberAssociations()) {
+                return -1;
+            }
+        } while (currentWalkedTokenRel != null && safetyCounter <= account.numberAssociations());
+
+        // At this point, `currentTokenNum` is either -1 (if we reached the end of the linked token rel pointers chain),
+        // zero if a token rel's previous or next pointer was incorrectly set to zero (e.g. initialized by default to
+        // zero and not set), or the token number of the first token rel that will NOT be deleted. In the first two
+        // cases, this value is the account's new head token number. Otherwise, return a fallback of number of -1
+        return currentTokenNum > 0 ? currentTokenNum : -1;
     }
 
     /**
