@@ -93,6 +93,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case TOKEN_PAUSE -> dispatchTokenPause(context);
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(context);
             case TOKEN_FEE_SCHEDULE_UPDATE -> dispatchTokenFeeScheduleUpdate(context);
+            case TOKEN_DELETION -> dispatchTokenDeletion(context);
             case UTIL_PRNG -> dispatchPrng(context);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
@@ -235,6 +236,11 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     private void dispatchTokenFeeScheduleUpdate(@NonNull final HandleContext handleContext) {
         requireNonNull(handleContext);
         final var handler = handlers.tokenFeeScheduleUpdateHandler();
+        handler.handle(handleContext);
+    }
+
+    private void dispatchTokenDeletion(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.tokenDeleteHandler();
         handler.handle(handleContext);
     }
 }
