@@ -247,7 +247,6 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         Token token; // token from readableToken store by tokenID
         TokenID tokenID; // build from tokenNum
         AccountID accountID; // build from accountNumber
-        TokenRelationship tokenRelationship; // created TokenRelationship object
         while (tokenNum != 0 && count < tokenConfig.maxRelsPerInfoQuery()) {
             accountID =
                     AccountID.newBuilder().accountNum(account.accountNumber()).build();
