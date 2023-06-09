@@ -568,6 +568,20 @@ class MonoTransactionDispatcherTest {
         given(handleContext.body()).willReturn(txnBody);
 
         dispatcher.dispatchHandle(handleContext);
+
+        verify(handleContext).body();
+    }
+
+    @Test
+    void dispatchesTokenDissociateAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .tokenDissociate(TokenDissociateTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+
+        dispatcher.dispatchHandle(handleContext);
+
+        verify(handleContext).body();
     }
 
     @Test
