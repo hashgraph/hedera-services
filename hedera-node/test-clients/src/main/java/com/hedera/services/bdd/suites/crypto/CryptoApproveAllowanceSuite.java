@@ -141,7 +141,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     private HapiSpec canDeleteAllowanceFromDeletedSpender() {
-        return defaultHapiSpec("canDeleteAllowanceFromDeletedSpender")
+        return onlyDefaultHapiSpec("canDeleteAllowanceFromDeletedSpender")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
@@ -156,13 +156,36 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .maxSupply(1000L)
                                 .initialSupply(10L)
                                 .treasury(TOKEN_TREASURY),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .maxSupply(10L)
+                                .initialSupply(0)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(SUPPLY_KEY)
+                                .treasury(TOKEN_TREASURY),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN),
-                        mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN))
+                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+                        mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN),
+                        mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c"))))
                 .when(
                         cryptoApproveAllowance()
                                 .payingWith(OWNER)
                                 .addCryptoAllowance(OWNER, SPENDER, 100L)
-                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 1),
+                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 1)
+                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, true, List.of()),
+                        getAccountDetails(OWNER)
+                                .payingWith(GENESIS)
+                                .has(accountDetailsWith()
+                                        .cryptoAllowancesCount(1)
+                                        .tokenAllowancesCount(1)
+                                        .nftApprovedForAllAllowancesCount(1)
+                                        .cryptoAllowancesContaining(SPENDER, 100L)
+                                        .tokenAllowancesContaining(FUNGIBLE_TOKEN, SPENDER, 1)),
                         cryptoDelete(SPENDER),
                         // removing fungible allowances should be possible even if the
                         // spender is deleted
@@ -170,10 +193,46 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .payingWith(OWNER)
                                 .addCryptoAllowance(OWNER, SPENDER, 0)
                                 .blankMemo(),
+                        getAccountDetails(OWNER)
+                                .payingWith(GENESIS)
+                                .has(accountDetailsWith()
+                                        .cryptoAllowancesCount(0)
+                                        .tokenAllowancesCount(1)
+                                        .nftApprovedForAllAllowancesCount(1)
+                                        .tokenAllowancesContaining(FUNGIBLE_TOKEN, SPENDER, 1)),
                         cryptoApproveAllowance()
                                 .payingWith(OWNER)
                                 .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 0)
-                                .blankMemo())
+                                .blankMemo(),
+                        getAccountDetails(OWNER)
+                                .payingWith(GENESIS)
+                                .has(accountDetailsWith()
+                                        .cryptoAllowancesCount(0)
+                                        .tokenAllowancesCount(0)
+                                        .nftApprovedForAllAllowancesCount(1)),
+                        // It should not be possible to remove approveForAllNftAllowance
+                        // and also add allowance to serials
+                        cryptoApproveAllowance()
+                                .payingWith(OWNER)
+                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L, 2L))
+                                .hasKnownStatus(INVALID_ALLOWANCE_SPENDER_ID),
+                        getAccountDetails(OWNER)
+                                .payingWith(GENESIS)
+                                .has(accountDetailsWith()
+                                        .cryptoAllowancesCount(0)
+                                        .tokenAllowancesCount(0)
+                                        .nftApprovedForAllAllowancesCount(1)),
+                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender(),
+                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasNoSpender(),
+                        cryptoApproveAllowance()
+                                .payingWith(OWNER)
+                                .addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of()),
+                        getAccountDetails(OWNER)
+                                .payingWith(GENESIS)
+                                .has(accountDetailsWith()
+                                        .cryptoAllowancesCount(0)
+                                        .tokenAllowancesCount(0)
+                                        .nftApprovedForAllAllowancesCount(0)))
                 .then();
     }
 
