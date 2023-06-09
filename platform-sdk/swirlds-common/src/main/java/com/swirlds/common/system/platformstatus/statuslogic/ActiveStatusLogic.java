@@ -20,79 +20,54 @@ import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.time.Time;
-import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#ACTIVE ACTIVE} status.
  */
-public class ActiveStatusLogic extends AbstractStatusLogic {
-    private static final Logger logger = LogManager.getLogger(ActiveStatusLogic.class);
-
+public class ActiveStatusLogic implements PlatformStatusLogic {
     /**
      * The last time an own event was observed reaching consensus
      */
     private Instant lastTimeOwnEventReachedConsensus;
 
     /**
-     * Constructor
-     *
-     * @param time   a source of time
-     * @param config the platform status config
-     */
-    public ActiveStatusLogic(@NonNull final Time time, @NonNull final PlatformStatusConfig config) {
-        super(time, config);
-
-        // an own event had to reach consensus to arrive at the ACTIVE status
-        this.lastTimeOwnEventReachedConsensus = time.now();
-    }
-
-    /**
      * {@inheritDoc}
      */
-    @Nullable
+    @NonNull
     @Override
-    public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
+    public PlatformStatus processStatusAction(
+            @NonNull final PlatformStatusAction action,
+            @NonNull final Instant statusStartTime,
+            @NonNull final Time time,
+            @NonNull final PlatformStatusConfig config) {
+
         return switch (action) {
             case OWN_EVENT_REACHED_CONSENSUS -> {
                 // record the time an own event reached consensus, resetting the timer that would trigger a transition
                 // to CHECKING
-                lastTimeOwnEventReachedConsensus = getTime().now();
-                yield null;
+                lastTimeOwnEventReachedConsensus = time.now();
+                yield PlatformStatus.ACTIVE;
             }
             case FREEZE_PERIOD_ENTERED -> PlatformStatus.FREEZING;
             case FALLEN_BEHIND -> PlatformStatus.BEHIND;
-            case STATE_WRITTEN_TO_DISK -> null;
+            case STATE_WRITTEN_TO_DISK -> PlatformStatus.ACTIVE;
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
             case TIME_ELAPSED -> {
-                if (Duration.between(lastTimeOwnEventReachedConsensus, getTime().now())
-                                .compareTo(getConfig().activeStatusDelay())
+                if (Duration.between(lastTimeOwnEventReachedConsensus, time.now())
+                                .compareTo(config.activeStatusDelay())
                         > 0) {
                     // if an own event hasn't been observed reaching consensus in the configured duration, go back to
                     // CHECKING
                     yield PlatformStatus.CHECKING;
                 } else {
-                    yield null;
+                    yield PlatformStatus.ACTIVE;
                 }
             }
-            default -> {
-                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusActionLog(action));
-                yield null;
-            }
+            default -> throw new IllegalArgumentException(
+                    "Unexpected action `%s` while in status `ACTIVE`".formatted(action));
         };
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public PlatformStatus getStatus() {
-        return PlatformStatus.ACTIVE;
     }
 }

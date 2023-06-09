@@ -16,17 +16,17 @@
 
 package com.swirlds.common.system.platformstatus;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
-import com.swirlds.common.system.platformstatus.statuslogic.PlatformStatusLogic;
-import com.swirlds.common.system.platformstatus.statuslogic.StatusLogicFactory;
 import com.swirlds.common.time.Time;
 import com.swirlds.logging.payloads.PlatformStatusPayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,7 +55,12 @@ public class PlatformStatusStateMachine {
     /**
      * The object containing the state machine logic for the current status
      */
-    private PlatformStatusLogic currentStatusLogic;
+    private PlatformStatus currentStatus;
+
+    /**
+     * The time at which the current status started
+     */
+    private Instant currentStatusStartTime;
 
     /**
      * Constructor
@@ -73,7 +78,8 @@ public class PlatformStatusStateMachine {
         this.config = Objects.requireNonNull(config);
         this.notificationEngine = Objects.requireNonNull(notificationEngine);
 
-        this.currentStatusLogic = StatusLogicFactory.createStatusLogic(PlatformStatus.STARTING_UP, time, config);
+        this.currentStatus = PlatformStatus.STARTING_UP;
+        this.currentStatusStartTime = time.now();
     }
 
     /**
@@ -86,23 +92,27 @@ public class PlatformStatusStateMachine {
     public void processStatusAction(@NonNull final PlatformStatusAction action) {
         Objects.requireNonNull(action);
 
-        final PlatformStatus newStatus = currentStatusLogic.processStatusAction(action);
-
-        // null means status hasn't changed
-        if (newStatus == null) {
+        final PlatformStatus newStatus;
+        try {
+            newStatus = currentStatus.processStatusAction(action, currentStatusStartTime, time, config);
+        } catch (final IllegalStateException e) {
+            logger.error(EXCEPTION.getMarker(), e.getMessage(), e);
             return;
         }
 
-        final String statusChangeMessage = "Platform status changed after %s"
-                .formatted(Duration.between(currentStatusLogic.getStatusStartTime(), time.now()));
+        final Instant transitionTime = time.now();
+
+        final String statusChangeMessage =
+                "Platform status changed after %s".formatted(Duration.between(currentStatusStartTime, transitionTime));
 
         logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                        statusChangeMessage, currentStatusLogic.getStatus().name(), newStatus.name())
+                        statusChangeMessage, currentStatus.name(), newStatus.name())
                 .toString());
 
         notificationEngine.dispatch(
                 PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newStatus));
 
-        currentStatusLogic = StatusLogicFactory.createStatusLogic(newStatus, time, config);
+        currentStatusStartTime = transitionTime;
+        currentStatus = newStatus;
     }
 }

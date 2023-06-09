@@ -24,25 +24,21 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
 /**
- * Class containing the state machine logic for the {@link PlatformStatus#STARTING_UP STARTING_UP} status.
+ * Placeholder class representing the state machine logic for the {@link PlatformStatus#DISCONNECTED DISCONNECTED}
+ * status
+ * <p>
+ * Will be removed once the status is removed
  */
-public class StartingUpStatusLogic implements PlatformStatusLogic {
-    /**
-     * {@inheritDoc}
-     */
+@Deprecated(forRemoval = true)
+public class DisconnectedStatusLogic implements PlatformStatusLogic {
     @NonNull
+    @Override
     public PlatformStatus processStatusAction(
-            @NonNull final PlatformStatusAction action,
-            @NonNull final Instant statusStartTime,
-            @NonNull final Time time,
-            @NonNull final PlatformStatusConfig config) {
+            @NonNull PlatformStatusAction action,
+            @NonNull Instant statusStartTime,
+            @NonNull Time time,
+            @NonNull PlatformStatusConfig config) {
 
-        return switch (action) {
-            case STARTED_REPLAYING_EVENTS -> PlatformStatus.REPLAYING_EVENTS;
-            case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
-            case TIME_ELAPSED -> PlatformStatus.STARTING_UP;
-            default -> throw new IllegalArgumentException(
-                    "Unexpected action `%s` while in status `STARTING_UP`".formatted(action));
-        };
+        throw new IllegalArgumentException("Unexpected action `%s` while in status `DISCONNECTED`".formatted(action));
     }
 }

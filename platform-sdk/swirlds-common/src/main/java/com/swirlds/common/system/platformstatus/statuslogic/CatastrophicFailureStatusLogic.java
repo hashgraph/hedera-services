@@ -20,46 +20,26 @@ import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.time.Time;
-import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.time.Instant;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#CATASTROPHIC_FAILURE CATASTROPHIC_FAILURE}
  * status.
  */
-public class CatastrophicFailureStatusLogic extends AbstractStatusLogic {
-    private static final Logger logger = LogManager.getLogger(CatastrophicFailureStatusLogic.class);
-
-    /**
-     * Constructor
-     *
-     * @param time   a source of time
-     * @param config the platform status config
-     */
-    public CatastrophicFailureStatusLogic(@NonNull final Time time, @NonNull final PlatformStatusConfig config) {
-        super(time, config);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Nullable
-    @Override
-    public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
-        // nothing should be happening if a catastrophic failure has occurred
-        logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusActionLog(action));
-        return null;
-    }
-
+public class CatastrophicFailureStatusLogic implements PlatformStatusLogic {
     /**
      * {@inheritDoc}
      */
     @NonNull
     @Override
-    public PlatformStatus getStatus() {
-        return PlatformStatus.CATASTROPHIC_FAILURE;
+    public PlatformStatus processStatusAction(
+            @NonNull final PlatformStatusAction action,
+            @NonNull final Instant statusStartTime,
+            @NonNull final Time time,
+            @NonNull final PlatformStatusConfig config) {
+
+        throw new IllegalArgumentException(
+                "Unexpected action `%s` while in status `CATASTROPHIC_FAILURE`".formatted(action));
     }
 }

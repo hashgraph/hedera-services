@@ -20,45 +20,26 @@ import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.time.Time;
-import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.time.Instant;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#FREEZE_COMPLETE FREEZE_COMPLETE} status.
  */
-public class FreezeCompleteStatusLogic extends AbstractStatusLogic {
-    private static final Logger logger = LogManager.getLogger(FreezeCompleteStatusLogic.class);
-
-    /**
-     * Constructor
-     *
-     * @param time   a source of time
-     * @param config the platform status config
-     */
-    public FreezeCompleteStatusLogic(@NonNull Time time, @NonNull PlatformStatusConfig config) {
-        super(time, config);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Nullable
-    @Override
-    public PlatformStatus processStatusAction(@NonNull PlatformStatusAction action) {
-        // nothing should be happening if a freeze is complete
-        logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusActionLog(action));
-        return null;
-    }
-
+public class FreezeCompleteStatusLogic implements PlatformStatusLogic {
     /**
      * {@inheritDoc}
      */
     @NonNull
     @Override
-    public PlatformStatus getStatus() {
-        return PlatformStatus.FREEZE_COMPLETE;
+    public PlatformStatus processStatusAction(
+            @NonNull final PlatformStatusAction action,
+            @NonNull final Instant statusStartTime,
+            @NonNull final Time time,
+            @NonNull final PlatformStatusConfig config) {
+
+        // nothing should be happening if a freeze is complete
+        throw new IllegalArgumentException(
+                "Unexpected action `%s` while in status `FREEZE_COMPLETE`".formatted(action));
     }
 }

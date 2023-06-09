@@ -20,51 +20,30 @@ import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.time.Time;
-import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.time.Instant;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#BEHIND BEHIND} status.
  */
-public class BehindStatusLogic extends AbstractStatusLogic {
-    private static final Logger logger = LogManager.getLogger(BehindStatusLogic.class);
-
-    /**
-     * Constructor
-     *
-     * @param time   a source of time
-     * @param config the platform status config object
-     */
-    public BehindStatusLogic(@NonNull final Time time, @NonNull final PlatformStatusConfig config) {
-        super(time, config);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Nullable
-    @Override
-    public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
-        return switch (action) {
-            case RECONNECT_COMPLETE -> PlatformStatus.RECONNECT_COMPLETE;
-            case STATE_WRITTEN_TO_DISK, TIME_ELAPSED -> null;
-            case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
-            default -> {
-                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusActionLog(action));
-                yield null;
-            }
-        };
-    }
-
+public class BehindStatusLogic implements PlatformStatusLogic {
     /**
      * {@inheritDoc}
      */
     @NonNull
     @Override
-    public PlatformStatus getStatus() {
-        return PlatformStatus.BEHIND;
+    public PlatformStatus processStatusAction(
+            @NonNull final PlatformStatusAction action,
+            @NonNull final Instant statusStartTime,
+            @NonNull final Time time,
+            @NonNull final PlatformStatusConfig config) {
+
+        return switch (action) {
+            case RECONNECT_COMPLETE -> PlatformStatus.RECONNECT_COMPLETE;
+            case STATE_WRITTEN_TO_DISK, TIME_ELAPSED -> PlatformStatus.BEHIND;
+            case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
+            default -> throw new IllegalArgumentException(
+                    "Unexpected action `%s` while in status `BEHIND`".formatted(action));
+        };
     }
 }

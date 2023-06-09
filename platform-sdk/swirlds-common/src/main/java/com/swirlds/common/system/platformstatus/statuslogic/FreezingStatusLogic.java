@@ -20,61 +20,38 @@ import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.time.Time;
-import com.swirlds.logging.LogMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.time.Instant;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#FREEZING FREEZING} status.
  */
-public class FreezingStatusLogic extends AbstractStatusLogic {
-    private static final Logger logger = LogManager.getLogger(FreezingStatusLogic.class);
-
-    /**
-     * Constructor
-     *
-     * @param time   a source of time
-     * @param config the platform status config
-     */
-    public FreezingStatusLogic(@NonNull final Time time, @NonNull final PlatformStatusConfig config) {
-        super(time, config);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Nullable
-    @Override
-    public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
-        return switch (action) {
-            case OWN_EVENT_REACHED_CONSENSUS -> null;
-            case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
-            case TIME_ELAPSED -> {
-                if (Duration.between(getStatusStartTime(), getTime().now())
-                                .compareTo(getConfig().freezingStatusDelay())
-                        > 0) {
-                    // move to the saving freeze state status after the configured amount of time has elapsed
-                    yield PlatformStatus.SAVING_FREEZE_STATE;
-                } else {
-                    yield null;
-                }
-            }
-            default -> {
-                logger.error(LogMarker.EXCEPTION.getMarker(), getUnexpectedStatusActionLog(action));
-                yield null;
-            }
-        };
-    }
-
+public class FreezingStatusLogic implements PlatformStatusLogic {
     /**
      * {@inheritDoc}
      */
     @NonNull
     @Override
-    public PlatformStatus getStatus() {
-        return PlatformStatus.FREEZING;
+    public PlatformStatus processStatusAction(
+            @NonNull final PlatformStatusAction action,
+            @NonNull final Instant statusStartTime,
+            @NonNull final Time time,
+            @NonNull final PlatformStatusConfig config) {
+
+        return switch (action) {
+            case OWN_EVENT_REACHED_CONSENSUS -> PlatformStatus.FREEZING;
+            case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
+            case TIME_ELAPSED -> {
+                if (Duration.between(statusStartTime, time.now()).compareTo(config.freezingStatusDelay()) > 0) {
+                    // move to the saving freeze state status after the configured amount of time has elapsed
+                    yield PlatformStatus.SAVING_FREEZE_STATE;
+                } else {
+                    yield PlatformStatus.FREEZING;
+                }
+            }
+            default -> throw new IllegalArgumentException(
+                    "Unexpected action `%s` while in status `FREEZING`".formatted(action));
+        };
     }
 }

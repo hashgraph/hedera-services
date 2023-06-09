@@ -18,49 +18,33 @@ package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusAction;
+import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
+import com.swirlds.common.time.Time;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
  * Interface representing the state machine logic for an individual {@link PlatformStatus}.
  */
+@FunctionalInterface
 public interface PlatformStatusLogic {
     /**
      * Process a status action.
      * <p>
-     * If the input action causes a status transition, then this method will return the new status. Otherwise, a return
-     * value of null indicates that the input action didn't cause a status transition
+     * If the input action causes a status transition, then this method will return the new status. Otherwise, it will
+     * return the same status as before processing the action.
      *
-     * @param action the status action that has occurred
-     * @return the new status if the input action caused a status transition, otherwise null
-     */
-    @Nullable
-    PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action);
-
-    /**
-     * Get the status that this logic is for.
-     *
-     * @return the status that this logic is for
+     * @param action          the status action that has occurred
+     * @param statusStartTime the time at which the current status started
+     * @param time            a source of time
+     * @param config          the platform status config
+     * @return the status after processing the action. may be the same status as before processing
+     * @throws IllegalArgumentException if the input action is not expected in the current status
      */
     @NonNull
-    PlatformStatus getStatus();
-
-    /**
-     * Get the time that the current status was transitioned to.
-     *
-     * @return the time that the current status was transitioned to
-     */
-    @NonNull
-    Instant getStatusStartTime();
-
-    /**
-     * Get the log message to use when an unexpected status action is received.
-     *
-     * @param action the unexpected status action
-     * @return the log message to use when an unexpected status action is received
-     */
-    default String getUnexpectedStatusActionLog(@NonNull final PlatformStatusAction action) {
-        return "Received unexpected status action %s with current status of %s".formatted(action, getStatus());
-    }
+    PlatformStatus processStatusAction(
+            @NonNull final PlatformStatusAction action,
+            @NonNull final Instant statusStartTime,
+            @NonNull final Time time,
+            @NonNull final PlatformStatusConfig config);
 }
