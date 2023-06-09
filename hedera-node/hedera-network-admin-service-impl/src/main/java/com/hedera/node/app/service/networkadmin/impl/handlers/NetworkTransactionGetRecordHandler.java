@@ -76,16 +76,17 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         if (!op.hasTransactionID()) throw new PreCheckException(INVALID_TRANSACTION_ID);
 
         // The record must exist for that transaction ID
-        final var recordCache = context.createStore(RecordCache.class);
         final var txnId = op.transactionIDOrThrow();
-        final var record = recordCache.getReceipt(txnId);
-        mustExist(record, INVALID_TRANSACTION_ID);
 
         // verify that the account id exist and not default
         final var accountID = txnId.accountID();
-        if (accountID.equals(AccountID.DEFAULT)) {
+        if (accountID == null || accountID.equals(AccountID.DEFAULT)) {
             throw new PreCheckException(INVALID_ACCOUNT_ID);
         }
+
+        final var recordCache = context.createStore(RecordCache.class);
+        final var record = recordCache.getReceipt(txnId);
+        mustExist(record, INVALID_TRANSACTION_ID);
     }
 
     @Override

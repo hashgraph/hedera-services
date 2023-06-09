@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -117,6 +118,15 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
         given(context.query()).willReturn(query);
 
         assertThrowsPreCheck(() -> networkTransactionGetRecordHandler.validate(context), INVALID_TRANSACTION_ID);
+    }
+
+    @Test
+    void validatesQueryWhenNoAccountId() throws Throwable {
+
+        final var query = createGetTransactionRecordQuery(transactionIDWithoutAccount(0, 0), false, false);
+        given(context.query()).willReturn(query);
+
+        assertThrowsPreCheck(() -> networkTransactionGetRecordHandler.validate(context), INVALID_ACCOUNT_ID);
     }
 
     @Test

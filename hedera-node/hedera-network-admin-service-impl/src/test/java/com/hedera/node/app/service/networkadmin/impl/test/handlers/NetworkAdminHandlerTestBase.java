@@ -403,4 +403,13 @@ public class NetworkAdminHandlerTestBase {
                 .nonce(nonce)
                 .build();
     }
+
+    protected TransactionID transactionIDWithoutAccount(int nanos, int nonce) {
+        final var now = Instant.now();
+        return TransactionID.newBuilder()
+                .transactionValidStart(
+                        Timestamp.newBuilder().seconds(now.getEpochSecond()).nanos(nanos))
+                .nonce(nonce)
+                .build();
+    }
 }
