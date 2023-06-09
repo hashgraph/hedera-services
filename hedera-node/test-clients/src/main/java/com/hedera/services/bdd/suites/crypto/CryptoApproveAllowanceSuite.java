@@ -136,7 +136,45 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 approveForAllSpenderCanDelegateOnNFT(),
                 duplicateEntriesGetsReplacedWithDifferentTxn(),
                 duplicateKeysAndSerialsInSameTxnDoesntThrow(),
-                scheduledCryptoApproveAllowanceWorks());
+                scheduledCryptoApproveAllowanceWorks(),
+                canDeleteAllowanceFromDeletedSpender());
+    }
+
+    private HapiSpec canDeleteAllowanceFromDeletedSpender() {
+        return defaultHapiSpec("canDeleteAllowanceFromDeletedSpender")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY)
+                                .balance(100 * ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(10),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .supplyKey(SUPPLY_KEY)
+                                .maxSupply(1000L)
+                                .initialSupply(10L)
+                                .treasury(TOKEN_TREASURY),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN),
+                        mintToken(FUNGIBLE_TOKEN, 500L).via(FUNGIBLE_TOKEN_MINT_TXN))
+                .when(
+                        cryptoApproveAllowance()
+                                .payingWith(OWNER)
+                                .addCryptoAllowance(OWNER, SPENDER, 100L)
+                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 1),
+                        cryptoDelete(SPENDER),
+                        // removing fungible allowances should be possible even if the
+                        // spender is deleted
+                        cryptoApproveAllowance()
+                                .payingWith(OWNER)
+                                .addCryptoAllowance(OWNER, SPENDER, 0)
+                                .blankMemo(),
+                        cryptoApproveAllowance()
+                                .payingWith(OWNER)
+                                .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 0)
+                                .blankMemo())
+                .then();
     }
 
     private HapiSpec duplicateKeysAndSerialsInSameTxnDoesntThrow() {
