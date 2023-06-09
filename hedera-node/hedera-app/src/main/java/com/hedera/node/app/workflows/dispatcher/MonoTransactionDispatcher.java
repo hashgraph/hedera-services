@@ -85,6 +85,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case CRYPTO_UPDATE_ACCOUNT -> dispatchCryptoUpdate(context);
             case FREEZE -> dispatchFreeze(context);
             case TOKEN_ASSOCIATE -> dispatchTokenAssociate(context);
+            case TOKEN_DISSOCIATE -> dispatchTokenDissociate(context);
             case TOKEN_FREEZE -> dispatchTokenFreeze(context);
             case TOKEN_UNFREEZE -> dispatchTokenUnfreeze(context);
             case TOKEN_GRANT_KYC -> dispatchTokenGrantKycToAccount(context);
@@ -92,6 +93,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case TOKEN_PAUSE -> dispatchTokenPause(context);
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(context);
             case TOKEN_FEE_SCHEDULE_UPDATE -> dispatchTokenFeeScheduleUpdate(context);
+            case TOKEN_DELETION -> dispatchTokenDeletion(context);
             case UTIL_PRNG -> dispatchPrng(context);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
@@ -190,6 +192,11 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
         handler.handle(handleContext);
     }
 
+    private void dispatchTokenDissociate(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.tokenDissociateFromAccountHandler();
+        handler.handle(handleContext);
+    }
+
     private void dispatchTokenPause(@NonNull final HandleContext handleContext) {
         final var handler = handlers.tokenPauseHandler();
         handler.handle(handleContext);
@@ -229,6 +236,11 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     private void dispatchTokenFeeScheduleUpdate(@NonNull final HandleContext handleContext) {
         requireNonNull(handleContext);
         final var handler = handlers.tokenFeeScheduleUpdateHandler();
+        handler.handle(handleContext);
+    }
+
+    private void dispatchTokenDeletion(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.tokenDeleteHandler();
         handler.handle(handleContext);
     }
 }

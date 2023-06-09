@@ -20,7 +20,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
 import static com.swirlds.common.units.DataUnit.UNIT_KILOBYTES;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
-import static com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager.NO_MINIMUM_GENERATION;
+import static com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager.NO_MINIMUM_GENERATION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -45,13 +45,13 @@ import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.test.io.FileManipulation;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.event.preconsensus.AsyncPreConsensusEventWriter;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventFile;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventMultiFileIterator;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.AsyncPreconsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
-import com.swirlds.platform.event.preconsensus.SyncPreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.event.source.StandardEventSource;
@@ -80,8 +80,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@DisplayName("AsyncPreConsensusEventWriter Tests")
-class AsyncPreConsensusEventWriterTests {
+@DisplayName("AsyncPreconsensusEventWriter Tests")
+class AsyncPreconsensusEventWriterTests {
 
     /**
      * Temporary directory provided by JUnit
@@ -161,7 +161,7 @@ class AsyncPreConsensusEventWriterTests {
     }
 
     /**
-     * Perform verification on a stream written by a {@link SyncPreConsensusEventWriter}.
+     * Perform verification on a stream written by a {@link SyncPreconsensusEventWriter}.
      *
      * @param events             the events that were written to the stream
      * @param platformContext    the platform context
@@ -180,11 +180,11 @@ class AsyncPreConsensusEventWriterTests {
             lastGeneration = Math.max(lastGeneration, event.getGeneration());
         }
 
-        final PreConsensusEventFileManager reader =
-                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
+        final PreconsensusEventFileManager reader =
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
 
         // Verify that the events were written correctly
-        final PreConsensusEventMultiFileIterator eventsIterator = reader.getEventIterator(0, fixDiscontinuities);
+        final PreconsensusEventMultiFileIterator eventsIterator = reader.getEventIterator(0, fixDiscontinuities);
         for (final EventImpl event : events) {
             assertTrue(eventsIterator.hasNext());
             assertEventsAreEqual(event, eventsIterator.next());
@@ -209,7 +209,7 @@ class AsyncPreConsensusEventWriterTests {
         assertFalse(eventsIterator3.hasNext());
 
         // Do basic validation on event files
-        final List<PreConsensusEventFile> files = new ArrayList<>();
+        final List<PreconsensusEventFile> files = new ArrayList<>();
         reader.getFileIterator(0, false).forEachRemaining(files::add);
 
         // There should be at least 2 files.
@@ -221,7 +221,7 @@ class AsyncPreConsensusEventWriterTests {
         Instant previousTimestamp = Instant.MIN;
         long previousMinimum = Long.MIN_VALUE;
         long previousMaximum = Long.MIN_VALUE;
-        for (final PreConsensusEventFile file : files) {
+        for (final PreconsensusEventFile file : files) {
             assertEquals(nextSequenceNumber, file.getSequenceNumber());
             nextSequenceNumber++;
             assertTrue(isGreaterThanOrEqualTo(file.getTimestamp(), previousTimestamp));
@@ -275,14 +275,14 @@ class AsyncPreConsensusEventWriterTests {
 
         final PlatformContext platformContext = buildContext();
 
-        final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(buildContext(), OSTime.getInstance(), new NodeId(0));
+        final PreconsensusEventFileManager fileManager =
+                new PreconsensusEventFileManager(buildContext(), OSTime.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
-        final PreConsensusEventWriter writer = new AsyncPreConsensusEventWriter(
+        final PreconsensusEventWriter writer = new AsyncPreconsensusEventWriter(
                 platformContext,
                 getStaticThreadManager(),
-                new SyncPreConsensusEventWriter(platformContext, fileManager));
+                new SyncPreconsensusEventWriter(platformContext, fileManager));
 
         writer.start();
         writer.beginStreamingNewEvents();
@@ -305,8 +305,8 @@ class AsyncPreConsensusEventWriterTests {
 
         // Without advancing the first non-ancient generation,
         // we should never be able to increase the minimum generation from 0.
-        for (final Iterator<PreConsensusEventFile> it = fileManager.getFileIterator(0, false); it.hasNext(); ) {
-            final PreConsensusEventFile file = it.next();
+        for (final Iterator<PreconsensusEventFile> it = fileManager.getFileIterator(0, false); it.hasNext(); ) {
+            final PreconsensusEventFile file = it.next();
             assertEquals(0, file.getMinimumGeneration());
         }
     }
@@ -359,14 +359,14 @@ class AsyncPreConsensusEventWriterTests {
 
         final FakeTime time = new FakeTime(Duration.ofMillis(1));
 
-        final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, time, new NodeId(0));
+        final PreconsensusEventFileManager fileManager =
+                new PreconsensusEventFileManager(platformContext, time, new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
-        final PreConsensusEventWriter writer = new AsyncPreConsensusEventWriter(
+        final PreconsensusEventWriter writer = new AsyncPreconsensusEventWriter(
                 platformContext,
                 getStaticThreadManager(),
-                new SyncPreConsensusEventWriter(platformContext, fileManager));
+                new SyncPreconsensusEventWriter(platformContext, fileManager));
 
         writer.start();
         writer.beginStreamingNewEvents();
@@ -432,8 +432,8 @@ class AsyncPreConsensusEventWriterTests {
         // Since we were very careful to always advance the first non-ancient generation, we should
         // find lots of files with a minimum generation exceeding 0.
         boolean foundNonZeroMinimumGeneration = false;
-        for (Iterator<PreConsensusEventFile> it2 = fileManager.getFileIterator(0, false); it2.hasNext(); ) {
-            final PreConsensusEventFile file = it2.next();
+        for (Iterator<PreconsensusEventFile> it2 = fileManager.getFileIterator(0, false); it2.hasNext(); ) {
+            final PreconsensusEventFile file = it2.next();
             if (file.getMinimumGeneration() > 0) {
                 foundNonZeroMinimumGeneration = true;
                 break;
@@ -469,14 +469,14 @@ class AsyncPreConsensusEventWriterTests {
 
         final PlatformContext platformContext = buildContext();
 
-        final PreConsensusEventFileManager fileManager1 =
-                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
+        final PreconsensusEventFileManager fileManager1 =
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer1 = new PreconsensusEventStreamSequencer();
-        final PreConsensusEventWriter writer1 = new AsyncPreConsensusEventWriter(
+        final PreconsensusEventWriter writer1 = new AsyncPreconsensusEventWriter(
                 platformContext,
                 getStaticThreadManager(),
-                new SyncPreConsensusEventWriter(platformContext, fileManager1));
+                new SyncPreconsensusEventWriter(platformContext, fileManager1));
 
         writer1.start();
         writer1.beginStreamingNewEvents();
@@ -506,9 +506,9 @@ class AsyncPreConsensusEventWriterTests {
 
         if (truncateLastFile) {
             // Remove a single byte from the last file. This will corrupt the last event that was written.
-            final Iterator<PreConsensusEventFile> it = fileManager1.getFileIterator(NO_MINIMUM_GENERATION, false);
+            final Iterator<PreconsensusEventFile> it = fileManager1.getFileIterator(NO_MINIMUM_GENERATION, false);
             while (it.hasNext()) {
-                final PreConsensusEventFile file = it.next();
+                final PreconsensusEventFile file = it.next();
                 if (!it.hasNext()) {
                     FileManipulation.truncateNBytesFromFile(file.getPath(), 1);
                 }
@@ -517,13 +517,13 @@ class AsyncPreConsensusEventWriterTests {
             events1.remove(events1.size() - 1);
         }
 
-        final PreConsensusEventFileManager fileManager2 =
-                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
+        final PreconsensusEventFileManager fileManager2 =
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
         final PreconsensusEventStreamSequencer sequencer2 = new PreconsensusEventStreamSequencer();
-        final PreConsensusEventWriter writer2 = new AsyncPreConsensusEventWriter(
+        final PreconsensusEventWriter writer2 = new AsyncPreconsensusEventWriter(
                 platformContext,
                 getStaticThreadManager(),
-                new SyncPreConsensusEventWriter(platformContext, fileManager2));
+                new SyncPreconsensusEventWriter(platformContext, fileManager2));
         writer2.start();
 
         // Write all events currently in the stream, we expect these to be ignored and not written to the stream twice.
