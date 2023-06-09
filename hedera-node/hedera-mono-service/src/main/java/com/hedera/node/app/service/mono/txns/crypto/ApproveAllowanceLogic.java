@@ -184,11 +184,11 @@ public class ApproveAllowanceLogic {
                 final var approveForAllNfts = approvingAccount.getMutableApprovedForAllNfts();
                 final var key = FcTokenAllowanceId.from(tokenId.asEntityNum(), spenderId.asEntityNum());
                 if (allowance.getApprovedForAll().getValue()) {
-                    // To remove approveForALl allowance for a spender, the spender need not be
-                    // validated as being a valid account
+                    // Validate the spender/operator account
                     accountStore.loadAccountOrFailWith(spenderId, INVALID_ALLOWANCE_SPENDER_ID);
                     approveForAllNfts.add(key);
                 } else {
+                    // Need not validate anything here to revoke the approval
                     approveForAllNfts.remove(key);
                 }
                 validateAllowanceLimitsOn(approvingAccount, dynamicProperties.maxAllowanceLimitPerAccount());

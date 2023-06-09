@@ -141,7 +141,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     }
 
     private HapiSpec canDeleteAllowanceFromDeletedSpender() {
-        return onlyDefaultHapiSpec("canDeleteAllowanceFromDeletedSpender")
+        return defaultHapiSpec("canDeleteAllowanceFromDeletedSpender")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
