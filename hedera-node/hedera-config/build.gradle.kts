@@ -15,19 +15,19 @@
  */
 
 plugins {
-  id("com.hedera.hashgraph.conventions")
-  `java-test-fixtures`
+    id("com.hedera.hashgraph.conventions")
+    `java-test-fixtures`
 }
 
 description = "Hedera Configuration"
 
 dependencies {
-  javaModuleDependencies {
-    testImplementation(gav("org.assertj.core"))
-    testImplementation(gav("org.hyperledger.besu.datatypes"))
-    testImplementation(gav("org.junit.jupiter.api"))
-    testImplementation(gav("org.junit.jupiter.params"))
-    testImplementation(gav("org.mockito"))
-    testImplementation(gav("org.mockito.junit.jupiter"))
-  }
+    javaModuleDependencies {
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("org.hyperledger.besu.datatypes"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.junit.jupiter.params"))
+        testImplementation(gav("org.mockito"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+    }
 }
