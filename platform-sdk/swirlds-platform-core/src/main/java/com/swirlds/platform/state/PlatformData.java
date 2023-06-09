@@ -204,11 +204,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         consensusTimestamp = in.readInstant();
 
         if (version < ClassVersion.CONSENSUS_SNAPSHOT) {
-            final int minGenInfoSize = in.readInt();
-            minGenInfo = new LinkedList<>();
-            for (int i = 0; i < minGenInfoSize; i++) {
-                minGenInfo.add(new MinGenInfo(in.readLong(), in.readLong()));
-            }
+            minGenInfo = MinGenInfo.deserializeList(in);
 
             // previously this was the last transaction timestamp
             in.readInstant();

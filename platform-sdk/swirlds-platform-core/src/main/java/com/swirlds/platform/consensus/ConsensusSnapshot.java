@@ -17,9 +17,14 @@
 package com.swirlds.platform.consensus;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.state.MinGenInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -31,12 +36,18 @@ import java.util.Objects;
  * consensus needs to continue from a particular point. Apart from this record, consensus needs all
  * non-ancient events to continue.
  */
-public class ConsensusSnapshot {
-    private final long round;
-    private final Collection<Hash> judgeHashes;
-    private final List<MinGenInfo> minGens;
-    private final long nextConsensusNumber;
-    private final Instant minConsensusTimestamp;
+public class ConsensusSnapshot implements SelfSerializable {
+    private static final long CLASS_ID = 0xe9563ac8048b7abcL;
+    private static final int MAX_JUDGES = 1000;
+
+    private long round;
+    private List<Hash> judgeHashes;
+    private List<MinGenInfo> minGens;
+    private long nextConsensusNumber;
+    private Instant minConsensusTimestamp;
+
+    public ConsensusSnapshot() {
+    }
 
     /**
      * @param round
@@ -53,7 +64,7 @@ public class ConsensusSnapshot {
      */
     public ConsensusSnapshot(
             long round,
-            @NonNull Collection<Hash> judgeHashes,
+            @NonNull List<Hash> judgeHashes,
             @NonNull List<MinGenInfo> minGens,
             long nextConsensusNumber,
             // minConsensusTimestamp is null if no event has reached consensus yet, typically in round 1
@@ -66,22 +77,21 @@ public class ConsensusSnapshot {
     }
 
     @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("round: ").append(round).append('\n');
-        sb.append("hashes: ").append('\n');
-        for (final Hash hash : judgeHashes) {
-            sb.append("   ").append(hash.toString()).append('\n');
-        }
-        sb.append("minGens: ").append('\n');
-        minGens.forEach(mg -> sb.append("   ")
-                .append(mg.round())
-                .append("->")
-                .append(mg.minimumGeneration())
-                .append('\n'));
-        sb.append("nextConsensusNumber: ").append(nextConsensusNumber).append('\n');
-        sb.append("minConsensusTimestamp: ").append(minConsensusTimestamp).append('\n');
-        return sb.toString();
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
+        out.writeLong(round);
+        out.writeSerializableList(judgeHashes, false, true);
+        MinGenInfo.serializeList(minGens, out);
+        out.writeLong(nextConsensusNumber);
+        out.writeInstant(minConsensusTimestamp);
+    }
+
+    @Override
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        round = in.readLong();
+        judgeHashes = in.readSerializableList(MAX_JUDGES, false, Hash::new);
+        minGens = MinGenInfo.deserializeList(in);
+        nextConsensusNumber = in.readLong();
+        minConsensusTimestamp = in.readInstant();
     }
 
     public long round() {
@@ -136,6 +146,25 @@ public class ConsensusSnapshot {
     }
 
     @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("round: ").append(round).append('\n');
+        sb.append("hashes: ").append('\n');
+        for (final Hash hash : judgeHashes) {
+            sb.append("   ").append(hash.toString()).append('\n');
+        }
+        sb.append("minGens: ").append('\n');
+        minGens.forEach(mg -> sb.append("   ")
+                .append(mg.round())
+                .append("->")
+                .append(mg.minimumGeneration())
+                .append('\n'));
+        sb.append("nextConsensusNumber: ").append(nextConsensusNumber).append('\n');
+        sb.append("minConsensusTimestamp: ").append(minConsensusTimestamp).append('\n');
+        return sb.toString();
+    }
+
+    @Override
     public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -150,5 +179,25 @@ public class ConsensusSnapshot {
     @Override
     public int hashCode() {
         return Objects.hash(round, judgeHashes, minGens, nextConsensusNumber, minConsensusTimestamp);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getClassId() {
+        return CLASS_ID;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getVersion() {
+        return ClassVersion.ORIGINAL;
+    }
+
+    private static final class ClassVersion {
+        public static final int ORIGINAL = 1;
     }
 }

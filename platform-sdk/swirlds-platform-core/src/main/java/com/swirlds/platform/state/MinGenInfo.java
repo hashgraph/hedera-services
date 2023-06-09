@@ -16,6 +16,13 @@
 
 package com.swirlds.platform.state;
 
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Records the minimum event generation for particular rounds
  *
@@ -24,4 +31,22 @@ package com.swirlds.platform.state;
  * @param minimumGeneration
  * 		the minimum event generation for a given round
  */
-public record MinGenInfo(long round, long minimumGeneration) {}
+public record MinGenInfo(long round, long minimumGeneration) {
+	public static void serializeList(final List<MinGenInfo> minGenInfo, final SerializableDataOutputStream out)
+			throws IOException {
+		out.writeInt(minGenInfo.size());
+		for (final MinGenInfo info : minGenInfo) {
+			out.writeLong(info.round());
+			out.writeLong(info.minimumGeneration());
+		}
+	}
+
+	public static List<MinGenInfo> deserializeList(final SerializableDataInputStream in) throws IOException {
+		final int minGenInfoSize = in.readInt();
+		final List<MinGenInfo> minGenInfo = new ArrayList<>(minGenInfoSize);
+		for (int i = 0; i < minGenInfoSize; i++) {
+			minGenInfo.add(new MinGenInfo(in.readLong(), in.readLong()));
+		}
+		return minGenInfo;
+	}
+}
