@@ -17,8 +17,8 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
-  id("com.hedera.hashgraph.conventions")
-  id("com.hedera.hashgraph.shadow-jar")
+    id("com.hedera.hashgraph.conventions")
+    id("com.hedera.hashgraph.shadow-jar")
 }
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
@@ -26,180 +26,187 @@ description = "Hedera Services Test Clients for End to End Tests (EET)"
 tasks.jar { manifest { attributes("Automatic-Module-Name" to "com.hedera.node.app.testclient") } }
 
 tasks.test {
-  // Disable these EET tests from being executed as part of the gradle "test" task. We should maybe
-  // remove them
-  // from src/test into src/eet, so it can be part of an eet test task instead. See issue #3412
-  // (https://github.com/hashgraph/hedera-services/issues/3412).
-  exclude("**/*")
+    // Disable these EET tests from being executed as part of the gradle "test" task.
+    // We should maybe remove them from src/test into src/eet,
+    // so it can be part of an eet test task instead. See issue #3412
+    // (https://github.com/hashgraph/hedera-services/issues/3412).
+    exclude("**/*")
 }
 
 configurations { evaluationDependsOn(":hedera-node:node-app-hapi-fees") }
 
 sourceSets {
-  // Needed because "resource" directory is misnamed. See
-  // https://github.com/hashgraph/hedera-services/issues/3361
-  main { resources { srcDir("src/main/resource") } }
+    // Needed because "resource" directory is misnamed. See
+    // https://github.com/hashgraph/hedera-services/issues/3361
+    main { resources { srcDir("src/main/resource") } }
 }
 
 dependencies {
-  javaModuleDependencies {
-    api(project(":hedera-node:node-app-hapi-fees"))
-    api(project(":hedera-node:node-app-hapi-utils"))
-    api(gav("com.fasterxml.jackson.annotation"))
-    api(gav("com.google.common"))
-    api(gav("com.google.protobuf"))
-    api(gav("com.hedera.hashgraph.protobuf.java.api"))
-    api(gav("com.swirlds.common"))
-    api(gav("headlong"))
-    api(gav("info.picocli"))
-    api(gav("java.annotation"))
-    api(gav("net.i2p.crypto.eddsa"))
-    api(gav("org.apache.commons.io"))
-    api(gav("org.apache.logging.log4j"))
-    api(gav("org.checkerframework.checker.qual"))
-    api(gav("org.junit.jupiter.api"))
-    api(gav("org.testcontainers"))
-    api(gav("org.yaml.snakeyaml"))
-    api(gav("tuweni.bytes"))
+    javaModuleDependencies {
+        api(project(":hedera-node:node-app-hapi-fees"))
+        api(project(":hedera-node:node-app-hapi-utils"))
+        api(gav("com.fasterxml.jackson.annotation"))
+        api(gav("com.google.common"))
+        api(gav("com.google.protobuf"))
+        api(project(":hedera-node:node-hapi"))
+        api(gav("com.swirlds.common"))
+        api(gav("headlong"))
+        api(gav("info.picocli"))
+        api(gav("java.annotation"))
+        api(gav("net.i2p.crypto.eddsa"))
+        api(gav("org.apache.commons.io"))
+        api(gav("org.apache.logging.log4j"))
+        api(gav("org.checkerframework.checker.qual"))
+        api(gav("org.junit.jupiter.api"))
+        api(gav("org.testcontainers"))
+        api(gav("org.yaml.snakeyaml"))
+        api(gav("tuweni.bytes"))
 
-    implementation(project(":hedera-node:node-app-service-evm"))
-    implementation(gav("com.fasterxml.jackson.core"))
-    implementation(gav("com.fasterxml.jackson.databind"))
-    implementation(gav("com.github.docker.java.api"))
-    implementation(gav("com.github.spotbugs.annotations"))
-    implementation(gav("grpc.netty"))
-    implementation(gav("io.grpc"))
-    implementation(gav("io.netty.handler"))
-    implementation(gav("org.apache.commons.lang3"))
-    implementation(gav("org.apache.logging.log4j.core"))
-    implementation(gav("org.bouncycastle.provider"))
-    implementation(gav("org.hyperledger.besu.crypto"))
-    implementation(gav("org.hyperledger.besu.datatypes"))
-    implementation(gav("org.hyperledger.besu.evm"))
-    implementation(gav("org.json"))
-    implementation(gav("org.opentest4j"))
-    implementation(gav("tuweni.units"))
+        implementation(project(":hedera-node:node-app-service-evm"))
+        implementation(gav("com.fasterxml.jackson.core"))
+        implementation(gav("com.fasterxml.jackson.databind"))
+        implementation(gav("com.github.docker.java.api"))
+        implementation(gav("com.github.spotbugs.annotations"))
+        implementation(gav("grpc.netty"))
+        implementation(gav("io.grpc"))
+        implementation(gav("io.netty.handler"))
+        implementation(gav("org.apache.commons.lang3"))
+        implementation(gav("org.apache.logging.log4j.core"))
+        implementation(gav("org.bouncycastle.provider"))
+        implementation(gav("org.hyperledger.besu.crypto"))
+        implementation(gav("org.hyperledger.besu.datatypes"))
+        implementation(gav("org.hyperledger.besu.evm"))
+        implementation(gav("org.json"))
+        implementation(gav("org.opentest4j"))
+        implementation(gav("tuweni.units"))
 
-    itestImplementation(project(path))
-    itestImplementation(gav("org.testcontainers"))
-    itestImplementation(gav("org.testcontainers.junit.jupiter"))
-    itestImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
-    itestImplementation(gav("org.junit.jupiter.api"))
+        itestImplementation(project(path))
+        itestImplementation(gav("org.testcontainers"))
+        itestImplementation(gav("org.testcontainers.junit.jupiter"))
+        itestImplementation(project(":hedera-node:node-hapi"))
+        itestImplementation(gav("org.junit.jupiter.api"))
 
-    eetImplementation(project(path))
-    eetImplementation(gav("org.junit.jupiter.api"))
-    eetImplementation(gav("org.testcontainers"))
-    eetImplementation(gav("org.testcontainers.junit.jupiter"))
-  }
+        eetImplementation(project(path))
+        eetImplementation(gav("org.junit.jupiter.api"))
+        eetImplementation(gav("org.testcontainers"))
+        eetImplementation(gav("org.testcontainers.junit.jupiter"))
+    }
 }
 
 tasks.itest {
-  systemProperty("junit.jupiter.execution.parallel.enabled", false)
-  systemProperty("TAG", "services-node:" + project.version)
-  systemProperty("networkWorkspaceDir", File(project.buildDir, "network/itest"))
+    systemProperty("junit.jupiter.execution.parallel.enabled", false)
+    systemProperty("TAG", "services-node:" + project.version)
+    systemProperty("networkWorkspaceDir", File(project.buildDir, "network/itest"))
 }
 
 tasks.eet {
-  systemProperty("TAG", "services-node:" + project.version)
-  systemProperty("networkWorkspaceDir", File(project.buildDir, "network/eet"))
+    systemProperty("TAG", "services-node:" + project.version)
+    systemProperty("networkWorkspaceDir", File(project.buildDir, "network/eet"))
 }
 
 tasks.shadowJar {
-  dependsOn(project(":hedera-node:node-app-hapi-fees").tasks.jar)
+    dependsOn(project(":hedera-node:node-app-hapi-fees").tasks.jar)
 
-  mergeServiceFiles()
+    mergeServiceFiles()
 
-  archiveFileName.set("SuiteRunner.jar")
-  isReproducibleFileOrder = true
-  isPreserveFileTimestamps = false
-  fileMode = 664
-  dirMode = 775
+    archiveFileName.set("SuiteRunner.jar")
+    isReproducibleFileOrder = true
+    isPreserveFileTimestamps = false
+    fileMode = 664
+    dirMode = 775
 
-  manifest {
-    attributes(
-        "Main-Class" to "com.hedera.services.bdd.suites.SuiteRunner", "Multi-Release" to "true")
-  }
+    manifest {
+        attributes(
+            "Main-Class" to "com.hedera.services.bdd.suites.SuiteRunner",
+            "Multi-Release" to "true"
+        )
+    }
 }
 
 val yahCliJar =
     tasks.register<ShadowJar>("yahCliJar") {
-      dependsOn(project(":hedera-node:node-app-hapi-fees").tasks.jar)
+        dependsOn(project(":hedera-node:node-app-hapi-fees").tasks.jar)
 
-      group = "shadow"
-      from(sourceSets.main.get().output)
-      configurations = listOf(project.configurations["runtimeClasspath"])
-      mergeServiceFiles()
+        group = "shadow"
+        from(sourceSets.main.get().output)
+        configurations = listOf(project.configurations["runtimeClasspath"])
+        mergeServiceFiles()
 
-      exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
+        exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
 
-      archiveClassifier.set("yahcli")
-      isReproducibleFileOrder = true
-      isPreserveFileTimestamps = false
-      fileMode = 664
-      dirMode = 775
+        archiveClassifier.set("yahcli")
+        isReproducibleFileOrder = true
+        isPreserveFileTimestamps = false
+        fileMode = 664
+        dirMode = 775
 
-      manifest {
-        attributes("Main-Class" to "com.hedera.services.yahcli.Yahcli", "Multi-Release" to "true")
-      }
+        manifest {
+            attributes(
+                "Main-Class" to "com.hedera.services.yahcli.Yahcli",
+                "Multi-Release" to "true"
+            )
+        }
     }
 
 val validationJar =
     tasks.register<ShadowJar>("validationJar") {
-      dependsOn(project(":hedera-node:node-app-hapi-fees").tasks.jar)
+        dependsOn(project(":hedera-node:node-app-hapi-fees").tasks.jar)
 
-      group = "shadow"
-      from(sourceSets.main.get().output)
-      configurations = listOf(project.configurations["runtimeClasspath"])
-      mergeServiceFiles()
+        group = "shadow"
+        from(sourceSets.main.get().output)
+        configurations = listOf(project.configurations["runtimeClasspath"])
+        mergeServiceFiles()
 
-      exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
+        exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
 
-      archiveFileName.set("ValidationScenarios.jar")
-      isReproducibleFileOrder = true
-      isPreserveFileTimestamps = false
-      fileMode = 664
-      dirMode = 775
+        archiveFileName.set("ValidationScenarios.jar")
+        isReproducibleFileOrder = true
+        isPreserveFileTimestamps = false
+        fileMode = 664
+        dirMode = 775
 
-      manifest {
-        attributes(
-            "Main-Class" to "com.hedera.services.bdd.suites.utils.validation.ValidationScenarios",
-            "Multi-Release" to "true")
-      }
+        manifest {
+            attributes(
+                "Main-Class" to
+                    "com.hedera.services.bdd.suites.utils.validation.ValidationScenarios",
+                "Multi-Release" to "true"
+            )
+        }
     }
 
 val copyValidation =
     tasks.register<Copy>("copyValidation") {
-      group = "copy"
-      from(validationJar)
-      into(project.file("validation-scenarios"))
+        group = "copy"
+        from(validationJar)
+        into(project.file("validation-scenarios"))
     }
 
 val cleanValidation =
     tasks.register<Delete>("cleanValidation") {
-      group = "build"
-      delete(File(project.file("validation-scenarios"), "ValidationScenarios.jar"))
+        group = "build"
+        delete(File(project.file("validation-scenarios"), "ValidationScenarios.jar"))
     }
 
 val copyYahCli =
     tasks.register<Copy>("copyYahCli") {
-      group = "copy"
-      from(yahCliJar)
-      into(project.file("yahcli"))
-      rename { "yahcli.jar" }
+        group = "copy"
+        from(yahCliJar)
+        into(project.file("yahcli"))
+        rename { "yahcli.jar" }
     }
 
 val cleanYahCli =
     tasks.register<Delete>("cleanYahCli") {
-      group = "build"
-      delete(File(project.file("yahcli"), "yahcli.jar"))
+        group = "build"
+        delete(File(project.file("yahcli"), "yahcli.jar"))
     }
 
 tasks.assemble {
-  dependsOn(tasks.shadowJar)
-  dependsOn(copyYahCli)
+    dependsOn(tasks.shadowJar)
+    dependsOn(copyYahCli)
 }
 
 tasks.clean {
-  dependsOn(cleanYahCli)
-  dependsOn(cleanValidation)
+    dependsOn(cleanYahCli)
+    dependsOn(cleanValidation)
 }

@@ -23,6 +23,7 @@ import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -50,5 +51,11 @@ public class ReadableRunningHashLeafStoreImpl implements ReadableRunningHashLeaf
     @NonNull
     public RunningHash getNMinusThreeRunningHash() {
         return requireNonNull(runningHashState.get()).getNMinus3RunningHash();
+    }
+
+    @NonNull
+    @Override
+    public Hash getRunningHash() {
+        return requireNonNull(runningHashState.get()).getRunningHash().getHash();
     }
 }
