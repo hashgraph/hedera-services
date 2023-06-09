@@ -39,19 +39,19 @@ import org.apache.logging.log4j.Logger;
 /**
  * This object is responsible for writing events to the database.
  */
-public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Startable, Stoppable {
+public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Startable, Stoppable {
 
-    private static final Logger logger = LogManager.getLogger(SyncPreConsensusEventWriter.class);
+    private static final Logger logger = LogManager.getLogger(SyncPreconsensusEventWriter.class);
 
     /**
      * Keeps track of the event stream files on disk.
      */
-    private final PreConsensusEventFileManager fileManager;
+    private final PreconsensusEventFileManager fileManager;
 
     /**
      * The current file that is being written to.
      */
-    private PreConsensusEventMutableFile currentMutableFile;
+    private PreconsensusEventMutableFile currentMutableFile;
 
     /**
      * The current minimum generation required to be considered non-ancient. Only read and written on the handle
@@ -136,14 +136,14 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
      * @param platformContext the platform context
      * @param fileManager     manages all preconsensus event stream files currently on disk
      */
-    public SyncPreConsensusEventWriter(
-            @NonNull final PlatformContext platformContext, @NonNull final PreConsensusEventFileManager fileManager) {
+    public SyncPreconsensusEventWriter(
+            @NonNull final PlatformContext platformContext, @NonNull final PreconsensusEventFileManager fileManager) {
 
         throwArgNull(platformContext, "platformContext");
         throwArgNull(fileManager, "fileManager");
 
-        final PreConsensusEventStreamConfig config =
-                platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
+        final PreconsensusEventStreamConfig config =
+                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
 
         preferredFileSizeMegabytes = config.preferredFileSizeMegabytes();
 
@@ -210,7 +210,7 @@ public class SyncPreConsensusEventWriter implements PreConsensusEventWriter, Sta
             closeFile();
         }
 
-        final PreConsensusEventFile file = fileManager.getNextFileDescriptor(0, 0, true);
+        final PreconsensusEventFile file = fileManager.getNextFileDescriptor(0, 0, true);
 
         try {
             Files.createFile(file.getPath());

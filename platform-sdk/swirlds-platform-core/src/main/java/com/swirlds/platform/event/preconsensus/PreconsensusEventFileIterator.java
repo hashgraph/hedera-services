@@ -28,9 +28,9 @@ import java.io.IOException;
 import java.util.NoSuchElementException;
 
 /**
- * Iterates over the events in a single pre-consensus event file.
+ * Iterates over the events in a single preconsensus event file.
  */
-public class PreConsensusEventFileIterator implements IOIterator<EventImpl> {
+public class PreconsensusEventFileIterator implements IOIterator<EventImpl> {
 
     private final long minimumGeneration;
     private final SerializableDataInputStream stream;
@@ -39,15 +39,15 @@ public class PreConsensusEventFileIterator implements IOIterator<EventImpl> {
     private EventImpl next;
 
     /**
-     * Create a new iterator that walks over events in a pre-consensus event file.
+     * Create a new iterator that walks over events in a preconsensus event file.
      *
      * @param fileDescriptor
-     * 		describes a pre-consensus event file
+     * 		describes a preconsensus event file
      * @param minimumGeneration
      * 		the minimum generation to return, any events in the file with a smaller
      * 		generation are ignored and not returned
      */
-    public PreConsensusEventFileIterator(final PreConsensusEventFile fileDescriptor, final long minimumGeneration)
+    public PreconsensusEventFileIterator(final PreconsensusEventFile fileDescriptor, final long minimumGeneration)
             throws IOException {
 
         this.minimumGeneration = minimumGeneration;

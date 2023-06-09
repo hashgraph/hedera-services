@@ -34,14 +34,14 @@ import org.apache.logging.log4j.Logger;
 /**
  * An object capable of writing preconsensus events to disk. Work is done asynchronously on a background thread.
  */
-public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
+public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
 
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * The wrapped writer.
      */
-    private final PreConsensusEventWriter writer;
+    private final PreconsensusEventWriter writer;
 
     /**
      * Background work is performed on this thread.
@@ -102,20 +102,20 @@ public class AsyncPreConsensusEventWriter implements PreConsensusEventWriter {
      * @param threadManager responsible for creating new threads
      * @param writer        the writer to which events will be written, wrapped by this class
      */
-    public AsyncPreConsensusEventWriter(
+    public AsyncPreconsensusEventWriter(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            @NonNull final PreConsensusEventWriter writer) {
+            @NonNull final PreconsensusEventWriter writer) {
 
         throwArgNull(platformContext, "platformContext");
         throwArgNull(threadManager, "threadManager");
         this.writer = throwArgNull(writer, "writer");
 
-        final PreConsensusEventStreamConfig config =
-                platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
+        final PreconsensusEventStreamConfig config =
+                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
 
         handleThread = new MultiQueueThreadConfiguration(threadManager)
-                .setComponent("pre-consensus")
+                .setComponent("preconsensus")
                 .setThreadName("event-writer")
                 .setCapacity(config.writeQueueCapacity())
                 .addHandler(Long.class, this::setMinimumGenerationNonAncientHandler)
