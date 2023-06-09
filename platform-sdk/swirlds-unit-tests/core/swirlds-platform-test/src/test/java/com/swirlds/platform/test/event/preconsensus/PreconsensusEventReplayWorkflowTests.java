@@ -31,7 +31,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.system.PlatformStatus;
+import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.common.time.OSTime;
@@ -180,7 +180,7 @@ class PreconsensusEventReplayWorkflowTests {
                 phase.set(TestPhase.REPLAY_EVENTS);
             } else if (phase.get() == TestPhase.SET_FINISH_STATUS) {
                 assertEquals(PlatformStatus.REPLAYING_EVENTS, currentStatus.get());
-                assertEquals(PlatformStatus.READY, status);
+                assertEquals(PlatformStatus.OBSERVING, status);
                 currentStatus.set(status);
                 phase.set(TestPhase.TEST_FINISHED);
             } else {

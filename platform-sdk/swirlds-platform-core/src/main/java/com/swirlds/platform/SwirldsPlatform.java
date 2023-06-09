@@ -51,11 +51,11 @@ import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.threading.framework.QueueThread;
@@ -1062,7 +1062,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 .getConfigData(PreconsensusEventStreamConfig.class)
                 .enableReplay();
         if (!enableReplay) {
-            setPlatformStatus(PlatformStatus.READY);
+            setPlatformStatus(PlatformStatus.OBSERVING);
         } else {
             PreconsensusEventReplayWorkflow.replayPreconsensusEvents(
                     platformContext,
@@ -1108,7 +1108,7 @@ public class SwirldsPlatform implements Platform, Startable {
             } else if (gossip.hasFallenBehind()) {
                 setPlatformStatus(PlatformStatus.BEHIND);
             } else if (freezeManager.isFreezeStarted()) {
-                setPlatformStatus(PlatformStatus.MAINTENANCE);
+                setPlatformStatus(PlatformStatus.FREEZING);
             } else if (freezeManager.isFreezeComplete()) {
                 setPlatformStatus(PlatformStatus.FREEZE_COMPLETE);
             } else {
