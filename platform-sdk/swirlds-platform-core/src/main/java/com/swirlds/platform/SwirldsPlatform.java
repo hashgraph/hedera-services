@@ -1062,7 +1062,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 .getConfigData(PreconsensusEventStreamConfig.class)
                 .enableReplay();
         if (!enableReplay) {
-            setPlatformStatus(PlatformStatus.READY);
+            setPlatformStatus(PlatformStatus.OBSERVING);
         } else {
             PreconsensusEventReplayWorkflow.replayPreconsensusEvents(
                     platformContext,
