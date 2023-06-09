@@ -36,7 +36,7 @@ import java.io.IOException;
  * <p>The Services version is the version of the node software itself.
  */
 public class HederaSoftwareVersion implements SoftwareVersion {
-    public static final long CLASS_ID = 0x6f2b1bc2df8cbd0bL;
+    public static final long CLASS_ID = 0x6f2b1bc2df8cbd0cL;
     public static final int RELEASE_027_VERSION = 1;
 
     private SemanticVersion hapiVersion;

@@ -18,17 +18,19 @@ package com.swirlds.platform.event.preconsensus;
 
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /**
  * Iterates over events from a sequence of preconsensus event files.
  */
-public class PreConsensusEventMultiFileIterator implements IOIterator<EventImpl> {
+public class PreconsensusEventMultiFileIterator implements IOIterator<EventImpl> {
 
-    private final Iterator<PreConsensusEventFile> fileIterator;
-    private PreConsensusEventFileIterator currentIterator;
+    private final Iterator<PreconsensusEventFile> fileIterator;
+    private PreconsensusEventFileIterator currentIterator;
     private final long minimumGeneration;
     private EventImpl next;
     private int truncatedFileCount = 0;
@@ -42,10 +44,10 @@ public class PreConsensusEventMultiFileIterator implements IOIterator<EventImpl>
      * @param fileIterator
      * 		an iterator that walks over event files
      */
-    public PreConsensusEventMultiFileIterator(
-            final long minimumGeneration, final Iterator<PreConsensusEventFile> fileIterator) {
+    public PreconsensusEventMultiFileIterator(
+            final long minimumGeneration, @NonNull final Iterator<PreconsensusEventFile> fileIterator) {
 
-        this.fileIterator = fileIterator;
+        this.fileIterator = Objects.requireNonNull(fileIterator);
         this.minimumGeneration = minimumGeneration;
     }
 
@@ -63,7 +65,7 @@ public class PreConsensusEventMultiFileIterator implements IOIterator<EventImpl>
                     break;
                 }
 
-                currentIterator = new PreConsensusEventFileIterator(fileIterator.next(), minimumGeneration);
+                currentIterator = new PreconsensusEventFileIterator(fileIterator.next(), minimumGeneration);
             } else {
                 next = currentIterator.next();
             }

@@ -35,11 +35,11 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- * Describes a pre-consensus event stream file.
+ * Describes a preconsensus event stream file.
  * </p>
  *
  * <p>
- * Files have the following format. Deviation from this format is not allowed. A {@link PreConsensusEventFileManager}
+ * Files have the following format. Deviation from this format is not allowed. A {@link PreconsensusEventFileManager}
  * will be unable to correctly read files with a different format.
  * </p>
  * <pre>
@@ -47,16 +47,16 @@ import java.util.stream.Stream;
  * </pre>
  * <p>
  * By default, files are stored with the following directory structure. Note that files are not required to be stored
- * with this directory structure in order to be read by a {@link PreConsensusEventFileManager}.
+ * with this directory structure in order to be read by a {@link PreconsensusEventFileManager}.
  * </p>
  * <pre>
  * [root directory]/[4 digit year][2 digit month][2 digit day]/[file name]
  * </pre>
  */
-public final class PreConsensusEventFile implements Comparable<PreConsensusEventFile> {
+public final class PreconsensusEventFile implements Comparable<PreconsensusEventFile> {
 
     /**
-     * The file extension for standard files. Stands for "Pre-Consensus Event Stream".
+     * The file extension for standard files. Stands for "PreConsensus Event Stream".
      */
     public static final String EVENT_FILE_EXTENSION = ".pces";
 
@@ -128,7 +128,7 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
      * @param path              the location where this file can be found
      * @param discontinuity     if true then this file is a placeholder signaling a discontinuity
      */
-    private PreConsensusEventFile(
+    private PreconsensusEventFile(
             final long sequenceNumber,
             final long minimumGeneration,
             final long maximumGeneration,
@@ -173,7 +173,7 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
      * @return a description of the file
      */
     @NonNull
-    public static PreConsensusEventFile of(
+    public static PreconsensusEventFile of(
             final long sequenceNumber,
             final long minimumGeneration,
             final long maximumGeneration,
@@ -186,7 +186,7 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
                 buildFileName(sequenceNumber, minimumGeneration, maximumGeneration, timestamp, discontinuity);
         final Path path = parentDirectory.resolve(fileName);
 
-        return new PreConsensusEventFile(
+        return new PreconsensusEventFile(
                 sequenceNumber, minimumGeneration, maximumGeneration, timestamp, path, discontinuity);
     }
 
@@ -198,7 +198,7 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
      * @throws IOException if the file could not be parsed
      */
     @NonNull
-    public static PreConsensusEventFile of(@NonNull final Path filePath) throws IOException {
+    public static PreconsensusEventFile of(@NonNull final Path filePath) throws IOException {
         Objects.requireNonNull(filePath, "filePath");
 
         final boolean discontinuity;
@@ -221,7 +221,7 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
         }
 
         try {
-            return new PreConsensusEventFile(
+            return new PreconsensusEventFile(
                     Long.parseLong(elements[1].replace(SEQUENCE_NUMBER_PREFIX, "")),
                     Long.parseLong(elements[2].replace(MINIMUM_GENERATION_PREFIX, "")),
                     Long.parseLong(elements[3].replace(MAXIMUM_GENERATION_PREFIX, "")),
@@ -240,7 +240,7 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
      * @return a description of the new file
      */
     @NonNull
-    public PreConsensusEventFile buildFileWithCompressedSpan(final long maximumGenerationInFile) {
+    public PreconsensusEventFile buildFileWithCompressedSpan(final long maximumGenerationInFile) {
         if (maximumGenerationInFile < minimumGeneration) {
             throw new IllegalArgumentException("maximumGenerationInFile " + maximumGenerationInFile
                     + " is less than minimumGeneration " + minimumGeneration);
@@ -256,7 +256,7 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
                 buildFileName(sequenceNumber, minimumGeneration, maximumGenerationInFile, timestamp, discontinuity);
         final Path newPath = parentDirectory.resolve(fileName);
 
-        return new PreConsensusEventFile(
+        return new PreconsensusEventFile(
                 sequenceNumber, minimumGeneration, maximumGenerationInFile, timestamp, newPath, discontinuity);
     }
 
@@ -312,8 +312,8 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
      * @return a writer for this file
      */
     @NonNull
-    public PreConsensusEventMutableFile getMutableFile() throws IOException {
-        return new PreConsensusEventMutableFile(this);
+    public PreconsensusEventMutableFile getMutableFile() throws IOException {
+        return new PreconsensusEventMutableFile(this);
     }
 
     /**
@@ -371,8 +371,8 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
      * @return an iterator over the events in this file
      */
     @NonNull
-    public PreConsensusEventFileIterator iterator(final long minimumGeneration) throws IOException {
-        return new PreConsensusEventFileIterator(this, minimumGeneration);
+    public PreconsensusEventFileIterator iterator(final long minimumGeneration) throws IOException {
+        return new PreconsensusEventFileIterator(this, minimumGeneration);
     }
 
     /**
@@ -446,7 +446,7 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
      * {@inheritDoc}
      */
     @Override
-    public int compareTo(@NonNull final PreConsensusEventFile that) {
+    public int compareTo(@NonNull final PreconsensusEventFile that) {
         return Long.compare(sequenceNumber, that.sequenceNumber);
     }
 
@@ -467,7 +467,7 @@ public final class PreConsensusEventFile implements Comparable<PreConsensusEvent
             return true;
         }
 
-        if (obj instanceof final PreConsensusEventFile that) {
+        if (obj instanceof final PreconsensusEventFile that) {
             return this.sequenceNumber == that.sequenceNumber;
         }
 

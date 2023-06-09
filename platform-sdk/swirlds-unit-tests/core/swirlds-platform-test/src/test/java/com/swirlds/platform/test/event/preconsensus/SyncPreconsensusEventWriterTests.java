@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
-import static com.swirlds.platform.test.event.preconsensus.AsyncPreConsensusEventWriterTests.buildGraphGenerator;
-import static com.swirlds.platform.test.event.preconsensus.AsyncPreConsensusEventWriterTests.verifyStream;
+import static com.swirlds.platform.test.event.preconsensus.AsyncPreconsensusEventWriterTests.buildGraphGenerator;
+import static com.swirlds.platform.test.event.preconsensus.AsyncPreconsensusEventWriterTests.verifyStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -35,11 +35,11 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventFile;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventFileManager;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
-import com.swirlds.platform.event.preconsensus.SyncPreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -59,8 +59,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-@DisplayName("SyncPreConsensusEventWriter Tests")
-class SyncPreConsensusEventWriterTests {
+@DisplayName("SyncPreconsensusEventWriter Tests")
+class SyncPreconsensusEventWriterTests {
 
     /**
      * Temporary directory provided by JUnit
@@ -117,11 +117,11 @@ class SyncPreConsensusEventWriterTests {
 
         final PlatformContext platformContext = buildContext();
 
-        final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
+        final PreconsensusEventFileManager fileManager =
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
-        final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
+        final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
 
         writer.start();
         writer.beginStreamingNewEvents();
@@ -173,11 +173,11 @@ class SyncPreConsensusEventWriterTests {
 
         final PlatformContext platformContext = buildContext();
 
-        final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
+        final PreconsensusEventFileManager fileManager =
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
-        final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
+        final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
 
         writer.start();
         writer.beginStreamingNewEvents();
@@ -229,11 +229,11 @@ class SyncPreConsensusEventWriterTests {
 
         final PlatformContext platformContext = buildContext();
 
-        final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
+        final PreconsensusEventFileManager fileManager =
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
-        final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
+        final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
 
         writer.start();
         writer.beginStreamingNewEvents();
@@ -302,11 +302,11 @@ class SyncPreConsensusEventWriterTests {
 
         final PlatformContext platformContext = buildContext();
 
-        final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
+        final PreconsensusEventFileManager fileManager =
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
-        final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
+        final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
 
         writer.start();
         writer.beginStreamingNewEvents();
@@ -322,8 +322,8 @@ class SyncPreConsensusEventWriterTests {
 
         // Without advancing the first non-ancient generation,
         // we should never be able to increase the minimum generation from 0.
-        for (final Iterator<PreConsensusEventFile> it = fileManager.getFileIterator(0, false); it.hasNext(); ) {
-            final PreConsensusEventFile file = it.next();
+        for (final Iterator<PreconsensusEventFile> it = fileManager.getFileIterator(0, false); it.hasNext(); ) {
+            final PreconsensusEventFile file = it.next();
             assertEquals(0, file.getMinimumGeneration());
         }
     }
@@ -345,11 +345,11 @@ class SyncPreConsensusEventWriterTests {
 
         final PlatformContext platformContext = buildContext();
 
-        final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
+        final PreconsensusEventFileManager fileManager =
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
-        final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
+        final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
 
         writer.start();
 
@@ -374,7 +374,7 @@ class SyncPreConsensusEventWriterTests {
 
         // We shouldn't find any events in the stream.
         assertFalse(() -> fileManager
-                .getFileIterator(PreConsensusEventFileManager.NO_MINIMUM_GENERATION, false)
+                .getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false)
                 .hasNext());
 
         writer.stop();
@@ -403,11 +403,11 @@ class SyncPreConsensusEventWriterTests {
 
         final PlatformContext platformContext = buildContext();
 
-        final PreConsensusEventFileManager fileManager =
-                new PreConsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
+        final PreconsensusEventFileManager fileManager =
+                new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
-        final PreConsensusEventWriter writer = new SyncPreConsensusEventWriter(platformContext, fileManager);
+        final PreconsensusEventWriter writer = new SyncPreconsensusEventWriter(platformContext, fileManager);
 
         writer.start();
         writer.beginStreamingNewEvents();
