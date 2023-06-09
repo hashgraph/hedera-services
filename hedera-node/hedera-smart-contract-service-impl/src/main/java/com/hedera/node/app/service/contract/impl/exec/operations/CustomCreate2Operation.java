@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.operations.CustomizedOpcodes.CREATE2;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
@@ -36,7 +37,7 @@ public class CustomCreate2Operation extends AbstractCustomCreateOperation {
 
     public CustomCreate2Operation(
             @NonNull final GasCalculator gasCalculator, @NonNull final FeatureFlags featureFlags) {
-        super(0xF5, "ħCREATE2", 4, 1, gasCalculator);
+        super(CREATE2.opcode(), "ħCREATE2", 4, 1, gasCalculator);
         this.featureFlags = featureFlags;
     }
 

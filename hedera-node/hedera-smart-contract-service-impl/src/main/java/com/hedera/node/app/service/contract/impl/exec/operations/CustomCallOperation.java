@@ -35,6 +35,8 @@ import org.hyperledger.besu.evm.operation.CallOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
+import java.util.Objects;
+
 /**
  * A Hedera customization of {@link CallOperation} that, if lazy creation is enabled and
  * applies to a call, does no additional address checks. Otherwise, only allows calls to an
@@ -56,8 +58,8 @@ public class CustomCallOperation extends CallOperation {
             @NonNull final GasCalculator gasCalculator,
             @NonNull final AddressChecks addressChecks) {
         super(gasCalculator);
-        this.featureFlags = featureFlags;
-        this.addressChecks = addressChecks;
+        this.featureFlags = Objects.requireNonNull(featureFlags);
+        this.addressChecks = Objects.requireNonNull(addressChecks);
     }
 
     @Override

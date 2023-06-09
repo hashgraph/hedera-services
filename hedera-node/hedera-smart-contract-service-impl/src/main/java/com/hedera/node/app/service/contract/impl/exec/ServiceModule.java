@@ -44,6 +44,10 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  */
 @Module(includes = {V030Module.class, V034Module.class, V038Module.class})
 public interface ServiceModule {
+    String VERSION_030 = "v0.30";
+    String VERSION_034 = "v0.34";
+    String VERSION_038 = "v0.38";
+
     @Binds
     @Singleton
     GasCalculator bindGasCalculator(@NonNull final CustomGasCalculator gasCalculator);
@@ -58,6 +62,8 @@ public interface ServiceModule {
             @ServicesV034 @NonNull final TransactionProcessor v034Processor,
             @ServicesV038 @NonNull final TransactionProcessor v038Processor) {
         return Map.ofEntries(
-                entry("v0.30", v030Processor), entry("v0.34", v034Processor), entry("v0.38", v038Processor));
+                entry(VERSION_030, v030Processor),
+                entry(VERSION_034, v034Processor),
+                entry(VERSION_038, v038Processor));
     }
 }

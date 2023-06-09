@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.operations.CustomizedOpcodes.CHAINID;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 
 import com.hedera.node.config.data.ContractsConfig;
@@ -38,7 +39,7 @@ public class CustomChainIdOperation extends AbstractOperation {
     private final long cost;
 
     public CustomChainIdOperation(@NonNull final GasCalculator gasCalculator) {
-        super(0x46, "CHAINID", 0, 1, gasCalculator);
+        super(CHAINID.opcode(), "CHAINID", 0, 1, gasCalculator);
         this.cost = Objects.requireNonNull(gasCalculator).getBaseTierGasCost();
     }
 

@@ -76,6 +76,6 @@ public interface VerificationStrategy {
     @Nullable
     default CryptoTransferTransactionBody maybeAmendTransfer(
             @NonNull CryptoTransferTransactionBody transfer, List<Long> invalidSignerNumbers) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Default verification strategy does not amend transfers");
     }
 }
