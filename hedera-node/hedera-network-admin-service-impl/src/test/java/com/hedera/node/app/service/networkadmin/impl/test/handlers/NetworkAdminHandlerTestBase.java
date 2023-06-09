@@ -121,7 +121,7 @@ public class NetworkAdminHandlerTestBase {
 
     protected TransactionID otherNonceOneTransactionID = transactionID(1);
     protected TransactionID otherNonceTwoTransactionID = transactionID(2);
-    protected TransactionID otherNonceTreeTransactionID = transactionID(3);
+    protected TransactionID otherNonceThreeTransactionID = transactionID(3);
     protected TransactionID transactionIDNotInCache = transactionID(5);
 
     private static final int MAX_QUERYABLE_PER_ACCOUNT = 10;
@@ -223,7 +223,7 @@ public class NetworkAdminHandlerTestBase {
                 .receipt(receipt)
                 .build();
         final var recordThree = TransactionRecord.newBuilder()
-                .transactionID(otherNonceTreeTransactionID)
+                .transactionID(otherNonceThreeTransactionID)
                 .receipt(receipt)
                 .build();
         cache.add(0, PAYER_ACCOUNT_ID, primaryRecord, Instant.now());
@@ -400,6 +400,15 @@ public class NetworkAdminHandlerTestBase {
                 .transactionValidStart(
                         Timestamp.newBuilder().seconds(now.getEpochSecond()).nanos(nanos))
                 .accountID(PAYER_ACCOUNT_ID)
+                .nonce(nonce)
+                .build();
+    }
+
+    protected TransactionID transactionIDWithoutAccount(int nanos, int nonce) {
+        final var now = Instant.now();
+        return TransactionID.newBuilder()
+                .transactionValidStart(
+                        Timestamp.newBuilder().seconds(now.getEpochSecond()).nanos(nanos))
                 .nonce(nonce)
                 .build();
     }
