@@ -131,7 +131,6 @@ public class SyncManagerTest {
         Settings.getInstance().setEventIntakeQueueThrottleSize(100);
         Settings.getInstance().setMaxIncomingSyncsInc(10);
         Settings.getInstance().setMaxOutgoingSyncs(10);
-        Settings.getInstance().getState().saveStatePeriod = 100;
         Settings.getInstance().setStaleEventPreventionThreshold(10);
     }
 
