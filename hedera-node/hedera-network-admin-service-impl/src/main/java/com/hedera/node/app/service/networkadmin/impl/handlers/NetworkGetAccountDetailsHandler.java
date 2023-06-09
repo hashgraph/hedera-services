@@ -137,8 +137,10 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
                     account, accountStore, tokensConfig, readableTokenStore, tokenRelationStore, ledgerConfig);
 
             if (optionalInfo.isEmpty()) {
-                header.copyBuilder().nodeTransactionPrecheckCode(FAIL_INVALID).build();
-                responseBuilder.header(header);
+                final var updatedHeader = header.copyBuilder()
+                        .nodeTransactionPrecheckCode(FAIL_INVALID)
+                        .build();
+                responseBuilder.header(updatedHeader);
             } else {
                 optionalInfo.ifPresent(responseBuilder::accountDetails);
             }

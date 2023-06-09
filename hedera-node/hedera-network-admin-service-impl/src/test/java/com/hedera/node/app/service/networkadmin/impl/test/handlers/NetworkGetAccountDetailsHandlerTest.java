@@ -82,7 +82,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
 
     @Test
     void extractsHeader() {
-        final var query = createGetAccountDetailsQuery(id);
+        final var query = createGetAccountDetailsQuery(accountId);
         final var header = networkGetAccountDetailsHandler.extractHeader(query);
         final var op = query.accountDetailsOrThrow();
         assertEquals(op.header(), header);
@@ -119,7 +119,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     @Test
     void validatesQueryWhenValidAccount() throws Throwable {
 
-        final var query = createGetAccountDetailsQuery(id);
+        final var query = createGetAccountDetailsQuery(accountId);
         given(context.query()).willReturn(query);
         given(context.createStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
 
@@ -142,7 +142,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
                 .build();
 
-        final var query = createGetAccountDetailsQuery(id);
+        final var query = createGetAccountDetailsQuery(accountId);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
 
@@ -167,7 +167,8 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
 
         final var response = networkGetAccountDetailsHandler.findResponse(context, responseHeader);
         final var accountDetailsResponse = response.accountDetailsOrThrow();
-        assertEquals(ResponseCodeEnum.OK, accountDetailsResponse.header().nodeTransactionPrecheckCode());
+        assertEquals(
+                ResponseCodeEnum.FAIL_INVALID, accountDetailsResponse.header().nodeTransactionPrecheckCode());
         assertNull(accountDetailsResponse.accountDetails());
     }
 
@@ -185,7 +186,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
                 Collections.emptyList(),
                 Collections.emptyList());
 
-        final var query = createGetAccountDetailsQuery(id);
+        final var query = createGetAccountDetailsQuery(accountId);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
@@ -209,7 +210,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
                 Collections.emptyList(),
                 Collections.emptyList());
 
-        final var query = createGetAccountDetailsQuery(id);
+        final var query = createGetAccountDetailsQuery(accountId);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
@@ -249,7 +250,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
         tokenRelationships.add(tokenRelation);
         final var expectedInfo = getExpectedInfo(
                 false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), tokenRelationships);
-        final var query = createGetAccountDetailsQuery(id);
+        final var query = createGetAccountDetailsQuery(accountId);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
@@ -302,7 +303,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
                 grantedTokenAllowancesList,
                 Collections.emptyList());
 
-        final var query = createGetAccountDetailsQuery(id);
+        final var query = createGetAccountDetailsQuery(accountId);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);

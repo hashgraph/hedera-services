@@ -16,18 +16,32 @@
 
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.RECEIPT_NOT_FOUND;
+import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
+import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
+import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.hapi.node.transaction.TransactionGetReceiptQuery;
 import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
+import com.hedera.hapi.node.transaction.TransactionReceipt;
+import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -56,15 +70,81 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
     }
 
     @Override
+    public boolean requiresNodePayment(@NonNull ResponseType responseType) {
+        return responseType == ANSWER_ONLY || responseType == ANSWER_STATE_PROOF;
+    }
+
+    @Override
+    public boolean needsAnswerOnlyCost(@NonNull ResponseType responseType) {
+        return COST_ANSWER == responseType;
+    }
+
+    @Override
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+        final var query = context.query();
+        final var recordCache = context.createStore(RecordCache.class);
+        final TransactionGetReceiptQuery transactionGetReceiptQuery = query.transactionGetReceiptOrThrow();
+        if (transactionGetReceiptQuery.hasTransactionID()) {
+            final var receipts =
+                    recordCache.getReceipt(transactionGetReceiptQuery.transactionIDOrElse(TransactionID.DEFAULT));
+            mustExist(receipts, INVALID_TRANSACTION_ID);
+        } else {
+            throw new PreCheckException(INVALID_TRANSACTION_ID);
+        }
     }
 
     @Override
     public Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
         requireNonNull(context);
         requireNonNull(header);
-        throw new UnsupportedOperationException("Not implemented");
+        final var query = context.query();
+        final var recordCache = context.createStore(RecordCache.class);
+        final var transactionGetReceiptQuery = query.transactionGetReceiptOrThrow();
+        final var responseBuilder = TransactionGetReceiptResponse.newBuilder();
+        final var transactionId = transactionGetReceiptQuery.transactionIDOrElse(TransactionID.DEFAULT);
+
+        final var responseType =
+                transactionGetReceiptQuery.headerOrElse(QueryHeader.DEFAULT).responseType();
+        responseBuilder.header(header);
+        if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
+            final var transactionReceiptPrimary = recordCache.getReceipt(transactionId);
+            if (transactionReceiptPrimary == null) {
+                final var updatedHeader = header.copyBuilder()
+                        .nodeTransactionPrecheckCode(RECEIPT_NOT_FOUND)
+                        .build();
+                responseBuilder.header(updatedHeader);
+            } else {
+                responseBuilder.receipt(transactionReceiptPrimary);
+                if (transactionGetReceiptQuery.includeDuplicates()) {
+                    final List<TransactionReceipt> allTransactionReceipts = recordCache.getReceipts(transactionId);
+
+                    // remove the primary receipt from the list
+                    final List<TransactionReceipt> duplicateTransactionReceipts =
+                            allTransactionReceipts.subList(1, allTransactionReceipts.size());
+                    responseBuilder.duplicateTransactionReceipts(duplicateTransactionReceipts);
+                }
+                if (transactionGetReceiptQuery.includeChildReceipts()) {
+                    responseBuilder.childTransactionReceipts(transformedChildrenOf(transactionId, recordCache));
+                }
+            }
+        }
+
+        return Response.newBuilder().transactionGetReceipt(responseBuilder).build();
+    }
+
+    private List<TransactionReceipt> transformedChildrenOf(TransactionID transactionID, RecordCache recordCache) {
+        final List<TransactionReceipt> children = new ArrayList<>();
+        // In a transaction id if nonce is 0 it is a parent and if we have any other number it is a child
+        for (int nonce = 1; ; nonce++) {
+            var childTransactionId = transactionID.copyBuilder().nonce(nonce).build();
+            var maybeChildRecord = recordCache.getRecord(childTransactionId);
+            if (maybeChildRecord == null) {
+                break;
+            } else {
+                if (maybeChildRecord.receipt() != null) children.add(maybeChildRecord.receipt());
+            }
+        }
+        return children;
     }
 }
