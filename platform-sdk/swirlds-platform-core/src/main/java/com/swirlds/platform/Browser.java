@@ -554,14 +554,17 @@ public class Browser {
      * setting.
      */
     private void startThreadDumpGenerator() {
-        if (Settings.getInstance().getThreadDumpPeriodMs() > 0) {
+        //if (Settings.getInstance().getThreadDumpPeriodMs() > 0) {
             final Path dir = getAbsolutePath(Settings.getInstance().getThreadDumpLogDir());
+        logger.info(STARTUP.getMarker(), "Starting thread dump generator in {}", dir);
             if (!Files.exists(dir)) {
                 rethrowIO(() -> Files.createDirectories(dir));
+
             }
+        logger.info(STARTUP.getMarker(), "Starting thread dump generator in {}", dir);
             ThreadDumpGenerator.generateThreadDumpAtIntervals(
-                    dir, Settings.getInstance().getThreadDumpPeriodMs());
-        }
+                    dir, 10000);
+        //}
     }
 
     /**
