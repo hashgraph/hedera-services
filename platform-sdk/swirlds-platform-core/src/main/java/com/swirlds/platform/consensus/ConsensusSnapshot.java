@@ -139,9 +139,6 @@ public class ConsensusSnapshot implements SelfSerializable {
                 return info.minimumGeneration();
             }
         }
-        for (MinGenInfo minGen : minGens()) {
-            System.out.printf("round: %d, minGen: %d\n", minGen.round(), minGen.minimumGeneration());
-        }
         throw new NoSuchElementException("No minimum generation found for round: " + round);
     }
 

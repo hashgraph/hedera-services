@@ -22,6 +22,7 @@ import static com.swirlds.common.test.RandomUtils.randomInstant;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
@@ -58,13 +59,20 @@ public final class PlatformStateUtils {
         platformData.setRound(random.nextLong());
         platformData.setNumEventsCons(random.nextLong());
         platformData.setConsensusTimestamp(randomInstant(random));
-        platformData.setMinGenInfo(List.of());
 
         final List<MinGenInfo> minGenInfo = new LinkedList<>();
         for (int index = 0; index < 10; index++) {
             minGenInfo.add(new MinGenInfo(random.nextLong(), random.nextLong()));
         }
-        platformState.getPlatformData().setMinGenInfo(minGenInfo);
+        platformState.getPlatformData().setSnapshot(
+                new ConsensusSnapshot(
+                        random.nextLong(),
+                        List.of(randomHash(random), randomHash(random), randomHash(random)),
+                        minGenInfo,
+                        random.nextLong(),
+                        randomInstant(random)
+                )
+        );
 
         return platformState;
     }

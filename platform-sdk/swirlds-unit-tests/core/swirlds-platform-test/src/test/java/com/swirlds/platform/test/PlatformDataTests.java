@@ -16,13 +16,6 @@
 
 package com.swirlds.platform.test;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.utility.CompareTo.isGreaterThan;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -30,11 +23,14 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.test.RandomUtils;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -42,9 +38,14 @@ import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+
+import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.RandomUtils.randomInstant;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 @DisplayName("PlatformData Tests")
 class PlatformDataTests {
@@ -67,11 +68,19 @@ class PlatformDataTests {
         return new PlatformData()
                 .setRound(random.nextLong(randomBound))
                 .setNumEventsCons(random.nextLong(randomBound))
-                .setHashEventsCons(RandomUtils.randomHash(random))
+                .setHashEventsCons(randomHash(random))
                 .setConsensusTimestamp(Instant.ofEpochSecond(random.nextInt(randomBound)))
-                .setMinGenInfo(minGenInfo)
                 .setCreationSoftwareVersion(new BasicSoftwareVersion(random.nextInt(randomBound)))
-                .setEpochHash(RandomUtils.randomHash(random));
+                .setEpochHash(randomHash(random))
+                .setSnapshot(
+                        new ConsensusSnapshot(
+                                random.nextLong(),
+                                List.of(randomHash(random), randomHash(random), randomHash(random)),
+                                minGenInfo,
+                                random.nextLong(),
+                                randomInstant(random)
+                        )
+                );
         // TODO store snapshot
     }
 
@@ -118,7 +127,7 @@ class PlatformDataTests {
     void updateEpochHashTest() {
         final Random random = getRandomPrintSeed();
         final PlatformData platformData = generateRandomPlatformData(random);
-        final Hash hash = RandomUtils.randomHash(random);
+        final Hash hash = randomHash(random);
 
         platformData.setEpochHash(null);
         platformData.setNextEpochHash(null);
@@ -138,7 +147,7 @@ class PlatformDataTests {
         assertEquals(hash, platformData.getEpochHash(), "epoch hash should be updated");
         assertNull(platformData.getNextEpochHash(), "next epoch hash should be set to null");
 
-        platformData.setEpochHash(RandomUtils.randomHash(random));
+        platformData.setEpochHash(randomHash(random));
         platformData.setNextEpochHash(hash);
         assertDoesNotThrow(platformData::updateEpochHash);
         assertEquals(hash, platformData.getEpochHash(), "epoch hash should be updated");

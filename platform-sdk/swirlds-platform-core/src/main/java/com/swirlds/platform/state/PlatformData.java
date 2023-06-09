@@ -71,7 +71,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * how many consensus events have there been throughout all of history, up through the round received that this
      * SignedState represents.
      */
-    private long numEventsCons;
+    private long numEventsCons;//TODO this has also moved to the snapshot
 
     /**
      * running hash of the hashes of all consensus events have there been throughout all of history, up through the
@@ -137,9 +137,11 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         if (that.minGenInfo != null) {
             this.minGenInfo = new ArrayList<>(that.minGenInfo);
         }
+        this.creationSoftwareVersion = that.creationSoftwareVersion;
         this.epochHash = that.epochHash;
         this.nextEpochHash = that.nextEpochHash;
         this.roundsNonAncient = that.roundsNonAncient;
+        this.snapshot = that.snapshot;
     }
 
     /**
@@ -366,19 +368,10 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @return minimum generation info list
      */
     public List<MinGenInfo> getMinGenInfo() {
+        if (snapshot != null) {
+            return snapshot.minGens();
+        }
         return minGenInfo;
-    }
-
-    /**
-     * Get the minimum event generation for each node within this state.
-     *
-     * @param minGenInfo minimum generation info list
-     * @return this object
-     */
-    @Deprecated
-    public PlatformData setMinGenInfo(final List<MinGenInfo> minGenInfo) {
-        this.minGenInfo = minGenInfo;
-        return this;
     }
 
     /**
@@ -388,9 +381,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * @param round the round whose minimum generation will be returned
      * @return the minimum generation for the round specified
      * @throws NoSuchElementException if the generation information for this round is not contained withing this state
-     * @deprecated replace with the method in {@link com.swirlds.platform.consensus.ConsensusSnapshot}
      */
-    @Deprecated
     public long getMinGen(final long round) {
         for (final MinGenInfo info : getMinGenInfo()) {
             if (info.round() == round) {
@@ -571,6 +562,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
                 .append("minGenInfo", minGenInfo)
                 .append("epochHash", epochHash)
                 .append("roundsNonAncient", roundsNonAncient)
+                .append("snapshot", snapshot)
                 .toString();
     }
 }

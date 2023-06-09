@@ -59,7 +59,6 @@ public class RandomSignedStateGenerator {
     private AddressBook addressBook;
     private Instant consensusTimestamp;
     private Boolean freezeState = false;
-    private List<MinGenInfo> minGenInfo;
     private SoftwareVersion softwareVersion;
     private List<NodeId> signingNodeIds;
     private Map<NodeId, Signature> signatures;
@@ -112,7 +111,6 @@ public class RandomSignedStateGenerator {
             stateInstance.setSwirldState(swirldState);
             PlatformState platformState = new PlatformState();
             final PlatformData platformData = new PlatformData();
-            platformData.setMinGenInfo(List.of());
             platformState.setPlatformData(platformData);
             stateInstance.setPlatformState(platformState);
         } else {
@@ -161,16 +159,6 @@ public class RandomSignedStateGenerator {
             roundsNonAncientInstance = roundsNonAncient;
         }
 
-        final List<MinGenInfo> minGenInfoInstance;
-        if (minGenInfo == null) {
-            minGenInfoInstance = new ArrayList<>();
-            for (int i = 0; i < roundsNonAncientInstance; i++) {
-                minGenInfoInstance.add(new MinGenInfo(roundInstance - i, 0L));
-            }
-        } else {
-            minGenInfoInstance = minGenInfo;
-        }
-
         final SoftwareVersion softwareVersionInstance;
         if (softwareVersion == null) {
             softwareVersionInstance = new BasicSoftwareVersion(Math.abs(random.nextLong()));
@@ -186,7 +174,6 @@ public class RandomSignedStateGenerator {
                 .setNumEventsCons(numEventsConsInstance)
                 .setHashEventsCons(hashEventsConsInstance)
                 .setConsensusTimestamp(consensusTimestampInstance)
-                .setMinGenInfo(minGenInfoInstance)
                 .setCreationSoftwareVersion(softwareVersionInstance)
                 .setRoundsNonAncient(roundsNonAncientInstance);
 
@@ -330,16 +317,6 @@ public class RandomSignedStateGenerator {
      */
     public RandomSignedStateGenerator setFreezeState(final boolean freezeState) {
         this.freezeState = freezeState;
-        return this;
-    }
-
-    /**
-     * Set minimum generation info for the state.
-     *
-     * @return this object
-     */
-    public RandomSignedStateGenerator setMinGenInfo(final List<MinGenInfo> minGenInfo) {
-        this.minGenInfo = minGenInfo;
         return this;
     }
 

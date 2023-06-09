@@ -22,8 +22,8 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
+
 import java.time.Instant;
-import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -50,7 +50,6 @@ public final class GenesisStateBuilder {
         platformData.setRound(0);
         platformData.setNumEventsCons(0);
         platformData.setHashEventsCons(null);
-        platformData.setMinGenInfo(List.of());
         platformData.setEpochHash(null);
         platformData.setConsensusTimestamp(Instant.ofEpochSecond(0L));
 

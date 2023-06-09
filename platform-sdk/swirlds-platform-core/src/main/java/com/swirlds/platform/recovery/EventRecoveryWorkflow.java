@@ -46,6 +46,8 @@ import com.swirlds.common.system.state.notifications.NewRecoveredStateNotificati
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.platform.consensus.ConsensusUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
@@ -353,15 +355,21 @@ public final class EventRecoveryWorkflow {
                 // .setEvents(collectEventsForRound(
                 //        roundsNonAncient, previousState.get().getEvents(), round))
                 .setConsensusTimestamp(currentRoundTimestamp)
-                .setMinGenInfo(
-                        getMinGenInfo(roundsNonAncient, previousState.get().getMinGenInfo(), round))
+                .setSnapshot(
+                        new ConsensusSnapshot(
+                                round.getRoundNum(),
+                                List.of(),//TODO fake judges?
+                                getMinGenInfo(roundsNonAncient, previousState.get().getMinGenInfo(), round),
+                                previousState.get().getNumEventsCons() + round.getEventCount() + 1,
+                                ConsensusUtils.calcMinTimestampForNextEvent(currentRoundTimestamp)
+                        )
+                )
                 .setCreationSoftwareVersion(previousState
                         .get()
                         .getState()
                         .getPlatformState()
                         .getPlatformData()
                         .getCreationSoftwareVersion());
-        // TODO add snapshot
 
         applyTransactions(
                 previousState.get().getSwirldState().cast(),
