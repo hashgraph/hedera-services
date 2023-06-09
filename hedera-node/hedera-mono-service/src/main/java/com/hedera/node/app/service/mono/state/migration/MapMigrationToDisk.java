@@ -84,6 +84,7 @@ public class MapMigrationToDisk {
                     onDiskAccounts.get().put(new EntityNumVirtualKey(num.longValue()), onDiskAccount);
                     if (insertionsSoFar.incrementAndGet() % insertionsPerCopy == 0) {
                         final var onDiskAccountsCopy = onDiskAccounts.get().copy();
+                        onDiskAccounts.get().release();
                         onDiskAccounts.set(onDiskAccountsCopy);
                     }
                 }),
@@ -111,6 +112,7 @@ public class MapMigrationToDisk {
                     onDiskRels.get().put(EntityNumVirtualKey.fromPair(numPair), onDiskRel);
                     if (insertionsSoFar.incrementAndGet() % insertionsPerCopy == 0) {
                         final var onDiskRelCopy = onDiskRels.get().copy();
+                        onDiskRels.get().release();
                         onDiskRels.set(onDiskRelCopy);
                     }
                 }),
