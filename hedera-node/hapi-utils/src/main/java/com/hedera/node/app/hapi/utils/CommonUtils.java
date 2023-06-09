@@ -202,6 +202,12 @@ public final class CommonUtils {
         };
     }
 
+    /**
+     *get the EVM address from the long number
+     *
+     * @param num the input long number
+     * @return evm address
+     */
     public static byte[] asEvmAddress(final long num) {
         final byte[] evmAddress = new byte[20];
         arraycopy(Longs.toByteArray(num), 0, evmAddress, 12, 8);

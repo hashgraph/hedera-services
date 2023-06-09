@@ -256,16 +256,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
             if (tokenRelation.isPresent()) {
                 token = readableTokenStore.get(tokenID);
                 if (token != null) {
-                    tokenRelationship = TokenRelationship.newBuilder()
-                            .tokenId(TokenID.newBuilder().tokenNum(tokenNum).build())
-                            .symbol(token.symbol())
-                            .balance(tokenRelation.get().balance())
-                            .decimals(token.decimals())
-                            .kycStatus(tokenRelation.get().kycGranted() ? GRANTED : KYC_NOT_APPLICABLE)
-                            .freezeStatus(tokenRelation.get().frozen() ? FROZEN : FREEZE_NOT_APPLICABLE)
-                            .automaticAssociation(tokenRelation.get().automaticAssociation())
-                            .build();
-                    ret.add(tokenRelationship);
+                    addTokenRelation(ret, token, tokenRelation.get(), tokenNum);
                 }
                 tokenNum = tokenRelation.get().nextToken();
             } else {
@@ -276,6 +267,33 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         return ret;
     }
 
+    /**
+     * add TokenRelationship to ArrayList
+     * @param ret ArrayList of TokenRelationship object
+     * @param token token from readableToken store by tokenID
+     * @param tokenRelation token relation from token relation store
+     * @param tokenNum token number
+     */
+    private void addTokenRelation(
+            ArrayList<TokenRelationship> ret, Token token, TokenRelation tokenRelation, long tokenNum) {
+        final var tokenRelationship = TokenRelationship.newBuilder()
+                .tokenId(TokenID.newBuilder().tokenNum(tokenNum).build())
+                .symbol(token.symbol())
+                .balance(tokenRelation.balance())
+                .decimals(token.decimals())
+                .kycStatus(tokenRelation.kycGranted() ? GRANTED : KYC_NOT_APPLICABLE)
+                .freezeStatus(tokenRelation.frozen() ? FROZEN : FREEZE_NOT_APPLICABLE)
+                .automaticAssociation(tokenRelation.automaticAssociation())
+                .build();
+        ret.add(tokenRelationship);
+    }
+
+    /**
+     * get ContractAccountId String of an Account
+     * @param account   the account to be calculated from
+     * @param alias    the alias of the account
+     * @return String of ContractAccountId
+     */
     private String getContractAccountId(Account account, final Bytes alias) {
         if (alias.toByteArray().length == EVM_ADDRESS_SIZE) {
             return hex(alias.toByteArray());
@@ -289,6 +307,12 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         }
     }
 
+    /**
+     * recover EVM address from account key
+     * @param key   the key of the account
+     * @param addressRecovery    the function to recover EVM address
+     * @return byte[] of EVM address
+     */
     public static byte[] tryAddressRecovery(@Nullable final Key key, final UnaryOperator<byte[]> addressRecovery) {
         if (key != null && key.hasEcdsaSecp256k1()) {
             // Only compressed keys are stored at the moment
@@ -307,6 +331,13 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         return null;
     }
 
+    /**
+     * get StakingInfo of an Account
+     * @param account   the account to be calculated from
+     * @param rewardCalculator  the reward calculator
+     * @param readableStakingInfoStore  readable staking info store
+     * @return StakingInfo object
+     */
     private StakingInfo getStakingInfo(
             final Account account,
             @NonNull final RewardCalculator rewardCalculator,
@@ -327,6 +358,14 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         return stakingInfo.build();
     }
 
+    /**
+     * add staking meta to StakingInfo
+     * @param stakingInfo   the staking info to be added to
+     * @param account   the account to be calculated from
+     * @param rewardCalculator  the reward calculator
+     * @param readableStakingInfoStore  readable staking info store
+     * @return long of StakedNodeAddressBookId
+     */
     private void addNodeStakeMeta(
             final StakingInfo.Builder stakingInfo,
             @NonNull final Account account,
