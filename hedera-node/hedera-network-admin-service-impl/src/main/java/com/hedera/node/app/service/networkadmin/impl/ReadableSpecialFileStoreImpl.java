@@ -16,23 +16,34 @@
 
 package com.hedera.node.app.service.networkadmin.impl;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 
 /**
  * Implementation of {@link ReadableSpecialFileStore}
  *
- * @deprecated This is a temporary class. It will be replaced by a new class in FileService.
+ * This is a temporary location for this class. It will be moved to FileService.
+ * @todo('Issue #6856')
  */
-@Deprecated
 public class ReadableSpecialFileStoreImpl implements ReadableSpecialFileStore {
 
     /** The underlying data storage class that holds the file data. */
-    private final ReadableKVState<Long, byte[]> freezeFilesById;
+    private final ReadableKVState<FileID, byte[]> freezeFilesById;
+
+    /** The underlying data storage class that holds the prepared update file number.
+     * If null, no prepared update file has been set. */
+    private final ReadableSingletonState<FileID> preparedUpdateFileID;
+    /** The underlying data storage class that holds the prepared update file hash.
+     * May be null if no prepared update file has been set. */
+    private final ReadableSingletonState<Bytes> preparedUpdateFileHash;
 
     /**
      * Create a new {@link ReadableSpecialFileStoreImpl} instance.
@@ -42,12 +53,26 @@ public class ReadableSpecialFileStoreImpl implements ReadableSpecialFileStore {
     public ReadableSpecialFileStoreImpl(@NonNull final ReadableStates states) {
         Objects.requireNonNull(states);
         this.freezeFilesById = states.get(FreezeServiceImpl.UPGRADE_FILES_KEY);
+        this.preparedUpdateFileID = states.getSingleton("preparedUpdateFileID");
+        this.preparedUpdateFileHash = states.getSingleton("preparedUpdateFileHash");
     }
 
     @Override
     @NonNull
-    public Optional<byte[]> get(long fileId) {
+    public Optional<byte[]> get(FileID fileId) {
         final var file = freezeFilesById.get(fileId);
         return Optional.ofNullable(file);
+    }
+
+    @Override
+    @Nullable
+    public FileID preparedUpdateFileID() {
+        return preparedUpdateFileID.get();
+    }
+
+    @Override
+    @Nullable
+    public Bytes preparedUpdateFileHash() {
+        return preparedUpdateFileHash.get();
     }
 }

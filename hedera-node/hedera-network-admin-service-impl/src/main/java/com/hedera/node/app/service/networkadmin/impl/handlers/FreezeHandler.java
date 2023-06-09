@@ -31,6 +31,7 @@ import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
+import com.hedera.node.app.service.networkadmin.impl.WritableSpecialFileStore;
 import com.hedera.node.app.service.networkadmin.impl.config.NetworkAdminServiceConfig;
 import com.hedera.node.app.spi.state.WritableFreezeStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -123,14 +124,14 @@ public class FreezeHandler implements TransactionHandler {
         final var txn = context.body();
         final NetworkAdminServiceConfig adminServiceConfig =
                 context.configuration().getConfigData(NetworkAdminServiceConfig.class);
-        final ReadableSpecialFileStore specialFileStore = context.readableStore(ReadableSpecialFileStore.class);
+        final WritableSpecialFileStore specialFileStore = context.writableStore(WritableSpecialFileStore.class);
         final WritableFreezeStore freezeStore = context.writableStore(WritableFreezeStore.class);
 
         final FreezeTransactionBody freezeTxn = txn.freezeOrThrow();
-        final FileID updateFileNum =
+        final FileID updateFileID =
                 freezeTxn.updateFile(); // only some freeze types require this, it may be null for others
 
-        validateSemantics(freezeTxn, specialFileStore, updateFileNum);
+        validateSemantics(freezeTxn, specialFileStore, updateFileID);
 
         final FreezeUpgradeActions upgradeActions = new FreezeUpgradeActions(adminServiceConfig, freezeStore);
         final Timestamp freezeStartTime = freezeTxn.startTime(); // may be null for some freeze types
@@ -140,18 +141,23 @@ public class FreezeHandler implements TransactionHandler {
 
         // @todo('Issue #6761') - the below switch returns a CompletableFuture, need to use this with an ExecutorService
         switch (freezeTxn.freezeType()) {
-            case PREPARE_UPGRADE ->
-            // by the time we get here, we've already checked that updateFileNum is non-null in validateSemantics()
-            upgradeActions.extractSoftwareUpgrade(specialFileStore
-                    .get(requireNonNull(updateFileNum).fileNum())
-                    .orElseThrow(() -> new IllegalStateException("Update file not found")));
-                // @todo('Issue #6201'): call networkCtx.recordPreparedUpgrade(freezeTxn);
+            case PREPARE_UPGRADE -> {
+                // by the time we get here, we've already checked that updateFileID is non-null in validateSemantics()
+                upgradeActions.extractSoftwareUpgrade(specialFileStore
+                        .get(requireNonNull(updateFileID))
+                        .orElseThrow(() -> new IllegalStateException("Update file not found")));
+                specialFileStore.preparedUpdateFileHash(freezeTxn.fileHash());
+                specialFileStore.preparedUpdateFileID(updateFileID);
+            }
             case FREEZE_UPGRADE -> upgradeActions.scheduleFreezeUpgradeAt(requireNonNull(freezeStartTimeInstant));
-            case FREEZE_ABORT -> upgradeActions.abortScheduledFreeze();
-                // @todo('Issue #6201'): call networkCtx.discardPreparedUpgradeMeta();
+            case FREEZE_ABORT -> {
+                upgradeActions.abortScheduledFreeze();
+                specialFileStore.preparedUpdateFileHash(null);
+                specialFileStore.preparedUpdateFileID(null);
+            }
             case TELEMETRY_UPGRADE -> upgradeActions.extractTelemetryUpgrade(
                     specialFileStore
-                            .get(requireNonNull(updateFileNum).fileNum())
+                            .get(requireNonNull(updateFileID))
                             .orElseThrow(() -> new IllegalStateException("Telemetry update file not found")),
                     requireNonNull(freezeStartTimeInstant));
             case FREEZE_ONLY -> upgradeActions.scheduleFreezeOnlyAt(requireNonNull(freezeStartTimeInstant));
@@ -166,15 +172,15 @@ public class FreezeHandler implements TransactionHandler {
     private static void validateSemantics(
             @NonNull final FreezeTransactionBody freezeTxn,
             @NonNull final ReadableSpecialFileStore specialFileStore,
-            @Nullable final FileID updateFileNum) {
+            @Nullable final FileID updateFileID) {
         requireNonNull(freezeTxn);
         requireNonNull(specialFileStore);
 
         if (freezeTxn.freezeType() == PREPARE_UPGRADE || freezeTxn.freezeType() == TELEMETRY_UPGRADE) {
-            if (updateFileNum == null) {
+            if (updateFileID == null) {
                 throw new HandleException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
             }
-            final Optional<byte[]> updateFileZip = specialFileStore.get(updateFileNum.fileNum());
+            final Optional<byte[]> updateFileZip = specialFileStore.get(updateFileID);
             if (updateFileZip.isEmpty()) {
                 throw new IllegalStateException("Update file not found");
             }
@@ -218,7 +224,7 @@ public class FreezeHandler implements TransactionHandler {
         requireNonNull(specialFileStore);
         final FileID updateFile = freezeTxn.updateFile();
 
-        if (updateFile == null || specialFileStore.get(updateFile.fileNum()).isEmpty()) {
+        if (updateFile == null || specialFileStore.get(updateFile).isEmpty()) {
             throw new PreCheckException(ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
         }
 
