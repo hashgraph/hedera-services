@@ -41,7 +41,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.precompile.ContractKeysStillWorkAsExpectedSuite.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
+import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
+import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -130,7 +131,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("fungibleTokenCreateHappyPath")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
@@ -236,7 +237,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("inheritsSenderAutoRenewAccountIfAnyForNftCreate")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ED25519KEY),
@@ -302,7 +303,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("inheritsSenderAutoRenewAccountForTokenCreate")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
@@ -372,7 +373,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("nonFungibleTokenCreateHappyPath")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ED25519KEY),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
@@ -464,7 +465,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("fungibleTokenCreateThenQueryAndTransfer")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         cryptoCreate(ACCOUNT)
                                 .balance(ONE_MILLION_HBARS)
@@ -546,7 +547,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("nonFungibleTokenCreateThenQuery")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
                         contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER))
@@ -614,7 +615,7 @@ public class CreatePrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("createTokenWithDefaultExpiryAndEmptyKeys")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),

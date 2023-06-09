@@ -61,7 +61,8 @@ import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.nCopiesOfSender;
 import static com.hedera.services.bdd.suites.contract.Utils.nNonMirrorAddressFrom;
 import static com.hedera.services.bdd.suites.contract.Utils.nonMirrorAddrWith;
-import static com.hedera.services.bdd.suites.contract.precompile.ContractKeysStillWorkAsExpectedSuite.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
+import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
+import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
@@ -178,7 +179,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("hollowAccountSigningReqsStillEnforced")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(nftKey),
                         uploadInitCode(AUTO_CREATION_MODES),
                         contractCreate(AUTO_CREATION_MODES),
@@ -239,7 +240,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("revertedAutoCreationRollsBackEvenIfTopLevelSucceeds")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(nftKey),
                         uploadInitCode(AUTO_CREATION_MODES),
                         contractCreate(AUTO_CREATION_MODES),
@@ -287,7 +288,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("canCreateViaFungibleWithFractionalFee")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ftKey),
                         uploadInitCode(AUTO_CREATION_MODES),
                         contractCreate(AUTO_CREATION_MODES),
@@ -345,7 +346,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("canCreateMultipleHollows")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(nftKey),
                         uploadInitCode(AUTO_CREATION_MODES),
                         contractCreate(AUTO_CREATION_MODES),
@@ -384,7 +385,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("cryptoTransferV1LazyCreate")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(SENDER)
                                 .balance(10 * ONE_HUNDRED_HBARS)
@@ -568,7 +569,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("cryptoTransferV2LazyCreate")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(SENDER)
                                 .balance(INIT_BALANCE)
@@ -741,7 +742,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("transferTokenLazyCreate")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -804,7 +805,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("transferTokensToEVMAddressAliasRevertAndTransferAgainSuccessfully")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TOKEN_TREASURY),
@@ -868,7 +869,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("transferNftLazyCreate")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -931,7 +932,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("transferNftsLazyCreate")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -998,7 +999,7 @@ public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("htsTransferFromFungibleTokenLazyCreate")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),

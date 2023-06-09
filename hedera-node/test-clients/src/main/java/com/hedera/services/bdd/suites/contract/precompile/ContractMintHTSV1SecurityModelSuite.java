@@ -48,7 +48,8 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.expectedPrecompileGasFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
-import static com.hedera.services.bdd.suites.contract.precompile.ContractKeysStillWorkAsExpectedSuite.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
+import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
+import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -128,7 +129,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("happyPathZeroUnitFungibleTokenMint")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).payingWith(GENESIS),
                         cryptoCreate(TOKEN_TREASURY),
@@ -171,7 +172,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("helloWorldFungibleMint")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(MULTI_KEY),
                         tokenCreate(FUNGIBLE_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -218,7 +219,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("helloWorldNftMint")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(MULTI_KEY),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -283,7 +284,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("happyPathFungibleTokenMint")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).payingWith(GENESIS),
                         cryptoCreate(TOKEN_TREASURY),
@@ -336,7 +337,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("happyPathNonFungibleTokenMint")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
@@ -392,7 +393,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("rollbackOnFailedAssociateAfterNonFungibleMint")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECIPIENT),
@@ -454,7 +455,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
         return propertyPreservingHapiSpec("gasCostNotMetSetsInsufficientGasStatusInChildRecord")
                 .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, "10_000_000"),
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(5 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
