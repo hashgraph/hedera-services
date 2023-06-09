@@ -19,14 +19,14 @@ plugins { id("com.hedera.hashgraph.conventions") }
 description = "Default Hedera Util Service Implementation"
 
 dependencies {
-  javaModuleDependencies {
-    annotationProcessor(gav("dagger.compiler"))
+    javaModuleDependencies {
+        annotationProcessor(gav("dagger.compiler"))
 
-    testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
-    testImplementation(testFixtures(project(":hedera-node:node-config")))
-    testImplementation(gav("org.assertj.core"))
-    testImplementation(gav("org.junit.jupiter.api"))
-    testImplementation(gav("org.mockito"))
-    testImplementation(gav("org.mockito.junit.jupiter"))
-  }
+        testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+        testImplementation(testFixtures(project(":hedera-node:node-config")))
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.mockito"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+    }
 }

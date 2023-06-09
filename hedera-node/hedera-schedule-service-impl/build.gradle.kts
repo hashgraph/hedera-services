@@ -19,9 +19,9 @@ plugins { id("com.hedera.hashgraph.conventions") }
 description = "Default Hedera Schedule Service Implementation"
 
 dependencies {
-  javaModuleDependencies {
-    annotationProcessor(gav("dagger.compiler"))
+    javaModuleDependencies {
+        annotationProcessor(gav("dagger.compiler"))
 
-    testRuntimeOnly(gav("org.mockito.inline"))
-  }
+        testRuntimeOnly(gav("org.mockito.inline"))
+    }
 }

@@ -53,6 +53,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -113,7 +114,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
         this.accountBalanceDigest = MessageDigest.getInstance(Cryptography.DEFAULT_DIGEST_TYPE.algorithmName());
     }
 
-    private Instant getFirstExportTime(final Instant now, final int exportPeriodInSecs) {
+    private Instant nextPeriodBoundaryAtLeastNow(final Instant now, final int exportPeriodInSecs) {
         final long epochSeconds = now.getEpochSecond();
         final long elapsedSecs = epochSeconds % exportPeriodInSecs;
         return elapsedSecs == 0
@@ -131,8 +132,11 @@ public class SignedStateBalancesExporter implements BalancesExporter {
         if (!dynamicProperties.shouldExportBalances()) {
             return false;
         }
-        if (nextExportTime == null) {
-            nextExportTime = getFirstExportTime(now, exportPeriod);
+        // In dev environments, it's common to load a state created a long time ago, but we don't want to
+        // export balances for every period boundary between the saved state time and now; so "fast-forward"
+        // the next export time to the first period boundary after the saved state time
+        if (nextExportTime == null || Duration.between(nextExportTime, now).getSeconds() > exportPeriod) {
+            nextExportTime = nextPeriodBoundaryAtLeastNow(now, exportPeriod);
         }
         if (!now.isBefore(nextExportTime)) {
             nextExportTime = nextExportTime.plusSeconds(exportPeriod);

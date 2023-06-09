@@ -23,7 +23,7 @@ description = "Hedera EVM - Implementation"
 // TODO module-info.java in 'test'
 // https://github.com/autonomousapps/dependency-analysis-android-gradle-plugin/issues/900
 dependencyAnalysis.issues {
-  onUnusedDependencies {
-    exclude(javaModuleDependencies.ga("com.github.spotbugs.annotations").get())
-  }
+    onUnusedDependencies {
+        exclude(javaModuleDependencies.ga("com.github.spotbugs.annotations").get())
+    }
 }

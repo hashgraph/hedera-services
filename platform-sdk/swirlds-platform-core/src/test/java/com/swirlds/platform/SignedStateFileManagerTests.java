@@ -105,8 +105,6 @@ class SignedStateFileManagerTests {
 
     @BeforeEach
     void beforeEach() throws IOException {
-        Settings.getInstance().getState().savedStateDirectory =
-                testDirectory.toFile().toString();
         TemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory);
     }
 
@@ -169,9 +167,6 @@ class SignedStateFileManagerTests {
     @ValueSource(booleans = {true, false})
     @DisplayName("Standard Operation Test")
     void standardOperationTest(final boolean successExpected) throws InterruptedException, IOException {
-
-        Settings.getInstance().getState().savedStateDirectory =
-                testDirectory.toFile().toString();
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()

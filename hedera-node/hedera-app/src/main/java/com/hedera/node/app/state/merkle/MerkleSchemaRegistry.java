@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.state.merkle;
 
+import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.SemanticVersionComparator;
+import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.*;
 import com.hedera.node.app.state.merkle.MerkleHederaState.MerkleWritableStates;
@@ -93,7 +95,10 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     public SchemaRegistry register(@NonNull Schema schema) {
         schemas.remove(schema);
         schemas.add(Objects.requireNonNull(schema));
-        logger.debug("Registering schema v{} for service {} ", schema.getVersion(), serviceName);
+        logger.debug(
+                "Registering schema {} for service {} ",
+                () -> HapiUtils.toString(schema.getVersion()),
+                () -> serviceName);
 
         // Any states being created, need to be registered for deserialization
         schema.statesToCreate().forEach(def -> {
@@ -272,8 +277,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @return true if both are null, or if both have the same version number
      */
     private boolean isSameVersion(@Nullable final SemanticVersion a, @Nullable final SemanticVersion b) {
-        return (a == null && b == null)
-                || (a != null && b != null && SemanticVersionComparator.INSTANCE.compare(a, b) == 0);
+        return (a == null && b == null) || (a != null && b != null && SEMANTIC_VERSION_COMPARATOR.compare(a, b) == 0);
     }
 
     private boolean isBetween(
@@ -310,7 +314,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // If the comparison yields the first argument as being before
         // or matching the second argument, then we return true because
         // the condition we're testing for holds.
-        return SemanticVersionComparator.INSTANCE.compare(maybeBefore, maybeAfter) <= 0;
+        return SEMANTIC_VERSION_COMPARATOR.compare(maybeBefore, maybeAfter) <= 0;
     }
 
     /**
