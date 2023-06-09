@@ -39,6 +39,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -48,7 +49,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -116,5 +119,28 @@ public class TokenHandlerHelper {
         validateFalse(token.deleted(), TOKEN_WAS_DELETED);
         validateFalse(token.paused(), TOKEN_IS_PAUSED);
         return token;
+    }
+
+    /**
+     * Returns the token relation if it exists and is usable
+     *
+     * @param accountId the ID of the account
+     * @param tokenId the ID of the token
+     * @param tokenRelStore the {@link ReadableTokenRelationStore} to use for token relation retrieval
+     * @throws HandleException if any of the token relation conditions are not met
+     */
+    @NonNull
+    public static TokenRelation getIfUsable(
+            @NonNull final AccountID accountId,
+            @NonNull final TokenID tokenId,
+            @NonNull final ReadableTokenRelationStore tokenRelStore) {
+        requireNonNull(accountId);
+        requireNonNull(tokenId);
+        requireNonNull(tokenRelStore);
+
+        final var tokenRel = tokenRelStore.get(accountId, tokenId);
+        validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+
+        return tokenRel;
     }
 }
