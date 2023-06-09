@@ -19,9 +19,10 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Settings;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -79,7 +80,8 @@ public final class SignedStateFileUtils {
      * @return the base directory for all signed state files
      */
     public static Path getSignedStatesBaseDirectory() {
-        return getAbsolutePath(Settings.getInstance().getState().savedStateDirectory);
+        final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
+        return getAbsolutePath(stateConfig.savedStateDirectory());
     }
 
     /**
