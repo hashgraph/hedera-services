@@ -22,6 +22,7 @@ import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.EventConstants;
+import com.swirlds.platform.test.consensus.framework.validation.ConsensusRoundValidation;
 import com.swirlds.platform.test.event.DynamicValue;
 import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.generator.GraphGenerator;
@@ -63,13 +64,10 @@ class IntakeAndConsensusTests {
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("consensus.roundsNonAncient", 25)
-                .withValue("consensus.roundsExpired", 24)
+                .withValue("consensus.roundsExpired", 25)
                 .getOrCreateConfig();
 
         final ConsensusConfig consensusConfig = configuration.getConfigData(ConsensusConfig.class);
-
-        // roundsExpired seems to have an off-by-one error, so it's lower than roundsNonAncient, but the effect is as
-        // though they are the same
 
         // the generated events are first fed into consensus so that round created is calculated before we start
         // using them
@@ -158,8 +156,10 @@ class IntakeAndConsensusTests {
     }
 
     private static void assertConsensusEvents(final TestIntake node1, final TestIntake node2) {
-        Assertions.assertEquals(
-                node1.getConsensusRounds(), node2.getConsensusRounds(), "consensus rounds must always be equal");
+        ConsensusRoundValidation.validateIterableRounds(
+                node1.getConsensusRounds().iterator(),
+                node2.getConsensusRounds().iterator()
+        );
         node1.getConsensusRounds().clear();
         node2.getConsensusRounds().clear();
     }

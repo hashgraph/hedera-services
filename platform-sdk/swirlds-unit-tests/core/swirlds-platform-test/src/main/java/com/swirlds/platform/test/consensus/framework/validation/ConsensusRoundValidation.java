@@ -37,8 +37,11 @@ public class ConsensusRoundValidation {
                                 + "output1 has %d rounds, output2 has %d rounds",
                         output1.getConsensusRounds().size(),
                         output2.getConsensusRounds().size()));
-        final Iterator<ConsensusRound> rndIt1 = output1.getConsensusRounds().iterator();
-        final Iterator<ConsensusRound> rndIt2 = output2.getConsensusRounds().iterator();
+
+        validateIterableRounds(output1.getConsensusRounds().iterator(), output2.getConsensusRounds().iterator());
+    }
+
+    public static void validateIterableRounds(final Iterator<ConsensusRound> rndIt1, final Iterator<ConsensusRound> rndIt2) {
         int roundIndex = 0;
         while (rndIt1.hasNext() && rndIt2.hasNext()) {
             final ConsensusRound round1 = rndIt1.next();
