@@ -70,6 +70,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(ContractMintHTSV1SecurityModelSuite.class);
@@ -86,7 +87,6 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
     private static final String NESTED_MINT_CONTRACT = "NestedMint";
     private static final String HELLO_WORLD_MINT = "HelloWorldMint";
     private static final String ACCOUNT = "anybody";
-    private static final String DELEGATE_CONTRACT_KEY_NAME = "contractKey";
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
     private static final String FIRST_MINT_TXN = "firstMintTxn";
     private static final String SECOND_MINT_TXN = "secondMintTxn";

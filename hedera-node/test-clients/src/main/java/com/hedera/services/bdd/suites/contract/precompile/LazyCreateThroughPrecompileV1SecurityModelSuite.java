@@ -100,6 +100,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
 
+@SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class LazyCreateThroughPrecompileV1SecurityModelSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LazyCreateThroughPrecompileV1SecurityModelSuite.class);
     private static final long GAS_TO_OFFER = 4_000_000L;

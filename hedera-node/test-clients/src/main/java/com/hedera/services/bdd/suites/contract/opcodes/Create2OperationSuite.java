@@ -147,8 +147,6 @@ public class Create2OperationSuite extends HapiSuite {
     private static final String RETURNER = "Returner";
     private static final String CALL_RETURNER = "callReturner";
     private static final String ADMIN_KEY = "adminKey";
-    private static final String CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS = "contracts.maxNumWithHapiSigsAccess";
-    private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
     private static final String ENTITY_MEMO = "JUST DO IT";
     private static final String DELETED_CREATE_2_LOG = "Deleted the deployed CREATE2 contract using HAPI";
 
