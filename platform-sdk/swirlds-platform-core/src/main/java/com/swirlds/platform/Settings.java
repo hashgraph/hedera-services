@@ -97,12 +97,10 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
 import com.swirlds.platform.internal.SubSetting;
 import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateManager;
-import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -389,15 +387,6 @@ public class Settings {
     /** settings that control the {@link SignedStateManager} and {@link SignedStateFileManager} behaviors */
     private StateSettings state = new StateSettings();
 
-    /**
-     * Settings controlling VirtualMap.
-     */
-    private VirtualMapSettingsImpl virtualMap = new VirtualMapSettingsImpl();
-    /**
-     * Settings controlling MerkleDb.
-     */
-    private MerkleDbSettingsImpl merkleDb = new MerkleDbSettingsImpl();
-
     private Settings() {}
 
     public static Settings getInstance() {
@@ -418,9 +407,6 @@ public class Settings {
         SettingsCommon.logStack = getInstance().isLogStack();
         SettingsCommon.showInternalStats = getInstance().isShowInternalStats();
         SettingsCommon.verboseStatistics = getInstance().isVerboseStatistics();
-
-        VirtualMapSettingsFactory.configure(getInstance().getVirtualMap());
-        MerkleDbSettingsFactory.configure(getInstance().getMerkleDb());
     }
 
     /**
@@ -907,14 +893,6 @@ public class Settings {
 
     public int getMaxTransactionCountPerEvent() {
         return maxTransactionCountPerEvent;
-    }
-
-    public VirtualMapSettingsImpl getVirtualMap() {
-        return virtualMap;
-    }
-
-    public MerkleDbSettingsImpl getMerkleDb() {
-        return merkleDb;
     }
 
     public String getCsvOutputFolder() {

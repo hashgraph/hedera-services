@@ -18,10 +18,10 @@ package com.swirlds.merkledb.files;
 
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
-import com.swirlds.merkledb.settings.MerkleDbSettings;
-import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
 import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.IOException;
@@ -45,11 +45,11 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 @SuppressWarnings("rawtypes")
 public final class DataFileIterator implements AutoCloseable {
     /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before
-     * any application classes that might instantiate a data source, the {@link MerkleDbSettingsFactory}
+     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
+     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
      * holder will have been configured by the time this static initializer runs.
      */
-    private static final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
+    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
 
     /** Input stream this iterator is reading from */
     private final BufferedInputStream inputStream;
@@ -96,7 +96,7 @@ public final class DataFileIterator implements AutoCloseable {
         this.headerSize = dataItemSerializer.getHeaderSize();
         /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3929 */
         this.inputStream = new BufferedInputStream(
-                Files.newInputStream(path, StandardOpenOption.READ), settings.getIteratorInputBufferBytes());
+                Files.newInputStream(path, StandardOpenOption.READ), config.iteratorInputBufferBytes());
     }
 
     /**
