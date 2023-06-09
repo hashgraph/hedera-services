@@ -22,6 +22,8 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.Settings;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,7 +32,7 @@ import java.time.Instant;
 /**
  * Defines all data related to the emergency recovery file and how it is formatted.
  */
-public record EmergencyRecoveryFile(Recovery recovery) {
+public record EmergencyRecoveryFile(@NonNull Recovery recovery) {
     private static final String OUTPUT_FILENAME = "emergencyRecovery.yaml";
     private static final String INPUT_FILENAME = Settings.getInstance().getEmergencyRecoveryStateFileName();
 
@@ -41,7 +43,7 @@ public record EmergencyRecoveryFile(Recovery recovery) {
      * @param hash      the hash of the state this file is for
      * @param timestamp the consensus timestamp of the state this file is for
      */
-    public EmergencyRecoveryFile(final long round, final Hash hash, final Instant timestamp) {
+    public EmergencyRecoveryFile(final long round, final Hash hash, @NonNull final Instant timestamp) {
         this(new Recovery(new State(round, hash, timestamp), null, null, null));
     }
 
@@ -52,7 +54,7 @@ public record EmergencyRecoveryFile(Recovery recovery) {
      * @param state         emergency recovery data for the state resulting from the event recovery process
      * @param bootstrapTime the consensus timestamp of the bootstrap state used to start the event recovery process
      */
-    public EmergencyRecoveryFile(final State state, final Instant bootstrapTime) {
+    public EmergencyRecoveryFile(@NonNull final State state, @NonNull final Instant bootstrapTime) {
         this(new Recovery(state, new Bootstrap(bootstrapTime), null, null));
     }
 
@@ -90,7 +92,7 @@ public record EmergencyRecoveryFile(Recovery recovery) {
      * @param directory the directory to write to. Must exist and be writable.
      * @throws IOException if an exception occurs creating or writing to the file
      */
-    public void write(final Path directory) throws IOException {
+    public void write(@NonNull final Path directory) throws IOException {
         final ObjectMapper mapper =
                 new ObjectMapper(new YAMLFactory().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER));
         mapper.writeValue(directory.resolve(OUTPUT_FILENAME).toFile(), this);
@@ -106,7 +108,7 @@ public record EmergencyRecoveryFile(Recovery recovery) {
      * exists
      * @throws IOException if an exception occurs reading from the file, or the file content is not properly formatted
      */
-    public static EmergencyRecoveryFile read(final Path directory, final boolean failOnMissingFields)
+    public static EmergencyRecoveryFile read(@NonNull final Path directory, final boolean failOnMissingFields)
             throws IOException {
         final Path fileToRead = directory.resolve(INPUT_FILENAME);
         if (!Files.exists(fileToRead)) {
@@ -127,7 +129,7 @@ public record EmergencyRecoveryFile(Recovery recovery) {
     /**
      * Same as {@link #read(Path, boolean)} but with failOnMissingFields set to false.
      */
-    public static EmergencyRecoveryFile read(final Path directory) throws IOException {
+    public static EmergencyRecoveryFile read(@NonNull final Path directory) throws IOException {
         return read(directory, false);
     }
 
