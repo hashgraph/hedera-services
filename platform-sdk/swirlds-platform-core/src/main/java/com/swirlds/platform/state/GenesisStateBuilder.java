@@ -22,7 +22,6 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Supplier;

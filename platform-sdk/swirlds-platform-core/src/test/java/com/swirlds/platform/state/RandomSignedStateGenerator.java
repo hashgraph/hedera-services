@@ -33,7 +33,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.state.DummySwirldState;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Instant;

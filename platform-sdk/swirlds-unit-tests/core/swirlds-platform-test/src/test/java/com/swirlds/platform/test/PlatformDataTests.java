@@ -16,6 +16,13 @@
 
 package com.swirlds.platform.test;
 
+import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.utility.CompareTo.isGreaterThan;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -28,10 +35,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.test.framework.config.TestConfigBuilder;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -39,13 +42,9 @@ import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.utility.CompareTo.isGreaterThan;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 @DisplayName("PlatformData Tests")
 class PlatformDataTests {
@@ -73,7 +72,7 @@ class PlatformDataTests {
                 .setMinGenInfo(minGenInfo)
                 .setCreationSoftwareVersion(new BasicSoftwareVersion(random.nextInt(randomBound)))
                 .setEpochHash(RandomUtils.randomHash(random));
-        //TODO store snapshot
+        // TODO store snapshot
     }
 
     @Test

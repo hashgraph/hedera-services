@@ -31,7 +31,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -67,11 +66,8 @@ public abstract class EventUtils {
      * @param signedState the state where events are stored
      */
     public static void convertEvents(final SignedState signedState) {
-        final EventImpl[] events = signedState
-                .getState()
-                .getPlatformState()
-                .getPlatformData()
-                .getEvents();
+        final EventImpl[] events =
+                signedState.getState().getPlatformState().getPlatformData().getEvents();
         for (int i = 0; i < events.length; i++) {
             final IndexedEvent ie = new IndexedEvent(events[i]);
             events[i] = ie;

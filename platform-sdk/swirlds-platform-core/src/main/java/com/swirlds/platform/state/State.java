@@ -25,12 +25,11 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.internal.EventImpl;
+import java.util.HashMap;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-
-import java.util.HashMap;
 
 /**
  * The root of the merkle tree holding the state of the Swirlds ledger.

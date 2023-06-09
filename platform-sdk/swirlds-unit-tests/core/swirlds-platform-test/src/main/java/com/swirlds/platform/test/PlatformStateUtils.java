@@ -18,7 +18,6 @@ package com.swirlds.platform.test;
 
 import static com.swirlds.common.test.RandomUtils.randomHash;
 import static com.swirlds.common.test.RandomUtils.randomInstant;
-import static com.swirlds.platform.test.event.RandomEventUtils.randomEvent;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;

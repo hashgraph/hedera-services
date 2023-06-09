@@ -349,8 +349,8 @@ public final class EventRecoveryWorkflow {
                 .setRound(round.getRoundNum())
                 .setNumEventsCons(previousState.get().getNumEventsCons() + round.getEventCount())
                 .setHashEventsCons(getHashEventsCons(previousState.get().getHashEventsCons(), round))
-                //TODO check if this can be removed
-                //.setEvents(collectEventsForRound(
+                // TODO check if this can be removed
+                // .setEvents(collectEventsForRound(
                 //        roundsNonAncient, previousState.get().getEvents(), round))
                 .setConsensusTimestamp(currentRoundTimestamp)
                 .setMinGenInfo(
@@ -361,7 +361,7 @@ public final class EventRecoveryWorkflow {
                         .getPlatformState()
                         .getPlatformData()
                         .getCreationSoftwareVersion());
-                //TODO add snapshot
+        // TODO add snapshot
 
         applyTransactions(
                 previousState.get().getSwirldState().cast(),
