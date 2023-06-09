@@ -23,7 +23,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.Settings;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
