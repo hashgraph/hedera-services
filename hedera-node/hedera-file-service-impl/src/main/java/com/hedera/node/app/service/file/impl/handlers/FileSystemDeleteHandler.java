@@ -92,7 +92,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
         } else {
             /* Get all the fields from existing file and change deleted flag */
             final var fileBuilder = new File.Builder()
-                    .fileNumber(file.fileNumber())
+                    .fileId(file.fileId())
                     .expirationTime(newExpiry)
                     .keys(file.keys())
                     .contents(file.contents())

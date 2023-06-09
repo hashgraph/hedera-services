@@ -131,7 +131,7 @@ public class GenesisSchema extends Schema {
                     fileId,
                     File.newBuilder()
                             .contents(CurrentAndNextFeeSchedule.PROTOBUF.toBytes(feeSchedule))
-                            .fileNumber(fileNum)
+                            .fileId(fileId)
                             .keys(KeyList.newBuilder().keys(masterKey))
                             .expirationTime(bootstrapConfig.systemEntityExpiry())
                             .build());
@@ -248,7 +248,7 @@ public class GenesisSchema extends Schema {
                 fileId,
                 File.newBuilder()
                         .contents(ExchangeRateSet.PROTOBUF.toBytes(exchangeRateSet))
-                        .fileNumber(fileNum)
+                        .fileId(fileId)
                         .keys(KeyList.newBuilder().keys(masterKey))
                         .expirationTime(bootstrapConfig.systemEntityExpiry())
                         .build());

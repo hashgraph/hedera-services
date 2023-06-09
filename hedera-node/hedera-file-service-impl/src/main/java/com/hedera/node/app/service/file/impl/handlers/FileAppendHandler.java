@@ -111,7 +111,7 @@ public class FileAppendHandler implements TransactionHandler {
         validateContent(newContents, fileServiceConfig);
         /* Copy all the fields from existing file and change deleted flag */
         final var fileBuilder = new File.Builder()
-                .fileNumber(file.fileNumber())
+                .fileId(file.fileId())
                 .expirationTime(file.expirationTime())
                 .keys(file.keys())
                 .contents(Bytes.wrap(newContents))

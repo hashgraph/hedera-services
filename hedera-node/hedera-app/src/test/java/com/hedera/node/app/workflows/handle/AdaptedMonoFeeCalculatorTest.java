@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
@@ -49,14 +51,7 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.time.Instant;
 import java.util.Collections;
@@ -83,11 +78,11 @@ class AdaptedMonoFeeCalculatorTest {
     private static final Map<SubType, FeeData> TYPED_PRICES = Map.of(SubType.DEFAULT, FeeData.getDefaultInstance());
 
     private static final Topic MOCK_TOPIC = new Topic(
-            1L,
+            toPbj(TopicID.newBuilder().setTopicNum(1L).build()),
             2L,
             3L,
             4L,
-            5L,
+            toPbj(AccountID.newBuilder().setAccountNum(5L).build()),
             true,
             Bytes.wrap("MOCK_RUNNING_HASH".getBytes()),
             "MOCK_MEMO",
@@ -97,7 +92,7 @@ class AdaptedMonoFeeCalculatorTest {
     private static final TransactionBody MOCK_TXN = TransactionBody.newBuilder()
             .setConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody.newBuilder()
                     .setTopicID(TopicID.newBuilder()
-                            .setTopicNum(MOCK_TOPIC.topicNumber())
+                            .setTopicNum(MOCK_TOPIC.topicId().topicNum())
                             .build()))
             .build();
 
@@ -186,7 +181,7 @@ class AdaptedMonoFeeCalculatorTest {
 
         given(workingStateAccessor.getHederaState()).willReturn(state);
         given(state.createReadableStates(ConsensusService.NAME)).willReturn(readableStates);
-        given(readableStates.<EntityNum, Topic>get(ConsensusServiceImpl.TOPICS_KEY))
+        given(readableStates.<TopicID, Topic>get(ConsensusServiceImpl.TOPICS_KEY))
                 .willReturn(wellKnownTopicsKVS());
 
         final var mappedTopic = MonoGetTopicInfoUsage.monoTopicFrom(MOCK_TOPIC);
@@ -213,7 +208,7 @@ class AdaptedMonoFeeCalculatorTest {
         given(stateAccessor.get()).willReturn(wrapper);
         given(wrapper.get()).willReturn(state);
         given(state.createReadableStates(ConsensusService.NAME)).willReturn(readableStates);
-        given(readableStates.<EntityNum, Topic>get(ConsensusServiceImpl.TOPICS_KEY))
+        given(readableStates.<TopicID, Topic>get(ConsensusServiceImpl.TOPICS_KEY))
                 .willReturn(wellKnownTopicsKVS());
 
         final var mappedTopic = MonoGetTopicInfoUsage.monoTopicFrom(MOCK_TOPIC);
@@ -262,9 +257,9 @@ class AdaptedMonoFeeCalculatorTest {
         assertSame(expected, assessment);
     }
 
-    private MapReadableKVState<EntityNum, Topic> wellKnownTopicsKVS() {
-        return MapReadableKVState.<EntityNum, Topic>builder(ConsensusServiceImpl.TOPICS_KEY)
-                .value(EntityNum.fromLong(MOCK_TOPIC.topicNumber()), MOCK_TOPIC)
+    private MapReadableKVState<TopicID, Topic> wellKnownTopicsKVS() {
+        return MapReadableKVState.<TopicID, Topic>builder(ConsensusServiceImpl.TOPICS_KEY)
+                .value(fromPbj(MOCK_TOPIC.topicId()), MOCK_TOPIC)
                 .build();
     }
 }

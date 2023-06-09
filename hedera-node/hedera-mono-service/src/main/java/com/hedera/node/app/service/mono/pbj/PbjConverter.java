@@ -81,6 +81,15 @@ public final class PbjConverter {
                 .build();
     }
 
+    public static @NonNull FileID toPbj(@NonNull com.hederahashgraph.api.proto.java.FileID fileID) {
+        requireNonNull(fileID);
+        return FileID.newBuilder()
+                .shardNum(fileID.getShardNum())
+                .realmNum(fileID.getRealmNum())
+                .fileNum(fileID.getFileNum())
+                .build();
+    }
+
     public static @NonNull TransactionBody toPbj(@NonNull com.hederahashgraph.api.proto.java.TransactionBody txBody) {
         requireNonNull(txBody);
         try {

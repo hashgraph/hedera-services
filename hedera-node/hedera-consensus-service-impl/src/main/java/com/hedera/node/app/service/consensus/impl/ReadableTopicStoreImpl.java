@@ -38,7 +38,7 @@ import java.util.Optional;
  */
 public class ReadableTopicStoreImpl implements ReadableTopicStore {
     /** The underlying data storage class that holds the topic data. */
-    private final ReadableKVState<EntityNum, Topic> topicState;
+    private final ReadableKVState<TopicID, Topic> topicState;
 
     /**
      * Create a new {@link ReadableTopicStoreImpl} instance.
@@ -66,6 +66,6 @@ public class ReadableTopicStoreImpl implements ReadableTopicStore {
 
     @NonNull
     public Optional<Topic> getTopicLeaf(@NonNull final TopicID id) {
-        return Optional.ofNullable(Objects.requireNonNull(topicState).get(EntityNum.fromTopicId(id)));
+        return Optional.ofNullable(Objects.requireNonNull(topicState).get(id));
     }
 }

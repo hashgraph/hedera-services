@@ -247,12 +247,12 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .willReturn(new ExpiryMeta(
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
-                        op.autoRenewAccount().accountNum()));
+                        op.autoRenewAccount()));
         given(handleContext.newEntityNum()).willReturn(1_234L);
 
         subject.handle(handleContext);
-
-        final var createdTopic = topicStore.get(1_234L);
+        final var id = TopicID.newBuilder().topicNum(1_234L).build();
+        final var createdTopic = topicStore.get(id);
         assertTrue(createdTopic.isPresent());
 
         final var actualTopic = createdTopic.get();
@@ -262,10 +262,10 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         assertEquals(submitKey, actualTopic.submitKey());
         assertEquals(1234667, actualTopic.expiry());
         assertEquals(op.autoRenewPeriod().seconds(), actualTopic.autoRenewPeriod());
-        assertEquals(autoRenewId.accountNum(), actualTopic.autoRenewAccountNumber());
+        assertEquals(autoRenewId.accountNum(), actualTopic.autoRenewAccountId());
         final var topicID = TopicID.newBuilder().topicNum(1_234L).build();
         verify(recordBuilder).topicID(topicID);
-        assertTrue(topicStore.get(1234L).isPresent());
+        assertTrue(topicStore.get(id).isPresent());
     }
 
     @Test
@@ -282,12 +282,12 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .willReturn(new ExpiryMeta(
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
-                        op.autoRenewAccount().accountNumOrElse(0L)));
+                        op.autoRenewAccount()));
         given(handleContext.newEntityNum()).willReturn(1_234L);
 
         subject.handle(handleContext);
-
-        final var createdTopic = topicStore.get(1_234L);
+        final var id = TopicID.newBuilder().topicNum(1_234L).build();
+        final var createdTopic = topicStore.get(id);
         assertTrue(createdTopic.isPresent());
 
         final var actualTopic = createdTopic.get();
@@ -297,10 +297,9 @@ class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
         assertNull(actualTopic.submitKey());
         assertEquals(1_234_567L + op.autoRenewPeriod().seconds(), actualTopic.expiry());
         assertEquals(op.autoRenewPeriod().seconds(), actualTopic.autoRenewPeriod());
-        assertEquals(autoRenewId.accountNum(), actualTopic.autoRenewAccountNumber());
-        final var topicID = TopicID.newBuilder().topicNum(1_234L).build();
-        verify(recordBuilder).topicID(topicID);
-        assertTrue(topicStore.get(1234L).isPresent());
+        assertEquals(autoRenewId.accountNum(), actualTopic.autoRenewAccountId());
+        verify(recordBuilder).topicID(id);
+        assertTrue(topicStore.get(id).isPresent());
     }
 
     @Test

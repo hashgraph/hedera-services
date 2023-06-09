@@ -109,7 +109,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var topicUpdate = handleContext.body().consensusUpdateTopic();
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         final var maybeTopic = requireNonNull(topicStore)
-                .get(topicUpdate.topicIDOrElse(TopicID.DEFAULT).topicNum());
+                .get(topicUpdate.topicIDOrElse(TopicID.DEFAULT));
         validateTrue(maybeTopic.isPresent(), INVALID_TOPIC_ID);
         final var topic = maybeTopic.get();
         validateFalse(topic.deleted(), INVALID_TOPIC_ID);
@@ -121,7 +121,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         // Now we apply the mutations to a builder
         final var builder = new Topic.Builder();
         // But first copy over the immutable topic attributes to the builder
-        builder.topicNumber(topic.topicNumber());
+        builder.topicId(topic.topicId());
         builder.sequenceNumber(topic.sequenceNumber());
         builder.runningHash(topic.runningHash());
         builder.deleted(topic.deleted());
@@ -159,7 +159,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, topic);
         builder.expiry(resolvedExpiryMeta.expiry());
         builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
-        builder.autoRenewAccountNumber(resolvedExpiryMeta.autoRenewId().accountNum());
+        builder.autoRenewAccountId(resolvedExpiryMeta.autoRenewId());
     }
 
     private void validateMaybeNewAttributes(
@@ -186,9 +186,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var currentMeta = new ExpiryMeta(
                 topic.expiry(),
                 topic.autoRenewPeriod(),
-                AccountID.newBuilder()
-                        .accountNum(topic.autoRenewAccountNumber())
-                        .build());
+                topic.autoRenewAccountId());
         if (updatesExpiryMeta(op)) {
             final var updateMeta = new ExpiryMeta(effExpiryOf(op), effAutoRenewPeriodOf(op), effAutoRenewNumOf(op));
             return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);

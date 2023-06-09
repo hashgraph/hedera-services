@@ -82,7 +82,9 @@ public class MonoGetTopicInfoUsage {
                 (JKey) fromPbjKey(topic.adminKeyOrElse(Key.DEFAULT)).orElse(null),
                 (JKey) fromPbjKey(topic.submitKeyOrElse(Key.DEFAULT)).orElse(null),
                 topic.autoRenewPeriod(),
-                new EntityId(0, 0, topic.autoRenewAccountNumber()),
+                new EntityId(topic.autoRenewAccountId().shardNum(),
+                        topic.autoRenewAccountId().realmNum(),
+                        topic.autoRenewAccountId().accountNum()),
                 new RichInstant(topic.expiry(), 0));
         monoTopic.setRunningHash(PbjConverter.asBytes(topic.runningHash()));
         monoTopic.setSequenceNumber(topic.sequenceNumber());

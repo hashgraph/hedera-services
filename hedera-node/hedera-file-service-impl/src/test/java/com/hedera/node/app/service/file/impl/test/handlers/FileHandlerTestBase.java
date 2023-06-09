@@ -159,9 +159,9 @@ public class FileHandlerTestBase {
     }
 
     protected void givenValidFile(boolean deleted, boolean withKeys) {
-        file = new File(fileId.fileNum(), expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
+        file = new File(fileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
         fileSystem = new File(
-                fileSystemfileId.fileNum(),
+                fileSystemfileId,
                 expirationTime,
                 withKeys ? keys : null,
                 Bytes.wrap(contents),
@@ -171,7 +171,7 @@ public class FileHandlerTestBase {
 
     protected File createFile() {
         return new File.Builder()
-                .fileNumber(fileId.fileNum())
+                .fileId(fileId)
                 .expirationTime(expirationTime)
                 .keys(keys)
                 .contents(Bytes.wrap(contents))

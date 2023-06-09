@@ -19,6 +19,7 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+import static com.hedera.node.app.spi.validation.ExpiryMeta.NO_AUTO_RENEW_ACCOUNT;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -200,7 +201,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
-                .willReturn(new ExpiryMeta(expirationTime, NA, NA));
+                .willReturn(new ExpiryMeta(expirationTime, NA, NO_AUTO_RENEW_ACCOUNT));
         given(handleContext.newEntityNum()).willReturn(1_234L);
         given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
 
@@ -214,7 +215,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         assertEquals(keys, actualFile.keys());
         assertEquals(1_234_567L, actualFile.expirationTime());
         assertEquals(contentsBytes, actualFile.contents());
-        assertEquals(fileId.fileNum(), actualFile.fileNumber());
+        assertEquals(fileId, actualFile.fileId());
         assertFalse(actualFile.deleted());
         verify(recordBuilder).fileID(FileID.newBuilder().fileNum(1_234L).build());
         assertTrue(fileStore.get(1234L).isPresent());
@@ -230,7 +231,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
-                .willReturn(new ExpiryMeta(1_234_567L, NA, NA));
+                .willReturn(new ExpiryMeta(1_234_567L, NA, NO_AUTO_RENEW_ACCOUNT));
         given(handleContext.newEntityNum()).willReturn(1_234L);
         given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
 
@@ -244,7 +245,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         assertEquals(keys, actualFile.keys());
         assertEquals(1_234_567L, actualFile.expirationTime());
         assertEquals(contentsBytes, actualFile.contents());
-        assertEquals(fileId.fileNum(), actualFile.fileNumber());
+        assertEquals(fileId, actualFile.fileId());
         assertFalse(actualFile.deleted());
         verify(recordBuilder).fileID(FileID.newBuilder().fileNum(1_234L).build());
         assertTrue(fileStore.get(1234L).isPresent());
@@ -276,7 +277,7 @@ class FileCreateHandlerTest extends FileHandlerTestBase {
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
-                .willReturn(new ExpiryMeta(1_234_567L, NA, NA));
+                .willReturn(new ExpiryMeta(1_234_567L, NA, NO_AUTO_RENEW_ACCOUNT));
 
         doThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .when(validator)

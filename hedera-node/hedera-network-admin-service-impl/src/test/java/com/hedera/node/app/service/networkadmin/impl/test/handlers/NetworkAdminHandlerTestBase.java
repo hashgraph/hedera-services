@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
@@ -74,6 +75,8 @@ public class NetworkAdminHandlerTestBase {
 
     protected final TokenID tokenId =
             TokenID.newBuilder().tokenNum(fungibleTokenNum.longValue()).build();
+    protected final TokenID nonFungibleTokenID =
+            TokenID.newBuilder().tokenNum(nonFungibleTokenNum.longValue()).build();
     protected final String tokenName = "test token";
     protected final String tokenSymbol = "TT";
     protected final AccountID treasury = AccountID.newBuilder().accountNum(100).build();
@@ -176,7 +179,7 @@ public class NetworkAdminHandlerTestBase {
         givenValidFungibleToken();
         nonFungibleToken = fungibleToken
                 .copyBuilder()
-                .tokenNumber(nonFungibleTokenNum.longValue())
+                .tokenId(nonFungibleTokenID)
                 .customFees(List.of())
                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                 .build();
@@ -191,12 +194,12 @@ public class NetworkAdminHandlerTestBase {
             boolean withAdminKey,
             boolean withSubmitKey) {
         fungibleToken = new Token(
-                tokenId.tokenNum(),
+                tokenId,
                 tokenName,
                 tokenSymbol,
                 1000,
                 1000,
-                treasury.accountNum(),
+                treasury,
                 null,
                 null,
                 null,
@@ -208,7 +211,7 @@ public class NetworkAdminHandlerTestBase {
                 deleted,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.INFINITE,
-                autoRenewAccountNumber,
+                autoRenewId,
                 autoRenewSecs,
                 expirationTime,
                 memo,
@@ -225,20 +228,20 @@ public class NetworkAdminHandlerTestBase {
             @Nullable List<AccountApprovalForAllAllowance> approveForAllNftAllowances,
             @Nullable List<AccountFungibleTokenAllowance> tokenAllowances) {
         account = new Account(
-                accountNum,
+                id,
+                payerBalance,
+                isDeleted,
+                1_234_567L,
                 alias.alias(),
                 null, //  key,
-                1_234_567L,
-                payerBalance,
                 "testAccount",
-                isDeleted,
                 1_234L,
                 1_234_568L,
                 0,
                 true,
                 true,
-                2,
-                2,
+                TokenID.newBuilder().tokenNum(2L).build(),
+                UniqueTokenId.newBuilder().tokenId(TokenID.newBuilder().tokenNum(2L).build()).serialNumber(2L).build(),
                 1,
                 2,
                 10,
@@ -248,7 +251,7 @@ public class NetworkAdminHandlerTestBase {
                 2,
                 0,
                 1000L,
-                2,
+                AccountID.newBuilder().accountNum(2L).build(),
                 72000,
                 0,
                 cryptoAllowances,
@@ -260,30 +263,31 @@ public class NetworkAdminHandlerTestBase {
     }
 
     protected void givenFungibleTokenRelation() {
-        fungibleTokenRelation = TokenRelation.newBuilder()
-                .tokenNumber(tokenId.tokenNum())
-                .accountNumber(accountNum)
-                .balance(1000L)
-                .frozen(false)
-                .kycGranted(false)
-                .deleted(false)
-                .automaticAssociation(true)
-                .nextToken(0L)
-                .previousToken(3L)
-                .build();
+        fungibleTokenRelation =
+                TokenRelation.newBuilder()
+                        .tokenId(tokenId)
+                        .accountId(id)
+                        .balance(1000L)
+                        .frozen(false)
+                        .kycGranted(false)
+                        .deleted(false)
+                        .automaticAssociation(true)
+                        .nextToken(TokenID.DEFAULT)
+                        .previousToken(TokenID.newBuilder().tokenNum(3L).build())
+                        .build();
     }
 
     protected void givenNonFungibleTokenRelation() {
         nonFungibleTokenRelation = TokenRelation.newBuilder()
-                .tokenNumber(nonFungibleTokenNum.longValue())
-                .accountNumber(accountNum)
+                .tokenId(nonFungibleTokenID)
+                .accountId(id)
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(0L)
-                .previousToken(3L)
+                .nextToken(TokenID.DEFAULT)
+                .previousToken(TokenID.newBuilder().tokenNum(3L).build())
                 .build();
     }
 }

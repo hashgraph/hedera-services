@@ -109,14 +109,14 @@ public class FileCreateHandler implements TransactionHandler {
             builder.memo(fileCreateTransactionBody.memo());
 
             builder.keys(fileCreateTransactionBody.keys());
-            builder.fileNumber(handleContext.newEntityNum());
+            builder.fileId(FileID.newBuilder().fileNum(handleContext.newEntityNum()).build());
             validateContent(PbjConverter.asBytes(fileCreateTransactionBody.contents()), fileServiceConfig);
             builder.contents(fileCreateTransactionBody.contents());
 
             final var file = builder.build();
             fileStore.put(file);
 
-            final var fileID = FileID.newBuilder().fileNum(file.fileNumber()).build();
+            final var fileID = file.fileId();
             handleContext.recordBuilder(CreateFileRecordBuilder.class).fileID(fileID);
         } catch (final HandleException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {

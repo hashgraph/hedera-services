@@ -161,11 +161,11 @@ public class ConsensusHandlerTestBase {
     protected void givenValidTopic(
             long autoRenewAccountNumber, boolean deleted, boolean withAdminKey, boolean withSubmitKey) {
         topic = new Topic(
-                topicId.topicNum(),
+                topicId,
                 sequenceNumber,
                 expirationTime,
                 autoRenewSecs,
-                autoRenewAccountNumber,
+                AccountID.newBuilder().accountNum(autoRenewAccountNumber).build(),
                 deleted,
                 Bytes.wrap(runningHash),
                 memo,
@@ -175,11 +175,11 @@ public class ConsensusHandlerTestBase {
 
     protected Topic createTopic() {
         return new Topic.Builder()
-                .topicNumber(topicId.topicNum())
+                .topicId(topicId)
                 .adminKey(key)
                 .submitKey(key)
                 .autoRenewPeriod(autoRenewSecs)
-                .autoRenewAccountNumber(autoRenewId.accountNum())
+                .autoRenewAccountId(autoRenewId)
                 .expiry(expirationTime)
                 .sequenceNumber(sequenceNumber)
                 .memo(memo)

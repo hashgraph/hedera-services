@@ -96,7 +96,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var op = txn.consensusSubmitMessageOrThrow();
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         final var topic =
-                topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT).topicNum());
+                topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT));
         /* Validate all needed fields in the transaction */
         final var config = handleContext.configuration().getConfigData(ConsensusConfig.class);
         validateTransaction(txn, config, topic);

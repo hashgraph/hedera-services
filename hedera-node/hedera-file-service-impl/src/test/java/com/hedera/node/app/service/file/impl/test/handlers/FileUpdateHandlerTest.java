@@ -19,6 +19,7 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+import static com.hedera.node.app.spi.validation.ExpiryMeta.NO_AUTO_RENEW_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -58,7 +59,7 @@ class FileUpdateHandlerTest extends FileHandlerTestBase {
 
     private final FileUpdateTransactionBody.Builder OP_BUILDER = FileUpdateTransactionBody.newBuilder();
 
-    private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(expirationTime, NA, NA);
+    private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(expirationTime, NA, NO_AUTO_RENEW_ACCOUNT);
 
     @Mock
     private ReadableAccountStore accountStore;

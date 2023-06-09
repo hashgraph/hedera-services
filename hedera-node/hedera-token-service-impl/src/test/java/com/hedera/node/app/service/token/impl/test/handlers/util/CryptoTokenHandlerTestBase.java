@@ -437,11 +437,11 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         nonFungibleTokenRelation = givenNonFungibleTokenRelation();
         ownerFTRelation = givenFungibleTokenRelation()
                 .copyBuilder()
-                .accountNumber(ownerId.accountNum())
+                .accountId(ownerId)
                 .build();
         ownerNFTRelation = givenNonFungibleTokenRelation()
                 .copyBuilder()
-                .accountNumber(ownerId.accountNum())
+                .accountId(ownerId)
                 .build();
     }
 
@@ -457,29 +457,29 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         spenderAccount = givenValidAccount()
                 .copyBuilder()
                 .key(spenderKey)
-                .accountNumber(spenderId.accountNum())
+                .accountId(spenderId)
                 .build();
         ownerAccount = givenValidAccount()
                 .copyBuilder()
-                .accountNumber(ownerId.accountNum())
+                .accountId(ownerId)
                 .cryptoAllowances(AccountCryptoAllowance.newBuilder()
-                        .spenderNum(spenderId.accountNum())
+                        .spenderId(spenderId)
                         .amount(100)
                         .build())
                 .tokenAllowances(AccountFungibleTokenAllowance.newBuilder()
-                        .tokenNum(fungibleTokenId.tokenNum())
-                        .spenderNum(spenderId.accountNum())
+                        .tokenId(fungibleTokenId)
+                        .spenderId(spenderId)
                         .amount(100)
                         .build())
                 .approveForAllNftAllowances(AccountApprovalForAllAllowance.newBuilder()
-                        .tokenNum(nonFungibleTokenNum.longValue())
-                        .spenderNum(spenderId.accountNum())
+                        .tokenId(nonFungibleTokenId)
+                        .spenderId(spenderId)
                         .build())
                 .key(ownerKey)
                 .build();
         delegatingSpenderAccount = givenValidAccount()
                 .copyBuilder()
-                .accountNumber(delegatingSpenderId.accountNum())
+                .accountId(delegatingSpenderId)
                 .build();
     }
 
@@ -498,12 +498,12 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             boolean accountsFrozenByDefault,
             boolean accountsKycGrantedByDefault) {
         return new Token(
-                fungibleTokenId.tokenNum(),
+                fungibleTokenId,
                 tokenName,
                 tokenSymbol,
                 1000,
                 1000,
-                treasuryId.accountNum(),
+                treasuryId,
                 adminKey,
                 kycKey,
                 freezeKey,
@@ -515,7 +515,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 deleted,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.FINITE,
-                autoRenewAccountNumber,
+                autoRenewId,
                 autoRenewSecs,
                 expirationTime,
                 memo,
@@ -530,8 +530,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         givenValidFungibleToken();
         return fungibleToken
                 .copyBuilder()
-                .tokenNumber(nonFungibleTokenNum.longValue())
-                .treasuryAccountNumber(treasuryId.accountNum())
+                .tokenId(nonFungibleTokenId)
+                .treasuryAccountId(treasuryId)
                 .customFees(List.of())
                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                 .build();
@@ -539,7 +539,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     protected Account givenValidAccount() {
         return new Account(
-                accountNum,
+                payerId,
                 alias.alias(),
                 key,
                 1_234_567L,
@@ -575,35 +575,35 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     protected TokenRelation givenFungibleTokenRelation() {
         return TokenRelation.newBuilder()
-                .tokenNumber(fungibleTokenId.tokenNum())
-                .accountNumber(accountNum)
+                .tokenId(fungibleTokenId)
+                .accountId(payerId)
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(2L)
-                .previousToken(3L)
+                .nextToken(TokenID.newBuilder().tokenNum(2L).build())
+                .previousToken(TokenID.newBuilder().tokenNum(3L).build())
                 .build();
     }
 
     protected TokenRelation givenNonFungibleTokenRelation() {
         return TokenRelation.newBuilder()
-                .tokenNumber(nonFungibleTokenNum.longValue())
-                .accountNumber(accountNum)
+                .tokenId(nonFungibleTokenId)
+                .accountId(payerId)
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(2L)
-                .previousToken(3L)
+                .nextToken(TokenID.newBuilder().tokenNum(2L).build())
+                .previousToken(TokenID.newBuilder().tokenNum(3L).build())
                 .build();
     }
 
     protected Nft givenNft(UniqueTokenId uniqueTokenId) {
         return Nft.newBuilder()
-                .ownerNumber(ownerId.accountNum())
+                .ownerId(ownerId)
                 .id(uniqueTokenId)
                 .build();
     }

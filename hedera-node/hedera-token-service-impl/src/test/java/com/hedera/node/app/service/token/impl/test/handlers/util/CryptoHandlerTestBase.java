@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
@@ -126,17 +127,17 @@ public class CryptoHandlerTestBase {
 
     @BeforeEach
     public void setUp() {
-        account = givenValidAccount(accountNum);
-        deleteAccount = givenValidAccount(deleteAccountNum)
+        account = givenValidAccount(id);
+        deleteAccount = givenValidAccount(deleteAccountId)
                 .copyBuilder()
-                .accountNumber(deleteAccountNum)
+                .accountId(deleteAccountId)
                 .key(accountKey)
                 .numberPositiveBalances(0)
                 .numberTreasuryTitles(0)
                 .build();
-        transferAccount = givenValidAccount(transferAccountNum)
+        transferAccount = givenValidAccount(transferAccountId)
                 .copyBuilder()
-                .accountNumber(transferAccountNum)
+                .accountId(transferAccountId)
                 .key(key)
                 .build();
         refreshStoresWithCurrentTokenOnlyInReadable();
@@ -237,22 +238,24 @@ public class CryptoHandlerTestBase {
         return MapReadableKVState.builder(ALIASES);
     }
 
-    protected Account givenValidAccount(final long accountNum) {
+    protected Account givenValidAccount(final AccountID id) {
         return new Account(
-                accountNum,
+                id,
+                payerBalance,
+                false,
+                1_234_567L,
                 alias.alias(),
                 key,
-                1_234_567L,
-                payerBalance,
                 "testAccount",
-                false,
                 1_234L,
                 1_234_568L,
                 0,
                 true,
                 true,
-                3,
-                2,
+                TokenID.newBuilder().tokenNum(3L).build(),
+                UniqueTokenId.newBuilder()
+                        .tokenId(TokenID.newBuilder().tokenNum(3L).build())
+                        .serialNumber(2L).build(),
                 1,
                 2,
                 10,
@@ -262,7 +265,7 @@ public class CryptoHandlerTestBase {
                 2,
                 0,
                 1000L,
-                2,
+                AccountID.newBuilder().accountNum(2L).build(),
                 72000,
                 0,
                 Collections.emptyList(),
@@ -275,20 +278,22 @@ public class CryptoHandlerTestBase {
 
     protected void givenValidContract() {
         account = new Account(
-                accountNum,
+                id,
+                payerBalance,
+                false,
+                1_234_567L,
                 alias.alias(),
                 key,
-                1_234_567L,
-                payerBalance,
                 "testAccount",
-                false,
                 1_234L,
                 1_234_568L,
                 0,
                 true,
                 true,
-                3,
-                2,
+                TokenID.newBuilder().tokenNum(3L).build(),
+                UniqueTokenId.newBuilder()
+                        .tokenId(TokenID.newBuilder().tokenNum(3L).build())
+                        .serialNumber(2L).build(),
                 1,
                 2,
                 10,
@@ -298,7 +303,7 @@ public class CryptoHandlerTestBase {
                 2,
                 0,
                 1000L,
-                2,
+                AccountID.newBuilder().accountNum(2L).build(),
                 72000,
                 0,
                 Collections.emptyList(),

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.file.impl.test.handlers;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_FILE;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
@@ -81,6 +82,6 @@ public final class FileTestUtils {
     }
 
     static FileMetadata newFileMeta(KeyList keys) {
-        return new FileMetadata(MISC_FILE.getFileNum(), null, keys, null, null, false);
+        return new FileMetadata(toPbj(MISC_FILE), null, keys, null, null, false);
     }
 }

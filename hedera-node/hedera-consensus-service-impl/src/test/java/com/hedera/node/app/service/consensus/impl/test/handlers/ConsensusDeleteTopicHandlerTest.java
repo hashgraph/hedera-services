@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
@@ -160,17 +161,18 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         final var txn = newDeleteTxn();
         given(handleContext.body()).willReturn(txn);
 
-        topic = new Topic(
-                topicId.topicNum(),
-                sequenceNumber,
-                expirationTime,
-                autoRenewSecs,
-                10L,
-                false,
-                Bytes.wrap(runningHash),
-                memo,
-                null,
-                null);
+        topic =
+                new Topic(
+                        topicId,
+                        sequenceNumber,
+                        expirationTime,
+                        autoRenewSecs,
+                        AccountID.newBuilder().accountNum(10L).build(),
+                        false,
+                        Bytes.wrap(runningHash),
+                        memo,
+                        null,
+                        null);
 
         writableTopicState = writableTopicStateWithOneKey();
         given(writableStates.<EntityNum, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
@@ -188,14 +190,14 @@ class ConsensusDeleteTopicHandlerTest extends ConsensusHandlerTestBase {
         final var txn = newDeleteTxn();
         given(handleContext.body()).willReturn(txn);
 
-        final var existingTopic = writableStore.get(topicEntityNum.longValue());
+        final var existingTopic = writableStore.get(topicId);
         assertTrue(existingTopic.isPresent());
         assertFalse(existingTopic.get().deleted());
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
         subject.handle(handleContext);
 
-        final var changedTopic = writableStore.get(topicEntityNum.longValue());
+        final var changedTopic = writableStore.get(topicId);
 
         assertTrue(changedTopic.isPresent());
         assertTrue(changedTopic.get().deleted());

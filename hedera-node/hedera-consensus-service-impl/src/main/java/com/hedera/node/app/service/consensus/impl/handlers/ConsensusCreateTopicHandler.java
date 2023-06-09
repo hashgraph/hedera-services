@@ -122,10 +122,10 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
                     handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta);
             builder.autoRenewPeriod(effectiveExpiryMeta.autoRenewPeriod());
             builder.expiry(effectiveExpiryMeta.expiry());
-            builder.autoRenewAccountNumber(effectiveExpiryMeta.autoRenewId().accountNum());
+            builder.autoRenewAccountId(effectiveExpiryMeta.autoRenewId());
 
             /* --- Add topic number to topic builder --- */
-            builder.topicNumber(handleContext.newEntityNum());
+            builder.topicId(TopicID.newBuilder().topicNum(handleContext.newEntityNum()).build());
 
             builder.runningHash(Bytes.wrap(new byte[RUNNING_HASH_BYTE_ARRAY_SIZE]));
 
@@ -136,8 +136,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
             /* --- Build the record with newly created topic --- */
             final var recordBuilder = handleContext.recordBuilder(ConsensusCreateTopicRecordBuilder.class);
-            final var topicID =
-                    TopicID.newBuilder().topicNum(topic.topicNumber()).build();
+            final var topicID = topic.topicId();
             recordBuilder.topicID(topicID);
         } catch (final HandleException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {

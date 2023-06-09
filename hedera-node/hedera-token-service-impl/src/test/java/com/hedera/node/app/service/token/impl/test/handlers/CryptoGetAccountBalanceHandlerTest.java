@@ -111,7 +111,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("Validate query is successful with valid account")
     void validatesQueryWhenValidAccount() {
-        givenValidAccount(accountNum);
+        givenValidAccount(id);
         readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates);

@@ -264,14 +264,19 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     @Test
     void getsResponseIfOkResponseWhenAllowancesListAsExpected() {
         List<AccountCryptoAllowance> cryptoAllowancesList = new ArrayList<>();
-        AccountCryptoAllowance cryptoAllowance = new AccountCryptoAllowance(123L, 456L);
+        AccountCryptoAllowance cryptoAllowance = new AccountCryptoAllowance(AccountID.newBuilder().accountNum(123).build(),
+                456L);
         cryptoAllowancesList.add(cryptoAllowance);
         List<AccountApprovalForAllAllowance> accountApprovalForAllAllowanceList = new ArrayList<>();
-        AccountApprovalForAllAllowance accountApprovalForAllAllowance = new AccountApprovalForAllAllowance(456L, 567L);
+        AccountApprovalForAllAllowance accountApprovalForAllAllowance =
+                new AccountApprovalForAllAllowance(TokenID.newBuilder().tokenNum(456).build(),
+                        AccountID.newBuilder().accountNum(567).build());
         accountApprovalForAllAllowanceList.add(accountApprovalForAllAllowance);
         List<AccountFungibleTokenAllowance> accountFungibleTokenAllowanceList = new ArrayList<>();
         AccountFungibleTokenAllowance accountFungibleTokenAllowance =
-                new AccountFungibleTokenAllowance(789L, 890L, 901L);
+                new AccountFungibleTokenAllowance(TokenID.newBuilder().tokenNum(789).build(),
+                        AccountID.newBuilder().accountNum(890L).build(),
+                        901L);
         accountFungibleTokenAllowanceList.add(accountFungibleTokenAllowance);
         givenValidAccount(
                 false, cryptoAllowancesList, accountApprovalForAllAllowanceList, accountFungibleTokenAllowanceList);

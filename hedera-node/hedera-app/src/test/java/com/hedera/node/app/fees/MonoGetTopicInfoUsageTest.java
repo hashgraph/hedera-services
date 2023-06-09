@@ -17,7 +17,7 @@
 package com.hedera.node.app.fees;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toProtoQuery;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.*;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.*;
@@ -59,7 +59,7 @@ class MonoGetTopicInfoUsageTest {
     private final AccountID autoRenewId = asAccount("0.0.4");
     private final byte[] runningHash = "runningHash".getBytes();
 
-    private final Key key = PbjConverter.fromPbj(A_COMPLEX_KEY);
+    private final Key key = fromPbj(A_COMPLEX_KEY);
     private final EntityNum topicEntityNum = EntityNum.fromLong(1L);
     private final TopicID topicId =
             TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build();
@@ -70,11 +70,11 @@ class MonoGetTopicInfoUsageTest {
     private final boolean deleted = true;
 
     private final Topic topic = new Topic(
-            topicId.topicNum(),
+            topicId,
             sequenceNumber,
             expirationTime,
             autoRenewSecs,
-            autoRenewId.getAccountNum(),
+            toPbj(autoRenewId),
             deleted,
             Bytes.wrap(runningHash),
             memo,

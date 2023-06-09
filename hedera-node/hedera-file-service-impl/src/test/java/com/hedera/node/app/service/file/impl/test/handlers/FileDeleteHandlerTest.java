@@ -138,7 +138,7 @@ class FileDeleteHandlerTest extends FileHandlerTestBase {
     void keysDoesntExist() {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
-        file = new File(fileId.fileNum(), expirationTime, null, Bytes.wrap(contents), memo, false);
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);

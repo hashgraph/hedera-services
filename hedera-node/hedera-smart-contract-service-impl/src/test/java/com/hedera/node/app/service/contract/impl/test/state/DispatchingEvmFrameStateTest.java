@@ -28,6 +28,7 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
@@ -352,6 +353,6 @@ class DispatchingEvmFrameStateTest {
     }
 
     private Account.Builder accountWith(final long num) {
-        return Account.newBuilder().accountNumber(num);
+        return Account.newBuilder().accountId(AccountID.newBuilder().accountNum(num).build());
     }
 }

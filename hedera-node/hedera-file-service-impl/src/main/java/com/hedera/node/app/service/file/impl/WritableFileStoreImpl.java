@@ -55,7 +55,7 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
      * @param file - the file to be mapped onto a new {@link MerkleTopic} and persisted.
      */
     public void put(@NonNull final File file) {
-        filesState.put(asFileId(requireNonNull(file).fileNumber()), file);
+        filesState.put(requireNonNull(file).fileId(), file);
     }
 
     /**

@@ -88,7 +88,7 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
         } else {
             /* Copy all the fields from existing special file and change deleted flag */
             final var fileBuilder = new File.Builder()
-                    .fileNumber(file.fileNumber())
+                    .fileId(file.fileId())
                     .expirationTime(file.expirationTime())
                     .keys(file.keys())
                     .contents(file.contents())

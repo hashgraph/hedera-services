@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -74,7 +75,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @Test
     @DisplayName("autoRenew account key is not added when it is sentinel value")
     void autoRenewAccountIdAsSentinelNotAdded() throws PreCheckException {
-        final var txn = contractCreateTransaction(adminContractKey, asAccount("0.0.0"));
+        final var txn = contractCreateTransaction(adminContractKey, AccountID.DEFAULT);
         final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
 
@@ -106,7 +107,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         }
 
         if (autoRenewId != null) {
-            if (!autoRenewId.equals(asAccount("0.0.0"))) {
+            if (!autoRenewId.equals(AccountID.DEFAULT)) {
                 final var autoRenewAccount = mock(Account.class);
                 given(accountStore.getAccountById(autoRenewId)).willReturn(autoRenewAccount);
                 given(autoRenewAccount.key()).willReturn(autoRenewKey);

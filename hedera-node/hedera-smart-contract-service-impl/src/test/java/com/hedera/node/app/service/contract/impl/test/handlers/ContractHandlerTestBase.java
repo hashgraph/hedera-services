@@ -43,8 +43,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @SuppressWarnings("NewClassNamingConvention")
 @ExtendWith(MockitoExtension.class)
 public class ContractHandlerTestBase implements TransactionFactory {
-    protected final AccountID payer = asAccount("0.0.3");
-    protected final AccountID autoRenewAccountId = asAccount("0.0.10001");
+    protected final AccountID payer = AccountID.newBuilder().accountNum(3).build();
+    protected final AccountID autoRenewAccountId = AccountID.newBuilder().accountNum(10001).build();
     protected final Key payerKey = A_COMPLEX_KEY;
     protected final HederaKey payerHederaKey = asHederaKey(A_COMPLEX_KEY).orElseThrow();
     protected final Key adminKey = B_COMPLEX_KEY;

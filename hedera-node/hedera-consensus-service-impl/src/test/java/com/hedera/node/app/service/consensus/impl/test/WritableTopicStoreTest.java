@@ -62,7 +62,7 @@ class WritableTopicStoreTest extends ConsensusHandlerTestBase {
         topic = createTopic();
         writableStore.put(topic);
 
-        final var maybeReadTopic = writableStore.get(topicEntityNum.longValue());
+        final var maybeReadTopic = writableStore.get(topicId);
 
         assertTrue(maybeReadTopic.isPresent());
         final var readTopic = maybeReadTopic.get();

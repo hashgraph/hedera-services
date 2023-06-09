@@ -50,12 +50,12 @@ class ReadableTopicStoreImplTest extends ConsensusHandlerTestBase {
 
         assertNotNull(topic);
 
-        assertEquals(topicEntityNum.longValue(), topic.topicNumber());
+        assertEquals(topicId, topic.topicId());
         assertEquals(adminKey.toString(), topic.adminKey().toString());
         assertEquals(adminKey.toString(), topic.submitKey().toString());
         assertEquals(this.topic.sequenceNumber(), topic.sequenceNumber());
         assertEquals(this.topic.autoRenewPeriod(), topic.autoRenewPeriod());
-        assertEquals(autoRenewId.accountNum(), topic.autoRenewAccountNumber());
+        assertEquals(autoRenewId, topic.autoRenewAccountId());
         assertEquals(memo, topic.memo());
         assertFalse(topic.deleted());
         assertArrayEquals(runningHash, asBytes(topic.runningHash()));
@@ -73,12 +73,12 @@ class ReadableTopicStoreImplTest extends ConsensusHandlerTestBase {
 
         assertNotNull(topic);
 
-        assertEquals(topicEntityNum.longValue(), topic.topicNumber());
+        assertEquals(topicId, topic.topicId());
         assertEquals(adminKey.toString(), topic.adminKey().toString());
         assertEquals(adminKey.toString(), topic.submitKey().toString());
         assertEquals(this.topic.sequenceNumber(), topic.sequenceNumber());
         assertEquals(this.topic.autoRenewPeriod(), topic.autoRenewPeriod());
-        assertEquals(0L, topic.autoRenewAccountNumber());
+        assertEquals(0L, topic.autoRenewAccountId().accountNum());
         assertEquals(memo, topic.memo());
         assertFalse(topic.deleted());
         assertArrayEquals(runningHash, asBytes(topic.runningHash()));

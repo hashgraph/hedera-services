@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.EXISTING_TOPIC;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
@@ -81,6 +82,8 @@ public final class ConsensusTestUtils {
     }
 
     static Topic newTopic(Key admin, Key submit) {
-        return new Topic(EXISTING_TOPIC.getTopicNum(), -1L, 0L, -1L, 1234567L, false, null, "memo", admin, submit);
+        return new Topic(toPbj(EXISTING_TOPIC), -1L, 0L, -1L,
+                AccountID.newBuilder().accountNum(1234567L).build(), false, null,
+                "memo", admin, submit);
     }
 }

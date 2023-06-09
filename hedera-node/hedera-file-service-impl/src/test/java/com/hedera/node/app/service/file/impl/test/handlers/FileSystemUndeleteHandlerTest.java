@@ -151,7 +151,7 @@ class FileSystemUndeleteHandlerTest extends FileHandlerTestBase {
     @DisplayName("Fails handle if keys doesn't exist on file system to be deleted")
     void keysDoesntExist() {
         given(handleContext.body()).willReturn(newSystemDeleteTxn());
-        fileSystem = new File(fileSystemfileId.fileNum(), expirationTime, null, Bytes.wrap(contents), memo, false);
+        fileSystem = new File(fileSystemfileId, expirationTime, null, Bytes.wrap(contents), memo, false);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);

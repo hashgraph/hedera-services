@@ -18,7 +18,7 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -29,17 +29,14 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
-import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.ExpiryMeta;
-import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,21 +50,6 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
             FileID.newBuilder().fileNum(1L).build();
 
     private final FileAppendTransactionBody.Builder OP_BUILDER = FileAppendTransactionBody.newBuilder();
-
-    private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(expirationTime, NA, NA);
-
-    @Mock
-    private Account account;
-
-    @Mock
-    private Account autoRenewAccount;
-
-    @Mock
-    private ExpiryValidator expiryValidator;
-
-    @Mock
-    private AttributeValidator attributeValidator;
-
     @Mock
     private Configuration configuration;
 

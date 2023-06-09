@@ -64,14 +64,15 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.STAKING_FUND;
 import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
-import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
-import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.UniqueTokenId;
+import com.hedera.hapi.node.state.token.*;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -83,6 +84,7 @@ import com.hedera.test.utils.TestFixturesKeyLookup;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.mockito.Mockito;
 
 // NOTE: This class is duplicated in more than one service module.
@@ -142,19 +144,19 @@ public class AdapterUtils {
         private static final String ACCOUNTS_KEY = "ACCOUNTS";
 
         private static AccountCryptoAllowance cryptoAllowances = AccountCryptoAllowance.newBuilder()
-                .spenderNum(DEFAULT_PAYER.getAccountNum())
+                .spenderId(toPbj(DEFAULT_PAYER))
                 .amount(500L)
                 .build();
         private static AccountFungibleTokenAllowance fungibleTokenAllowances =
                 AccountFungibleTokenAllowance.newBuilder()
-                        .tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
-                        .spenderNum(DEFAULT_PAYER.getAccountNum())
+                        .tokenId(toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS))
+                        .spenderId(toPbj(DEFAULT_PAYER))
                         .amount(10_000L)
                         .build();
 
         private static AccountApprovalForAllAllowance nftAllowances = AccountApprovalForAllAllowance.newBuilder()
-                .tokenNum(KNOWN_TOKEN_WITH_WIPE.getTokenNum())
-                .spenderNum(DEFAULT_PAYER.getAccountNum())
+                .tokenId(toPbj(KNOWN_TOKEN_WITH_WIPE))
+                .spenderId(toPbj(DEFAULT_PAYER))
                 .build();
 
         private static ReadableKVState<EntityNumVirtualKey, Account> wellKnownAccountsState() {
@@ -261,20 +263,22 @@ public class AdapterUtils {
                 List<AccountFungibleTokenAllowance> fungibleTokenAllowances,
                 List<AccountApprovalForAllAllowance> nftTokenAllowances) {
             return new Account(
-                    number,
-                    Bytes.EMPTY,
-                    key,
-                    10_000L,
+                    AccountID.newBuilder().accountNum(number).build(),
                     balance,
-                    "test",
                     false,
                     1_234_567L,
+                    Bytes.EMPTY,
+                    key,
+                    "test",
+                    10_000L,
                     1_234_567L,
                     0L,
                     false,
                     receiverSigRequired,
-                    3L,
-                    2L,
+                    TokenID.newBuilder().tokenNum(3L).build(),
+                    UniqueTokenId.newBuilder()
+                            .tokenId(TokenID.newBuilder().tokenNum(3L).build())
+                            .serialNumber(2L).build(),
                     1L,
                     2,
                     3,
@@ -284,7 +288,7 @@ public class AdapterUtils {
                     3,
                     0,
                     1_234_5678L,
-                    2,
+                    toPbj(asAccount("0.0.2")),
                     76_000L,
                     0,
                     cryptoAllowances,
