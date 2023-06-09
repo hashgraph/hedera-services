@@ -72,8 +72,9 @@ public class ConsensusTestNode {
      */
     public ConsensusTestNode reconnect() {
         // create a new context
-        final EventEmitter<?> newEmitter = eventEmitter.cleanCopy();
+        final EventEmitter<?> newEmitter = eventEmitter.cleanCopy(random.nextLong());
         newEmitter.reset();
+
         final ConsensusTestNode consensusTestNode = new ConsensusTestNode(
                 newEmitter, new TestIntake(newEmitter.getGraphGenerator().getAddressBook()));
         consensusTestNode.intake.loadSnapshot(

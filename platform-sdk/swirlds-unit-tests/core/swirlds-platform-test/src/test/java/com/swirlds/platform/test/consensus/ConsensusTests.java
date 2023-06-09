@@ -16,18 +16,17 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
-
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 
 @DisplayName("Consensus Tests")
 @Tag(TIME_CONSUMING)
@@ -64,7 +63,6 @@ class ConsensusTests {
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Reconnect Simulation")
     @ParameterizedTest
-    @Disabled("spams the logs because the shadowgraph is not ready to handle the new restart" + " paradigm")
     void reconnectSimulation(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::reconnect)
@@ -251,8 +249,6 @@ class ConsensusTests {
                 .run();
     }
 
-    // TODO fix and enable
-    @Disabled("spams the logs because the shadowgraph is not ready to handle the new restart" + " paradigm")
     @ParameterizedTest
     @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#restartWithEventsParams")
     @Tag(TestQualifierTags.MIN_ACCEPTED_TEST)
