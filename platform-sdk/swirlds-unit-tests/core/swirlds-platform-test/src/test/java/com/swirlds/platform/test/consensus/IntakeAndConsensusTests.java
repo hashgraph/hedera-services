@@ -35,7 +35,6 @@ import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -158,8 +157,7 @@ class IntakeAndConsensusTests {
     private static void assertConsensusEvents(final TestIntake node1, final TestIntake node2) {
         ConsensusRoundValidation.validateIterableRounds(
                 node1.getConsensusRounds().iterator(),
-                node2.getConsensusRounds().iterator()
-        );
+                node2.getConsensusRounds().iterator());
         node1.getConsensusRounds().clear();
         node2.getConsensusRounds().clear();
     }

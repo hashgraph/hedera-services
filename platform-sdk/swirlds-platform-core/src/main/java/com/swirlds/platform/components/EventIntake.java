@@ -16,6 +16,11 @@
 
 package com.swirlds.platform.components;
 
+import static com.swirlds.base.ArgumentUtils.throwArgNull;
+import static com.swirlds.logging.LogMarker.INTAKE_EVENT;
+import static com.swirlds.logging.LogMarker.STALE_EVENTS;
+import static com.swirlds.logging.LogMarker.SYNC;
+
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.Consensus;
@@ -29,17 +34,11 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
-
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
-import static com.swirlds.logging.LogMarker.INTAKE_EVENT;
-import static com.swirlds.logging.LogMarker.STALE_EVENTS;
-import static com.swirlds.logging.LogMarker.SYNC;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class is responsible for adding events to {@link Consensus} and notifying event observers, including

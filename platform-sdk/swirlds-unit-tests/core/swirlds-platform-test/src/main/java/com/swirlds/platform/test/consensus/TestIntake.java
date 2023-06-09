@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.test.consensus;
 
+import static org.mockito.Mockito.mock;
+
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.system.NodeId;
@@ -40,12 +42,9 @@ import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import com.swirlds.platform.test.event.IndexedEvent;
-
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
-
-import static org.mockito.Mockito.mock;
 
 /** Event intake with consensus and shadowgraph, used for testing */
 public class TestIntake implements LoadableFromSignedState {
