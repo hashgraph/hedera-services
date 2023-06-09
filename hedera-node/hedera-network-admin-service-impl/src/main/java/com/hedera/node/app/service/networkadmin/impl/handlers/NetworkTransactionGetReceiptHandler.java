@@ -19,8 +19,6 @@ package com.hedera.node.app.service.networkadmin.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.RECEIPT_NOT_FOUND;
-import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
-import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
@@ -28,7 +26,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
@@ -66,16 +63,6 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
         requireNonNull(header);
         final var response = TransactionGetReceiptResponse.newBuilder().header(header);
         return Response.newBuilder().transactionGetReceipt(response).build();
-    }
-
-    @Override
-    public boolean requiresNodePayment(@NonNull ResponseType responseType) {
-        return ANSWER_ONLY == responseType || ANSWER_STATE_PROOF == responseType;
-    }
-
-    @Override
-    public boolean needsAnswerOnlyCost(@NonNull ResponseType responseType) {
-        return COST_ANSWER == responseType;
     }
 
     @Override
