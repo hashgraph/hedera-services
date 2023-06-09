@@ -51,6 +51,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCh
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
@@ -85,7 +86,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 public class ContractKeysHTSSuite extends HapiSuite {
     private static final long GAS_TO_OFFER = 1_500_000L;
@@ -2478,11 +2478,6 @@ public class ContractKeysHTSSuite extends HapiSuite {
                                         .newTotalSupply(99)),
                         getTokenInfo(TYPE_OF_TOKEN).hasTotalSupply(amount),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TYPE_OF_TOKEN, amount));
-    }
-
-    @NotNull
-    private String getNestedContractAddress(String contract, HapiSpec spec) {
-        return AssociatePrecompileSuite.getNestedContractAddress(contract, spec);
     }
 
     @Override

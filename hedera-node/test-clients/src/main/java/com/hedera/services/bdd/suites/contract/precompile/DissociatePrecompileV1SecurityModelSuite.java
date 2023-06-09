@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.contract.precompile.ContractKeysStillWorkAsExpectedSuite.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
@@ -66,7 +67,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class DissociatePrecompileV1SecurityModelSuite extends HapiSuite {
@@ -392,10 +392,5 @@ public class DissociatePrecompileV1SecurityModelSuite extends HapiSuite {
                 .setRealmNum(nativeParts[1])
                 .setTokenNum(nativeParts[2])
                 .build();
-    }
-
-    @NotNull
-    private String getNestedContractAddress(final String outerContract, final HapiSpec spec) {
-        return AssociatePrecompileSuite.getNestedContractAddress(outerContract, spec);
     }
 }

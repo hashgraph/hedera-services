@@ -47,6 +47,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -909,10 +910,6 @@ public class ContractHTSSuite extends HapiSuite {
                                 .contractCallResult(resultWith()
                                         .contractCallResult(
                                                 htsPrecompileResult().withStatus(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN)))));
-    }
-
-    private String getNestedContractAddress(final String contract, final HapiSpec spec) {
-        return AssociatePrecompileSuite.getNestedContractAddress(contract, spec);
     }
 
     @Override

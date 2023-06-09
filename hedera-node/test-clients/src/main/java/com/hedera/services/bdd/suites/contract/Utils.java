@@ -20,8 +20,11 @@ import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPre
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.lang.System.arraycopy;
@@ -32,14 +35,19 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
@@ -48,6 +56,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -64,6 +73,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.crypto.Hash;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -353,5 +363,49 @@ public class Utils {
     public static Address nonMirrorAddrWith(final long seed, final long num) {
         return Address.wrap(Address.toChecksumAddress(
                 new BigInteger(1, HapiPropertySource.asSolidityAddress((int) seed, seed, num))));
+    }
+
+    public static long expectedPrecompileGasFor(
+            final HapiSpec spec, final HederaFunctionality function, final SubType type) {
+        final var gasThousandthsOfTinycentPrice = spec.fees()
+                .getCurrentOpFeeData()
+                .get(ContractCall)
+                .get(DEFAULT)
+                .getServicedata()
+                .getGas();
+        final var assetsLoader = new AssetsLoader();
+        final BigDecimal hapiUsdPrice;
+        try {
+            hapiUsdPrice = assetsLoader.loadCanonicalPrices().get(function).get(type);
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        final var precompileTinycentPrice = hapiUsdPrice
+                .multiply(BigDecimal.valueOf(1.2))
+                .multiply(BigDecimal.valueOf(100 * 100_000_000L))
+                .longValueExact();
+        return (precompileTinycentPrice * 1000 / gasThousandthsOfTinycentPrice);
+    }
+
+    @NotNull
+    public static String getNestedContractAddress(final String outerContract, final HapiSpec spec) {
+        return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(outerContract));
+    }
+
+    @NotNull
+    @SuppressWarnings("java:S5960")
+    public static CustomSpecAssert assertTxnRecordHasNoTraceabilityEnrichedContractFnResult(
+            final String nestedTransferTxn) {
+        return assertionsHold((spec, log) -> {
+            final var subOp = getTxnRecord(nestedTransferTxn);
+            allRunFor(spec, subOp);
+
+            final var rcd = subOp.getResponseRecord();
+
+            final var contractCallResult = rcd.getContractCallResult();
+            assertEquals(0L, contractCallResult.getGas(), "Result not expected to externalize gas");
+            assertEquals(0L, contractCallResult.getAmount(), "Result not expected to externalize amount");
+            assertEquals(ByteString.EMPTY, contractCallResult.getFunctionParameters());
+        });
     }
 }

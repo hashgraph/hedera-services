@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -42,6 +41,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asToken;
+import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -69,7 +70,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 public class AssociatePrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AssociatePrecompileSuite.class);
@@ -450,20 +450,5 @@ public class AssociatePrecompileSuite extends HapiSuite {
     @Override
     protected Logger getResultsLogger() {
         return log;
-    }
-
-    /* --- Helpers --- */
-    private static TokenID asToken(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return TokenID.newBuilder()
-                .setShardNum(nativeParts[0])
-                .setRealmNum(nativeParts[1])
-                .setTokenNum(nativeParts[2])
-                .build();
-    }
-
-    @NotNull
-    public static String getNestedContractAddress(final String outerContract, final HapiSpec spec) {
-        return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(outerContract));
     }
 }
