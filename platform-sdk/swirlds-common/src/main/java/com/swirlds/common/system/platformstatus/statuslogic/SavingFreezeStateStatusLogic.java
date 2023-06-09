@@ -30,8 +30,6 @@ import org.apache.logging.log4j.Logger;
  * status.
  */
 public class SavingFreezeStateStatusLogic implements PlatformStatusLogic {
-    private static final Logger logger = LogManager.getLogger(SavingFreezeStateStatusLogic.class);
-
     /**
      * {@inheritDoc}
      */
@@ -47,8 +45,16 @@ public class SavingFreezeStateStatusLogic implements PlatformStatusLogic {
             case STATE_WRITTEN_TO_DISK -> PlatformStatus.FREEZE_COMPLETE;
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
             case TIME_ELAPSED -> PlatformStatus.SAVING_FREEZE_STATE;
-            default -> throw new IllegalArgumentException(
-                    "Unexpected action `%s` while in status `SAVING_FREEZE_STATE`".formatted(action));
+            default -> throw new IllegalArgumentException(getUnexpectedActionString(action));
         };
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public PlatformStatus getStatus() {
+        return PlatformStatus.SAVING_FREEZE_STATE;
     }
 }

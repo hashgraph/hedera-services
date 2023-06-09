@@ -58,8 +58,16 @@ public class ReplayingEventsStatusLogic implements PlatformStatusLogic {
             }
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
             case TIME_ELAPSED -> PlatformStatus.REPLAYING_EVENTS;
-            default -> throw new IllegalArgumentException(
-                    "Unexpected action `%s` while in status `REPLAYING_EVENTS`".formatted(action));
+            default -> throw new IllegalArgumentException(getUnexpectedActionString(action));
         };
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public PlatformStatus getStatus() {
+        return PlatformStatus.REPLAYING_EVENTS;
     }
 }

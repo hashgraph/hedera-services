@@ -57,7 +57,7 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
             case TIME_ELAPSED -> {
                 if (Duration.between(lastTimeOwnEventReachedConsensus, time.now())
-                                .compareTo(config.activeStatusDelay())
+                        .compareTo(config.activeStatusDelay())
                         > 0) {
                     // if an own event hasn't been observed reaching consensus in the configured duration, go back to
                     // CHECKING
@@ -66,8 +66,16 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
                     yield PlatformStatus.ACTIVE;
                 }
             }
-            default -> throw new IllegalArgumentException(
-                    "Unexpected action `%s` while in status `ACTIVE`".formatted(action));
+            default -> throw new IllegalArgumentException(getUnexpectedActionString(action));
         };
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public PlatformStatus getStatus() {
+        return PlatformStatus.ACTIVE;
     }
 }

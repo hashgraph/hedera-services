@@ -26,7 +26,6 @@ import java.time.Instant;
 /**
  * Interface representing the state machine logic for an individual {@link PlatformStatus}.
  */
-@FunctionalInterface
 public interface PlatformStatusLogic {
     /**
      * Process a status action.
@@ -47,4 +46,22 @@ public interface PlatformStatusLogic {
             @NonNull final Instant statusStartTime,
             @NonNull final Time time,
             @NonNull final PlatformStatusConfig config);
+
+    /**
+     * Get the status that this logic is for.
+     *
+     * @return the status that this logic is for
+     */
+    @NonNull
+    PlatformStatus getStatus();
+
+    /**
+     * Get the string to use in an {@link IllegalArgumentException} when an unexpected action is encountered.
+     *
+     * @param action the unexpected action
+     * @return the string to use in an {@link IllegalArgumentException} when an unexpected action is encountered
+     */
+    default String getUnexpectedActionString(@NonNull final PlatformStatusAction action) {
+        return "Unexpected action `%s` while in status `%s`".formatted(action, getStatus().name());
+    }
 }

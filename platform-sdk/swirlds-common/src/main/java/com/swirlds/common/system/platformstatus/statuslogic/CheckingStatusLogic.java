@@ -44,8 +44,16 @@ public class CheckingStatusLogic implements PlatformStatusLogic {
             case FALLEN_BEHIND -> PlatformStatus.BEHIND;
             case STATE_WRITTEN_TO_DISK, TIME_ELAPSED -> PlatformStatus.CHECKING;
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
-            default -> throw new IllegalArgumentException(
-                    "Unexpected action `%s` while in status `CHECKING`".formatted(action));
+            default -> throw new IllegalArgumentException(getUnexpectedActionString(action));
         };
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public PlatformStatus getStatus() {
+        return PlatformStatus.CHECKING;
     }
 }

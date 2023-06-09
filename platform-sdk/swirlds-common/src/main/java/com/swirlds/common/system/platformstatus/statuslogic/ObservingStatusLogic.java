@@ -63,8 +63,16 @@ public class ObservingStatusLogic implements PlatformStatusLogic {
                     yield PlatformStatus.CHECKING;
                 }
             }
-            default -> throw new IllegalArgumentException(
-                    "Unexpected action `%s` while in status `OBSERVING`".formatted(action));
+            default -> throw new IllegalArgumentException(getUnexpectedActionString(action));
         };
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public PlatformStatus getStatus() {
+        return PlatformStatus.OBSERVING;
     }
 }

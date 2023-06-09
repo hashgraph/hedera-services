@@ -39,7 +39,15 @@ public class CatastrophicFailureStatusLogic implements PlatformStatusLogic {
             @NonNull final Time time,
             @NonNull final PlatformStatusConfig config) {
 
-        throw new IllegalArgumentException(
-                "Unexpected action `%s` while in status `CATASTROPHIC_FAILURE`".formatted(action));
+        throw new IllegalArgumentException(getUnexpectedActionString(action));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public PlatformStatus getStatus() {
+        return PlatformStatus.CATASTROPHIC_FAILURE;
     }
 }

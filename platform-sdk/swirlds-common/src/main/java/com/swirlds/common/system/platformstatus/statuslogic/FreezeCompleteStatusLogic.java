@@ -39,7 +39,15 @@ public class FreezeCompleteStatusLogic implements PlatformStatusLogic {
             @NonNull final PlatformStatusConfig config) {
 
         // nothing should be happening if a freeze is complete
-        throw new IllegalArgumentException(
-                "Unexpected action `%s` while in status `FREEZE_COMPLETE`".formatted(action));
+        throw new IllegalArgumentException(getUnexpectedActionString(action));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public PlatformStatus getStatus() {
+        return PlatformStatus.FREEZE_COMPLETE;
     }
 }

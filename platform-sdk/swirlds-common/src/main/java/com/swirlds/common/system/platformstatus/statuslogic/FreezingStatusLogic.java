@@ -50,8 +50,16 @@ public class FreezingStatusLogic implements PlatformStatusLogic {
                     yield PlatformStatus.FREEZING;
                 }
             }
-            default -> throw new IllegalArgumentException(
-                    "Unexpected action `%s` while in status `FREEZING`".formatted(action));
+            default -> throw new IllegalArgumentException(getUnexpectedActionString(action));
         };
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public PlatformStatus getStatus() {
+        return PlatformStatus.FREEZING;
     }
 }

@@ -42,8 +42,16 @@ public class BehindStatusLogic implements PlatformStatusLogic {
             case RECONNECT_COMPLETE -> PlatformStatus.RECONNECT_COMPLETE;
             case STATE_WRITTEN_TO_DISK, TIME_ELAPSED -> PlatformStatus.BEHIND;
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
-            default -> throw new IllegalArgumentException(
-                    "Unexpected action `%s` while in status `BEHIND`".formatted(action));
+            default -> throw new IllegalArgumentException(getUnexpectedActionString(action));
         };
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public PlatformStatus getStatus() {
+        return PlatformStatus.BEHIND;
     }
 }

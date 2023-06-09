@@ -22,6 +22,7 @@ import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
+import com.swirlds.common.system.platformstatus.statuslogic.PlatformStatusLogic;
 import com.swirlds.common.time.Time;
 import com.swirlds.logging.payloads.PlatformStatusPayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -55,7 +56,7 @@ public class PlatformStatusStateMachine {
     /**
      * The object containing the state machine logic for the current status
      */
-    private PlatformStatus currentStatus;
+    private PlatformStatusLogic currentStatusLogic;
 
     /**
      * The time at which the current status started
@@ -78,7 +79,7 @@ public class PlatformStatusStateMachine {
         this.config = Objects.requireNonNull(config);
         this.notificationEngine = Objects.requireNonNull(notificationEngine);
 
-        this.currentStatus = PlatformStatus.STARTING_UP;
+        this.currentStatusLogic = PlatformStatus.STARTING_UP.buildLogic();
         this.currentStatusStartTime = time.now();
     }
 
@@ -94,9 +95,14 @@ public class PlatformStatusStateMachine {
 
         final PlatformStatus newStatus;
         try {
-            newStatus = currentStatus.processStatusAction(action, currentStatusStartTime, time, config);
+            newStatus = currentStatusLogic.processStatusAction(action, currentStatusStartTime, time, config);
         } catch (final IllegalStateException e) {
             logger.error(EXCEPTION.getMarker(), e.getMessage(), e);
+            return;
+        }
+
+        // the status didn't change, so there isn't anything to do
+        if (newStatus.equals(currentStatusLogic.getStatus())) {
             return;
         }
 
@@ -106,13 +112,13 @@ public class PlatformStatusStateMachine {
                 "Platform status changed after %s".formatted(Duration.between(currentStatusStartTime, transitionTime));
 
         logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                        statusChangeMessage, currentStatus.name(), newStatus.name())
+                        statusChangeMessage, currentStatusLogic.getStatus().name(), newStatus.name())
                 .toString());
 
         notificationEngine.dispatch(
                 PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newStatus));
 
         currentStatusStartTime = transitionTime;
-        currentStatus = newStatus;
+        currentStatusLogic = newStatus.buildLogic();
     }
 }

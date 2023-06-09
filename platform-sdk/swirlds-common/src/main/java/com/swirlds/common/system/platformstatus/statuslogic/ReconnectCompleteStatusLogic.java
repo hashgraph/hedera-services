@@ -60,8 +60,16 @@ public class ReconnectCompleteStatusLogic implements PlatformStatusLogic {
             }
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
             case TIME_ELAPSED -> PlatformStatus.RECONNECT_COMPLETE;
-            default -> throw new IllegalArgumentException(
-                    "Unexpected action `%s` while in status `RECONNECT_COMPLETE`".formatted(action));
+            default -> throw new IllegalArgumentException(getUnexpectedActionString(action));
         };
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public PlatformStatus getStatus() {
+        return PlatformStatus.RECONNECT_COMPLETE;
     }
 }

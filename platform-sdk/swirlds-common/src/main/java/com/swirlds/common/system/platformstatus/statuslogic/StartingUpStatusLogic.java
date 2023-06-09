@@ -41,8 +41,16 @@ public class StartingUpStatusLogic implements PlatformStatusLogic {
             case STARTED_REPLAYING_EVENTS -> PlatformStatus.REPLAYING_EVENTS;
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
             case TIME_ELAPSED -> PlatformStatus.STARTING_UP;
-            default -> throw new IllegalArgumentException(
-                    "Unexpected action `%s` while in status `STARTING_UP`".formatted(action));
+            default -> throw new IllegalArgumentException(getUnexpectedActionString(action));
         };
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public PlatformStatus getStatus() {
+        return PlatformStatus.STARTING_UP;
     }
 }

@@ -39,6 +39,15 @@ public class DisconnectedStatusLogic implements PlatformStatusLogic {
             @NonNull Time time,
             @NonNull PlatformStatusConfig config) {
 
-        throw new IllegalArgumentException("Unexpected action `%s` while in status `DISCONNECTED`".formatted(action));
+        throw new IllegalArgumentException(getUnexpectedActionString(action));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public PlatformStatus getStatus() {
+        return PlatformStatus.DISCONNECTED;
     }
 }
