@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.test.consensus;
 
+import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
+
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
@@ -25,8 +27,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 
 @DisplayName("Consensus Tests")
 @Tag(TIME_CONSUMING)
