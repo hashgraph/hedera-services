@@ -30,6 +30,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -94,8 +95,7 @@ public class TokenDeleteHandler implements TransactionHandler {
 
     @NonNull
     public Token validateSemantics(@NonNull final TokenID tokenId, @NonNull final ReadableTokenStore tokenStore) {
-        // The contextual retriever will validate that the token is usable
-        final var token = ContextualRetriever.getIfUsable(tokenId, tokenStore);
+        final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
 
         validateTrue(token.adminKey() != null, ResponseCodeEnum.TOKEN_IS_IMMUTABLE);
 

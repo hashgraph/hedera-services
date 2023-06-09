@@ -640,13 +640,10 @@ class MonoTransactionDispatcherTest {
                 .tokenDeletion(TokenDeleteTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         dispatcher.dispatchHandle(handleContext);
 
-        verify(writableTokenStore).commit();
-        verify(writableAccountStore).commit();
+        verify(handleContext).body();
     }
 
     @Test

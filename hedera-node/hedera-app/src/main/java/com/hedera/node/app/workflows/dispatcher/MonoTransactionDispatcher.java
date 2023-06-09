@@ -242,11 +242,5 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     private void dispatchTokenDeletion(@NonNull final HandleContext handleContext) {
         final var handler = handlers.tokenDeleteHandler();
         handler.handle(handleContext);
-        finishTokenDeletion(handleContext);
-    }
-
-    private void finishTokenDeletion(@NonNull final HandleContext handleContext) {
-        handleContext.writableStore(WritableTokenStore.class).commit();
-        handleContext.writableStore(WritableAccountStore.class).commit();
     }
 }
