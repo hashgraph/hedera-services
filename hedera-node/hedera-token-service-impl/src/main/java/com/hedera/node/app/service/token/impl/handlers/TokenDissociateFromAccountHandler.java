@@ -59,8 +59,6 @@ import org.slf4j.LoggerFactory;
  */
 @Singleton
 public class TokenDissociateFromAccountHandler implements TransactionHandler {
-    private static final Logger log = LoggerFactory.getLogger(TokenDissociateFromAccountHandler.class);
-
     @Inject
     public TokenDissociateFromAccountHandler() {
         // Exists for injection
@@ -246,9 +244,6 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
     }
 
     private boolean tokenIsExpired(final Token token, final Instant consensusNow) {
-        // just to get the compiler not to complain about the method params not being used...
-        log.info("tokenIsExpired | token: {}, consensusNow: {}", token, consensusNow);
-
         // @future('6864'): identify expired tokens
         // This method will need to identify a token that is expired or a token that is "detached", i.e. expired but
         // still within its grace period
