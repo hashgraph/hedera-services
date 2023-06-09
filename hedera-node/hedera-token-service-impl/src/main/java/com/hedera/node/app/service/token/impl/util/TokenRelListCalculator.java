@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
 
 /**
  * Class that computes the expected results of a token relation operation. That is to say, given a
@@ -39,6 +40,7 @@ import java.util.stream.Collectors;
  * relationships in some way
  */
 public class TokenRelListCalculator {
+    private static final Logger log = org.slf4j.LoggerFactory.getLogger(TokenRelListCalculator.class);
 
     private final ReadableTokenRelationStore tokenRelStore;
 
@@ -306,9 +308,12 @@ public class TokenRelListCalculator {
 
             // Default to a null pointer (value of -1) for infinite looping cases
             if (safetyCounter++ > account.numberAssociations()) {
+                log.error(
+                        "Encountered token rels list that exceeds total token associations for account {}",
+                        account.accountNumber());
                 return -1;
             }
-        } while (currentWalkedTokenRel != null && safetyCounter <= account.numberAssociations());
+        } while (currentWalkedTokenRel != null);
 
         // At this point, `currentTokenNum` is either -1 (if we reached the end of the linked token rel pointers chain),
         // zero if a token rel's previous or next pointer was incorrectly set to zero (e.g. initialized by default to

@@ -60,6 +60,7 @@ class TokenRelListCalculatorTest {
     private static final Account ACCT_2300 = Account.newBuilder()
             .accountNumber(ACCT_2300_ID.accountNumOrThrow())
             .headTokenNumber(TOKEN_NUMBER_1)
+            .numberAssociations(5)
             .build();
 
     // We construct a test dataset of "local" token relations for the test account 2300, where token relation (account
