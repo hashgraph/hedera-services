@@ -402,6 +402,9 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                         MINIMUM_TO_COLLECT,
                                         OptionalLong.of(MAXIMUM_TO_COLLECT),
                                         TOKEN_TREASURY))
+                                // Also include a fractional fee with no minimum to collect
+                                .withCustom(fractionalFee(
+                                        NUMERATOR, DENOMINATOR * 2L, 0, OptionalLong.empty(), TOKEN_TREASURY))
                                 .via(CREATE_TXN))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
@@ -429,9 +432,6 @@ public class TokenInfoHTSSuite extends HapiSuite {
 
                     allRunFor(
                             spec,
-                            getTxnRecord(FUNGIBLE_TOKEN_INFO_TXN)
-                                    .andAllChildRecords()
-                                    .logged(),
                             childRecordsCheck(
                                     FUNGIBLE_TOKEN_INFO_TXN,
                                     SUCCESS,
@@ -968,6 +968,9 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                 .maxSupply(MAX_SUPPLY)
                                 .initialSupply(500L)
                                 .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
+                                // Include a fractional fee with no minimum to collect
+                                .withCustom(fractionalFee(
+                                        NUMERATOR, DENOMINATOR * 2L, 0, OptionalLong.empty(), TOKEN_TREASURY))
                                 .withCustom(fractionalFee(
                                         NUMERATOR,
                                         DENOMINATOR,
@@ -975,7 +978,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                         OptionalLong.of(MAXIMUM_TO_COLLECT),
                                         TOKEN_TREASURY))
                                 .via(CREATE_TXN),
-                        getTokenInfo(PRIMARY_TOKEN_NAME).via(GET_TOKEN_INFO_TXN))
+                        getTokenInfo(PRIMARY_TOKEN_NAME).via(GET_TOKEN_INFO_TXN).logged())
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
@@ -1002,7 +1005,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                 .contractCallResult(htsPrecompileResult()
                                                         .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
                                                         .withStatus(SUCCESS)
-                                                        .withCustomFees(getCustomFees(spec))))))));
+                                                        .withCustomFees(getExpectedCustomFees(spec))))))));
     }
 
     private HapiSpec happyPathGetNonFungibleTokenCustomFees() {
@@ -1220,7 +1223,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
             final long expirySecond) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
 
-        final ArrayList<CustomFee> customFees = getCustomFees(spec);
+        final ArrayList<CustomFee> customFees = getExpectedCustomFees(spec);
 
         return TokenInfo.newBuilder()
                 .setLedgerId(fromString("0x03"))
@@ -1248,11 +1251,22 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     @NotNull
-    private ArrayList<CustomFee> getCustomFees(final HapiSpec spec) {
+    private ArrayList<CustomFee> getExpectedCustomFees(final HapiSpec spec) {
         final var fixedFee = FixedFee.newBuilder().setAmount(500L).build();
         final var customFixedFee = CustomFee.newBuilder()
                 .setFixedFee(fixedFee)
                 .setFeeCollectorAccountId(spec.registry().getAccountID(HTS_COLLECTOR))
+                .build();
+
+        final var firstFraction = Fraction.newBuilder()
+                .setNumerator(NUMERATOR)
+                .setDenominator(DENOMINATOR)
+                .build();
+        final var firstFractionalFee =
+                FractionalFee.newBuilder().setFractionalAmount(firstFraction).build();
+        final var firstCustomFractionalFee = CustomFee.newBuilder()
+                .setFractionalFee(firstFractionalFee)
+                .setFeeCollectorAccountId(spec.registry().getAccountID(TOKEN_TREASURY))
                 .build();
 
         final var fraction = Fraction.newBuilder()
@@ -1271,6 +1285,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
 
         final var customFees = new ArrayList<CustomFee>();
         customFees.add(customFixedFee);
+        customFees.add(firstCustomFractionalFee);
         customFees.add(customFractionalFee);
         return customFees;
     }
