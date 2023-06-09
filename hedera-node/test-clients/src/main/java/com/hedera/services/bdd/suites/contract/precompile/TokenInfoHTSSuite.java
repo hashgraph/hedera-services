@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -206,6 +207,9 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                 .feeScheduleKey(FEE_SCHEDULE_KEY)
                                 .pauseKey(PAUSE_KEY)
                                 .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
+                                // Include a fractional fee with no minimum to collect
+                                .withCustom(fractionalFee(
+                                        NUMERATOR, DENOMINATOR * 2L, 0, OptionalLong.empty(), TOKEN_TREASURY))
                                 .withCustom(fractionalFee(
                                         NUMERATOR,
                                         DENOMINATOR,
@@ -301,6 +305,9 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                 .feeScheduleKey(FEE_SCHEDULE_KEY)
                                 .pauseKey(PAUSE_KEY)
                                 .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
+                                // Include a fractional fee with no minimum to collect
+                                .withCustom(fractionalFee(
+                                        NUMERATOR, DENOMINATOR * 2L, 0, OptionalLong.empty(), TOKEN_TREASURY))
                                 .withCustom(fractionalFee(
                                         NUMERATOR,
                                         DENOMINATOR,
@@ -396,15 +403,15 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                 .feeScheduleKey(FEE_SCHEDULE_KEY)
                                 .pauseKey(PAUSE_KEY)
                                 .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
+                                // Also include a fractional fee with no minimum to collect
+                                .withCustom(fractionalFee(
+                                        NUMERATOR, DENOMINATOR * 2L, 0, OptionalLong.empty(), TOKEN_TREASURY))
                                 .withCustom(fractionalFee(
                                         NUMERATOR,
                                         DENOMINATOR,
                                         MINIMUM_TO_COLLECT,
                                         OptionalLong.of(MAXIMUM_TO_COLLECT),
                                         TOKEN_TREASURY))
-                                // Also include a fractional fee with no minimum to collect
-                                .withCustom(fractionalFee(
-                                        NUMERATOR, DENOMINATOR * 2L, 0, OptionalLong.empty(), TOKEN_TREASURY))
                                 .via(CREATE_TXN))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
@@ -490,6 +497,9 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                 .feeScheduleKey(FEE_SCHEDULE_KEY)
                                 .pauseKey(PAUSE_KEY)
                                 .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
+                                // Include a fractional fee with no minimum to collect
+                                .withCustom(fractionalFee(
+                                        NUMERATOR, DENOMINATOR * 2L, 0, OptionalLong.empty(), TOKEN_TREASURY))
                                 .withCustom(fractionalFee(
                                         NUMERATOR,
                                         DENOMINATOR,
@@ -1260,7 +1270,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
 
         final var firstFraction = Fraction.newBuilder()
                 .setNumerator(NUMERATOR)
-                .setDenominator(DENOMINATOR)
+                .setDenominator(DENOMINATOR * 2L)
                 .build();
         final var firstFractionalFee =
                 FractionalFee.newBuilder().setFractionalAmount(firstFraction).build();
