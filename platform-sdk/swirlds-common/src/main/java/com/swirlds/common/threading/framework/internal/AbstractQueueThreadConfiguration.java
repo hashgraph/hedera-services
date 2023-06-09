@@ -65,7 +65,7 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
     /**
      * The callback to run periodically when the queue is idle.
      */
-    private Runnable idleCallback;
+    private InterruptableRunnable idleCallback;
 
     /**
      * When waiting for work, the amount of time to block.
@@ -187,7 +187,7 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
      * @return this object
      */
     @SuppressWarnings("unchecked")
-    public C setIdleCallback(@NonNull final Runnable idleCallback) {
+    public C setIdleCallback(@NonNull final InterruptableRunnable idleCallback) {
         this.idleCallback = idleCallback;
         return (C) this;
     }
@@ -196,7 +196,7 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
      * Get the idle callback that will be called periodically when the queue is empty.
      */
     @Nullable
-    public Runnable getIdleCallback() {
+    public InterruptableRunnable getIdleCallback() {
         return idleCallback;
     }
 

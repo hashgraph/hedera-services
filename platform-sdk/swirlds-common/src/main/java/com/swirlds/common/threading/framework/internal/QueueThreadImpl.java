@@ -61,7 +61,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
     /**
      * If not null, called periodically when the queue thread is idle.
      */
-    private final Runnable idleCallback;
+    private final InterruptableRunnable idleCallback;
 
     /**
      * The amount of time to wait for work.

@@ -1029,19 +1029,19 @@ class QueueThreadTests {
         });
         queue.start();
 
-        // The queue should be call the idle callback during this time,
+        // The queue should call the idle callback during this time,
         // but give it some time to do bad things if it's going to do bad things.
         MILLISECONDS.sleep(10);
 
         latch1.countDown();
 
-        // The queue should be call the idle callback during this time,
+        // The queue should call the idle callback during this time,
         // but give it some time to do bad things if it's going to do bad things.
         MILLISECONDS.sleep(10);
 
         latch2.countDown();
 
-        // The queue should be call the idle callback during this time,
+        // The queue should call the idle callback during this time,
         // but give it some time to do bad things if it's going to do bad things.
         MILLISECONDS.sleep(10);
 
