@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.spi.validation;
 
+import com.hedera.hapi.node.base.AccountID;
+
 /**
  * Encapsulates expiry/auto-renewal metadata for an entity.
  *
@@ -24,26 +26,16 @@ package com.hedera.node.app.spi.validation;
  *
  * @param expiry the consensus second at which the entity expires
  * @param autoRenewPeriod the number of seconds between auto-renewals
- * @param autoRenewNum the number of the account to be charged for auto-renewals
+ * @param autoRenewId the id of the account to be charged for auto-renewals
  */
-public record ExpiryMeta(
-        long expiry, long autoRenewPeriod, long autoRenewShard, long autoRenewRealm, long autoRenewNum) {
-
-    /**
-     * For convenience in tests, creates an instance with the given expiry, auto-renew period,
-     * and auto-renew account number with zeros for the shard and realm of the auto-renew account.
-     *
-     * @param expiry the consensus second at which the entity expires
-     * @param autoRenewPeriod the number of seconds between auto-renewals
-     */
-    public ExpiryMeta(long expiry, long autoRenewPeriod, long autoRenewNum) {
-        this(expiry, autoRenewPeriod, 0, 0, autoRenewNum);
-    }
-
+public record ExpiryMeta(long expiry, long autoRenewPeriod, AccountID autoRenewId) {
     /**
      * A sentinel value indicating some part of the metadata is not available..
      */
     public static long NA = Long.MIN_VALUE;
+
+    public static AccountID NO_AUTO_RENEW_ACCOUNT =
+            AccountID.newBuilder().accountNum(NA).build();
 
     /**
      * Returns true if the expiry is explicitly set.
@@ -69,7 +61,7 @@ public record ExpiryMeta(
      * @return whether this metadata has explicit auto-renew account
      */
     public boolean hasAutoRenewNum() {
-        return autoRenewNum != NA;
+        return !autoRenewId.equals(NO_AUTO_RENEW_ACCOUNT);
     }
 
     /**

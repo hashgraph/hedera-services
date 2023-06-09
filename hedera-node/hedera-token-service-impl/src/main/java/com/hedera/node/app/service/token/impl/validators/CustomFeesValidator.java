@@ -116,8 +116,7 @@ public class CustomFeesValidator {
                 case FRACTIONAL_FEE -> {
                     // fractional fee can be only applied to fungible common tokens
                     validateTrue(isFungibleCommon(tokenType), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
-                    final var tokenId =
-                            TokenID.newBuilder().tokenNum(token.tokenNumber()).build();
+                    final var tokenId = token.tokenId();
                     final var relation = tokenRelationStore.get(collectorId, tokenId);
                     validateTrue(relation.isPresent(), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
                 }

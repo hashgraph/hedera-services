@@ -73,7 +73,7 @@ public interface TransactionFactory {
         return Bytes.wrap(asByteArray(codec, r));
     }
 
-    default AccountID asAccount(@NonNull final String id) {
+    static AccountID asAccount(@NonNull final String id) {
         final var parts = id.split("\\.");
         return AccountID.newBuilder()
                 .shardNum(Long.parseLong(parts[0]))

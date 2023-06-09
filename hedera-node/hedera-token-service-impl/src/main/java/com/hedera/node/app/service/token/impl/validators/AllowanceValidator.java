@@ -121,13 +121,15 @@ public class AllowanceValidator {
      * as an invalid owner and returns false.
      *
      * @param nft given nft
-     * @param ownerNum owner given in allowance
+     * @param ownerId owner given in allowance
      * @param token token for which nft belongs to
      * @return whether the owner is valid
      */
-    public static boolean isValidOwner(final Nft nft, final long ownerNum, final Token token) {
-        final var listedOwner = nft.ownerNumber();
-        return listedOwner == 0 ? ownerNum == token.treasuryAccountNumber() : listedOwner == ownerNum;
+    public static boolean isValidOwner(final Nft nft, final AccountID ownerId, final Token token) {
+        final var listedOwnerId = nft.ownerId();
+        return listedOwnerId.equals(AccountID.DEFAULT)
+                ? ownerId == token.treasuryAccountId()
+                : listedOwnerId == ownerId;
     }
 
     /**
@@ -146,7 +148,7 @@ public class AllowanceValidator {
             @NonNull final Account payer,
             @NonNull final ReadableAccountStore accountStore) {
         final var ownerNum = owner != null ? owner.accountNumOrElse(0L) : 0L;
-        if (ownerNum == 0 || ownerNum == payer.accountNumber()) {
+        if (ownerNum == 0 || owner.equals(payer)) {
             return payer;
         } else {
             // If owner is in modifications get the modified account from state

@@ -92,10 +92,11 @@ public class TokenServiceImpl implements TokenService {
                         Key.newBuilder().ed25519(superUserKeyBytes).build();
 
                 try {
+                    final var superUserId = AccountID.newBuilder().accountNum(2).build();
                     accounts.put(
-                            AccountID.newBuilder().accountNum(2).build(),
+                            superUserId,
                             Account.newBuilder()
-                                    .accountNumber(2)
+                                    .accountId(superUserId)
                                     .key(superUserKey)
                                     .declineReward(true)
                                     .build());

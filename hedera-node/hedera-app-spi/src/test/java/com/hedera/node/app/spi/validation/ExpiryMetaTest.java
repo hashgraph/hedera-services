@@ -17,39 +17,43 @@
 package com.hedera.node.app.spi.validation;
 
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+import static com.hedera.node.app.spi.validation.ExpiryMeta.NO_AUTO_RENEW_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.hapi.node.base.AccountID;
 import org.junit.jupiter.api.Test;
 
 class ExpiryMetaTest {
+    private final AccountID id = id;
+
     @Test
     void detectsExplicitExpiry() {
-        final var withExpiry = new ExpiryMeta(1L, NA, NA);
-        final var withoutExpiry = new ExpiryMeta(NA, NA, NA);
+        final var withExpiry = new ExpiryMeta(1L, NA, NO_AUTO_RENEW_ACCOUNT);
+        final var withoutExpiry = new ExpiryMeta(NA, NA, NO_AUTO_RENEW_ACCOUNT);
         assertTrue(withExpiry.hasExplicitExpiry());
         assertFalse(withoutExpiry.hasExplicitExpiry());
     }
 
     @Test
     void detectsRenewPeriod() {
-        final var withRenewPeriod = new ExpiryMeta(NA, 1L, NA);
-        final var withoutRenewPeriod = new ExpiryMeta(2L, NA, 1L);
+        final var withRenewPeriod = new ExpiryMeta(NA, 1L, NO_AUTO_RENEW_ACCOUNT);
+        final var withoutRenewPeriod = new ExpiryMeta(2L, NA, id);
         assertTrue(withRenewPeriod.hasAutoRenewPeriod());
         assertFalse(withoutRenewPeriod.hasAutoRenewPeriod());
     }
 
     @Test
     void detectsRenewNum() {
-        final var withRenewNum = new ExpiryMeta(NA, 1L, 1L);
-        final var withoutRenewNum = new ExpiryMeta(2L, NA, NA);
+        final var withRenewNum = new ExpiryMeta(NA, 1L, id);
+        final var withoutRenewNum = new ExpiryMeta(2L, NA, NO_AUTO_RENEW_ACCOUNT);
         assertTrue(withRenewNum.hasAutoRenewNum());
         assertFalse(withoutRenewNum.hasAutoRenewNum());
     }
 
     @Test
     void detectsFullAutoRenewSpec() {
-        final var withFullSpec = new ExpiryMeta(NA, 1L, 1L);
-        final var withoutFullSpec = new ExpiryMeta(2L, NA, 1L);
+        final var withFullSpec = new ExpiryMeta(NA, 1L, id);
+        final var withoutFullSpec = new ExpiryMeta(2L, NA, id);
         assertTrue(withFullSpec.hasFullAutoRenewSpec());
         assertFalse(withoutFullSpec.hasFullAutoRenewSpec());
     }

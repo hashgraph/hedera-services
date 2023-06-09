@@ -22,7 +22,6 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
@@ -100,7 +99,9 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             final var spenderAccount = accountStore.getAccountById(spender);
             validateTrue(spenderAccount != null, INVALID_ALLOWANCE_SPENDER_ID);
             validateTrue(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
-            validateFalse(effectiveOwner.accountNumber() == spender.accountNumOrThrow(), SPENDER_ACCOUNT_SAME_AS_OWNER);
+            validateFalse(
+                    effectiveOwner.accountIdOrThrow().accountNumOrThrow().equals(spender.accountNumOrThrow()),
+                    SPENDER_ACCOUNT_SAME_AS_OWNER);
         }
     }
 
@@ -173,8 +174,8 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
                             DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL);
                 }
                 final var approveForAllKey = AccountApprovalForAllAllowance.newBuilder()
-                        .tokenNum(tokenId.tokenNum())
-                        .spenderNum(spender.accountNumOrThrow())
+                        .tokenId(tokenId)
+                        .spenderId(spender)
                         .build();
                 validateTrue(
                         effectiveOwner
@@ -203,13 +204,12 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             final AccountID spender,
             final Token token,
             final ReadableTokenRelationStore tokenRelStore) {
-        final var ownerId =
-                AccountID.newBuilder().accountNum(owner.accountNumber()).build();
-        final var tokenId = TokenID.newBuilder().tokenNum(token.tokenNumber()).build();
+        final var ownerId = owner.accountIdOrThrow();
+        final var tokenId = token.tokenIdOrThrow();
         // ONLY reject self-approval for NFT's; else allow to match OZ ERC-20
         validateFalse(
                 !token.tokenType().equals(TokenType.FUNGIBLE_COMMON)
-                        && owner.accountNumber() == spender.accountNumOrThrow(),
+                        && owner.accountId().equals(spender),
                 SPENDER_ACCOUNT_SAME_AS_OWNER);
         final var relation = tokenRelStore.get(ownerId, tokenId);
         validateTrue(relation.isPresent(), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);

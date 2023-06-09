@@ -122,15 +122,13 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         accountStore.put(accountCreated);
 
         // set newly created account number in the record builder
-        final var createdAccountNum = accountCreated.accountNumber();
-        final var createdAccountID =
-                AccountID.newBuilder().accountNum(createdAccountNum).build();
+        final var createdAccountId = accountCreated.accountId();
         final var recordBuilder = handleContext.recordBuilder(CryptoCreateRecordBuilder.class);
-        recordBuilder.accountID(createdAccountID);
+        recordBuilder.accountID(createdAccountId);
 
         // put if any new alias is associated with the account into account store
         if (op.alias() != Bytes.EMPTY) {
-            accountStore.putAlias(op.alias().toString(), createdAccountNum);
+            accountStore.putAlias(op.alias().toString(), createdAccountId);
         }
     }
 
@@ -213,7 +211,8 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
             builder.stakedNumber(stakeNumber);
         }
         // set the new account number
-        builder.accountNumber(handleContext.newEntityNum());
+        builder.accountId(
+                AccountID.newBuilder().accountNum(handleContext.newEntityNum()).build());
         return builder.build();
     }
 

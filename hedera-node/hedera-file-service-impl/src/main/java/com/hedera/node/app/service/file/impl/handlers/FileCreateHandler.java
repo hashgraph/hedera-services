@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+import static com.hedera.node.app.spi.validation.ExpiryMeta.NO_AUTO_RENEW_ACCOUNT;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
@@ -97,9 +98,7 @@ public class FileCreateHandler implements TransactionHandler {
                 expiry,
                 NA,
                 // Shard and realm will be ignored if num is NA
-                NA,
-                NA,
-                NA);
+                NO_AUTO_RENEW_ACCOUNT);
 
         try {
             final var effectiveExpiryMeta =

@@ -109,8 +109,8 @@ class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void validatesOwner() {
-        assertThat(isValidOwner(nftSl1, spenderId.accountNum(), fungibleToken)).isFalse();
-        assertThat(isValidOwner(nftSl1, ownerId.accountNum(), nonFungibleToken)).isTrue();
+        assertThat(isValidOwner(nftSl1, spenderId, fungibleToken)).isFalse();
+        assertThat(isValidOwner(nftSl1, ownerId, nonFungibleToken)).isTrue();
     }
 
     @Test

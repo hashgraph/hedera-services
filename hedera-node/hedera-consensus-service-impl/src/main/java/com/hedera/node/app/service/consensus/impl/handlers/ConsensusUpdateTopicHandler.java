@@ -20,11 +20,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOU
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
+import static com.hedera.node.app.spi.validation.ExpiryMeta.NO_AUTO_RENEW_ACCOUNT;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TopicID;
@@ -157,7 +159,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, topic);
         builder.expiry(resolvedExpiryMeta.expiry());
         builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
-        builder.autoRenewAccountNumber(resolvedExpiryMeta.autoRenewNum());
+        builder.autoRenewAccountNumber(resolvedExpiryMeta.autoRenewId().accountNum());
     }
 
     private void validateMaybeNewAttributes(
@@ -181,14 +183,14 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
             @NonNull final Topic topic) {
-        final var currentMeta = new ExpiryMeta(topic.expiry(), topic.autoRenewPeriod(), topic.autoRenewAccountNumber());
+        final var currentMeta = new ExpiryMeta(
+                topic.expiry(),
+                topic.autoRenewPeriod(),
+                AccountID.newBuilder()
+                        .accountNum(topic.autoRenewAccountNumber())
+                        .build());
         if (updatesExpiryMeta(op)) {
-            final var updateMeta = new ExpiryMeta(
-                    effExpiryOf(op),
-                    effAutoRenewPeriodOf(op),
-                    effAutoRenewShardOf(op),
-                    effAutoRenewRealmOf(op),
-                    effAutoRenewNumOf(op));
+            final var updateMeta = new ExpiryMeta(effExpiryOf(op), effAutoRenewPeriodOf(op), effAutoRenewNumOf(op));
             return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);
         } else {
             return currentMeta;
@@ -203,16 +205,8 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         return op.hasAutoRenewPeriod() ? op.autoRenewPeriodOrThrow().seconds() : NA;
     }
 
-    private long effAutoRenewShardOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
-        return op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow().shardNum() : NA;
-    }
-
-    private long effAutoRenewRealmOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
-        return op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow().realmNum() : NA;
-    }
-
-    private long effAutoRenewNumOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
-        return op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow().accountNumOrElse(NA) : NA;
+    private AccountID effAutoRenewNumOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
+        return op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow() : NO_AUTO_RENEW_ACCOUNT;
     }
 
     private boolean updatesExpiryMeta(@NonNull final ConsensusUpdateTopicTransactionBody op) {

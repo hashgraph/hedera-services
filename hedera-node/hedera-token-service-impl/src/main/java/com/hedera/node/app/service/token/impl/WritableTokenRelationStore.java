@@ -20,8 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -38,7 +38,7 @@ import java.util.Set;
  */
 public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
     /** The underlying data storage class that holds the token data. */
-    private final WritableKVState<EntityNumPair, TokenRelation> tokenRelState;
+    private final WritableKVState<EntityIDPair, TokenRelation> tokenRelState;
 
     /**
      * Create a new {@link WritableTokenRelationStore} instance.
@@ -58,7 +58,10 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
     public void put(@NonNull final TokenRelation tokenRelation) {
         requireNonNull(tokenRelState)
                 .put(
-                        EntityNumPair.fromLongs(tokenRelation.accountNumber(), tokenRelation.tokenNumber()),
+                        EntityIDPair.newBuilder()
+                                .tokenId(tokenRelation.tokenId())
+                                .accountId(tokenRelation.accountId())
+                                .build(),
                         Objects.requireNonNull(tokenRelation));
     }
 
@@ -77,14 +80,17 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
         if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return Optional.empty();
 
         final var token = Objects.requireNonNull(tokenRelState)
-                .getForModify(EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum()));
+                .getForModify(EntityIDPair.newBuilder()
+                        .tokenId(tokenId)
+                        .accountId(accountId)
+                        .build());
         return Optional.ofNullable(token);
     }
 
     /**
      * @return the set of token relations modified in existing state
      */
-    public Set<EntityNumPair> modifiedTokens() {
+    public Set<EntityIDPair> modifiedTokens() {
         return tokenRelState.modifiedKeys();
     }
 }

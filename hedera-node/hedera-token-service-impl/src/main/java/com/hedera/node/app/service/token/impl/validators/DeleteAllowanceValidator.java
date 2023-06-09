@@ -99,11 +99,7 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
 
             final var effectiveOwner = getEffectiveOwner(ownerId, payerAccount, accountStore);
 
-            final var relation = tokenRelStore.get(
-                    AccountID.newBuilder()
-                            .accountNum(effectiveOwner.accountNumber())
-                            .build(),
-                    TokenID.newBuilder().tokenNum(token.tokenNumber()).build());
+            final var relation = tokenRelStore.get(effectiveOwner.accountId(), token.tokenId());
             validateTrue(relation.isPresent(), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
             validateDeleteSerialNums(serialNums, tokenId, nftStore);

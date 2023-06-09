@@ -89,7 +89,7 @@ public class HapiUtils {
      */
     public static boolean isHollow(@NonNull final Account account) {
         requireNonNull(account);
-        return (account.accountNumber() > 1000
+        return (account.accountId().accountNum() > 1000
                 && account.keyOrElse(EMPTY_KEY_LIST).equals(EMPTY_KEY_LIST)
                 && account.alias() != null
                 && account.alias().length() == EVM_ADDRESS_ALIAS_LENGTH);

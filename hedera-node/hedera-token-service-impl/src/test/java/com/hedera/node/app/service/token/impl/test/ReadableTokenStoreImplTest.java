@@ -83,7 +83,7 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
         assertEquals(feeScheduleKey, meta.feeScheduleKey());
         assertEquals(pauseKey, meta.pauseKey());
         assertTrue(meta.hasRoyaltyWithFallback());
-        assertEquals(treasury.accountNum(), meta.treasuryNum());
+        assertEquals(treasury.accountNum(), meta.treasuryID());
     }
 
     @Test
@@ -104,7 +104,7 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
         final var meta = subject.getTokenMeta(tokenId);
 
         assertTrue(meta.hasRoyaltyWithFallback());
-        assertSame(treasury.accountNum(), meta.treasuryNum());
+        assertSame(treasury.accountNum(), meta.treasuryID());
     }
 
     @Test
@@ -118,6 +118,6 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
         final var meta = subject.getTokenMeta(tokenId);
 
         assertFalse(meta.hasRoyaltyWithFallback());
-        assertSame(treasury.accountNum(), meta.treasuryNum());
+        assertSame(treasury.accountNum(), meta.treasuryID());
     }
 }

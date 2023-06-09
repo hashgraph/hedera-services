@@ -189,7 +189,7 @@ public class FakePreHandleContext implements PreHandleContext {
         requireNonNull(hollowAccount);
         if (!isHollow(hollowAccount)) {
             throw new IllegalArgumentException(
-                    "Account %d is not a hollow account".formatted(hollowAccount.accountNumber()));
+                    "Account %d is not a hollow account".formatted(hollowAccount.accountId()));
         }
         optionalHollowAccounts.add(hollowAccount);
         return this;
@@ -350,7 +350,7 @@ public class FakePreHandleContext implements PreHandleContext {
     public PreHandleContext requireSignatureForHollowAccount(@NonNull final Account hollowAccount) {
         requireNonNull(hollowAccount);
         if (!isHollow(hollowAccount)) {
-            throw new IllegalArgumentException("Account " + hollowAccount.accountNumber() + " is not a hollow account");
+            throw new IllegalArgumentException("Account " + hollowAccount.accountId() + " is not a hollow account");
         }
 
         requiredHollowAccounts.add(hollowAccount);

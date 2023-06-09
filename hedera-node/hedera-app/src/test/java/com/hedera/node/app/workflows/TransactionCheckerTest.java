@@ -99,7 +99,7 @@ final class TransactionCheckerTest extends AppTestBase {
 
     private TransactionID.Builder txIdBuilder() {
         return TransactionID.newBuilder()
-                .accountID(asAccount("0.0.1024"))
+                .accountID(AccountID.newBuilder().accountNum(1024).build())
                 .transactionValidStart(asTimestamp(Instant.now()));
     }
 

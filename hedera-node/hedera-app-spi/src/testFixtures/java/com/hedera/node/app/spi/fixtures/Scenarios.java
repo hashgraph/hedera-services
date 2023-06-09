@@ -270,7 +270,7 @@ public interface Scenarios extends TransactionFactory {
             0L,
             AccountID.newBuilder().accountNum(3L).build(),
             Account.newBuilder()
-                    .accountNumber(3L)
+                    .accountId(TransactionFactory.asAccount("0.0.3"))
                     .key(FAKE_ECDSA_KEY_INFOS[0].publicKey())
                     .declineReward(true)
                     .build(),
@@ -280,7 +280,7 @@ public interface Scenarios extends TransactionFactory {
             0L,
             AccountID.newBuilder().accountNum(4L).build(),
             Account.newBuilder()
-                    .accountNumber(4L)
+                    .accountId(TransactionFactory.asAccount("0.0.4"))
                     .key(FAKE_ED25519_KEY_INFOS[0].publicKey())
                     .declineReward(true)
                     .build(),
@@ -288,13 +288,15 @@ public interface Scenarios extends TransactionFactory {
 
     TestUser STAKING_REWARD_ACCOUNT = new TestUser(
             AccountID.newBuilder().accountNum(800L).build(),
-            Account.newBuilder().accountNumber(800L).build(),
+            Account.newBuilder()
+                    .accountId(TransactionFactory.asAccount("0.0.800"))
+                    .build(),
             null);
 
     TestUser ALICE = new TestUser(
             AccountID.newBuilder().accountNum(1002L).build(),
             Account.newBuilder()
-                    .accountNumber(1002L)
+                    .accountId(TransactionFactory.asAccount("0.0.1002"))
                     .key(FAKE_ECDSA_KEY_INFOS[2].publicKey())
                     .build(),
             FAKE_ECDSA_KEY_INFOS[2]);
@@ -302,7 +304,7 @@ public interface Scenarios extends TransactionFactory {
     TestUser BOB = new TestUser(
             AccountID.newBuilder().accountNum(1003L).build(),
             Account.newBuilder()
-                    .accountNumber(1003L)
+                    .accountId(TransactionFactory.asAccount("0.0.1003"))
                     .key(FAKE_ED25519_KEY_INFOS[1].publicKey())
                     .build(),
             FAKE_ED25519_KEY_INFOS[1]);
@@ -310,7 +312,7 @@ public interface Scenarios extends TransactionFactory {
     TestUser CAROL = new TestUser(
             AccountID.newBuilder().accountNum(1004L).build(),
             Account.newBuilder()
-                    .accountNumber(1004L)
+                    .accountId(TransactionFactory.asAccount("0.0.1004"))
                     .key(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].publicKey())
                     .alias(hexBytes("67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69"))
                     .build(),
@@ -319,7 +321,7 @@ public interface Scenarios extends TransactionFactory {
     TestUser ERIN = new TestUser(
             AccountID.newBuilder().accountNum(1006L).build(),
             Account.newBuilder()
-                    .accountNumber(1006L)
+                    .accountId(TransactionFactory.asAccount("0.0.1006"))
                     .key(Key.newBuilder().keyList(KeyList.DEFAULT).build())
                     .alias(hexBytes("0b75f0b70076fab3f18f94700ecaf3b00fe528e7"))
                     .build(),

@@ -87,7 +87,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
                 token.pauseKeyOrElse(null),
                 token.symbol(),
                 hasRoyaltyWithFallback,
-                token.treasuryAccountNumber(), // remove this and make it a long
+                token.treasuryAccountId(), // remove this and make it a long
                 token.decimals());
     }
 

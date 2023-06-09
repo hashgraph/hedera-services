@@ -105,28 +105,26 @@ public class TokenAssociateToAccountHandler extends TokenHandlerHelper implement
             // Link each of the new token IDs together in a doubly-linked list way by setting each
             // token relation's previous and next token IDs.
 
-            // Compute the previous and next token IDs. Unfortunately `TokenRelation` doesn't
-            // allow for null values, so a value of '0' will have to indicate a null pointer to
-            // the previous or next token (since no token number 0 can exist)
-            long prevTokenId = 0;
-            long nextTokenId = 0;
+            // Compute the previous and next token IDs.
+            TokenID prevTokenId = null;
+            TokenID nextTokenId = null;
             if (i - 1 >= 0) { // if there is a previous token
                 prevTokenId = Optional.ofNullable(tokens.get(i - 1))
-                        .map(Token::tokenNumber)
-                        .orElse(0L);
+                        .map(Token::tokenId)
+                        .orElse(null);
             }
             if (i + 1 < tokens.size()) { // if there is a next token
                 nextTokenId = Optional.ofNullable(tokens.get(i + 1))
-                        .map(Token::tokenNumber)
-                        .orElse(0L);
+                        .map(Token::tokenId)
+                        .orElse(null);
             }
 
             // Create the new token relation
             final var isFrozen = token.hasFreezeKey() && token.accountsFrozenByDefault();
             final var kycGranted = !token.hasKycKey();
             final var newTokenRel = new TokenRelation(
-                    token.tokenNumber(),
-                    account.accountNumber(),
+                    token.tokenId(),
+                    account.accountId(),
                     0,
                     isFrozen,
                     kycGranted,
@@ -139,22 +137,17 @@ public class TokenAssociateToAccountHandler extends TokenHandlerHelper implement
 
         // Now all the NEW token relations are linked together, but they are not yet linked to the account. First,
         // compute where the account's current head token number should go in the linked list of tokens
-        final var currentHeadTokenNum = account.headTokenNumber();
+        final var currentHeadTokenId = account.headTokenId();
         // NOTE: if currentHeadTokenNum is less than 1, it means the account isn't associated with any tokens yet, so
         // we'll just set the head to the first token, i.e. the first token ID list from the transaction (since the new
         // tokenRels are all linked, and in the order of the token IDs as they appeared in the original list)
-        if (isValidTokenNum(currentHeadTokenNum)) {
+        if (isValidTokenNum(currentHeadTokenId.tokenNum())) {
             // The account is already associated with some tokens, so we need to insert the new
             // tokenRels at the beginning of the list of existing token numbers first. We start by
             // retrieving the token rel object with the currentHeadTokenNum at the head of the
             // account
-            final var headTokenRel = tokenRelStore
-                    .get(
-                            AccountID.newBuilder()
-                                    .accountNum(account.accountNumber())
-                                    .build(),
-                            TokenID.newBuilder().tokenNum(currentHeadTokenNum).build())
-                    .orElse(null);
+            final var headTokenRel =
+                    tokenRelStore.get(account.accountId(), currentHeadTokenId).orElse(null);
             if (headTokenRel != null) {
                 // Recreate the current head token's tokenRel, but with its previous pointer set to
                 // the last of the new tokenRels. This links the new token rels to the rest of the
@@ -162,13 +155,13 @@ public class TokenAssociateToAccountHandler extends TokenHandlerHelper implement
                 final var lastOfNewTokenRels = newTokenRels.remove(newTokenRels.size() - 1);
                 final var headTokenAsNonHeadTokenRel = headTokenRel
                         .copyBuilder()
-                        .previousToken(lastOfNewTokenRels.tokenNumber())
+                        .previousToken(lastOfNewTokenRels.tokenId())
                         .build(); // the old head token rel is no longer the head
 
                 // Also connect the last of the new tokenRels to the old head token rel
                 newTokenRels.add(lastOfNewTokenRels
                         .copyBuilder()
-                        .nextToken(headTokenAsNonHeadTokenRel.tokenNumber())
+                        .nextToken(headTokenAsNonHeadTokenRel.tokenId())
                         .build());
                 tokenRelStore.put(headTokenAsNonHeadTokenRel);
             } else {
@@ -176,8 +169,8 @@ public class TokenAssociateToAccountHandler extends TokenHandlerHelper implement
                 // associations
                 log.error(
                         "Unable to get head tokenRel for account {}, token {}! Linked-list relations are likely in a bad state",
-                        account.accountNumber(),
-                        currentHeadTokenNum);
+                        account.accountId(),
+                        currentHeadTokenId);
             }
         }
 
@@ -186,7 +179,7 @@ public class TokenAssociateToAccountHandler extends TokenHandlerHelper implement
         final var firstOfNewTokenRels = newTokenRels.get(0);
         final var updatedAcct = account.copyBuilder()
                 // replace the head token number with the first token number of the new tokenRels
-                .headTokenNumber(firstOfNewTokenRels.tokenNumber())
+                .headTokenId(firstOfNewTokenRels.tokenId())
                 // and also update the account's total number of token associations
                 .numberAssociations(account.numberAssociations() + newTokenRels.size())
                 .build();

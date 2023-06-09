@@ -64,19 +64,18 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public void put(@NonNull final Account account) {
         Objects.requireNonNull(account);
-        accountState.put(
-                AccountID.newBuilder().accountNum(account.accountNumber()).build(), Objects.requireNonNull(account));
+        accountState.put(account.accountIdOrThrow(), Objects.requireNonNull(account));
     }
 
     /**
      * Persists a new alias linked to the account persisted to state
      *
      * @param alias - the alias to be added to modifications in state.
-     * @param accountNum - the account number to be added to modifications in state.
+     * @param accountId - the account id to be added to modifications in state.
      */
-    public void putAlias(@NonNull final String alias, final long accountNum) {
+    public void putAlias(@NonNull final String alias, final AccountID accountId) {
         Objects.requireNonNull(alias);
-        aliases.put(alias, AccountID.newBuilder().accountNum(accountNum).build());
+        aliases.put(alias, accountId);
     }
 
     /**

@@ -46,7 +46,6 @@ import com.hedera.hapi.node.token.GrantedNftAllowance;
 import com.hedera.hapi.node.token.GrantedTokenAllowance;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUtil;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -165,8 +164,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             return Optional.empty();
         } else {
             final var info = AccountDetails.newBuilder();
-            info.accountId(
-                    AccountID.newBuilder().accountNum(account.accountNumber()).build());
+            info.accountId(account.accountId());
             info.contractAccountId(NetworkAdminServiceUtil.asHexedEvmAddress(accountID));
             info.deleted(account.deleted());
             info.key(account.key());
@@ -207,24 +205,17 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             ReadableTokenStore readableTokenStore,
             ReadableTokenRelationStore tokenRelationStore) {
         final var tokenRelationshipList = new ArrayList<TokenRelationship>();
-        var tokenNum = account.headTokenNumber();
+        var tokenID = account.headTokenId();
         int count = 0;
 
-        while (tokenNum != 0 && count <= maxRelsPerInfoQuery) {
-            final Optional<TokenRelation> optionalTokenRelation = tokenRelationStore.get(
-                    AccountID.newBuilder().accountNum(account.accountNumber()).build(),
-                    TokenID.newBuilder().tokenNum(tokenNum).build());
+        while (!tokenID.equals(TokenID.DEFAULT) && count <= maxRelsPerInfoQuery) {
+            final Optional<TokenRelation> optionalTokenRelation = tokenRelationStore.get(account.accountId(), tokenID);
             if (optionalTokenRelation.isPresent()) {
-                final var tokenId = TokenID.newBuilder()
-                        .shardNum(StaticProperties.getShard())
-                        .realmNum(StaticProperties.getRealm())
-                        .tokenNum(tokenNum)
-                        .build();
-                final TokenMetadata token = readableTokenStore.getTokenMeta(tokenId);
+                final TokenMetadata token = readableTokenStore.getTokenMeta(tokenID);
                 final var tokenRelation = optionalTokenRelation.get();
                 if (token != null) {
                     final TokenRelationship tokenRelationship = TokenRelationship.newBuilder()
-                            .tokenId(tokenId)
+                            .tokenId(tokenID)
                             .balance(tokenRelation.balance())
                             .decimals(token.decimals())
                             .symbol(token.symbol())
@@ -238,7 +229,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
                             .build();
                     tokenRelationshipList.add(tokenRelationship);
                 }
-                tokenNum = tokenRelation.nextToken();
+                tokenID = tokenRelation.nextToken();
             } else {
                 break;
             }
@@ -255,12 +246,10 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
     private static List<GrantedNftAllowance> getNftGrantedAllowancesList(final Account account) {
         if (!account.approveForAllNftAllowances().isEmpty()) {
             List<GrantedNftAllowance> nftAllowances = new ArrayList<>();
-            for (var a : account.approveForAllNftAllowances()) {
+            for (var allowance : account.approveForAllNftAllowances()) {
                 final var approveForAllNftsAllowance = GrantedNftAllowance.newBuilder();
-                approveForAllNftsAllowance.tokenId(
-                        TokenID.newBuilder().tokenNum(a.tokenNum()).build());
-                approveForAllNftsAllowance.spender(
-                        AccountID.newBuilder().accountNum(a.spenderNum()).build());
+                approveForAllNftsAllowance.tokenId(allowance.tokenId());
+                approveForAllNftsAllowance.spender(allowance.spenderId()).build();
                 nftAllowances.add(approveForAllNftsAllowance.build());
             }
             return nftAllowances;
@@ -277,12 +266,10 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         if (!account.tokenAllowances().isEmpty()) {
             List<GrantedTokenAllowance> tokenAllowances = new ArrayList<>();
             final var tokenAllowance = GrantedTokenAllowance.newBuilder();
-            for (var a : account.tokenAllowances()) {
-                tokenAllowance.tokenId(
-                        TokenID.newBuilder().tokenNum(a.tokenNum()).build());
-                tokenAllowance.spender(
-                        AccountID.newBuilder().accountNum(a.spenderNum()).build());
-                tokenAllowance.amount(a.amount());
+            for (var allowance : account.tokenAllowances()) {
+                tokenAllowance.tokenId(allowance.tokenId());
+                tokenAllowance.spender(allowance.spenderId());
+                tokenAllowance.amount(allowance.amount());
                 tokenAllowances.add(tokenAllowance.build());
             }
             return tokenAllowances;
@@ -299,10 +286,9 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         if (!account.cryptoAllowances().isEmpty()) {
             List<GrantedCryptoAllowance> cryptoAllowances = new ArrayList<>();
             final var cryptoAllowance = GrantedCryptoAllowance.newBuilder();
-            for (var a : account.cryptoAllowances()) {
-                cryptoAllowance.spender(
-                        AccountID.newBuilder().accountNum(a.spenderNum()).build());
-                cryptoAllowance.amount(a.amount());
+            for (var allowance : account.cryptoAllowances()) {
+                cryptoAllowance.spender(allowance.spenderId());
+                cryptoAllowance.amount(allowance.amount());
                 cryptoAllowances.add(cryptoAllowance.build());
             }
             return cryptoAllowances;
