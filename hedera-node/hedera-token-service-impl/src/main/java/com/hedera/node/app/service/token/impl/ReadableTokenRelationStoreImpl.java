@@ -27,7 +27,6 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 
 /**
  * Provides read-only methods for getting underlying data for working with TokenRelations.
@@ -58,8 +57,7 @@ public class ReadableTokenRelationStoreImpl implements ReadableTokenRelationStor
 
         if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return null;
 
-        return Objects.requireNonNull(readableTokenRelState)
-                .get(EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum()));
+        return readableTokenRelState.get(EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum()));
     }
 
     /**

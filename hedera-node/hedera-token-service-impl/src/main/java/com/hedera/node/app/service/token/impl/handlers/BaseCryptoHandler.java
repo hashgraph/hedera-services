@@ -52,7 +52,8 @@ public class BaseCryptoHandler {
         }
     }
 
-    public static AccountID asAccount(long num) {
+    @NonNull
+    public static AccountID asAccount(final long num) {
         return AccountID.newBuilder().accountNum(num).build();
     }
 }

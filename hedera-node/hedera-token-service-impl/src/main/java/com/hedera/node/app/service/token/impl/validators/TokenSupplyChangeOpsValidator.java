@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.TokensConfig;
@@ -30,11 +31,11 @@ import javax.inject.Inject;
  * This class contains validations to be done in handle for Token Mint and Token Burn operations
  */
 public class TokenSupplyChangeOpsValidator {
-    private ConfigProvider configProvider;
+    private final ConfigProvider configProvider;
 
     @Inject
     public TokenSupplyChangeOpsValidator(@NonNull final ConfigProvider configProvider) {
-        this.configProvider = configProvider;
+        this.configProvider = requireNonNull(configProvider);
     }
 
     /**

@@ -375,8 +375,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             // Since the account had no positive balances, its number of positive balances should still be zero
             Assertions.assertThat(savedAcct.numberPositiveBalances()).isZero();
             // Verify that the token rel was removed
-            final var supposedlyDeletedTokenRel =
-                    writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID).orElse(null);
+            final var supposedlyDeletedTokenRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID);
             Assertions.assertThat(supposedlyDeletedTokenRel).isNull();
         }
 
@@ -420,8 +419,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             // Since the account had no positive balances, its number of positive balances should still be zero
             Assertions.assertThat(savedAcct.numberPositiveBalances()).isZero();
             // Verify that the token rel was removed
-            final var supposedlyDeletedTokenRel =
-                    writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID).orElse(null);
+            final var supposedlyDeletedTokenRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID);
             Assertions.assertThat(supposedlyDeletedTokenRel).isNull();
         }
 
@@ -498,13 +496,11 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             Assertions.assertThat(treasuryAcct.headTokenNumber()).isEqualTo(TOKEN_555_ID.tokenNum());
 
             // Verify that the token rel with account 1339 was removed
-            final var supposedlyDeletedTokenRel =
-                    writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID).orElse(null);
+            final var supposedlyDeletedTokenRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID);
             Assertions.assertThat(supposedlyDeletedTokenRel).isNull();
 
             // Verify that the token rel with the treasury account was updated
-            final var treasuryTokenRel =
-                    writableTokenRelStore.get(ACCOUNT_2020, TOKEN_555_ID).orElse(null);
+            final var treasuryTokenRel = writableTokenRelStore.get(ACCOUNT_2020, TOKEN_555_ID);
             Assertions.assertThat(treasuryTokenRel).isNotNull();
             // Verify that the treasury balance is now equal to its supply
             Assertions.assertThat(treasuryTokenRel.balance()).isEqualTo(totalSupply);
@@ -583,14 +579,11 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             Assertions.assertThat(savedAcct.numberPositiveBalances()).isZero();
 
             // Verify that the token rels were removed
-            final var token444Rel =
-                    writableTokenRelStore.get(ACCOUNT_1339, token444Id).orElse(null);
+            final var token444Rel = writableTokenRelStore.get(ACCOUNT_1339, token444Id);
             Assertions.assertThat(token444Rel).isNull();
-            final var token555Rel =
-                    writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID).orElse(null);
+            final var token555Rel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID);
             Assertions.assertThat(token555Rel).isNull();
-            final var token666Rel =
-                    writableTokenRelStore.get(ACCOUNT_1339, TOKEN_666_ID).orElse(null);
+            final var token666Rel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_666_ID);
             Assertions.assertThat(token666Rel).isNull();
         }
 

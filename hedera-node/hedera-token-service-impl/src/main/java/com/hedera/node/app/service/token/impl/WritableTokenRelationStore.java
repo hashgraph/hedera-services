@@ -56,10 +56,9 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
      * @param tokenRelation - the tokenRelation to be persisted
      */
     public void put(@NonNull final TokenRelation tokenRelation) {
-        requireNonNull(tokenRelState)
-                .put(
-                        EntityNumPair.fromLongs(tokenRelation.accountNumber(), tokenRelation.tokenNumber()),
-                        Objects.requireNonNull(tokenRelation));
+        tokenRelState.put(
+                EntityNumPair.fromLongs(tokenRelation.accountNumber(), tokenRelation.tokenNumber()),
+                Objects.requireNonNull(tokenRelation));
     }
 
     /**
@@ -68,8 +67,7 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
      * @param tokenRelation the {@code TokenRelation} to be removed
      */
     public void remove(@NonNull final TokenRelation tokenRelation) {
-        requireNonNull(tokenRelState)
-                .remove(EntityNumPair.fromLongs(tokenRelation.accountNumber(), tokenRelation.tokenNumber()));
+        tokenRelState.remove(EntityNumPair.fromLongs(tokenRelation.accountNumber(), tokenRelation.tokenNumber()));
     }
 
     /**
@@ -86,8 +84,7 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
 
         if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return null;
 
-        return Objects.requireNonNull(tokenRelState)
-                .getForModify(EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum()));
+        return tokenRelState.getForModify(EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum()));
     }
 
     /**
