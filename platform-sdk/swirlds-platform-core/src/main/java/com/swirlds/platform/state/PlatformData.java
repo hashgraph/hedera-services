@@ -25,18 +25,19 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.utility.NonCryptographicHashing;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.RoundCalculationUtils;
 import com.swirlds.platform.internal.EventImpl;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * A collection of miscellaneous platform data.
@@ -109,12 +110,13 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     private Hash nextEpochHash;
 
-    // TODO add snapshot
-
     /**
      * The number of non-ancient rounds.
      */
     private int roundsNonAncient;
+
+    /** A snapshot of the consensus state at the end of the round, used for restart/reconnect */
+    private ConsensusSnapshot snapshot;
 
     public PlatformData() {}
 
@@ -178,6 +180,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
         out.writeSerializable(creationSoftwareVersion, true);
         out.writeSerializable(epochHash, false);
         out.writeInt(roundsNonAncient);
+        out.writeSerializable(snapshot, false);
     }
 
     /**
@@ -223,6 +226,10 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
                     .roundsNonAncient();
         } else {
             roundsNonAncient = in.readInt();
+        }
+
+        if (version >= ClassVersion.CONSENSUS_SNAPSHOT) {
+            snapshot = in.readSerializable(false, ConsensusSnapshot::new);
         }
     }
 
@@ -472,6 +479,22 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     public long getMinimumGenerationNonAncient() {
         return RoundCalculationUtils.getMinGenNonAncient(roundsNonAncient, round, this::getMinGen);
+    }
+
+    /**
+     * @return the consensus snapshot for this round
+     */
+    public ConsensusSnapshot getSnapshot() {
+        return snapshot;
+    }
+
+    /**
+     * @param snapshot the consensus snapshot for this round
+     * @return this object
+     */
+    public PlatformData setSnapshot(final ConsensusSnapshot snapshot) {
+        this.snapshot = snapshot;
+        return this;
     }
 
     /**

@@ -433,8 +433,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 .setHashEventsCons(runningHash)
                 .setConsensusTimestamp(round.getLastEvent().getLastTransTime())
                 .setCreationSoftwareVersion(softwareVersion)
-                .setRoundsNonAncient(roundsNonAncient);
-        // round.getSnapshot(),
+                .setRoundsNonAncient(roundsNonAncient)
+                .setSnapshot(round.getSnapshot());
     }
 
     private void createSignedState() throws InterruptedException {
