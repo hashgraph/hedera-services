@@ -5,7 +5,6 @@ module com.hedera.node.app.service.mono.test.fixtures {
     exports com.hedera.test.mocks;
     exports com.hedera.test.factories.scenarios;
 
-    requires transitive com.hedera.hashgraph.protobuf.java.api;
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;

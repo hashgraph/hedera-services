@@ -80,6 +80,14 @@ public class DefaultIntegerAccumulator extends DefaultMetric implements IntegerA
      * {@inheritDoc}
      */
     @Override
+    public void reset() {
+        container.set(initializer.getAsInt());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String toString() {
         return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                 .appendSuper(super.toString())
