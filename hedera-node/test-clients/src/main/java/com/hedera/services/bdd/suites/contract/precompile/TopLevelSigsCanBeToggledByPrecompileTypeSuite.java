@@ -58,8 +58,6 @@ import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompil
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.ECDSA_KEY;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.ED25519KEY;
 import static com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite.DELEGATE_KEY;
-import static com.hedera.services.bdd.suites.contract.precompile.DeleteTokenPrecompileSuite.DELETE_TOKEN_CONTRACT;
-import static com.hedera.services.bdd.suites.contract.precompile.DeleteTokenPrecompileSuite.TOKEN_DELETE_FUNCTION;
 import static com.hedera.services.bdd.suites.contract.precompile.FreezeUnfreezeTokenPrecompileSuite.FREEZE_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.precompile.FreezeUnfreezeTokenPrecompileSuite.TOKEN_FREEZE_FUNC;
 import static com.hedera.services.bdd.suites.contract.precompile.FreezeUnfreezeTokenPrecompileSuite.TOKEN_UNFREEZE_FUNC;
@@ -105,6 +103,8 @@ import org.apache.logging.log4j.Logger;
 public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TopLevelSigsCanBeToggledByPrecompileTypeSuite.class);
 
+    public static final String DELETE_TOKEN_CONTRACT = "DeleteTokenContract";
+    public static final String TOKEN_DELETE_FUNCTION = "tokenDelete";
     public static final String WIPE_CONTRACT = "WipeTokenAccount";
     public static final String ADMIN_ACCOUNT = "admin";
     private static final String ACCOUNT = "anybody";

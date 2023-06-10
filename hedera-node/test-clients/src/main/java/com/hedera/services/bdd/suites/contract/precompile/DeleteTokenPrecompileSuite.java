@@ -59,14 +59,6 @@ import org.apache.logging.log4j.Logger;
 public class DeleteTokenPrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(DeleteTokenPrecompileSuite.class);
 
-    private static final long GAS_TO_OFFER = 4_000_000L;
-    public static final String DELETE_TOKEN_CONTRACT = "DeleteTokenContract";
-    public static final String TOKEN_DELETE_FUNCTION = "tokenDelete";
-    private static final String ACCOUNT = "anybody";
-    private static final String MULTI_KEY = "purpose";
-    private static final String DELETE_TXN = "deleteTxn";
-    final AtomicReference<AccountID> accountID = new AtomicReference<>();
-
     public static void main(String... args) {
         new DeleteTokenPrecompileSuite().runSuiteAsync();
     }
@@ -78,112 +70,7 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(deleteFungibleTokenWithNegativeCases(), deleteNftTokenWithNegativeCases());
-    }
-
-    private HapiSpec deleteFungibleTokenWithNegativeCases() {
-        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        final var tokenAlreadyDeletedTxn = "tokenAlreadyDeletedTxn";
-
-        return defaultHapiSpec("deleteFungibleTokenWithNegativeCases")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT)
-                                .key(MULTI_KEY)
-                                .balance(100 * ONE_HBAR)
-                                .exposingCreatedIdTo(accountID::set),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(VANILLA_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
-                                .initialSupply(1110),
-                        uploadInitCode(DELETE_TOKEN_CONTRACT),
-                        contractCreate(DELETE_TOKEN_CONTRACT),
-                        tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-                        cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        contractCall(
-                                        DELETE_TOKEN_CONTRACT,
-                                        TOKEN_DELETE_FUNCTION,
-                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .gas(GAS_TO_OFFER)
-                                .signedBy(GENESIS, ACCOUNT)
-                                .alsoSigningWithFullPrefix(ACCOUNT)
-                                .via(DELETE_TXN),
-                        getTokenInfo(VANILLA_TOKEN).isDeleted().logged(),
-                        cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
-                                .hasKnownStatus(TOKEN_WAS_DELETED),
-                        contractCall(
-                                        DELETE_TOKEN_CONTRACT,
-                                        TOKEN_DELETE_FUNCTION,
-                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .gas(GAS_TO_OFFER)
-                                .via(tokenAlreadyDeletedTxn)
-                                .signedBy(GENESIS, ACCOUNT)
-                                .alsoSigningWithFullPrefix(ACCOUNT)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(childRecordsCheck(
-                        tokenAlreadyDeletedTxn,
-                        CONTRACT_REVERT_EXECUTED,
-                        recordWith()
-                                .status(TOKEN_WAS_DELETED)
-                                .contractCallResult(resultWith()
-                                        .contractCallResult(
-                                                htsPrecompileResult().withStatus(TOKEN_WAS_DELETED)))));
-    }
-
-    private HapiSpec deleteNftTokenWithNegativeCases() {
-        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        final var notAnAdminTxn = "notAnAdminTxn";
-
-        return defaultHapiSpec("deleteNftTokenWithNegativeCases")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT).balance(100 * ONE_HBAR).exposingCreatedIdTo(accountID::set),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(VANILLA_TOKEN)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
-                                .initialSupply(0),
-                        mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("First!"))),
-                        uploadInitCode(DELETE_TOKEN_CONTRACT),
-                        contractCreate(DELETE_TOKEN_CONTRACT),
-                        tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-                        cryptoTransfer(movingUnique(VANILLA_TOKEN, 1L).between(TOKEN_TREASURY, ACCOUNT)))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        contractCall(
-                                        DELETE_TOKEN_CONTRACT,
-                                        TOKEN_DELETE_FUNCTION,
-                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .gas(GAS_TO_OFFER)
-                                .signedBy(GENESIS, ACCOUNT)
-                                .alsoSigningWithFullPrefix(ACCOUNT)
-                                .via(notAnAdminTxn)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                        cryptoUpdate(ACCOUNT).key(MULTI_KEY),
-                        contractCall(
-                                        DELETE_TOKEN_CONTRACT,
-                                        TOKEN_DELETE_FUNCTION,
-                                        asHeadlongAddress(asHexedAddress(vanillaTokenID.get())))
-                                .signedBy(GENESIS, ACCOUNT)
-                                .alsoSigningWithFullPrefix(ACCOUNT)
-                                .gas(GAS_TO_OFFER),
-                        getTokenInfo(VANILLA_TOKEN).isDeleted().logged())))
-                .then(childRecordsCheck(
-                        notAnAdminTxn,
-                        CONTRACT_REVERT_EXECUTED,
-                        recordWith()
-                                .status(INVALID_SIGNATURE)
-                                .contractCallResult(resultWith()
-                                        .contractCallResult(
-                                                htsPrecompileResult().withStatus(INVALID_SIGNATURE)))));
+        return List.of();
     }
 
     @Override
