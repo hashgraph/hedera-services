@@ -29,6 +29,7 @@ import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileV1
 import com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite;
+import com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileV1SecurityModelSuite;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -59,6 +60,7 @@ public class LeakySecurityModelV1Suite extends HapiSuite {
                 new LazyCreateThroughPrecompileV1SecurityModelSuite(),
                 new MixedHTSPrecompileTestsV1SecurityModelSuite(),
                 new PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite(),
+                new TokenInfoHTSV1SecurityModelSuite(),
                 new TokenUpdatePrecompileV1SecurityModelSuite());
     }
 
