@@ -25,7 +25,6 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.*;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
@@ -59,6 +58,7 @@ public class SigningReqsSuite extends HapiSuite {
     private static final String LEGACY_ACTIVATIONS_PROP = "contracts.keys.legacyActivations";
     public static final String AUTO_RENEW = "autoRenew";
     public static final String AR_KEY = "arKey";
+    public static final int GAS_TO_OFFER = 1_000_000;
 
     public static void main(String... args) {
         new SigningReqsSuite().runSuiteAsync();

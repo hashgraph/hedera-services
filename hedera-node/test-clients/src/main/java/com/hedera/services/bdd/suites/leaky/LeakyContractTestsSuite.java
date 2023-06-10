@@ -147,7 +147,6 @@ import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSu
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIG_NAME;
 import static com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileSuite.FIRST_META;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.GAS_TO_OFFER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FUNGIBLE_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.NON_FUNGIBLE_TOKEN;
@@ -242,6 +241,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private static final String TOKEN_TRANSFER_CONTRACT = "TokenTransferContract";
     private static final String TRANSFER_TOKEN_PUBLIC = "transferTokenPublic";
     private static final String HEDERA_ALLOWANCES_IS_ENABLED = "hedera.allowances.isEnabled";
+    public static final int GAS_TO_OFFER = 1_000_000;
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();

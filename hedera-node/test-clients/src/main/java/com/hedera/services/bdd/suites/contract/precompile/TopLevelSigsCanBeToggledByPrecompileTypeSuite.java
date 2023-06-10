@@ -64,7 +64,6 @@ import static com.hedera.services.bdd.suites.contract.precompile.FreezeUnfreezeT
 import static com.hedera.services.bdd.suites.contract.precompile.FreezeUnfreezeTokenPrecompileSuite.TOKEN_FREEZE_FUNC;
 import static com.hedera.services.bdd.suites.contract.precompile.FreezeUnfreezeTokenPrecompileSuite.TOKEN_UNFREEZE_FUNC;
 import static com.hedera.services.bdd.suites.contract.precompile.GrantRevokeKycSuite.GRANT_REVOKE_KYC_CONTRACT;
-import static com.hedera.services.bdd.suites.contract.precompile.GrantRevokeKycSuite.SECOND_ACCOUNT;
 import static com.hedera.services.bdd.suites.contract.precompile.GrantRevokeKycSuite.TOKEN_GRANT_KYC;
 import static com.hedera.services.bdd.suites.contract.precompile.GrantRevokeKycSuite.TOKEN_REVOKE_KYC;
 import static com.hedera.services.bdd.suites.contract.precompile.PauseUnpauseTokenAccountPrecompileSuite.PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME;
@@ -76,16 +75,9 @@ import static com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrec
 import static com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileSuite.TOKEN_UPDATE_AS_KEY;
 import static com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileSuite.TOKEN_UPDATE_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.ADMIN_ACCOUNT;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.GAS_TO_OFFER;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.WIPE_CONTRACT;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.WIPE_FUNGIBLE_TOKEN;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.WIPE_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FREEZE_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.KYC_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.PAUSE_KEY;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
-import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.TOKEN;
@@ -112,6 +104,15 @@ import org.apache.logging.log4j.Logger;
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TopLevelSigsCanBeToggledByPrecompileTypeSuite.class);
+
+    public static final String WIPE_CONTRACT = "WipeTokenAccount";
+    public static final String ADMIN_ACCOUNT = "admin";
+    private static final String ACCOUNT = "anybody";
+    private static final String SECOND_ACCOUNT = "anybodySecond";
+    public static final String WIPE_KEY = "wipeKey";
+    private static final String MULTI_KEY = "purpose";
+    public static final int GAS_TO_OFFER = 1_000_000;
+    public static final String WIPE_FUNGIBLE_TOKEN = "wipeFungibleToken";
 
     public static void main(String... args) {
         new TopLevelSigsCanBeToggledByPrecompileTypeSuite().runSuiteSync();

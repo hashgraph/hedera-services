@@ -33,7 +33,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.GAS_TO_OFFER;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -75,6 +74,7 @@ public class TokenExpiryInfoSuite extends HapiSuite {
     public static final String GET_EXPIRY_INFO_FOR_TOKEN = "getExpiryInfoForToken";
     public static final String UPDATE_EXPIRY_INFO_FOR_TOKEN_AND_READ_LATEST_INFO =
             "updateExpiryInfoForTokenAndReadLatestInfo";
+    public static final int GAS_TO_OFFER = 1_000_000;
 
     public static void main(String... args) {
         new TokenExpiryInfoSuite().runSuiteAsync();
