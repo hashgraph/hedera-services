@@ -72,6 +72,7 @@ repositories {
     maven {
         url = uri("https://oss.sonatype.org/content/repositories/comhederahashgraph-1531")
     }
+    mavenLocal()
 }
 
 // Make sure we use UTF-8 encoding when compiling
