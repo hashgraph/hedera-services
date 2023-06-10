@@ -116,7 +116,7 @@ public class FreezeUnfreezeTokenPrecompileV1SecurityModelSuite extends HapiSuite
                 .given(
                         overridingTwo(
                                 CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                                "ContractCall,CryptoTransfer,TokenAssociateToAccount,TokenCreate,TokenFreeze,TokenUnfreeze",
+                                "ContractCall,CryptoTransfer,TokenAssociateToAccount,TokenCreate,TokenFreezeAccount,TokenUnfreezeAccount",
                                 CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                                 CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(FREEZE_KEY),
@@ -229,7 +229,7 @@ public class FreezeUnfreezeTokenPrecompileV1SecurityModelSuite extends HapiSuite
                 .given(
                         overridingTwo(
                                 CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                                "ContractCall,CryptoTransfer,TokenAssociateToAccount,TokenCreate,TokenFreeze,TokenUnfreeze",
+                                "ContractCall,CryptoTransfer,TokenAssociateToAccount,TokenCreate,TokenFreezeAccount,TokenUnfreezeAccount",
                                 CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                                 CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(FREEZE_KEY),
@@ -319,7 +319,7 @@ public class FreezeUnfreezeTokenPrecompileV1SecurityModelSuite extends HapiSuite
                 .given(
                         overridingTwo(
                                 CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                                "ContractCall,CryptoTransfer,TokenAssociateToAccount,TokenCreate,TokenFreeze",
+                                "ContractCall,CryptoTransfer,TokenAssociateToAccount,TokenCreate,TokenFreezeAccount",
                                 CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                                 CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(FREEZE_KEY),
