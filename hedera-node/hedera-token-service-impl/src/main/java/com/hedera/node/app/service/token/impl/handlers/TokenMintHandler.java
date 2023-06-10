@@ -202,11 +202,9 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         // into the store
         final var copyToken = token.copyBuilder();
         final var copyTreasury = treasuryAccount.copyBuilder();
-
+        // Update Token and treasury
         copyToken.lastUsedSerialNumber(currentSerialNumber);
         copyTreasury.numberOwnedNfts(treasuryAccount.numberOwnedNfts() + metadataCount);
-        copyTreasury.headNftSerialNumber(currentSerialNumber);
-        copyTreasury.headNftId(tokenId.tokenNum());
 
         tokenStore.put(copyToken.build());
         accountStore.put(copyTreasury.build());
@@ -241,10 +239,6 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
                         .nanos(consensusTime.getNano())
                         .build())
                 .metadata(meta)
-                .ownerNextNftId(UniqueTokenId.newBuilder()
-                        .serialNumber(treasuryAccount.headNftId())
-                        .tokenTypeNumber(treasuryAccount.headNftSerialNumber()))
-                .ownerPreviousNftId((UniqueTokenId) null)
                 .build();
     }
 }
