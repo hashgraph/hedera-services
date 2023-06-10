@@ -35,6 +35,7 @@ import com.hedera.services.bdd.suites.contract.precompile.FreezeUnfreezeTokenPre
 import com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite;
+import com.hedera.services.bdd.suites.contract.precompile.SigningReqsV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenExpiryInfoV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileV1SecurityModelSuite;
@@ -77,6 +78,7 @@ public class LeakySecurityModelV1Suite extends HapiSuite {
                 new LazyCreateThroughPrecompileV1SecurityModelSuite(),
                 new MixedHTSPrecompileTestsV1SecurityModelSuite(),
                 new PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite(),
+                new SigningReqsV1SecurityModelSuite(),
                 new TokenAssociationV1SecurityModelSpecs(),
                 new TokenExpiryInfoV1SecurityModelSuite(),
                 new TokenInfoHTSV1SecurityModelSuite(),
