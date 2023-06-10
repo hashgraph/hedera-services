@@ -533,7 +533,7 @@ public class Browser {
                                 .setThreadName("shutdown-hook")
                                 .setRunnable(() -> {
                                     logger.info(STARTUP.getMarker(), "JVM is shutting down.");
-                                    generateThreadDumpFile(getAbsolutePath(Settings.getInstance().getThreadDumpLogDir()), null);
+                                    ThreadDumpGenerator.generateThreadDumpFile(getAbsolutePath(Settings.getInstance().getThreadDumpLogDir()), null);
                                     LogManager.shutdown();
                                 })
                                 .build());
