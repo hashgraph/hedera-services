@@ -22,6 +22,7 @@ import com.hedera.services.bdd.suites.contract.hapi.ContractCreateV1SecurityMode
 import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractHTSV1SecurityModelSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractKeysHTSV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSV1SecurityModelSuite;
@@ -30,6 +31,7 @@ import com.hedera.services.bdd.suites.contract.precompile.FreezeUnfreezeTokenPre
 import com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite;
+import com.hedera.services.bdd.suites.contract.precompile.TokenExpiryInfoV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileV1SecurityModelSuite;
@@ -55,6 +57,7 @@ public class LeakySecurityModelV1Suite extends HapiSuite {
                 new ContractBurnHTSV1SecurityModelSuite(),
                 new ContractCreateV1SecurityModelSuite(),
                 new ContractHTSV1SecurityModelSuite(),
+                new ContractKeysHTSV1SecurityModelSuite(),
                 new ContractMintHTSV1SecurityModelSuite(),
                 new Create2OperationV1SecurityModelSuite(),
                 new CreatePrecompileV1SecurityModelSuite(),
@@ -65,6 +68,7 @@ public class LeakySecurityModelV1Suite extends HapiSuite {
                 new LazyCreateThroughPrecompileV1SecurityModelSuite(),
                 new MixedHTSPrecompileTestsV1SecurityModelSuite(),
                 new PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite(),
+                new TokenExpiryInfoV1SecurityModelSuite(),
                 new TokenInfoHTSV1SecurityModelSuite(),
                 new TokenUpdatePrecompileV1SecurityModelSuite(),
                 new WipeTokenAccountPrecompileV1SecurityModelSuite());
