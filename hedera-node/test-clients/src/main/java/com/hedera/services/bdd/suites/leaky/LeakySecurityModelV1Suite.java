@@ -20,6 +20,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCreateV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationV1SecurityModelSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractHTSV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSV1SecurityModelSuite;
@@ -46,14 +47,15 @@ public class LeakySecurityModelV1Suite extends HapiSuite {
     public LeakySecurityModelV1Suite() {
         suites = List.of(
                 new ContractCreateV1SecurityModelSuite(),
+                new ContractHTSV1SecurityModelSuite(),
+                new ContractMintHTSV1SecurityModelSuite(),
+                new Create2OperationV1SecurityModelSuite(),
                 new CreatePrecompileV1SecurityModelSuite(),
                 new CryptoTransferHTSV1SecurityModelSuite(),
                 new DissociatePrecompileV1SecurityModelSuite(),
-                new Create2OperationV1SecurityModelSuite(),
-                new MixedHTSPrecompileTestsV1SecurityModelSuite(),
-                new TokenUpdatePrecompileV1SecurityModelSuite(),
                 new LazyCreateThroughPrecompileV1SecurityModelSuite(),
-                new ContractMintHTSV1SecurityModelSuite());
+                new MixedHTSPrecompileTestsV1SecurityModelSuite(),
+                new TokenUpdatePrecompileV1SecurityModelSuite());
     }
 
     @Override
