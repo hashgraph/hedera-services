@@ -20,6 +20,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCreateV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationV1SecurityModelSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractHTSV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileV1SecurityModelSuite;
@@ -46,6 +47,7 @@ public class LeakySecurityModelV1Suite extends HapiSuite {
 
     public LeakySecurityModelV1Suite() {
         suites = List.of(
+                new ContractBurnHTSV1SecurityModelSuite(),
                 new ContractCreateV1SecurityModelSuite(),
                 new ContractHTSV1SecurityModelSuite(),
                 new ContractMintHTSV1SecurityModelSuite(),
