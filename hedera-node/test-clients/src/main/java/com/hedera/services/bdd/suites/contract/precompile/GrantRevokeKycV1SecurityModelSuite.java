@@ -54,6 +54,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class GrantRevokeKycV1SecurityModelSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(GrantRevokeKycV1SecurityModelSuite.class);
     public static final String GRANT_REVOKE_KYC_CONTRACT = "GrantRevokeKyc";
