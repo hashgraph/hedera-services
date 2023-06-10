@@ -55,19 +55,12 @@ public class ContractHTSSuite extends HapiSuite {
 
     private static final long GAS_TO_OFFER = 2_000_000L;
     private static final long TOTAL_SUPPLY = 1_000;
-    private static final long AMOUNT_TO_SEND = 10L;
-    private static final long CUSTOM_HBAR_FEE_AMOUNT = 100L;
     private static final String TOKEN_TREASURY = "treasury";
 
     private static final String A_TOKEN = "TokenA";
-    private static final String NFT = "nft";
 
     private static final String ACCOUNT = "sender";
-    private static final String FEE_COLLECTOR = "feeCollector";
     private static final String RECEIVER = "receiver";
-    private static final String SECOND_RECEIVER = "receiver2";
-
-    private static final String FEE_TOKEN = "feeToken";
 
     private static final String UNIVERSAL_KEY = "multipurpose";
 
