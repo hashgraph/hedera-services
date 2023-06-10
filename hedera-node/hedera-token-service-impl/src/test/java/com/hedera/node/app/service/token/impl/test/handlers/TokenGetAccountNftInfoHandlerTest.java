@@ -64,7 +64,8 @@ class TokenGetAccountNftInfoHandlerTest {
         final var responseHeader = ResponseHeader.newBuilder().build();
         final var response = subject.createEmptyResponse(responseHeader);
         final var expectedResponse = Response.newBuilder()
-                .tokenGetAccountNftInfos(TokenGetAccountNftInfosResponse.newBuilder().header(responseHeader))
+                .tokenGetAccountNftInfos(
+                        TokenGetAccountNftInfosResponse.newBuilder().header(responseHeader))
                 .build();
         assertThat(expectedResponse).isEqualTo(response);
     }
