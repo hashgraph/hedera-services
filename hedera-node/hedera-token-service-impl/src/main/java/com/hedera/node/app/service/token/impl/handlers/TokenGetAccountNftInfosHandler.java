@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.token.TokenGetAccountNftInfosResponse;
 import com.hedera.hapi.node.transaction.Query;
@@ -34,6 +35,9 @@ import javax.inject.Singleton;
 /**
  * This class contains all workflow-related functionality regarding {@link
  * HederaFunctionality#TOKEN_GET_ACCOUNT_NFT_INFOS}.
+ * <p>
+ * This token service call has been deprecated. Because protobufs promise backwards compatibility,
+ * we cannot remove it. However, it should not be used.
  */
 @Singleton
 public class TokenGetAccountNftInfosHandler extends FreeQueryHandler {
@@ -58,13 +62,14 @@ public class TokenGetAccountNftInfosHandler extends FreeQueryHandler {
     @Override
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+        throw new PreCheckException(ResponseCodeEnum.NOT_SUPPORTED);
     }
 
     @Override
     public Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
+        // this code should never be executed, as validate() should fail before we get here
         requireNonNull(context);
         requireNonNull(header);
-        throw new UnsupportedOperationException("Not implemented");
+        throw new UnsupportedOperationException("Not supported");
     }
 }
