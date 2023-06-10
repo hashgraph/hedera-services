@@ -32,6 +32,7 @@ import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTest
 import com.hedera.services.bdd.suites.contract.precompile.PauseUnpauseTokenAccountPrecompileV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileV1SecurityModelSuite;
+import com.hedera.services.bdd.suites.ethereum.EthereumV1SecurityModelSuite;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -58,6 +59,7 @@ public class LeakySecurityModelV1Suite extends HapiSuite {
                 new CreatePrecompileV1SecurityModelSuite(),
                 new CryptoTransferHTSV1SecurityModelSuite(),
                 new DissociatePrecompileV1SecurityModelSuite(),
+                new EthereumV1SecurityModelSuite(),
                 new FreezeUnfreezeTokenPrecompileV1SecurityModelSuite(),
                 new LazyCreateThroughPrecompileV1SecurityModelSuite(),
                 new MixedHTSPrecompileTestsV1SecurityModelSuite(),
