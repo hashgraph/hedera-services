@@ -28,9 +28,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 /**
  * Provides write methods for modifying underlying data storage mechanisms for
  * working with freeze states.
- * This is a temporary location for this class. It will be moved to FileService.
- * @todo('Issue #6856')
  */
+// This is a temporary location for this class. It will be moved to FileService.
+// @todo('Issue #6856')
 public class WritableSpecialFileStore extends ReadableSpecialFileStoreImpl {
     /** The underlying data storage class that holds the prepared update file number. */
     private final WritableSingletonState<FileID> preparedUpdateFileIDState;

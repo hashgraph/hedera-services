@@ -29,12 +29,10 @@ import java.util.Optional;
 
 /**
  * Implementation of {@link ReadableSpecialFileStore}
- *
- * This is a temporary location for this class. It will be moved to FileService.
- * @todo('Issue #6856')
  */
+// This is a temporary location for this class. It will be moved to FileService.
+// @todo('Issue #6856')
 public class ReadableSpecialFileStoreImpl implements ReadableSpecialFileStore {
-
     /** The underlying data storage class that holds the file data. */
     private final ReadableKVState<FileID, byte[]> freezeFilesById;
 
