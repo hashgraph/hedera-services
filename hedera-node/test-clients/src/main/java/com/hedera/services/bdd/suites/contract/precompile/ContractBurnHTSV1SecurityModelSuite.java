@@ -210,7 +210,7 @@ public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
                 .given(
                         overridingTwo(
                                 CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                                "ContractCall,TokenBurn,TokenCreate,TokenTransfer,TokenUpdate",
+                                "ContractCall,CryptoTransfer,TokenBurn,TokenCreate,TokenUpdate",
                                 CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                                 CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(MULTI_KEY),
