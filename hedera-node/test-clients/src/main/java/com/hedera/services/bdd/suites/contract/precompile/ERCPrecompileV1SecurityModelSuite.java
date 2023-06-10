@@ -89,11 +89,11 @@ public class ERCPrecompileV1SecurityModelSuite extends HapiSuite {
         final var addLiquidityTxn = "addLiquidityTxn";
         final var create2Txn = "create2Txn";
 
-        final var ACCOUNT_A = "AccountA";
-        final var ACCOUNT_B = "AccountB";
+        final var account_A = "AccountA";
+        final var account_B = "AccountB";
 
-        final var ALIASED_TRANSFER = "AliasedTransfer";
-        final byte[][] ALIASED_ADDRESS = new byte[1][1];
+        final var aliasedTransfer = "AliasedTransfer";
+        final byte[][] aliasedAddress = new byte[1][1];
 
         final AtomicReference<String> childMirror = new AtomicReference<>();
         final AtomicReference<String> childEip1014 = new AtomicReference<>();
@@ -110,24 +110,24 @@ public class ERCPrecompileV1SecurityModelSuite extends HapiSuite {
                         cryptoCreate(OWNER),
                         cryptoCreate(ACCOUNT),
                         cryptoCreate(ACCOUNT_A).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(ACCOUNT_B).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(account_B).balance(ONE_MILLION_HBARS),
                         tokenCreate(TOKEN_NAME)
                                 .adminKey(MULTI_KEY)
                                 .initialSupply(10000)
                                 .treasury(ACCOUNT_A),
-                        tokenAssociate(ACCOUNT_B, TOKEN_NAME),
-                        uploadInitCode(ALIASED_TRANSFER),
-                        contractCreate(ALIASED_TRANSFER).gas(300_000),
+                        tokenAssociate(account_B, TOKEN_NAME),
+                        uploadInitCode(aliasedTransfer),
+                        contractCreate(aliasedTransfer).gas(300_000),
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCall(
-                                                ALIASED_TRANSFER,
+                                                aliasedTransfer,
                                                 "deployWithCREATE2",
                                                 asHeadlongAddress(asHexedAddress(
                                                         spec.registry().getTokenID(TOKEN_NAME))))
                                         .exposingResultTo(result -> {
                                             final var res = (Address) result[0];
-                                            ALIASED_ADDRESS[0] = res.value().toByteArray();
+                                            aliasedAddress[0] = res.value().toByteArray();
                                         })
                                         .payingWith(ACCOUNT)
                                         .alsoSigningWithFullPrefix(MULTI_KEY)
@@ -139,7 +139,7 @@ public class ERCPrecompileV1SecurityModelSuite extends HapiSuite {
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCall(
-                                                ALIASED_TRANSFER,
+                                                aliasedTransfer,
                                                 "giveTokensToOperator",
                                                 HapiParserUtil.asHeadlongAddress(asAddress(
                                                         spec.registry().getTokenID(TOKEN_NAME))),
@@ -154,10 +154,10 @@ public class ERCPrecompileV1SecurityModelSuite extends HapiSuite {
                         withOpContext((spec, opLog) -> allRunFor(
                                 spec,
                                 contractCall(
-                                                ALIASED_TRANSFER,
+                                                aliasedTransfer,
                                                 TRANSFER,
                                                 HapiParserUtil.asHeadlongAddress(asAddress(
-                                                        spec.registry().getAccountID(ACCOUNT_B))),
+                                                        spec.registry().getAccountID(account_B))),
                                                 BigInteger.valueOf(1000))
                                         .payingWith(ACCOUNT)
                                         .alsoSigningWithFullPrefix(MULTI_KEY)
@@ -170,7 +170,7 @@ public class ERCPrecompileV1SecurityModelSuite extends HapiSuite {
                                 .hasToken(ExpectedTokenRel.relationshipWith(TOKEN_NAME)
                                         .balance(500))
                                 .logged()),
-                        getAccountBalance(ACCOUNT_B).hasTokenBalance(TOKEN_NAME, 1000),
+                        getAccountBalance(account_B).hasTokenBalance(TOKEN_NAME, 1000),
                         getAccountBalance(ACCOUNT_A).hasTokenBalance(TOKEN_NAME, 8500));
     }
 

@@ -250,6 +250,7 @@ public class TokenExpiryInfoV1SecurityModelSuite extends HapiSuite {
                         }));
     }
 
+    @SuppressWarnings("java:S1192") // "use already defined const instead of copying its value here" - not this time
     private HapiSpec updateExpiryInfoForTokenAndReadLatestInfo() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
