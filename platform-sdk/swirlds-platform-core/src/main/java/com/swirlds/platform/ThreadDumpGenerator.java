@@ -77,7 +77,7 @@ class ThreadDumpGenerator {
                 }
             }
         };
-        Thread t = new Thread(generator));
+        Thread t = new Thread(generator);
         t.setDaemon(true);
         t.start();
     }
