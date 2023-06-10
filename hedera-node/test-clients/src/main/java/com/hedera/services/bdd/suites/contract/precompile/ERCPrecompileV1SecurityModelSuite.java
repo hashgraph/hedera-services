@@ -109,12 +109,12 @@ public class ERCPrecompileV1SecurityModelSuite extends HapiSuite {
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER),
                         cryptoCreate(ACCOUNT),
-                        cryptoCreate(ACCOUNT_A).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(account_A).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         cryptoCreate(account_B).balance(ONE_MILLION_HBARS),
                         tokenCreate(TOKEN_NAME)
                                 .adminKey(MULTI_KEY)
                                 .initialSupply(10000)
-                                .treasury(ACCOUNT_A),
+                                .treasury(account_A),
                         tokenAssociate(account_B, TOKEN_NAME),
                         uploadInitCode(aliasedTransfer),
                         contractCreate(aliasedTransfer).gas(300_000),
@@ -144,7 +144,7 @@ public class ERCPrecompileV1SecurityModelSuite extends HapiSuite {
                                                 HapiParserUtil.asHeadlongAddress(asAddress(
                                                         spec.registry().getTokenID(TOKEN_NAME))),
                                                 HapiParserUtil.asHeadlongAddress(asAddress(
-                                                        spec.registry().getAccountID(ACCOUNT_A))),
+                                                        spec.registry().getAccountID(account_A))),
                                                 1500L)
                                         .payingWith(ACCOUNT)
                                         .alsoSigningWithFullPrefix(MULTI_KEY)
@@ -171,7 +171,7 @@ public class ERCPrecompileV1SecurityModelSuite extends HapiSuite {
                                         .balance(500))
                                 .logged()),
                         getAccountBalance(account_B).hasTokenBalance(TOKEN_NAME, 1000),
-                        getAccountBalance(ACCOUNT_A).hasTokenBalance(TOKEN_NAME, 8500));
+                        getAccountBalance(account_A).hasTokenBalance(TOKEN_NAME, 8500));
     }
 
     @Override

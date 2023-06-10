@@ -95,7 +95,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
                 .given(
                         overridingTwo(
                                 CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                                "ContractCall,CryptoTransfer,CreateToken",
+                                "ContractCall,CryptoTransfer,TokenCreate",
                                 CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                                 CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(arKey).shape(SECP256K1),
@@ -168,7 +168,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
                 .given(
                         overridingTwo(
                                 CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                                "ContractCall,CryptoTransfer,CreateToken",
+                                "ContractCall,CryptoTransfer,TokenCreate",
                                 CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                                 CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(arKey).shape(SECP256K1),
@@ -234,7 +234,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
                 .given(
                         overridingTwo(
                                 CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                                "ContractCall,CryptoTransfer,CreateToken",
+                                "ContractCall,CryptoTransfer,TokenCreate",
                                 CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                                 CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(arKey).shape(SECP256K1),
@@ -295,7 +295,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
                 .given(
                         overridingTwo(
                                 CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                                "ContractCall,CryptoTransfer,CreateToken,TokenUpdate",
+                                "ContractCall,CryptoTransfer,TokenCreate,TokenUpdate",
                                 CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                                 CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ntKey).shape(SECP256K1),
@@ -350,7 +350,7 @@ public class SigningReqsV1SecurityModelSuite extends HapiSuite {
                 .given(
                         overridingTwo(
                                 CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                                "ContractCall,CryptoTransfer,CreateToken,UpdateToken",
+                                "ContractCall,CryptoTransfer,TokenCreate,UpdateToken",
                                 CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
                                 CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(adminKey),
