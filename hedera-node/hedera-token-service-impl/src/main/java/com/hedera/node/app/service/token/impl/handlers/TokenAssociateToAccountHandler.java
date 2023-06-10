@@ -21,6 +21,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static com.hedera.node.app.service.token.impl.util.IdConvenienceUtils.isValidTokenNum;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -148,13 +150,9 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
             // tokenRels at the beginning of the list of existing token numbers first. We start by
             // retrieving the token rel object with the currentHeadTokenNum at the head of the
             // account
-            final var headTokenRel = tokenRelStore
-                    .get(
-                            AccountID.newBuilder()
-                                    .accountNum(account.accountNumber())
-                                    .build(),
-                            TokenID.newBuilder().tokenNum(currentHeadTokenNum).build())
-                    .orElse(null);
+            final var headTokenRel = tokenRelStore.get(
+                    AccountID.newBuilder().accountNum(account.accountNumber()).build(),
+                    TokenID.newBuilder().tokenNum(currentHeadTokenNum).build());
             if (headTokenRel != null) {
                 // Recreate the current head token's tokenRel, but with its previous pointer set to
                 // the last of the new tokenRels. This links the new token rels to the rest of the
@@ -236,7 +234,7 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
         // Check that the given tokens exist and are usable
         final var tokens = new ArrayList<Token>();
         for (final TokenID tokenId : tokenIds) {
-            final var token = ContextualRetriever.getIfUsable(tokenId, tokenStore);
+            final var token = getIfUsable(tokenId, tokenStore);
             tokens.add(token);
         }
 
@@ -248,7 +246,7 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
 
         // Check that a token rel doesn't already exist for each new token ID
         for (final TokenID tokenId : tokenIds) {
-            final var existingTokenRel = tokenRelStore.get(accountId, tokenId).orElse(null);
+            final var existingTokenRel = tokenRelStore.get(accountId, tokenId);
             validateTrue(existingTokenRel == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
         }
 
@@ -279,8 +277,4 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
     }
 
     private record Validated(@NonNull Account account, @NonNull List<Token> tokens) {}
-
-    private static boolean isValidTokenNum(final long tokenNum) {
-        return tokenNum > 0;
-    }
 }

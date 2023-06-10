@@ -111,7 +111,7 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
             @NonNull final TokenID tokenId,
             @NonNull final WritableTokenRelationStore tokenRelStore)
             throws HandleException {
-        final var tokenRel = tokenRelStore.getForModify(accountId, tokenId).orElse(null);
+        final var tokenRel = tokenRelStore.getForModify(accountId, tokenId);
         validateTrue(tokenRel != null, INVALID_TOKEN_ID);
 
         return tokenRel;

@@ -87,12 +87,6 @@ class WritableTokenRelationStoreTest {
     }
 
     @Test
-    void testCommit() {
-        subject.commit();
-        verify(tokenRelState).commit();
-    }
-
-    @Test
     void testGet() {
         final var tokenRelation = TokenRelation.newBuilder()
                 .tokenNumber(TOKEN_10)
@@ -101,7 +95,7 @@ class WritableTokenRelationStoreTest {
         given(tokenRelState.get(EntityNumPair.fromLongs(ACCOUNT_20, TOKEN_10))).willReturn(tokenRelation);
 
         final var result = subject.get(ACCOUNT_20_ID, TOKEN_10_ID);
-        Assertions.assertThat(result.orElseThrow()).isEqualTo(tokenRelation);
+        Assertions.assertThat(result).isEqualTo(tokenRelation);
     }
 
     @Test
@@ -110,7 +104,7 @@ class WritableTokenRelationStoreTest {
 
         final var result =
                 subject.get(ACCOUNT_20_ID, TokenID.newBuilder().tokenNum(-1L).build());
-        Assertions.assertThat(result).isEmpty();
+        Assertions.assertThat(result).isNull();
     }
 
     @Test
@@ -120,7 +114,7 @@ class WritableTokenRelationStoreTest {
                 .willReturn(tokenRelation);
 
         final var result = subject.getForModify(ACCOUNT_20_ID, TOKEN_10_ID);
-        Assertions.assertThat(result.orElseThrow()).isEqualTo(tokenRelation);
+        Assertions.assertThat(result).isEqualTo(tokenRelation);
     }
 
     @Test
@@ -130,7 +124,7 @@ class WritableTokenRelationStoreTest {
 
         final var result =
                 subject.getForModify(AccountID.newBuilder().accountNum(-2L).build(), TOKEN_10_ID);
-        Assertions.assertThat(result).isEmpty();
+        Assertions.assertThat(result).isNull();
     }
 
     @Test

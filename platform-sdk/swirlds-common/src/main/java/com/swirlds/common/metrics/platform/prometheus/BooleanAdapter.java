@@ -77,7 +77,7 @@ public class BooleanAdapter extends AbstractMetricAdapter {
             gauge.set(newValue);
         } else {
             throwArgNull(nodeId, "nodeId");
-            final Gauge.Child child = gauge.labels(Long.toString(nodeId.id()));
+            final Gauge.Child child = gauge.labels(nodeId.toString());
             child.set(newValue);
         }
     }

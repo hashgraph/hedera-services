@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.spi.state;
 
+import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.SemanticVersionComparator;
 import com.hedera.pbj.runtime.Codec;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
@@ -78,17 +79,15 @@ public abstract class Schema implements Comparable<Schema> {
      * called with the {@link ReadableStates} of the previous version of the {@link Schema}. If
      * there was no previous version, then {@code previousStates} will be empty, but not null.
      *
-     * @param previousStates The {@link ReadableStates} of the previous {@link Schema} version
-     * @param newStates {@link WritableStates} for this schema.
+     * @param ctx {@link MigrationContext} for this schema migration
      */
-    public void migrate(@NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
-        Objects.requireNonNull(previousStates);
-        Objects.requireNonNull(newStates);
+    public void migrate(@NonNull final MigrationContext ctx) {
+        Objects.requireNonNull(ctx);
     }
 
     /**
      * The {@link Set} of state keys of all states that should be removed <b>AFTER</b> {@link
-     * #migrate(ReadableStates, WritableStates)}.
+     * #migrate(MigrationContext)}.
      *
      * @return the set of states to remove
      */
@@ -100,7 +99,7 @@ public abstract class Schema implements Comparable<Schema> {
     /** {@inheritDoc} */
     @Override
     public int compareTo(Schema o) {
-        return SemanticVersionComparator.INSTANCE.compare(this.version, o.version);
+        return SEMANTIC_VERSION_COMPARATOR.compare(this.version, o.version);
     }
 
     /** {@inheritDoc} */

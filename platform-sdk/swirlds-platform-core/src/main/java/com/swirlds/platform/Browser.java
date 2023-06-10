@@ -20,7 +20,6 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.JVM_PAUSE_WARN;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserWindow;
@@ -52,6 +51,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.internal.ApplicationDefinition;
+import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
@@ -84,7 +84,7 @@ import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
@@ -229,9 +229,10 @@ public class Browser {
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(OSHealthCheckConfig.class)
                 .withConfigDataType(WiringConfig.class)
-                .withConfigDataType(PreConsensusEventStreamConfig.class)
+                .withConfigDataType(PreconsensusEventStreamConfig.class)
                 .withConfigDataType(SyncConfig.class)
-                .withConfigDataType(UptimeConfig.class);
+                .withConfigDataType(UptimeConfig.class)
+                .withConfigDataType(RecycleBinConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
@@ -575,7 +576,7 @@ public class Browser {
                     (pauseTimeMs, allocTimeMs) -> {
                         if (pauseTimeMs > Settings.getInstance().getJVMPauseReportMs()) {
                             logger.warn(
-                                    JVM_PAUSE_WARN.getMarker(),
+                                    EXCEPTION.getMarker(),
                                     "jvmPauseDetectorThread detected JVM paused for {} ms, allocation pause {} ms",
                                     pauseTimeMs,
                                     allocTimeMs);
@@ -691,7 +692,8 @@ public class Browser {
                         appVersion,
                         appMain::newState,
                         loadedSignedState,
-                        emergencyRecoveryManager);
+                        emergencyRecoveryManager,
+                        softwareUpgrade);
                 platforms.add(platform);
 
                 new InfoMember(infoSwirld, instanceNumber, platform);

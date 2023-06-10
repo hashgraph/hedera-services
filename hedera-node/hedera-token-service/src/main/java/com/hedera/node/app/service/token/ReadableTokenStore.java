@@ -46,8 +46,10 @@ public interface ReadableTokenStore {
             @Nullable Key supplyKey,
             @Nullable Key feeScheduleKey,
             @Nullable Key pauseKey,
+            @Nullable String symbol,
             boolean hasRoyaltyWithFallback,
-            long treasuryNum) {
+            long treasuryNum,
+            int decimals) {
         public boolean hasAdminKey() {
             return adminKey != null && !adminKey.key().kind().equals(KeyOneOfType.UNSET);
         }

@@ -37,15 +37,20 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.Utilities;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This holds the current state of a swirld representing both a cryptocurrency and a stock market.
@@ -101,14 +106,12 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
     ////////////////////////////////////////////////////
     // the following are the shared state:
 
-    /** the number of members participating in this swirld */
-    private int numMembers;
     /** ticker symbols for each of the stocks */
     private String[] tickerSymbol;
     /** number of cents owned by each member */
-    private long[] wallet;
+    private Map<NodeId, AtomicLong> wallet;
     /** shares[m][s] is the number of shares that member m owns of stock s */
-    private long[][] shares;
+    private Map<NodeId, List<AtomicLong>> shares;
     /** a record of the last NUM_TRADES trades */
     private String[] trades;
     /** number of trades currently stored in trades[] (from 0 to MAX_TRADES, inclusive) */
@@ -122,9 +125,9 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
     /** the most recent price (in cents) that a buyer has offered for each stock */
     private byte[] bid;
     /** the ID number of the member whose offer is stored in ask[] (or -1 if none) */
-    private long[] askId;
+    private NodeId[] askId;
     /** the ID number of the member whose offer is stored in bid[] (or -1 if none) */
-    private long[] bidId;
+    private NodeId[] bidId;
     /** price of the most recent trade for each stock */
     private byte[] price;
 
@@ -135,10 +138,10 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
     private CryptocurrencyDemoState(final CryptocurrencyDemoState sourceState) {
         super(sourceState);
         this.platform = sourceState.platform;
-        this.numMembers = sourceState.numMembers;
         this.tickerSymbol = sourceState.tickerSymbol.clone();
-        this.wallet = sourceState.wallet.clone();
-        this.shares = Utilities.deepClone(sourceState.shares);
+        this.wallet = new HashMap<>(sourceState.wallet);
+        this.shares = new HashMap<>();
+        sourceState.shares.forEach((nodeId, sharesForNode) -> this.shares.put(nodeId, new ArrayList<>(sharesForNode)));
         this.trades = sourceState.trades.clone();
         this.numTradesStored = sourceState.numTradesStored;
         this.lastTradeIndex = sourceState.lastTradeIndex;
@@ -225,9 +228,8 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
      * </pre>
      */
     private void handleTransaction(
-            @NonNull final NodeId id, final boolean isConsensus, @NonNull final Transaction transaction) {
+            @NonNull final NodeId id, final boolean isConsensus, @Nullable final Transaction transaction) {
         Objects.requireNonNull(id, "id must not be null");
-        Objects.requireNonNull(transaction, "transaction must not be null");
         if (transaction == null || transaction.getContents().length == 0) {
             return;
         }
@@ -237,8 +239,6 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
         } else if (!isConsensus || transaction.getContents().length < 3) {
             return; // ignore any bid/ask that doesn't have consensus yet
         }
-        final AddressBook addressBook = platform.getAddressBook();
-        final int selfIdIndex = addressBook.getIndexOfNodeId(id);
         final int askBid = transaction.getContents()[0];
         final int tradeStock = transaction.getContents()[1];
         int tradePrice = transaction.getContents()[2];
@@ -249,35 +249,36 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
 
         if (askBid == TransType.ask.ordinal()) { // it is an ask
             // if they're trying to sell something they don't have, then ignore it
-            if (shares[selfIdIndex][tradeStock] == 0) {
+            if (shares.get(id).get(tradeStock).get() == 0) {
                 return;
             }
             // if previous member with bid no longer has enough money, then forget them
-            if (bidId[tradeStock] != -1 && wallet[(int) bidId[tradeStock]] < bid[tradeStock]) {
-                bidId[tradeStock] = -1L;
+            if (bidId[tradeStock] != null && wallet.get(bidId[tradeStock]).get() < bid[tradeStock]) {
+                bidId[tradeStock] = null;
             }
             // if this is the lowest ask for this stock since its last trade, then remember it
-            if (askId[tradeStock] == -1 || tradePrice < ask[tradeStock]) {
-                askId[tradeStock] = selfIdIndex;
+            if (askId[tradeStock] == null || tradePrice < ask[tradeStock]) {
+                askId[tradeStock] = id;
                 ask[tradeStock] = (byte) tradePrice;
             }
         } else { // it is a bid
             // if they're trying to buy but don't have enough money, then ignore it
-            if (shares[selfIdIndex][tradeStock] == 0) {
+            if (shares.get(id).get(tradeStock).get() == 0) {
                 return;
             }
             // if previous member with ask no longer has the share, then forget them
-            if (askId[tradeStock] != -1 && shares[(int) askId[tradeStock]][tradeStock] == 0) {
-                askId[tradeStock] = -1L;
+            if (askId[tradeStock] != null
+                    && shares.get(askId[tradeStock]).get(tradeStock).get() == 0) {
+                askId[tradeStock] = null;
             }
             // if this is the highest bid for this stock since its last trade, then remember it
-            if (bidId[tradeStock] == -1 || tradePrice > bid[tradeStock]) {
-                bidId[tradeStock] = selfIdIndex;
+            if (bidId[tradeStock] == null || tradePrice > bid[tradeStock]) {
+                bidId[tradeStock] = id;
                 bid[tradeStock] = (byte) tradePrice;
             }
         }
         // if there is not yet a match for this stock, then don't create a trade yet
-        if (askId[tradeStock] == -1 || bidId[tradeStock] == -1 || ask[tradeStock] > bid[tradeStock]) {
+        if (askId[tradeStock] == null || bidId[tradeStock] == null || ask[tradeStock] > bid[tradeStock]) {
             return;
         }
 
@@ -289,10 +290,10 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
         tradePrice = (tradePrice / 2) + ((tradePrice % 4) / 3);
 
         // perform the trade (exchanging money for a share)
-        wallet[(int) askId[tradeStock]] += tradePrice; // seller gets money
-        wallet[(int) bidId[tradeStock]] -= tradePrice; // buyer gives money
-        shares[(int) askId[tradeStock]][tradeStock] -= 1; // seller gives 1 share
-        shares[(int) bidId[tradeStock]][tradeStock] += 1; // buyer gets 1 share
+        wallet.get(askId[tradeStock]).addAndGet(tradePrice); // seller gets money
+        wallet.get(bidId[tradeStock]).addAndGet(-tradePrice); // buyer gives money
+        shares.get(askId[tradeStock]).get(tradeStock).addAndGet(-1); // seller gives 1 share
+        shares.get(bidId[tradeStock]).get(tradeStock).addAndGet(1); // buyer gets 1 share
 
         // save a description of the trade to show on the console
         final String selfName = platform.getAddressBook().getAddress(id).getSelfName();
@@ -317,32 +318,31 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
                 sellerNickname,
                 buyerNickname,
                 selfName,
-                wallet[selfIdIndex] / 100.,
-                Arrays.toString(shares[selfIdIndex]));
+                wallet.get(id).get() / 100.,
+                shares.get(id));
 
         // record the trade, and say there are now no pending asks or bids
         trades[lastTradeIndex] = tradeDescription;
         price[tradeStock] = (byte) tradePrice;
-        askId[tradeStock] = -1L;
-        bidId[tradeStock] = -1L;
+        askId[tradeStock] = null;
+        bidId[tradeStock] = null;
     }
 
     /**
      * Do setup at genesis
      */
     public void genesisInit() {
-        this.numMembers = platform.getAddressBook().getSize();
         tickerSymbol = new String[NUM_STOCKS];
-        wallet = new long[numMembers];
-        shares = new long[numMembers][NUM_STOCKS];
+        wallet = new HashMap<>();
+        shares = new HashMap<>();
         trades = new String[MAX_TRADES];
         numTradesStored = 0;
         lastTradeIndex = 0;
         numTrades = 0;
         ask = new byte[NUM_STOCKS];
         bid = new byte[NUM_STOCKS];
-        askId = new long[NUM_STOCKS];
-        bidId = new long[NUM_STOCKS];
+        askId = new NodeId[NUM_STOCKS];
+        bidId = new NodeId[NUM_STOCKS];
         price = new byte[NUM_STOCKS];
 
         // seed 0 so everyone gets same ticker symbols on every run
@@ -353,15 +353,21 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
                     + (char) (65 + rand.nextInt(26))
                     + (char) (65 + rand.nextInt(26))
                     + (char) (65 + rand.nextInt(26));
-            askId[i] = bidId[i] = -1L; // no one has offered to buy or sell yet
+            askId[i] = bidId[i] = null; // no one has offered to buy or sell yet
             ask[i] = bid[i] = price[i] = 64; // start the trading around 64 cents
         }
-        for (int i = 0; i < numMembers; i++) {
-            wallet[i] = 20000L; // each member starts with $200 dollars (20,000 cents)
-            shares[i] = new long[NUM_STOCKS];
-            for (int j = 0; j < NUM_STOCKS; j++) {
-                shares[i][j] = 200L; // each member starts with 200 shares of each stock
+
+        final AddressBook addressBook = platform.getAddressBook();
+        for (final Address address : addressBook) {
+            final NodeId id = address.getNodeId();
+            // each member starts with $200 dollars (20,000 cents)
+            wallet.put(id, new AtomicLong(20000L));
+            final List<AtomicLong> sharesForID = new ArrayList<>();
+            for (int i = 0; i < NUM_STOCKS; i++) {
+                // each member starts with 200 shares of each stock
+                sharesForID.add(new AtomicLong(200L));
             }
+            shares.put(id, sharesForID);
         }
     }
 
@@ -383,13 +389,21 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
 
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeInt(numMembers);
         out.writeStringArray(tickerSymbol);
-        out.writeLongArray(wallet);
 
-        out.writeInt(shares.length);
-        for (final long[] subArray : shares) {
-            out.writeLongArray(subArray);
+        out.writeInt(wallet.size());
+        for (Map.Entry<NodeId, AtomicLong> entry : wallet.entrySet()) {
+            out.writeSerializable(entry.getKey(), false);
+            out.writeLong(entry.getValue().get());
+        }
+
+        out.writeInt(shares.size());
+        for (Map.Entry<NodeId, List<AtomicLong>> entry : shares.entrySet()) {
+            out.writeSerializable(entry.getKey(), false);
+            out.writeInt(entry.getValue().size());
+            for (int i = 0; i < entry.getValue().size(); i++) {
+                out.writeLong(entry.getValue().get(i).get());
+            }
         }
 
         out.writeStringArray(trades);
@@ -398,24 +412,31 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
         out.writeLong(numTrades);
         out.writeByteArray(ask);
         out.writeByteArray(bid);
-        out.writeLongArray(askId);
-        out.writeLongArray(bidId);
+        out.writeSerializableArray(askId, false, true);
+        out.writeSerializableArray(bidId, false, true);
         out.writeByteArray(price);
     }
 
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        numMembers = in.readInt();
         tickerSymbol = in.readStringArray(DEFAULT_MAX_ARRAY_SIZE, DEFAULT_MAX_STRING_SIZE);
-        wallet = in.readLongArray(DEFAULT_MAX_ARRAY_SIZE);
 
-        final int sharesLength = in.readInt();
-        if (sharesLength > Integer.MIN_VALUE) {
-            throw new IOException("Length exceeds maximum value");
+        int walletSize = in.readInt();
+        for (int i = 0; i < walletSize; i++) {
+            final NodeId id = in.readSerializable(false, NodeId::new);
+            final AtomicLong amount = new AtomicLong(in.readLong());
+            wallet.put(id, amount);
         }
-        shares = new long[sharesLength][];
-        for (int index = 0; index < sharesLength; index++) {
-            shares[index] = in.readLongArray(DEFAULT_MAX_ARRAY_SIZE);
+
+        final int sharesSize = in.readInt();
+        for (int i = 0; i < sharesSize; i++) {
+            final NodeId id = in.readSerializable(false, NodeId::new);
+            final int numShares = in.readInt();
+            final List<AtomicLong> sharesForID = new ArrayList<>(numShares);
+            for (int j = 0; j < numShares; j++) {
+                sharesForID.add(new AtomicLong(in.readLong()));
+            }
+            shares.put(id, sharesForID);
         }
 
         trades = in.readStringArray(DEFAULT_MAX_ARRAY_SIZE, DEFAULT_MAX_STRING_SIZE);
@@ -424,8 +445,8 @@ public class CryptocurrencyDemoState extends PartialMerkleLeaf implements Swirld
         numTrades = in.readLong();
         ask = in.readByteArray(DEFAULT_MAX_ARRAY_SIZE);
         bid = in.readByteArray(DEFAULT_MAX_ARRAY_SIZE);
-        askId = in.readLongArray(DEFAULT_MAX_ARRAY_SIZE);
-        bidId = in.readLongArray(DEFAULT_MAX_ARRAY_SIZE);
+        askId = in.readSerializableArray(NodeId[]::new, DEFAULT_MAX_ARRAY_SIZE, false, NodeId::new);
+        bidId = in.readSerializableArray(NodeId[]::new, DEFAULT_MAX_ARRAY_SIZE, false, NodeId::new);
         price = in.readByteArray(DEFAULT_MAX_ARRAY_SIZE);
     }
 

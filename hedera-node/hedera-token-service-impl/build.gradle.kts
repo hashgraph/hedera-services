@@ -19,22 +19,21 @@ plugins { id("com.hedera.hashgraph.conventions") }
 description = "Default Hedera Token Service Implementation"
 
 dependencies {
-  javaModuleDependencies {
-    annotationProcessor(gav("dagger.compiler"))
+    javaModuleDependencies {
+        annotationProcessor(gav("dagger.compiler"))
 
-    testImplementation(project(":hedera-node:node-app-service-token-impl"))
-    testImplementation(project(":hedera-node:node-app"))
-    testImplementation(testFixtures(project(":hedera-node:node-app-service-mono")))
-    testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
-    testImplementation(testFixtures(project(":hedera-node:node-config")))
-    testImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
-    testImplementation(gav("com.swirlds.common"))
-    testImplementation(gav("org.assertj.core"))
-    testImplementation(gav("org.hamcrest"))
-    testImplementation(gav("org.junit.jupiter.api"))
-    testImplementation(gav("org.mockito"))
-    testImplementation(gav("org.mockito.junit.jupiter"))
-    testImplementation(gav("com.swirlds.merkle"))
-    testRuntimeOnly(gav("org.mockito.inline"))
-  }
+        testImplementation(project(":hedera-node:node-app-service-token-impl"))
+        testImplementation(project(":hedera-node:node-app"))
+        testImplementation(testFixtures(project(":hedera-node:node-app-service-mono")))
+        testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+        testImplementation(testFixtures(project(":hedera-node:node-config")))
+        testImplementation(gav("com.swirlds.common"))
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("org.hamcrest"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.mockito"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+        testImplementation(gav("com.swirlds.merkle"))
+        testRuntimeOnly(gav("org.mockito.inline"))
+    }
 }

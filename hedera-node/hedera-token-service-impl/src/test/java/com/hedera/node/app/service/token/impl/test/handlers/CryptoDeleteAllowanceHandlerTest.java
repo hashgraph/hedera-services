@@ -16,54 +16,63 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoDeleteAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftRemoveAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteAllowanceHandler;
+import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
+import com.hedera.node.app.service.token.impl.validators.DeleteAllowanceValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.ConfigProvider;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
-    private final TokenID nft = TokenID.newBuilder().tokenNum(56789).build();
+@ExtendWith(MockitoExtension.class)
+class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
+    @Mock(strictness = LENIENT)
+    private ConfigProvider configProvider;
 
-    @Mock
-    private Account ownerAccount;
+    @Mock(strictness = LENIENT)
+    private HandleContext handleContext;
 
-    private CryptoDeleteAllowanceHandler subject = new CryptoDeleteAllowanceHandler();
+    private CryptoDeleteAllowanceHandler subject;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
-        readableAccounts = emptyReadableAccountStateBuilder()
-                .value(EntityNumVirtualKey.fromLong(owner.accountNum()), ownerAccount)
-                .value(EntityNumVirtualKey.fromLong(accountNum), account)
-                .value(EntityNumVirtualKey.fromLong(delegatingSpender.accountNum()), account)
-                .build();
-        given(readableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        final var deleteAllowanceValidator = new DeleteAllowanceValidator(configProvider);
+        subject = new CryptoDeleteAllowanceHandler(deleteAllowanceValidator);
+        refreshWritableStores();
+        givenStoresAndConfig(configProvider, handleContext);
+
+        given(handleContext.configuration()).willReturn(configuration);
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
     }
 
     @Test
     void cryptoDeleteAllowanceVanilla() throws PreCheckException {
-        given(ownerAccount.key()).willReturn(ownerKey);
-
-        final var txn = cryptoDeleteAllowanceTransaction(id);
-        final var context = new FakePreHandleContext(readableStore, txn);
+        final var txn = cryptoDeleteAllowanceTransaction(payerId);
+        final var context = new FakePreHandleContext(readableAccountStore, txn);
         subject.preHandle(context);
         basicMetaAssertions(context, 1);
         assertEquals(key, context.payerKey());
@@ -72,24 +81,223 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoDeleteAllowanceDoesntAddIfOwnerSameAsPayer() throws PreCheckException {
-        given(ownerAccount.key()).willReturn(ownerKey);
-
-        final var txn = cryptoDeleteAllowanceTransaction(owner);
-        final var context = new FakePreHandleContext(readableStore, txn);
+        final var txn = cryptoDeleteAllowanceTransaction(ownerId);
+        final var context = new FakePreHandleContext(readableAccountStore, txn);
         subject.preHandle(context);
         basicMetaAssertions(context, 0);
         assertEquals(ownerKey, context.payerKey());
         assertIterableEquals(List.of(), context.requiredNonPayerKeys());
     }
 
-    private TransactionBody cryptoDeleteAllowanceTransaction(final AccountID id) {
+    @Test
+    void happyPathDeletesAllowances() {
+        writableNftStore.put(
+                nftSl1.copyBuilder().spenderNumber(spenderId.accountNum()).build());
+        writableNftStore.put(
+                nftSl2.copyBuilder().spenderNumber(spenderId.accountNum()).build());
+
+        final var txn = cryptoDeleteAllowanceTransaction(payerId);
+        given(handleContext.body()).willReturn(txn);
+
+        assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isEqualTo(spenderId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isEqualTo(spenderId.accountNum());
+
+        subject.handle(handleContext);
+
+        assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isZero();
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isZero();
+    }
+
+    @Test
+    void canDeleteAllowancesOnTreasury() {
+        writableNftStore.put(
+                nftSl1.copyBuilder().spenderNumber(spenderId.accountNum()).build());
+        writableNftStore.put(
+                nftSl2.copyBuilder().spenderNumber(spenderId.accountNum()).build());
+
+        final var txn = cryptoDeleteAllowanceTransaction(payerId);
+        given(handleContext.body()).willReturn(txn);
+
+        assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isEqualTo(spenderId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isEqualTo(spenderId.accountNum());
+
+        subject.handle(handleContext);
+
+        assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isZero();
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isZero();
+    }
+
+    @Test
+    void validateIfSerialsEmpty() {
+        final var nftAllowance = NftRemoveAllowance.newBuilder()
+                .owner(payerId)
+                .tokenId(nonFungibleTokenId)
+                .serialNumbers(List.of())
+                .build();
+        final var txn = allowancesTxn(payerId, List.of(nftAllowance));
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(EMPTY_ALLOWANCES));
+    }
+
+    @Test
+    void checksEmptyAllowancesInTxn() {
+        final var txn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(payerId).build())
+                .cryptoDeleteAllowance(CryptoDeleteAllowanceTransactionBody.newBuilder())
+                .build();
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(EMPTY_ALLOWANCES));
+    }
+
+    @Test
+    void failsDeleteAllowancesOnInvalidTreasury() {
+        writableTokenStore.put(
+                nonFungibleToken.copyBuilder().treasuryAccountNumber(200L).build());
+        writableNftStore.put(
+                nftSl1.copyBuilder().spenderNumber(spenderId.accountNum()).build());
+        writableNftStore.put(
+                nftSl2.copyBuilder().spenderNumber(spenderId.accountNum()).build());
+
+        final var txn = cryptoDeleteAllowanceTransaction(payerId);
+        given(handleContext.body()).willReturn(txn);
+
+        assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isEqualTo(spenderId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isEqualTo(spenderId.accountNum());
+
+        subject.handle(handleContext);
+
+        assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isZero();
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isZero();
+    }
+
+    @Test
+    void doesntThrowIfAllowanceToBeDeletedDoesNotExist() {
+        final var nftAllowance = NftRemoveAllowance.newBuilder()
+                .tokenId(nonFungibleTokenId)
+                .owner(ownerId)
+                .serialNumbers(List.of(1L, 2L))
+                .build();
+
+        writableNftStore.put(
+                nftSl1.copyBuilder().ownerNumber(ownerId.accountNum()).build());
+        writableNftStore.put(
+                nftSl2.copyBuilder().ownerNumber(ownerId.accountNum()).build());
+
+        final var txn = txnWithAllowance(payerId, nftAllowance);
+        given(handleContext.body()).willReturn(txn);
+
+        assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isEqualTo(0);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isEqualTo(0);
+
+        subject.handle(handleContext);
+        // No error thrown and no changes to state
+        assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isEqualTo(0);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isEqualTo(0);
+    }
+
+    @Test
+    void considersPayerIfOwnerNotSpecifiedAndFailIfDoesntOwn() {
+        final var nftAllowance = NftRemoveAllowance.newBuilder()
+                .tokenId(nonFungibleTokenId)
+                .serialNumbers(List.of(1L, 2L))
+                .build();
+
+        writableNftStore.put(
+                nftSl1.copyBuilder().spenderNumber(spenderId.accountNum()).build());
+        writableNftStore.put(
+                nftSl2.copyBuilder().spenderNumber(spenderId.accountNum()).build());
+
+        final var txn = txnWithAllowance(payerId, nftAllowance);
+        given(handleContext.body()).willReturn(txn);
+
+        assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isEqualTo(spenderId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isEqualTo(spenderId.accountNum());
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO));
+    }
+
+    @Test
+    void considersPayerIfOwnerNotSpecified() {
+        final var nftAllowance = NftRemoveAllowance.newBuilder()
+                .tokenId(nonFungibleTokenId)
+                .serialNumbers(List.of(1L, 2L))
+                .build();
+
+        writableNftStore.put(nftSl1.copyBuilder()
+                .ownerNumber(payerId.accountNum())
+                .spenderNumber(spenderId.accountNum())
+                .build());
+        writableNftStore.put(nftSl2.copyBuilder()
+                .ownerNumber(payerId.accountNum())
+                .spenderNumber(spenderId.accountNum())
+                .build());
+
+        final var txn = txnWithAllowance(payerId, nftAllowance);
+        given(handleContext.body()).willReturn(txn);
+
+        assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(payerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(payerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isEqualTo(spenderId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isEqualTo(spenderId.accountNum());
+
+        subject.handle(handleContext);
+
+        assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(payerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(payerId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isZero();
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isZero();
+    }
+
+    private TransactionBody cryptoDeleteAllowanceTransaction(final AccountID txnPayer) {
+        final var nftAllowance = NftRemoveAllowance.newBuilder()
+                .owner(ownerId)
+                .tokenId(nonFungibleTokenId)
+                .serialNumbers(List.of(1L, 2L))
+                .build();
+        return allowancesTxn(txnPayer, List.of(nftAllowance));
+    }
+
+    private TransactionBody txnWithAllowance(final AccountID id, NftRemoveAllowance allowance) {
+        return allowancesTxn(id, List.of(allowance));
+    }
+
+    private TransactionBody allowancesTxn(final AccountID id, List<NftRemoveAllowance> nftAllowances) {
         final var transactionID = TransactionID.newBuilder().accountID(id).transactionValidStart(consensusTimestamp);
         final var allowanceTxnBody = CryptoDeleteAllowanceTransactionBody.newBuilder()
-                .nftAllowances(NftRemoveAllowance.newBuilder()
-                        .owner(owner)
-                        .tokenId(nft)
-                        .serialNumbers(List.of(1L, 2L, 3L))
-                        .build())
+                .nftAllowances(nftAllowances)
                 .build();
         return TransactionBody.newBuilder()
                 .transactionID(transactionID)

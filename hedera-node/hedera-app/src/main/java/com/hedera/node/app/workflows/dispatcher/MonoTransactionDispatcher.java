@@ -22,14 +22,10 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -92,6 +88,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case CRYPTO_UPDATE_ACCOUNT -> dispatchCryptoUpdate(context);
             /* ------------------ token -------------------------- */
             case TOKEN_ASSOCIATE -> dispatchTokenAssociate(context);
+            case TOKEN_DISSOCIATE -> dispatchTokenDissociate(context);
             case TOKEN_FREEZE -> dispatchTokenFreeze(context);
             case TOKEN_UNFREEZE -> dispatchTokenUnfreeze(context);
             case TOKEN_GRANT_KYC -> dispatchTokenGrantKycToAccount(context);
@@ -107,7 +104,8 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
-
+    // For all the below methods, commit is not called from stores, as it is responsibility of
+    // handle workflow to call commit on WritableKVState.
     private void dispatchConsensusCreateTopic(@NonNull final HandleContext handleContext) {
         final var handler = handlers.consensusCreateTopicHandler();
         handler.handle(handleContext);
@@ -120,8 +118,6 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
         txnCtx.setCreated(PbjConverter.fromPbj(recordBuilder.topicID()));
         // Adapt the metric impact for mono-service
         usageLimits.refreshTopics();
-        final var topicStore = handleContext.writableStore(WritableTopicStore.class);
-        topicStore.commit();
     }
 
     private void dispatchFreeze(@NonNull final HandleContext handleContext) {
@@ -141,23 +137,11 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     private void dispatchConsensusUpdateTopic(@NonNull final HandleContext handleContext) {
         final var handler = handlers.consensusUpdateTopicHandler();
         handler.handle(handleContext);
-        finishConsensusUpdateTopic(handleContext);
-    }
-
-    private void finishConsensusUpdateTopic(@NonNull final HandleContext handleContext) {
-        final var topicStore = handleContext.writableStore(WritableTopicStore.class);
-        topicStore.commit();
     }
 
     private void dispatchConsensusDeleteTopic(@NonNull final HandleContext handleContext) {
         final var handler = handlers.consensusDeleteTopicHandler();
         handler.handle(handleContext);
-        finishConsensusDeleteTopic(handleContext);
-    }
-
-    private void finishConsensusDeleteTopic(@NonNull final HandleContext handleContext) {
-        final var topicStore = handleContext.writableStore(WritableTopicStore.class);
-        topicStore.commit();
     }
 
     private void dispatchConsensusSubmitMessage(@NonNull final HandleContext handleContext) {
@@ -171,8 +155,6 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
         final var recordBuilder = handleContext.recordBuilder(SingleTransactionRecordBuilder.class);
         txnCtx.setTopicRunningHash(
                 PbjConverter.asBytes(recordBuilder.topicRunningHash()), recordBuilder.topicSequenceNumber());
-        final var topicStore = handleContext.writableStore(WritableTopicStore.class);
-        topicStore.commit();
     }
 
     private void dispatchCryptoCreate(@NonNull final HandleContext handleContext) {
@@ -189,103 +171,56 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
         // Adapt the record builder outcome for mono-service
         final var recordBuilder = handleContext.recordBuilder(SingleTransactionRecordBuilder.class);
         txnCtx.setCreated(PbjConverter.fromPbj(recordBuilder.accountID()));
-        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
-        accountStore.commit();
     }
 
     private void dispatchTokenGrantKycToAccount(@NonNull final HandleContext handleContext) {
         final var handler = handlers.tokenGrantKycToAccountHandler();
         handler.handle(handleContext);
-        finishTokenGrantKycToAccount(handleContext);
     }
 
     private void dispatchCryptoDelete(@NonNull final HandleContext handleContext) {
         final var handler = handlers.cryptoDeleteHandler();
         handler.handle(handleContext);
-        finishDefaultForCryptoOps(handleContext);
     }
 
     private void dispatchCryptoUpdate(@NonNull final HandleContext handleContext) {
         final var handler = handlers.cryptoUpdateHandler();
         handler.handle(handleContext);
-        finishDefaultForCryptoOps(handleContext);
-    }
-
-    protected void finishDefaultForCryptoOps(@NonNull final HandleContext handleContext) {
-        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
-        accountStore.commit();
-    }
-
-    private void finishTokenGrantKycToAccount(@NonNull final HandleContext handleContext) {
-        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
-        tokenRelStore.commit();
     }
 
     private void dispatchTokenRevokeKycFromAccount(@NonNull final HandleContext handleContext) {
         final var handler = handlers.tokenRevokeKycFromAccountHandler();
         handler.handle(handleContext);
-        finishTokenRevokeKycFromAccount(handleContext);
-    }
-
-    private void finishTokenRevokeKycFromAccount(@NonNull final HandleContext handleContext) {
-        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
-        tokenRelStore.commit();
     }
 
     private void dispatchTokenAssociate(@NonNull final HandleContext handleContext) {
         final var handler = handlers.tokenAssociateToAccountHandler();
         handler.handle(handleContext);
-        finishTokenAssociateToAccount(handleContext);
     }
 
-    private void finishTokenAssociateToAccount(@NonNull final HandleContext handleContext) {
-        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
-        accountStore.commit();
-
-        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
-        tokenRelStore.commit();
+    private void dispatchTokenDissociate(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.tokenDissociateFromAccountHandler();
+        handler.handle(handleContext);
     }
 
     private void dispatchTokenPause(@NonNull final HandleContext handleContext) {
         final var handler = handlers.tokenPauseHandler();
         handler.handle(handleContext);
-        finishTokenPause(handleContext);
-    }
-
-    private void finishTokenPause(@NonNull final HandleContext handleContext) {
-        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
-        tokenStore.commit();
     }
 
     private void dispatchTokenUnpause(@NonNull final HandleContext handleContext) {
         final var handler = handlers.tokenUnpauseHandler();
         handler.handle(handleContext);
-        finishTokenUnPause(handleContext);
-    }
-
-    private void finishTokenUnPause(@NonNull final HandleContext handleContext) {
-        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
-        tokenStore.commit();
     }
 
     private void dispatchTokenFreeze(@NonNull final HandleContext handleContext) {
         final var handler = handlers.tokenFreezeAccountHandler();
         handler.handle(handleContext);
-        finishTokenFreeze(handleContext);
-    }
-
-    private void finishTokenFreeze(@NonNull final HandleContext handleContext) {
-        handleContext.writableStore(WritableTokenRelationStore.class).commit();
     }
 
     private void dispatchTokenUnfreeze(@NonNull final HandleContext handleContext) {
         final var handler = handlers.tokenUnfreezeAccountHandler();
         handler.handle(handleContext);
-        finishTokenUnfreeze(handleContext);
-    }
-
-    private void finishTokenUnfreeze(@NonNull final HandleContext handleContext) {
-        handleContext.writableStore(WritableTokenRelationStore.class).commit();
     }
 
     private void dispatchPrng(@NonNull final HandleContext handleContext) {
@@ -308,12 +243,6 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
         requireNonNull(handleContext);
         final var handler = handlers.tokenFeeScheduleUpdateHandler();
         handler.handle(handleContext);
-        finishTokenFeeScheduleUpdate(handleContext);
-    }
-
-    private void finishTokenFeeScheduleUpdate(@NonNull final HandleContext handleContext) {
-        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
-        requireNonNull(tokenStore).commit();
     }
 
     private void dispatchTokenCreate(@NonNull final HandleContext handleContext) {
@@ -326,8 +255,5 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     protected void finishTokenCreate(@NonNull final HandleContext handleContext) {
         // If token can't be created, due to the usage of a price regime, throw an exception
         validateTrue(usageLimits.areCreatableTokens(1), MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
-
-        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
-        tokenStore.commit();
     }
 }

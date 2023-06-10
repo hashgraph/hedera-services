@@ -22,9 +22,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,9 +39,9 @@ import java.util.Set;
  */
 public class WritableAccountStore extends ReadableAccountStoreImpl {
     /** The underlying data storage class that holds the account data. */
-    private final WritableKVState<EntityNumVirtualKey, Account> accountState;
+    private final WritableKVState<AccountID, Account> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
-    private final WritableKVState<String, EntityNumValue> aliases;
+    private final WritableKVState<String, AccountID> aliases;
 
     /**
      * Create a new {@link WritableAccountStore} instance.
@@ -66,7 +64,8 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public void put(@NonNull final Account account) {
         Objects.requireNonNull(account);
-        accountState.put(EntityNumVirtualKey.fromLong(account.accountNumber()), Objects.requireNonNull(account));
+        accountState.put(
+                AccountID.newBuilder().accountNum(account.accountNumber()).build(), Objects.requireNonNull(account));
     }
 
     /**
@@ -77,13 +76,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public void putAlias(@NonNull final String alias, final long accountNum) {
         Objects.requireNonNull(alias);
-        aliases.put(alias, new EntityNumValue(accountNum));
-    }
-
-    /** Commits the changes to the underlying data storage. */
-    public void commit() {
-        ((WritableKVStateBase<?, ?>) accountState).commit();
-        ((WritableKVStateBase<?, ?>) aliases).commit();
+        aliases.put(alias, AccountID.newBuilder().accountNum(accountNum).build());
     }
 
     /**
@@ -116,14 +109,17 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                         if (alias.length() == EVM_ADDRESS_LEN && isMirror(alias)) {
                             yield fromMirror(alias);
                         } else {
-                            final var entityNum = aliases.get(alias.asUtf8String());
-                            yield entityNum == null ? EntityNumValue.DEFAULT.num() : entityNum.num();
+                            final var accountID = aliases.get(alias.asUtf8String());
+                            yield accountID == null ? AccountID.DEFAULT.accountNum() : accountID.accountNum();
                         }
                     }
                     case UNSET -> EntityNumValue.DEFAULT.num();
                 };
 
-        return accountState.getForModify(EntityNumVirtualKey.fromLong(accountNum));
+        return accountNum == null
+                ? null
+                : accountState.getForModify(
+                        AccountID.newBuilder().accountNum(accountNum).build());
     }
 
     /**
@@ -132,7 +128,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * @param accountID - the account id of the account to be removed.
      */
     public void remove(@NonNull final AccountID accountID) {
-        accountState.remove(EntityNumVirtualKey.fromLong(accountID.accountNum()));
+        accountState.remove(accountID);
     }
 
     /**
@@ -161,7 +157,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * @return the set of accounts modified in existing state
      */
     @NonNull
-    public Set<EntityNumVirtualKey> modifiedAccountsInState() {
+    public Set<AccountID> modifiedAccountsInState() {
         return accountState.modifiedKeys();
     }
 

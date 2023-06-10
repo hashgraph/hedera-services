@@ -38,11 +38,11 @@ import com.swirlds.test.framework.TestTypeTags;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.DisplayName;
@@ -271,10 +271,11 @@ class CriticalQuorumTest {
         final List<Arguments> arguments = new ArrayList<>();
         for (int numNodes = 3; numNodes <= 20; numNodes++) {
             final List<Long> weights = WeightGenerators.oneThirdNodesZeroWeight(null, numNodes);
+            final AtomicInteger index = new AtomicInteger(0);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(true)
-                    .setCustomWeightGenerator(id -> weights.get((int) id))
+                    .setSequentialIds(false)
+                    .setCustomWeightGenerator(id -> weights.get(index.getAndIncrement()))
                     .build();
             final String name = numNodes + " nodes, one third of nodes are zero-weight, remaining have random weight "
                     + "between [1, 90]";
@@ -293,10 +294,11 @@ class CriticalQuorumTest {
         final List<Arguments> arguments = new ArrayList<>();
         for (int numNodes = 11; numNodes <= 20; numNodes++) {
             final List<Long> weights = WeightGenerators.threeNodesWithStrongMinority(numNodes);
+            final AtomicInteger index = new AtomicInteger(0);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(true)
-                    .setCustomWeightGenerator(id -> weights.get((int) id))
+                    .setSequentialIds(false)
+                    .setCustomWeightGenerator(id -> weights.get(index.getAndIncrement()))
                     .build();
             final String name =
                     numNodes + " nodes, three nodes have a strong minority, remaining weight evenly " + "distributed";
@@ -315,10 +317,11 @@ class CriticalQuorumTest {
         final List<Arguments> arguments = new ArrayList<>();
         for (int numNodes = 3; numNodes <= 9; numNodes++) {
             final List<Long> weights = WeightGenerators.singleNodeWithStrongMinority(numNodes);
+            final AtomicInteger index = new AtomicInteger(0);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(true)
-                    .setCustomWeightGenerator(id -> weights.get((int) id))
+                    .setSequentialIds(false)
+                    .setCustomWeightGenerator(id -> weights.get(index.getAndIncrement()))
                     .build();
             final String name = numNodes + " nodes, one node has strong minority, remaining weight evenly distributed";
             arguments.add(Arguments.of(new CriticalQuorumBuilder(name, addressBook)));
@@ -336,10 +339,11 @@ class CriticalQuorumTest {
         final List<Arguments> arguments = new ArrayList<>();
         for (int numNodes = 1; numNodes <= 9; numNodes++) {
             final List<Long> weights = WeightGenerators.incrementingWeightWithOneZeroWeight(numNodes);
+            final AtomicInteger index = new AtomicInteger(0);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(true)
-                    .setCustomWeightGenerator(id -> weights.get((int) id))
+                    .setSequentialIds(false)
+                    .setCustomWeightGenerator(id -> weights.get(index.getAndIncrement()))
                     .build();
             final String name = numNodes + " node" + (numNodes == 1 ? "" : "s") + " unbalanced";
             arguments.add(Arguments.of(new CriticalQuorumBuilder(name, addressBook)));
@@ -355,12 +359,12 @@ class CriticalQuorumTest {
     private static Collection<Arguments> balancedWeightArgs() {
         final List<Arguments> arguments = new ArrayList<>();
         for (int numNodes = 1; numNodes <= 9; numNodes++) {
-            final List<Long> weights = Collections.nCopies(numNodes, 1L);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(true)
-                    .setCustomWeightGenerator(id -> weights.get((int) id))
+                    .setSequentialIds(false)
+                    .setCustomWeightGenerator(id -> 1L)
                     .build();
+
             final String name = numNodes + " node" + (numNodes == 1 ? "" : "s") + " balanced";
             arguments.add(Arguments.of(new CriticalQuorumBuilder(name, addressBook)));
         }

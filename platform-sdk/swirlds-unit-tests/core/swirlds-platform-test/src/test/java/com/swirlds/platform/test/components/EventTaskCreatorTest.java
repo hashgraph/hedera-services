@@ -51,7 +51,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 class EventTaskCreatorTest {
 
@@ -71,7 +70,7 @@ class EventTaskCreatorTest {
         eventMapper = mock(EventMapper.class);
         addressBook = mock(AddressBook.class);
         address = mock(Address.class);
-        when(addressBook.getAddress(Mockito.anyLong())).thenReturn(address);
+        when(addressBook.getAddress(any())).thenReturn(address);
         when(addressBook.copy()).thenReturn(addressBook);
         selfId = new NodeId(1);
         eventIntakeMetrics = mock(EventIntakeMetrics.class);

@@ -16,21 +16,20 @@
 
 plugins { id("com.hedera.hashgraph.conventions") }
 
-description = "Default Hedera NetworkAdmin Service Implementation"
+description = "Default Hedera Network Admin Service Implementation"
 
 dependencies {
-  javaModuleDependencies {
-    annotationProcessor(gav("dagger.compiler"))
+    javaModuleDependencies {
+        annotationProcessor(gav("dagger.compiler"))
 
-    testImplementation(project(":hedera-node:node-app-service-token"))
-    testImplementation(testFixtures(project(":hedera-node:node-config")))
-    testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
-    testImplementation(gav("com.hedera.hashgraph.protobuf.java.api"))
-    testImplementation(gav("com.swirlds.fcqueue"))
-    testImplementation(gav("org.assertj.core"))
-    testImplementation(gav("org.junit.jupiter.api"))
-    testImplementation(gav("org.mockito"))
-    testImplementation(gav("org.mockito.junit.jupiter"))
-    testRuntimeOnly(gav("org.mockito.inline"))
-  }
+        testImplementation(project(":hedera-node:node-app-service-token-impl"))
+        testImplementation(testFixtures(project(":hedera-node:node-config")))
+        testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+        testImplementation(gav("com.swirlds.fcqueue"))
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.mockito"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+        testRuntimeOnly(gav("org.mockito.inline"))
+    }
 }
