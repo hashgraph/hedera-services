@@ -16,11 +16,9 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -96,24 +94,24 @@ public class TokenExpiryInfoV1SecurityModelSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                updateExpiryInfoForToken(), updateExpiryInfoForTokenAndReadLatestInfo());
+        return List.of(updateExpiryInfoForToken(), updateExpiryInfoForTokenAndReadLatestInfo());
     }
 
-    @SuppressWarnings({"java:S5960","java:S1192"}) // using `assertThat` in production code - except this isn't production code
+    @SuppressWarnings({"java:S5960", "java:S1192"
+    }) // using `assertThat` in production code - except this isn't production code
     private HapiSpec updateExpiryInfoForToken() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("updateExpiryInfoForToken")
-            .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
-            .given(
-                overridingTwo(
-                    CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                    "ContractCall,TokenCreate,TokenUpdate",
-                    CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                    CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+                .given(
+                        overridingTwo(
+                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
+                                "ContractCall,TokenCreate,TokenUpdate",
+                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
+                                CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
                         cryptoCreate(UPDATED_AUTO_RENEW_ACCOUNT)
@@ -258,13 +256,13 @@ public class TokenExpiryInfoV1SecurityModelSuite extends HapiSuite {
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("updateExpiryInfoForTokenAndReadLatestInfo")
-            .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
-            .given(
-                overridingTwo(
-                    CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                    "ContractCall,TokenCreate,TokenUpdate",
-                    CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                    CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+                .given(
+                        overridingTwo(
+                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
+                                "ContractCall,TokenCreate,TokenUpdate",
+                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
+                                CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
                         cryptoCreate(UPDATED_AUTO_RENEW_ACCOUNT)
