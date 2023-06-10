@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -91,13 +90,13 @@ public class DeleteTokenPrecompileV1SecurityModelSuite extends HapiSuite {
         final var tokenAlreadyDeletedTxn = "tokenAlreadyDeletedTxn";
 
         return propertyPreservingHapiSpec("deleteFungibleTokenWithNegativeCases")
-            .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
-            .given(
-                overridingTwo(
-                    CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                    "ContractCall,CryptoTransfer,TokenAssociateToAccount,TokenCreate,TokenDelete",
-                    CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                    CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+                .given(
+                        overridingTwo(
+                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
+                                "ContractCall,CryptoTransfer,TokenAssociateToAccount,TokenCreate,TokenDelete",
+                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
+                                CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT)
                                 .key(MULTI_KEY)
@@ -151,13 +150,13 @@ public class DeleteTokenPrecompileV1SecurityModelSuite extends HapiSuite {
         final var notAnAdminTxn = "notAnAdminTxn";
 
         return propertyPreservingHapiSpec("deleteNftTokenWithNegativeCases")
-            .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
-            .given(
-                overridingTwo(
-                    CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
-                    "ContractCall,CryptoTransfer,TokenAssociateToAccount,TokenCreate,TokenDelete",
-                    CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
-                    CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
+                .given(
+                        overridingTwo(
+                                CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
+                                "ContractCall,CryptoTransfer,TokenAssociateToAccount,TokenCreate,TokenDelete",
+                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
+                                CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HBAR).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),

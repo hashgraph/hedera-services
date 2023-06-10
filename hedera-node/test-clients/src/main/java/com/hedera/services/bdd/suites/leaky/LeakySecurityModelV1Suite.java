@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.leaky;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractCallV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCreateV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationV1SecurityModelSuite;
 import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileV1SecurityModelSuite;
@@ -60,13 +61,15 @@ public class LeakySecurityModelV1Suite extends HapiSuite {
         suites = List.of(
                 new AssociatePrecompileV1SecurityModelSuite(),
                 new ContractBurnHTSV1SecurityModelSuite(),
+                new ContractCallV1SecurityModelSuite(),
                 new ContractCreateV1SecurityModelSuite(),
                 new ContractHTSV1SecurityModelSuite(),
                 new ContractKeysHTSV1SecurityModelSuite(),
                 new ContractMintHTSV1SecurityModelSuite(),
                 new Create2OperationV1SecurityModelSuite(),
                 new CreatePrecompileV1SecurityModelSuite(),
-                new CryptoTransferHTSV1SecurityModelSuite(), new DeleteTokenPrecompileV1SecurityModelSuite(),
+                new CryptoTransferHTSV1SecurityModelSuite(),
+                new DeleteTokenPrecompileV1SecurityModelSuite(),
                 new DissociatePrecompileV1SecurityModelSuite(),
                 new ERCPrecompileV1SecurityModelSuite(),
                 new EthereumV1SecurityModelSuite(),
