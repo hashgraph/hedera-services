@@ -78,7 +78,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.jetbrains.annotations.NotNull;
 
-@SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class TokenInfoHTSSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(TokenInfoHTSSuite.class);

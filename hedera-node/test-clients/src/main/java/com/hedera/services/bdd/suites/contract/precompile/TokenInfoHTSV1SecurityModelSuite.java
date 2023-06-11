@@ -39,14 +39,9 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
-import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
-import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF;
+import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.*;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -129,7 +124,6 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
     private static final int MINIMUM_TO_COLLECT = 5;
     private static final int MAXIMUM_TO_COLLECT = 400;
     private static final int MAX_SUPPLY = 1000;
-    public static final String GET_CUSTOM_FEES_FOR_TOKEN = "getCustomFeesForToken";
 
     public static void main(final String... args) {
         new TokenInfoHTSV1SecurityModelSuite().runSuiteSync();
@@ -203,7 +197,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
                                 .feeScheduleKey(FEE_SCHEDULE_KEY)
                                 .pauseKey(PAUSE_KEY)
                                 .withCustom(fixedHbarFee(500L, HTS_COLLECTOR))
-                                // Also include a fractional fee with no minimum to collect
+                                // Include a fractional fee with no minimum to collect
                                 .withCustom(fractionalFee(
                                         NUMERATOR, DENOMINATOR * 2L, 0, OptionalLong.empty(), TOKEN_TREASURY))
                                 .withCustom(fractionalFee(
@@ -643,7 +637,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
             final long expirySecond) {
         final var autoRenewAccount = spec.registry().getAccountID(AUTO_RENEW_ACCOUNT);
 
-        final ArrayList<CustomFee> customFees = getCustomFees(spec);
+        final ArrayList<CustomFee> customFees = getExpectedCustomFees(spec);
 
         return TokenInfo.newBuilder()
                 .setLedgerId(fromString("0x03"))
@@ -671,11 +665,22 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
     }
 
     @NotNull
-    private ArrayList<CustomFee> getCustomFees(final HapiSpec spec) {
+    private ArrayList<CustomFee> getExpectedCustomFees(final HapiSpec spec) {
         final var fixedFee = FixedFee.newBuilder().setAmount(500L).build();
         final var customFixedFee = CustomFee.newBuilder()
                 .setFixedFee(fixedFee)
                 .setFeeCollectorAccountId(spec.registry().getAccountID(HTS_COLLECTOR))
+                .build();
+
+        final var firstFraction = Fraction.newBuilder()
+                .setNumerator(NUMERATOR)
+                .setDenominator(DENOMINATOR * 2L)
+                .build();
+        final var firstFractionalFee =
+                FractionalFee.newBuilder().setFractionalAmount(firstFraction).build();
+        final var firstCustomFractionalFee = CustomFee.newBuilder()
+                .setFractionalFee(firstFractionalFee)
+                .setFeeCollectorAccountId(spec.registry().getAccountID(TOKEN_TREASURY))
                 .build();
 
         final var fraction = Fraction.newBuilder()
@@ -694,6 +699,7 @@ public class TokenInfoHTSV1SecurityModelSuite extends HapiSuite {
 
         final var customFees = new ArrayList<CustomFee>();
         customFees.add(customFixedFee);
+        customFees.add(firstCustomFractionalFee);
         customFees.add(customFractionalFee);
         return customFees;
     }
