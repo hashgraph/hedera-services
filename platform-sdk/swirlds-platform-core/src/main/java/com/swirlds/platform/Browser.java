@@ -564,7 +564,7 @@ public class Browser {
             }
         logger.info(STARTUP.getMarker(), "Starting thread dump generator in {}", dir);
             ThreadDumpGenerator.generateThreadDumpAtIntervals(
-                    dir, 10);
+                    dir, 30000);
         //}
     }
 
@@ -707,6 +707,7 @@ public class Browser {
                         .setThreadName("appMain")
                         .setRunnable(appMain)
                         .build();
+                appThread.setDaemon(false);
                 appRunThreads[ownHostIndex] = appThread;
 
                 ownHostIndex++;
