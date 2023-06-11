@@ -564,7 +564,7 @@ public class Browser {
             }
         logger.info(STARTUP.getMarker(), "Starting thread dump generator in {}", dir);
             ThreadDumpGenerator.generateThreadDumpAtIntervals(
-                    dir, 40);
+                    dir, 10);
         //}
     }
 
