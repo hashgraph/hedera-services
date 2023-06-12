@@ -28,6 +28,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -43,6 +44,7 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
@@ -65,6 +67,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.stats.CycleTimingStat;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.FileNotFoundException;
 import java.time.Duration;
@@ -278,7 +281,7 @@ class EventFlowTests {
 
     /**
      * Verifies that signed states are created for the appropriate rounds given the
-     * {@link SettingsProvider#getSignedStateFreq()}.
+     * {@link com.swirlds.common.config.StateConfig#signedStateFreq()}.
      * <p>
      * Some developers have seen this test hang when running locally. There is a known memory leak with SS1
      * (https://github.com/swirlds/swirlds-platform/issues/4776) that causes the hang-up when running with multiple SS1
@@ -299,9 +302,7 @@ class EventFlowTests {
             final SwirldState origSwirldState) {
         final Random random = RandomUtils.initRandom(seed);
 
-        when(settingsProvider.getSignedStateFreq()).thenReturn(signedStateFreq);
-
-        init(random, numNodes, origSwirldState);
+        init(random, numNodes, origSwirldState, null, prepareConfig(signedStateFreq));
         final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
 
         final List<ConsensusRound> consensusRounds = wrapper.applyConsensusRounds(addressBook, numEvents);
@@ -361,12 +362,10 @@ class EventFlowTests {
             final SwirldState origSwirldState) {
         final Random random = RandomUtils.initRandom(seed);
 
-        when(settingsProvider.getSignedStateFreq()).thenReturn(signedStateFreq);
-
         // Will hold the freeze round when the last event of the round is generated
         final AtomicLong freezeRound = new AtomicLong(-1);
 
-        init(random, numNodes, origSwirldState);
+        init(random, numNodes, origSwirldState, null, prepareConfig(signedStateFreq));
         final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
 
         final List<ConsensusRound> consensusRounds =
@@ -553,11 +552,20 @@ class EventFlowTests {
     }
 
     protected void init(final Random random, final int numNodes, final SwirldState swirldState) {
-        init(random, numNodes, swirldState, null);
+        init(random, numNodes, swirldState, null, prepareConfig());
     }
 
     protected void init(
             final Random random, final int numNodes, final SwirldState swirldState, final State initialState) {
+        init(random, numNodes, swirldState, initialState, prepareConfig());
+    }
+
+    protected void init(
+            final Random random,
+            final int numNodes,
+            final SwirldState swirldState,
+            final State initialState,
+            final Configuration config) {
         addressBook = new RandomAddressBookGenerator(random)
                 .setSize(numNodes)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
@@ -619,8 +627,9 @@ class EventFlowTests {
                 () -> false,
                 state);
 
+        ConfigurationHolder.getInstance().setConfiguration(config);
         final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+                TestPlatformContextBuilder.create().withConfiguration(config).build();
 
         preConsensusEventHandler = new PreConsensusEventHandler(
                 new NoOpMetrics(), getStaticThreadManager(), selfId, swirldStateManager, consensusMetrics);
@@ -637,6 +646,16 @@ class EventFlowTests {
                 () -> {},
                 (round) -> {},
                 SoftwareVersion.NO_VERSION);
+    }
+
+    private Configuration prepareConfig() {
+        return prepareConfig(1);
+    }
+
+    private Configuration prepareConfig(int signedStateFreq) {
+        return new TestConfigBuilder()
+                .withValue("state.signedStateFreq", signedStateFreq)
+                .getOrCreateConfig();
     }
 
     private State getInitialState(

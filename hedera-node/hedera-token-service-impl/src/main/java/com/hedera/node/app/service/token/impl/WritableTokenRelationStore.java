@@ -63,6 +63,16 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
     }
 
     /**
+     * Removes a {@link TokenRelation} from the state
+     *
+     * @param tokenRelation the {@code TokenRelation} to be removed
+     */
+    public void remove(@NonNull final TokenRelation tokenRelation) {
+        requireNonNull(tokenRelState)
+                .remove(EntityNumPair.fromLongs(tokenRelation.accountNumber(), tokenRelation.tokenNumber()));
+    }
+
+    /**
      * Returns the {@link TokenRelation} with the given token number and account number.
      * If no such token relation exists, returns {@code Optional.empty()}
      *

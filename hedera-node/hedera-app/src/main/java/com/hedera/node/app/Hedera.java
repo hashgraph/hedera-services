@@ -132,6 +132,11 @@ import org.apache.logging.log4j.Logger;
  * controls execution of the node. If you want to understand our system, this is a great place to start!
  */
 public final class Hedera implements SwirldMain {
+    static {
+        // Helidon uses java.util.logging, so we need to set up the bridge before it has a chance to log anything
+        System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
+    }
+
     private static final Logger logger = LogManager.getLogger(Hedera.class);
     // This should come from configuration, NOT be hardcoded.
     public static final int MAX_SIGNED_TXN_SIZE = 6144;

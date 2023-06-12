@@ -25,7 +25,7 @@ import java.time.Instant;
  */
 public interface DualState {
     /**
-     * Sets the instant after which the platform will enter maintenance status.
+     * Sets the instant after which the platform will enter FREEZING status.
      * When consensus timestamp of a signed state is after this instant,
      * the platform will stop creating events and accepting transactions.
      * This is used to safely shut down the platform for maintenance.
