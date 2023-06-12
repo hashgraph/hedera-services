@@ -1,0 +1,250 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.service.token.impl.test.handlers;
+
+import static com.hedera.hapi.node.base.TokenFreezeStatus.FROZEN;
+import static com.hedera.hapi.node.base.TokenFreezeStatus.UNFROZEN;
+import static com.hedera.hapi.node.base.TokenKycStatus.GRANTED;
+import static com.hedera.hapi.node.base.TokenKycStatus.REVOKED;
+import static com.hedera.hapi.node.base.TokenPauseStatus.PAUSED;
+import static com.hedera.hapi.node.base.TokenPauseStatus.UNPAUSED;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKENS;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.when;
+
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.QueryHeader;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.token.TokenGetInfoQuery;
+import com.hedera.hapi.node.token.TokenGetInfoResponse;
+import com.hedera.hapi.node.token.TokenInfo;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
+import com.hedera.node.app.service.token.impl.handlers.TokenGetInfoHandler;
+import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
+import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.converter.BytesConverter;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
+
+    @Mock(strictness = LENIENT)
+    private QueryContext context;
+
+    @Mock
+    private Token token1, token2, token3;
+    @Mock
+    private ReadableStates readableStates1, readableStates2, readableStates3;
+
+    private TokenGetInfoHandler subject;
+
+    @BeforeEach
+    public void setUp() {
+        super.setUp();
+        subject = new TokenGetInfoHandler();
+    }
+
+    @Test
+    void extractsHeader() {
+        final var query = createTokenGetInfoQuery(fungibleTokenId);
+        final var header = subject.extractHeader(query);
+        final var op = query.tokenGetInfoOrThrow();
+        assertEquals(op.header(), header);
+    }
+
+    @Test
+    void createsEmptyResponse() {
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
+                .build();
+        final var response = subject.createEmptyResponse(responseHeader);
+        final var expectedResponse = Response.newBuilder()
+                .tokenGetInfo(TokenGetInfoResponse.newBuilder().header(responseHeader))
+                .build();
+        assertEquals(expectedResponse, response);
+    }
+
+    @Test
+    void validatesQueryWhenValidToken() {
+        final var query = createTokenGetInfoQuery(fungibleTokenId);
+        given(context.query()).willReturn(query);
+        given(context.createStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+
+        assertThatCode(() -> subject.validate(context)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void validatesQueryIfInvalidToken() {
+        final var state = MapReadableKVState.<EntityNum, Token>builder(TOKENS).build();
+        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(state);
+        final var store = new ReadableTokenStoreImpl(readableStates);
+
+        final var query = createTokenGetInfoQuery(fungibleTokenId);
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableTokenStore.class)).thenReturn(store);
+
+        assertThatThrownBy(() -> subject.validate(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(ResponseCodeEnum.INVALID_TOKEN_ID));
+    }
+
+    @Test
+    void validatesQueryIfInvalidTokenInTrans() {
+        final var state = MapReadableKVState.<EntityNum, Token>builder(TOKENS).build();
+        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(state);
+        final var store = new ReadableTokenStoreImpl(readableStates);
+
+        final var query = createEmptyTokenGetInfoQuery();
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableTokenStore.class)).thenReturn(store);
+
+        assertThatThrownBy(() -> subject.validate(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(ResponseCodeEnum.INVALID_TOKEN_ID));
+    }
+
+    @Test
+    void validatesQueryIfDeletedToken() {
+        fungibleToken = fungibleToken.copyBuilder().deleted(true).build();
+        final var state = MapReadableKVState.<EntityNum, Token>builder(TOKENS)
+                .value(fungibleTokenNum, fungibleToken)
+                .build();
+        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(state);
+        final var store = new ReadableTokenStoreImpl(readableStates);
+
+        final var query = createTokenGetInfoQuery(fungibleTokenId);
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableTokenStore.class)).thenReturn(store);
+
+        assertThatThrownBy(() -> subject.validate(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(ResponseCodeEnum.INVALID_TOKEN_ID));
+    }
+
+    @Test
+    void getsResponseIfFailedResponse() {
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
+                .build();
+
+        final var query = createTokenGetInfoQuery(fungibleTokenId);
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+
+        final var config = new HederaTestConfigBuilder()
+                .withValue("tokens.maxRelsPerInfoQuery", 1000)
+                .getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
+
+        final var response = subject.findResponse(context, responseHeader);
+        final var op = response.tokenGetInfoOrThrow();
+        assertEquals(ResponseCodeEnum.FAIL_FEE, op.header().nodeTransactionPrecheckCode());
+    }
+
+    @Test
+    @DisplayName("OK response is correctly handled in findResponse")
+    void getsResponseIfOkResponse() {
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .build();
+        final var expectedInfo = getExpectedInfo();
+
+        final var query = createTokenGetInfoQuery(fungibleTokenId);
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+
+        final var config =
+                new HederaTestConfigBuilder().withValue("ledger.id", "0x03").getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
+
+        final var response = subject.findResponse(context, responseHeader);
+        final var tokenInfoResponse = response.tokenGetInfoOrThrow();
+        assertEquals(ResponseCodeEnum.OK, tokenInfoResponse.header().nodeTransactionPrecheckCode());
+        assertEquals(expectedInfo, tokenInfoResponse.tokenInfo());
+    }
+
+    private TokenInfo getExpectedInfo() {
+        return TokenInfo.newBuilder()
+                .ledgerId(new BytesConverter().convert("0x03"))
+                .tokenType(fungibleToken.tokenType())
+                .supplyType(fungibleToken.supplyType())
+                .tokenId(fungibleTokenId)
+                .deleted(fungibleToken.deleted())
+                .symbol(fungibleToken.symbol())
+                .name(fungibleToken.name())
+                .memo(fungibleToken.memo())
+                .treasury(AccountID.newBuilder().accountNum(fungibleToken.treasuryAccountNumber()))
+                .totalSupply(fungibleToken.totalSupply())
+                .maxSupply(fungibleToken.maxSupply())
+                .decimals(fungibleToken.decimals())
+                .expiry(Timestamp.newBuilder().seconds(fungibleToken.expiry()))
+                .adminKey(fungibleToken.adminKey())
+                .kycKey(fungibleToken.kycKey())
+                .freezeKey(fungibleToken.freezeKey())
+                .wipeKey(fungibleToken.wipeKey())
+                .supplyKey(fungibleToken.supplyKey())
+                .feeScheduleKey(fungibleToken.feeScheduleKey())
+                .pauseKey(fungibleToken.pauseKey())
+                .autoRenewPeriod(Duration.newBuilder().seconds(fungibleToken.autoRenewSecs()))
+                .autoRenewAccount(AccountID.newBuilder().accountNum(fungibleToken.autoRenewAccountNumber()))
+                .defaultFreezeStatus(fungibleToken.accountsFrozenByDefault() ? FROZEN : UNFROZEN)
+                .defaultKycStatus(fungibleToken.accountsKycGrantedByDefault() ? GRANTED : REVOKED)
+                .pauseStatus(fungibleToken.paused() ? PAUSED : UNPAUSED)
+                .customFees(fungibleToken.customFees())
+                .build();
+    }
+
+    private Query createTokenGetInfoQuery(final TokenID tokenId) {
+        final var data = TokenGetInfoQuery.newBuilder()
+                .token(tokenId)
+                .header(QueryHeader.newBuilder().build())
+                .build();
+
+        return Query.newBuilder().tokenGetInfo(data).build();
+    }
+
+    private Query createEmptyTokenGetInfoQuery() {
+        final var data = TokenGetInfoQuery.newBuilder()
+                .header(QueryHeader.newBuilder().build())
+                .build();
+
+        return Query.newBuilder().tokenGetInfo(data).build();
+    }
+}
