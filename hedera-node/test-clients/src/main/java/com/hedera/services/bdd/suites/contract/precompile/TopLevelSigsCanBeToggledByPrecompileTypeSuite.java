@@ -58,13 +58,10 @@ import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompil
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.ECDSA_KEY;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.ED25519KEY;
 import static com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite.DELEGATE_KEY;
-import static com.hedera.services.bdd.suites.contract.precompile.DeleteTokenPrecompileSuite.DELETE_TOKEN_CONTRACT;
-import static com.hedera.services.bdd.suites.contract.precompile.DeleteTokenPrecompileSuite.TOKEN_DELETE_FUNCTION;
 import static com.hedera.services.bdd.suites.contract.precompile.FreezeUnfreezeTokenPrecompileSuite.FREEZE_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.precompile.FreezeUnfreezeTokenPrecompileSuite.TOKEN_FREEZE_FUNC;
 import static com.hedera.services.bdd.suites.contract.precompile.FreezeUnfreezeTokenPrecompileSuite.TOKEN_UNFREEZE_FUNC;
 import static com.hedera.services.bdd.suites.contract.precompile.GrantRevokeKycSuite.GRANT_REVOKE_KYC_CONTRACT;
-import static com.hedera.services.bdd.suites.contract.precompile.GrantRevokeKycSuite.SECOND_ACCOUNT;
 import static com.hedera.services.bdd.suites.contract.precompile.GrantRevokeKycSuite.TOKEN_GRANT_KYC;
 import static com.hedera.services.bdd.suites.contract.precompile.GrantRevokeKycSuite.TOKEN_REVOKE_KYC;
 import static com.hedera.services.bdd.suites.contract.precompile.PauseUnpauseTokenAccountPrecompileSuite.PAUSE_TOKEN_ACCOUNT_FUNCTION_NAME;
@@ -75,16 +72,10 @@ import static com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrec
 import static com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileSuite.CUSTOM_SYMBOL;
 import static com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileSuite.TOKEN_UPDATE_AS_KEY;
 import static com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileSuite.TOKEN_UPDATE_CONTRACT;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.ADMIN_ACCOUNT;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.GAS_TO_OFFER;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.WIPE_CONTRACT;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.WIPE_FUNGIBLE_TOKEN;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.WIPE_KEY;
+import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FREEZE_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.KYC_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.PAUSE_KEY;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
-import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.TOKEN;
@@ -108,9 +99,20 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TopLevelSigsCanBeToggledByPrecompileTypeSuite.class);
-    private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
+
+    public static final String DELETE_TOKEN_CONTRACT = "DeleteTokenContract";
+    public static final String TOKEN_DELETE_FUNCTION = "tokenDelete";
+    public static final String WIPE_CONTRACT = "WipeTokenAccount";
+    public static final String ADMIN_ACCOUNT = "admin";
+    private static final String ACCOUNT = "anybody";
+    private static final String SECOND_ACCOUNT = "anybodySecond";
+    public static final String WIPE_KEY = "wipeKey";
+    private static final String MULTI_KEY = "purpose";
+    public static final int GAS_TO_OFFER = 1_000_000;
+    public static final String WIPE_FUNGIBLE_TOKEN = "wipeFungibleToken";
 
     public static void main(String... args) {
         new TopLevelSigsCanBeToggledByPrecompileTypeSuite().runSuiteSync();
@@ -131,7 +133,6 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     }
 
     private HapiSpec canToggleTopLevelSigUsageForWipePrecompile() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var failedWipeTxn = "failedWipeTxn";
         final var succeededWipeTxn = "succeededWipeTxn";
 
@@ -139,7 +140,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("CanToggleTopLevelSigUsageForWipePrecompile")
-                .preserving(ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         newKeyNamed(WIPE_KEY),
                         cryptoCreate(ADMIN_ACCOUNT).exposingCreatedIdTo(adminAccountID::set),
@@ -156,7 +157,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
                         // First revoke use of top-level signatures from all precompiles
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
                 .when(
                         // Trying to wipe token with top-level signatures should fail
                         sourcing(() -> contractCall(
@@ -171,7 +172,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // But now restore use of top-level signatures for the token wipe precompile
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenAccountWipe"),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenAccountWipe"),
                         // Now the same call should succeed
                         sourcing(() -> contractCall(
                                         WIPE_CONTRACT,
@@ -193,13 +194,12 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     }
 
     private HapiSpec canToggleTopLevelSigUsageForUpdatePrecompile() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var failedUpdateTxn = "failedUpdateTxn";
         final var succeededUpdateTxn = "succeededUpdateTxn";
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("CanToggleTopLevelSigUsageForWipePrecompile")
-                .preserving(ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
@@ -226,7 +226,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                         grantTokenKyc(VANILLA_TOKEN, ACCOUNT),
                         cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
                         // First revoke use of top-level signatures from all precompiles
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
                 .when(
                         // Trying to update token with top-level signatures should fail
                         withOpContext((spec, opLog) -> allRunFor(
@@ -261,7 +261,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                 // But now restore use of top-level signatures for
                                 // the token update precompile
-                                overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenUpdate"),
+                                overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenUpdate"),
                                 contractCall(
                                                 TOKEN_UPDATE_CONTRACT,
                                                 "updateTokenWithAllFields",
@@ -301,7 +301,6 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     }
 
     private HapiSpec canToggleTopLevelSigUsageForPauseAndUnpausePrecompile() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var failedPauseTxn = "failedPauseTxn";
         final var failedUnpauseTxn = "failedUnpauseTxn";
         final var succeededPauseTxn = "succeededPauseTxn";
@@ -311,7 +310,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("CanToggleTopLevelSigUsageForPauseAndUnpausePrecompile")
-                .preserving(ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         newKeyNamed(PAUSE_KEY),
                         newKeyNamed(MULTI_KEY),
@@ -329,7 +328,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
                         // First revoke use of top-level signatures from all precompiles
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
                 .when(
                         // Trying to pause with top-level signatures should fail
                         sourcing(() -> contractCall(
@@ -342,7 +341,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .via(failedPauseTxn)),
                         // But now restore use of top-level signatures for the pause precompile
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenPause"),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenPause"),
                         // Now the same call should succeed
                         sourcing(() -> contractCall(
                                         PAUSE_UNPAUSE_CONTRACT,
@@ -354,7 +353,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .via(succeededPauseTxn)),
                         // revoke use of top-level signatures from all precompiles again
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""),
                         // Now the same call should succeed
                         sourcing(() -> contractCall(
                                         PAUSE_UNPAUSE_CONTRACT,
@@ -366,7 +365,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .via(failedUnpauseTxn)),
                         // But now restore use of top-level signatures for the unpause precompile
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenUnpause"),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenUnpause"),
                         // Now the same call should succeed
                         sourcing(() -> contractCall(
                                         PAUSE_UNPAUSE_CONTRACT,
@@ -439,12 +438,11 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     }
 
     private HapiSpec canToggleTopLevelSigUsageForBurnPrecompile() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var failedBurnTxn = "failedBurnTxn";
         final var succeededBurnTxn = "succeededBurnTxn";
 
         return propertyPreservingHapiSpec("CanToggleTopLevelSigUsageForBurnPrecompile")
-                .preserving(ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SUPPLY_KEY),
@@ -467,7 +465,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                         .via(CREATION_TX)
                                         .gas(GAS_TO_OFFER))),
                         // First revoke use of top-level signatures from all precompiles
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
                 .when(
                         // Trying to burn with top-level signatures should fail
                         sourcing(() -> contractCall(
@@ -478,7 +476,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 .via(failedBurnTxn)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // But now restore use of top-level signatures for the burn precompile
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenBurn"),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenBurn"),
                         // Now the same call should succeed
                         sourcing(() -> contractCall(
                                         THE_BURN_CONTRACT, BURN_TOKEN_WITH_EVENT, BigInteger.valueOf(10L), new long[0])
@@ -496,7 +494,6 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     }
 
     private HapiSpec canToggleTopLevelSigUsageForMintPrecompile() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var tokenToMint = "tokenToMint";
         final var failedMintTxn = "failedMintTxn";
         final var succeededMintTxn = "succeededMintTxn";
@@ -504,7 +501,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
         final AtomicReference<Address> accountAddress = new AtomicReference<>();
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         return propertyPreservingHapiSpec("CanToggleTopLevelSigUsageForMintPrecompile")
-                .preserving(ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SUPPLY_KEY),
@@ -525,7 +522,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                         sourcing(() -> contractCreate(
                                 MINT_CONTRACT, HapiParserUtil.asHeadlongAddress(asAddress(fungible.get())))),
                         // First revoke use of top-level signatures from all precompiles
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
                 .when(
                         // Trying to mint with top-level signatures should fail
                         sourcing(() -> contractCall(
@@ -535,7 +532,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 .via(failedMintTxn)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // But now restore use of top-level signatures for the mint precompile
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenMint"),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenMint"),
                         // Now the same call should succeed
                         sourcing(() -> contractCall(
                                         MINT_CONTRACT, MINT_FUNGIBLE_TOKEN_WITH_EVENT, BigInteger.valueOf(10L))
@@ -552,13 +549,12 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     }
 
     private HapiSpec canToggleTopLevelSigUsageForDeletePrecompile() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var failedDeleteTxn = "failedDeleteTxn";
         final var succeededDeleteTxn = "succeededDeleteTxn";
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return propertyPreservingHapiSpec("CanToggleTopLevelSigUsageForDeletePrecompile")
-                .preserving(ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT)
@@ -577,7 +573,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
                         // First revoke use of top-level signatures from all precompiles
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
                 .when(
                         // Trying to delete with top-level signatures should fail
                         sourcing(() -> contractCall(
@@ -589,7 +585,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 .via(failedDeleteTxn)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         // But now restore use of top-level signatures for the delete precompile
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenDelete"),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenDelete"),
                         // Now the same call should succeed
                         sourcing(() -> contractCall(
                                         DELETE_TOKEN_CONTRACT,
@@ -608,7 +604,6 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     }
 
     private HapiSpec canToggleTopLevelSigUsageForFreezeAndUnfreezePrecompile() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var failedFreezeTxn = "failedFreezeTxn";
         final var failedUnfreezeTxn = "failedUnfreezeTxn";
         final var succeededFreezeTxn = "succeededFreezeTxn";
@@ -618,7 +613,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("CanToggleTopLevelSigUsageForFreezeAndUnfreezePrecompile")
-                .preserving(ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(MULTI_KEY),
@@ -636,7 +631,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
                         // First revoke use of top-level signatures from all precompiles
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
                 .when(
                         // Trying to freezing with top-level signatures should fail
                         sourcing(() -> contractCall(
@@ -650,7 +645,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .via(failedFreezeTxn)),
                         // But now restore use of top-level signatures for the freeze precompile
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenFreezeAccount"),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenFreezeAccount"),
                         // Now the same call should succeed
                         sourcing(() -> contractCall(
                                         FREEZE_CONTRACT,
@@ -663,7 +658,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .via(succeededFreezeTxn)),
                         // revoke use of top-level signatures from all precompiles again
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""),
                         // Now the same call should succeed
                         sourcing(() -> contractCall(
                                         FREEZE_CONTRACT,
@@ -676,7 +671,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .via(failedUnfreezeTxn)),
                         // But now restore use of top-level signatures for the unfreeze precompile
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenUnfreezeAccount"),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenUnfreezeAccount"),
                         // Now the same call should succeed
                         sourcing(() -> contractCall(
                                         FREEZE_CONTRACT,
@@ -701,7 +696,6 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
     }
 
     private HapiSpec canToggleTopLevelSigUsageForGrantKycAndRevokeKycPrecompile() {
-        final String ALLOW_SYSTEM_USE_OF_HAPI_SIGS = CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
         final var failedGrantTxn = "failedGrantTxn";
         final var failedRevokeTxn = "failedRevokeTxn";
         final var succeededGrantTxn = "succeededGrantTxn";
@@ -712,7 +706,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
         final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("canToggleTopLevelSigUsageForGrantKycAndRevokeKycPrecompile")
-                .preserving(ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
+                .preserving(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS)
                 .given(
                         newKeyNamed(KYC_KEY),
                         cryptoCreate(ACCOUNT)
@@ -732,7 +726,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                         tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                         tokenAssociate(SECOND_ACCOUNT, VANILLA_TOKEN),
                         // First revoke use of top-level signatures from all precompiles
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""))
                 .when(
                         // Trying to grant kyc with top-level signatures should fail
                         sourcing(() -> contractCall(
@@ -746,7 +740,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .via(failedGrantTxn)),
                         // But now restore use of top-level signatures for the grant kyc precompile
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenGrantKycToAccount"),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenGrantKycToAccount"),
                         // Now the same call should succeed
                         sourcing(() -> contractCall(
                                         GRANT_REVOKE_KYC_CONTRACT,
@@ -759,7 +753,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .via(succeededGrantTxn)),
                         // revoke use of top-level signatures from all precompiles again
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, ""),
                         // Now the same call should succeed
                         sourcing(() -> contractCall(
                                         GRANT_REVOKE_KYC_CONTRACT,
@@ -772,7 +766,7 @@ public class TopLevelSigsCanBeToggledByPrecompileTypeSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .via(failedRevokeTxn)),
                         // But now restore use of top-level signatures for the revoke kyc precompile
-                        overriding(ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenRevokeKycToAccount"),
+                        overriding(CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS, "TokenRevokeKycToAccount"),
                         // Now the same call should succeed
                         sourcing(() -> contractCall(
                                         GRANT_REVOKE_KYC_CONTRACT,
