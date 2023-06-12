@@ -63,7 +63,6 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
 
     @Override
     public Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
-        // this code should never be executed, as validate() should fail before we get here
         requireNonNull(context);
         requireNonNull(header);
         throw new UnsupportedOperationException("Not implemented");
