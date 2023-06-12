@@ -64,7 +64,7 @@ class CryptoGetLiveHashHandlerTest {
         final var responseHeader = ResponseHeader.newBuilder().build();
         final var response = subject.createEmptyResponse(responseHeader);
         final var expectedResponse = Response.newBuilder()
-                .cryptoGetLiveHash(CryptoGetLiveHashResponse.DEFAULT)
+                .cryptoGetLiveHash(CryptoGetLiveHashResponse.newBuilder().header(responseHeader))
                 .build();
         assertThat(expectedResponse).isEqualTo(response);
     }
