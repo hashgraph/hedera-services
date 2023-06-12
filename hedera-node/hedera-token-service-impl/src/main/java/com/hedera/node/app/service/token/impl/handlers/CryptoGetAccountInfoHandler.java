@@ -243,7 +243,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         final var ret = new ArrayList<TokenRelationship>();
         var tokenNum = account.headTokenNumber();
         int count = 0;
-        Optional<TokenRelation> tokenRelation;
+        TokenRelation tokenRelation;
         Token token; // token from readableToken store by tokenID
         TokenID tokenID; // build from tokenNum
         AccountID accountID; // build from accountNumber
@@ -252,12 +252,12 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
                     AccountID.newBuilder().accountNum(account.accountNumber()).build();
             tokenID = TokenID.newBuilder().tokenNum(tokenNum).build();
             tokenRelation = tokenRelationStore.get(accountID, tokenID);
-            if (tokenRelation.isPresent()) {
+            if (tokenRelation != null) {
                 token = readableTokenStore.get(tokenID);
                 if (token != null) {
-                    addTokenRelation(ret, token, tokenRelation.get(), tokenNum);
+                    addTokenRelation(ret, token, tokenRelation, tokenNum);
                 }
-                tokenNum = tokenRelation.get().nextToken();
+                tokenNum = tokenRelation.nextToken();
             } else {
                 break;
             }
