@@ -51,7 +51,7 @@ public abstract class AbstractStatusLogic implements PlatformStatusLogic {
     protected AbstractStatusLogic(@NonNull final Time time, @NonNull final PlatformStatusConfig config) {
         this.time = Objects.requireNonNull(time);
         this.statusStartTime = time.now();
-        this.config = config;
+        this.config = Objects.requireNonNull(config);
     }
 
     /**
@@ -64,7 +64,9 @@ public abstract class AbstractStatusLogic implements PlatformStatusLogic {
     }
 
     /**
-     * {@inheritDoc}
+     * Get the source of time
+     *
+     * @return the source of time
      */
     @NonNull
     protected Time getTime() {
@@ -72,7 +74,9 @@ public abstract class AbstractStatusLogic implements PlatformStatusLogic {
     }
 
     /**
-     * {@inheritDoc}
+     * Get the configuration object
+     *
+     * @return the configuration object
      */
     @NonNull
     protected PlatformStatusConfig getConfig() {
