@@ -5,31 +5,16 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.service.token.impl.validators;
-
-import com.hedera.hapi.node.base.TokenSupplyType;
-import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.token.TokenCreateTransactionBody;
-import com.hedera.node.app.service.mono.utils.TokenTypesMapper;
-import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.data.TokensConfig;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
@@ -42,20 +27,27 @@ import static com.hedera.hapi.node.base.TokenSupplyType.FINITE;
 import static com.hedera.hapi.node.base.TokenSupplyType.INFINITE;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.node.app.service.mono.txns.validation.TokenListChecks.*;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+
+import com.hedera.hapi.node.base.TokenSupplyType;
+import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.token.TokenCreateTransactionBody;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.data.TokensConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Singleton
 public class TokenCreateValidator {
     private final TokenFieldsValidator tokenFieldsValidator;
+
     @Inject
     public TokenCreateValidator(@NonNull final TokenFieldsValidator tokenFieldsValidator) {
         this.tokenFieldsValidator = tokenFieldsValidator;
     }
-
 
     public void pureChecks(@NonNull final TokenCreateTransactionBody op) throws PreCheckException {
         final var initialSupply = op.initialSupply();
@@ -63,7 +55,6 @@ public class TokenCreateValidator {
         final var decimals = op.decimals();
         final var supplyType = op.supplyType();
         final var tokenType = op.tokenType();
-
 
         validateTokenType(tokenType, initialSupply, decimals);
         validateSupplyType(supplyType, maxSupply);
@@ -79,9 +70,7 @@ public class TokenCreateValidator {
         }
     }
 
-    public void validate(
-            final TokenCreateTransactionBody op,
-            final TokensConfig config) {
+    public void validate(final TokenCreateTransactionBody op, final TokensConfig config) {
         final var nftsAreEnabled = config.nftsAreEnabled();
         if (op.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
             validateTrue(nftsAreEnabled, NOT_SUPPORTED);
@@ -101,7 +90,8 @@ public class TokenCreateValidator {
                 op.hasPauseKey(), op.pauseKey());
     }
 
-    private void validateTokenType(final TokenType type, final long initialSupply, final int decimals) throws PreCheckException {
+    private void validateTokenType(final TokenType type, final long initialSupply, final int decimals)
+            throws PreCheckException {
         validateTruePreCheck(type == FUNGIBLE_COMMON || type == NON_FUNGIBLE_UNIQUE, NOT_SUPPORTED);
         if (type == FUNGIBLE_COMMON) {
             validateTruePreCheck(initialSupply >= 0, INVALID_TOKEN_INITIAL_SUPPLY);

@@ -77,16 +77,16 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     public void dispatchHandle(@NonNull final HandleContext context) {
         final var txBody = context.body();
         switch (txBody.data().kind()) {
-            /* ------------------ topic -------------------------- */
+                /* ------------------ topic -------------------------- */
             case CONSENSUS_CREATE_TOPIC -> dispatchConsensusCreateTopic(context);
             case CONSENSUS_UPDATE_TOPIC -> dispatchConsensusUpdateTopic(context);
             case CONSENSUS_DELETE_TOPIC -> dispatchConsensusDeleteTopic(context);
             case CONSENSUS_SUBMIT_MESSAGE -> dispatchConsensusSubmitMessage(context);
-            /* ------------------ crypto -------------------------- */
+                /* ------------------ crypto -------------------------- */
             case CRYPTO_CREATE_ACCOUNT -> dispatchCryptoCreate(context);
             case CRYPTO_DELETE -> dispatchCryptoDelete(context);
             case CRYPTO_UPDATE_ACCOUNT -> dispatchCryptoUpdate(context);
-            /* ------------------ token -------------------------- */
+                /* ------------------ token -------------------------- */
             case TOKEN_ASSOCIATE -> dispatchTokenAssociate(context);
             case TOKEN_DISSOCIATE -> dispatchTokenDissociate(context);
             case TOKEN_FREEZE -> dispatchTokenFreeze(context);
@@ -97,9 +97,9 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(context);
             case TOKEN_CREATION -> dispatchTokenCreate(context);
             case TOKEN_FEE_SCHEDULE_UPDATE -> dispatchTokenFeeScheduleUpdate(context);
-            /* ------------------ admin -------------------------- */
+                /* ------------------ admin -------------------------- */
             case FREEZE -> dispatchFreeze(context);
-            /* ------------------ util -------------------------- */
+                /* ------------------ util -------------------------- */
             case UTIL_PRNG -> dispatchPrng(context);
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }

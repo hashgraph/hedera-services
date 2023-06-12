@@ -17,24 +17,16 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
-import static com.hedera.hapi.node.base.TokenSupplyType.FINITE;
-import static com.hedera.hapi.node.base.TokenSupplyType.INFINITE;
-import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
-import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.TokenSupplyType;
-import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -44,7 +36,6 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
-import com.hedera.node.app.service.token.impl.validators.TokenFieldsValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -52,9 +43,6 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
@@ -67,14 +55,12 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenCreateHandler extends BaseTokenHandler implements TransactionHandler {
     private final CustomFeesValidator customFeesValidator;
-    private final TokenFieldsValidator tokenTypeValidator;
     private final TokenCreateValidator tokenCreateValidator;
+
     @Inject
-    public TokenCreateHandler(@NonNull CustomFeesValidator customFeesValidator,
-                              @NonNull TokenFieldsValidator tokenTypeValidator,
-                              @NonNull TokenCreateValidator tokenCreateValidator) {
+    public TokenCreateHandler(
+            @NonNull CustomFeesValidator customFeesValidator, @NonNull TokenCreateValidator tokenCreateValidator) {
         this.customFeesValidator = customFeesValidator;
-        this.tokenTypeValidator = tokenTypeValidator;
         this.tokenCreateValidator = tokenCreateValidator;
     }
 
@@ -118,7 +104,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
         // validate fields in the transaction body that involves checking with
         // dynamic properties or state.
-        final var resolvedExpiryMeta = validateSemantics(context, accountStore,  op, config);
+        final var resolvedExpiryMeta = validateSemantics(context, accountStore, op, config);
         // build a new token
         final var newTokenId = context.newEntityNum();
         final var newToken = buildToken(newTokenId, op, resolvedExpiryMeta);
@@ -128,36 +114,39 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 newToken, accountStore, tokenRelationStore, tokenStore, op.customFeesOrElse(emptyList()));
         // associate token with treasury and collector ids of custom fees whose token denomination
         // is set to sentinel value
-        final var newRels = associateAccounts(newToken, accountStore, tokenRelationStore,
-                feesSetNeedingCollectorAutoAssociation);
+        associateAccounts(newToken, accountStore, tokenRelationStore, feesSetNeedingCollectorAutoAssociation);
 
-        if(op.initialSupply() > 0){
-            final var treasuryRel = newRels.get(0);
+        if (op.initialSupply() > 0) {
+            // Since we have associated treasury and needed fee collector accounts in the previous step,
+            // this relation should exist. Mint the provided initial supply of tokens
+            final var treasuryRel = tokenRelationStore.get(
+                    op.treasuryOrThrow(),
+                    TokenID.newBuilder().tokenNum(newToken.tokenNumber()).build());
             mintFungible(newToken, treasuryRel, op.initialSupply(), true, accountStore, tokenStore, tokenRelationStore);
         }
 
-        // Keep token into modifications in token store
+        // Keep token into modifications in token store.
+        // New token relations are already put to modification in associateAccounts
         tokenStore.put(newToken);
-        newRels.forEach(rel -> tokenRelationStore.put(rel));
     }
 
-    private List<TokenRelation> associateAccounts(Token newToken,
-                                                  ReadableAccountStore readableAccountStore,
-                                                  WritableTokenRelationStore writableTokenRelStore,
-                                                  Set<CustomFee> requireCollectorAutoAssociation) {
-        final var treasury = newToken.treasuryAccountNumber();
-        final Set<Long> associatedSoFar = new HashSet<>();
-        final List<TokenRelation> newRels = new ArrayList<>();
-        associate(newToken, treasury, writableTokenRelStore);
-        associatedSoFar.add(treasury);
+    private void associateAccounts(
+            Token newToken,
+            WritableAccountStore accountStore,
+            WritableTokenRelationStore tokenRelStore,
+            Set<CustomFee> requireCollectorAutoAssociation) {
+        // This should exist as it is validated in validateSemantics
+        final var treasury = accountStore.get(AccountID.newBuilder()
+                .accountNum(newToken.treasuryAccountNumber())
+                .build());
+        createAndLinkTokenRels(treasury, List.of(newToken), accountStore, tokenRelStore);
 
         for (final var customFee : requireCollectorAutoAssociation) {
-            final var collector = customFee.feeCollectorAccountId();
-            associate(newToken, collector, writableTokenRelStore);
+            // This should exist as it is validated in validateSemantics
+            final var collector = accountStore.get(customFee.feeCollectorAccountIdOrThrow());
+            createAndLinkTokenRels(collector, List.of(newToken), accountStore, tokenRelStore);
         }
-        return newRels;
     }
-
 
     private Token buildToken(long newTokenNum, TokenCreateTransactionBody op, ExpiryMeta resolvedExpiryMeta) {
         return new Token(
