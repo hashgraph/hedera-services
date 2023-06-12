@@ -34,7 +34,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenKycStatus;
 import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.AccountDetails;
 import com.hedera.hapi.node.token.GetAccountDetailsQuery;
 import com.hedera.hapi.node.token.GetAccountDetailsResponse;
@@ -199,17 +198,16 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
         int count = 0;
 
         while (tokenNum != 0 && count <= maxRelsPerInfoQuery) {
-            final Optional<TokenRelation> optionalTokenRelation = tokenRelationStore.get(
+            final var tokenRelation = tokenRelationStore.get(
                     AccountID.newBuilder().accountNum(account.accountNumber()).build(),
                     TokenID.newBuilder().tokenNum(tokenNum).build());
-            if (optionalTokenRelation.isPresent()) {
+            if (tokenRelation != null) {
                 final var tokenId = TokenID.newBuilder()
                         .shardNum(StaticProperties.getShard())
                         .realmNum(StaticProperties.getRealm())
                         .tokenNum(tokenNum)
                         .build();
                 final TokenMetadata token = readableTokenStore.getTokenMeta(tokenId);
-                final var tokenRelation = optionalTokenRelation.get();
                 if (token != null) {
                     final TokenRelationship tokenRelationship = TokenRelationship.newBuilder()
                             .tokenId(tokenId)

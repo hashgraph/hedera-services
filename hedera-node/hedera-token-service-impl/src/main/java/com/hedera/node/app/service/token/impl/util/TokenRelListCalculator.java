@@ -216,9 +216,8 @@ public class TokenRelListCalculator {
 
         // Finally, if we haven't found the token rel already, we resort to the token relation store to retrieve it (if
         // it exists)
-        return tokenRelStore
-                .get(accountId, TokenID.newBuilder().tokenNum(tokenNumToLookup).build())
-                .orElse(null);
+        return tokenRelStore.get(
+                accountId, TokenID.newBuilder().tokenNum(tokenNumToLookup).build());
     }
 
     /**
@@ -283,13 +282,9 @@ public class TokenRelListCalculator {
         do {
             currentWalkedTokenRel = updatedTokenRels.containsKey(currentTokenNum)
                     ? updatedTokenRels.get(currentTokenNum)
-                    : tokenRelStore
-                            .get(
-                                    accountId,
-                                    TokenID.newBuilder()
-                                            .tokenNum(currentTokenNum)
-                                            .build())
-                            .orElse(null);
+                    : tokenRelStore.get(
+                            accountId,
+                            TokenID.newBuilder().tokenNum(currentTokenNum).build());
             if (currentWalkedTokenRel != null) {
                 if (!tokenRelsToDeleteByTokenId.containsKey(currentWalkedTokenRel.tokenNumber())) {
                     // we found the first existing token rel that is not in the list of token rels to delete
