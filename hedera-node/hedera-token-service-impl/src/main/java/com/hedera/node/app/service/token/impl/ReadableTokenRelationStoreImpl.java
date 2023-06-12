@@ -26,8 +26,7 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
-import java.util.Optional;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Provides read-only methods for getting underlying data for working with TokenRelations.
@@ -51,15 +50,14 @@ public class ReadableTokenRelationStoreImpl implements ReadableTokenRelationStor
      * {@inheritDoc}
      */
     @Override
-    public Optional<TokenRelation> get(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {
+    @Nullable
+    public TokenRelation get(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {
         requireNonNull(accountId);
         requireNonNull(tokenId);
 
-        if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return Optional.empty();
+        if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return null;
 
-        final var tokenRelation = Objects.requireNonNull(readableTokenRelState)
-                .get(EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum()));
-        return Optional.ofNullable(tokenRelation);
+        return readableTokenRelState.get(EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum()));
     }
 
     /**

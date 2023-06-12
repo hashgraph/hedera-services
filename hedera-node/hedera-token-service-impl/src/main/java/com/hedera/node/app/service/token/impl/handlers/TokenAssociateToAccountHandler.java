@@ -150,13 +150,9 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
             // tokenRels at the beginning of the list of existing token numbers first. We start by
             // retrieving the token rel object with the currentHeadTokenNum at the head of the
             // account
-            final var headTokenRel = tokenRelStore
-                    .get(
-                            AccountID.newBuilder()
-                                    .accountNum(account.accountNumber())
-                                    .build(),
-                            TokenID.newBuilder().tokenNum(currentHeadTokenNum).build())
-                    .orElse(null);
+            final var headTokenRel = tokenRelStore.get(
+                    AccountID.newBuilder().accountNum(account.accountNumber()).build(),
+                    TokenID.newBuilder().tokenNum(currentHeadTokenNum).build());
             if (headTokenRel != null) {
                 // Recreate the current head token's tokenRel, but with its previous pointer set to
                 // the last of the new tokenRels. This links the new token rels to the rest of the
@@ -250,7 +246,7 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
 
         // Check that a token rel doesn't already exist for each new token ID
         for (final TokenID tokenId : tokenIds) {
-            final var existingTokenRel = tokenRelStore.get(accountId, tokenId).orElse(null);
+            final var existingTokenRel = tokenRelStore.get(accountId, tokenId);
             validateTrue(existingTokenRel == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
         }
 
