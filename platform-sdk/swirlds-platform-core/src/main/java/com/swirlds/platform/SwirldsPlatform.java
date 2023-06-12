@@ -134,7 +134,6 @@ import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
-import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -449,7 +448,7 @@ public class SwirldsPlatform implements Platform, Startable {
             startedFromGenesis = true;
         }
 
-        final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState);
+        final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState, stateConfig);
         final PreConsensusEventHandler preConsensusEventHandler;
         try (loadedState.signedStateFromDisk) {
             final SignedState signedStateFromDisk = loadedState.signedStateFromDisk.getNullable();
@@ -732,14 +731,16 @@ public class SwirldsPlatform implements Platform, Startable {
      * Create the LoadedState from the SignedState loaded from disk, if it is present.
      *
      * @param signedStateFromDisk the SignedState loaded from disk.
+     * @param stateConfig         the state configuration
      * @return the LoadedState
      */
     @NonNull
-    private LoadedState initializeLoadedStateFromSignedState(@NonNull final ReservedSignedState signedStateFromDisk) {
+    private LoadedState initializeLoadedStateFromSignedState(
+            @NonNull final ReservedSignedState signedStateFromDisk, @NonNull final StateConfig stateConfig) {
         try (signedStateFromDisk) {
             if (signedStateFromDisk.isNotNull()) {
                 updateLoadedStateAddressBook(signedStateFromDisk.get(), initialAddressBook);
-                final State initialState = loadSavedState(signedStateFromDisk.get());
+                final State initialState = loadSavedState(signedStateFromDisk.get(), stateConfig);
                 return new LoadedState(
                         signedStateFromDisk.getAndReserve("SwirldsPlatform.initializeLoadedStateFromSignedState()"),
                         initialState);
@@ -747,20 +748,21 @@ public class SwirldsPlatform implements Platform, Startable {
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Saved state not loaded:", e);
             // if requireStateLoad is on, we exit. if not, we just log it
-            if (Settings.getInstance().isRequireStateLoad()) {
+            if (stateConfig.requireStateLoad()) {
                 SystemExitUtils.exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED);
             }
         }
         return new LoadedState(createNullReservation(), null);
     }
 
-    private State loadSavedState(final SignedState signedStateFromDisk) {
+    private State loadSavedState(
+            @NonNull final SignedState signedStateFromDisk, @NonNull final StateConfig stateConfig) {
         logger.info(
                 STARTUP.getMarker(),
                 "Information for state loaded from disk:\n{}\n{}",
                 () -> signedStateFromDisk.getState().getPlatformState().getInfoString(),
                 () -> new MerkleTreeVisualizer(signedStateFromDisk.getState())
-                        .setDepth(StateSettings.getDebugHashDepth())
+                        .setDepth(stateConfig.debugHashDepth())
                         .render());
 
         // The previous version of the software that was run. Null if this is the first time running, or if the previous

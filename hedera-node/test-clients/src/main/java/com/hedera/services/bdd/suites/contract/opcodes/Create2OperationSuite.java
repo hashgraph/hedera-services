@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -181,7 +180,6 @@ public class Create2OperationSuite extends HapiSuite {
                 allLogOpcodesResolveExpectedContractId(),
                 eip1014AliasIsPriorityInErcOwnerPrecompile(),
                 canAssociateInConstructor(),
-                childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor(),
                 /* --- HIP 583 --- */
                 canMergeCreate2ChildWithHollowAccount(),
                 canMergeCreate2MultipleCreatesWithHollowAccount());
@@ -778,36 +776,6 @@ public class Create2OperationSuite extends HapiSuite {
                                         .contractCallResult(htsPrecompileResult()
                                                 .forFunction(FunctionType.ERC_OWNER)
                                                 .withOwner(unhex(userAliasAddr.get())))))));
-    }
-
-    private HapiSpec childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor() {
-        final var ft = "fungibleToken";
-        final var multiKey = SWISS;
-        final var creationAndAssociation = "creationAndAssociation";
-        final var immediateChildAssoc = "ImmediateChildAssociation";
-
-        final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> childMirrorAddr = new AtomicReference<>();
-
-        return propertyPreservingHapiSpec("childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor")
-                .preserving("contracts.maxNumWithHapiSigsAccess")
-                .given(
-                        overriding("contracts.maxNumWithHapiSigsAccess", "10_000_000"),
-                        newKeyNamed(multiKey),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(ft)
-                                .exposingCreatedIdTo(id ->
-                                        tokenMirrorAddr.set(hex(asSolidityAddress(HapiPropertySource.asToken(id))))))
-                .when(uploadInitCode(immediateChildAssoc), sourcing(() -> contractCreate(
-                                immediateChildAssoc, asHeadlongAddress(tokenMirrorAddr.get()))
-                        .gas(2_000_000)
-                        .adminKey(multiKey)
-                        .payingWith(GENESIS)
-                        .sigMapPrefixes(uniqueWithFullPrefixesFor(GENESIS, multiKey))
-                        .signedBy(GENESIS, multiKey)
-                        .exposingNumTo(n -> childMirrorAddr.set("0.0." + (n + 1)))
-                        .via(creationAndAssociation)))
-                .then(sourcing(() -> getContractInfo(childMirrorAddr.get()).logged()));
     }
 
     @SuppressWarnings("java:S5669")

@@ -49,11 +49,6 @@ public interface SettingsProvider {
     int getTransactionMaxBytes();
 
     /**
-     * @see Settings#signedStateFreq
-     */
-    int getSignedStateFreq();
-
-    /**
      * @see Settings#delayShuffle
      */
     long getDelayShuffle();
@@ -107,8 +102,4 @@ public interface SettingsProvider {
      * @see Settings#sleepHeartbeat
      */
     int sleepHeartbeatMillis();
-
-    boolean isRequireStateLoad();
-
-    boolean isCheckSignedStateFromDisk();
 }
