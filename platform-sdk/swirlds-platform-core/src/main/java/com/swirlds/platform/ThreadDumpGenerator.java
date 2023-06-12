@@ -362,7 +362,8 @@ class ThreadDumpGenerator {
     /**
      * Used to write a textual identification of a thread to a writer
      */
-    private static void writeThreadTitle(Writer writer, String threadName, Long threadId, boolean isDaemon) throws IOException {
+    private static void writeThreadTitle(Writer writer, String threadName, Long threadId, boolean isDaemon)
+            throws IOException {
         writer.append('"');
         writer.append(threadName);
         writer.append("\" | ");
