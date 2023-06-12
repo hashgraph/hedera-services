@@ -27,7 +27,8 @@ package com.hedera.node.app.service.contract.impl.exec.operations;
 public enum CustomizedOpcodes {
     CHAINID(0x46),
     CREATE(0xf0),
-    CREATE2(0xf5);
+    CREATE2(0xf5),
+    SELFDESTRUCT(0xff);
 
     CustomizedOpcodes(int opcode) {
         this.opcode = opcode;

@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELFDESTRUCT_TO_SELF;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOKEN_HOLDER_SELFDESTRUCT;
@@ -30,6 +34,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
@@ -46,7 +52,9 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.TokenEvmAccount;
+import com.hedera.node.app.spi.meta.bni.ActiveContractVerificationStrategy;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
+import com.hedera.node.app.spi.meta.bni.VerificationStrategy;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -58,6 +66,7 @@ import org.hyperledger.besu.evm.code.CodeFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -292,6 +301,12 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
+    void returnsWhetherAnAccountIsContract() {
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM).smartContract(true));
+        assertTrue(subject.isContract(ACCOUNT_NUM));
+    }
+
+    @Test
     void returnsBalanceIfPresent() {
         final var value = Wei.of(1234);
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).tinybarBalance(1234));
@@ -323,6 +338,77 @@ class DispatchingEvmFrameStateTest {
 
         assertTrue(reasonToHaltDeletion.isPresent());
         assertEquals(MISSING_ADDRESS, reasonToHaltDeletion.get());
+    }
+
+    @Test
+    void missingAccountsCannotTransferFunds() {
+        final var reasonToHaltDeletion = subject.tryTransferFromContract(EVM_ADDRESS, LONG_ZERO_ADDRESS, 123L, true);
+        assertTrue(reasonToHaltDeletion.isPresent());
+        assertEquals(MISSING_ADDRESS, reasonToHaltDeletion.get());
+    }
+
+    @Test
+    void nonContractAccountsShouldNeverBeTransferringFunds() {
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.tryTransferFromContract(LONG_ZERO_ADDRESS, EVM_ADDRESS, 123L, true));
+    }
+
+    @Test
+    void cannotTransferToMissingAccount() {
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM).smartContract(true));
+        final var reasonToHaltDeletion = subject.tryTransferFromContract(LONG_ZERO_ADDRESS, EVM_ADDRESS, 123L, true);
+        assertTrue(reasonToHaltDeletion.isPresent());
+        assertEquals(MISSING_ADDRESS, reasonToHaltDeletion.get());
+    }
+
+    @Test
+    void cannotTransferToTokenAccount() {
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM).smartContract(true));
+        givenWellKnownToken();
+        final var reasonToHaltDeletion = subject.tryTransferFromContract(LONG_ZERO_ADDRESS, TOKEN_ADDRESS, 123L, true);
+        assertTrue(reasonToHaltDeletion.isPresent());
+        assertEquals(MISSING_ADDRESS, reasonToHaltDeletion.get());
+    }
+
+    @Test
+    void transferDelegationUsesExpectedVerifierForNonDelegate() {
+        final var captor = ArgumentCaptor.forClass(VerificationStrategy.class);
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM).smartContract(true));
+        givenWellKnownAccount(BENEFICIARY_NUM, accountWith(BENEFICIARY_NUM));
+        given(dispatch.transferWithReceiverSigCheck(eq(123L), eq(ACCOUNT_NUM), eq(BENEFICIARY_NUM), captor.capture()))
+                .willReturn(OK);
+        final var reasonToHaltDeletion =
+                subject.tryTransferFromContract(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, 123L, false);
+        assertTrue(reasonToHaltDeletion.isEmpty());
+        final var strategy = assertInstanceOf(ActiveContractVerificationStrategy.class, captor.getValue());
+        assertEquals(ACCOUNT_NUM, strategy.getActiveNumber());
+        assertEquals(tuweniToPbjBytes(LONG_ZERO_ADDRESS), strategy.getActiveAddress());
+        assertFalse(strategy.requiresDelegatePermission());
+    }
+
+    @Test
+    void transferDelegationReportsInvalidSignature() {
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM).smartContract(true));
+        givenWellKnownAccount(BENEFICIARY_NUM, accountWith(BENEFICIARY_NUM));
+        given(dispatch.transferWithReceiverSigCheck(eq(123L), eq(ACCOUNT_NUM), eq(BENEFICIARY_NUM), any()))
+                .willReturn(INVALID_SIGNATURE);
+        final var reasonToHaltDeletion =
+                subject.tryTransferFromContract(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, 123L, false);
+        assertTrue(reasonToHaltDeletion.isPresent());
+        assertEquals(INVALID_RECEIVER_SIGNATURE, reasonToHaltDeletion.get());
+    }
+
+    @Test
+    void transferDelegationThrowsOnApparentlyImpossibleFailureMode() {
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM).smartContract(true));
+        givenWellKnownAccount(BENEFICIARY_NUM, accountWith(BENEFICIARY_NUM));
+        given(dispatch.transferWithReceiverSigCheck(eq(123L), eq(ACCOUNT_NUM), eq(BENEFICIARY_NUM), any()))
+                .willReturn(INSUFFICIENT_ACCOUNT_BALANCE);
+        assertThrows(
+                IllegalStateException.class,
+                () -> subject.tryTransferFromContract(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, 123L, false));
     }
 
     @Test
@@ -368,6 +454,16 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void tokenAccountsCannotBeBeneficiaries() {
+        givenWellKnownToken();
+
+        final var reasonToHaltDeletion = subject.tryToTrackDeletion(EVM_ADDRESS, TOKEN_ADDRESS);
+
+        assertTrue(reasonToHaltDeletion.isPresent());
+        assertEquals(MISSING_ADDRESS, reasonToHaltDeletion.get());
+    }
+
+    @Test
+    void senderAccountMustBeC() {
         givenWellKnownToken();
 
         final var reasonToHaltDeletion = subject.tryToTrackDeletion(EVM_ADDRESS, TOKEN_ADDRESS);

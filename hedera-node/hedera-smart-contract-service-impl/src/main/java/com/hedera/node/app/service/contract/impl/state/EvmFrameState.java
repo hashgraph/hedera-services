@@ -57,19 +57,22 @@ public interface EvmFrameState {
     }
 
     /**
-     * Tries to transfer the given amount from the sender to the recipient. The sender has already
-     * authorized this action, in the sense that it is the address that has initiated either a
-     * message call with value or a {@code selfdestruct}. The recipient, however, must still be
-     * checked for authorization based on the Hedera concept of receiver signature requirements.
+     * Tries to transfer the given amount from a sending contract to the recipient. The sender
+     * has already authorized this action, in the sense that it is the address that has initiated
+     * either a message call with value or a {@code selfdestruct}. The recipient, however, must
+     * still be checked for authorization based on the Hedera concept of receiver signature
+     * requirements.
      *
      * <p>Returns true if the receiver authorization and transfer succeeded, false otherwise.
      *
-     * @param verifiedSender the sender of the transfer, already authorized
-     * @param recipient the recipient of the transfer, not yet authorized
-     * @param amount the amount to transfer
-     * @return whether the transfer succeeded
+     * @param sendingContract the sender of the transfer, already authorized
+     * @param recipient       the recipient of the transfer, not yet authorized
+     * @param amount          the amount to transfer
+     * @param delegateCall    whether this transfer is done via code executed by a delegate call
+     * @return a optional with the reason to halt if the transfer failed, or empty if it succeeded
      */
-    boolean tryTransfer(@NonNull Address verifiedSender, @NonNull Address recipient, @NonNull long amount);
+    Optional<ExceptionalHaltReason> tryTransferFromContract(
+            @NonNull Address sendingContract, @NonNull Address recipient, long amount, boolean delegateCall);
 
     /**
      * Returns whether the account with the given address is a "hollow account"; that is, an account
@@ -192,6 +195,14 @@ public interface EvmFrameState {
      * @return the number of positive token balances
      */
     int getNumPositiveTokenBalances(long number);
+
+    /**
+     * Returns whether the account with the given number is a contract.
+     *
+     * @param number the account number
+     * @return whether the account is a contract
+     */
+    boolean isContract(long number);
 
     /**
      * Sets the nonce for the account with the given number.

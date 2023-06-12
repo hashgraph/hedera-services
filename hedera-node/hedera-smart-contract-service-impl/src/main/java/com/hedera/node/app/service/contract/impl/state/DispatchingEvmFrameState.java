@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELFDESTRUCT_TO_SELF;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOKEN_HOLDER_SELFDESTRUCT;
@@ -36,6 +39,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.spi.meta.bni.ActiveContractVerificationStrategy;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
 import com.hedera.node.app.spi.meta.bni.Scope;
 import com.hedera.node.app.spi.state.WritableKVState;
@@ -171,6 +175,11 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     }
 
     @Override
+    public boolean isContract(final long number) {
+        return validatedAccount(number).smartContract();
+    }
+
+    @Override
     public int getNumPositiveTokenBalances(final long number) {
         return validatedAccount(number).numberPositiveBalances();
     }
@@ -225,9 +234,42 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         dispatch.finalizeHollowAccountAsContract(tuweniToPbjBytes(address));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean tryTransfer(@NonNull Address verifiedSender, @NonNull Address recipient, @NonNull long amount) {
-        throw new AssertionError("Not implemented");
+    public Optional<ExceptionalHaltReason> tryTransferFromContract(
+            @NonNull final Address sendingContract,
+            @NonNull final Address recipient,
+            final long amount,
+            final boolean delegateCall) {
+        final var from = (ProxyEvmAccount) getAccount(sendingContract);
+        if (from == null) {
+            return Optional.of(MISSING_ADDRESS);
+        }
+        if (!from.isContract()) {
+            throw new IllegalArgumentException("EVM should not initiate transfer from EOA 0.0." + from.number);
+        }
+        final var to = getAccount(recipient);
+        if (to == null || to instanceof TokenEvmAccount) {
+            return Optional.of(MISSING_ADDRESS);
+        }
+        final var status = dispatch.transferWithReceiverSigCheck(
+                amount,
+                from.number,
+                ((ProxyEvmAccount) to).number,
+                new ActiveContractVerificationStrategy(from.number, tuweniToPbjBytes(from.getAddress()), delegateCall));
+        if (status != OK) {
+            if (status == INVALID_SIGNATURE) {
+                return Optional.of(INVALID_RECEIVER_SIGNATURE);
+            } else {
+                throw new IllegalStateException("Transfer from 0.0." + from.number
+                        + " to 0.0." + ((ProxyEvmAccount) to).number
+                        + " failed with status " + status + " despite valid preconditions");
+            }
+        } else {
+            return Optional.empty();
+        }
     }
 
     /**

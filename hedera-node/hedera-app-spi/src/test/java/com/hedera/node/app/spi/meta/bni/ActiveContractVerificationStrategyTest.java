@@ -31,46 +31,104 @@ class ActiveContractVerificationStrategyTest {
     private static final Bytes ACTIVE_ADDRESS = Bytes.fromHex("1234");
     private static final Bytes OTHER_ADDRESS = Bytes.fromHex("abcd");
 
-    private ActiveContractVerificationStrategy subject =
-            new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS);
+    private static final Key ACTIVE_ID_KEY = Key.newBuilder()
+            .contractID(ContractID.newBuilder().contractNum(ACTIVE_NUMBER))
+            .build();
+    private static final Key DELEGATABLE_ACTIVE_ID_KEY = Key.newBuilder()
+            .delegatableContractId(ContractID.newBuilder().contractNum(ACTIVE_NUMBER))
+            .build();
+    private static final Key INACTIVE_ID_KEY = Key.newBuilder()
+            .contractID(ContractID.newBuilder().contractNum(SOME_OTHER_NUMBER))
+            .build();
+    private static final Key DELEGATABLE_INACTIVE_ID_KEY = Key.newBuilder()
+            .delegatableContractId(ContractID.newBuilder().contractNum(SOME_OTHER_NUMBER))
+            .build();
+    private static final Key ACTIVE_ADDRESS_KEY = Key.newBuilder()
+            .contractID(ContractID.newBuilder().evmAddress(ACTIVE_ADDRESS))
+            .build();
+    private static final Key DELEGATABLE_ACTIVE_ADDRESS_KEY = Key.newBuilder()
+            .delegatableContractId(ContractID.newBuilder().evmAddress(ACTIVE_ADDRESS))
+            .build();
+    private static final Key INACTIVE_ADDRESS_KEY = Key.newBuilder()
+            .contractID(ContractID.newBuilder().evmAddress(OTHER_ADDRESS))
+            .build();
+    private static final Key DELEGATABLE_INACTIVE_ADDRESS_KEY = Key.newBuilder()
+            .delegatableContractId(ContractID.newBuilder().evmAddress(OTHER_ADDRESS))
+            .build();
+    private static final Key CRYPTO_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("1234567812345678123456781234567812345678123456781234567812345678"))
+            .build();
 
     @Test
-    void validatesAsExpected() {
-        final var activeIdKey = Key.newBuilder()
-                .contractID(ContractID.newBuilder().contractNum(ACTIVE_NUMBER))
-                .build();
-        final var inactiveIdKey = Key.newBuilder()
-                .contractID(ContractID.newBuilder().contractNum(SOME_OTHER_NUMBER))
-                .build();
-        final var activeAddressKey = Key.newBuilder()
-                .contractID(ContractID.newBuilder().evmAddress(ACTIVE_ADDRESS))
-                .build();
-        final var inactiveAddressKey = Key.newBuilder()
-                .contractID(ContractID.newBuilder().evmAddress(OTHER_ADDRESS))
-                .build();
-        final var cryptoKey = Key.newBuilder()
-                .ed25519(Bytes.fromHex("1234567812345678123456781234567812345678123456781234567812345678"))
-                .build();
+    void validatesKeysAsExpectedWhenDelegatePermissionNotRequired() {
+        final var subject = new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS, false);
 
         assertEquals(
                 VerificationStrategy.Decision.VALID,
-                subject.maybeVerifySignature(activeIdKey, VerificationStrategy.KeyRole.OTHER));
+                subject.maybeVerifySignature(ACTIVE_ID_KEY, VerificationStrategy.KeyRole.OTHER));
         assertEquals(
                 VerificationStrategy.Decision.VALID,
-                subject.maybeVerifySignature(activeAddressKey, VerificationStrategy.KeyRole.OTHER));
+                subject.maybeVerifySignature(ACTIVE_ADDRESS_KEY, VerificationStrategy.KeyRole.OTHER));
         assertEquals(
                 VerificationStrategy.Decision.INVALID,
-                subject.maybeVerifySignature(inactiveIdKey, VerificationStrategy.KeyRole.OTHER));
+                subject.maybeVerifySignature(INACTIVE_ID_KEY, VerificationStrategy.KeyRole.OTHER));
         assertEquals(
                 VerificationStrategy.Decision.INVALID,
-                subject.maybeVerifySignature(inactiveAddressKey, VerificationStrategy.KeyRole.OTHER));
+                subject.maybeVerifySignature(INACTIVE_ADDRESS_KEY, VerificationStrategy.KeyRole.OTHER));
+        assertEquals(
+                VerificationStrategy.Decision.VALID,
+                subject.maybeVerifySignature(DELEGATABLE_ACTIVE_ID_KEY, VerificationStrategy.KeyRole.OTHER));
+        assertEquals(
+                VerificationStrategy.Decision.VALID,
+                subject.maybeVerifySignature(DELEGATABLE_ACTIVE_ADDRESS_KEY, VerificationStrategy.KeyRole.OTHER));
+        assertEquals(
+                VerificationStrategy.Decision.INVALID,
+                subject.maybeVerifySignature(DELEGATABLE_INACTIVE_ID_KEY, VerificationStrategy.KeyRole.OTHER));
+        assertEquals(
+                VerificationStrategy.Decision.INVALID,
+                subject.maybeVerifySignature(DELEGATABLE_INACTIVE_ADDRESS_KEY, VerificationStrategy.KeyRole.OTHER));
         assertEquals(
                 VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION,
-                subject.maybeVerifySignature(cryptoKey, VerificationStrategy.KeyRole.OTHER));
+                subject.maybeVerifySignature(CRYPTO_KEY, VerificationStrategy.KeyRole.OTHER));
+    }
+
+    @Test
+    void validatesKeysAsExpectedWhenDelegatePermissionRequired() {
+        final var subject = new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS, true);
+
+        assertEquals(
+                VerificationStrategy.Decision.INVALID,
+                subject.maybeVerifySignature(ACTIVE_ID_KEY, VerificationStrategy.KeyRole.OTHER));
+        assertEquals(
+                VerificationStrategy.Decision.INVALID,
+                subject.maybeVerifySignature(ACTIVE_ADDRESS_KEY, VerificationStrategy.KeyRole.OTHER));
+        assertEquals(
+                VerificationStrategy.Decision.INVALID,
+                subject.maybeVerifySignature(INACTIVE_ID_KEY, VerificationStrategy.KeyRole.OTHER));
+        assertEquals(
+                VerificationStrategy.Decision.INVALID,
+                subject.maybeVerifySignature(INACTIVE_ADDRESS_KEY, VerificationStrategy.KeyRole.OTHER));
+        assertEquals(
+                VerificationStrategy.Decision.VALID,
+                subject.maybeVerifySignature(DELEGATABLE_ACTIVE_ID_KEY, VerificationStrategy.KeyRole.OTHER));
+        assertEquals(
+                VerificationStrategy.Decision.VALID,
+                subject.maybeVerifySignature(DELEGATABLE_ACTIVE_ADDRESS_KEY, VerificationStrategy.KeyRole.OTHER));
+        assertEquals(
+                VerificationStrategy.Decision.INVALID,
+                subject.maybeVerifySignature(DELEGATABLE_INACTIVE_ID_KEY, VerificationStrategy.KeyRole.OTHER));
+        assertEquals(
+                VerificationStrategy.Decision.INVALID,
+                subject.maybeVerifySignature(DELEGATABLE_INACTIVE_ADDRESS_KEY, VerificationStrategy.KeyRole.OTHER));
+        assertEquals(
+                VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION,
+                subject.maybeVerifySignature(CRYPTO_KEY, VerificationStrategy.KeyRole.OTHER));
     }
 
     @Test
     void doesNotSupportAmendingTransfer() {
+        final var subject = new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS, true);
+
         assertThrows(
                 UnsupportedOperationException.class,
                 () -> subject.maybeAmendTransfer(CryptoTransferTransactionBody.DEFAULT, List.of()));

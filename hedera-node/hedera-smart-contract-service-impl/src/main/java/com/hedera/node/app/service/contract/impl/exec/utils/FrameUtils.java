@@ -33,4 +33,8 @@ public class FrameUtils {
             @NonNull final MessageFrame frame, @NonNull final Predicate<Configuration> test) {
         return test.test(configOf(frame));
     }
+
+    public static boolean isDelegateCall(@NonNull final MessageFrame frame) {
+        return !frame.getRecipientAddress().equals(frame.getContractAddress());
+    }
 }

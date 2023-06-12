@@ -106,11 +106,30 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
     }
 
     // --- Hedera-specific methods ---
+    /**
+     * Returns the number of treasury titles held by this account.
+     *
+     * @return the number of treasury titles held by this account
+     */
     public int numTreasuryTitles() {
         return state.getNumTreasuryTitles(number);
     }
 
+    /**
+     * Returns the number of positive token balances held by this account.
+     *
+     * @return the number of positive token balances held by this account
+     */
     public int numPositiveTokenBalances() {
         return state.getNumPositiveTokenBalances(number);
+    }
+
+    /**
+     * Returns whether the account is a contract.
+     *
+     * @return if the account is a contract
+     */
+    public boolean isContract() {
+        return state.isContract(number);
     }
 }

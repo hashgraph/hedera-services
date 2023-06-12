@@ -107,21 +107,26 @@ public class ProxyWorldUpdater implements WorldUpdater {
 
     // --- Some Hedera-specific methods ---
     /**
-     * Tries to transfer the given amount from the sender to the recipient. The sender has already
-     * authorized this action, in the sense that it is the address that has initiated either a
-     * message call with value or a {@code selfdestruct}. The recipient, however, must still be
-     * checked for authorization based on the Hedera concept of receiver signature requirements.
+     * Tries to transfer the given amount from a sending contract to the recipient. The sender
+     * has already authorized this action, in the sense that it is the address that has initiated
+     * either a message call with value or a {@code selfdestruct}. The recipient, however, must
+     * still be checked for authorization based on the Hedera concept of receiver signature
+     * requirements.
      *
      * <p>Returns true if the receiver authorization and transfer succeeded, false otherwise.
      *
-     * @param verifiedSender the sender of the transfer, already authorized
-     * @param recipient the recipient of the transfer, not yet authorized
-     * @param amount the amount to transfer
-     * @return whether the transfer succeeded
+     * @param sendingContract the sender of the transfer, already authorized
+     * @param recipient       the recipient of the transfer, not yet authorized
+     * @param amount          the amount to transfer
+     * @param delegateCall    whether this transfer is done via code executed by a delegate call
+     * @return a optional with the reason to halt if the transfer failed, or empty if it succeeded
      */
-    public boolean tryTransfer(
-            @NonNull final Address verifiedSender, @NonNull final Address recipient, @NonNull final long amount) {
-        throw new AssertionError("Not implemented");
+    public Optional<ExceptionalHaltReason> tryTransferFromContract(
+            @NonNull final Address sendingContract,
+            @NonNull final Address recipient,
+            final long amount,
+            final boolean delegateCall) {
+        return evmFrameState.tryTransferFromContract(sendingContract, recipient, amount, delegateCall);
     }
 
     /**
@@ -159,7 +164,7 @@ public class ProxyWorldUpdater implements WorldUpdater {
      * <p>Does not return anything, as the {@code CREATE2} address is already known.
      *
      * @param receiver the address of the recipient of a {@code CONTRACT_CREATION} message, zero if a top-level message
-     * @param alias the EIP-1014 address computed by an in-progress {@code CREATE2} operation
+     * @param alias    the EIP-1014 address computed by an in-progress {@code CREATE2} operation
      */
     public void setupCreate2(@NonNull final Address receiver, @NonNull final Address alias) {
         setupPendingCreation(receiver, alias);
@@ -180,7 +185,7 @@ public class ProxyWorldUpdater implements WorldUpdater {
      * Attempts to track the given deletion of an account with the designated beneficiary, returning an optional
      * {@link ExceptionalHaltReason} to indicate whether the deletion could be successfully tracked.
      *
-     * @param deleted the address of the account being deleted
+     * @param deleted     the address of the account being deleted
      * @param beneficiary the address of the beneficiary of the deletion
      * @return an optional {@link ExceptionalHaltReason} with the reason deletion could not be tracked
      */
@@ -276,8 +281,8 @@ public class ProxyWorldUpdater implements WorldUpdater {
      * within the scope of this updater.
      *
      * <p>TODO - we may not need this; only used in Besu by
-     * {@code AbstractMessageProcessor.clearAccumulatedStateBesidesGasAndOutput()}, which seems to be in
-     * response to unwinding side-effects of an Ethereum consensus bug.
+     * {@code AbstractMessageProcessor.clearAccumulatedStateBesidesGasAndOutput()}, which seems to just deal
+     * with side-effects of an Ethereum consensus bug.
      *
      * @return the accounts that have been touched
      */

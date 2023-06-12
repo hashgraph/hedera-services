@@ -141,6 +141,12 @@ class ProxyEvmAccountTest {
     }
 
     @Test
+    void delegatesCheckingContract() {
+        given(hederaState.isContract(ACCOUNT_NUM)).willReturn(true);
+        assertTrue(subject.isContract());
+    }
+
+    @Test
     void isItselfMutable() {
         assertSame(subject, subject.getMutable());
     }

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.meta.bni;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,24 +29,53 @@ import java.util.Objects;
 public class ActiveContractVerificationStrategy implements VerificationStrategy {
     private final long activeNumber;
     private final Bytes activeAddress;
+    private final boolean requiresDelegatePermission;
 
-    public ActiveContractVerificationStrategy(final long activeNumber, @NonNull final Bytes activeAddress) {
+    public ActiveContractVerificationStrategy(
+            final long activeNumber, @NonNull final Bytes activeAddress, final boolean requiresDelegatePermission) {
         this.activeNumber = activeNumber;
         this.activeAddress = Objects.requireNonNull(activeAddress);
+        this.requiresDelegatePermission = requiresDelegatePermission;
     }
 
+    /**
+     * {@inheritDoc
+     */
     @Override
     public Decision maybeVerifySignature(@NonNull final Key key, @NonNull final KeyRole keyRole) {
-        if (key.key().kind() == Key.KeyOneOfType.CONTRACT_ID) {
-            final var contractId = key.contractIDOrThrow();
-            if (contractId.hasContractNum() && contractId.contractNumOrThrow() == activeNumber) {
-                return Decision.VALID;
-            } else if (contractId.hasEvmAddress() && activeAddress.equals(contractId.evmAddress())) {
-                return Decision.VALID;
-            } else {
+        final var keyKind = key.key().kind();
+        if (keyKind == Key.KeyOneOfType.CONTRACT_ID) {
+            if (requiresDelegatePermission) {
                 return Decision.INVALID;
+            } else {
+                return decisionFor(key.contractIDOrThrow());
             }
+        } else if (keyKind == Key.KeyOneOfType.DELEGATABLE_CONTRACT_ID) {
+            return decisionFor(key.delegatableContractIdOrThrow());
+        } else {
+            return Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION;
         }
-        return Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION;
+    }
+
+    public long getActiveNumber() {
+        return activeNumber;
+    }
+
+    public Bytes getActiveAddress() {
+        return activeAddress;
+    }
+
+    public boolean requiresDelegatePermission() {
+        return requiresDelegatePermission;
+    }
+
+    private Decision decisionFor(@NonNull final ContractID authorizedId) {
+        if (authorizedId.hasContractNum() && authorizedId.contractNumOrThrow() == activeNumber) {
+            return Decision.VALID;
+        } else if (authorizedId.hasEvmAddress() && activeAddress.equals(authorizedId.evmAddress())) {
+            return Decision.VALID;
+        } else {
+            return Decision.INVALID;
+        }
     }
 }

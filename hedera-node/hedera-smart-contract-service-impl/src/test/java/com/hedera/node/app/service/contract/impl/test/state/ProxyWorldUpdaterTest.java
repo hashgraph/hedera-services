@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
@@ -31,6 +32,7 @@ import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
 import com.hedera.node.app.spi.meta.bni.Scope;
 import java.util.List;
+import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
@@ -227,6 +229,15 @@ class ProxyWorldUpdaterTest {
         assertInstanceOf(ProxyWorldUpdater.class, updater);
         assertTrue(updater.parentUpdater().isPresent());
         assertSame(subject, updater.parentUpdater().get());
+    }
+
+    @Test
+    void delegatesTransfer() {
+        given(evmFrameState.tryTransferFromContract(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true))
+                .willReturn(Optional.of(INVALID_RECEIVER_SIGNATURE));
+        final var maybeHaltReason = subject.tryTransferFromContract(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true);
+        assertTrue(maybeHaltReason.isPresent());
+        assertEquals(INVALID_RECEIVER_SIGNATURE, maybeHaltReason.get());
     }
 
     @Test

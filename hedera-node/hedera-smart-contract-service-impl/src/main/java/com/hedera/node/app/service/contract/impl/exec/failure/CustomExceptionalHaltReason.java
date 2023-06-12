@@ -28,7 +28,8 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
     MISSING_ADDRESS("Invalid account reference"),
     TOKEN_TREASURY_SELFDESTRUCT("Token treasury cannot be deleted"),
     TOKEN_HOLDER_SELFDESTRUCT("Accounts still holding tokens cannot be deleted"),
-    SELFDESTRUCT_TO_SELF("Selfdestruct must give a different beneficiary");
+    SELFDESTRUCT_TO_SELF("Selfdestruct must give a different beneficiary"),
+    INVALID_RECEIVER_SIGNATURE("Receiver signature required but not provided");
 
     private final String description;
 
