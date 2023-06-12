@@ -44,7 +44,7 @@ public class FreezingStatusLogic extends AbstractStatusLogic {
     @Override
     public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
         return switch (action) {
-            case OWN_EVENT_REACHED_CONSENSUS -> getStatus();
+            case OWN_EVENT_REACHED_CONSENSUS, FALLEN_BEHIND -> getStatus();
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
             case TIME_ELAPSED -> {
                 if (Duration.between(getStatusStartTime(), getTime().now())

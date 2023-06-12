@@ -26,56 +26,28 @@ import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
-import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link ActiveStatusLogic}.
+ * Unit tests for {@link SavingFreezeStateStatusLogic}.
  */
-class ActiveStatusLogicTests {
-    private FakeTime time;
-    private ActiveStatusLogic logic;
+class SavingFreezeStateStatusLogicTests {
+    private SavingFreezeStateStatusLogic logic;
 
     @BeforeEach
     void setup() {
-        time = new FakeTime();
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("platformStatus.activeStatusDelay", "5s")
-                .getOrCreateConfig();
-        logic = new ActiveStatusLogic(time, configuration.getConfigData(PlatformStatusConfig.class));
+        final FakeTime time = new FakeTime();
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        logic = new SavingFreezeStateStatusLogic(time, configuration.getConfigData(PlatformStatusConfig.class));
     }
 
     @Test
-    @DisplayName("Go to FREEZING")
-    void toFreezing() {
-        triggerActionAndAssertTransition(logic, PlatformStatusAction.FREEZE_PERIOD_ENTERED, PlatformStatus.FREEZING);
-    }
-
-    @Test
-    @DisplayName("Go to CHECKING")
-    void toChecking() {
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
-
-        time.tick(Duration.ofSeconds(2));
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
-
-        // restart the timer that will trigger the status change to checking
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.OWN_EVENT_REACHED_CONSENSUS);
-
-        // if the own event reaching consensus successfully restarted the timer, then the status should still be active
-        time.tick(Duration.ofSeconds(4));
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
-
-        time.tick(Duration.ofSeconds(2));
-        triggerActionAndAssertTransition(logic, PlatformStatusAction.TIME_ELAPSED, PlatformStatus.CHECKING);
-    }
-
-    @Test
-    @DisplayName("Go to BEHIND")
-    void toBehind() {
-        triggerActionAndAssertTransition(logic, PlatformStatusAction.FALLEN_BEHIND, PlatformStatus.BEHIND);
+    @DisplayName("Go to FREEZE_COMPLETE")
+    void toFreezeComplete() {
+        triggerActionAndAssertTransition(
+                logic, PlatformStatusAction.STATE_WRITTEN_TO_DISK, PlatformStatus.FREEZE_COMPLETE);
     }
 
     @Test
@@ -88,14 +60,17 @@ class ActiveStatusLogicTests {
     @Test
     @DisplayName("Irrelevant actions shouldn't cause transitions")
     void irrelevantActions() {
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.STATE_WRITTEN_TO_DISK);
+        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
     }
 
     @Test
     @DisplayName("Unexpected actions should cause exceptions")
     void unexpectedActions() {
-        triggerActionAndAssertException(logic, PlatformStatusAction.RECONNECT_COMPLETE);
-        triggerActionAndAssertException(logic, PlatformStatusAction.DONE_REPLAYING_EVENTS);
         triggerActionAndAssertException(logic, PlatformStatusAction.STARTED_REPLAYING_EVENTS);
+        triggerActionAndAssertException(logic, PlatformStatusAction.DONE_REPLAYING_EVENTS);
+        triggerActionAndAssertException(logic, PlatformStatusAction.OWN_EVENT_REACHED_CONSENSUS);
+        triggerActionAndAssertException(logic, PlatformStatusAction.FREEZE_PERIOD_ENTERED);
+        triggerActionAndAssertException(logic, PlatformStatusAction.FALLEN_BEHIND);
+        triggerActionAndAssertException(logic, PlatformStatusAction.RECONNECT_COMPLETE);
     }
 }

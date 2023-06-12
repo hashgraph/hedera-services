@@ -44,7 +44,7 @@ public class BehindStatusLogic extends AbstractStatusLogic {
     public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
         return switch (action) {
             case RECONNECT_COMPLETE -> PlatformStatus.RECONNECT_COMPLETE;
-            case STATE_WRITTEN_TO_DISK, TIME_ELAPSED -> getStatus();
+            case TIME_ELAPSED -> getStatus();
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
             default -> throw new IllegalArgumentException(getUnexpectedStatusActionLog(action));
         };

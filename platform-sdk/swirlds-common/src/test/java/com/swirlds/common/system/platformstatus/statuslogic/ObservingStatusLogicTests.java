@@ -32,43 +32,40 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link ActiveStatusLogic}.
+ * Tests for {@link ObservingStatusLogic}.
  */
-class ActiveStatusLogicTests {
+class ObservingStatusLogicTests {
     private FakeTime time;
-    private ActiveStatusLogic logic;
+    private ObservingStatusLogic logic;
 
     @BeforeEach
     void setup() {
         time = new FakeTime();
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("platformStatus.activeStatusDelay", "5s")
+                .withValue("platformStatus.observingStatusDelay", "5s")
                 .getOrCreateConfig();
-        logic = new ActiveStatusLogic(time, configuration.getConfigData(PlatformStatusConfig.class));
+        logic = new ObservingStatusLogic(time, configuration.getConfigData(PlatformStatusConfig.class));
     }
 
     @Test
     @DisplayName("Go to FREEZING")
     void toFreezing() {
-        triggerActionAndAssertTransition(logic, PlatformStatusAction.FREEZE_PERIOD_ENTERED, PlatformStatus.FREEZING);
+        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.FREEZE_PERIOD_ENTERED);
+
+        time.tick(Duration.ofSeconds(2));
+        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
+
+        time.tick(Duration.ofSeconds(4));
+        triggerActionAndAssertTransition(logic, PlatformStatusAction.TIME_ELAPSED, PlatformStatus.FREEZING);
     }
 
     @Test
     @DisplayName("Go to CHECKING")
     void toChecking() {
+        time.tick(Duration.ofSeconds(3));
         triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
 
-        time.tick(Duration.ofSeconds(2));
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
-
-        // restart the timer that will trigger the status change to checking
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.OWN_EVENT_REACHED_CONSENSUS);
-
-        // if the own event reaching consensus successfully restarted the timer, then the status should still be active
-        time.tick(Duration.ofSeconds(4));
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
-
-        time.tick(Duration.ofSeconds(2));
+        time.tick(Duration.ofSeconds(3));
         triggerActionAndAssertTransition(logic, PlatformStatusAction.TIME_ELAPSED, PlatformStatus.CHECKING);
     }
 
@@ -94,8 +91,9 @@ class ActiveStatusLogicTests {
     @Test
     @DisplayName("Unexpected actions should cause exceptions")
     void unexpectedActions() {
-        triggerActionAndAssertException(logic, PlatformStatusAction.RECONNECT_COMPLETE);
-        triggerActionAndAssertException(logic, PlatformStatusAction.DONE_REPLAYING_EVENTS);
         triggerActionAndAssertException(logic, PlatformStatusAction.STARTED_REPLAYING_EVENTS);
+        triggerActionAndAssertException(logic, PlatformStatusAction.DONE_REPLAYING_EVENTS);
+        triggerActionAndAssertException(logic, PlatformStatusAction.OWN_EVENT_REACHED_CONSENSUS);
+        triggerActionAndAssertException(logic, PlatformStatusAction.RECONNECT_COMPLETE);
     }
 }

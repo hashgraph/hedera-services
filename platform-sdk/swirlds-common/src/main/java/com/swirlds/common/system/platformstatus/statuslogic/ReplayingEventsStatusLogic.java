@@ -51,7 +51,7 @@ public class ReplayingEventsStatusLogic extends AbstractStatusLogic {
             case DONE_REPLAYING_EVENTS -> {
                 // always transition to a new status when done replaying events
                 if (freezePeriodEntered) {
-                    yield PlatformStatus.FREEZING;
+                    yield PlatformStatus.SAVING_FREEZE_STATE;
                 } else {
                     yield PlatformStatus.OBSERVING;
                 }

@@ -72,8 +72,12 @@ public class StatusLogicTestUtils {
     public static void triggerActionAndAssertException(
             @NonNull final PlatformStatusLogic logic, @NonNull final PlatformStatusAction action) {
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            logic.processStatusAction(action);
-        });
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    logic.processStatusAction(action);
+                },
+                "Expected an exception to be thrown when triggering action " + action + " in status "
+                        + logic.getStatus());
     }
 }

@@ -52,6 +52,7 @@ public class ReconnectCompleteStatusLogic extends AbstractStatusLogic {
                 freezePeriodEntered = true;
                 yield getStatus();
             }
+            case FALLEN_BEHIND -> PlatformStatus.BEHIND;
             case STATE_WRITTEN_TO_DISK -> {
                 // always transition to a new status once a state has been written to disk
                 if (freezePeriodEntered) {
@@ -61,7 +62,7 @@ public class ReconnectCompleteStatusLogic extends AbstractStatusLogic {
                 }
             }
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
-            case TIME_ELAPSED -> getStatus();
+            case TIME_ELAPSED, OWN_EVENT_REACHED_CONSENSUS -> getStatus();
             default -> throw new IllegalArgumentException(getUnexpectedStatusActionLog(action));
         };
     }
