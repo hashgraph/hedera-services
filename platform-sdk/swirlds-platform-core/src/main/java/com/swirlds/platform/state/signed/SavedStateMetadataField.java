@@ -25,10 +25,6 @@ public enum SavedStateMetadataField {
      */
     ROUND,
     /**
-     * The number of consensus events, starting from genesis, that have been handled to create this state.
-     */
-    NUMBER_OF_CONSENSUS_EVENTS,
-    /**
      * The consensus timestamp of this state.
      */
     CONSENSUS_TIMESTAMP,

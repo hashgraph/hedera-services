@@ -84,7 +84,6 @@ class SavedStateMetadataTests {
         final Random random = getRandomPrintSeed();
 
         final long round = random.nextLong();
-        final long numberOfConsensusEvents = random.nextLong();
         final Instant timestamp = RandomUtils.randomInstant(random);
         final Hash runningEventHash = RandomUtils.randomHash(random);
         final long minimumGenerationNonAncient = random.nextLong();
@@ -113,7 +112,6 @@ class SavedStateMetadataTests {
         final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
         assertEquals(round, deserialized.round());
-        assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
         assertEquals(timestamp, deserialized.consensusTimestamp());
         assertEquals(runningEventHash, deserialized.runningEventHash());
         assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
@@ -131,7 +129,6 @@ class SavedStateMetadataTests {
         final Random random = getRandomPrintSeed();
 
         final long round = random.nextLong();
-        final long numberOfConsensusEvents = random.nextLong();
         final Instant timestamp = RandomUtils.randomInstant(random);
         final Hash runningEventHash = RandomUtils.randomHash(random);
         final long minimumGenerationNonAncient = random.nextLong();
@@ -157,7 +154,6 @@ class SavedStateMetadataTests {
         final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
         assertEquals(round, deserialized.round());
-        assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
         assertEquals(timestamp, deserialized.consensusTimestamp());
         assertEquals(runningEventHash, deserialized.runningEventHash());
         assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
@@ -179,13 +175,6 @@ class SavedStateMetadataTests {
             round = random.nextLong();
         } else {
             round = null;
-        }
-
-        final Long numberOfConsensusEvents;
-        if (random.nextBoolean()) {
-            numberOfConsensusEvents = random.nextLong();
-        } else {
-            numberOfConsensusEvents = null;
         }
 
         final Instant timestamp;
@@ -269,7 +258,6 @@ class SavedStateMetadataTests {
         final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
         assertEquals(round, deserialized.round());
-        assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
         assertEquals(timestamp, deserialized.consensusTimestamp());
         assertEquals(runningEventHash, deserialized.runningEventHash());
         assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
@@ -314,7 +302,6 @@ class SavedStateMetadataTests {
         final Random random = getRandomPrintSeed();
 
         final long round = random.nextLong();
-        final long numberOfConsensusEvents = random.nextLong();
         final Instant timestamp = RandomUtils.randomInstant(random);
         final Hash runningEventHash = RandomUtils.randomHash(random);
         final long minimumGenerationNonAncient = random.nextLong();
@@ -342,7 +329,6 @@ class SavedStateMetadataTests {
         final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
         assertEquals(round, deserialized.round());
-        assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
         assertEquals(timestamp, deserialized.consensusTimestamp());
         assertEquals(runningEventHash, deserialized.runningEventHash());
         assertEquals(minimumGenerationNonAncient, deserialized.minimumGenerationNonAncient());
@@ -370,7 +356,6 @@ class SavedStateMetadataTests {
             throws IOException {
 
         final long round = random.nextLong();
-        final long numberOfConsensusEvents = random.nextLong();
         final Instant timestamp = RandomUtils.randomInstant(random);
         final Hash runningEventHash = RandomUtils.randomHash(random);
         final long minimumGenerationNonAncient = random.nextLong();
@@ -416,12 +401,6 @@ class SavedStateMetadataTests {
             assertNull(deserialized.round());
         } else {
             assertEquals(round, deserialized.round());
-        }
-
-        if (invalidFields.contains(SavedStateMetadataField.NUMBER_OF_CONSENSUS_EVENTS)) {
-            assertNull(deserialized.numberOfConsensusEvents());
-        } else {
-            assertEquals(numberOfConsensusEvents, deserialized.numberOfConsensusEvents());
         }
 
         if (invalidFields.contains(SavedStateMetadataField.CONSENSUS_TIMESTAMP)) {
