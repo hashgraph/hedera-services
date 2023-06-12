@@ -107,7 +107,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      *
      * @param serialNum - the serial number of the NFT to remove
      */
-    public void remove(final UniqueTokenId serialNum) {
-        nftState.remove(serialNum);
+    public void remove(final @NonNull UniqueTokenId serialNum) {
+        nftState.remove(requireNonNull(serialNum));
     }
 }

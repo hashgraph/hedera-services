@@ -153,7 +153,7 @@ public class BaseTokenHandler {
      * @return the unique token ID object
      */
     @NonNull
-    public static UniqueTokenId asUniqueTokenId(final TokenID tokenId, final long serialNum) {
+    public static UniqueTokenId asUniqueTokenId(final @NonNull TokenID tokenId, final long serialNum) {
         return UniqueTokenId.newBuilder()
                 .tokenTypeNumber(tokenId.tokenNum())
                 .serialNumber(serialNum)
