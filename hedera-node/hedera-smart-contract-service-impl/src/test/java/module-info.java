@@ -12,6 +12,7 @@ module com.hedera.node.app.service.contract.impl.test {
     requires com.hedera.pbj.runtime;
     requires org.hyperledger.besu.evm;
     requires org.hyperledger.besu.datatypes;
+    requires com.github.spotbugs.annotations;
     requires tuweni.bytes;
     requires tuweni.units;
     requires com.hedera.node.config;
@@ -33,5 +34,7 @@ module com.hedera.node.app.service.contract.impl.test {
     opens com.hedera.node.app.service.contract.impl.test.exec.v034 to
             org.junit.platform.commons;
     opens com.hedera.node.app.service.contract.impl.test.exec.v038 to
+            org.junit.platform.commons;
+    opens com.hedera.node.app.service.contract.impl.test.exec.processors to
             org.junit.platform.commons;
 }

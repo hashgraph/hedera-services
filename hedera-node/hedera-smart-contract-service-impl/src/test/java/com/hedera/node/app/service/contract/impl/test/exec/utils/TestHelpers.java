@@ -19,6 +19,8 @@ package com.hedera.node.app.service.contract.impl.test.exec.utils;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigInteger;
+import java.util.Objects;
+
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.operation.Operation;
 
@@ -34,5 +36,12 @@ public class TestHelpers {
             final Operation.OperationResult expected, final Operation.OperationResult actual) {
         assertEquals(expected.getHaltReason(), actual.getHaltReason());
         assertEquals(expected.getGasCost(), actual.getGasCost());
+    }
+
+    public static boolean isSameResult(
+            final Operation.OperationResult expected,
+            final Operation.OperationResult actual) {
+        return Objects.equals(expected.getHaltReason(), actual.getHaltReason()) &&
+                expected.getGasCost() == actual.getGasCost();
     }
 }

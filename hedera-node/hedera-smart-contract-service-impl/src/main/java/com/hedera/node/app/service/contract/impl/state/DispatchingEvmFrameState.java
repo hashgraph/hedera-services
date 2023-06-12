@@ -32,6 +32,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pb
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniUInt256;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
@@ -251,8 +252,10 @@ public class DispatchingEvmFrameState implements EvmFrameState {
             throw new IllegalArgumentException("EVM should not initiate transfer from EOA 0.0." + from.number);
         }
         final var to = getAccount(recipient);
-        if (to == null || to instanceof TokenEvmAccount) {
+        if (to == null) {
             return Optional.of(MISSING_ADDRESS);
+        } else if (to instanceof TokenEvmAccount) {
+            return Optional.of(ILLEGAL_STATE_CHANGE);
         }
         final var status = dispatch.transferWithReceiverSigCheck(
                 amount,

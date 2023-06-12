@@ -37,4 +37,8 @@ public class FrameUtils {
     public static boolean isDelegateCall(@NonNull final MessageFrame frame) {
         return !frame.getRecipientAddress().equals(frame.getContractAddress());
     }
+
+    public static boolean transfersValue(@NonNull final MessageFrame frame) {
+        return !frame.getValue().isZero();
+    }
 }

@@ -27,6 +27,7 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniUInt256;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -369,7 +370,7 @@ class DispatchingEvmFrameStateTest {
         givenWellKnownToken();
         final var reasonToHaltDeletion = subject.tryTransferFromContract(LONG_ZERO_ADDRESS, TOKEN_ADDRESS, 123L, true);
         assertTrue(reasonToHaltDeletion.isPresent());
-        assertEquals(MISSING_ADDRESS, reasonToHaltDeletion.get());
+        assertEquals(ILLEGAL_STATE_CHANGE, reasonToHaltDeletion.get());
     }
 
     @Test

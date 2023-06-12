@@ -29,7 +29,8 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
     TOKEN_TREASURY_SELFDESTRUCT("Token treasury cannot be deleted"),
     TOKEN_HOLDER_SELFDESTRUCT("Accounts still holding tokens cannot be deleted"),
     SELFDESTRUCT_TO_SELF("Selfdestruct must give a different beneficiary"),
-    INVALID_RECEIVER_SIGNATURE("Receiver signature required but not provided");
+    INVALID_RECEIVER_SIGNATURE("Receiver signature required but not provided"),
+    INVALID_VALUE_TRANSFER("Value transfer not allowed to system accounts");
 
     private final String description;
 
