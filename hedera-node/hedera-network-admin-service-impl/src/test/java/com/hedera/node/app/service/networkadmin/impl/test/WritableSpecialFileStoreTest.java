@@ -24,7 +24,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
-import com.hedera.node.app.service.networkadmin.impl.ReadableSpecialFileStoreImpl;
 import com.hedera.node.app.service.networkadmin.impl.WritableSpecialFileStore;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -36,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class SpecialFileStoreTest {
+class WritableSpecialFileStoreTest {
     private WritableSpecialFileStore subject;
 
     @Mock(strictness = LENIENT)
@@ -51,11 +50,10 @@ class SpecialFileStoreTest {
     @Test
     void testNullConstructorArgs() {
         assertThrows(NullPointerException.class, () -> new WritableSpecialFileStore(null));
-        assertThrows(NullPointerException.class, () -> new ReadableSpecialFileStoreImpl(null));
     }
 
     @Test
-    void testPreparedUpdateFileNum() {
+    void testPreparedUpdateFileID() {
         AtomicReference<Long> backingStore = new AtomicReference<>(null);
         when(writableStates.getSingleton(FreezeServiceImpl.UPGRADE_FILEID_KEY))
                 .then(invocation -> new WritableSingletonStateBase<>(
