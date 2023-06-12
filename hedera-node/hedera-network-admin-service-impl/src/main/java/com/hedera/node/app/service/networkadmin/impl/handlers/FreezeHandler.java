@@ -143,17 +143,18 @@ public class FreezeHandler implements TransactionHandler {
         switch (freezeTxn.freezeType()) {
             case PREPARE_UPGRADE -> {
                 // by the time we get here, we've already checked that updateFileID is non-null in validateSemantics()
+                // and that fileHash is non-null in preHandle()
+                specialFileStore.updateFileHash(freezeTxn.fileHash());
+                specialFileStore.updateFileID(updateFileID);
                 upgradeActions.extractSoftwareUpgrade(specialFileStore
                         .get(requireNonNull(updateFileID))
                         .orElseThrow(() -> new IllegalStateException("Update file not found")));
-                specialFileStore.preparedUpdateFileHash(freezeTxn.fileHash());
-                specialFileStore.preparedUpdateFileID(updateFileID);
             }
             case FREEZE_UPGRADE -> upgradeActions.scheduleFreezeUpgradeAt(requireNonNull(freezeStartTimeInstant));
             case FREEZE_ABORT -> {
                 upgradeActions.abortScheduledFreeze();
-                specialFileStore.preparedUpdateFileHash(null);
-                specialFileStore.preparedUpdateFileID(null);
+                specialFileStore.updateFileHash(null);
+                specialFileStore.updateFileID(null);
             }
             case TELEMETRY_UPGRADE -> upgradeActions.extractTelemetryUpgrade(
                     specialFileStore

@@ -24,6 +24,7 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Optional;
 
 /**
  * Provides write methods for modifying underlying data storage mechanisms for
@@ -32,10 +33,10 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 // This is a temporary location for this class. It will be moved to FileService.
 // @todo('Issue #6856')
 public class WritableSpecialFileStore extends ReadableSpecialFileStoreImpl {
-    /** The underlying data storage class that holds the prepared update file number. */
-    private final WritableSingletonState<FileID> preparedUpdateFileIDState;
-    /** The underlying data storage class that holds the prepared update file hash. */
-    private final WritableSingletonState<Bytes> preparedUpdateFileHashState;
+    /** The underlying data storage class that holds the update file number. */
+    private final WritableSingletonState<FileID> updateFileID;
+    /** The underlying data storage class that holds the update file hash. */
+    private final WritableSingletonState<Bytes> updateFileHash;
 
     /**
      * Create a new {@link WritableSpecialFileStore} instance.
@@ -45,39 +46,39 @@ public class WritableSpecialFileStore extends ReadableSpecialFileStoreImpl {
     public WritableSpecialFileStore(@NonNull final WritableStates states) {
         super(states);
         requireNonNull(states);
-        preparedUpdateFileIDState = states.getSingleton(FreezeServiceImpl.PREPARED_UPGRADE_FILEID_KEY);
-        preparedUpdateFileHashState = states.getSingleton(FreezeServiceImpl.PREPARED_UPGRADE_FILE_HASH_KEY);
+        updateFileID = states.getSingleton(FreezeServiceImpl.UPGRADE_FILEID_KEY);
+        updateFileHash = states.getSingleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY);
     }
 
     /**
-     * Sets the prepared update file ID.
+     * Sets or clears the update file ID.
      *
-     * @param preparedUpdateFileID The prepared update file ID to set.
-     *                             If null, clears the prepared update file ID.
+     * @param updateFileID The update file ID to set. If null, clears the update file ID.
      */
-    public void preparedUpdateFileID(@Nullable final FileID preparedUpdateFileID) {
-        preparedUpdateFileIDState.put(preparedUpdateFileID);
+    public void updateFileID(@Nullable final FileID updateFileID) {
+        this.updateFileID.put(updateFileID);
     }
 
     /**
-     * Sets the prepared update file hash.
+     * Sets or clears the update file hash.
      *
-     * @param preparedUpdateFileHash The prepared update file hash to set.
-     *                               If null, clears the prepared update file hash.
+     * @param updateFileHash The update file hash to set. If null, clears the update file hash.
      */
-    public void preparedUpdateFileHash(@Nullable final Bytes preparedUpdateFileHash) {
-        preparedUpdateFileHashState.put(preparedUpdateFileHash);
+    public void updateFileHash(@Nullable final Bytes updateFileHash) {
+        this.updateFileHash.put(updateFileHash);
     }
 
     @Override
-    @Nullable
-    public FileID preparedUpdateFileID() {
-        return preparedUpdateFileIDState.get();
+    @NonNull
+    public Optional<FileID> updateFileID() {
+        FileID fileId = updateFileID.get();
+        return (fileId == null ? Optional.empty() : Optional.of(fileId));
     }
 
     @Override
-    @Nullable
-    public Bytes preparedUpdateFileHash() {
-        return preparedUpdateFileHashState.get();
+    @NonNull
+    public Optional<Bytes> updateFileHash() {
+        Bytes fileHash = updateFileHash.get();
+        return (fileHash == null ? Optional.empty() : Optional.of(fileHash));
     }
 }

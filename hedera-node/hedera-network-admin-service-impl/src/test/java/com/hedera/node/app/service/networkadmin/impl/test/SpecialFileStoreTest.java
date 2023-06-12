@@ -57,25 +57,25 @@ class SpecialFileStoreTest {
     @Test
     void testPreparedUpdateFileNum() {
         AtomicReference<Long> backingStore = new AtomicReference<>(null);
-        when(writableStates.getSingleton(FreezeServiceImpl.PREPARED_UPGRADE_FILEID_KEY))
+        when(writableStates.getSingleton(FreezeServiceImpl.UPGRADE_FILEID_KEY))
                 .then(invocation -> new WritableSingletonStateBase<>(
-                        FreezeServiceImpl.PREPARED_UPGRADE_FILEID_KEY, backingStore::get, backingStore::set));
+                        FreezeServiceImpl.UPGRADE_FILEID_KEY, backingStore::get, backingStore::set));
 
         final WritableSpecialFileStore store = new WritableSpecialFileStore(writableStates);
-        store.preparedUpdateFileID(FileID.newBuilder().fileNum(42L).build());
+        store.updateFileID(FileID.newBuilder().fileNum(42L).build());
 
-        assertEquals(42L, store.preparedUpdateFileID().fileNum());
+        assertEquals(42L, store.updateFileID().get().fileNum());
     }
 
     @Test
     void testPreparedUpdateFileHash() {
         AtomicReference<Bytes> backingStore = new AtomicReference<>(null);
-        when(writableStates.getSingleton(FreezeServiceImpl.PREPARED_UPGRADE_FILE_HASH_KEY))
+        when(writableStates.getSingleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY))
                 .then(invocation -> new WritableSingletonStateBase<>(
-                        FreezeServiceImpl.PREPARED_UPGRADE_FILE_HASH_KEY, backingStore::get, backingStore::set));
+                        FreezeServiceImpl.UPGRADE_FILE_HASH_KEY, backingStore::get, backingStore::set));
         final WritableSpecialFileStore store = new WritableSpecialFileStore(writableStates);
-        store.preparedUpdateFileHash(Bytes.wrap("test hash"));
+        store.updateFileHash(Bytes.wrap("test hash"));
 
-        assertEquals(Bytes.wrap("test hash"), store.preparedUpdateFileHash());
+        assertEquals(Bytes.wrap("test hash"), store.updateFileHash().get());
     }
 }

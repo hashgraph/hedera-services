@@ -31,8 +31,8 @@ import java.util.Set;
 public final class FreezeServiceImpl implements FreezeService {
     // special files will move to FileService
     public static final String UPGRADE_FILES_KEY = "SPECIAL_FILES";
-    public static final String PREPARED_UPGRADE_FILEID_KEY = "PREPARED_UPGRADE_FILEID";
-    public static final String PREPARED_UPGRADE_FILE_HASH_KEY = "PREPARED_UPGRADE_FILE_HASH";
+    public static final String UPGRADE_FILEID_KEY = "UPGRADE_FILEID";
+    public static final String UPGRADE_FILE_HASH_KEY = "UPGRADE_FILE_HASH";
 
     public static final String DUAL_STATE_KEY = "DUAL_STATE";
 

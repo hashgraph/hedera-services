@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.networkadmin.impl;
 
+import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.UPGRADE_FILEID_KEY;
+import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.UPGRADE_FILE_HASH_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
@@ -25,7 +27,6 @@ import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 
 /**
@@ -39,10 +40,10 @@ public class ReadableSpecialFileStoreImpl implements ReadableSpecialFileStore {
 
     /** The underlying data storage class that holds the prepared update file number.
      * If null, no prepared update file has been set. */
-    private final ReadableSingletonState<FileID> preparedUpdateFileID;
+    private final ReadableSingletonState<FileID> updateFileID;
     /** The underlying data storage class that holds the prepared update file hash.
      * May be null if no prepared update file has been set. */
-    private final ReadableSingletonState<Bytes> preparedUpdateFileHash;
+    private final ReadableSingletonState<Bytes> updateFileHash;
 
     /**
      * Create a new {@link ReadableSpecialFileStoreImpl} instance.
@@ -52,8 +53,8 @@ public class ReadableSpecialFileStoreImpl implements ReadableSpecialFileStore {
     public ReadableSpecialFileStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
         this.freezeFilesById = states.get(FreezeServiceImpl.UPGRADE_FILES_KEY);
-        this.preparedUpdateFileID = states.getSingleton("preparedUpdateFileID");
-        this.preparedUpdateFileHash = states.getSingleton("preparedUpdateFileHash");
+        this.updateFileID = states.getSingleton(UPGRADE_FILEID_KEY);
+        this.updateFileHash = states.getSingleton(UPGRADE_FILE_HASH_KEY);
     }
 
     @Override
@@ -65,14 +66,16 @@ public class ReadableSpecialFileStoreImpl implements ReadableSpecialFileStore {
     }
 
     @Override
-    @Nullable
-    public FileID preparedUpdateFileID() {
-        return preparedUpdateFileID.get();
+    @NonNull
+    public Optional<FileID> updateFileID() {
+        FileID fileId = updateFileID.get();
+        return (fileId == null ? Optional.empty() : Optional.of(fileId));
     }
 
     @Override
-    @Nullable
-    public Bytes preparedUpdateFileHash() {
-        return preparedUpdateFileHash.get();
+    @NonNull
+    public Optional<Bytes> updateFileHash() {
+        Bytes hash = updateFileHash.get();
+        return (hash == null ? Optional.empty() : Optional.of(hash));
     }
 }

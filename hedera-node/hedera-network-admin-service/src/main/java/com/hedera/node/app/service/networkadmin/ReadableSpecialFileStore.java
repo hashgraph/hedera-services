@@ -19,7 +19,6 @@ package com.hedera.node.app.service.networkadmin;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 
 /**
@@ -32,7 +31,7 @@ import java.util.Optional;
 public interface ReadableSpecialFileStore {
 
     /**
-     * Gets the freeze file with the given ID. If there is no file with given ID
+     * Gets the freeze file with the given FileID. If there is no file with given FileID then
      * returns {@link Optional#empty()}.
      *
      * @param fileId given id for the file
@@ -43,17 +42,17 @@ public interface ReadableSpecialFileStore {
 
     /**
      * Get the file ID of the prepared update file. If no prepared update file has been set
-     * (i.e. if the network is not in the process of an upgrade), this method will return null.
-     * @return the file ID of the prepared update file, or null if no prepared update file has been set
+     * (i.e. if the network is not in the process of an upgrade), this method will return {@link Optional#empty()}.
+     * @return the file ID of the prepared update file, or {@link Optional#empty()} if no prepared update file has been set
      */
-    @Nullable
-    FileID preparedUpdateFileID();
+    @NonNull
+    Optional<FileID> updateFileID();
 
     /**
      * Get the hash of the prepared update file. If no prepared update file has been set
-     * (i.e. if the network is not in the process of an upgrade), this method will return null.
-     * @return the hash of the prepared update file, or null if no prepared update file has been set
+     * (i.e. if the network is not in the process of an upgrade), this method will return {@link Optional#empty()}.
+     * @return the hash of the prepared update file, or {@link Optional#empty()} if no prepared update file has been set
      */
-    @Nullable
-    Bytes preparedUpdateFileHash();
+    @NonNull
+    Optional<Bytes> updateFileHash();
 }
