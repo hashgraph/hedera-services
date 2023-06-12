@@ -17,38 +17,13 @@
 package com.swirlds.platform.test;
 
 import com.swirlds.platform.SettingsProvider;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class TestSettings implements SettingsProvider {
-    public final AtomicInteger rescueChildlessInverseProbability = new AtomicInteger(0);
-    public final AtomicInteger randomEventProbability = new AtomicInteger(0);
-    public final AtomicReference<Double> throttle7Threshold = new AtomicReference<>(0.0);
-    public final AtomicReference<Double> throttle7Extra = new AtomicReference<>(0.0);
-    public final AtomicInteger throttle7MaxBytes = new AtomicInteger(0);
-    public final AtomicBoolean throttle7Enabled = new AtomicBoolean(false);
-    public final AtomicInteger maxEventQueueForCons = new AtomicInteger(0);
     public final AtomicInteger transactionMaxBytes = new AtomicInteger(0);
-    public final AtomicInteger signedStateFreq = new AtomicInteger(0);
     public final AtomicInteger throttleTransactionQueueSize = new AtomicInteger(100_000);
     public final AtomicLong delayShuffle = new AtomicLong(0);
-
-    @Override
-    public int getRescueChildlessInverseProbability() {
-        return rescueChildlessInverseProbability.get();
-    }
-
-    @Override
-    public int getRandomEventProbability() {
-        return randomEventProbability.get();
-    }
-
-    @Override
-    public int getMaxEventQueueForCons() {
-        return maxEventQueueForCons.get();
-    }
 
     @Override
     public int getTransactionMaxBytes() {

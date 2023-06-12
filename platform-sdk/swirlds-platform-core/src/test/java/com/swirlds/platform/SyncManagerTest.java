@@ -30,12 +30,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEvent;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
@@ -110,10 +112,11 @@ public class SyncManagerTest {
                     return null;
                 }
             };
-            final ReconnectConfig config = new TestConfigBuilder()
+            Configuration configuration = new TestConfigBuilder()
                     .withValue("reconnect.fallenBehindThreshold", "0.25")
-                    .getOrCreateConfig()
-                    .getConfigData(ReconnectConfig.class);
+                    .getOrCreateConfig();
+            final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
+            final EventConfig eventConfig = configuration.getConfigData(EventConfig.class);
             eventQueue = new DummyEventQueue(hashgraph);
             syncManager = new SyncManagerImpl(
                     new NoOpMetrics(),
@@ -123,15 +126,15 @@ public class SyncManagerTest {
                     new EventCreationRules(List.of(startUpEventFrozenManager, freezeManager)),
                     criticalQuorum,
                     hashgraph.getAddressBook(),
-                    new FallenBehindManagerImpl(addressBook, selfId, connectionGraph, () -> {}, () -> {}, config));
+                    new FallenBehindManagerImpl(
+                            addressBook, selfId, connectionGraph, () -> {}, () -> {}, reconnectConfig),
+                    eventConfig);
         }
     }
 
     protected void resetTestSettings() {
-        Settings.getInstance().setEventIntakeQueueThrottleSize(100);
         Settings.getInstance().setMaxIncomingSyncsInc(10);
         Settings.getInstance().setMaxOutgoingSyncs(10);
-        Settings.getInstance().setStaleEventPreventionThreshold(10);
     }
 
     /**
@@ -390,6 +393,7 @@ public class SyncManagerTest {
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId ID = addressBook.getNodeId(0);
         final NodeId OTHER_ID = addressBook.getNodeId(1);
+        final EventConfig config = new TestConfigBuilder().getOrCreateConfig().getConfigData(EventConfig.class);
 
         // If events read is too large then do not create an event
         test.hashgraph.isInCriticalQuorum.put(ID, true);
@@ -397,7 +401,7 @@ public class SyncManagerTest {
                 test.syncManager.shouldCreateEvent(
                         OTHER_ID,
                         false,
-                        Settings.getInstance().getStaleEventPreventionThreshold()
+                        config.staleEventPreventionThreshold()
                                         * test.hashgraph.getAddressBook().getSize()
                                 + 1,
                         0),

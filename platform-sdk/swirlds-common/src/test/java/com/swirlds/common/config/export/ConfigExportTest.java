@@ -62,7 +62,6 @@ class ConfigExportTest {
         // Verify properties in file are listed
         assertContains(regexForLine("verifyEventSigs", "false", true), lines);
         assertContains(regexForLine("doUpnp", "false", true), lines);
-        assertContains(regexForLine("checkSignedStateFromDisk", "true", true), lines);
         assertContains(regexForLine("showInternalStats", "true", true), lines);
         assertContains(regexForLine("csvFileName", "PlatformTesting", true), lines);
         assertContains(regexForLine("useLoopbackIp", "false", true), lines);
@@ -75,7 +74,6 @@ class ConfigExportTest {
         // Verify properties not in file are listed (spot check only)
         assertContains(regexForLine("state.signedStateDisk", "3", true), lines);
         assertContains(regexForLine("numConnections", "40", true), lines);
-        assertContains(regexForLine("eventIntakeQueueSize", "10000", true), lines);
         assertContains(regexForLine("verboseStatistics", "false", true), lines);
     }
 
