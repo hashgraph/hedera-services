@@ -3,6 +3,7 @@ package com.swirlds.platform.componentframework.framework;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
 
 public class QueueSubmitter implements InvocationHandler {
@@ -29,6 +30,8 @@ public class QueueSubmitter implements InvocationHandler {
 				return false;
 			case "toString":
 				return proxy.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(proxy));
+			case "getProcessingMethods":
+				throw new UnsupportedOperationException();
 			default:
 				queue.put(args[0]);
 		}

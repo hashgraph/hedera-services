@@ -16,18 +16,18 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class Components {
-	private final List<Class<? extends Component>> componentsDefs;
-	private final Map<Class<? extends Component>, BlockingQueue<Object>> queues;
-	private final Map<Class<? extends Component>, Component> processors;
-	private final Map<Class<? extends Component>, Object> facades;
+	private final List<Class<? extends TaskProcessor>> componentsDefs;
+	private final Map<Class<? extends TaskProcessor>, BlockingQueue<Object>> queues;
+	private final Map<Class<? extends TaskProcessor>, TaskProcessor> processors;
+	private final Map<Class<? extends TaskProcessor>, Object> facades;
 
-	public Components(final List<Class<? extends Component>> componentsDefs) {
+	public Components(final List<Class<? extends TaskProcessor>> componentsDefs) {
 		this.componentsDefs = componentsDefs;
 		queues = new HashMap<>();
 		processors = new HashMap<>();
 		facades = new HashMap<>();
 
-		for (Class<? extends Component> component : componentsDefs) {
+		for (Class<? extends TaskProcessor> component : componentsDefs) {
 			if (TaskProcessor.class.isAssignableFrom(component)) {
 				BlockingQueue<Object> queue = new LinkedBlockingQueue<>();
 				facades.put(component, QueueSubmitter.create(component, queue));
@@ -36,8 +36,10 @@ public class Components {
 		}
 	}
 
-	public <T extends Component> void addImplementation(T component) {
-		final Class<? extends Component> defClass = componentsDefs
+	@SuppressWarnings("unchecked")
+	public <T extends TaskProcessor> void addImplementation(T component) {
+		Objects.requireNonNull(component);
+		final Class<? extends TaskProcessor> defClass = componentsDefs
 				.stream()
 				.filter(c -> c.isAssignableFrom(component.getClass()))
 				.findFirst()
@@ -48,16 +50,15 @@ public class Components {
 		);
 	}
 
-	public <T extends Component> void addImplementation(T component, Class<T> componentClass){
-		if (component instanceof TaskProcessor) {
-			processors.put(componentClass, component);
-		} else {
-			facades.put(componentClass, component);
-		}
+	public <T extends TaskProcessor> void addImplementation(T component, Class<T> componentClass){
+		Objects.requireNonNull(component);
+		Objects.requireNonNull(componentClass);
+		processors.put(componentClass, component);
 	}
 
 	@SuppressWarnings("unchecked")
 	public <T extends Component> T getComponent(Class<T> componentClass) {
+		Objects.requireNonNull(componentClass);
 		return (T) facades.get(componentClass);
 	}
 
@@ -65,7 +66,7 @@ public class Components {
 	public void start(){
 		for (Class<? extends Component> componentsDef : componentsDefs) {
 			if (TaskProcessor.class.isAssignableFrom(componentsDef)) {
-				final TaskProcessor tp = (TaskProcessor) processors.get(componentsDef);
+				final TaskProcessor tp = processors.get(componentsDef);
 				final Map<Class<?>, InterruptableConsumer<?>> processingMethods = tp.getProcessingMethods();
 				final InterruptableConsumer<?> handler;
 				if (processingMethods.size() == 1) {
