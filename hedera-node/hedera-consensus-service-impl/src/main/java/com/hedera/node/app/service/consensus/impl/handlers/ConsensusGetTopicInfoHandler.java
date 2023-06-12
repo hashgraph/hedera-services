@@ -124,6 +124,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * Provides information about a topic.
      * @param topicID the topic to get information about
      * @param topicStore the topic store
+     * @param config the LedgerConfig
      * @return the information about the topic
      */
     private Optional<ConsensusTopicInfo> infoForTopic(
