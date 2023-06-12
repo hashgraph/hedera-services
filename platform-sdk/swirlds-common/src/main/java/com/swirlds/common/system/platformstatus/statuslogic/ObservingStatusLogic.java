@@ -54,7 +54,7 @@ public class ObservingStatusLogic extends AbstractStatusLogic {
                 yield getStatus();
             }
             case FALLEN_BEHIND -> PlatformStatus.BEHIND;
-            case STATE_WRITTEN_TO_DISK -> getStatus();
+            case STATE_WRITTEN_TO_DISK, OWN_EVENT_REACHED_CONSENSUS -> getStatus();
             case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
             case TIME_ELAPSED -> {
                 if (Duration.between(getStatusStartTime(), getTime().now())

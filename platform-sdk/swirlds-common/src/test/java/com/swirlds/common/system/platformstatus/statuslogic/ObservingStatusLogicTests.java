@@ -62,6 +62,8 @@ class ObservingStatusLogicTests {
     @Test
     @DisplayName("Go to CHECKING")
     void toChecking() {
+        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
+
         time.tick(Duration.ofSeconds(3));
         triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
 
@@ -86,6 +88,7 @@ class ObservingStatusLogicTests {
     @DisplayName("Irrelevant actions shouldn't cause transitions")
     void irrelevantActions() {
         triggerActionAndAssertNoTransition(logic, PlatformStatusAction.STATE_WRITTEN_TO_DISK);
+        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.OWN_EVENT_REACHED_CONSENSUS);
     }
 
     @Test
@@ -93,7 +96,6 @@ class ObservingStatusLogicTests {
     void unexpectedActions() {
         triggerActionAndAssertException(logic, PlatformStatusAction.STARTED_REPLAYING_EVENTS);
         triggerActionAndAssertException(logic, PlatformStatusAction.DONE_REPLAYING_EVENTS);
-        triggerActionAndAssertException(logic, PlatformStatusAction.OWN_EVENT_REACHED_CONSENSUS);
         triggerActionAndAssertException(logic, PlatformStatusAction.RECONNECT_COMPLETE);
     }
 }

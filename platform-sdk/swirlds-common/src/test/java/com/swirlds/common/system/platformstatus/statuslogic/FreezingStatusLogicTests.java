@@ -50,6 +50,8 @@ class FreezingStatusLogicTests {
     @Test
     @DisplayName("Go to SAVING_FREEZE_STATE")
     void toSavingFreezeState() {
+        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
+
         time.tick(Duration.ofSeconds(3));
         triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
 
