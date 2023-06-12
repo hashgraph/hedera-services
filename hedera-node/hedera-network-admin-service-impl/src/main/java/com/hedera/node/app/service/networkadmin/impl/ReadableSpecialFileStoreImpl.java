@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.networkadmin.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -24,7 +26,6 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -49,7 +50,7 @@ public class ReadableSpecialFileStoreImpl implements ReadableSpecialFileStore {
      * @param states The state to use.
      */
     public ReadableSpecialFileStoreImpl(@NonNull final ReadableStates states) {
-        Objects.requireNonNull(states);
+        requireNonNull(states);
         this.freezeFilesById = states.get(FreezeServiceImpl.UPGRADE_FILES_KEY);
         this.preparedUpdateFileID = states.getSingleton("preparedUpdateFileID");
         this.preparedUpdateFileHash = states.getSingleton("preparedUpdateFileHash");
@@ -57,7 +58,8 @@ public class ReadableSpecialFileStoreImpl implements ReadableSpecialFileStore {
 
     @Override
     @NonNull
-    public Optional<byte[]> get(FileID fileId) {
+    public Optional<byte[]> get(@NonNull FileID fileId) {
+        requireNonNull(fileId);
         final var file = freezeFilesById.get(fileId);
         return Optional.ofNullable(file);
     }
