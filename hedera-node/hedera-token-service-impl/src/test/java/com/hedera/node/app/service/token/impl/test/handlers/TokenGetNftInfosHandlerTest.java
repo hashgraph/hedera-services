@@ -23,11 +23,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.token.TokenGetNftInfoQuery;
-import com.hedera.hapi.node.token.TokenGetNftInfoResponse;
+import com.hedera.hapi.node.token.TokenGetNftInfosQuery;
+import com.hedera.hapi.node.token.TokenGetNftInfosResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfoHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfosHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,25 +37,25 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class TokenGetNftInfoHandlerTest {
+class TokenGetNftInfosHandlerTest {
     @Mock
     private QueryContext context;
 
-    private TokenGetNftInfoHandler subject;
+    private TokenGetNftInfosHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TokenGetNftInfoHandler();
+        subject = new TokenGetNftInfosHandler();
     }
 
     @Test
     void extractsHeader() {
-        final var data = TokenGetNftInfoQuery.newBuilder()
+        final var data = TokenGetNftInfosQuery.newBuilder()
                 .header(QueryHeader.newBuilder().build())
                 .build();
-        final var query = Query.newBuilder().tokenGetNftInfo(data).build();
+        final var query = Query.newBuilder().tokenGetNftInfos(data).build();
         final var header = subject.extractHeader(query);
-        final var op = query.tokenGetNftInfoOrThrow();
+        final var op = query.tokenGetNftInfosOrThrow();
         assertThat(op.header()).isEqualTo(header);
     }
 
@@ -64,7 +64,7 @@ class TokenGetNftInfoHandlerTest {
         final var responseHeader = ResponseHeader.newBuilder().build();
         final var response = subject.createEmptyResponse(responseHeader);
         final var expectedResponse = Response.newBuilder()
-                .tokenGetNftInfo(TokenGetNftInfoResponse.newBuilder().header(responseHeader))
+                .tokenGetNftInfos(TokenGetNftInfosResponse.newBuilder().header(responseHeader))
                 .build();
         assertThat(expectedResponse).isEqualTo(response);
     }

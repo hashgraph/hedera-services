@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.token.TokenGetAccountNftInfosResponse;
 import com.hedera.hapi.node.transaction.Query;
@@ -62,7 +62,7 @@ public class TokenGetAccountNftInfosHandler extends FreeQueryHandler {
     @Override
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
-        throw new PreCheckException(ResponseCodeEnum.NOT_SUPPORTED);
+        throw new PreCheckException(NOT_SUPPORTED);
     }
 
     @Override
@@ -70,6 +70,6 @@ public class TokenGetAccountNftInfosHandler extends FreeQueryHandler {
         // this code should never be executed, as validate() should fail before we get here
         requireNonNull(context);
         requireNonNull(header);
-        throw new UnsupportedOperationException("Not supported");
+        throw new UnsupportedOperationException(NOT_SUPPORTED.toString());
     }
 }

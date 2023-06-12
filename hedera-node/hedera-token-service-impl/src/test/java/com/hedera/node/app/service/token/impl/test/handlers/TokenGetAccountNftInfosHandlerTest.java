@@ -37,7 +37,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class TokenGetAccountNftInfoHandlerTest {
+class TokenGetAccountNftInfosHandlerTest {
     @Mock
     private QueryContext context;
 
