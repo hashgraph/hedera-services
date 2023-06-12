@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
-import static com.hedera.node.app.service.token.impl.handlers.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
@@ -104,7 +104,7 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
                             .accountNum(effectiveOwner.accountNumber())
                             .build(),
                     TokenID.newBuilder().tokenNum(token.tokenNumber()).build());
-            validateTrue(relation.isPresent(), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+            validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
             validateDeleteSerialNums(serialNums, tokenId, nftStore);
         }

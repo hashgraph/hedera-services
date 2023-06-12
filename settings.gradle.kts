@@ -123,9 +123,8 @@ dependencyResolutionManagement {
     @Suppress("UnstableApiUsage")
     versionCatalogs {
         // The libs of this catalog are the **ONLY** ones that are authorized to be part of the
-        // runtime
-        // distribution. These libs can be depended on during compilation, or bundled as part of
-        // runtime.
+        // runtime distribution. These libs can be depended on during compilation, or bundled as
+        // part of runtime.
         create("libs") {
             val besuNativeVersion = "0.6.1"
             val besuVersion = "23.1.2"
@@ -151,7 +150,7 @@ dependencyResolutionManagement {
             version("com.google.common", "31.1-jre")
             version("com.google.protobuf", "3.19.4")
             version("com.google.protobuf.util", "3.19.2")
-            version("com.hedera.pbj.runtime", "0.6.0")
+            version("com.hedera.pbj.runtime", "0.6.1")
             version("com.sun.jna", "5.12.1")
             version("com.swirlds.base", swirldsVersion)
             version("com.swirlds.cli", swirldsVersion)
@@ -187,6 +186,7 @@ dependencyResolutionManagement {
             version("org.apache.commons.lang3", "3.12.0")
             version("org.apache.logging.log4j", log4jVersion)
             version("org.apache.logging.log4j.core", log4jVersion)
+            version("org.apache.logging.log4j.jul", log4jVersion)
             version("org.assertj.core", "3.23.1")
             version("org.bouncycastle.pkix", bouncycastleVersion)
             version("org.bouncycastle.provider", bouncycastleVersion)
@@ -214,7 +214,7 @@ dependencyResolutionManagement {
 
             version("hapi-proto", hapiProtoVersion)
 
-            plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.6.0")
+            plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.6.1")
         }
     }
 }

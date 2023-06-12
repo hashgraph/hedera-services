@@ -55,7 +55,6 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.util.Collections;
-import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -204,7 +203,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         @Test
         @DisplayName("When getForModify returns empty, should not put or commit")
         void emptyGetForModifyShouldNotPersist() {
-            given(tokenRelStore.getForModify(notNull(), notNull())).willReturn(Optional.empty());
+            given(tokenRelStore.getForModify(notNull(), notNull())).willReturn(null);
 
             final var txnBody = newTxnBody(true, true);
             given(handleContext.body()).willReturn(txnBody);
@@ -220,7 +219,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         void kycGrantedAndPersisted() {
             final var stateTokenRel =
                     newTokenRelationBuilder().kycGranted(false).build();
-            given(tokenRelStore.getForModify(payerId, tokenId)).willReturn(Optional.of(stateTokenRel));
+            given(tokenRelStore.getForModify(payerId, tokenId)).willReturn(stateTokenRel);
 
             final var txnBody = newTxnBody(true, true);
             given(handleContext.body()).willReturn(txnBody);

@@ -24,7 +24,6 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.SettingConstants.APPS_STRING;
 import static com.swirlds.platform.SettingConstants.BUFFER_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.CHECK_SIGNED_STATE_FROM_DISK_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.CONFIG_TXT;
 import static com.swirlds.platform.SettingConstants.CSV_APPEND_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.CSV_FILE_NAME_DEFAULT_VALUE;
@@ -35,7 +34,6 @@ import static com.swirlds.platform.SettingConstants.DEADLOCK_CHECK_PERIOD_DEFAUL
 import static com.swirlds.platform.SettingConstants.DELAY_SHUFFLE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DISABLE_METRICS_OUTPUT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DO_UPNP_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.EMERGENCY_STATE_FILE_NAME_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.ENABLE_EVENT_STREAMING_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.EVENTS_LOG_DIR_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.EVENTS_LOG_PERIOD_DEFAULT_VALUE;
@@ -63,12 +61,10 @@ import static com.swirlds.platform.SettingConstants.PROMETHEUS_ENDPOINT_ENABLED_
 import static com.swirlds.platform.SettingConstants.PROMETHEUS_ENDPOINT_MAX_BACKLOG_ALLOWED_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.PROMETHEUS_ENDPOINT_PORT_NUMBER_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.RANDOM_EVENT_PROBABILITY_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.REQUIRE_STATE_LOAD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.RESCUE_CHILDLESS_INVERSE_PROBABILITY_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SAVED_STRING;
 import static com.swirlds.platform.SettingConstants.SETTINGS_TXT;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.SIGNED_STATE_FREQ_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_CALLER_SKIPS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_HEARTBEAT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SOCKET_IP_TOS_DEFAULT_VALUE;
@@ -98,10 +94,6 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.internal.SubSetting;
-import com.swirlds.platform.state.StateSettings;
-import com.swirlds.platform.state.signed.SignedStateFileManager;
-import com.swirlds.platform.state.signed.SignedStateManager;
-import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -179,13 +171,6 @@ public class Settings {
     private boolean showInternalStats = SHOW_INTERNAL_STATS_DEFAULT_VALUE;
     /** show expand statistics values, inlcude mean, min, max, stdDev */
     private boolean verboseStatistics = VERBOSE_STATISTICS_DEFAULT_VALUE;
-    /** if set to true, the platform will fail to start if it fails to load a state from disk */
-    private boolean requireStateLoad = REQUIRE_STATE_LOAD_DEFAULT_VALUE;
-    /**
-     * hash and sign a state every signedStateFreq rounds. 1 means that a state will be signed every round, 2 means
-     * every other round, and so on. If the value is 0 or less, no states will be signed
-     */
-    private int signedStateFreq = SIGNED_STATE_FREQ_DEFAULT_VALUE;
     /** max events that can be put in the forCons queue (q2) in ConsensusRoundHandler (0 for infinity) */
     private int maxEventQueueForCons = MAX_EVENT_QUEUE_FOR_CONS_DEFAULT_VALUE;
     /**
@@ -297,10 +282,6 @@ public class Settings {
      */
     private String csvFileName = CSV_FILE_NAME_DEFAULT_VALUE;
     /**
-     * The CSV file name of the emergency state recovery file
-     */
-    private String emergencyStateFileName = EMERGENCY_STATE_FILE_NAME_DEFAULT_VALUE;
-    /**
      * The path to look for an emergency recovery file on node start. If a file is present in this directory at startup,
      * emergency recovery will begin.
      */
@@ -328,11 +309,6 @@ public class Settings {
      * syncs that started before the throttle engages can grow the queue to very large sizes on larger networks.
      */
     private int eventIntakeQueueSize = EVENT_INTAKE_QUEUE_SIZE_DEFAULT_VALUE;
-    /**
-     * If true, the platform will recalculate the hash of the signed state and check it against the written hash. It
-     * will also verify that the signatures are valid.
-     */
-    private boolean checkSignedStateFromDisk = CHECK_SIGNED_STATE_FROM_DISK_DEFAULT_VALUE;
     /**
      * The probability that after a sync, a node will create an event with a random other parent. The probability is is
      * 1 in X, where X is the value of randomEventProbability. A value of 0 means that a node will not create any random
@@ -385,14 +361,6 @@ public class Settings {
      */
     private boolean gossipWithDifferentVersions = GOSSIP_WITH_DIFFERENT_VERSIONS_DEFAULT_VALUE;
 
-    /** settings that control the {@link SignedStateManager} and {@link SignedStateFileManager} behaviors */
-    private StateSettings state = new StateSettings();
-
-    /**
-     * Settings controlling VirtualMap.
-     */
-    private VirtualMapSettingsImpl virtualMap = new VirtualMapSettingsImpl();
-
     private Settings() {}
 
     public static Settings getInstance() {
@@ -413,8 +381,6 @@ public class Settings {
         SettingsCommon.logStack = getInstance().isLogStack();
         SettingsCommon.showInternalStats = getInstance().isShowInternalStats();
         SettingsCommon.verboseStatistics = getInstance().isVerboseStatistics();
-
-        VirtualMapSettingsFactory.configure(getInstance().getVirtualMap());
     }
 
     /**
@@ -747,22 +713,6 @@ public class Settings {
         return verboseStatistics;
     }
 
-    public StateSettings getState() {
-        return state;
-    }
-
-    public boolean isRequireStateLoad() {
-        return requireStateLoad;
-    }
-
-    public void setRequireStateLoad(final boolean value) {
-        requireStateLoad = value;
-    }
-
-    public int getSignedStateFreq() {
-        return signedStateFreq;
-    }
-
     public int getMaxEventQueueForCons() {
         return maxEventQueueForCons;
     }
@@ -903,10 +853,6 @@ public class Settings {
         return maxTransactionCountPerEvent;
     }
 
-    public VirtualMapSettingsImpl getVirtualMap() {
-        return virtualMap;
-    }
-
     public String getCsvOutputFolder() {
         return csvOutputFolder;
     }
@@ -949,14 +895,6 @@ public class Settings {
 
     public int getEventIntakeQueueSize() {
         return eventIntakeQueueSize;
-    }
-
-    public boolean isCheckSignedStateFromDisk() {
-        return checkSignedStateFromDisk;
-    }
-
-    public void setCheckSignedStateFromDisk(final boolean value) {
-        checkSignedStateFromDisk = value;
     }
 
     public int getRandomEventProbability() {
@@ -1009,10 +947,6 @@ public class Settings {
 
     public boolean isGossipWithDifferentVersions() {
         return gossipWithDifferentVersions;
-    }
-
-    public String getEmergencyRecoveryStateFileName() {
-        return emergencyStateFileName;
     }
 
     public Path getEmergencyRecoveryFileLoadDir() {
