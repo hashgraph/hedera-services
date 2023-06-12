@@ -17,6 +17,9 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.TokenSupplyType.FINITE;
+import static com.hedera.hapi.node.base.TokenSupplyType.INFINITE;
+import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -28,6 +31,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenSupplyType;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
@@ -39,10 +44,9 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
-import com.hedera.node.app.service.token.impl.validators.TokenTypeValidator;
+import com.hedera.node.app.service.token.impl.validators.TokenFieldsValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -63,11 +67,11 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenCreateHandler extends BaseTokenHandler implements TransactionHandler {
     private final CustomFeesValidator customFeesValidator;
-    private final TokenTypeValidator tokenTypeValidator;
+    private final TokenFieldsValidator tokenTypeValidator;
     private final TokenCreateValidator tokenCreateValidator;
     @Inject
     public TokenCreateHandler(@NonNull CustomFeesValidator customFeesValidator,
-                              @NonNull TokenTypeValidator tokenTypeValidator,
+                              @NonNull TokenFieldsValidator tokenTypeValidator,
                               @NonNull TokenCreateValidator tokenCreateValidator) {
         this.customFeesValidator = customFeesValidator;
         this.tokenTypeValidator = tokenTypeValidator;
@@ -98,28 +102,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        final var op = txn.tokenCreation();
-        final var initialSupply = op.initialSupply();
-        final var maxSupply = op.maxSupply();
-        final var decimals = op.decimals();
-        final var supplyType = op.supplyType();
-        final var tokenType = op.tokenType();
-
-        var validity = tokenTypeValidator.validateType(tokenType, initialSupply, decimals);
-        validateTrue(validity == OK, validity);
-
-        validity = tokenTypeValidator.validateSupplyType(supplyType, maxSupply);
-        validateTrue(validity == OK, validity);
-
-        validateFalsePreCheck(maxSupply > 0 && initialSupply > maxSupply, INVALID_TOKEN_INITIAL_SUPPLY);
-        validateTruePreCheck(op.hasTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-
-        if (tokenType == NON_FUNGIBLE_UNIQUE) {
-            validateTruePreCheck(op.hasSupplyKey(), TOKEN_HAS_NO_SUPPLY_KEY);
-        }
-        if (op.freezeDefault()) {
-            validateTruePreCheck(op.hasFreezeKey(), TOKEN_HAS_NO_FREEZE_KEY);
-        }
+        tokenCreateValidator.pureChecks(txn.tokenCreationOrThrow());
     }
 
     @Override
@@ -127,6 +110,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.tokenCreationOrThrow();
+        // Create or get needed config and stores
         final var config = context.configuration().getConfigData(TokensConfig.class);
         final var accountStore = context.writableStore(WritableAccountStore.class);
         final var tokenStore = context.writableStore(WritableTokenStore.class);
@@ -134,32 +118,17 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
         // validate fields in the transaction body that involves checking with
         // dynamic properties or state. Also validate custom fees
-        validateSemantics(accountStore, tokenStore, op, config);
-
-        // validate expiration and auto-renew account if present
-        final var givenExpiryMeta = getExpiryMeta(context.consensusNow().getEpochSecond(), op);
-        final var resolvedExpiryMeta = context.expiryValidator().resolveCreationAttempt(false, givenExpiryMeta);
-
-        // validate auto-renew account exists
-        if (resolvedExpiryMeta.autoRenewNum() != 0) {
-            final var id = AccountID.newBuilder()
-                    .accountNum(resolvedExpiryMeta.autoRenewNum())
-                    .build();
-            final var autoRenewAccount = accountStore.getAccountById(id);
-            validateTrue(autoRenewAccount != null, INVALID_AUTORENEW_ACCOUNT);
-        }
-        // build a token object
+        final var resolvedExpiryMeta = validateSemantics(context, accountStore,  op, config);
+        // build a new token
         final var newTokenId = context.newEntityNum();
         final var newToken = buildToken(newTokenId, op, resolvedExpiryMeta);
 
         // validate custom fees and get back list of fees with created token denomination
-        final var requireCollectorAutoAssociation = customFeesValidator.validateCreation(
-                newToken, accountStore, tokenRelationStore, tokenStore, op.customFees());
-
+        final var requireCollectorAutoAssociation = customFeesValidator.validateForCreation(
+                newToken, accountStore, tokenRelationStore, tokenStore, op.customFeesOrElse(emptyList()));
         // associate token with treasury and collector ids of custom fees whose token denomination
         // is set to sentinel value
-        final var newRels = associateNeededAccounts(
-                newToken, accountStore, tokenRelationStore, requireCollectorAutoAssociation);
+        final var newRels = associateAccounts(newToken, accountStore, tokenRelationStore, requireCollectorAutoAssociation);
 
         if(op.initialSupply() > 0){
             final var treasuryRel = newRels.get(0);
@@ -171,10 +140,10 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         newRels.forEach(rel -> tokenRelationStore.put(rel));
     }
 
-    private List<TokenRelation> associateNeededAccounts(Token newToken,
-                                                        ReadableAccountStore readableAccountStore,
-                                                        WritableTokenRelationStore writableTokenRelStore,
-                                                        Set<CustomFee> requireCollectorAutoAssociation) {
+    private List<TokenRelation> associateAccounts(Token newToken,
+                                                  ReadableAccountStore readableAccountStore,
+                                                  WritableTokenRelationStore writableTokenRelStore,
+                                                  Set<CustomFee> requireCollectorAutoAssociation) {
         final var treasury = newToken.treasuryAccountNumber();
         final Set<Long> associatedSoFar = new HashSet<>();
         final List<TokenRelation> newRels = new ArrayList<>();
@@ -231,19 +200,31 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA);
     }
 
-    private void validateSemantics(
+    private ExpiryMeta validateSemantics(
+            final HandleContext context,
             final ReadableAccountStore accountStore,
-            final WritableTokenStore tokenStore,
             final TokenCreateTransactionBody op,
             final TokensConfig config) {
         // validate treasury exists
         final var treasury = accountStore.getAccountById(op.treasuryOrElse(AccountID.DEFAULT));
         validateTrue(treasury != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-        tokenCreateValidator.validate(accountStore, tokenStore, op, config);
-        // FUTURE : Need to do areNftsEnabled, memoCheck, tokenSymbolCheck, tokenNameCheck, checkKeys,
-        // validateAutoRenewAccount
+        tokenCreateValidator.validate(op, config);
+        // validate custom fees length
         validateTrue(op.customFees().size() <= config.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);
-        customFeesValidator.validateCreation(op.customFees(), accountStore, tokenStore, true);
+
+        // validate expiration and auto-renew account if present
+        final var givenExpiryMeta = getExpiryMeta(context.consensusNow().getEpochSecond(), op);
+        final var resolvedExpiryMeta = context.expiryValidator().resolveCreationAttempt(false, givenExpiryMeta);
+
+        // validate auto-renew account exists
+        if (resolvedExpiryMeta.autoRenewNum() != 0) {
+            final var id = AccountID.newBuilder()
+                    .accountNum(resolvedExpiryMeta.autoRenewNum())
+                    .build();
+            final var autoRenewAccount = accountStore.getAccountById(id);
+            validateTrue(autoRenewAccount != null, INVALID_AUTORENEW_ACCOUNT);
+        }
+        return resolvedExpiryMeta;
     }
 
     /* --------------- Helper methods --------------- */

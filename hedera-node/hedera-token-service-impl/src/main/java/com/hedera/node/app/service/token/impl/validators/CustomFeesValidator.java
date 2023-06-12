@@ -63,7 +63,7 @@ public class CustomFeesValidator {
      * @param customFees The custom fees to validate.
      * @return The set of custom fees that need to auto associate collector accounts.
      */
-    public Set<CustomFee> validateCreation(
+    public Set<CustomFee> validateForCreation(
             @NonNull final Token createdToken,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
@@ -76,7 +76,7 @@ public class CustomFeesValidator {
         final Set<CustomFee> fees = new HashSet<>();
         final var tokenType = createdToken.tokenType();
         for (final var fee : customFees) {
-            final var collector = accountStore.getAccountById(fee.feeCollectorAccountId());
+            final var collector = accountStore.getAccountById(fee.feeCollectorAccountIdOrElse(AccountID.DEFAULT));
             validateTrue(collector != null, INVALID_CUSTOM_FEE_COLLECTOR);
 
             switch (fee.fee().kind()) {
@@ -86,6 +86,7 @@ public class CustomFeesValidator {
                     fees.add(fee);
                 }
                 case ROYALTY_FEE -> validateRoyaltyFeeForCreation(tokenType, fee, tokenRelationStore, tokenStore);
+                default -> throw new IllegalStateException("Unexpected value: " + fee.fee().kind());
             }
         }
         return fees;
@@ -126,7 +127,7 @@ public class CustomFeesValidator {
 
             switch (fee.fee().kind()) {
                 case FIXED_FEE -> {
-                    final var fixedFee = fee.fixedFee();
+                    final var fixedFee = fee.fixedFeeOrThrow();
                     // validate any explicit token denomination set
                     if (fixedFee.hasDenominatingTokenId()) {
                         validateExplicitTokenDenomination(
@@ -145,10 +146,11 @@ public class CustomFeesValidator {
                     // royalty fee can be only applied to non-fungible unique tokens
                     validateTrue(
                             isNonFungibleUnique(tokenType), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
-                    if (fee.royaltyFee().hasFallbackFee()
-                            && fee.royaltyFee().fallbackFee().hasDenominatingTokenId()) {
-                        final var tokenNum = fee.royaltyFee()
-                                .fallbackFee()
+                    final var royaltyFee = fee.royaltyFeeOrThrow();
+                    if (royaltyFee.hasFallbackFee()
+                            && royaltyFee.fallbackFeeOrThrow().hasDenominatingTokenId()) {
+                        final var tokenNum = royaltyFee
+                                .fallbackFeeOrThrow()
                                 .denominatingTokenId()
                                 .tokenNum();
                         final var tokenId =
@@ -204,11 +206,11 @@ public class CustomFeesValidator {
                                              @NonNull final ReadableTokenRelationStore tokenRelationStore,
                                              @NonNull final WritableTokenStore tokenStore,
                                              @NonNull final Set<CustomFee> fees){
-        final var fixedFee = fee.fixedFee();
+        final var fixedFee = fee.fixedFeeOrThrow();
         if (fixedFee.hasDenominatingTokenId()) {
             // If the denominating token id is set to sentinel value 0.0.0, then the fee is
             // denominated in the same token as the token being created.
-            if (fixedFee.denominatingTokenId().tokenNum() == 0L) {
+            if (fixedFee.denominatingTokenIdOrThrow().tokenNum() == 0L) {
                 validateTrue(
                         isFungibleCommon(tokenType),
                         CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
@@ -234,10 +236,11 @@ public class CustomFeesValidator {
                                                @NonNull final ReadableTokenRelationStore tokenRelationStore,
                                                @NonNull final WritableTokenStore tokenStore) {
         validateTrue(isNonFungibleUnique(tokenType), CUSTOM_ROYALTY_FEE_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE);
-        if (fee.royaltyFee().hasFallbackFee()) {
-            final var fallbackFee = fee.royaltyFee().fallbackFee();
+        final var royaltyFee = fee.royaltyFeeOrThrow();
+        if (royaltyFee.hasFallbackFee()) {
+            final var fallbackFee = royaltyFee.fallbackFeeOrThrow();
             if (fallbackFee.hasDenominatingTokenId()) {
-                final var denominatingTokenId = fallbackFee.denominatingTokenId();
+                final var denominatingTokenId = fallbackFee.denominatingTokenIdOrThrow();
                 validateTrue(denominatingTokenId.tokenNum() != 0, CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
                 validateExplicitTokenDenomination(
                         fee.feeCollectorAccountId(),

@@ -17,19 +17,30 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.store.TypedTokenStore;
+import com.hedera.node.app.service.mono.store.models.TokenRelationship;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 public class BaseTokenHandler {
     /**
@@ -133,6 +144,44 @@ public class BaseTokenHandler {
         accountStore.put(copyTreasuryAccount.build());
         tokenStore.put(copyToken.build());
         tokenRelationStore.put(copyTreasuryRel.build());
+    }
+
+    protected void associateGiven(Token token,
+            final Account account,
+            final WritableTokenRelationStore tokenRelStore,
+            final Set<Long> associatedSoFar,
+            final List<TokenRelation> newRelations) {
+        final var accountNum = account.accountNumber();
+        if (associatedSoFar.contains(accountNum)) {
+            return;
+        }
+        newRelations.addAll(
+                account.associateWith(List.of(provisionalToken), tokenStore, false, true, dynamicProperties));
+        associatedSoFar.add(accountId);
+    }
+
+    public List<TokenRelation> associateWith(
+            final List<Token> tokens,
+            final WritableTokenRelationStore tokenRelStore,
+            final boolean isAutomaticAssociation,
+            final boolean shouldEnableRelationship) {
+        final var proposedTotalAssociations = tokens.size() + numAssociations;
+        validateFalse(
+                exceedsTokenAssociationLimit(dynamicProperties, proposedTotalAssociations),
+                TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+        final List<TokenRelation> newModelRels = new ArrayList<>();
+        for (final var token : tokens) {
+            validateFalse(tokenRelStore.get(token, this), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+            if (isAutomaticAssociation) {
+                incrementUsedAutomaticAssociations();
+            }
+            final var newRel = shouldEnableRelationship
+                    ? token.newEnabledRelationship(this)
+                    : token.newRelationshipWith(this, false);
+            numAssociations++;
+            newModelRels.add(newRel);
+        }
+        return newModelRels;
     }
 
     @NonNull

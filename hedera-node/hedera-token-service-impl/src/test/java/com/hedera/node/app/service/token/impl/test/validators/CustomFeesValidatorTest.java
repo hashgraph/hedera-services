@@ -280,7 +280,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("Custom fee validation for TokenCreate is not implemented")
     void validateCustomFeeForCreation() {
-        assertThatThrownBy(() -> subject.validateCreation(
+        assertThatThrownBy(() -> subject.validateForCreation(
                         fungibleToken, readableAccountStore, readableTokenRelStore, writableTokenStore, customFees))
                 .isInstanceOf(UnsupportedOperationException.class);
     }

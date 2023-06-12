@@ -28,7 +28,8 @@ import java.util.List;
 import javax.inject.Inject;
 
 /**
- * This class contains validations to be done in handle for Token Mint and Token Burn operations
+ * This class contains validations to be done in handle for Token Mint and
+ * Token Burn operations in handle
  */
 public class TokenSupplyChangeOpsValidator {
     private final ConfigProvider configProvider;
