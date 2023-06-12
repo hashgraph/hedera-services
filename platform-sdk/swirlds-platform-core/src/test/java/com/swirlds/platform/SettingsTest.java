@@ -16,30 +16,9 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_FULL_MERGE_PERIOD;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_HASHES_RAM_TO_DISK_THRESHOLD;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_INDEX_REBUILDING_ENFORCED;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_ITERATOR_INPUT_BUFFER_BYTES;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_KEY_SET_BLOOM_FILTER_HASH_COUNT;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_KEY_SET_BLOOM_FILTER_SIZE_IN_BYTES;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_KEY_SET_HALF_DISK_HASH_MAP_BUFFER;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_KEY_SET_HALF_DISK_HASH_MAP_SIZE;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_MAX_FILE_SIZE_BYTES;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_MAX_GB_RAM_FOR_MERGING;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_MAX_NUMBER_OF_FILES_IN_MERGE;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_MAX_NUM_OF_KEYS;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_MEDIUM_MERGE_CUTOFF_MB;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_MEDIUM_MERGE_PERIOD;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_MERGE_ACTIVATED_PERIOD;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_MIN_NUMBER_OF_FILES_IN_MERGE;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_MOVE_LIST_CHUNK_SIZE;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_RECONNECT_KEY_LEAK_MITIGATION_ENABLED;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_SMALL_MERGE_CUTOFF_MB;
-import static com.swirlds.jasperdb.settings.DefaultJasperDbSettings.DEFAULT_WRITER_OUTPUT_BUFFER_BYTES;
 import static com.swirlds.platform.SettingConstants.APPS_STRING;
 import static com.swirlds.platform.SettingConstants.BUFFER_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.CHECK_SIGNED_STATE_FROM_DISK_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.CONFIG_TXT;
 import static com.swirlds.platform.SettingConstants.CSV_APPEND_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.CSV_FILE_NAME_DEFAULT_VALUE;
@@ -73,11 +52,9 @@ import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_COUNT_PER_EV
 import static com.swirlds.platform.SettingConstants.NUM_CONNECTIONS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.NUM_CRYPTO_THREADS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.RANDOM_EVENT_PROBABILITY_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.REQUIRE_STATE_LOAD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.RESCUE_CHILDLESS_INVERSE_PROBABILITY_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SETTINGS_TXT;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.SIGNED_STATE_FREQ_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_CALLER_SKIPS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_HEARTBEAT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SOCKET_IP_TOS_DEFAULT_VALUE;
@@ -97,16 +74,6 @@ import static com.swirlds.platform.SettingConstants.USE_LOOPBACK_IP_DEFAULT_VALU
 import static com.swirlds.platform.SettingConstants.USE_TLS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.VERBOSE_STATISTICS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.VERIFY_EVENT_SIGS_DEFAULT_VALUE;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_FLUSH_INTERVAL;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_FLUSH_THROTTLE_STEP_SIZE;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_MAXIMUM_FLUSH_THROTTLE_PERIOD;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_MAXIMUM_VIRTUAL_MAP_SIZE;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_PERCENT_CLEANER_THREADS;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_PERCENT_HASH_THREADS;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_PREFERRED_FLUSH_QUEUE_SIZE;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_VIRTUAL_MAP_WARNING_INTERVAL;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_VIRTUAL_MAP_WARNING_THRESHOLD;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.UNIT_FRACTION_PERCENT;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
@@ -114,10 +81,8 @@ import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.settings.ParsingUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.state.StateSettings;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.BufferedReader;
@@ -126,8 +91,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -257,8 +220,6 @@ class SettingsTest {
         Assertions.assertEquals(NUM_CRYPTO_THREADS_DEFAULT_VALUE, settings.getNumCryptoThreads());
         Assertions.assertEquals(SHOW_INTERNAL_STATS_DEFAULT_VALUE, settings.isShowInternalStats());
         Assertions.assertEquals(VERBOSE_STATISTICS_DEFAULT_VALUE, settings.isVerboseStatistics());
-        Assertions.assertEquals(REQUIRE_STATE_LOAD_DEFAULT_VALUE, settings.isRequireStateLoad());
-        Assertions.assertEquals(SIGNED_STATE_FREQ_DEFAULT_VALUE, settings.getSignedStateFreq());
         Assertions.assertEquals(MAX_EVENT_QUEUE_FOR_CONS_DEFAULT_VALUE, settings.getMaxEventQueueForCons());
         Assertions.assertEquals(
                 THROTTLE_TRANSACTION_QUEUE_SIZE_DEFAULT_VALUE, settings.getThrottleTransactionQueueSize());
@@ -302,7 +263,6 @@ class SettingsTest {
         Assertions.assertEquals(
                 EVENT_INTAKE_QUEUE_THROTTLE_SIZE_DEFAULT_VALUE, settings.getEventIntakeQueueThrottleSize());
         Assertions.assertEquals(EVENT_INTAKE_QUEUE_SIZE_DEFAULT_VALUE, settings.getEventIntakeQueueSize());
-        Assertions.assertEquals(CHECK_SIGNED_STATE_FROM_DISK_DEFAULT_VALUE, settings.isCheckSignedStateFromDisk());
         Assertions.assertEquals(RANDOM_EVENT_PROBABILITY_DEFAULT_VALUE, settings.getRandomEventProbability());
         Assertions.assertEquals(
                 STALE_EVENT_PREVENTION_THRESHOLD_DEFAULT_VALUE, settings.getStaleEventPreventionThreshold());
@@ -356,8 +316,6 @@ class SettingsTest {
         Assertions.assertEquals(16, settings.getNumCryptoThreads());
         Assertions.assertTrue(settings.isShowInternalStats());
         Assertions.assertTrue(settings.isVerboseStatistics());
-        Assertions.assertTrue(settings.isRequireStateLoad());
-        Assertions.assertEquals(3, settings.getSignedStateFreq());
         Assertions.assertEquals(600, settings.getMaxEventQueueForCons());
         Assertions.assertEquals(200000, settings.getThrottleTransactionQueueSize());
         Assertions.assertEquals(50, settings.getNumConnections());
@@ -393,7 +351,6 @@ class SettingsTest {
         Assertions.assertTrue(settings.isCsvAppend());
         Assertions.assertEquals(2000, settings.getEventIntakeQueueThrottleSize());
         Assertions.assertEquals(15000, settings.getEventIntakeQueueSize());
-        Assertions.assertTrue(settings.isCheckSignedStateFromDisk());
         Assertions.assertEquals(1, settings.getRandomEventProbability());
         Assertions.assertEquals(10, settings.getStaleEventPreventionThreshold());
         Assertions.assertEquals(15, settings.getRescueChildlessInverseProbability());
@@ -406,79 +363,6 @@ class SettingsTest {
         Assertions.assertEquals(2000, settings.getJVMPauseDetectorSleepMs());
         Assertions.assertEquals(2000, settings.getJVMPauseReportMs());
         Assertions.assertTrue(settings.isGossipWithDifferentVersions());
-    }
-
-    /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
-     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
-     */
-    @Test
-    @Disabled
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that default state sub-settings are retrieved correctly")
-    public void checkGetDefaultStateSubSettings() {
-        // given
-        final StateSettings stateSettings = Settings.getInstance().getState();
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-
-        // then
-        Assertions.assertEquals("data/saved", stateSettings.savedStateDirectory);
-        Assertions.assertFalse(stateSettings.cleanSavedStateDirectory);
-        Assertions.assertEquals(20, stateSettings.stateSavingQueueSize);
-        Assertions.assertEquals(0, stateSettings.getSaveStatePeriod());
-        Assertions.assertEquals(3, stateSettings.getSignedStateDisk());
-        Assertions.assertEquals(
-                Integer.parseInt(ConsensusConfig.ROUNDS_EXPIRED_DEFAULT_VALUE),
-                configuration.getConfigData(ConsensusConfig.class).roundsExpired());
-        Assertions.assertEquals(
-                Integer.parseInt(ConsensusConfig.ROUNDS_NON_ANCIENT_DEFAULT_VALUE),
-                configuration.getConfigData(ConsensusConfig.class).roundsNonAncient());
-        Assertions.assertTrue(stateSettings.dumpStateOnFatal);
-        Assertions.assertEquals(Duration.ofHours(6).toSeconds(), stateSettings.secondsBetweenISSDumps);
-        Assertions.assertFalse(StateSettings.backgroundHashChecking);
-        Assertions.assertEquals(5, StateSettings.getDebugHashDepth());
-        Assertions.assertEquals(60, stateSettings.getStateDeletionErrorLogFrequencySeconds());
-        Assertions.assertTrue(stateSettings.enableHashStreamLogging);
-    }
-
-    /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
-     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
-     */
-    @Test
-    @Disabled
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that loaded state sub-settings are retrieved correctly")
-    public void checkGetLoadedStateSubSettings() throws IOException {
-        // given
-        final Settings settings = Settings.getInstance();
-        final File settingsFile =
-                new File(SettingsTest.class.getResource("settings5.txt").getFile());
-        Assertions.assertTrue(settingsFile.exists());
-        final Configuration configuration = new TestConfigBuilder()
-                .withSource(new LegacyFileConfigSource(settingsFile.toPath()))
-                .getOrCreateConfig();
-
-        // when
-        settings.loadSettings(settingsFile);
-        final StateSettings stateSettings = Settings.getInstance().getState();
-
-        // then
-        Assertions.assertEquals("badData/badSaved", stateSettings.savedStateDirectory);
-        Assertions.assertTrue(stateSettings.cleanSavedStateDirectory);
-        Assertions.assertEquals(30, stateSettings.stateSavingQueueSize);
-        Assertions.assertEquals(1, stateSettings.getSaveStatePeriod());
-        Assertions.assertEquals(4, stateSettings.getSignedStateDisk());
-        Assertions.assertEquals(
-                1000, configuration.getConfigData(ConsensusConfig.class).roundsExpired());
-        Assertions.assertEquals(
-                30, configuration.getConfigData(ConsensusConfig.class).roundsNonAncient());
-        Assertions.assertFalse(stateSettings.dumpStateOnFatal);
-        Assertions.assertEquals(6000, stateSettings.secondsBetweenISSDumps);
-        Assertions.assertTrue(StateSettings.backgroundHashChecking);
-        Assertions.assertEquals(10, StateSettings.getDebugHashDepth());
-        Assertions.assertEquals(120, stateSettings.getStateDeletionErrorLogFrequencySeconds());
-        Assertions.assertFalse(stateSettings.enableHashStreamLogging);
     }
 
     /**
@@ -528,69 +412,6 @@ class SettingsTest {
     @Test
     @Disabled
     @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that default virtual map sub-settings are retrieved correctly")
-    public void checkGetDefaultVirtualMapSubSettings() {
-        // given
-        final VirtualMapSettingsImpl virtualMapSettings = Settings.getInstance().getVirtualMap();
-        final int numProcessors = Runtime.getRuntime().availableProcessors();
-
-        // then
-        Assertions.assertEquals(DEFAULT_PERCENT_HASH_THREADS, virtualMapSettings.getPercentHashThreads());
-        Assertions.assertEquals(
-                (int) (numProcessors * (virtualMapSettings.getPercentHashThreads() / UNIT_FRACTION_PERCENT)),
-                virtualMapSettings.getNumHashThreads());
-        Assertions.assertEquals(DEFAULT_PERCENT_CLEANER_THREADS, virtualMapSettings.getPercentCleanerThreads());
-        Assertions.assertEquals(
-                (int) (numProcessors * (virtualMapSettings.getPercentCleanerThreads() / UNIT_FRACTION_PERCENT)),
-                virtualMapSettings.getNumCleanerThreads());
-        Assertions.assertEquals(DEFAULT_MAXIMUM_VIRTUAL_MAP_SIZE, virtualMapSettings.getMaximumVirtualMapSize());
-        Assertions.assertEquals(
-                DEFAULT_VIRTUAL_MAP_WARNING_THRESHOLD, virtualMapSettings.getVirtualMapWarningThreshold());
-        Assertions.assertEquals(
-                DEFAULT_VIRTUAL_MAP_WARNING_INTERVAL, virtualMapSettings.getVirtualMapWarningInterval());
-        Assertions.assertEquals(DEFAULT_FLUSH_INTERVAL, virtualMapSettings.getFlushInterval());
-        Assertions.assertEquals(DEFAULT_PREFERRED_FLUSH_QUEUE_SIZE, virtualMapSettings.getPreferredFlushQueueSize());
-        Assertions.assertEquals(DEFAULT_FLUSH_THROTTLE_STEP_SIZE, virtualMapSettings.getFlushThrottleStepSize());
-        Assertions.assertEquals(
-                DEFAULT_MAXIMUM_FLUSH_THROTTLE_PERIOD, virtualMapSettings.getMaximumFlushThrottlePeriod());
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that loaded virtual map sub-settings are retrieved correctly")
-    public void checkGetLoadedVirtualMapSubSettings() {
-        // given
-        final Settings settings = Settings.getInstance();
-        final File settingsFile =
-                new File(SettingsTest.class.getResource("settings9.txt").getFile());
-        Assertions.assertTrue(settingsFile.exists());
-
-        // when
-        settings.loadSettings(settingsFile);
-        final VirtualMapSettingsImpl virtualMapSettings = Settings.getInstance().getVirtualMap();
-
-        // then
-        Assertions.assertEquals(1, virtualMapSettings.getNumHashThreads());
-        Assertions.assertEquals(75.0, virtualMapSettings.getPercentHashThreads());
-        Assertions.assertEquals(1, virtualMapSettings.getNumCleanerThreads());
-        Assertions.assertEquals(50.0, virtualMapSettings.getPercentCleanerThreads());
-        Assertions.assertEquals(10, virtualMapSettings.getMaximumVirtualMapSize());
-        Assertions.assertEquals(7500000, virtualMapSettings.getVirtualMapWarningThreshold());
-        Assertions.assertEquals(150000, virtualMapSettings.getVirtualMapWarningInterval());
-        Assertions.assertEquals(30, virtualMapSettings.getFlushInterval());
-        Assertions.assertEquals(3, virtualMapSettings.getPreferredFlushQueueSize());
-        Assertions.assertEquals(ParsingUtils.parseDuration("300millis"), virtualMapSettings.getFlushThrottleStepSize());
-        Assertions.assertEquals(
-                ParsingUtils.parseDuration("6secs"), virtualMapSettings.getMaximumFlushThrottlePeriod());
-    }
-
-    /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
-     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
-     */
-    @Test
-    @Disabled
-    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Checks that default address book sub-settings are retrieved correctly")
     public void checkGetDefaultAddressBookSubSettings() {
         // given
@@ -618,85 +439,6 @@ class SettingsTest {
 
         // then
         Assertions.assertFalse(addressBookConfig.updateAddressBookOnlyAtUpgrade());
-    }
-
-    /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
-     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
-     */
-    @Test
-    @Disabled
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that default JasperDB sub-settings are retrieved correctly")
-    public void checkGetDefaultJasperDbSubSettings() {
-        // given
-        final JasperDbSettingsImpl jasperDbSettings = Settings.getInstance().getJasperDb();
-
-        // then
-        Assertions.assertEquals(DEFAULT_MAX_NUM_OF_KEYS, jasperDbSettings.getMaxNumOfKeys());
-        Assertions.assertEquals(DEFAULT_HASHES_RAM_TO_DISK_THRESHOLD, jasperDbSettings.getHashesRamToDiskThreshold());
-        Assertions.assertEquals(DEFAULT_SMALL_MERGE_CUTOFF_MB, jasperDbSettings.getSmallMergeCutoffMb());
-        Assertions.assertEquals(DEFAULT_MEDIUM_MERGE_CUTOFF_MB, jasperDbSettings.getMediumMergeCutoffMb());
-        Assertions.assertEquals(DEFAULT_MOVE_LIST_CHUNK_SIZE, jasperDbSettings.getMoveListChunkSize());
-        Assertions.assertEquals(DEFAULT_MAX_GB_RAM_FOR_MERGING, jasperDbSettings.getMaxRamUsedForMergingGb());
-        Assertions.assertEquals(DEFAULT_ITERATOR_INPUT_BUFFER_BYTES, jasperDbSettings.getIteratorInputBufferBytes());
-        Assertions.assertEquals(DEFAULT_WRITER_OUTPUT_BUFFER_BYTES, jasperDbSettings.getWriterOutputBufferBytes());
-        Assertions.assertEquals(DEFAULT_MAX_FILE_SIZE_BYTES, jasperDbSettings.getMaxDataFileBytes());
-        Assertions.assertEquals(DEFAULT_FULL_MERGE_PERIOD, jasperDbSettings.getFullMergePeriod());
-        Assertions.assertEquals(DEFAULT_MEDIUM_MERGE_PERIOD, jasperDbSettings.getMediumMergePeriod());
-        Assertions.assertEquals(DEFAULT_MERGE_ACTIVATED_PERIOD, jasperDbSettings.getMergeActivatePeriod());
-        Assertions.assertEquals(DEFAULT_MAX_NUMBER_OF_FILES_IN_MERGE, jasperDbSettings.getMaxNumberOfFilesInMerge());
-        Assertions.assertEquals(DEFAULT_MIN_NUMBER_OF_FILES_IN_MERGE, jasperDbSettings.getMinNumberOfFilesInMerge());
-        Assertions.assertEquals(
-                DEFAULT_RECONNECT_KEY_LEAK_MITIGATION_ENABLED, jasperDbSettings.isReconnectKeyLeakMitigationEnabled());
-        Assertions.assertEquals(ChronoUnit.valueOf("MINUTES"), jasperDbSettings.getMergePeriodUnit());
-        Assertions.assertEquals(
-                DEFAULT_KEY_SET_BLOOM_FILTER_HASH_COUNT, jasperDbSettings.getKeySetBloomFilterHashCount());
-        Assertions.assertEquals(
-                DEFAULT_KEY_SET_BLOOM_FILTER_SIZE_IN_BYTES, jasperDbSettings.getKeySetBloomFilterSizeInBytes());
-        Assertions.assertEquals(
-                DEFAULT_KEY_SET_HALF_DISK_HASH_MAP_SIZE, jasperDbSettings.getKeySetHalfDiskHashMapSize());
-        Assertions.assertEquals(
-                DEFAULT_KEY_SET_HALF_DISK_HASH_MAP_BUFFER, jasperDbSettings.getKeySetHalfDiskHashMapBuffer());
-        Assertions.assertEquals(DEFAULT_INDEX_REBUILDING_ENFORCED, jasperDbSettings.isIndexRebuildingEnforced());
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that loaded JasperDB sub-settings are retrieved correctly")
-    public void checkGetLoadedJasperDbSubSettings() {
-        // given
-        final Settings settings = Settings.getInstance();
-        final File settingsFile =
-                new File(SettingsTest.class.getResource("settings11.txt").getFile());
-        Assertions.assertTrue(settingsFile.exists());
-
-        // when
-        settings.loadSettings(settingsFile);
-        final JasperDbSettingsImpl jasperDbSettings = Settings.getInstance().getJasperDb();
-
-        // then
-        Assertions.assertEquals(250000000, jasperDbSettings.getMaxNumOfKeys());
-        Assertions.assertEquals(1, jasperDbSettings.getHashesRamToDiskThreshold());
-        Assertions.assertEquals(4096, jasperDbSettings.getSmallMergeCutoffMb());
-        Assertions.assertEquals(40960, jasperDbSettings.getMediumMergeCutoffMb());
-        Assertions.assertEquals(250000, jasperDbSettings.getMoveListChunkSize());
-        Assertions.assertEquals(15, jasperDbSettings.getMaxRamUsedForMergingGb());
-        Assertions.assertEquals(500000000, jasperDbSettings.getIteratorInputBufferBytes());
-        Assertions.assertEquals(500000000, jasperDbSettings.getWriterOutputBufferBytes());
-        Assertions.assertEquals(500000000, jasperDbSettings.getMaxDataFileBytes());
-        Assertions.assertEquals(2000, jasperDbSettings.getFullMergePeriod());
-        Assertions.assertEquals(100, jasperDbSettings.getMediumMergePeriod());
-        Assertions.assertEquals(2, jasperDbSettings.getMergeActivatePeriod());
-        Assertions.assertEquals(128, jasperDbSettings.getMaxNumberOfFilesInMerge());
-        Assertions.assertEquals(16, jasperDbSettings.getMinNumberOfFilesInMerge());
-        Assertions.assertTrue(jasperDbSettings.isReconnectKeyLeakMitigationEnabled());
-        // Assertions.assertEquals("Seconds", jasperDbSettings.getMergePeriodUnit());
-        Assertions.assertEquals(15, jasperDbSettings.getKeySetBloomFilterHashCount());
-        Assertions.assertEquals(300000000, jasperDbSettings.getKeySetBloomFilterSizeInBytes());
-        Assertions.assertEquals(200000000, jasperDbSettings.getKeySetHalfDiskHashMapSize());
-        Assertions.assertEquals(200000000, jasperDbSettings.getKeySetHalfDiskHashMapBuffer());
-        Assertions.assertTrue(jasperDbSettings.isIndexRebuildingEnforced());
     }
 
     /**

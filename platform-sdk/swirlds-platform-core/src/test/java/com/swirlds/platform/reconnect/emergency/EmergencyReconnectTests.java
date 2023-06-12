@@ -20,7 +20,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -41,6 +40,7 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
@@ -93,7 +93,7 @@ public class EmergencyReconnectTests {
         ConstructableRegistry.getInstance().registerConstructables("");
 
         when(trueFuture.get()).thenReturn(true);
-        when(reconnectThrottle.initiateReconnect(anyLong())).thenReturn(true);
+        when(reconnectThrottle.initiateReconnect(any())).thenReturn(true);
 
         if (executor.isMutable()) {
             executor.start();
@@ -272,7 +272,8 @@ public class EmergencyReconnectTests {
                 signedStateManager,
                 100,
                 mock(ReconnectMetrics.class),
-                reconnectController);
+                reconnectController,
+                mock(FallenBehindManager.class));
     }
 
     private EmergencyReconnectProtocol createLearnerProtocol(
@@ -291,7 +292,8 @@ public class EmergencyReconnectTests {
                 mock(SignedStateManager.class),
                 100,
                 mock(ReconnectMetrics.class),
-                reconnectController);
+                reconnectController,
+                mock(FallenBehindManager.class));
     }
 
     private void mockTeacherHasCompatibleState(
@@ -305,7 +307,7 @@ public class EmergencyReconnectTests {
                 .setAverageWeight(100L)
                 .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
-                .setSequentialIds(true)
+                .setSequentialIds(false)
                 .build();
     }
 

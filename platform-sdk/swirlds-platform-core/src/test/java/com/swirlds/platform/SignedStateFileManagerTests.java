@@ -59,6 +59,7 @@ import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
+import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -104,8 +105,6 @@ class SignedStateFileManagerTests {
 
     @BeforeEach
     void beforeEach() throws IOException {
-        Settings.getInstance().getState().savedStateDirectory =
-                testDirectory.toFile().toString();
         TemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory);
     }
 
@@ -168,9 +167,6 @@ class SignedStateFileManagerTests {
     @ValueSource(booleans = {true, false})
     @DisplayName("Standard Operation Test")
     void standardOperationTest(final boolean successExpected) throws InterruptedException, IOException {
-
-        Settings.getInstance().getState().savedStateDirectory =
-                testDirectory.toFile().toString();
         final TestConfigBuilder configBuilder = new TestConfigBuilder()
                 .withValue("state.savedStateDirectory", testDirectory.toFile().toString());
         final PlatformContext context = TestPlatformContextBuilder.create()
@@ -510,7 +506,7 @@ class SignedStateFileManagerTests {
                     .setRound(round)
                     .build();
 
-            manager.determineIfStateShouldBeSaved(signedState);
+            manager.determineIfStateShouldBeSaved(signedState, SourceOfSignedState.TRANSACTIONS);
 
             if (signedState.isStateToSave()) {
                 assertTrue(

@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.network.RandomGraph;
@@ -29,8 +31,10 @@ import org.junit.jupiter.api.Test;
 
 class FallenBehindManagerTest {
     final int numNodes = 11;
+    final AddressBook addressBook =
+            new RandomAddressBookGenerator().setSize(numNodes).build();
     final double fallenBehindThreshold = 0.5;
-    final NodeId selfId = new NodeId(0L);
+    final NodeId selfId = addressBook.getNodeId(0);
     final RandomGraph graph = new RandomGraph(numNodes, numNodes + (numNodes % 2), numNodes);
     final AtomicInteger platformNotification = new AtomicInteger(0);
     final AtomicInteger fallenBehindNotification = new AtomicInteger(0);
@@ -39,7 +43,12 @@ class FallenBehindManagerTest {
             .getOrCreateConfig()
             .getConfigData(ReconnectConfig.class);
     final FallenBehindManager manager = new FallenBehindManagerImpl(
-            selfId, graph, platformNotification::incrementAndGet, fallenBehindNotification::incrementAndGet, config);
+            addressBook,
+            selfId,
+            graph,
+            platformNotification::incrementAndGet,
+            fallenBehindNotification::incrementAndGet,
+            config);
 
     @Test
     void test() {

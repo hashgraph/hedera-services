@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.logic;
 
+import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static com.hedera.node.app.service.mono.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -23,6 +24,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
+import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.state.expiry.EntityAutoExpiry;
 import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
 import com.hedera.node.app.service.mono.stats.ExecutionTimeTracker;
@@ -31,7 +33,9 @@ import com.hedera.node.app.service.mono.txns.schedule.ScheduleProcessing;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpan;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -54,6 +58,7 @@ public class StandardProcessLogic implements ProcessLogic {
     private final StateView workingView;
     private final ScheduleProcessing scheduleProcessing;
     private final RecordStreaming recordStreaming;
+    private final RecordCache recordCache;
 
     @Inject
     public StandardProcessLogic(
@@ -68,7 +73,8 @@ public class StandardProcessLogic implements ProcessLogic {
             final ScheduleProcessing scheduleProcessing,
             final ExecutionTimeTracker executionTimeTracker,
             final RecordStreaming recordStreaming,
-            final StateView workingView) {
+            final StateView workingView,
+            final RecordCache recordCache) {
         this.expiries = expiries;
         this.invariantChecks = invariantChecks;
         this.expandHandleSpan = expandHandleSpan;
@@ -81,12 +87,24 @@ public class StandardProcessLogic implements ProcessLogic {
         this.sigImpactHistorian = sigImpactHistorian;
         this.recordStreaming = recordStreaming;
         this.workingView = workingView;
+        this.recordCache = recordCache;
     }
 
     @Override
-    public void incorporateConsensusTxn(ConsensusTransaction platformTxn, long submittingMember) {
+    public void incorporateConsensusTxn(
+            @NonNull final ConsensusTransaction platformTxn,
+            final long submittingMember,
+            @NonNull final SoftwareVersion softwareVersion) {
+
         try {
             final var accessor = expandHandleSpan.accessorFor(platformTxn);
+            // Check if the transaction is submitted by a version before the deployed version.
+            // If so, return and set the status on the receipt to BUSY
+            if (SEMANTIC_VERSIONS.deployedSoftwareVersion().isAfter(softwareVersion)) {
+                recordCache.setStaleTransaction(
+                        accessor.getPayer(), accessor, platformTxn.getConsensusTimestamp(), submittingMember);
+                return;
+            }
             incorporate(accessor, platformTxn.getConsensusTimestamp(), submittingMember);
         } catch (InvalidProtocolBufferException e) {
             log.warn("Consensus platform txn was not gRPC!", e);

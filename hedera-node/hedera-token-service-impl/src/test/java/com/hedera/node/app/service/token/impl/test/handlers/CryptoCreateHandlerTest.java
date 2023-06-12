@@ -27,10 +27,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -38,12 +41,12 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -59,12 +62,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 @ExtendWith(MockitoExtension.class)
 class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
-    @Mock
+    @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
-    private CryptoCreateHandler subject = new CryptoCreateHandler();
-    private TransactionBody txn;
+    @Mock
     private CryptoCreateRecordBuilder recordBuilder;
+
+    private CryptoCreateHandler subject;
+
+    private TransactionBody txn;
     private static final long defaultInitialBalance = 100L;
 
     @BeforeEach
@@ -72,7 +78,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         super.setUp();
         refreshStoresWithCurrentTokenInWritable();
         txn = new CryptoCreateBuilder().build();
-        recordBuilder = subject.newRecordBuilder();
+        given(handleContext.body()).willReturn(txn);
+        given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableStore);
+
+        subject = new CryptoCreateHandler();
     }
 
     @Test
@@ -184,28 +194,27 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @DisplayName("handle works when account can be created without any alias")
     void handleCryptoCreateVanilla() {
         given(handleContext.consensusNow()).willReturn(consensusInstant);
-        given(handleContext.newEntityNumSupplier()).willReturn(() -> 1000L);
+        given(handleContext.newEntityNum()).willReturn(1000L);
 
         // newly created account and payer account are not modified. Validate payers balance
-        assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
-        assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
-        assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
+        assertFalse(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
+        assertFalse(writableStore.modifiedAccountsInState().contains(accountID(id.accountNum())));
+        assertEquals(payerBalance, writableStore.get(id).tinybarBalance());
 
-        subject.handle(handleContext, txn, writableStore, recordBuilder);
+        subject.handle(handleContext);
 
         // newly created account and payer account are modified
-        assertTrue(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
-        assertTrue(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
+        assertTrue(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
+        assertTrue(writableStore.modifiedAccountsInState().contains(accountID(id.accountNum())));
 
         // Validate created account exists and check record builder has created account recorded
-        final var optionalAccount =
+        final var createdAccount =
                 writableStore.get(AccountID.newBuilder().accountNum(1000L).build());
-        assertTrue(optionalAccount.isPresent());
-        assertEquals(1000L, recordBuilder.getCreatedAccount());
+        assertThat(createdAccount).isNotNull();
+        final var accountID = AccountID.newBuilder().accountNum(1000L).build();
+        verify(recordBuilder).accountID(accountID);
 
         // validate fields on created account
-        final var createdAccount = optionalAccount.get();
-
         assertTrue(createdAccount.receiverSigRequired());
         assertEquals(1000L, createdAccount.accountNumber());
         assertEquals(Bytes.EMPTY, createdAccount.alias());
@@ -239,39 +248,39 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertTrue(createdAccount.tokenAllowances().isEmpty());
         assertEquals(0, createdAccount.numberTreasuryTitles());
         assertFalse(createdAccount.expiredAndPendingRemoval());
-        assertNull(createdAccount.firstContractStorageKey());
+        assertEquals(0, createdAccount.firstContractStorageKey().length());
 
         // validate payer balance reduced
-        assertEquals(9_900L, writableStore.get(id).get().tinybarBalance());
+        assertEquals(9_900L, writableStore.get(id).tinybarBalance());
     }
 
     @Test
     @DisplayName("handle works when account can be created without any alias using staked account id")
     void handleCryptoCreateVanillaWithStakedAccountId() {
         txn = new CryptoCreateBuilder().withStakedAccountId(1000).build();
+        given(handleContext.body()).willReturn(txn);
         given(handleContext.consensusNow()).willReturn(consensusInstant);
-        given(handleContext.newEntityNumSupplier()).willReturn(() -> 1000L);
+        given(handleContext.newEntityNum()).willReturn(1000L);
 
         // newly created account and payer account are not modified. Validate payers balance
-        assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
-        assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
-        assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
+        assertFalse(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
+        assertFalse(writableStore.modifiedAccountsInState().contains(accountID(id.accountNum())));
+        assertEquals(payerBalance, writableStore.get(id).tinybarBalance());
 
-        subject.handle(handleContext, txn, writableStore, recordBuilder);
+        subject.handle(handleContext);
 
         // newly created account and payer account are modified
-        assertTrue(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
-        assertTrue(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
+        assertTrue(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
+        assertTrue(writableStore.modifiedAccountsInState().contains(accountID(id.accountNum())));
 
         // Validate created account exists and check record builder has created account recorded
-        final var optionalAccount =
+        final var createdAccount =
                 writableStore.get(AccountID.newBuilder().accountNum(1000L).build());
-        assertTrue(optionalAccount.isPresent());
-        assertEquals(1000L, recordBuilder.getCreatedAccount());
+        assertThat(createdAccount).isNotNull();
+        final var accountID = AccountID.newBuilder().accountNum(1000L).build();
+        verify(recordBuilder).accountID(accountID);
 
         // validate fields on created account
-        final var createdAccount = optionalAccount.get();
-
         assertTrue(createdAccount.receiverSigRequired());
         assertEquals(1000L, createdAccount.accountNumber());
         assertEquals(Bytes.EMPTY, createdAccount.alias());
@@ -305,10 +314,10 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertTrue(createdAccount.tokenAllowances().isEmpty());
         assertEquals(0, createdAccount.numberTreasuryTitles());
         assertFalse(createdAccount.expiredAndPendingRemoval());
-        assertNull(createdAccount.firstContractStorageKey());
+        assertEquals(0, createdAccount.firstContractStorageKey().length());
 
         // validate payer balance reduced
-        assertEquals(9_900L, writableStore.get(id).get().tinybarBalance());
+        assertEquals(9_900L, writableStore.get(id).tinybarBalance());
     }
 
     @Test
@@ -318,34 +327,32 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void handleFailsWhenAutoRenewPeriodNotSet() {
         txn = new CryptoCreateBuilder().withNoAutoRenewPeriod().build();
         // newly created account and payer account are not modified. Validate payers balance
-        assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
-        assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
-        assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
+        assertFalse(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
+        assertFalse(writableStore.modifiedAccountsInState().contains(accountID(id.accountNum())));
+        assertEquals(payerBalance, writableStore.get(id).tinybarBalance());
 
-        assertThrows(
-                NullPointerException.class, () -> subject.handle(handleContext, txn, writableStore, recordBuilder));
+        assertThrows(NullPointerException.class, () -> subject.handle(handleContext));
     }
 
     @Test
     @DisplayName("handle fails when payer account can't pay for the newly created account initial balance")
     void handleFailsWhenPayerHasInsufficientBalance() {
         txn = new CryptoCreateBuilder().withInitialBalance(payerBalance + 1L).build();
+        given(handleContext.body()).willReturn(txn);
 
         // newly created account and payer account are not modified. Validate payers balance
-        assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
-        assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
-        assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
+        assertFalse(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
+        assertFalse(writableStore.modifiedAccountsInState().contains(accountID(id.accountNum())));
+        assertEquals(payerBalance, writableStore.get(id).tinybarBalance());
 
-        final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext, txn, writableStore, recordBuilder));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INSUFFICIENT_PAYER_BALANCE, msg.getStatus());
 
-        final var recordMsg = assertThrows(IllegalStateException.class, () -> recordBuilder.getCreatedAccount());
-        assertEquals("No new account number was recorded", recordMsg.getMessage());
+        verify(recordBuilder, never()).accountID(any());
 
         // newly created account and payer account are not modified
-        assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
-        assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
+        assertFalse(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
+        assertFalse(writableStore.modifiedAccountsInState().contains(accountID(id.accountNum())));
     }
 
     @Test
@@ -353,15 +360,13 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void handleFailsWhenPayerIsDeleted() {
         changeAccountToDeleted();
 
-        final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext, txn, writableStore, recordBuilder));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ACCOUNT_DELETED, msg.getStatus());
 
-        final var recordMsg = assertThrows(IllegalStateException.class, () -> recordBuilder.getCreatedAccount());
-        assertEquals("No new account number was recorded", recordMsg.getMessage());
+        verify(recordBuilder, never()).accountID(any());
 
         // newly created account and payer account are not modified
-        assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
+        assertFalse(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
     }
 
     @Test
@@ -370,48 +375,47 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         txn = new CryptoCreateBuilder()
                 .withPayer(AccountID.newBuilder().accountNum(600L).build())
                 .build();
+        given(handleContext.body()).willReturn(txn);
 
-        final var msg = assertThrows(
-                HandleException.class, () -> subject.handle(handleContext, txn, writableStore, recordBuilder));
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_PAYER_ACCOUNT_ID, msg.getStatus());
 
-        final var recordMsg = assertThrows(IllegalStateException.class, () -> recordBuilder.getCreatedAccount());
-        assertEquals("No new account number was recorded", recordMsg.getMessage());
+        verify(recordBuilder, never()).accountID(any());
 
         // newly created account and payer account are not modified
-        assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
+        assertFalse(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
     }
 
     @Test
     @DisplayName("handle commits when any alias is mentioned in the transaction")
     void handleCommitsAnyAlias() {
         txn = new CryptoCreateBuilder().withAlias(Bytes.wrap("alias")).build();
+        given(handleContext.body()).willReturn(txn);
 
         given(handleContext.consensusNow()).willReturn(consensusInstant);
-        given(handleContext.newEntityNumSupplier()).willReturn(() -> 1000L);
+        given(handleContext.newEntityNum()).willReturn(1000L);
 
         // newly created account and payer account are not modified. Validate payers balance
-        assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
-        assertFalse(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
-        assertEquals(payerBalance, writableStore.get(id).get().tinybarBalance());
+        assertFalse(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
+        assertFalse(writableStore.modifiedAccountsInState().contains(accountID(id.accountNum())));
+        assertEquals(payerBalance, writableStore.get(id).tinybarBalance());
 
-        subject.handle(handleContext, txn, writableStore, recordBuilder);
+        subject.handle(handleContext);
 
         // newly created account and payer account are modified
-        assertTrue(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(1000L)));
-        assertTrue(writableStore.modifiedAccountsInState().contains(EntityNumVirtualKey.fromLong(id.accountNum())));
+        assertTrue(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
+        assertTrue(writableStore.modifiedAccountsInState().contains(accountID(id.accountNum())));
         assertEquals(
                 Bytes.wrap("alias"),
                 writableStore
                         .get(AccountID.newBuilder().accountNum(1000L).build())
-                        .get()
                         .alias());
     }
 
     private void changeAccountToDeleted() {
         final var copy = account.copyBuilder().deleted(true).build();
-        writableAccounts.put(EntityNumVirtualKey.fromLong(id.accountNum()), copy);
-        given(writableStates.<EntityNumVirtualKey, Account>get(ACCOUNTS)).willReturn(writableAccounts);
+        writableAccounts.put(id, copy);
+        given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         writableStore = new WritableAccountStore(writableStates);
     }
 

@@ -183,6 +183,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.QUERIES_BLOB_LOOK_UP_RETRIES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.RATES_MIDNIGHT_CHECK_INTERVAL;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.RECORDS_USE_CONSOLIDATED_FCQ;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_LONG_TERM_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_MAX_EXPIRATION_FUTURE_SECS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_MAX_NUM;
@@ -433,7 +434,8 @@ public final class BootstrapProperties implements PropertySource {
             STAKING_STARTUP_HELPER_RECOMPUTE,
             WORKFLOWS_ENABLED,
             STAKING_SUM_OF_CONSENSUS_WEIGHTS,
-            CONFIG_VERSION);
+            CONFIG_VERSION,
+            RECORDS_USE_CONSOLIDATED_FCQ);
 
     static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
             ACCOUNTS_MAX_NUM,
@@ -792,6 +794,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(CONTRACTS_DYNAMIC_EVM_VERSION, AS_BOOLEAN),
             entry(RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT, AS_INT),
             entry(RATES_MIDNIGHT_CHECK_INTERVAL, AS_LONG),
+            entry(RECORDS_USE_CONSOLIDATED_FCQ, AS_BOOLEAN),
             entry(SIGS_EXPAND_FROM_IMMUTABLE_STATE, AS_BOOLEAN),
             entry(SCHEDULING_LONG_TERM_ENABLED, AS_BOOLEAN),
             entry(SCHEDULING_MAX_TXN_PER_SEC, AS_LONG),

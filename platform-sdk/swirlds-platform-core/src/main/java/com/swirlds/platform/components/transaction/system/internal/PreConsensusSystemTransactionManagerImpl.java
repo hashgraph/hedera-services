@@ -18,15 +18,18 @@ package com.swirlds.platform.components.transaction.system.internal;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionHandler;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionTypedHandler;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -74,7 +77,9 @@ public class PreConsensusSystemTransactionManagerImpl implements PreConsensusSys
      * @param creatorId   the id of the creator of the transaction
      * @param transaction the transaction being handled
      */
-    private void handleTransaction(final long creatorId, final SystemTransaction transaction) {
+    private void handleTransaction(@NonNull final NodeId creatorId, @NonNull final SystemTransaction transaction) {
+        Objects.requireNonNull(creatorId, "creatorId must not be null");
+        Objects.requireNonNull(transaction, "transaction must not be null");
         final List<PreConsensusSystemTransactionHandler<SystemTransaction>> relevantHandlers =
                 handlers.get(transaction.getClass());
 

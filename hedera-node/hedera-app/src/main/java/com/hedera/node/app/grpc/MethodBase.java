@@ -27,14 +27,21 @@ import com.swirlds.common.metrics.SpeedometerMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An instance of either {@link TransactionMethod} or {@link QueryMethod} is created per transaction
  * type and query type.
  */
 abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, BufferedData> {
+    private static final Logger logger = LogManager.getLogger(MethodBase.class);
+
     // To be set by configuration. See Issue #4294
     private static final int MAX_MESSAGE_SIZE = Hedera.MAX_SIGNED_TXN_SIZE;
+    // To be set by configuration. See Issue #4294. Originally this was intended to be the same max size as
+    // a transaction, but some files and other responses are much larger. So we had to set this larger.
+    private static final int MAX_RESPONSE_SIZE = 1024 * 100;
 
     // Constants for metric names and descriptions
     private static final String COUNTER_HANDLED_NAME_TPL = "%sHdl";
@@ -53,7 +60,7 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, Buffe
      * not have control over the thread pool used by the underlying gRPC server.
      */
     private static final ThreadLocal<BufferedData> BUFFER_THREAD_LOCAL =
-            ThreadLocal.withInitial(() -> BufferedData.allocate(MAX_MESSAGE_SIZE));
+            ThreadLocal.withInitial(() -> BufferedData.allocate(MAX_RESPONSE_SIZE));
 
     /** The name of the service associated with this method. */
     protected final String serviceName;
@@ -129,6 +136,7 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, Buffe
             callsHandledSpeedometer.cycle();
         } catch (final Throwable th) {
             // Track the number of times we failed to handle a call
+            logger.error("Failed to handle call! Unexpected exception", th);
             callsFailedCounter.increment();
             responseObserver.onError(th);
         }

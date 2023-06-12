@@ -22,10 +22,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.swirlds.base.state.Mutable;
 import com.swirlds.common.Copyable;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadManager;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -52,7 +54,7 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
     /**
      * The ID of the node that is running the thread.
      */
-    private Long nodeId;
+    private NodeId nodeId;
 
     /**
      * The name of the component with which this thread is associated.
@@ -74,7 +76,7 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
      * The ID of the other node if this thread is responsible for a task associated with a
      * particular node.
      */
-    private Long otherNodeId;
+    private NodeId otherNodeId;
 
     /**
      * The thread group that will contain new threads.
@@ -315,7 +317,7 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
         }
 
         if (hasNode) {
-            parts.add(Long.toString(nodeId));
+            parts.add(nodeId.toString());
         }
 
         if (hasOtherNode) {
@@ -324,7 +326,7 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
             } else {
                 parts.add("? to");
             }
-            parts.add(Long.toString(otherNodeId));
+            parts.add(otherNodeId.toString());
         }
 
         if (useThreadNumbers) {
@@ -475,18 +477,20 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
     /**
      * Get the node ID that will run threads created by this object.
      */
-    public Long getNodeId() {
+    @NonNull
+    public NodeId getNodeId() {
         return nodeId;
     }
 
     /**
-     * Set the node ID. Null is interpreted as "no node ID".
+     * Set the node ID.
      *
      * @return this object
      */
     @SuppressWarnings("unchecked")
-    public C setNodeId(final Long nodeId) {
+    public C setNodeId(@NonNull final NodeId nodeId) {
         throwIfImmutable();
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
 
         this.nodeId = nodeId;
         return (C) this;
@@ -561,7 +565,8 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
     /**
      * Get the node ID of the other node (if created threads will be dealing with a task related to a specific node).
      */
-    public Long getOtherNodeId() {
+    @NonNull
+    public NodeId getOtherNodeId() {
         return otherNodeId;
     }
 
@@ -572,8 +577,9 @@ public abstract class AbstractThreadConfiguration<C extends AbstractThreadConfig
      * @return this object
      */
     @SuppressWarnings("unchecked")
-    public C setOtherNodeId(final Long otherNodeId) {
+    public C setOtherNodeId(@NonNull final NodeId otherNodeId) {
         throwIfImmutable();
+        Objects.requireNonNull(otherNodeId, "otherNodeId must not be null");
 
         this.otherNodeId = otherNodeId;
         return (C) this;

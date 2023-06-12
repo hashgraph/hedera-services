@@ -287,14 +287,14 @@ class GetTxnRecordAnswerTest {
     }
 
     @Test
-    void syntaxCheckPrioritizesAccountStatus() {
+    void validityCheckRealizesPayerAccountMightHaveBeenDeletedAndThatIsOk() {
         final var query = queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 123L));
         given(optionValidator.queryableAccountStatus(eq(targetTxnId.getAccountID()), any()))
                 .willReturn(ACCOUNT_DELETED);
 
         final var validity = subject.checkValidity(query, view);
 
-        assertEquals(ACCOUNT_DELETED, validity);
+        assertEquals(OK, validity);
     }
 
     @Test

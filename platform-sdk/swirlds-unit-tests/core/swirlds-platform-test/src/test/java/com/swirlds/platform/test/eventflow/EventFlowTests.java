@@ -28,6 +28,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -43,6 +44,7 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
@@ -65,6 +67,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.stats.CycleTimingStat;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.FileNotFoundException;
 import java.time.Duration;
@@ -74,6 +77,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -82,6 +86,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.provider.Arguments;
@@ -98,10 +103,8 @@ class EventFlowTests {
     /** The maximum allowed bytes per transaction */
     private static final Integer TX_MAX_BYTES = 10;
 
-    protected static final long selfId = 0L;
+    protected static final NodeId selfId = new NodeId(0L);
     private static final int THROTTLE_TRANSACTION_QUEUE_SIZE = 100_000;
-
-    private final NodeId selfNodeId = new NodeId(selfId);
 
     private final SettingsProvider settingsProvider = mock(SettingsProvider.class);
     protected AddressBook addressBook;
@@ -252,11 +255,11 @@ class EventFlowTests {
 
         // Extract the transactions from self events
         final HashSet<Transaction> selfConsensusTransactions =
-                extractTransactions((id) -> id == selfId, consensusRounds);
+                extractTransactions((id) -> Objects.equals(id, selfId), consensusRounds);
 
         // Extract the transactions from other events
         final HashSet<Transaction> otherConsensusTransactions =
-                extractTransactions((id) -> id != selfId, consensusRounds);
+                extractTransactions((id) -> !Objects.equals(id, selfId), consensusRounds);
 
         final TransactionTracker consensusState =
                 (TransactionTracker) swirldStateManager.getConsensusState().getSwirldState();
@@ -278,7 +281,7 @@ class EventFlowTests {
 
     /**
      * Verifies that signed states are created for the appropriate rounds given the
-     * {@link SettingsProvider#getSignedStateFreq()}.
+     * {@link com.swirlds.common.config.StateConfig#signedStateFreq()}.
      * <p>
      * Some developers have seen this test hang when running locally. There is a known memory leak with SS1
      * (https://github.com/swirlds/swirlds-platform/issues/4776) that causes the hang-up when running with multiple SS1
@@ -299,9 +302,7 @@ class EventFlowTests {
             final SwirldState origSwirldState) {
         final Random random = RandomUtils.initRandom(seed);
 
-        when(settingsProvider.getSignedStateFreq()).thenReturn(signedStateFreq);
-
-        init(random, numNodes, origSwirldState);
+        init(random, numNodes, origSwirldState, null, prepareConfig(signedStateFreq));
         final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
 
         final List<ConsensusRound> consensusRounds = wrapper.applyConsensusRounds(addressBook, numEvents);
@@ -361,12 +362,10 @@ class EventFlowTests {
             final SwirldState origSwirldState) {
         final Random random = RandomUtils.initRandom(seed);
 
-        when(settingsProvider.getSignedStateFreq()).thenReturn(signedStateFreq);
-
         // Will hold the freeze round when the last event of the round is generated
         final AtomicLong freezeRound = new AtomicLong(-1);
 
-        init(random, numNodes, origSwirldState);
+        init(random, numNodes, origSwirldState, null, prepareConfig(signedStateFreq));
         final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
 
         final List<ConsensusRound> consensusRounds =
@@ -553,11 +552,20 @@ class EventFlowTests {
     }
 
     protected void init(final Random random, final int numNodes, final SwirldState swirldState) {
-        init(random, numNodes, swirldState, null);
+        init(random, numNodes, swirldState, null, prepareConfig());
     }
 
     protected void init(
             final Random random, final int numNodes, final SwirldState swirldState, final State initialState) {
+        init(random, numNodes, swirldState, initialState, prepareConfig());
+    }
+
+    protected void init(
+            final Random random,
+            final int numNodes,
+            final SwirldState swirldState,
+            final State initialState,
+            final Configuration config) {
         addressBook = new RandomAddressBookGenerator(random)
                 .setSize(numNodes)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
@@ -611,7 +619,7 @@ class EventFlowTests {
         swirldStateManager = new SwirldStateManagerImpl(
                 TestPlatformContextBuilder.create().build(),
                 addressBook,
-                selfNodeId,
+                selfId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
@@ -619,11 +627,12 @@ class EventFlowTests {
                 () -> false,
                 state);
 
+        ConfigurationHolder.getInstance().setConfiguration(config);
         final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+                TestPlatformContextBuilder.create().withConfiguration(config).build();
 
         preConsensusEventHandler = new PreConsensusEventHandler(
-                new NoOpMetrics(), getStaticThreadManager(), selfNodeId, swirldStateManager, consensusMetrics);
+                new NoOpMetrics(), getStaticThreadManager(), selfId, swirldStateManager, consensusMetrics);
         consensusEventHandler = new ConsensusRoundHandler(
                 platformContext,
                 getStaticThreadManager(),
@@ -637,6 +646,16 @@ class EventFlowTests {
                 () -> {},
                 (round) -> {},
                 SoftwareVersion.NO_VERSION);
+    }
+
+    private Configuration prepareConfig() {
+        return prepareConfig(1);
+    }
+
+    private Configuration prepareConfig(int signedStateFreq) {
+        return new TestConfigBuilder()
+                .withValue("state.signedStateFreq", signedStateFreq)
+                .getOrCreateConfig();
     }
 
     private State getInitialState(
@@ -669,7 +688,9 @@ class EventFlowTests {
      * @return a set of transactions from the matching events
      */
     protected HashSet<Transaction> extractTransactions(
-            final Predicate<Long> nodeIdMatcher, final List<ConsensusRound> rounds) {
+            @NonNull final Predicate<NodeId> nodeIdMatcher, @NonNull final List<ConsensusRound> rounds) {
+        Objects.requireNonNull(nodeIdMatcher, "nodeIdMatcher must not be null");
+        Objects.requireNonNull(rounds, "rounds must not be null");
         final HashSet<Transaction> selfTransactions = new HashSet<>();
         for (final ConsensusRound round : rounds) {
             for (final EventImpl event : round.getConsensusEvents()) {

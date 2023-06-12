@@ -22,6 +22,7 @@ import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import com.swirlds.platform.test.chatter.network.framework.AbstractSimulatedEventPipeline;
 import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -44,7 +45,7 @@ public class EventDeduper<T extends SimulatedChatterEvent> extends AbstractSimul
      */
     @Override
     public void addEvent(final T event) {
-        if (event.getDescriptor().getCreator() == selfId.id()) {
+        if (Objects.equals(event.getDescriptor().getCreator(), selfId)) {
             next.addEvent(event);
             return;
         }

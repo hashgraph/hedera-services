@@ -135,7 +135,6 @@ class EndToEndTests extends E2ETestBase {
                 new DynamicContainer[] {
                     //				extractSpecsFromSuite(CryptoTransferHTSSuite::new),
                     //				extractSpecsFromSuite(DelegatePrecompileSuite::new),
-                    //				extractSpecsFromSuite(DissociatePrecompileSuite::new),
                     //				extractSpecsFromSuite(DynamicGasCostSuite::new),
                     //				extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)
                 });

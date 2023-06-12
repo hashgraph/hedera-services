@@ -23,6 +23,7 @@ import static com.hedera.test.utils.KeyUtils.A_KEY_LIST;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_KEY_LIST;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -33,11 +34,11 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,18 +60,19 @@ public class FileHandlerTestBase {
     protected final KeyList keys = A_KEY_LIST.keyList();
     protected final KeyList anotherKeys = B_KEY_LIST.keyList();
 
-    protected final EntityNum fileEntityNum = EntityNum.fromLong(1_234L);
-    protected final FileID fileId =
-            FileID.newBuilder().fileNum(fileEntityNum.longValue()).build();
+    protected final FileID fileId = FileID.newBuilder().fileNum(1_234L).build();
+    protected final FileID fileSystemfileId = FileID.newBuilder().fileNum(250L).build();
     protected final Duration WELL_KNOWN_AUTO_RENEW_PERIOD =
             Duration.newBuilder().seconds(100).build();
     protected final Timestamp WELL_KNOWN_EXPIRY =
             Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final FileID WELL_KNOWN_FILE_ID =
-            FileID.newBuilder().fileNum(fileEntityNum.longValue()).build();
+            FileID.newBuilder().fileNum(1_234L).build();
+    protected final FileID WELL_KNOWN_SYSTEM_FILE_ID =
+            FileID.newBuilder().fileNum(250L).build();
     protected final String beneficiaryIdStr = "0.0.3";
     protected final long paymentAmount = 1_234L;
-    protected final Bytes ledgerId = Bytes.wrap("0x03");
+    protected final Bytes ledgerId = Bytes.wrap(new byte[] {3});
     protected final String memo = "test memo";
     protected final long expirationTime = 1_234_567L;
     protected final long sequenceNumber = 1L;
@@ -80,14 +82,19 @@ public class FileHandlerTestBase {
 
     protected File file;
 
+    protected File fileSystem;
+
     @Mock
     protected ReadableStates readableStates;
 
     @Mock
     protected WritableStates writableStates;
 
-    protected MapReadableKVState<EntityNum, File> readableFileState;
-    protected MapWritableKVState<EntityNum, File> writableFileState;
+    @Mock(strictness = LENIENT)
+    protected HandleContext handleContext;
+
+    protected MapReadableKVState<FileID, File> readableFileState;
+    protected MapWritableKVState<FileID, File> writableFileState;
 
     protected ReadableFileStoreImpl readableStore;
     protected WritableFileStoreImpl writableStore;
@@ -101,43 +108,46 @@ public class FileHandlerTestBase {
     protected void refreshStoresWithCurrentFileOnlyInReadable() {
         readableFileState = readableFileState();
         writableFileState = emptyWritableFileState();
-        given(readableStates.<EntityNum, File>get(FILES)).willReturn(readableFileState);
-        given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
+        given(readableStates.<FileID, File>get(FILES)).willReturn(readableFileState);
+        given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         readableStore = new ReadableFileStoreImpl(readableStates);
         writableStore = new WritableFileStoreImpl(writableStates);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
     }
 
     protected void refreshStoresWithCurrentFileInBothReadableAndWritable() {
         readableFileState = readableFileState();
         writableFileState = writableFileStateWithOneKey();
-        given(readableStates.<EntityNum, File>get(FILES)).willReturn(readableFileState);
-        given(writableStates.<EntityNum, File>get(FILES)).willReturn(writableFileState);
+        given(readableStates.<FileID, File>get(FILES)).willReturn(readableFileState);
+        given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         readableStore = new ReadableFileStoreImpl(readableStates);
         writableStore = new WritableFileStoreImpl(writableStates);
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
     }
 
     @NonNull
-    protected MapWritableKVState<EntityNum, File> emptyWritableFileState() {
-        return MapWritableKVState.<EntityNum, File>builder(FILES).build();
+    protected MapWritableKVState<FileID, File> emptyWritableFileState() {
+        return MapWritableKVState.<FileID, File>builder(FILES).build();
     }
 
     @NonNull
-    protected MapWritableKVState<EntityNum, File> writableFileStateWithOneKey() {
-        return MapWritableKVState.<EntityNum, File>builder(FILES)
-                .value(fileEntityNum, file)
+    protected MapWritableKVState<FileID, File> writableFileStateWithOneKey() {
+        return MapWritableKVState.<FileID, File>builder(FILES)
+                .value(fileId, file)
+                .value(fileSystemfileId, fileSystem)
                 .build();
     }
 
     @NonNull
-    protected MapReadableKVState<EntityNum, File> readableFileState() {
-        return MapReadableKVState.<EntityNum, File>builder(FILES)
-                .value(fileEntityNum, file)
+    protected MapReadableKVState<FileID, File> readableFileState() {
+        return MapReadableKVState.<FileID, File>builder(FILES)
+                .value(fileId, file)
                 .build();
     }
 
     @NonNull
-    protected MapReadableKVState<EntityNum, File> emptyReadableFileState() {
-        return MapReadableKVState.<EntityNum, File>builder(FILES).build();
+    protected MapReadableKVState<FileID, File> emptyReadableFileState() {
+        return MapReadableKVState.<FileID, File>builder(FILES).build();
     }
 
     protected void givenValidFile() {
@@ -150,6 +160,13 @@ public class FileHandlerTestBase {
 
     protected void givenValidFile(boolean deleted, boolean withKeys) {
         file = new File(fileId.fileNum(), expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
+        fileSystem = new File(
+                fileSystemfileId.fileNum(),
+                expirationTime,
+                withKeys ? keys : null,
+                Bytes.wrap(contents),
+                memo,
+                deleted);
     }
 
     protected File createFile() {

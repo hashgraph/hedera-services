@@ -16,18 +16,21 @@
 
 package com.swirlds.demo.platform;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /*
  * Simulate Hedera Client to access file or map without going through
- * consensue
+ * consensus
  */
 public class AppClient extends Thread {
 
     Platform platform;
-    long selfId;
+    NodeId selfId;
     String myName;
     byte[] submittedBytes = null;
     PayloadCfgSimple config;
@@ -37,10 +40,15 @@ public class AppClient extends Thread {
     private TransactionSubmitter submitter;
     private ExpectedFCMFamily expectedFCMFamily;
 
-    AppClient(Platform platform, long selfId, SuperConfig currentConfig, String myName) {
-        this.platform = platform;
-        this.myName = myName;
-        this.selfId = selfId;
+    AppClient(
+            @NonNull final Platform platform,
+            @NonNull final NodeId selfId,
+            @NonNull final SuperConfig currentConfig,
+            @NonNull final String myName) {
+        this.platform = Objects.requireNonNull(platform, "platform must not be null");
+        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
+        Objects.requireNonNull(currentConfig, "currentConfig must not be null");
+        this.myName = Objects.requireNonNull(myName, "myName must not be null");
 
         PayloadCfgSimple pConfig = currentConfig.getPayloadConfig();
 
@@ -56,8 +64,8 @@ public class AppClient extends Thread {
 
         SubmitConfig submitConfig = currentConfig.getSubmitConfig();
 
-        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper = UnsafeMutablePTTStateAccessor.getInstance()
-                .getUnsafeMutableState(platform.getSelfId().id())) {
+        try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
+                UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
             final PlatformTestingToolState state = wrapper.get();
             submitter = new TransactionSubmitter(submitConfig, state.getControlQuorum());
             expectedFCMFamily = state.getStateExpectedMap();

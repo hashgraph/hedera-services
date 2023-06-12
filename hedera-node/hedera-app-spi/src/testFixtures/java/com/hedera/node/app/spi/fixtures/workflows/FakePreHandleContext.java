@@ -33,6 +33,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -138,6 +139,12 @@ public class FakePreHandleContext implements PreHandleContext {
     @NonNull
     public AccountID payer() {
         return payer;
+    }
+
+    @Override
+    @NonNull
+    public Configuration configuration() {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @NonNull

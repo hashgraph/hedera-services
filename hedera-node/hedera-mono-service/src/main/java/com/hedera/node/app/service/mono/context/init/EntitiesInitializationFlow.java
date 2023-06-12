@@ -46,7 +46,6 @@ public class EntitiesInitializationFlow {
         expiries.reviewExistingPayerRecords();
         log.info("Payer records reviewed");
         /* Use any entities stored in state to rebuild queue of expired entities. */
-        expiries.reviewExistingShortLivedEntities();
         log.info("Short-lived entities reviewed");
 
         sigImpactHistorian.invalidateCurrentWindow();

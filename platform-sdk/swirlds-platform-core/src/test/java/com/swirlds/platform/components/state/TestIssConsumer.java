@@ -16,20 +16,21 @@
 
 package com.swirlds.platform.components.state;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.state.notifications.IssNotification;
 
 public class TestIssConsumer {
 
     private long issRound;
     private IssNotification.IssType type;
-    private Long issNodeId;
+    private NodeId issNodeId;
     private int numInvocations;
 
     public TestIssConsumer() {
         reset();
     }
 
-    public void consume(final long round, final IssNotification.IssType issType, final Long issNodeId) {
+    public void consume(final long round, final IssNotification.IssType issType, final NodeId issNodeId) {
         this.issRound = round;
         this.type = issType;
         this.issNodeId = issNodeId;
@@ -44,7 +45,7 @@ public class TestIssConsumer {
         return type;
     }
 
-    public Long getIssNodeId() {
+    public NodeId getIssNodeId() {
         return issNodeId;
     }
 

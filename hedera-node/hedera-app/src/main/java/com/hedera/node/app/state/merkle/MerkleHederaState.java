@@ -78,7 +78,6 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HandleConsensusRoundListener;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.PreHandleListener;
-import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.state.merkle.adapters.MerkleMapLikeAdapter;
 import com.hedera.node.app.state.merkle.adapters.ScheduledTransactionsAdapter;
 import com.hedera.node.app.state.merkle.adapters.VirtualMapLikeAdapter;
@@ -177,9 +176,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * instance. The key is the "service-name.state-key".
      */
     private final Map<String, Map<String, StateMetadata<?, ?>>> services = new HashMap<>();
-
-    /** The cache used for tracking records in flight */
-    private final RecordCache recordCache = new MerkleRecordCache();
 
     /**
      * A rebuilt-map of all aliases.
@@ -311,12 +307,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         return stateMetadata == null ? EMPTY_WRITABLE_STATES : new MerkleWritableStates(stateMetadata);
     }
 
-    @NonNull
-    @Override
-    public RecordCache getRecordCache() {
-        return recordCache;
-    }
-
     /** {@inheritDoc} */
     @Override
     public MerkleHederaState copy() {
@@ -356,7 +346,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         return this;
     }
 
-    <K extends Comparable<K>, V> void putServiceStateIfAbsent(@NonNull final StateMetadata<K, V> md) {
+    <K, V> void putServiceStateIfAbsent(@NonNull final StateMetadata<K, V> md) {
         throwIfImmutable();
         Objects.requireNonNull(md);
         final var stateMetadata = services.computeIfAbsent(md.serviceName(), k -> new HashMap<>());
@@ -373,8 +363,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
      *                                  it doesn't have a label, or if the label isn't right.
      */
-    <K extends Comparable<K>, V> void putServiceStateIfAbsent(
-            @NonNull final StateMetadata<K, V> md, @NonNull final MerkleNode node) {
+    <K, V> void putServiceStateIfAbsent(@NonNull final StateMetadata<K, V> md, @NonNull final MerkleNode node) {
 
         // Validate the inputs
         throwIfImmutable();
@@ -736,12 +725,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             @Override
             @SuppressWarnings("unchecked")
             public AccountStorageAdapter accounts() {
-                return AccountStorageAdapter.fromOnDisk(
-                        mapLikePayerRecords(),
-                        VirtualMapLikeAdapter.unwrapping(
-                                (StateMetadata<EntityNumVirtualKey, OnDiskAccount>)
-                                        services.get(TokenService.NAME).get("ACCOUNTS"),
-                                getChild(findNodeIndex(TokenService.NAME, "ACCOUNTS"))));
+                return AccountStorageAdapter.fromOnDisk(VirtualMapLikeAdapter.unwrapping(
+                        (StateMetadata<EntityNumVirtualKey, OnDiskAccount>)
+                                services.get(TokenService.NAME).get("ACCOUNTS"),
+                        getChild(findNodeIndex(TokenService.NAME, "ACCOUNTS"))));
             }
 
             @SuppressWarnings("unchecked")
@@ -798,6 +785,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             public ScheduledTransactions scheduleTxs() {
                 return new ScheduledTransactionsAdapter(
                         ((SingletonNode<MerkleScheduledTransactionsState>) getChild(
@@ -830,12 +818,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             }
 
             @Override
-            @SuppressWarnings("unchecked")
             public AddressBook addressBook() {
                 return Objects.requireNonNull(platform).getAddressBook();
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             public MerkleSpecialFiles specialFiles() {
                 return ((SingletonNode<MerkleSpecialFiles>)
                                 getChild(findNodeIndex(FreezeService.NAME, FreezeServiceImpl.UPGRADE_FILES_KEY)))
@@ -857,6 +845,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             public RecordsRunningHashLeaf runningHashLeaf() {
                 return ((SingletonNode<RecordsRunningHashLeaf>)
                                 getChild(findNodeIndex(NetworkService.NAME, NetworkServiceImpl.RUNNING_HASHES_KEY)))
@@ -870,6 +859,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             public MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo() {
                 return MerkleMapLikeAdapter.unwrapping(
                         (StateMetadata<EntityNum, MerkleStakingInfo>)

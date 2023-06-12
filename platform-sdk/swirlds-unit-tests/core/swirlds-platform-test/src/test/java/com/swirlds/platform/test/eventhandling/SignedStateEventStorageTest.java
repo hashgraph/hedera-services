@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.eventhandling.SignedStateEventStorage;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.TestComponentTags;
@@ -112,7 +113,7 @@ class SignedStateEventStorageTest {
         when(event.getRoundCreated()).thenReturn((long) roundCreated);
         when(event.getGeneration()).thenReturn((long) roundCreated);
         when(event.getRoundReceived()).thenReturn((long) roundCreated + 1);
-        when(event.getCreatorId()).thenReturn((long) creator);
+        when(event.getCreatorId()).thenReturn(new NodeId(creator));
 
         return event;
     }

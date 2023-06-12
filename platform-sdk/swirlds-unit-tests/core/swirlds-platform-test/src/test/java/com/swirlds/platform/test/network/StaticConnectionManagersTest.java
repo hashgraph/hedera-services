@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
@@ -52,14 +54,16 @@ class StaticConnectionManagersTest {
     @MethodSource("topologicalVariations")
     void test(final int numNodes, final int numNeighbors) throws Exception {
         final Random r = RandomUtils.getRandomPrintSeed();
-        final NodeId selfId = new NodeId(r.nextInt(numNodes));
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(r).setSize(numNodes).build();
+        final NodeId selfId = addressBook.getNodeId(r.nextInt(numNodes));
         Mockito.when(connectionCreator.createConnection(Mockito.any())).thenAnswer(inv -> {
             final NodeId peerId = inv.getArgument(0, NodeId.class);
             return new FakeConnection(selfId, peerId);
         });
         for (final Boolean unidirectional : List.of(true, false)) {
 
-            final StaticTopology topology = new StaticTopology(selfId, numNodes, numNeighbors, unidirectional);
+            final StaticTopology topology = new StaticTopology(addressBook, selfId, numNeighbors, unidirectional);
             final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
             final List<NodeId> neighbors = topology.getNeighbors();
             final NodeId neighbor = neighbors.get(r.nextInt(neighbors.size()));

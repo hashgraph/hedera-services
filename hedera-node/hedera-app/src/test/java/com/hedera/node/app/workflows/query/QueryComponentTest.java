@@ -73,6 +73,7 @@ class QueryComponentTest {
                         .build())
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
+                .genesisUsage(false)
                 .build();
     }
 

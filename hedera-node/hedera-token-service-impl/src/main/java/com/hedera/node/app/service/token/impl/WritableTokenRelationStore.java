@@ -18,14 +18,15 @@ package com.hedera.node.app.service.token.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -55,31 +56,35 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
      * @param tokenRelation - the tokenRelation to be persisted
      */
     public void put(@NonNull final TokenRelation tokenRelation) {
-        requireNonNull(tokenRelState)
-                .put(
-                        EntityNumPair.fromLongs(tokenRelation.accountNumber(), tokenRelation.tokenNumber()),
-                        Objects.requireNonNull(tokenRelation));
+        tokenRelState.put(
+                EntityNumPair.fromLongs(tokenRelation.accountNumber(), tokenRelation.tokenNumber()),
+                Objects.requireNonNull(tokenRelation));
     }
 
     /**
-     * Commits the changes to the underlying data storage
+     * Removes a {@link TokenRelation} from the state
+     *
+     * @param tokenRelation the {@code TokenRelation} to be removed
      */
-    public void commit() {
-        requireNonNull(tokenRelState);
-        ((WritableKVStateBase<EntityNumPair, TokenRelation>) tokenRelState).commit();
+    public void remove(@NonNull final TokenRelation tokenRelation) {
+        tokenRelState.remove(EntityNumPair.fromLongs(tokenRelation.accountNumber(), tokenRelation.tokenNumber()));
     }
 
     /**
      * Returns the {@link TokenRelation} with the given token number and account number.
      * If no such token relation exists, returns {@code Optional.empty()}
      *
-     * @param tokenNum - the number of the token to be retrieved
-     * @param accountNum - the number of the account to be retrieved
+     * @param accountId - the number of the account to be retrieved
+     * @param tokenId   - the number of the token to be retrieved
      */
-    public Optional<TokenRelation> getForModify(final long accountNum, final long tokenNum) {
-        final var token =
-                Objects.requireNonNull(tokenRelState).getForModify(EntityNumPair.fromLongs(accountNum, tokenNum));
-        return Optional.ofNullable(token);
+    @Nullable
+    public TokenRelation getForModify(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {
+        requireNonNull(accountId);
+        requireNonNull(tokenId);
+
+        if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return null;
+
+        return tokenRelState.getForModify(EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum()));
     }
 
     /**

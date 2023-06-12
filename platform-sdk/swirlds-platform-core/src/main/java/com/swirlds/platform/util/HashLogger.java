@@ -18,15 +18,16 @@ package com.swirlds.platform.util;
 
 import static com.swirlds.logging.LogMarker.STATE_HASH;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.state.State;
-import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,6 +49,7 @@ public class HashLogger {
 
     private final AtomicLong lastRoundLogged = new AtomicLong(-1);
     private final NodeId nodeId;
+    private final StateConfig stateConfig;
     private final QueueThread<Runnable> logQueue;
     private final Logger logOutput; // NOSONAR: selected logger to output to.
     private final boolean isEnabled;
@@ -59,25 +61,34 @@ public class HashLogger {
      * 		responsible for creating and managing threads
      * @param nodeId
      * 		the id of the current node that is logging.
+     * @param stateConfig
+     *         configuration for the current state.
      */
-    public HashLogger(final ThreadManager threadManager, final NodeId nodeId) {
-        this(threadManager, nodeId, logger);
+    public HashLogger(
+            @NonNull final ThreadManager threadManager,
+            @NonNull final NodeId nodeId,
+            @NonNull final StateConfig stateConfig) {
+        this(threadManager, nodeId, stateConfig, logger);
     }
 
     // Visible for testing
-    HashLogger(final ThreadManager threadManager, final NodeId nodeId, final Logger logOutput) {
-        final boolean enabled = Settings.getInstance().getState().enableHashStreamLogging;
-        this.isEnabled = enabled;
-        this.nodeId = nodeId;
-        this.logQueue = !enabled
+    HashLogger(
+            @NonNull final ThreadManager threadManager,
+            @NonNull final NodeId nodeId,
+            @NonNull final StateConfig stateConfig,
+            @NonNull final Logger logOutput) {
+        this.stateConfig = Objects.requireNonNull(stateConfig);
+        isEnabled = stateConfig.enableHashStreamLogging();
+        this.nodeId = Objects.requireNonNull(nodeId);
+        logQueue = !isEnabled
                 ? null
-                : new QueueThreadConfiguration<Runnable>(threadManager)
+                : new QueueThreadConfiguration<Runnable>(Objects.requireNonNull(threadManager))
                         .setComponent("logging")
                         .setThreadName("log-hashstream")
                         .setCapacity(LOGGING_QUEUE_CAPACITY)
                         .setHandler(Runnable::run)
-                        .build(enabled /*start*/);
-        this.logOutput = logOutput;
+                        .build(isEnabled /*start*/);
+        this.logOutput = Objects.requireNonNull(logOutput);
     }
 
     private void log(final SignedState signedState) {
@@ -120,11 +131,11 @@ public class HashLogger {
         logQueue.offer(() -> log(signedState)); // NOSONAR: silently drop message if unable to queue.
     }
 
-    private static Message generateLogMessage(final NodeId nodeId, final SignedState signedState) {
+    private Message generateLogMessage(final NodeId nodeId, final SignedState signedState) {
         final State state = signedState.getState();
         final String platformInfo = state.getPlatformState().getInfoString();
         final String hashInfo = new MerkleTreeVisualizer(state)
-                .setDepth(StateSettings.getDebugHashDepth())
+                .setDepth(stateConfig.debugHashDepth())
                 .render();
         return MESSAGE_FACTORY.newMessage(
                 "[node-{}] Information for hash stream:\n{}\n{}\n", nodeId, platformInfo, hashInfo);

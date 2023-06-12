@@ -19,10 +19,10 @@ package com.swirlds.platform.gui.internal;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserWindow;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
-import static com.swirlds.platform.system.SystemUtils.exitSystem;
+import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
-import com.swirlds.platform.system.SystemExitReason;
+import com.swirlds.platform.system.SystemExitCode;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -333,7 +333,7 @@ public class WinBrowser extends JFrame {
     static WindowAdapter stopper() {
         return new WindowAdapter() {
             public void windowClosed(WindowEvent e) {
-                exitSystem(SystemExitReason.BROWSER_WINDOW_CLOSED, true);
+                exitSystem(SystemExitCode.NO_ERROR, "window closed", true);
             }
         };
     }

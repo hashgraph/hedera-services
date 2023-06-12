@@ -19,11 +19,14 @@ package com.swirlds.platform.test.chatter.simulator;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
+import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -31,8 +34,8 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 public class SimulatedMessage {
 
-    private final long source;
-    private final long destination;
+    private final NodeId source;
+    private final NodeId destination;
 
     private final SelfSerializable payload;
 
@@ -42,9 +45,10 @@ public class SimulatedMessage {
     private long bytesToSend;
     private long bytesToReceive;
 
-    public SimulatedMessage(final long source, final long destination, final SelfSerializable payload) {
-        this.source = source;
-        this.destination = destination;
+    public SimulatedMessage(
+            @NonNull final NodeId source, @NonNull final NodeId destination, final SelfSerializable payload) {
+        this.source = Objects.requireNonNull(source, "source must not be null");
+        this.destination = Objects.requireNonNull(destination, "destination must not be null");
 
         final Pair<Integer, SelfSerializable> pair = copyBySerialization(payload);
         this.size = pair.getKey();
@@ -92,14 +96,16 @@ public class SimulatedMessage {
     /**
      * Get the node ID that sent this message.
      */
-    public long getSource() {
+    @NonNull
+    public NodeId getSource() {
         return source;
     }
 
     /**
      * Get the node ID where this message is heading.
      */
-    public long getDestination() {
+    @NonNull
+    public NodeId getDestination() {
         return destination;
     }
 

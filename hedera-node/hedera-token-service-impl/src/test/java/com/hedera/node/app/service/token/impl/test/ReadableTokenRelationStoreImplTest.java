@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
@@ -36,7 +38,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ReadableTokenRelationStoreImplTest {
     private static final long TOKEN_10 = 10L;
+    private static final TokenID TOKEN_10_ID =
+            TokenID.newBuilder().tokenNum(TOKEN_10).build();
     private static final long ACCOUNT_20 = 20L;
+    private static final AccountID ACCOUNT_20_ID =
+            AccountID.newBuilder().accountNum(ACCOUNT_20).build();
 
     @Mock
     private ReadableStates states;
@@ -68,16 +74,17 @@ class ReadableTokenRelationStoreImplTest {
                 .build();
         given(tokenRelState.get(notNull())).willReturn(tokenRelation);
 
-        final var result = subject.get(ACCOUNT_20, TOKEN_10);
-        Assertions.assertThat(result.orElseThrow()).isEqualTo(tokenRelation);
+        final var result = subject.get(ACCOUNT_20_ID, TOKEN_10_ID);
+        Assertions.assertThat(result).isEqualTo(tokenRelation);
     }
 
     @Test
     void testGetEmpty() {
         given(tokenRelState.get(notNull())).willReturn(null);
 
-        final var result = subject.get(ACCOUNT_20, -1L);
-        Assertions.assertThat(result).isEmpty();
+        final var result =
+                subject.get(ACCOUNT_20_ID, TokenID.newBuilder().tokenNum(-1L).build());
+        Assertions.assertThat(result).isNull();
     }
 
     @Test

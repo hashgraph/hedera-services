@@ -27,6 +27,7 @@ import com.swirlds.platform.event.SelfEventStorage;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventAddedObserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
     /**
      * Contains the most recent event added from each node, with information about its descendants
      */
-    private final Map<Long, EventMapping> mappings;
+    private final Map<NodeId, EventMapping> mappings;
 
     /**
      * The ID of this node
@@ -61,7 +62,7 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
         mappings = new HashMap<>();
 
         metrics.getOrCreate(new FunctionGauge.Config<>(
-                        INFO_CATEGORY, "lastGen", Long.class, () -> getHighestGenerationNumber(selfId.id()))
+                        INFO_CATEGORY, "lastGen", Long.class, () -> getHighestGenerationNumber(selfId))
                 .withDescription("last event generation number by me")
                 .withFormat("%d"));
     }
@@ -72,8 +73,9 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
      * @param event the event that was added
      */
     @Override
-    public synchronized void eventAdded(final EventImpl event) {
-        final long nodeId = event.getCreatorId();
+    public synchronized void eventAdded(@NonNull final EventImpl event) {
+        Objects.requireNonNull(event, "event must not be null");
+        final NodeId nodeId = event.getCreatorId();
         mappings.put(nodeId, new EventMapping(event));
 
         final EventImpl otherParent = event.getOtherParent();
@@ -107,7 +109,8 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
      *
      * @param nodeId the ID of the node in question
      */
-    public synchronized EventImpl getMostRecentEvent(final long nodeId) {
+    @Nullable
+    public synchronized EventImpl getMostRecentEvent(@Nullable final NodeId nodeId) {
         return mappings.getOrDefault(nodeId, DEFAULT_RETURN).getEvent();
     }
 
@@ -115,8 +118,9 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
      * {@inheritDoc}
      */
     @Override
+    @Nullable
     public synchronized EventImpl getMostRecentSelfEvent() {
-        return getMostRecentEvent(selfId.id());
+        return getMostRecentEvent(selfId);
     }
 
     /**
@@ -133,7 +137,7 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
      *
      * @param nodeId the ID of the node in question
      */
-    public synchronized long getHighestGenerationNumber(final long nodeId) {
+    public synchronized long getHighestGenerationNumber(@Nullable final NodeId nodeId) {
         final EventMapping mapping = mappings.get(nodeId);
         if (mapping == null) {
             return EventConstants.GENERATION_UNDEFINED;
@@ -147,7 +151,7 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
      *
      * @param nodeId the ID of the node in question
      */
-    public synchronized boolean hasMostRecentEventBeenUsedAsOtherParent(final long nodeId) {
+    public synchronized boolean hasMostRecentEventBeenUsedAsOtherParent(@Nullable final NodeId nodeId) {
         return mappings.getOrDefault(nodeId, DEFAULT_RETURN).isHasDirectSelfDescendant();
     }
 
@@ -158,7 +162,7 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
      * @return true if the most recent event has descendants, otherwise false. False if there are no events for the
      * given node ID.
      */
-    public synchronized boolean doesMostRecentEventHaveDescendants(final long nodeId) {
+    public synchronized boolean doesMostRecentEventHaveDescendants(@Nullable final NodeId nodeId) {
         return mappings.getOrDefault(nodeId, DEFAULT_RETURN).isHasDescendant();
     }
 

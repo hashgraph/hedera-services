@@ -31,6 +31,7 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.EventTaskCreator;
@@ -50,7 +51,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 class EventTaskCreatorTest {
 
@@ -70,7 +70,7 @@ class EventTaskCreatorTest {
         eventMapper = mock(EventMapper.class);
         addressBook = mock(AddressBook.class);
         address = mock(Address.class);
-        when(addressBook.getAddress(Mockito.anyLong())).thenReturn(address);
+        when(addressBook.getAddress(any())).thenReturn(address);
         when(addressBook.copy()).thenReturn(addressBook);
         selfId = new NodeId(1);
         eventIntakeMetrics = mock(EventIntakeMetrics.class);
@@ -94,7 +94,7 @@ class EventTaskCreatorTest {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("test createEvent()")
     void testCreateEvent() throws InterruptedException {
-        final int otherId = 7;
+        final NodeId otherId = new NodeId(7);
 
         // regular call
         taskCreator.createEvent(otherId);
@@ -128,8 +128,13 @@ class EventTaskCreatorTest {
     void testEventRescue() throws InterruptedException {
         when(setting.getRescueChildlessInverseProbability()).thenReturn(5);
         when(addressBook.getSize()).thenReturn(5);
+        // this is a work around instead of refactoring the whole unit test file.
+        // the implementation of rescue children now iterates over the addresses in the address book.
+        final AddressBook newAddressBook =
+                new RandomAddressBookGenerator().setSize(5).build();
+        when(addressBook.iterator()).thenReturn(newAddressBook.iterator());
         EventImpl eventToRescue = mock(EventImpl.class);
-        when(eventToRescue.getCreatorId()).thenReturn(2L);
+        when(eventToRescue.getCreatorId()).thenReturn(newAddressBook.getNodeId(2));
         when(eventMapper.getMostRecentEvent(eventToRescue.getCreatorId())).thenReturn(eventToRescue);
 
         taskCreator.rescueChildlessEvents();
