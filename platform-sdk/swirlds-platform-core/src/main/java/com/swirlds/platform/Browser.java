@@ -533,7 +533,6 @@ public class Browser {
                                 .setThreadName("shutdown-hook")
                                 .setRunnable(() -> {
                                     logger.info(STARTUP.getMarker(), "JVM is shutting down.");
-                                    ThreadDumpGenerator.generateThreadDumpFile(getAbsolutePath(Settings.getInstance().getThreadDumpLogDir()), null);
                                     LogManager.shutdown();
                                 })
                                 .build());
@@ -551,11 +550,11 @@ public class Browser {
     }
 
     /**
-     * Instantiate and start the thread dump generator, if enabled via the {@link Settings#getThreadDumpPeriodMs()}
+//     * Instantiate and start the thread dump generator, if enabled via the {@link Settings#getThreadDumpPeriodMs()}
      * setting.
      */
     private void startThreadDumpGenerator() {
-        //if (Settings.getInstance().getThreadDumpPeriodMs() > 0) {
+        if (Settings.getInstance().getThreadDumpPeriodMs() > 0) {
             final Path dir = getAbsolutePath(Settings.getInstance().getThreadDumpLogDir());
         logger.info(STARTUP.getMarker(), "Starting thread dump generator in {}", dir);
             if (!Files.exists(dir)) {
@@ -564,8 +563,8 @@ public class Browser {
             }
         logger.info(STARTUP.getMarker(), "Starting thread dump generator in {}", dir);
             ThreadDumpGenerator.generateThreadDumpAtIntervals(
-                    dir, 30000);
-        //}
+                    dir, Settings.getInstance().getThreadDumpPeriodMs());
+        }
     }
 
     /**
