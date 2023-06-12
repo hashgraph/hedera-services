@@ -16,12 +16,12 @@
 
 package com.swirlds.common.metrics.extensions;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.FloatFormats;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.time.IntegerEpochTime;
 import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.common.utility.throttle.RateLimiter;

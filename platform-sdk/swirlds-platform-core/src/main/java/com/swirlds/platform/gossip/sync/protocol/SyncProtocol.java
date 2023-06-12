@@ -18,11 +18,11 @@ package com.swirlds.platform.gossip.sync.protocol;
 
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.gossip.FallenBehindManager;
