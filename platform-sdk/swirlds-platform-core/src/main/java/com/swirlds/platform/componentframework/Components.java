@@ -3,13 +3,11 @@ package com.swirlds.platform.componentframework;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.platform.componentframework.framework.Component;
 import com.swirlds.common.threading.utility.MultiHandler;
-import com.swirlds.platform.componentframework.framework.MultiTaskProcessor;
+import com.swirlds.platform.componentframework.framework.Component;
 import com.swirlds.platform.componentframework.framework.QueueSubmitter;
 import com.swirlds.platform.componentframework.framework.TaskProcessor;
 
-import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
