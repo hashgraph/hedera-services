@@ -613,8 +613,8 @@ public class TxnUtils {
     }
 
     public static String bytecodePath(final String contractName) {
-        // Quick fix for https://github.com/hashgraph/hedera-services/issues/6821, a better solution will be provided
-        // when the issue is resolved
+        // TODO: Quick fix for https://github.com/hashgraph/hedera-services/issues/6821, a better solution
+        // will be provided when the issue is resolved
         return Utils.getResourcePath(contractName, ".bin");
     }
 
