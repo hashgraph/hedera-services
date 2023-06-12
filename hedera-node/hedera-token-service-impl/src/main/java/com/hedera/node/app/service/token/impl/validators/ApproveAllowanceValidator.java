@@ -212,6 +212,6 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
                         && owner.accountNumber() == spender.accountNumOrThrow(),
                 SPENDER_ACCOUNT_SAME_AS_OWNER);
         final var relation = tokenRelStore.get(ownerId, tokenId);
-        validateTrue(relation.isPresent(), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+        validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
     }
 }

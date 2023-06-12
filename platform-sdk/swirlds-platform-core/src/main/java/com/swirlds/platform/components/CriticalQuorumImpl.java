@@ -127,6 +127,9 @@ public class CriticalQuorumImpl implements CriticalQuorum {
      */
     @Override
     public boolean isInCriticalQuorum(@Nullable final NodeId nodeId) {
+        if (nodeId == null) {
+            return false;
+        }
         return eventCounts.getOrDefault(nodeId, 0) <= threshold.get() + thresholdSoftening;
     }
 

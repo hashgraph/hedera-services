@@ -35,7 +35,11 @@ public final class ConfigMappings {
     private static final List<ConfigMapping> MAPPINGS = List.of(
             new ConfigMapping("consensus.roundsNonAncient", "state.roundsNonAncient"),
             new ConfigMapping("consensus.roundsExpired", "state.roundsExpired"),
-            new ConfigMapping("consensus.coinFreq", "coinFreq"));
+            new ConfigMapping("consensus.coinFreq", "coinFreq"),
+            new ConfigMapping("state.signedStateFreq", "signedStateFreq"),
+            new ConfigMapping("state.requireStateLoad", "requireStateLoad"),
+            new ConfigMapping("state.emergencyStateFileName", "emergencyStateFileName"),
+            new ConfigMapping("state.checkSignedStateFromDisk", "checkSignedStateFromDisk"));
 
     /**
      * Add all known aliases to the provided config source

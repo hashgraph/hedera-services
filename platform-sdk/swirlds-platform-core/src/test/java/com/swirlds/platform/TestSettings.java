@@ -50,11 +50,6 @@ public class TestSettings implements SettingsProvider {
     }
 
     @Override
-    public int getSignedStateFreq() {
-        return signedStateFreq.get();
-    }
-
-    @Override
     public long getDelayShuffle() {
         return delayShuffle.get();
     }
@@ -107,15 +102,5 @@ public class TestSettings implements SettingsProvider {
     @Override
     public int sleepHeartbeatMillis() {
         return 0;
-    }
-
-    @Override
-    public boolean isRequireStateLoad() {
-        return false;
-    }
-
-    @Override
-    public boolean isCheckSignedStateFromDisk() {
-        return false;
     }
 }

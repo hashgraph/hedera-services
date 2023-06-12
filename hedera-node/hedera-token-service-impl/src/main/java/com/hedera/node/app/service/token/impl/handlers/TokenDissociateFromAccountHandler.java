@@ -16,17 +16,38 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
+import com.hedera.node.app.service.token.impl.util.TokenRelListCalculator;
+import com.hedera.node.app.service.token.impl.validators.TokenListChecks;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -45,13 +66,195 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenDissociateOrThrow();
+
         final var target = op.accountOrElse(AccountID.DEFAULT);
 
         context.requireKeyOrThrow(target, INVALID_ACCOUNT_ID);
     }
 
-    @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {
-        throw new UnsupportedOperationException("Not implemented");
+    /**
+     * This method is called during the handle workflow. It executes the actual transaction.
+     *
+     * <p>
+     * Dissociates a token with an account, preventing various token operations from happening with
+     * respect to the given account
+     *
+     * <p>
+     * <b>Note:</b> this method will NOT apply account operation changes by account ID
+     *
+     * @throws NullPointerException if one of the arguments is {@code null}
+     */
+    public void handle(@NonNull final HandleContext context) {
+        requireNonNull(context);
+        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var tokenStore = context.readableStore(ReadableTokenStore.class);
+        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
+        final var expiryValidator = context.expiryValidator();
+        final var txn = context.body();
+        final var op = txn.tokenDissociateOrThrow();
+        final var tokenIds = op.tokensOrThrow();
+        final var validated = validateSemantics(
+                op.accountOrThrow(), tokenIds, accountStore, tokenStore, tokenRelStore, expiryValidator);
+
+        // Update the account and relevant token relations
+        // Note: since we can't query an Account copyBuilder for current values, and since the account object is
+        // undergoing an update (i.e. we can't accurately query account.numXYZs() at any arbitrary point during the
+        // following loop), we have to keep track of the aggregate number of NFTs, auto associations, associations, and
+        // positive balances to remove from the account separate from the account object itself. Confusing, but we'll
+        // _add_ the number to subtract to each aggregating variable. The total subtraction for each variable will be
+        // done outside the dissociation loop
+        var numNftsToSubtract = 0;
+        var numAutoAssociationsToSubtract = 0;
+        var numAssociationsToSubtract = 0;
+        var numPositiveBalancesToSubtract = 0;
+        final var account = validated.account();
+        final var tokenRelsToRemove = new ArrayList<TokenRelation>();
+        final var treasuryBalancesToUpdate = new ArrayList<TokenRelation>();
+        for (final var dissociation : validated.dissociations()) {
+            final var tokenRel = dissociation.tokenRel();
+            final var tokenRelBalance = tokenRel.balance();
+            final var token = dissociation.token();
+            final var tokenIsExpired = tokenIsExpired(token, context.consensusNow());
+
+            // Handle removed, deleted, or expired tokens
+            if (token == null || token.deleted() || tokenIsExpired) {
+                if (token != null && (token.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE)) {
+                    // Confusing, but we're _adding_ the number of NFTs to _subtract_ from the account. The total
+                    // subtraction will be done outside the dissociation loop
+                    numNftsToSubtract += tokenRelBalance;
+                }
+            } else {
+                // Handle active tokens
+                validateFalse(tokenRel.accountNumber() == token.treasuryAccountNumber(), ACCOUNT_IS_TREASURY);
+                validateFalse(tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
+
+                if (tokenRelBalance > 0) {
+                    validateFalse(token.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE, ACCOUNT_STILL_OWNS_NFTS);
+                    // If the fungible token is NOT expired, then we throw an exception because we
+                    // can only dissociate tokens with a zero balance by this time in the code
+                    // @future('6864'): uncomment when token expiry is implemented
+                    // validateTrue(tokenIsExpired, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+
+                    // If the fungible common token is expired, we automatically transfer the
+                    // dissociating account's balance back to the token's treasury
+                    final var treasuryTokenRel = dissociation.treasuryTokenRel();
+                    if (treasuryTokenRel != null) {
+                        final var updatedTreasuryBalanceTokenRel = treasuryTokenRel.balance() + tokenRelBalance;
+                        treasuryBalancesToUpdate.add(treasuryTokenRel
+                                .copyBuilder()
+                                .balance(updatedTreasuryBalanceTokenRel)
+                                .build());
+                    }
+                }
+            }
+
+            // Regardless of the token status, now the token relation with the given account ID must be updated to zero
+            final var updatedBalanceTokenRel =
+                    tokenRel.copyBuilder().balance(0L).build();
+            tokenRelsToRemove.add(updatedBalanceTokenRel);
+
+            if (tokenRel.automaticAssociation()) {
+                numAutoAssociationsToSubtract++;
+            }
+
+            if (tokenRel.balance() != 0) {
+                numPositiveBalancesToSubtract++;
+            }
+
+            numAssociationsToSubtract++;
+        }
+
+        // get changes to account and token relations
+        final var updatedTokenRels =
+                new TokenRelListCalculator(tokenRelStore).removeTokenRels(account, tokenRelsToRemove);
+        final var newHeadTokenId = updatedTokenRels.updatedHeadTokenId() != null
+                ? updatedTokenRels.updatedHeadTokenId()
+                : account.headTokenNumber();
+
+        // Update the account with the aggregate number of NFTs, auto associations, associations, and positive balances
+        // to remove, as well as the new head token number
+        final var updatedAcct = account.copyBuilder()
+                .numberOwnedNfts(account.numberOwnedNfts() - numNftsToSubtract)
+                .usedAutoAssociations(account.usedAutoAssociations() - numAutoAssociationsToSubtract)
+                .numberAssociations(account.numberAssociations() - numAssociationsToSubtract)
+                .numberPositiveBalances(account.numberPositiveBalances() - numPositiveBalancesToSubtract)
+                .headTokenNumber(newHeadTokenId)
+                .build();
+
+        // Finally, update the account and the token relations via their respective stores
+        accountStore.put(updatedAcct);
+        updatedTokenRels.updatedTokenRelsStillInChain().forEach(tokenRelStore::put);
+        tokenRelsToRemove.forEach(tokenRelStore::remove);
+        treasuryBalancesToUpdate.forEach(tokenRelStore::put);
     }
+
+    @Override
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        final TokenDissociateTransactionBody op = txn.tokenDissociateOrThrow();
+
+        validateTruePreCheck(op.hasAccount(), INVALID_ACCOUNT_ID);
+
+        validateTruePreCheck(!TokenListChecks.repeatsItself(op.tokensOrThrow()), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+    }
+
+    /**
+     * Performs checks that require state and context
+     */
+    @NonNull
+    private ValidatedResult validateSemantics(
+            @NonNull final AccountID accountId,
+            @NonNull final List<TokenID> tokenIds,
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final WritableTokenRelationStore tokenRelStore,
+            @NonNull final ExpiryValidator expiryValidator) {
+        // Check that the account is usable
+        final var acct = TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator);
+
+        // Construct the dissociation for each token ID
+        final var dissociations = new ArrayList<Dissociation>();
+        for (final var tokenId : tokenIds) {
+            final var tokenRel = tokenRelStore.get(accountId, tokenId);
+            validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+
+            // Here we check/retrieve a token that may not be "usable," but since we are dissociating token relations,
+            // we don't require a usable token (or even an existing token). We only need to update the token relation
+            final var possiblyUnusableToken = tokenStore.get(tokenId);
+            final TokenRelation dissociatedTokenTreasuryRel;
+            if (possiblyUnusableToken != null) {
+                validateFalse(possiblyUnusableToken.paused(), TOKEN_IS_PAUSED);
+                final var tokenTreasuryAcct = AccountID.newBuilder()
+                        .accountNum(possiblyUnusableToken.treasuryAccountNumber())
+                        .build();
+                dissociatedTokenTreasuryRel = tokenRelStore.get(tokenTreasuryAcct, tokenId);
+            } else {
+                // If the token isn't found, assume the treasury token rel is null
+                dissociatedTokenTreasuryRel = null;
+            }
+
+            final Dissociation dissociation =
+                    new Dissociation(possiblyUnusableToken, tokenRel, acct, dissociatedTokenTreasuryRel);
+            dissociations.add(dissociation);
+        }
+
+        return new ValidatedResult(acct, dissociations);
+    }
+
+    // NOSONAR
+    private boolean tokenIsExpired(final Token token, final Instant consensusNow) {
+        // @future('6864'): identify expired tokens
+        // This method will need to identify a token that is expired or a token that is "detached", i.e. expired but
+        // still within its grace period
+        return false;
+    }
+
+    private record ValidatedResult(@NonNull Account account, @NonNull List<Dissociation> dissociations) {}
+
+    private record Dissociation(
+            @Nullable Token token,
+            // This is the relation of the submitted account ID and the token ID
+            @NonNull TokenRelation tokenRel,
+            @NonNull Account acct,
+            // This is the relation of the token's treasury account ID and the token ID
+            @Nullable TokenRelation treasuryTokenRel) {}
 }

@@ -21,6 +21,8 @@ description = "Default Hedera Smart Contract Service Implementation"
 dependencies {
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
+        testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+        testImplementation(testFixtures(project(":hedera-node:node-config")))
 
         testRuntimeOnly(gav("org.mockito.inline"))
     }

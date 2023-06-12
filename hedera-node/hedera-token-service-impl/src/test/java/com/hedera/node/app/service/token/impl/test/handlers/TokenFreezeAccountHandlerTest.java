@@ -56,7 +56,6 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -228,7 +227,7 @@ class TokenFreezeAccountHandlerTest {
             given(readableAccountStore.getAccountById(ACCOUNT_13257))
                     .willReturn(
                             Account.newBuilder().accountNumber(accountNumber).build());
-            given(tokenRelStore.getForModify(ACCOUNT_13257, token)).willReturn(Optional.empty());
+            given(tokenRelStore.getForModify(ACCOUNT_13257, token)).willReturn(null);
             final var txn = newFreezeTxn(token);
             given(context.body()).willReturn(txn);
 
@@ -247,10 +246,10 @@ class TokenFreezeAccountHandlerTest {
                     .willReturn(
                             Account.newBuilder().accountNumber(accountNumber).build());
             given(tokenRelStore.getForModify(ACCOUNT_13257, token))
-                    .willReturn(Optional.of(TokenRelation.newBuilder()
+                    .willReturn(TokenRelation.newBuilder()
                             .tokenNumber(token.tokenNum())
                             .accountNumber(accountNumber)
-                            .build()));
+                            .build());
             final var txn = newFreezeTxn(token);
             given(context.body()).willReturn(txn);
 

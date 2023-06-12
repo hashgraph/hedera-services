@@ -119,7 +119,7 @@ public class CustomFeesValidator {
                     final var tokenId =
                             TokenID.newBuilder().tokenNum(token.tokenNumber()).build();
                     final var relation = tokenRelationStore.get(collectorId, tokenId);
-                    validateTrue(relation.isPresent(), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+                    validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
                 }
                 case ROYALTY_FEE -> {
                     // royalty fee can be only applied to non-fungible unique tokens
@@ -157,8 +157,7 @@ public class CustomFeesValidator {
         final var denomToken = tokenStore.get(tokenNum);
         validateTrue(denomToken != null, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
         validateTrue(isFungibleCommon(denomToken.tokenType()), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
-        validateTrue(
-                tokenRelationStore.get(feeCollectorNum, tokenNum).isPresent(), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+        validateTrue(tokenRelationStore.get(feeCollectorNum, tokenNum) != null, TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
     }
 
     /**
