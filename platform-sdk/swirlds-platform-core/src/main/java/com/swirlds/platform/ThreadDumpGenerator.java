@@ -77,7 +77,7 @@ class ThreadDumpGenerator {
                 }
             }
         };
-        Thread t = new Thread(generator);
+        final Thread t = new Thread(generator);
         t.setDaemon(true);
         t.start();
     }
@@ -362,7 +362,8 @@ class ThreadDumpGenerator {
     /**
      * Used to write a textual identification of a thread to a writer
      */
-    private static void writeThreadTitle(Writer writer, String threadName, Long threadId, boolean isDaemon)
+    private static void writeThreadTitle(
+            final Writer writer, final String threadName, final Long threadId, final boolean isDaemon)
             throws IOException {
         writer.append('"');
         writer.append(threadName);

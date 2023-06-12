@@ -549,17 +549,16 @@ public class Browser {
     }
 
     /**
-     * //     * Instantiate and start the thread dump generator, if enabled via the {@link Settings#getThreadDumpPeriodMs()}
+     * Instantiate and start the thread dump generator, if enabled via the {@link Settings#getThreadDumpPeriodMs()}
      * setting.
      */
     private void startThreadDumpGenerator() {
         if (Settings.getInstance().getThreadDumpPeriodMs() > 0) {
             final Path dir = getAbsolutePath(Settings.getInstance().getThreadDumpLogDir());
-            logger.info(STARTUP.getMarker(), "Starting thread dump generator in {}", dir);
             if (!Files.exists(dir)) {
                 rethrowIO(() -> Files.createDirectories(dir));
             }
-            logger.info(STARTUP.getMarker(), "Starting thread dump generator in {}", dir);
+            logger.info(STARTUP.getMarker(), "Starting thread dump generator and save to directory {}", dir);
             ThreadDumpGenerator.generateThreadDumpAtIntervals(
                     dir, Settings.getInstance().getThreadDumpPeriodMs());
         }
@@ -705,6 +704,8 @@ public class Browser {
                         .setThreadName("appMain")
                         .setRunnable(appMain)
                         .build();
+                // IMPORTATNT: this swirlds app thread must be non-daemon,
+                // so that the JVM will not exit when the main thread exits
                 appThread.setDaemon(false);
                 appRunThreads[ownHostIndex] = appThread;
 
