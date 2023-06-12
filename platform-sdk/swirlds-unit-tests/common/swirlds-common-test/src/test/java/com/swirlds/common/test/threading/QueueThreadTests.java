@@ -52,6 +52,7 @@ import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfigura
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.framework.internal.QueueThreadMetrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
@@ -1005,7 +1006,7 @@ class QueueThreadTests {
 
         final AtomicBoolean idleCallbackPermitted = new AtomicBoolean(false);
         final AtomicBoolean idleCallbackCalled = new AtomicBoolean(false);
-        final Runnable idleCallback = () -> {
+        final InterruptableRunnable idleCallback = () -> {
             if (idleCallbackPermitted.get()) {
                 idleCallbackCalled.set(true);
             } else {
