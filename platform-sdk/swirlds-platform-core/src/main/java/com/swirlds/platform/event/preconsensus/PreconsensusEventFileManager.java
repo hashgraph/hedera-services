@@ -79,7 +79,7 @@ public class PreconsensusEventFileManager {
     private final Path databaseDirectory;
 
     /**
-     * If we ever have to delete files out of band,
+     * If we ever have to delete files out of band, move them to the recycle bin.
      */
     private final RecycleBin recycleBin;
 
@@ -103,6 +103,7 @@ public class PreconsensusEventFileManager {
      *
      * @param platformContext the platform context for this node
      * @param time            provides wall clock time
+     * @param recycleBin      can remove files in a way that allows them to be possibly recovered for debugging
      * @param selfId          the ID of this node
      */
     public PreconsensusEventFileManager(
