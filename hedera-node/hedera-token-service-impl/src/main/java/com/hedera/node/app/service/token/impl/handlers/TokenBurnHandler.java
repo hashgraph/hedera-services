@@ -56,7 +56,7 @@ import javax.inject.Singleton;
  * HederaFunctionality#TOKEN_BURN}.
  */
 @Singleton
-public class TokenBurnHandler extends BaseTokenHandler implements TransactionHandler {
+public final class TokenBurnHandler extends BaseTokenHandler implements TransactionHandler {
     @NonNull
     private final TokenSupplyChangeOpsValidator validator;
 
