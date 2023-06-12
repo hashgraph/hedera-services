@@ -18,11 +18,13 @@ package com.swirlds.platform.reconnect.emergency;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
@@ -31,6 +33,7 @@ import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.state.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.SignedStateFinder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -51,6 +54,9 @@ public class EmergencyReconnectProtocol implements Protocol {
     private final ThreadManager threadManager;
     private final NotificationEngine notificationEngine;
 
+    @NonNull
+    private final FallenBehindManager fallenBehindManager;
+
     /**
      * @param threadManager
      * 		responsible for managing thread lifecycles
@@ -68,6 +74,8 @@ public class EmergencyReconnectProtocol implements Protocol {
      * 		tracks reconnect metrics
      * @param reconnectController
      * 		controls reconnecting as a learner
+     * @param fallenBehindManager
+     *      maintains this node's behind status
      */
     public EmergencyReconnectProtocol(
             final ThreadManager threadManager,
@@ -78,7 +86,8 @@ public class EmergencyReconnectProtocol implements Protocol {
             final SignedStateFinder stateFinder,
             final int reconnectSocketTimeout,
             final ReconnectMetrics reconnectMetrics,
-            final ReconnectController reconnectController) {
+            final ReconnectController reconnectController,
+            @NonNull final FallenBehindManager fallenBehindManager) {
         this.threadManager = threadManager;
         this.notificationEngine = notificationEngine;
         this.peerId = peerId;
@@ -88,6 +97,7 @@ public class EmergencyReconnectProtocol implements Protocol {
         this.reconnectSocketTimeout = reconnectSocketTimeout;
         this.reconnectMetrics = reconnectMetrics;
         this.reconnectController = reconnectController;
+        this.fallenBehindManager = ArgumentUtils.throwArgNull(fallenBehindManager, "fallenBehindManager");
     }
 
     @Override
@@ -113,7 +123,7 @@ public class EmergencyReconnectProtocol implements Protocol {
     @Override
     public boolean shouldAccept() {
         // if the throttle is initiated, we should call markReconnectFinished in teacher()
-        final boolean shouldAccept = teacherThrottle.initiateReconnect(peerId.id());
+        final boolean shouldAccept = teacherThrottle.initiateReconnect(peerId);
         if (shouldAccept) {
             initiatedBy = InitiatedBy.PEER;
         }
@@ -145,7 +155,12 @@ public class EmergencyReconnectProtocol implements Protocol {
 
     private void teacher(final Connection connection) {
         try {
-            new EmergencyReconnectTeacher(threadManager, stateFinder, reconnectSocketTimeout, reconnectMetrics)
+            new EmergencyReconnectTeacher(
+                            threadManager,
+                            stateFinder,
+                            reconnectSocketTimeout,
+                            fallenBehindManager::hasFallenBehind,
+                            reconnectMetrics)
                     .execute(connection);
         } finally {
             teacherThrottle.reconnectAttemptFinished();

@@ -33,9 +33,11 @@ import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationEx
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -79,6 +81,13 @@ public class TeachingSynchronizer {
     private final ThreadManager threadManager;
 
     /**
+     * A mechanism to check if teaching should be stopped, e.g. when the teacher itself has
+     * fallen behind network.
+     */
+    @Nullable
+    private final BooleanSupplier requestToStopTeaching;
+
+    /**
      * Create a new teaching synchronizer.
      *
      * @param threadManager
@@ -95,13 +104,16 @@ public class TeachingSynchronizer {
      * 		if there is a thread stuck on a blocking IO
      * 		operation that will never finish due to a
      * 		failure.
+     * @param requestToStopTeaching
+     *      a function to check periodically if teaching should be stopped
      */
     public TeachingSynchronizer(
             final ThreadManager threadManager,
             final MerkleDataInputStream in,
             final MerkleDataOutputStream out,
             final MerkleNode root,
-            final Runnable breakConnection) {
+            final Runnable breakConnection,
+            @Nullable final BooleanSupplier requestToStopTeaching) {
 
         this.threadManager = threadManager;
         inputStream = in;
@@ -111,6 +123,7 @@ public class TeachingSynchronizer {
         subtrees.add(new TeacherSubtree(root));
 
         this.breakConnection = breakConnection;
+        this.requestToStopTeaching = requestToStopTeaching;
     }
 
     /**
@@ -153,7 +166,8 @@ public class TeachingSynchronizer {
 
         final AtomicBoolean senderIsFinished = new AtomicBoolean(false);
 
-        new TeacherSendingThread<T>(workGroup, in, out, subtrees, view, senderIsFinished).start();
+        new TeacherSendingThread<T>(workGroup, in, out, subtrees, view, requestToStopTeaching, senderIsFinished)
+                .start();
         new TeacherReceivingThread<>(workGroup, in, view, senderIsFinished).start();
 
         workGroup.waitForTermination();

@@ -163,7 +163,7 @@ public class AdaptedMonoFeeCalculator implements FeeCalculator {
             final Map<SubType, FeeData> prices,
             final ExchangeRate rate) {
         final var storeFactory = new ReadableStoreFactory(state);
-        final var topicStore = storeFactory.createStore(ReadableTopicStore.class);
+        final var topicStore = storeFactory.getStore(ReadableTopicStore.class);
         final var topic = topicStore.getTopicLeaf(
                 toPbj(accessor.getTxn().getConsensusUpdateTopic().getTopicID()));
         try {

@@ -95,7 +95,7 @@ public class HashgraphDemoMain implements SwirldMain {
     /** the app is run by this */
     public Platform platform;
     /** ID for this member */
-    public long selfId;
+    public NodeId selfId;
     /** the entire window, including Swirlds menu, Picture, checkboxes */
     JFrame window;
     /** the JFrame with the hashgraph */
@@ -189,7 +189,9 @@ public class HashgraphDemoMain implements SwirldMain {
          * @return the x coordinate for that event
          */
         private int xpos(final PlatformEvent event) {
-            return ((int) event.getCreatorId() + 1) * width / (numColumns + 1);
+            // To support Noncontiguous NodeId, the index of the NodeId in the address book is used.
+            final int nodeIndex = platform.getAddressBook().getIndexOfNodeId(event.getCreatorId());
+            return (nodeIndex + 1) * width / (numColumns + 1);
         }
 
         /**
@@ -242,8 +244,7 @@ public class HashgraphDemoMain implements SwirldMain {
             print(g, "%5.3f sec, propagation time", createCons - recCons);
             print(g, "%5.3f sec, create to consensus", createCons);
             print(g, "%5.3f sec, receive to consensus", recCons);
-            final Address address =
-                    platform.getAddressBook().getAddress(platform.getSelfId().id());
+            final Address address = platform.getAddressBook().getAddress(platform.getSelfId());
             print(g, "Internal: " + Network.getInternalIPAddress() + " : " + address.getPortInternalIpv4(), 0);
 
             final ExternalIpAddress ipAddress = Network.getExternalIpAddress();
@@ -379,7 +380,8 @@ public class HashgraphDemoMain implements SwirldMain {
             numMembers = numColumns;
             names = new String[numColumns];
             for (int i = 0; i < numColumns; i++) {
-                names[i] = addressBook.getAddress(i).getNickname();
+                final NodeId nodeId = addressBook.getNodeId(i);
+                names[i] = addressBook.getAddress(nodeId).getNickname();
             }
         }
     }
@@ -391,12 +393,12 @@ public class HashgraphDemoMain implements SwirldMain {
     @Override
     public void init(final Platform platform, final NodeId id) {
         this.platform = platform;
-        this.selfId = id.id();
+        this.selfId = id;
         final String[] parameters = ParameterProvider.getInstance().getParameters();
 
         GuiPlatformAccessor.getInstance()
                 .setAbout(
-                        platform.getSelfId().id(),
+                        platform.getSelfId(),
                         "Hashgraph Demo v. 1.1\n" + "\n"
                                 + "trans/sec = # transactions added to the hashgraph per second\n"
                                 + "events/sec = # events added to the hashgraph per second\n"
@@ -476,8 +478,7 @@ public class HashgraphDemoMain implements SwirldMain {
     public void run() {
         while (true) {
             if (window != null && !freezeCheckbox.getState()) {
-                eventsCache = GuiPlatformAccessor.getInstance()
-                        .getAllEvents(platform.getSelfId().id());
+                eventsCache = GuiPlatformAccessor.getInstance().getAllEvents(platform.getSelfId());
                 // after this getAllEvents call, the set of events to draw is frozen
                 // for the duration of this screen redraw. But their status (consensus or not) may change
                 // while it is being drawn. If an event is discarded while being drawn, then it forgets its

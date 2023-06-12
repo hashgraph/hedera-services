@@ -16,10 +16,12 @@
 
 package com.hedera.node.app.config;
 
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.AccountIDConverter;
+import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.CongestionMultipliersConverter;
 import com.hedera.node.config.converter.ContractIDConverter;
 import com.hedera.node.config.converter.EntityScaleFactorsConverter;
@@ -30,9 +32,11 @@ import com.hedera.node.config.converter.KeyValuePairConverter;
 import com.hedera.node.config.converter.KnownBlockValuesConverter;
 import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
 import com.hedera.node.config.converter.MapAccessTypeConverter;
+import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
 import com.hedera.node.config.converter.ProfileConverter;
 import com.hedera.node.config.converter.RecomputeTypeConverter;
 import com.hedera.node.config.converter.ScaleFactorConverter;
+import com.hedera.node.config.converter.SemanticVersionConverter;
 import com.hedera.node.config.converter.SidecarTypeConverter;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
@@ -65,73 +69,101 @@ import com.hedera.node.config.data.TopicsConfig;
 import com.hedera.node.config.data.TraceabilityConfig;
 import com.hedera.node.config.data.UpgradeConfig;
 import com.hedera.node.config.data.UtilPrngConfig;
+import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.data.VirtualdatasourceConfig;
-import com.hedera.node.config.sources.DynamicConfigSource;
+import com.hedera.node.config.sources.PropertyConfigSource;
 import com.hedera.node.config.validation.EmulatesMapValidator;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.config.sources.PropertyFileConfigSource;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.ObjIntConsumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Implementation of the {@link ConfigProvider} interface.
  */
 @Singleton
 public class ConfigProviderImpl implements ConfigProvider {
-
-    private final AtomicReference<VersionedConfiguration> configuration;
-
-    private final AutoClosableLock updateLock = Locks.createAutoLock();
-
-    private final DynamicConfigSource dynamicConfigSource = new DynamicConfigSource();
+    private static final Logger logger = LogManager.getLogger(ConfigProviderImpl.class);
 
     /**
-     * Constructor.
+     * Name of an environment variable that can be used to override the default path to the genesis.properties file (see
+     * {@link #GENESIS_PROPERTIES_DEFAULT_PATH}).
+     */
+    public static final String GENESIS_PROPERTIES_PATH_ENV = "HEDERA_GENESIS_PROPERTIES_PATH";
+    /**
+     * Name of an environment variable that can be used to override the default path to the application.properties file
+     * (see {@link #APPLICATION_PROPERTIES_DEFAULT_PATH}).
+     */
+    public static final String APPLICATION_PROPERTIES_PATH_ENV = "HEDERA_APP_PROPERTIES_PATH";
+    /** Default path to the genesis.properties file. */
+    public static final String GENESIS_PROPERTIES_DEFAULT_PATH = "genesis.properties";
+    /** Default path to the application.properties file. */
+    public static final String APPLICATION_PROPERTIES_DEFAULT_PATH = "application.properties";
+    /** Default path to the semantic-version.properties file. */
+    private static final String SEMANTIC_VERSION_PROPERTIES_DEFAULT_PATH = "semantic-version.properties";
+    /**
+     * The actual underlying versioned configuration provided by this provider. This must provided thread-safe access
+     * since many threads (ingestion, pre-handle, etc.) will be accessing it from different threads while it is
+     * generally only updated on the handle thread (except during startup). The handle thread will also access it.
+     */
+    private final AtomicReference<VersionedConfiguration> configuration;
+    /** Provides synchronous access to updating the configuration to one thread at a time. */
+    private final AutoClosableLock updateLock = Locks.createAutoLock();
+
+    /**
+     * Create a new instance. You must specify whether to use the genesis.properties file as a source for the
+     * configuration. This should only be true if the node is starting from genesis.
      */
     @Inject
-    public ConfigProviderImpl() {
-        final Configuration config = createConfiguration();
+    public ConfigProviderImpl(@GenesisUsage @Nullable final Boolean useGenesisSource) {
+        requireNonNull(useGenesisSource);
+        final var builder = createConfigurationBuilder();
+        addFileSources(builder, useGenesisSource);
+        final Configuration config = builder.build();
         configuration = new AtomicReference<>(new VersionedConfigImpl(config, 0));
+    }
+
+    @Override
+    @NonNull
+    public VersionedConfiguration getConfiguration() {
+        return configuration.get();
     }
 
     /**
      * This method must be called if a property has changed. It will update the configuration and increase the version.
-     * This should happen whenever {@link GlobalDynamicProperties#reload()} is called.
+     *
+     * @param propertyFileContent the new property file content
      */
-    public void update(@NonNull final String name, @NonNull final String value) {
-        try (final var lock = updateLock.lock()) {
-            dynamicConfigSource.setProperty(name, value);
-            final Configuration config = createConfiguration();
-            final VersionedConfiguration versionedConfig =
-                    new VersionedConfigImpl(config, this.configuration.get().getVersion() + 1);
-            configuration.set(versionedConfig);
+    public void update(@NonNull final Bytes propertyFileContent) {
+        try (final var ignoredLock = updateLock.lock()) {
+            final var builder = createConfigurationBuilder();
+            addFileSources(builder, false);
+            addByteSource(builder, propertyFileContent);
+            final Configuration config = builder.build();
+            configuration.set(
+                    new VersionedConfigImpl(config, this.configuration.get().getVersion() + 1));
         }
     }
 
-    private Configuration createConfiguration() {
+    private ConfigurationBuilder createConfigurationBuilder() {
         return ConfigurationBuilder.create()
-                .withSource(dynamicConfigSource)
-                .withConverter(new CongestionMultipliersConverter())
-                .withConverter(new EntityScaleFactorsConverter())
-                .withConverter(new EntityTypeConverter())
-                .withConverter(new KnownBlockValuesConverter())
-                .withConverter(new LegacyContractIdActivationsConverter())
-                .withConverter(new MapAccessTypeConverter())
-                .withConverter(new RecomputeTypeConverter())
-                .withConverter(new ScaleFactorConverter())
-                .withConverter(new AccountIDConverter())
-                .withConverter(new ContractIDConverter())
-                .withConverter(new FileIDConverter())
-                .withConverter(new HederaFunctionalityConverter())
-                .withConverter(new ProfileConverter())
-                .withConverter(new SidecarTypeConverter())
-                .withConverter(new KeyValuePairConverter())
-                .withValidator(new EmulatesMapValidator())
+                .withSource(new PropertyConfigSource(SEMANTIC_VERSION_PROPERTIES_DEFAULT_PATH, 500))
                 .withConfigDataType(AccountsConfig.class)
                 .withConfigDataType(AutoCreationConfig.class)
                 .withConfigDataType(AutoRenew2Config.class)
@@ -164,12 +196,94 @@ public class ConfigProviderImpl implements ConfigProvider {
                 .withConfigDataType(TraceabilityConfig.class)
                 .withConfigDataType(UpgradeConfig.class)
                 .withConfigDataType(UtilPrngConfig.class)
+                .withConfigDataType(VersionConfig.class)
                 .withConfigDataType(VirtualdatasourceConfig.class)
-                .build();
+                .withConverter(new CongestionMultipliersConverter())
+                .withConverter(new EntityScaleFactorsConverter())
+                .withConverter(new EntityTypeConverter())
+                .withConverter(new KnownBlockValuesConverter())
+                .withConverter(new LegacyContractIdActivationsConverter())
+                .withConverter(new MapAccessTypeConverter())
+                .withConverter(new RecomputeTypeConverter())
+                .withConverter(new ScaleFactorConverter())
+                .withConverter(new AccountIDConverter())
+                .withConverter(new ContractIDConverter())
+                .withConverter(new FileIDConverter())
+                .withConverter(new HederaFunctionalityConverter())
+                .withConverter(new PermissionedAccountsRangeConverter())
+                .withConverter(new ProfileConverter())
+                .withConverter(new SidecarTypeConverter())
+                .withConverter(new SemanticVersionConverter())
+                .withConverter(new KeyValuePairConverter())
+                .withConverter(new BytesConverter())
+                .withValidator(new EmulatesMapValidator());
     }
 
-    @Override
-    public VersionedConfiguration getConfiguration() {
-        return configuration.get();
+    private void addByteSource(@NonNull final ConfigurationBuilder builder, @NonNull final Bytes propertyFileContent) {
+        requireNonNull(builder);
+        requireNonNull(propertyFileContent);
+        try (final var in = propertyFileContent.toInputStream()) {
+            final byte[] bytes = in.readAllBytes();
+            try (ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes)) {
+                Properties properties = new Properties();
+                properties.load(inputStream);
+                final PropertyConfigSource configSource = new PropertyConfigSource(properties, 101);
+                builder.withSource(configSource);
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Can not create config source for bytes", e);
+        }
+    }
+
+    private void addFileSources(@NonNull final ConfigurationBuilder builder, final boolean useGenesisSource) {
+        requireNonNull(builder);
+
+        if (useGenesisSource) {
+            try {
+                addFileSource(builder, GENESIS_PROPERTIES_PATH_ENV, GENESIS_PROPERTIES_DEFAULT_PATH, 400);
+            } catch (final Exception e) {
+                throw new IllegalStateException("Can not create config source for genesis properties", e);
+            }
+        }
+
+        try {
+            addFileSource(builder, APPLICATION_PROPERTIES_PATH_ENV, APPLICATION_PROPERTIES_DEFAULT_PATH, 100);
+        } catch (final Exception e) {
+            throw new IllegalStateException("Can not create config source for application properties", e);
+        }
+    }
+
+    private void addFileSource(
+            @NonNull final ConfigurationBuilder builder,
+            @NonNull final String envName,
+            @NonNull final String defaultPath,
+            final int priority) {
+        requireNonNull(builder);
+        requireNonNull(envName);
+        requireNonNull(defaultPath);
+
+        final ObjIntConsumer<Path> addSource = (path, p) -> {
+            if (path.toFile().exists()) {
+                if (!path.toFile().isDirectory()) {
+                    try {
+                        builder.withSource(new PropertyFileConfigSource(path, p));
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Can not create config source for property file", e);
+                    }
+                } else {
+                    throw new IllegalArgumentException("File " + path + " is a directory and not a property file");
+                }
+            } else {
+                logger.warn("Properties file {} does not exist and won't be used as configuration source", path);
+            }
+        };
+
+        try {
+            final Path propertiesPath =
+                    Optional.ofNullable(System.getenv(envName)).map(Path::of).orElseGet(() -> Path.of(defaultPath));
+            addSource.accept(propertiesPath, priority);
+        } catch (final Exception e) {
+            throw new IllegalStateException("Can not create config source for application properties", e);
+        }
     }
 }

@@ -16,6 +16,10 @@
 
 package com.swirlds.platform.components.common.output;
 
+import com.swirlds.platform.system.SystemExitCode;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 /**
  * Invoked when a fatal error has occurred. Consumers should use this method to perform any cleanup or take any final
  * actions before operations are halted.
@@ -33,5 +37,6 @@ public interface FatalErrorConsumer {
      * @param exitCode
      * 		the exit code to use when shutting down the node, if applicable, otherwise {@code null}
      */
-    void fatalError(final String msg, final Throwable throwable, final Integer exitCode);
+    void fatalError(
+            @NonNull final String msg, @Nullable final Throwable throwable, @NonNull final SystemExitCode exitCode);
 }

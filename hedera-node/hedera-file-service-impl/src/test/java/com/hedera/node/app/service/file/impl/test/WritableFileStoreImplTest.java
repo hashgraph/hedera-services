@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.test.handlers.FileHandlerTestBase;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -44,12 +45,12 @@ class WritableFileStoreImplTest extends FileHandlerTestBase {
     @Test
     void commitsFileChanges() {
         file = createFile();
-        assertFalse(writableFileState.contains(fileEntityNum));
+        assertFalse(writableFileState.contains(fileId));
 
         writableStore.put(file);
 
-        assertTrue(writableFileState.contains(fileEntityNum));
-        final var writtenTopic = writableFileState.get(fileEntityNum);
+        assertTrue(writableFileState.contains(fileId));
+        final var writtenTopic = writableFileState.get(fileId);
         assertEquals(file, writtenTopic);
     }
 
@@ -58,10 +59,25 @@ class WritableFileStoreImplTest extends FileHandlerTestBase {
         file = createFile();
         writableStore.put(file);
 
-        final var maybeReadFile = writableStore.get(fileEntityNum.longValue());
+        final var maybeReadFile = writableStore.get(fileId.fileNum());
 
         assertTrue(maybeReadFile.isPresent());
         final var readFile = maybeReadFile.get();
         assertEquals(file, readFile);
+    }
+
+    @Test
+    void verifyFileDeleted() {
+        file = createFile();
+        writableStore.put(file);
+
+        final var maybeReadFile = writableStore.get(fileId.fileNum());
+
+        assertTrue(maybeReadFile.isPresent());
+
+        writableStore.removeFile(fileId.fileNum());
+
+        final var readFile = writableStore.get(fileId.fileNum());
+        assertEquals(readFile, Optional.empty());
     }
 }

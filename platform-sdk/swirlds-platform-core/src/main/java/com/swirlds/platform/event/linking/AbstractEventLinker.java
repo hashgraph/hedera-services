@@ -21,6 +21,8 @@ import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.consensus.RoundCalculationUtils;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Common functionality for an {@link EventLinker}
@@ -31,7 +33,8 @@ public abstract class AbstractEventLinker implements EventLinker {
     /**
      * @param config consensus configuration
      */
-    protected AbstractEventLinker(final ConsensusConfig config) {
+    protected AbstractEventLinker(@NonNull final ConsensusConfig config) {
+        Objects.requireNonNull(config, "config must not be null");
         this.config = config;
     }
 

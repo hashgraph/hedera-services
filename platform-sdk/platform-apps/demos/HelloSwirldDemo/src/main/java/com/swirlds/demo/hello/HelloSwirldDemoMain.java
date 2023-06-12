@@ -34,9 +34,9 @@ import com.swirlds.common.notification.listeners.PlatformStatusChangeNotificatio
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.SwirldsPlatform;
@@ -80,7 +80,7 @@ public class HelloSwirldDemoMain implements SwirldMain {
         this.platform = (SwirldsPlatform) platform;
         this.selfId = id.id();
         this.console = createConsole(platform, true); // create the window, make it visible
-        GuiPlatformAccessor.getInstance().setAbout(platform.getSelfId().id(), "Hello Swirld v. 1.0\n");
+        GuiPlatformAccessor.getInstance().setAbout(platform.getSelfId(), "Hello Swirld v. 1.0\n");
     }
 
     @Override

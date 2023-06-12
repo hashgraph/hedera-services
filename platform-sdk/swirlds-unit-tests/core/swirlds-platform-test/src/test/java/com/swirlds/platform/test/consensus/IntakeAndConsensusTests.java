@@ -105,7 +105,7 @@ class IntakeAndConsensusTests {
         while (!succeeded) {
             batch = generator.generateEvents(1);
             lastEvent = batch.get(0);
-            if (partitionNodes.contains((int) lastEvent.getCreatorId())) {
+            if (partitionNodes.contains((int) lastEvent.getCreatorId().id())) {
                 partitionMinGen = partitionMinGen == EventConstants.GENERATION_UNDEFINED
                         ? lastEvent.getGeneration()
                         : Math.min(partitionMinGen, lastEvent.getGeneration());

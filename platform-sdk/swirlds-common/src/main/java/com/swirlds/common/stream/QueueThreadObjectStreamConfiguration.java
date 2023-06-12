@@ -18,8 +18,11 @@ package com.swirlds.common.stream;
 
 import com.swirlds.common.crypto.RunningHashable;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Configures and builds {@link QueueThreadObjectStream} instances.
@@ -193,16 +196,19 @@ public class QueueThreadObjectStreamConfiguration<T extends RunningHashable> {
     /**
      * Get the node ID that will run threads created by this object.
      */
-    public long getNodeId() {
+    @NonNull
+    public NodeId getNodeId() {
         return queueThreadConfiguration.getNodeId();
     }
 
     /**
-     * Set the node ID. Node IDs less than 0 are interpreted as "no node ID".
+     * Set the node ID.
      *
      * @return this object
      */
-    public QueueThreadObjectStreamConfiguration<T> setNodeId(final long nodeId) {
+    @NonNull
+    public QueueThreadObjectStreamConfiguration<T> setNodeId(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         queueThreadConfiguration.setNodeId(nodeId);
         return this;
     }
@@ -244,7 +250,8 @@ public class QueueThreadObjectStreamConfiguration<T extends RunningHashable> {
     /**
      * Set the node ID of the other node (if created threads will be dealing with a task related to a specific node).
      */
-    public long getOtherNodeId() {
+    @NonNull
+    public NodeId getOtherNodeId() {
         return queueThreadConfiguration.getOtherNodeId();
     }
 
@@ -253,7 +260,8 @@ public class QueueThreadObjectStreamConfiguration<T extends RunningHashable> {
      *
      * @return this object
      */
-    public QueueThreadObjectStreamConfiguration<T> setOtherNodeId(final long otherNodeId) {
+    public QueueThreadObjectStreamConfiguration<T> setOtherNodeId(@NonNull final NodeId otherNodeId) {
+        Objects.requireNonNull(otherNodeId, "otherNodeId must not be null");
         queueThreadConfiguration.setOtherNodeId(otherNodeId);
         return this;
     }

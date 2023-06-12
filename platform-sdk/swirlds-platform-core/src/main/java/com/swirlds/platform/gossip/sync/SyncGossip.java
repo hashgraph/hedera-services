@@ -89,7 +89,11 @@ public class SyncGossip extends AbstractGossip {
     protected final SyncConfig syncConfig;
     protected final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
-    private final Clearable clearAllPipelines;
+
+    /**
+     * Holds a list of objects that need to be cleared when {@link #clear()} is called on this object.
+     */
+    private final Clearable clearAllInternalPipelines;
 
     /**
      * A list of threads that execute the sync protocol using bidirectional connections
@@ -99,29 +103,30 @@ public class SyncGossip extends AbstractGossip {
     /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
      *
-     * @param platformContext           the platform context
-     * @param threadManager             the thread manager
-     * @param time                      the wall clock time
-     * @param crypto                    can be used to sign things
-     * @param notificationEngine        used to send notifications to the app
-     * @param addressBook               the current address book
-     * @param selfId                    this node's ID
-     * @param appVersion                the version of the app
-     * @param shadowGraph               contains non-ancient events
-     * @param emergencyRecoveryManager  handles emergency recovery
-     * @param consensusRef              a pointer to consensus
-     * @param intakeQueue               the event intake queue
-     * @param freezeManager             handles freezes
-     * @param startUpEventFrozenManager prevents event creation during startup
-     * @param swirldStateManager        manages the mutable state
-     * @param stateManagementComponent  manages the lifecycle of the state
-     * @param eventIntakeLambda         a method that is called when something needs to be added to the event intake
-     *                                  queue
-     * @param eventObserverDispatcher   the object used to wire event intake
-     * @param eventMapper               a data structure used to track the most recent event from each node
-     * @param eventIntakeMetrics        metrics for event intake
-     * @param updatePlatformStatus      a method that updates the platform status, when called
-     * @param loadReconnectState        a method that should be called when a state from reconnect is obtained
+     * @param platformContext               the platform context
+     * @param threadManager                 the thread manager
+     * @param time                          the wall clock time
+     * @param crypto                        can be used to sign things
+     * @param notificationEngine            used to send notifications to the app
+     * @param addressBook                   the current address book
+     * @param selfId                        this node's ID
+     * @param appVersion                    the version of the app
+     * @param shadowGraph                   contains non-ancient events
+     * @param emergencyRecoveryManager      handles emergency recovery
+     * @param consensusRef                  a pointer to consensus
+     * @param intakeQueue                   the event intake queue
+     * @param freezeManager                 handles freezes
+     * @param startUpEventFrozenManager     prevents event creation during startup
+     * @param swirldStateManager            manages the mutable state
+     * @param stateManagementComponent      manages the lifecycle of the state
+     * @param eventIntakeLambda             a method that is called when something needs to be added to the event intake
+     *                                      queue
+     * @param eventObserverDispatcher       the object used to wire event intake
+     * @param eventMapper                   a data structure used to track the most recent event from each node
+     * @param eventIntakeMetrics            metrics for event intake
+     * @param updatePlatformStatus          a method that updates the platform status, when called
+     * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
+     * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
     public SyncGossip(
             @NonNull final PlatformContext platformContext,
@@ -145,7 +150,8 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final Runnable updatePlatformStatus,
-            @NonNull final Consumer<SignedState> loadReconnectState) {
+            @NonNull final Consumer<SignedState> loadReconnectState,
+            @NonNull final Runnable clearAllPipelinesForReconnect) {
         super(
                 platformContext,
                 threadManager,
@@ -162,7 +168,8 @@ public class SyncGossip extends AbstractGossip {
                 eventIntakeMetrics,
                 eventObserverDispatcher,
                 updatePlatformStatus,
-                loadReconnectState);
+                loadReconnectState,
+                clearAllPipelinesForReconnect);
 
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
 
@@ -183,7 +190,7 @@ public class SyncGossip extends AbstractGossip {
                 false,
                 () -> {});
 
-        clearAllPipelines = new LoggingClearables(
+        clearAllInternalPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
                         Pair.of(intakeQueue, "intakeQueue"),
@@ -214,10 +221,10 @@ public class SyncGossip extends AbstractGossip {
         for (final NodeId otherId : topology.getNeighbors()) {
             syncProtocolThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
-                    .setNodeId(selfId.id())
+                    .setNodeId(selfId)
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
-                    .setOtherNodeId(otherId.id())
-                    .setThreadName("SyncProtocolWith" + otherId.id())
+                    .setOtherNodeId(otherId)
+                    .setThreadName("SyncProtocolWith" + otherId)
                     .setHangingThreadPeriod(hangingThreadDuration)
                     .setWork(new NegotiatorThread(
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
@@ -242,7 +249,8 @@ public class SyncGossip extends AbstractGossip {
                                             stateManagementComponent,
                                             reconnectConfig.asyncStreamTimeoutMilliseconds(),
                                             reconnectMetrics,
-                                            reconnectController),
+                                            reconnectController,
+                                            fallenBehindManager),
                                     new ReconnectProtocol(
                                             threadManager,
                                             otherId,
@@ -299,7 +307,7 @@ public class SyncGossip extends AbstractGossip {
     @NonNull
     @Override
     protected CriticalQuorum buildCriticalQuorum() {
-        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId.id(), addressBook);
+        return new CriticalQuorumImpl(platformContext.getMetrics(), selfId, addressBook);
     }
 
     /**
@@ -316,6 +324,7 @@ public class SyncGossip extends AbstractGossip {
     @Override
     protected FallenBehindManagerImpl buildFallenBehindManager() {
         return new FallenBehindManagerImpl(
+                addressBook,
                 selfId,
                 topology.getConnectionGraph(),
                 updatePlatformStatus,
@@ -345,7 +354,7 @@ public class SyncGossip extends AbstractGossip {
      */
     @Override
     public void clear() {
-        clearAllPipelines.clear();
+        clearAllInternalPipelines.clear();
     }
 
     /**

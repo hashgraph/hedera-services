@@ -19,21 +19,25 @@ package com.swirlds.platform.reconnect;
 import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.payloads.ReconnectFinishPayload;
 import com.swirlds.logging.payloads.ReconnectStartPayload;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.Objects;
+import java.util.function.BooleanSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -49,8 +53,8 @@ public class ReconnectTeacher {
     private final Connection connection;
     private final int reconnectSocketTimeout;
 
-    private final long selfId;
-    private final long otherId;
+    private final NodeId selfId;
+    private final NodeId otherId;
     private final long lastRoundReceived;
 
     private final ReconnectMetrics statistics;
@@ -61,6 +65,13 @@ public class ReconnectTeacher {
     private int originalSocketTimeout;
 
     private final ThreadManager threadManager;
+
+    /**
+     * A function to check periodically if teaching should be stopped, e.g. when the
+     * teacher has fallen behind.
+     */
+    @Nullable
+    private final BooleanSupplier requestToStopTeaching;
 
     /**
      * @param threadManager          responsible for managing thread lifecycles
@@ -75,18 +86,20 @@ public class ReconnectTeacher {
             @NonNull final ThreadManager threadManager,
             @NonNull final Connection connection,
             final int reconnectSocketTimeout,
-            final long selfId,
-            final long otherId,
+            @NonNull final NodeId selfId,
+            @NonNull final NodeId otherId,
             final long lastRoundReceived,
+            @Nullable final BooleanSupplier requestToStopTeaching,
             @NonNull final ReconnectMetrics statistics) {
 
         this.threadManager = Objects.requireNonNull(threadManager);
         this.connection = Objects.requireNonNull(connection);
         this.reconnectSocketTimeout = reconnectSocketTimeout;
 
-        this.selfId = selfId;
-        this.otherId = otherId;
+        this.selfId = Objects.requireNonNull(selfId);
+        this.otherId = Objects.requireNonNull(otherId);
         this.lastRoundReceived = lastRoundReceived;
+        this.requestToStopTeaching = requestToStopTeaching;
         this.statistics = Objects.requireNonNull(statistics);
     }
 
@@ -165,13 +178,18 @@ public class ReconnectTeacher {
         logger.info(
                 RECONNECT.getMarker(),
                 () -> new ReconnectStartPayload(
-                        "Starting reconnect in the role of the sender", false, selfId, otherId, lastRoundReceived));
+                        "Starting reconnect in the role of the sender",
+                        false,
+                        selfId.id(),
+                        otherId.id(),
+                        lastRoundReceived));
+        final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
         logger.info(
                 RECONNECT.getMarker(),
                 "The following state will be sent to the learner:\n{}\n{}",
                 () -> signedState.getState().getPlatformState().getInfoString(),
                 () -> new MerkleTreeVisualizer(signedState.getState())
-                        .setDepth(StateSettings.getDebugHashDepth())
+                        .setDepth(stateConfig.debugHashDepth())
                         .render());
     }
 
@@ -179,7 +197,11 @@ public class ReconnectTeacher {
         logger.info(
                 RECONNECT.getMarker(),
                 () -> new ReconnectFinishPayload(
-                        "Finished reconnect in the role of the sender.", false, selfId, otherId, lastRoundReceived));
+                        "Finished reconnect in the role of the sender.",
+                        false,
+                        selfId.id(),
+                        otherId.id(),
+                        lastRoundReceived));
     }
 
     /**
@@ -199,7 +221,8 @@ public class ReconnectTeacher {
                 new MerkleDataInputStream(connection.getDis()),
                 new MerkleDataOutputStream(connection.getDos()),
                 signedState.getState(),
-                connection::disconnect);
+                connection::disconnect,
+                requestToStopTeaching);
 
         synchronizer.synchronize();
         connection.getDos().flush();

@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.test.handlers.TokenHandlerTestBase;
+import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
 import java.util.Collections;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -53,10 +53,8 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
         token = createToken();
         writableTokenStore.put(token);
 
-        final var maybeReadToken = writableTokenStore.get(tokenEntityNum.longValue());
+        final var readToken = writableTokenStore.get(tokenId);
 
-        assertTrue(maybeReadToken.isPresent());
-        final var readToken = maybeReadToken.get();
         assertEquals(token, readToken);
     }
 
@@ -84,26 +82,6 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
         assertTrue(writableTokenState.contains(tokenEntityNum));
         final var writtenToken = writableTokenState.get(tokenEntityNum);
         assertEquals(token, writtenToken);
-    }
-
-    @Test
-    void commitsTokenChangesToState() {
-        token = createToken();
-        assertFalse(writableTokenState.contains(tokenEntityNum));
-        // put, keeps the token in the modifications.
-        // Size of state includes modifications and size of backing state.
-        writableTokenStore.put(token);
-
-        assertTrue(writableTokenState.contains(tokenEntityNum));
-        final var writtenToken = writableTokenState.get(tokenEntityNum);
-        assertEquals(1, writableTokenStore.sizeOfState());
-        assertTrue(writableTokenStore.modifiedTokens().contains(tokenEntityNum));
-        assertEquals(token, writtenToken);
-
-        // commit, pushes modifications to backing store. But the size of state is still 1
-        writableTokenStore.commit();
-        assertEquals(1, writableTokenStore.sizeOfState());
-        assertTrue(writableTokenStore.modifiedTokens().contains(tokenEntityNum));
     }
 
     @Test

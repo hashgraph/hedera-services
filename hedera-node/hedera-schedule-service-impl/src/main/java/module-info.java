@@ -1,15 +1,16 @@
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 
 module com.hedera.node.app.service.schedule.impl {
-    requires transitive com.hedera.node.app.service.scheduled;
-    requires org.apache.commons.lang3;
-    requires com.hedera.node.app.service.mono;
-    requires com.hedera.pbj.runtime;
-    requires com.swirlds.virtualmap;
-    requires dagger;
-    requires javax.inject;
-    requires com.swirlds.common;
+    requires transitive com.hedera.node.app.service.mono;
+    requires transitive com.hedera.node.app.service.schedule;
+    requires transitive com.hedera.node.app.spi;
+    requires transitive com.hedera.node.hapi;
+    requires transitive com.hedera.pbj.runtime;
+    requires transitive dagger;
+    requires transitive javax.inject;
     requires com.github.spotbugs.annotations;
+    requires com.swirlds.jasperdb;
+    requires org.apache.logging.log4j;
 
     exports com.hedera.node.app.service.schedule.impl to
             com.hedera.node.app.service.schedule.impl.test,

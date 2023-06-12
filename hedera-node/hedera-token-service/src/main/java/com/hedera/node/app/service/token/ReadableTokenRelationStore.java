@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.service.token;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import java.util.Optional;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Provides read-only methods for getting underlying data for working with TokenRelations.
@@ -26,12 +29,14 @@ import java.util.Optional;
  */
 public interface ReadableTokenRelationStore {
     /**
-     * Returns the {@link TokenRelation} with the given number. If no such token relation exists, returns {@code Optional.empty()}
+     * Returns the {@link TokenRelation} with the given IDs. If no such token relation exists,
+     * returns {@code null}
      *
-     * @param tokenNum - the number of the token relation to be retrieved
-     * @param accountNum - the number of the account relation to be retrieved
+     * @param accountId - the id of the account in the token-relation to be retrieved
+     * @param tokenId   - the id of the token in the token-relation to be retrieved
      */
-    Optional<TokenRelation> get(final long accountNum, final long tokenNum);
+    @Nullable
+    TokenRelation get(@NonNull final AccountID accountId, @NonNull final TokenID tokenId);
 
     /**
      * Returns the number of tokens in the state.

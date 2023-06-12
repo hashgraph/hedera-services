@@ -324,7 +324,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     public HapiSpec validAutoRenewWorks() {
         final var firstPeriod = THREE_MONTHS_IN_SECONDS;
         final var secondPeriod = THREE_MONTHS_IN_SECONDS + 1234;
-        return defaultHapiSpec("AutoRenewInfoChanges")
+        return defaultHapiSpec("validAutoRenewWorks")
                 .given(
                         cryptoCreate("autoRenew").balance(0L),
                         cryptoCreate("newAutoRenew").balance(0L),

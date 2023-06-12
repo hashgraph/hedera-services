@@ -68,7 +68,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
-            deletedContract(),
+            invalidDeletedContract(),
             invalidContractID(),
             impureCallFails(),
             insufficientFeeFails(),
@@ -80,7 +80,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     private HapiSpec vanillaSuccess() {
-        return defaultHapiSpec("VanillaSuccess")
+        return defaultHapiSpec("vanillaSuccess")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when(contractCall(CONTRACT, "create").gas(785_000))
                 .then(
@@ -93,7 +93,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     }
 
     private HapiSpec impureCallFails() {
-        return defaultHapiSpec("ImpureCallFails")
+        return defaultHapiSpec("impureCallFails")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when()
                 .then(
@@ -103,8 +103,8 @@ public class ContractCallLocalSuite extends HapiSuite {
                                 .hasAnswerOnlyPrecheck(ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION));
     }
 
-    private HapiSpec deletedContract() {
-        return defaultHapiSpec("InvalidDeletedContract")
+    private HapiSpec invalidDeletedContract() {
+        return defaultHapiSpec("invalidDeletedContract")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractDelete(CONTRACT))
                 .then(contractCallLocal(CONTRACT, "create")
@@ -130,7 +130,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     private HapiSpec insufficientFeeFails() {
         final long adequateQueryPayment = 500_000L;
 
-        return defaultHapiSpec("InsufficientFee")
+        return defaultHapiSpec("insufficientFeeFails")
                 .given(cryptoCreate("payer"), uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "create").gas(785_000))
                 .then(
@@ -145,7 +145,7 @@ public class ContractCallLocalSuite extends HapiSuite {
     private HapiSpec lowBalanceFails() {
         final long adequateQueryPayment = 500_000_000L;
 
-        return defaultHapiSpec("LowBalanceFails")
+        return defaultHapiSpec("lowBalanceFails")
                 .given(
                         cryptoCreate("payer"),
                         cryptoCreate("payer").balance(adequateQueryPayment),
@@ -169,7 +169,7 @@ public class ContractCallLocalSuite extends HapiSuite {
                 + "\"outputs\": [{\"name\": \"\",\"type\": \"uint8\"}],\"payable\": false,"
                 + "\"type\": \"function\"}";
 
-        return defaultHapiSpec("erc20Queries")
+        return defaultHapiSpec("erc20Query")
                 .given(tokenCreate(TOKEN).decimals(DECIMALS).symbol(SYMBOL).asCallableContract())
                 .when()
                 .then(contractCallLocalWithFunctionAbi(TOKEN, decimalsABI)
@@ -178,7 +178,7 @@ public class ContractCallLocalSuite extends HapiSuite {
 
     // https://github.com/hashgraph/hedera-services/pull/5485
     private HapiSpec callLocalDoesNotCheckSignaturesNorPayer() {
-        return defaultHapiSpec("VanillaSuccess")
+        return defaultHapiSpec("callLocalDoesNotCheckSignaturesNorPayer")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when(contractCall(CONTRACT, "create").gas(785_000))
                 .then(withOpContext((spec, opLog) -> IntStream.range(0, 2000).forEach(i -> {

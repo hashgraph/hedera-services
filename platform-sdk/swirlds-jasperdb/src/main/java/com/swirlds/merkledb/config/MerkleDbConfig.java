@@ -115,6 +115,11 @@ import java.time.temporal.ChronoUnit;
  * @param numHalfDiskHashMapFlushThreads
  *      Number of threads to use for half disk hash map background flushing. If set to a negative value, the number of
  *      threads to use is calculated based on {@link #percentHalfDiskHashMapFlushThreads}
+ * @param reservedBufferLengthForLeafList
+ *      Length of a reserved buffer in a LongList used to store leafs. Value in bytes.
+ * @param leafRecordCacheSize
+ *      Cache size in bytes for reading virtual leaf records. Initialized in data source creation time from JasperDB config.
+ *      If the value is zero, leaf records cache isn't used.
  */
 @ConfigData("merkleDb")
 public record MerkleDbConfig(
@@ -142,7 +147,11 @@ public record MerkleDbConfig(
         @ConfigProperty(defaultValue = "1000000") int keySetHalfDiskHashMapBuffer,
         @ConfigProperty(defaultValue = "false") boolean indexRebuildingEnforced,
         @ConfigProperty(defaultValue = "50.0") double percentHalfDiskHashMapFlushThreads,
-        @ConfigProperty(defaultValue = "-1") int numHalfDiskHashMapFlushThreads) {
+        @ConfigProperty(defaultValue = "-1") int numHalfDiskHashMapFlushThreads,
+        @ConfigProperty(defaultValue = "262144") int reservedBufferLengthForLeafList,
+        @ConfigProperty(defaultValue = "1048576") int leafRecordCacheSize) {
+
+    static double UNIT_FRACTION_PERCENT = 100.0;
 
     public ConfigViolation maxNumberOfFilesInMergeValidation(final Configuration configuration) {
         final long maxNumberOfFilesInMerge =
@@ -173,5 +182,13 @@ public record MerkleDbConfig(
                     "Cannot configure minNumberOfFilesInMerge to " + minNumberOfFilesInMerge + ", it must be >= 2");
         }
         return null;
+    }
+
+    public int getNumHalfDiskHashMapFlushThreads() {
+        final int numProcessors = Runtime.getRuntime().availableProcessors();
+        final int threads = (numHalfDiskHashMapFlushThreads() == -1)
+                ? (int) (numProcessors * (percentHalfDiskHashMapFlushThreads() / UNIT_FRACTION_PERCENT))
+                : numHalfDiskHashMapFlushThreads();
+        return Math.max(1, threads);
     }
 }

@@ -94,7 +94,7 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
                 INITIAL_PRE_CONS_EVENT_QUEUE_CAPACITY, EventUtils::consensusPriorityComparator);
 
         queueThread = new QueueThreadConfiguration<EventImpl>(threadManager)
-                .setNodeId(selfId.id())
+                .setNodeId(selfId)
                 .setQueue(queue)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("thread-curr")
@@ -111,7 +111,7 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
                 metrics,
                 INTERNAL_CATEGORY,
                 PlatformStatNames.PRE_CONSENSUS_QUEUE_SIZE,
-                "average number of events in the pre-consensus queue (q1) waiting to be handled",
+                "average number of events in the preconsensus queue (q1) waiting to be handled",
                 FORMAT_10_3,
                 AverageStat.WEIGHT_VOLATILE);
         metrics.addUpdater(() -> avgQ1PreConsEvents.update(queueThread.size()));
@@ -134,9 +134,9 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
 
     @Override
     public void clear() {
-        logger.info(RECONNECT.getMarker(), "pre-consensus handler: preparing for reconnect");
+        logger.info(RECONNECT.getMarker(), "preconsensus handler: preparing for reconnect");
         queueThread.clear();
-        logger.info(RECONNECT.getMarker(), "pre-consensus handler: ready for reconnect");
+        logger.info(RECONNECT.getMarker(), "preconsensus handler: ready for reconnect");
     }
 
     /**

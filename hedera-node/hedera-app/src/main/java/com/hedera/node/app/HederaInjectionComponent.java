@@ -22,6 +22,8 @@ import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
 import com.hedera.node.app.components.QueryInjectionComponent;
+import com.hedera.node.app.config.ConfigModule;
+import com.hedera.node.app.config.GenesisUsage;
 import com.hedera.node.app.fees.FeesInjectionModule;
 import com.hedera.node.app.info.InfoInjectionModule;
 import com.hedera.node.app.metrics.MetricsInjectionModule;
@@ -34,6 +36,7 @@ import com.hedera.node.app.service.mono.state.StateModule;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.solvency.SolvencyInjectionModule;
+import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.WorkingStateAccessor;
@@ -67,7 +70,8 @@ import javax.inject.Singleton;
             AuthorizerInjectionModule.class,
             InfoInjectionModule.class,
             ThrottleInjectionModule.class,
-            SolvencyInjectionModule.class
+            SolvencyInjectionModule.class,
+            ConfigModule.class
         })
 public interface HederaInjectionComponent extends ServicesApp {
     /* Needed by ServicesState */
@@ -80,6 +84,8 @@ public interface HederaInjectionComponent extends ServicesApp {
     AdaptedMonoEventExpansion adaptedMonoEventExpansion();
 
     NonAtomicReference<HederaState> mutableState();
+
+    RecordCache recordCache();
 
     @Component.Builder
     interface Builder {
@@ -109,6 +115,13 @@ public interface HederaInjectionComponent extends ServicesApp {
 
         @BindsInstance
         Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);
+
+        /**
+         * @deprecated we need to define the correct workflow to define that genesis is used
+         */
+        @Deprecated
+        @BindsInstance
+        Builder genesisUsage(@GenesisUsage final boolean genesisUsage);
 
         HederaInjectionComponent build();
     }

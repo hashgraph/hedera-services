@@ -39,11 +39,10 @@ import com.hedera.hapi.node.file.FileGetContentsResponse;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -57,21 +56,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class FileGetContentsHandlerTest extends FileHandlerTestBase {
 
     @Mock
-    private NetworkInfo networkInfo;
-
-    @Mock
     private QueryContext context;
 
     private FileGetContentsHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new FileGetContentsHandler(networkInfo);
+        subject = new FileGetContentsHandler();
     }
 
     @Test
     void extractsHeader() {
-        final var query = createGetFileContentQuery(fileEntityNum.intValue());
+        final var query = createGetFileContentQuery(fileId.fileNum());
         final var header = subject.extractHeader(query);
         final var op = query.fileGetContentsOrThrow();
         assertEquals(op.header(), header);
@@ -109,9 +105,9 @@ class FileGetContentsHandlerTest extends FileHandlerTestBase {
     void validatesQueryWhenValidFile() throws Throwable {
         givenValidFile();
 
-        final var query = createGetFileContentQuery(fileEntityNum.intValue());
+        final var query = createGetFileContentQuery(fileId.fileNum());
         given(context.query()).willReturn(query);
-        given(context.createStore(ReadableFileStoreImpl.class)).willReturn(readableStore);
+        given(context.createStore(ReadableFileStore.class)).willReturn(readableStore);
 
         assertThatCode(() -> subject.validate(context)).doesNotThrowAnyException();
     }
@@ -123,9 +119,9 @@ class FileGetContentsHandlerTest extends FileHandlerTestBase {
         given(readableStates.<Long, File>get(FILES)).willReturn(state);
         final var store = new ReadableFileStoreImpl(readableStates);
 
-        final var query = createGetFileContentQuery(fileEntityNum.intValue());
+        final var query = createGetFileContentQuery(fileId.fileNum());
         when(context.query()).thenReturn(query);
-        when(context.createStore(ReadableFileStoreImpl.class)).thenReturn(store);
+        when(context.createStore(ReadableFileStore.class)).thenReturn(store);
 
         assertThatThrownBy(() -> subject.validate(context))
                 .isInstanceOf(PreCheckException.class)
@@ -136,12 +132,12 @@ class FileGetContentsHandlerTest extends FileHandlerTestBase {
     void validatesQueryIfDeletedFile() throws Throwable {
         givenValidFile(true);
         readableFileState = readableFileState();
-        given(readableStates.<EntityNum, File>get(FILES)).willReturn(readableFileState);
+        given(readableStates.<FileID, File>get(FILES)).willReturn(readableFileState);
         readableStore = new ReadableFileStoreImpl(readableStates);
 
-        final var query = createGetFileContentQuery(fileEntityNum.intValue());
+        final var query = createGetFileContentQuery(fileId.fileNum());
         when(context.query()).thenReturn(query);
-        when(context.createStore(ReadableFileStoreImpl.class)).thenReturn(readableStore);
+        when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
 
         assertThatThrownBy(() -> subject.validate(context))
                 .isInstanceOf(PreCheckException.class)
@@ -154,9 +150,9 @@ class FileGetContentsHandlerTest extends FileHandlerTestBase {
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
                 .build();
 
-        final var query = createGetFileContentQuery(fileEntityNum.intValue());
+        final var query = createGetFileContentQuery(fileId.fileNum());
         when(context.query()).thenReturn(query);
-        when(context.createStore(ReadableFileStoreImpl.class)).thenReturn(readableStore);
+        when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
 
         final var response = subject.findResponse(context, responseHeader);
         final var op = response.fileGetContentsOrThrow();
@@ -172,9 +168,9 @@ class FileGetContentsHandlerTest extends FileHandlerTestBase {
                 .build();
         final var expectedContent = getExpectedContent();
 
-        final var query = createGetFileContentQuery(fileEntityNum.intValue());
+        final var query = createGetFileContentQuery(fileId.fileNum());
         when(context.query()).thenReturn(query);
-        when(context.createStore(ReadableFileStoreImpl.class)).thenReturn(readableStore);
+        when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
 
         final var response = subject.findResponse(context, responseHeader);
         final var fileContentResponse = response.fileGetContentsOrThrow();
@@ -189,7 +185,7 @@ class FileGetContentsHandlerTest extends FileHandlerTestBase {
                 .build();
     }
 
-    private Query createGetFileContentQuery(final int fileId) {
+    private Query createGetFileContentQuery(final long fileId) {
         final var payment =
                 payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = FileGetContentsQuery.newBuilder()

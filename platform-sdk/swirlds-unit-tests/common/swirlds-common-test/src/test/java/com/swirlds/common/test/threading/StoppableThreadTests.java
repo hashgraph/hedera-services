@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.state.MutabilityException;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.ThreadSeed;
@@ -448,7 +449,6 @@ class StoppableThreadTests {
 
     @Test
     @DisplayName("Max Rate Test")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void maxRateTest() throws InterruptedException {
         final AtomicInteger counter = new AtomicInteger(0);
         final InterruptableRunnable work = () -> {
@@ -561,7 +561,10 @@ class StoppableThreadTests {
         configuration.build();
         assertTrue(configuration.isImmutable(), "configuration should be immutable");
 
-        assertThrows(MutabilityException.class, () -> configuration.setNodeId(0L), "configuration should be immutable");
+        assertThrows(
+                MutabilityException.class,
+                () -> configuration.setNodeId(new NodeId(0L)),
+                "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
                 () -> configuration.setComponent("asdf"),
@@ -575,7 +578,9 @@ class StoppableThreadTests {
                 () -> configuration.setFullyFormattedThreadName("asdf"),
                 "configuration should be immutable");
         assertThrows(
-                MutabilityException.class, () -> configuration.setOtherNodeId(0L), "configuration should be immutable");
+                MutabilityException.class,
+                () -> configuration.setOtherNodeId(new NodeId(0L)),
+                "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
                 () -> configuration.setThreadGroup(null),

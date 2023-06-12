@@ -30,25 +30,28 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.fixtures.Scenarios;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -64,10 +67,14 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
+
+    private static final long DEFAULT_CONFIG_VERSION = 1L;
+
     /**
      * We use a mocked dispatcher, so it is easy to fake out interaction between the workflow and some
      * "hypothetical" transaction handlers.
@@ -89,11 +96,19 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     @Mock
     private SignatureVerifier signatureVerifier;
 
-    /**
-     * We use a mocked {@link SignatureExpander}, so it is easy to fake out expansion of signatures.
-     */
+    /** We use a mocked {@link SignatureExpander}, so it is easy to fake out expansion of signatures. */
     @Mock
     private SignatureExpander signatureExpander;
+
+    /**
+     * We use a mocked {@link ConfigProvider}, so it is easy to provide specific configurations.
+     */
+    @Mock(strictness = Strictness.LENIENT)
+    private ConfigProvider configProvider;
+
+    /** We use a mocked {@link DeduplicationCache}. */
+    @Mock
+    private DeduplicationCache deduplicationCache;
 
     /** We use a real functional store factory with our standard test data set. Needed by the workflow. */
     private ReadableStoreFactory storeFactory;
@@ -106,18 +121,27 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         final var fakeHederaState = new FakeHederaState();
         fakeHederaState.addService(
                 TokenService.NAME,
-                new MapReadableKVState<>(
+                Map.of(
                         "ACCOUNTS",
                         Map.of(
-                                EntityNumVirtualKey.fromLong(ALICE.accountID().accountNumOrThrow()), ALICE.account(),
-                                EntityNumVirtualKey.fromLong(ERIN.accountID().accountNumOrThrow()), ERIN.account(),
-                                EntityNumVirtualKey.fromLong(STAKING_REWARD_ACCOUNT
-                                                .accountID()
-                                                .accountNumOrThrow()),
-                                        STAKING_REWARD_ACCOUNT.account())),
-                new MapReadableKVState<String, Long>("ALIASES", Collections.emptyMap()));
+                                ALICE.accountID(), ALICE.account(),
+                                ERIN.accountID(), ERIN.account(),
+                                STAKING_REWARD_ACCOUNT.accountID(), STAKING_REWARD_ACCOUNT.account()),
+                        "ALIASES",
+                        Collections.emptyMap()));
         storeFactory = new ReadableStoreFactory(fakeHederaState);
-        workflow = new PreHandleWorkflowImpl(dispatcher, transactionChecker, signatureVerifier, signatureExpander);
+
+        final var config =
+                new VersionedConfigImpl(new HederaTestConfigBuilder(false).getOrCreateConfig(), DEFAULT_CONFIG_VERSION);
+        when(configProvider.getConfiguration()).thenReturn(config);
+
+        workflow = new PreHandleWorkflowImpl(
+                dispatcher,
+                transactionChecker,
+                signatureVerifier,
+                signatureExpander,
+                configProvider,
+                deduplicationCache);
     }
 
     /** Null arguments are not permitted to the constructor. */
@@ -125,14 +149,28 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     @DisplayName("Null constructor args throw NPE")
     @SuppressWarnings("DataFlowIssue") // Suppress the warning about null args
     void nullConstructorArgsTest() {
-        assertThatThrownBy(
-                        () -> new PreHandleWorkflowImpl(null, transactionChecker, signatureVerifier, signatureExpander))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        null,
+                        transactionChecker,
+                        signatureVerifier,
+                        signatureExpander,
+                        configProvider,
+                        deduplicationCache))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(dispatcher, null, signatureVerifier, signatureExpander))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        dispatcher, null, signatureVerifier, signatureExpander, configProvider, deduplicationCache))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(dispatcher, transactionChecker, null, signatureExpander))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        dispatcher, transactionChecker, null, signatureExpander, configProvider, deduplicationCache))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(dispatcher, transactionChecker, signatureVerifier, null))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        dispatcher, transactionChecker, signatureVerifier, null, configProvider, deduplicationCache))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        dispatcher, transactionChecker, signatureVerifier, signatureExpander, null, deduplicationCache))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(
+                        dispatcher, transactionChecker, signatureVerifier, signatureExpander, configProvider, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -289,7 +327,6 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         @Test
         @DisplayName("Fail pre-handle because the payer account cannot be found")
         void preHandlePayerAccountNotFound() throws PreCheckException {
-            // TODO This test failed at least once
             // Given a transactionID that refers to an account that does not exist
             // (Erin doesn't exist yet)
             final var txInfo = scenario().withPayer(FRANK.accountID()).txInfo();
@@ -304,6 +341,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final PreHandleResult result1 = platformTx.getMetadata();
             assertThat(result1.responseCode()).isEqualTo(PAYER_ACCOUNT_NOT_FOUND);
             assertThat(result1.payer()).isEqualTo(NODE_1.nodeAccountID());
+            // But we do see this transaction registered with the deduplication cache
+            verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
         }
 
         /**
@@ -339,6 +378,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(future).isNotNull();
             final var result = future.get(1, TimeUnit.MILLISECONDS);
             assertThat(result.passed()).isFalse();
+            // And we do see this transaction registered with the deduplication cache
+            verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
         }
     }
 
@@ -375,6 +416,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final PreHandleResult result = platformTx.getMetadata();
             assertThat(result.responseCode()).isEqualTo(INVALID_ACCOUNT_AMOUNTS);
             assertThat(result.payer()).isEqualTo(ALICE.accountID());
+            // And we do see this transaction registered with the deduplication cache
+            verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
         }
 
         /**
@@ -398,6 +441,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final PreHandleResult result = platformTx.getMetadata();
             assertThat(result.responseCode()).isEqualTo(UNKNOWN);
             assertThat(result.payer()).isNull();
+            // And we do see this transaction registered with the deduplication cache
+            verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
         }
 
         /**
@@ -448,6 +493,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(nonPayerFuture).isNotNull();
             final var nonPayerFutureResult = nonPayerFuture.get(1, TimeUnit.MILLISECONDS);
             assertThat(nonPayerFutureResult.passed()).isFalse();
+            // And we do see this transaction registered with the deduplication cache
+            verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
         }
     }
 
@@ -486,6 +533,9 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(payerFutureResult.passed()).isTrue();
             assertThat(result.txInfo()).isNotNull();
             assertThat(result.txInfo()).isSameAs(txInfo);
+            assertThat(result.configVersion()).isEqualTo(DEFAULT_CONFIG_VERSION);
+            // And we do see this transaction registered with the deduplication cache
+            verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
         }
 
         @Test
@@ -520,6 +570,9 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(payerFutureResult.key()).isEqualTo(finalizedKey);
             assertThat(result.txInfo()).isNotNull();
             assertThat(result.txInfo()).isSameAs(txInfo);
+            assertThat(result.configVersion()).isEqualTo(DEFAULT_CONFIG_VERSION);
+            // And we do see this transaction registered with the deduplication cache
+            verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
         }
 
         @Test
@@ -572,6 +625,9 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             assertThat(nonPayerResult.key()).isEqualTo(finalizedKey);
             assertThat(result.txInfo()).isNotNull();
             assertThat(result.txInfo()).isSameAs(txInfo);
+            assertThat(result.configVersion()).isEqualTo(DEFAULT_CONFIG_VERSION);
+            // And we do see this transaction registered with the deduplication cache
+            verify(deduplicationCache).add(txInfo.txBody().transactionIDOrThrow());
         }
     }
 }
