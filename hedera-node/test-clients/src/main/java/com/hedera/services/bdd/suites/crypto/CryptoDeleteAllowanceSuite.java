@@ -82,8 +82,65 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
             exceedsTransactionLimit(),
             succeedsWhenTokenPausedFrozenKycRevoked(),
             feesAsExpected(),
-            duplicateEntriesDoesntThrow()
+            duplicateEntriesDoesntThrow(),
+            canDeleteAllowanceForDeletedSpender()
         });
+    }
+
+    private HapiSpec canDeleteAllowanceForDeletedSpender() {
+        final String owner = "owner";
+        final String spender = "spender";
+        final String nft = "nft";
+        return defaultHapiSpec("canDeleteAllowanceForDeletedSpender")
+                .given(
+                        newKeyNamed("supplyKey"),
+                        cryptoCreate(owner).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                        cryptoCreate(spender).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY)
+                                .balance(100 * ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(10)
+                                .payingWith(GENESIS),
+                        tokenCreate(nft)
+                                .maxSupply(10L)
+                                .initialSupply(0)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey("supplyKey")
+                                .treasury(TOKEN_TREASURY)
+                                .payingWith(GENESIS),
+                        tokenAssociate(owner, nft),
+                        mintToken(
+                                        nft,
+                                        List.of(
+                                                ByteString.copyFromUtf8("a"),
+                                                ByteString.copyFromUtf8("b"),
+                                                ByteString.copyFromUtf8("c")))
+                                .via("nftTokenMint")
+                                .payingWith(GENESIS),
+                        cryptoTransfer(movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, owner))
+                                .payingWith(GENESIS))
+                .when(
+                        cryptoApproveAllowance()
+                                .payingWith(owner)
+                                .addNftAllowance(owner, nft, spender, true, List.of(3L))
+                                .via("otherAdjustTxn"),
+                        getAccountDetails(owner)
+                                .payingWith(GENESIS)
+                                .has(accountDetailsWith().nftApprovedForAllAllowancesCount(1)),
+                        getTokenNftInfo(nft, 3L).hasSpenderID(spender))
+                .then(
+                        cryptoDelete(spender),
+                        cryptoDeleteAllowance()
+                                .payingWith(owner)
+                                .addNftDeleteAllowance(owner, nft, List.of(3L))
+                                .blankMemo()
+                                .via("cryptoDeleteAllowanceTxn")
+                                .logged(),
+                        getTxnRecord("cryptoDeleteAllowanceTxn").logged(),
+                        getAccountDetails(owner)
+                                .payingWith(GENESIS)
+                                .has(accountDetailsWith().nftApprovedForAllAllowancesCount(1)),
+                        getTokenNftInfo(nft, 3L).hasNoSpender());
     }
 
     private HapiSpec duplicateEntriesDoesntThrow() {

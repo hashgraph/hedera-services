@@ -77,8 +77,7 @@ import java.time.Duration;
  *                                                        Both. Use this with caution.
  * @param databaseDirectory                               the directory where preconsensus events will be stored,
  *                                                        relative to
- *                                                        {@link
- *                                                        com.swirlds.platform.state.StateSettings#savedStateDirectory}.
+ *                                                        {@link com.swirlds.common.config.StateConfig#savedStateDirectory()}.
  * @param recycleBinDirectory                             the directory where invalid preconsensus event files will be
  *                                                        moved if a discontinuity is detected
  * @param enableStorage                                   if true, then stream preconsensus events to files on disk. If

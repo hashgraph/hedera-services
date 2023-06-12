@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -30,12 +31,10 @@ import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.store.TypedTokenStore;
-import com.hedera.node.app.service.mono.store.models.TokenRelationship;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 import java.util.ArrayList;

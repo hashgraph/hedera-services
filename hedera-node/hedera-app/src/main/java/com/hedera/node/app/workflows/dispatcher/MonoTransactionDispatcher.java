@@ -256,4 +256,9 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
         // If token can't be created, due to the usage of a price regime, throw an exception
         validateTrue(usageLimits.areCreatableTokens(1), MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
     }
+
+    private void dispatchTokenDeletion(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.tokenDeleteHandler();
+        handler.handle(handleContext);
+    }
 }
