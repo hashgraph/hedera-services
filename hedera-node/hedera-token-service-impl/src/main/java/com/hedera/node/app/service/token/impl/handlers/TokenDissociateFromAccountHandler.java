@@ -214,7 +214,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         // Construct the dissociation for each token ID
         final var dissociations = new ArrayList<Dissociation>();
         for (final var tokenId : tokenIds) {
-            final var tokenRel = tokenRelStore.get(accountId, tokenId).orElse(null);
+            final var tokenRel = tokenRelStore.get(accountId, tokenId);
             validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
             // Here we check/retrieve a token that may not be "usable," but since we are dissociating token relations,
@@ -226,8 +226,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                 final var tokenTreasuryAcct = AccountID.newBuilder()
                         .accountNum(possiblyUnusableToken.treasuryAccountNumber())
                         .build();
-                dissociatedTokenTreasuryRel =
-                        tokenRelStore.get(tokenTreasuryAcct, tokenId).orElse(null);
+                dissociatedTokenTreasuryRel = tokenRelStore.get(tokenTreasuryAcct, tokenId);
             } else {
                 // If the token isn't found, assume the treasury token rel is null
                 dissociatedTokenTreasuryRel = null;

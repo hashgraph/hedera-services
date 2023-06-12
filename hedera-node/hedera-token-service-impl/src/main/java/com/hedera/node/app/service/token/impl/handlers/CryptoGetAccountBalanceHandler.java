@@ -47,7 +47,6 @@ import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -134,7 +133,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         final var ret = new ArrayList<TokenBalance>();
         var tokenNum = account.headTokenNumber();
         int count = 0;
-        Optional<TokenRelation> tokenRelation;
+        TokenRelation tokenRelation;
         Token token; // token from readableToken store by tokenID
         TokenID tokenID; // build from tokenNum
         AccountID accountID; // build from accountNumber
@@ -144,17 +143,17 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
                     AccountID.newBuilder().accountNum(account.accountNumber()).build();
             tokenID = TokenID.newBuilder().tokenNum(tokenNum).build();
             tokenRelation = tokenRelationStore.get(accountID, tokenID);
-            if (tokenRelation.isPresent()) {
+            if (tokenRelation != null) {
                 token = readableTokenStore.get(tokenID);
                 if (token != null) {
                     tokenBalance = TokenBalance.newBuilder()
                             .tokenId(TokenID.newBuilder().tokenNum(tokenNum).build())
-                            .balance(tokenRelation.get().balance())
+                            .balance(tokenRelation.balance())
                             .decimals(token.decimals())
                             .build();
                     ret.add(tokenBalance);
                 }
-                tokenNum = tokenRelation.get().nextToken();
+                tokenNum = tokenRelation.nextToken();
             } else {
                 break;
             }
