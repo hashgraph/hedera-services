@@ -19,6 +19,7 @@ package com.hedera.node.app.service.networkadmin.impl.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.when;
 
@@ -54,26 +55,34 @@ class WritableSpecialFileStoreTest {
 
     @Test
     void testPreparedUpdateFileID() {
-        AtomicReference<Long> backingStore = new AtomicReference<>(null);
+        final AtomicReference<Long> backingStore = new AtomicReference<>(null);
         when(writableStates.getSingleton(FreezeServiceImpl.UPGRADE_FILEID_KEY))
                 .then(invocation -> new WritableSingletonStateBase<>(
                         FreezeServiceImpl.UPGRADE_FILEID_KEY, backingStore::get, backingStore::set));
 
         final WritableSpecialFileStore store = new WritableSpecialFileStore(writableStates);
-        store.updateFileID(FileID.newBuilder().fileNum(42L).build());
 
+        // test with no file ID set
+        assertTrue(store.updateFileID().isEmpty());
+
+        // test with file ID set
+        store.updateFileID(FileID.newBuilder().fileNum(42L).build());
         assertEquals(42L, store.updateFileID().get().fileNum());
     }
 
     @Test
     void testPreparedUpdateFileHash() {
-        AtomicReference<Bytes> backingStore = new AtomicReference<>(null);
+        final AtomicReference<Bytes> backingStore = new AtomicReference<>(null);
         when(writableStates.getSingleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY))
                 .then(invocation -> new WritableSingletonStateBase<>(
                         FreezeServiceImpl.UPGRADE_FILE_HASH_KEY, backingStore::get, backingStore::set));
         final WritableSpecialFileStore store = new WritableSpecialFileStore(writableStates);
-        store.updateFileHash(Bytes.wrap("test hash"));
 
+        // test with no file hash set
+        assertTrue(store.updateFileHash().isEmpty());
+
+        // test with file hash set
+        store.updateFileHash(Bytes.wrap("test hash"));
         assertEquals(Bytes.wrap("test hash"), store.updateFileHash().get());
     }
 }
