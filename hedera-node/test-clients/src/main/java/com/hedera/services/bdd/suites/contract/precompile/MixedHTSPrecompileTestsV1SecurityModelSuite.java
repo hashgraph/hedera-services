@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
@@ -36,8 +36,11 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
+import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -56,8 +59,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class MixedHTSPrecompileTestsSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(MixedHTSPrecompileTestsSuite.class);
+public class MixedHTSPrecompileTestsV1SecurityModelSuite extends HapiSuite {
+    private static final Logger log = LogManager.getLogger(MixedHTSPrecompileTestsV1SecurityModelSuite.class);
 
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final long TOTAL_SUPPLY = 1_000;
@@ -70,12 +73,12 @@ public class MixedHTSPrecompileTestsSuite extends HapiSuite {
     private static final String EXPLICIT_CREATE_RESULT = "Explicit create result is {}";
 
     public static void main(String... args) {
-        new MixedHTSPrecompileTestsSuite().runSuiteAsync();
+        new MixedHTSPrecompileTestsV1SecurityModelSuite().runSuiteSync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return true;
+        return false;
     }
 
     @Override
@@ -91,8 +94,10 @@ public class MixedHTSPrecompileTestsSuite extends HapiSuite {
         final var outerContract = "AssociateTryCatch";
         final var nestedContract = "CalledContract";
 
-        return defaultHapiSpec("hscsPrec021TryCatchConstructOnlyRollsBackTheFailedPrecompile")
+        return propertyPreservingHapiSpec("hscsPrec021TryCatchConstructOnlyRollsBackTheFailedPrecompile")
+                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(token)
@@ -144,8 +149,10 @@ public class MixedHTSPrecompileTestsSuite extends HapiSuite {
         final var TREASURY_KEY = "treasuryKey";
         final var RECIPIENT_KEY = "recipientKey";
         final var SECOND_RECIPIENT_KEY = "secondRecipientKey";
-        return defaultHapiSpec("createTokenWithFixedFeeThenTransferAndAssessFee")
+        return propertyPreservingHapiSpec("createTokenWithFixedFeeThenTransferAndAssessFee")
+                .preserving(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS)
                 .given(
+                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(FEE_COLLECTOR_KEY),
                         newKeyNamed(TREASURY_KEY),

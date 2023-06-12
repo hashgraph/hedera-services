@@ -21,21 +21,31 @@ import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
 import com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite;
 import com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite;
+import com.hedera.services.bdd.suites.leaky.LeakySecurityModelV1Suite;
 import com.hedera.services.bdd.suites.regression.TargetNetworkPrep;
 import com.hedera.services.bdd.suites.throttling.PrivilegedOpsSuite;
 import java.util.function.Supplier;
+import org.apache.commons.lang3.ArrayUtils;
 
 public class SequentialSuites {
-    @SuppressWarnings("unchecked")
     static Supplier<HapiSuite>[] all() {
+        return ArrayUtils.addAll(globalPrerequisiteSuites(), sequentialSuites());
+    }
+
+    @SuppressWarnings("unchecked")
+    static Supplier<HapiSuite>[] globalPrerequisiteSuites() {
+        return (Supplier<HapiSuite>[]) new Supplier[] {TargetNetworkPrep::new, FeatureFlagSuite::new};
+    }
+
+    @SuppressWarnings("unchecked")
+    static Supplier<HapiSuite>[] sequentialSuites() {
         return (Supplier<HapiSuite>[]) new Supplier[] {
-            TargetNetworkPrep::new,
-            FeatureFlagSuite::new,
             SpecialAccountsAreExempted::new,
             PrivilegedOpsSuite::new,
             TraceabilitySuite::new,
             LeakyContractTestsSuite::new,
             LeakyCryptoTestsSuite::new,
+            LeakySecurityModelV1Suite::new,
             Create2OperationSuite::new,
         };
     }

@@ -60,6 +60,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustInclude;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
+import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
@@ -87,7 +88,6 @@ import org.apache.logging.log4j.Logger;
 public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractKeysStillWorkAsExpectedSuite.class);
     private static final String EVM_ALIAS_ENABLED_PROP = "cryptoCreateWithAliasAndEvmAddress.enabled";
-    public static final String CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS = "contracts.maxNumWithHapiSigsAccess";
 
     public static void main(String... args) {
         new ContractKeysStillWorkAsExpectedSuite().runSuiteSync();
