@@ -101,4 +101,13 @@ public class WritableNftStore extends ReadableNftStoreImpl {
     public Set<UniqueTokenId> modifiedNfts() {
         return nftState.modifiedKeys();
     }
+
+    /**
+     * Removes the {@link Nft} with the given serial number
+     *
+     * @param serialNum - the serial number of the NFT to remove
+     */
+    public void remove(final UniqueTokenId serialNum) {
+        nftState.remove(serialNum);
+    }
 }
