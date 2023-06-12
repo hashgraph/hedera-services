@@ -19,6 +19,8 @@ package com.swirlds.platform.reconnect;
 import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
@@ -29,7 +31,6 @@ import com.swirlds.logging.payloads.ReconnectFinishPayload;
 import com.swirlds.logging.payloads.ReconnectStartPayload;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -182,12 +183,13 @@ public class ReconnectTeacher {
                         selfId.id(),
                         otherId.id(),
                         lastRoundReceived));
+        final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
         logger.info(
                 RECONNECT.getMarker(),
                 "The following state will be sent to the learner:\n{}\n{}",
                 () -> signedState.getState().getPlatformState().getInfoString(),
                 () -> new MerkleTreeVisualizer(signedState.getState())
-                        .setDepth(StateSettings.getDebugHashDepth())
+                        .setDepth(stateConfig.debugHashDepth())
                         .render());
     }
 

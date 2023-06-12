@@ -51,6 +51,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.internal.ApplicationDefinition;
+import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
@@ -83,7 +84,7 @@ import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
@@ -228,9 +229,10 @@ public class Browser {
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(OSHealthCheckConfig.class)
                 .withConfigDataType(WiringConfig.class)
-                .withConfigDataType(PreConsensusEventStreamConfig.class)
+                .withConfigDataType(PreconsensusEventStreamConfig.class)
                 .withConfigDataType(SyncConfig.class)
-                .withConfigDataType(UptimeConfig.class);
+                .withConfigDataType(UptimeConfig.class)
+                .withConfigDataType(RecycleBinConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
@@ -284,9 +286,6 @@ public class Browser {
                     .setTransactionMaxBytes(value));
             configurationProperties.ipTos().ifPresent(ipTos -> Settings.getInstance()
                     .setSocketIpTos(ipTos));
-            configurationProperties
-                    .saveStatePeriod()
-                    .ifPresent(value -> Settings.getInstance().getState().saveStatePeriod = value);
 
             // Write the settingsUsed.txt file
             writeSettingsUsed(configuration);
@@ -690,7 +689,8 @@ public class Browser {
                         appVersion,
                         appMain::newState,
                         loadedSignedState,
-                        emergencyRecoveryManager);
+                        emergencyRecoveryManager,
+                        softwareUpgrade);
                 platforms.add(platform);
 
                 new InfoMember(infoSwirld, instanceNumber, platform);
@@ -755,7 +755,7 @@ public class Browser {
             return savedStateLoader.getSavedStateToLoad();
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Signed state not loaded from disk:", e);
-            if (Settings.getInstance().isRequireStateLoad()) {
+            if (configuration.getConfigData(StateConfig.class).requireStateLoad()) {
                 exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED);
             }
         }

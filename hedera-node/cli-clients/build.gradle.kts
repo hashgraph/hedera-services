@@ -15,25 +15,25 @@
  */
 
 plugins {
-  id("com.hedera.hashgraph.conventions")
-  id("com.hedera.hashgraph.shadow-jar")
+    id("com.hedera.hashgraph.conventions")
+    id("com.hedera.hashgraph.shadow-jar")
 }
 
 description = "Hedera Services Command-Line Clients"
 
 configurations.all {
-  exclude("javax.annotation", "javax.annotation.api")
-  exclude("com.google.code.findbugs", "jsr305")
-  exclude("org.jetbrains", "annotations")
-  exclude("org.checkerframework", "checker-qual")
-  exclude("org.hamcrest", "hamcrest-core")
+    exclude("javax.annotation", "javax.annotation.api")
+    exclude("com.google.code.findbugs", "jsr305")
+    exclude("org.jetbrains", "annotations")
+    exclude("org.checkerframework", "checker-qual")
+    exclude("org.hamcrest", "hamcrest-core")
 }
 
 dependencies {
-  javaModuleDependencies {
-    testImplementation(gav("org.junit.jupiter.api"))
-    testImplementation(gav("org.mockito"))
-    testImplementation(gav("org.mockito.junit.jupiter"))
-    testRuntimeOnly(gav("org.mockito.inline"))
-  }
+    javaModuleDependencies {
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.mockito"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+        testRuntimeOnly(gav("org.mockito.inline"))
+    }
 }

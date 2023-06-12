@@ -20,8 +20,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.Settings;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,7 +34,8 @@ import java.time.Instant;
  */
 public record EmergencyRecoveryFile(@NonNull Recovery recovery) {
     private static final String OUTPUT_FILENAME = "emergencyRecovery.yaml";
-    private static final String INPUT_FILENAME = Settings.getInstance().getEmergencyRecoveryStateFileName();
+    private static final String INPUT_FILENAME =
+            ConfigurationHolder.getConfigData(StateConfig.class).emergencyStateFileName();
 
     /**
      * Creates a new emergency recovery file with data about a state being written to disk in normal operation.

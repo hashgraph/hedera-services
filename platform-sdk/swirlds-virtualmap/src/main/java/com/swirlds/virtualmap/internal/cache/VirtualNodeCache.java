@@ -21,6 +21,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.FastCopyable;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.exceptions.PlatformException;
 import com.swirlds.common.io.SelfSerializable;
@@ -30,8 +31,8 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
@@ -148,11 +149,11 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     public static final Hash NULL_HASH = new Hash();
 
     /**
-     * The number of threads to use when cleaning. Can either be supplied by a system property, or
-     * will compute a default based on "percentCleanerThreads".
+     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
+     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
+     * holder will have been configured by the time this static initializer runs.
      */
-    private static final int CACHE_CLEANER_THREAD_COUNT =
-            Math.max(1, VirtualMapSettingsFactory.get().getNumCleanerThreads());
+    private static final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
 
     /**
      * This thread pool contains the threads that purge unneeded key/mutation list pairs from the indexes.
@@ -161,8 +162,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     private static final Executor CLEANING_POOL = Boolean.getBoolean("syncCleaningPool")
             ? Runnable::run
             : new ThreadPoolExecutor(
-                    CACHE_CLEANER_THREAD_COUNT,
-                    CACHE_CLEANER_THREAD_COUNT,
+                    config.getNumCleanerThreads(),
+                    config.getNumCleanerThreads(),
                     60L,
                     TimeUnit.SECONDS,
                     new LinkedBlockingQueue<>(),
@@ -993,7 +994,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * Gets estimated number of dirty internal nodes in this cache.
      *
      * @return
-     * 		Estimated number of dirty internal nodes
+     *        Estimated number of dirty internal nodes
      */
     public long estimatedInternalsCount(final long firstLeafPath) {
         return (dirtyHashes == null) ? 0 : dirtyHashes.size();
