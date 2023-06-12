@@ -23,7 +23,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.state.MinGenInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
@@ -46,8 +45,7 @@ public class ConsensusSnapshot implements SelfSerializable {
     private long nextConsensusNumber;
     private Instant minConsensusTimestamp;
 
-    public ConsensusSnapshot() {
-    }
+    public ConsensusSnapshot() {}
 
     /**
      * @param round

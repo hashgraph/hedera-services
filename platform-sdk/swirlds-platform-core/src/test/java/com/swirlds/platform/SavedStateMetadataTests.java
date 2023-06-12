@@ -99,7 +99,7 @@ class SavedStateMetadataTests {
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
-				timestamp,
+                timestamp,
                 runningEventHash,
                 minimumGenerationNonAncient,
                 softwareVersion.toString(),
@@ -141,7 +141,7 @@ class SavedStateMetadataTests {
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
-				timestamp,
+                timestamp,
                 runningEventHash,
                 minimumGenerationNonAncient,
                 softwareVersion.toString(),
@@ -245,7 +245,7 @@ class SavedStateMetadataTests {
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
-				timestamp,
+                timestamp,
                 runningEventHash,
                 minimumGenerationNonAncient,
                 softwareVersion == null ? null : softwareVersion.toString(),
@@ -316,7 +316,7 @@ class SavedStateMetadataTests {
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
-				timestamp,
+                timestamp,
                 runningEventHash,
                 minimumGenerationNonAncient,
                 "why\nare\nthere\nnewlines\nhere\nplease\nstop\n",
@@ -371,7 +371,7 @@ class SavedStateMetadataTests {
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
-				timestamp,
+                timestamp,
                 runningEventHash,
                 minimumGenerationNonAncient,
                 softwareVersion.toString(),

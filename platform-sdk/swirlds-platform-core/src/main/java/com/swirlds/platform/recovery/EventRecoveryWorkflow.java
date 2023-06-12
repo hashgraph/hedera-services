@@ -354,15 +354,12 @@ public final class EventRecoveryWorkflow {
                 // .setEvents(collectEventsForRound(
                 //        roundsNonAncient, previousState.get().getEvents(), round))
                 .setConsensusTimestamp(currentRoundTimestamp)
-                .setSnapshot(
-                        new ConsensusSnapshot(
-                                round.getRoundNum(),
-                                List.of(),//TODO fake judges?
-                                getMinGenInfo(roundsNonAncient, previousState.get().getMinGenInfo(), round),
-                                getLastEvent(round).getConsensusOrder() + 1,
-                                ConsensusUtils.calcMinTimestampForNextEvent(currentRoundTimestamp)
-                        )
-                )
+                .setSnapshot(new ConsensusSnapshot(
+                        round.getRoundNum(),
+                        List.of(), // TODO fake judges?
+                        getMinGenInfo(roundsNonAncient, previousState.get().getMinGenInfo(), round),
+                        getLastEvent(round).getConsensusOrder() + 1,
+                        ConsensusUtils.calcMinTimestampForNextEvent(currentRoundTimestamp)))
                 .setCreationSoftwareVersion(previousState
                         .get()
                         .getState()
@@ -423,7 +420,7 @@ public final class EventRecoveryWorkflow {
         return getLastEvent(round).getConsensusTimestamp();
     }
 
-    static ConsensusEvent getLastEvent(final Round round){
+    static ConsensusEvent getLastEvent(final Round round) {
         final Iterator<ConsensusEvent> iterator = round.iterator();
 
         while (iterator.hasNext()) {

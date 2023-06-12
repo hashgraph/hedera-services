@@ -63,15 +63,14 @@ public final class PlatformStateUtils {
         for (int index = 0; index < 10; index++) {
             minGenInfo.add(new MinGenInfo(random.nextLong(), random.nextLong()));
         }
-        platformState.getPlatformData().setSnapshot(
-                new ConsensusSnapshot(
+        platformState
+                .getPlatformData()
+                .setSnapshot(new ConsensusSnapshot(
                         random.nextLong(),
                         List.of(randomHash(random), randomHash(random), randomHash(random)),
                         minGenInfo,
                         random.nextLong(),
-                        randomInstant(random)
-                )
-        );
+                        randomInstant(random)));
 
         return platformState;
     }

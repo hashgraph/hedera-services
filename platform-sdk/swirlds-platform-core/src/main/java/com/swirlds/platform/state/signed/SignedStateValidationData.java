@@ -37,11 +37,7 @@ import java.time.Instant;
  * 		The epoch hash from an earlier state.
  */
 public record SignedStateValidationData(
-        long round,
-        Instant consensusTimestamp,
-        Hash addressBookHash,
-        Hash consensusEventsRunningHash,
-        Hash epochHash) {
+        long round, Instant consensusTimestamp, Hash addressBookHash, Hash consensusEventsRunningHash, Hash epochHash) {
 
     public SignedStateValidationData(final PlatformData that, final AddressBook addressBook) {
         this(

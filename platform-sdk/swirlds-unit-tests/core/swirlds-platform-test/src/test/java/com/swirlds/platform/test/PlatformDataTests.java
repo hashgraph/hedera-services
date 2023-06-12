@@ -16,6 +16,14 @@
 
 package com.swirlds.platform.test;
 
+import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.RandomUtils.randomInstant;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -27,10 +35,6 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.test.framework.config.TestConfigBuilder;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -38,14 +42,9 @@ import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomHash;
-import static com.swirlds.common.test.RandomUtils.randomInstant;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 @DisplayName("PlatformData Tests")
 class PlatformDataTests {
@@ -71,15 +70,12 @@ class PlatformDataTests {
                 .setConsensusTimestamp(Instant.ofEpochSecond(random.nextInt(randomBound)))
                 .setCreationSoftwareVersion(new BasicSoftwareVersion(random.nextInt(randomBound)))
                 .setEpochHash(randomHash(random))
-                .setSnapshot(
-                        new ConsensusSnapshot(
-                                random.nextLong(),
-                                List.of(randomHash(random), randomHash(random), randomHash(random)),
-                                minGenInfo,
-                                random.nextLong(),
-                                randomInstant(random)
-                        )
-                );
+                .setSnapshot(new ConsensusSnapshot(
+                        random.nextLong(),
+                        List.of(randomHash(random), randomHash(random), randomHash(random)),
+                        minGenInfo,
+                        random.nextLong(),
+                        randomInstant(random)));
         // TODO store snapshot
     }
 
