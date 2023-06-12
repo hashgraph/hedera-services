@@ -24,9 +24,9 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
+import com.hedera.node.app.service.networkadmin.ReadableUpdateFileStore;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
-import com.hedera.node.app.service.networkadmin.impl.ReadableSpecialFileStoreImpl;
+import com.hedera.node.app.service.networkadmin.impl.ReadableUpdateFileStoreImpl;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -38,21 +38,21 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ReadableSpecialFileStoreTest {
-    private ReadableSpecialFileStore subject;
+class ReadableUpdateFileStoreTest {
+    private ReadableUpdateFileStore subject;
 
     @Mock(strictness = LENIENT)
     protected ReadableStates readableStates;
 
     @Test
     void constructorCreatesFreezeState() {
-        final ReadableSpecialFileStore store = new ReadableSpecialFileStoreImpl(readableStates);
+        final ReadableUpdateFileStore store = new ReadableUpdateFileStoreImpl(readableStates);
         assertNotNull(store);
     }
 
     @Test
     void testNullConstructorArgs() {
-        assertThrows(NullPointerException.class, () -> new ReadableSpecialFileStoreImpl(null));
+        assertThrows(NullPointerException.class, () -> new ReadableUpdateFileStoreImpl(null));
     }
 
     @Test
@@ -65,7 +65,7 @@ class ReadableSpecialFileStoreTest {
                 .build();
         when(readableStates.get(FreezeServiceImpl.UPGRADE_FILES_KEY)).then(invocation -> state);
 
-        final ReadableSpecialFileStore store = new ReadableSpecialFileStoreImpl(readableStates);
+        final ReadableUpdateFileStore store = new ReadableUpdateFileStoreImpl(readableStates);
         assertEquals(fileBytes, store.get(fileId).get());
     }
 
@@ -77,7 +77,7 @@ class ReadableSpecialFileStoreTest {
                 .build();
         when(readableStates.get(FreezeServiceImpl.UPGRADE_FILES_KEY)).then(invocation -> state);
 
-        final ReadableSpecialFileStore store = new ReadableSpecialFileStoreImpl(readableStates);
+        final ReadableUpdateFileStore store = new ReadableUpdateFileStoreImpl(readableStates);
         assertTrue(store.get(fileId).isEmpty());
     }
 
@@ -85,11 +85,11 @@ class ReadableSpecialFileStoreTest {
     void testPreparedUpdateFileID() {
         final FileID fileId = FileID.newBuilder().fileNum(42L).build();
         final AtomicReference<FileID> backingStore = new AtomicReference<>(fileId);
-        when(readableStates.getSingleton(FreezeServiceImpl.UPGRADE_FILEID_KEY))
+        when(readableStates.getSingleton(FreezeServiceImpl.UPGRADE_FILE_ID_KEY))
                 .then(invocation ->
-                        new ReadableSingletonStateBase<>(FreezeServiceImpl.UPGRADE_FILEID_KEY, backingStore::get));
+                        new ReadableSingletonStateBase<>(FreezeServiceImpl.UPGRADE_FILE_ID_KEY, backingStore::get));
 
-        final ReadableSpecialFileStore store = new ReadableSpecialFileStoreImpl(readableStates);
+        final ReadableUpdateFileStore store = new ReadableUpdateFileStoreImpl(readableStates);
 
         assertEquals(42L, store.updateFileID().get().fileNum());
     }
@@ -97,11 +97,11 @@ class ReadableSpecialFileStoreTest {
     @Test
     void testEmptyPreparedUpdateFileID() {
         final AtomicReference<FileID> backingStore = new AtomicReference<>(); // contains null
-        when(readableStates.getSingleton(FreezeServiceImpl.UPGRADE_FILEID_KEY))
+        when(readableStates.getSingleton(FreezeServiceImpl.UPGRADE_FILE_ID_KEY))
                 .then(invocation ->
-                        new ReadableSingletonStateBase<>(FreezeServiceImpl.UPGRADE_FILEID_KEY, backingStore::get));
+                        new ReadableSingletonStateBase<>(FreezeServiceImpl.UPGRADE_FILE_ID_KEY, backingStore::get));
 
-        final ReadableSpecialFileStore store = new ReadableSpecialFileStoreImpl(readableStates);
+        final ReadableUpdateFileStore store = new ReadableUpdateFileStoreImpl(readableStates);
 
         assertTrue(store.updateFileID().isEmpty());
     }
@@ -113,7 +113,7 @@ class ReadableSpecialFileStoreTest {
         when(readableStates.getSingleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY))
                 .then(invocation ->
                         new ReadableSingletonStateBase<>(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY, backingStore::get));
-        final ReadableSpecialFileStore store = new ReadableSpecialFileStoreImpl(readableStates);
+        final ReadableUpdateFileStore store = new ReadableUpdateFileStoreImpl(readableStates);
         assertEquals(Bytes.wrap("test hash"), store.updateFileHash().get());
     }
 
@@ -123,7 +123,7 @@ class ReadableSpecialFileStoreTest {
         when(readableStates.getSingleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY))
                 .then(invocation ->
                         new ReadableSingletonStateBase<>(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY, backingStore::get));
-        final ReadableSpecialFileStore store = new ReadableSpecialFileStoreImpl(readableStates);
+        final ReadableUpdateFileStore store = new ReadableUpdateFileStoreImpl(readableStates);
         assertTrue(store.updateFileHash().isEmpty());
     }
 }

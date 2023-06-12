@@ -40,8 +40,8 @@ import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
-import com.hedera.node.app.service.networkadmin.impl.WritableSpecialFileStore;
+import com.hedera.node.app.service.networkadmin.ReadableUpdateFileStore;
+import com.hedera.node.app.service.networkadmin.impl.WritableUpdateFileStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.WritableFreezeStore;
@@ -60,7 +60,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FreezeHandlerTest {
     @Mock(strictness = LENIENT)
-    WritableSpecialFileStore specialFileStore;
+    WritableUpdateFileStore specialFileStore;
 
     @Mock(strictness = LENIENT)
     private WritableFreezeStore freezeStore;
@@ -93,10 +93,10 @@ class FreezeHandlerTest {
         given(account.key()).willReturn(key);
 
         given(preHandleContext.createStore(ReadableAccountStore.class)).willReturn(accountStore);
-        given(preHandleContext.createStore(ReadableSpecialFileStore.class)).willReturn(specialFileStore);
+        given(preHandleContext.createStore(ReadableUpdateFileStore.class)).willReturn(specialFileStore);
 
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.writableStore(WritableSpecialFileStore.class)).willReturn(specialFileStore);
+        given(handleContext.writableStore(WritableUpdateFileStore.class)).willReturn(specialFileStore);
         given(handleContext.writableStore(WritableFreezeStore.class)).willReturn(freezeStore);
     }
 

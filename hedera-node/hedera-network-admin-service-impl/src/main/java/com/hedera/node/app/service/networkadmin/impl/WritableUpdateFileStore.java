@@ -32,21 +32,21 @@ import java.util.Optional;
  */
 // This is a temporary location for this class. It will be moved to FileService.
 // @todo('Issue #6856')
-public class WritableSpecialFileStore extends ReadableSpecialFileStoreImpl {
+public class WritableUpdateFileStore extends ReadableUpdateFileStoreImpl {
     /** The underlying data storage class that holds the update file number. */
     private final WritableSingletonState<FileID> updateFileID;
     /** The underlying data storage class that holds the update file hash. */
     private final WritableSingletonState<Bytes> updateFileHash;
 
     /**
-     * Create a new {@link WritableSpecialFileStore} instance.
+     * Create a new {@link WritableUpdateFileStore} instance.
      *
      * @param states The state to use.
      */
-    public WritableSpecialFileStore(@NonNull final WritableStates states) {
+    public WritableUpdateFileStore(@NonNull final WritableStates states) {
         super(states);
         requireNonNull(states);
-        updateFileID = states.getSingleton(FreezeServiceImpl.UPGRADE_FILEID_KEY);
+        updateFileID = states.getSingleton(FreezeServiceImpl.UPGRADE_FILE_ID_KEY);
         updateFileHash = states.getSingleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY);
     }
 

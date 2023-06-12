@@ -30,8 +30,8 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
-import com.hedera.node.app.service.networkadmin.impl.WritableSpecialFileStore;
+import com.hedera.node.app.service.networkadmin.ReadableUpdateFileStore;
+import com.hedera.node.app.service.networkadmin.impl.WritableUpdateFileStore;
 import com.hedera.node.app.service.networkadmin.impl.config.NetworkAdminServiceConfig;
 import com.hedera.node.app.spi.state.WritableFreezeStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -85,7 +85,7 @@ public class FreezeHandler implements TransactionHandler {
             verifyFreezeStartTimeIsInFuture(freezeTxn, txValidStart);
         }
         if (Arrays.asList(FREEZE_UPGRADE, TELEMETRY_UPGRADE, PREPARE_UPGRADE).contains(freezeType)) {
-            final ReadableSpecialFileStore specialFileStore = context.createStore(ReadableSpecialFileStore.class);
+            final ReadableUpdateFileStore specialFileStore = context.createStore(ReadableUpdateFileStore.class);
             verifyUpdateFileAndHash(freezeTxn, specialFileStore);
         }
 
@@ -124,7 +124,7 @@ public class FreezeHandler implements TransactionHandler {
         final var txn = context.body();
         final NetworkAdminServiceConfig adminServiceConfig =
                 context.configuration().getConfigData(NetworkAdminServiceConfig.class);
-        final WritableSpecialFileStore specialFileStore = context.writableStore(WritableSpecialFileStore.class);
+        final WritableUpdateFileStore specialFileStore = context.writableStore(WritableUpdateFileStore.class);
         final WritableFreezeStore freezeStore = context.writableStore(WritableFreezeStore.class);
 
         final FreezeTransactionBody freezeTxn = txn.freezeOrThrow();
@@ -172,7 +172,7 @@ public class FreezeHandler implements TransactionHandler {
      */
     private static void validateSemantics(
             @NonNull final FreezeTransactionBody freezeTxn,
-            @NonNull final ReadableSpecialFileStore specialFileStore,
+            @NonNull final ReadableUpdateFileStore specialFileStore,
             @Nullable final FileID updateFileID) {
         requireNonNull(freezeTxn);
         requireNonNull(specialFileStore);
@@ -219,7 +219,7 @@ public class FreezeHandler implements TransactionHandler {
      * @throws PreCheckException if updateFile or fileHash are not set or don't pass sanity checks
      */
     private static void verifyUpdateFileAndHash(
-            final @NonNull FreezeTransactionBody freezeTxn, final @NonNull ReadableSpecialFileStore specialFileStore)
+            final @NonNull FreezeTransactionBody freezeTxn, final @NonNull ReadableUpdateFileStore specialFileStore)
             throws PreCheckException {
         requireNonNull(freezeTxn);
         requireNonNull(specialFileStore);

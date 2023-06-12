@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.networkadmin.FreezeService;
-import com.hedera.node.app.service.networkadmin.impl.WritableSpecialFileStore;
+import com.hedera.node.app.service.networkadmin.impl.WritableUpdateFileStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -52,7 +52,7 @@ public class WritableStoreFactory {
                     WritableTokenStore.class, WritableTokenStore::new,
                     WritableTokenRelationStore.class, WritableTokenRelationStore::new),
             FreezeService.NAME,
-            Map.of(WritableSpecialFileStore.class, WritableSpecialFileStore::new));
+            Map.of(WritableUpdateFileStore.class, WritableUpdateFileStore::new));
 
     private final Map<Class<?>, Function<WritableStates, ?>> storeFactories;
     private final WritableStates states;
