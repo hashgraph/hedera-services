@@ -81,10 +81,7 @@ public class CustomFeesValidator {
 
             switch (fee.fee().kind()) {
                 case FIXED_FEE -> validateFixedFeeForCreation(tokenType, fee, createdToken, tokenRelationStore, tokenStore, fees);
-                case FRACTIONAL_FEE -> {
-                    validateTrue(isFungibleCommon(tokenType), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
-                    fees.add(fee);
-                }
+                case FRACTIONAL_FEE -> validateTrue(isFungibleCommon(tokenType), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
                 case ROYALTY_FEE -> validateRoyaltyFeeForCreation(tokenType, fee, tokenRelationStore, tokenStore);
                 default -> throw new IllegalStateException("Unexpected value: " + fee.fee().kind());
             }
@@ -205,11 +202,12 @@ public class CustomFeesValidator {
                                              @NonNull final Token createdToken,
                                              @NonNull final ReadableTokenRelationStore tokenRelationStore,
                                              @NonNull final WritableTokenStore tokenStore,
-                                             @NonNull final Set<CustomFee> fees){
+                                             @NonNull final Set<CustomFee> feesWithCollectorsToAutoAssociate){
         final var fixedFee = fee.fixedFeeOrThrow();
         if (fixedFee.hasDenominatingTokenId()) {
             // If the denominating token id is set to sentinel value 0.0.0, then the fee is
             // denominated in the same token as the token being created.
+            // For these fees the collector should be auto-associated to the token.
             if (fixedFee.denominatingTokenIdOrThrow().tokenNum() == 0L) {
                 validateTrue(
                         isFungibleCommon(tokenType),
@@ -220,7 +218,7 @@ public class CustomFeesValidator {
                                         .tokenNum(createdToken.tokenNumber())
                                         .build()))
                         .build();
-                fees.add(fee);
+                feesWithCollectorsToAutoAssociate.add(fee);
             } else {
                 validateExplicitTokenDenomination(
                         fee.feeCollectorAccountId(),

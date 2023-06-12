@@ -117,18 +117,19 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var tokenRelationStore = context.writableStore(WritableTokenRelationStore.class);
 
         // validate fields in the transaction body that involves checking with
-        // dynamic properties or state. Also validate custom fees
+        // dynamic properties or state.
         final var resolvedExpiryMeta = validateSemantics(context, accountStore,  op, config);
         // build a new token
         final var newTokenId = context.newEntityNum();
         final var newToken = buildToken(newTokenId, op, resolvedExpiryMeta);
 
         // validate custom fees and get back list of fees with created token denomination
-        final var requireCollectorAutoAssociation = customFeesValidator.validateForCreation(
+        final var feesSetNeedingCollectorAutoAssociation = customFeesValidator.validateForCreation(
                 newToken, accountStore, tokenRelationStore, tokenStore, op.customFeesOrElse(emptyList()));
         // associate token with treasury and collector ids of custom fees whose token denomination
         // is set to sentinel value
-        final var newRels = associateAccounts(newToken, accountStore, tokenRelationStore, requireCollectorAutoAssociation);
+        final var newRels = associateAccounts(newToken, accountStore, tokenRelationStore,
+                feesSetNeedingCollectorAutoAssociation);
 
         if(op.initialSupply() > 0){
             final var treasuryRel = newRels.get(0);
