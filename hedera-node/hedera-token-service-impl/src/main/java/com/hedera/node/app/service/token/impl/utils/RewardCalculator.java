@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.demo.consistency;
+package com.hedera.node.app.service.token.impl.utils;
 
-import com.swirlds.config.api.ConfigData;
-import com.swirlds.config.api.ConfigProperty;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
-/**
- * Config for consistency testing tool
- *
- * @param logfileDirectory the directory where consistency information is stored, relative to
- * {@link com.swirlds.common.config.StateConfig#savedStateDirectory()}.
- */
-@ConfigData("consistencyTestingTool")
-public record ConsistencyTestingToolConfig(
-        @ConfigProperty(defaultValue = "consistency-test") String logfileDirectory) {}
+public interface RewardCalculator {
+    // those are functions from mono RewardCalculator
+    long epochSecondAtStartOfPeriod(final long stakePeriod);
+
+    long estimatePendingRewards(final Account account, @Nullable final StakingNodeInfo stakingNodeInfo);
+}
