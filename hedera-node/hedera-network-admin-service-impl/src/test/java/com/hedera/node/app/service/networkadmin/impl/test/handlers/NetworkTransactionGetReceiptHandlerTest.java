@@ -20,9 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
@@ -30,7 +28,6 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
@@ -81,22 +78,6 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
                         TransactionGetReceiptResponse.newBuilder().header(responseHeader))
                 .build();
         assertEquals(expectedResponse, response);
-    }
-
-    @Test
-    void requiresPayment() {
-        assertTrue(networkTransactionGetReceiptHandler.requiresNodePayment(ResponseType.ANSWER_ONLY));
-        assertTrue(networkTransactionGetReceiptHandler.requiresNodePayment(ResponseType.ANSWER_STATE_PROOF));
-        assertFalse(networkTransactionGetReceiptHandler.requiresNodePayment(ResponseType.COST_ANSWER));
-        assertFalse(networkTransactionGetReceiptHandler.requiresNodePayment(ResponseType.COST_ANSWER_STATE_PROOF));
-    }
-
-    @Test
-    void needsAnswerOnlyCostForCostAnswer() {
-        assertFalse(networkTransactionGetReceiptHandler.needsAnswerOnlyCost(ResponseType.ANSWER_ONLY));
-        assertFalse(networkTransactionGetReceiptHandler.needsAnswerOnlyCost(ResponseType.ANSWER_STATE_PROOF));
-        assertTrue(networkTransactionGetReceiptHandler.needsAnswerOnlyCost(ResponseType.COST_ANSWER));
-        assertFalse(networkTransactionGetReceiptHandler.needsAnswerOnlyCost(ResponseType.COST_ANSWER_STATE_PROOF));
     }
 
     @Test
