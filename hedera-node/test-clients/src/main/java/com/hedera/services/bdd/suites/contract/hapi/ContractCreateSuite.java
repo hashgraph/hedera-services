@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -51,7 +50,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -78,7 +76,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -102,7 +99,6 @@ public class ContractCreateSuite extends HapiSuite {
     private static final String PAYER = "payer";
     private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
     private static final long GAS_TO_OFFER = 300_000L;
-    private static final String CONTRACTS_NONCES_EXTERNALIZATION_ENABLED = "contracts.nonces.externalization.enabled";
 
     public static void main(String... args) {
         new ContractCreateSuite().runSuiteAsync();
@@ -129,9 +125,7 @@ public class ContractCreateSuite extends HapiSuite {
                 vanillaSuccess(),
                 blockTimestampChangesWithinFewSeconds(),
                 contractWithAutoRenewNeedSignatures(),
-                createContractWithStakingFields(),
-                contractCreateNoncesExternalizationHappyPath(),
-                contractCreateFollowedByContractCallNoncesExternalization());
+                createContractWithStakingFields());
     }
 
     @Override
@@ -620,55 +614,6 @@ public class ContractCreateSuite extends HapiSuite {
                                 .logged())
                 .when()
                 .then();
-    }
-
-    private HapiSpec contractCreateNoncesExternalizationHappyPath() {
-        final var contract = "NoncesExternalization";
-        final var contractCreateTxn = "contractCreateTxn";
-
-        return defaultHapiSpec("ContractCreateNoncesExternalizationHappyPath")
-                .given(
-                        overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
-                        uploadInitCode(contract),
-                        contractCreate(contract).via(contractCreateTxn))
-                .when()
-                .then(withOpContext((spec, opLog) -> {
-                    HapiGetTxnRecord op = getTxnRecord(contractCreateTxn)
-                            .hasPriority(recordWith()
-                                    .contractCreateResult(resultWith()
-                                            .contractWithNonce(spec.registry().getContractId(contract), 4L)));
-                    allRunFor(spec, op);
-                }));
-    }
-
-    private HapiSpec contractCreateFollowedByContractCallNoncesExternalization() {
-        final var contract = "NoncesExternalization";
-        final var payer = "payer";
-        final var deployParentContract = "deployParentContract";
-
-        final var deployContractTxn = "deployContractTxn";
-
-        return propertyPreservingHapiSpec("contractCreateFollowedByContractCallNoncesExternalization")
-                .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
-                .given(
-                        overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
-                        cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        contractCall(contract, deployParentContract)
-                                .payingWith(payer)
-                                .via(deployContractTxn)
-                                .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(SUCCESS))))
-                .then(withOpContext((spec, opLog) -> {
-                    HapiGetTxnRecord op = getTxnRecord(deployContractTxn)
-                            .hasPriority(recordWith()
-                                    .contractCallResult(resultWith()
-                                            .contractWithNonce(spec.registry().getContractId(contract), 5L)));
-                    allRunFor(spec, op);
-                }));
     }
 
     @Override
