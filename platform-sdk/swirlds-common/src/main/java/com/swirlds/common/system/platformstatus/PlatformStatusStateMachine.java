@@ -100,12 +100,18 @@ public class PlatformStatusStateMachine {
             return;
         }
 
-        final String statusChangeMessage = "Platform status changed after %s"
-                .formatted(Duration.between(currentStatusLogic.getStatusStartTime(), time.now()));
+        final String previousStatusName = currentStatusLogic.getStatus().name();
+        final String newStatusName = newStatus.name();
 
-        logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                        statusChangeMessage, currentStatusLogic.getStatus().name(), newStatus.name())
-                .toString());
+        final String statusChangeMessage = "Platform spent %s time in %s. Now in %s"
+                .formatted(
+                        Duration.between(currentStatusLogic.getStatusStartTime(), time.now()),
+                        previousStatusName,
+                        newStatusName);
+
+        logger.info(
+                PLATFORM_STATUS.getMarker(),
+                () -> new PlatformStatusPayload(statusChangeMessage, previousStatusName, newStatusName).toString());
 
         notificationEngine.dispatch(
                 PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newStatus));
