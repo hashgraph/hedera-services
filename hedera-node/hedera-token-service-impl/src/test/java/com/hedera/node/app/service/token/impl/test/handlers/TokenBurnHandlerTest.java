@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
@@ -510,6 +511,29 @@ class TokenBurnHandlerTest extends ParityTestBase {
             Assertions.assertThatThrownBy(() -> subject.handle(context))
                     .isInstanceOf(HandleException.class)
                     .has(responseCode(INVALID_NFT_ID));
+        }
+
+        @Test
+        void nftSerialNumsEmpty() {
+            mockConfig();
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .totalSupply(10)
+                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .balance(10)
+                    .build());
+            final var txn = newBurnTxn(TOKEN_123, 0);
+            final var context = mockContext(txn);
+
+            Assertions.assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INVALID_TOKEN_BURN_METADATA));
         }
 
         @Test

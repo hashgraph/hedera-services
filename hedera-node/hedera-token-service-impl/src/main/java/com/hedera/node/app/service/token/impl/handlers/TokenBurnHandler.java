@@ -127,6 +127,8 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
                     tokenStore,
                     tokenRelStore);
         } else {
+            validateTrue(!nftSerialNums.isEmpty(), INVALID_TOKEN_BURN_METADATA);
+
             // Load and validate the nfts
             for (final Long nftSerial : nftSerialNums) {
                 final var nft = nftStore.get(tokenId, nftSerial);
@@ -157,7 +159,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
             @NonNull final List<Long> nftSerialNums,
             final ReadableTokenStore tokenStore,
             final ReadableTokenRelationStore tokenRelStore) {
-        validateTrue(fungibleBurnCount > -1, INVALID_TOKEN_BURN_AMOUNT);
+        validateTrue(fungibleBurnCount >= 0, INVALID_TOKEN_BURN_AMOUNT);
 
         validator.validateBurn(fungibleBurnCount, nftSerialNums);
 
