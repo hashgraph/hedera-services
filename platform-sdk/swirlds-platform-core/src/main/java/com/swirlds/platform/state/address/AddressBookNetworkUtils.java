@@ -42,7 +42,6 @@ public final class AddressBookNetworkUtils {
      *
      * @param address the address to check
      * @return true if the address is local to the machine, false otherwise
-     * @throws IllegalStateException if there is an error while checking if the address is local.
      */
     public static boolean isLocal(@NonNull final Address address) {
         Objects.requireNonNull(address, "The address must not be null.");
