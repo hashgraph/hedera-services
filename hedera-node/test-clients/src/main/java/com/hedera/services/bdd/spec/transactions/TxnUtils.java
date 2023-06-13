@@ -55,6 +55,7 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
+import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -612,7 +613,9 @@ public class TxnUtils {
     }
 
     public static String bytecodePath(final String contractName) {
-        return String.format("src/main/resource/contract/contracts/%s/%s.bin", contractName, contractName);
+        // TODO: Quick fix for https://github.com/hashgraph/hedera-services/issues/6821, a better solution
+        // will be provided when the issue is resolved
+        return Utils.getResourcePath(contractName, ".bin");
     }
 
     public static ByteString literalInitcodeFor(final String contract) {
