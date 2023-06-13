@@ -111,7 +111,7 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
             } else {
                 response.header(ResponseHeader.newBuilder()
                         .nodeTransactionPrecheckCode(INVALID_TOKEN_ID)
-                        .cost(0)); // from mono service, need to validate in the future
+                        .cost(0)); // FUTURE: from mono service, check in EET
             }
         }
 

@@ -159,7 +159,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
             } else {
                 response.header(ResponseHeader.newBuilder()
                         .nodeTransactionPrecheckCode(FAIL_INVALID)
-                        .cost(0)); // from mono service, need to validate in the future
+                        .cost(0)); // FUTURE: from mono service, check in EET
             }
         }
 
