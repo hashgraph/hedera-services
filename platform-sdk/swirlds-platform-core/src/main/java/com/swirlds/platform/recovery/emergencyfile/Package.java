@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.demo.consistency;
+package com.swirlds.platform.recovery.emergencyfile;
 
-import com.swirlds.config.api.ConfigData;
-import com.swirlds.config.api.ConfigProperty;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
- * Config for consistency testing tool
- *
- * @param logfileDirectory the directory where consistency information is stored, relative to
- * {@link com.swirlds.common.config.StateConfig#savedStateDirectory()}.
+ * Information about where to find the emergency recovery package
+ * @param locations the locations of the package
  */
-@ConfigData("consistencyTestingTool")
-public record ConsistencyTestingToolConfig(
-        @ConfigProperty(defaultValue = "consistency-test") String logfileDirectory) {}
+public record Package(@NonNull List<Location> locations) {}
