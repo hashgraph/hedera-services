@@ -36,59 +36,59 @@ includeBuild(".") // https://github.com/gradlex-org/java-module-dependencies/iss
 
 include(":hedera-node")
 
-include(":node-app-service-network-admin", "hedera-network-admin-service")
+include(":app", "hedera-app")
 
-include(":node-app-service-network-admin-impl", "hedera-network-admin-service-impl")
+include(":app-hapi-fees", "hapi-fees")
 
-include(":node-app-service-consensus", "hedera-consensus-service")
+include(":app-hapi-utils", "hapi-utils")
 
-include(":node-app-service-consensus-impl", "hedera-consensus-service-impl")
+include(":app-service-consensus", "hedera-consensus-service")
 
-include(":node-app-service-file", "hedera-file-service")
+include(":app-service-consensus-impl", "hedera-consensus-service-impl")
 
-include(":node-app-service-file-impl", "hedera-file-service-impl")
+include(":app-service-contract", "hedera-smart-contract-service")
 
-include(":node-app-service-schedule", "hedera-schedule-service")
+include(":app-service-contract-impl", "hedera-smart-contract-service-impl")
 
-include(":node-app-service-schedule-impl", "hedera-schedule-service-impl")
+include(":app-service-evm", "hedera-evm")
 
-include(":node-app-service-contract", "hedera-smart-contract-service")
+include(":app-service-evm-impl", "hedera-evm-impl")
 
-include(":node-app-service-contract-impl", "hedera-smart-contract-service-impl")
+include(":app-service-file", "hedera-file-service")
 
-include(":node-app-service-token", "hedera-token-service")
+include(":app-service-file-impl", "hedera-file-service-impl")
 
-include(":node-app-service-token-impl", "hedera-token-service-impl")
+include(":app-service-mono", "hedera-mono-service")
 
-include(":node-app-service-util", "hedera-util-service")
+include(":app-service-network-admin", "hedera-network-admin-service")
 
-include(":node-app-service-util-impl", "hedera-util-service-impl")
+include(":app-service-network-admin-impl", "hedera-network-admin-service-impl")
 
-include(":node-app-hapi-utils", "hapi-utils")
+include(":app-service-schedule", "hedera-schedule-service")
 
-include(":node-app-hapi-fees", "hapi-fees")
+include(":app-service-schedule-impl", "hedera-schedule-service-impl")
 
-include(":node-hapi", "hapi")
+include(":app-service-token", "hedera-token-service")
 
-include(":node-config", "hedera-config")
+include(":app-service-token-impl", "hedera-token-service-impl")
 
-include(":node-app", "hedera-app")
+include(":app-service-util", "hedera-util-service")
 
-include(":node-app-spi", "hedera-app-spi")
+include(":app-service-util-impl", "hedera-util-service-impl")
 
-include(":node-app-service-evm", "hedera-evm")
+include(":app-spi", "hedera-app-spi")
 
-include(":node-app-service-evm-impl", "hedera-evm-impl")
+include(":config", "hedera-config")
 
-include(":node-app-service-mono", "hedera-mono-service")
+include(":hapi", "hapi")
 
-include(":node-services-cli", "cli-clients")
+include(":services-cli", "cli-clients")
 
-include(":hedera-node:test-clients")
+include(":test-clients", "test-clients")
 
 fun include(name: String, path: String) {
-    include(":hedera-node$name")
-    project(":hedera-node$name").projectDir = File(rootDir, "hedera-node/$path")
+    include(name)
+    project(name).projectDir = File(rootDir, "hedera-node/$path")
 }
 
 // Enable Gradle Build Scan
