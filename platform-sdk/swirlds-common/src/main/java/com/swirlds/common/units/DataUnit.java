@@ -17,7 +17,6 @@
 package com.swirlds.common.units;
 
 import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
-import static com.swirlds.common.units.UnitConstants.KILOBYTES_TO_BYTES;
 
 import com.swirlds.common.units.internal.UnitConverter;
 
@@ -27,7 +26,7 @@ import com.swirlds.common.units.internal.UnitConverter;
 public enum DataUnit implements Unit<DataUnit> {
     UNIT_BITS(1, "bit", "b"),
     UNIT_BYTES(BYTES_TO_BITS, "byte", "B"),
-    UNIT_KILOBYTES(KILOBYTES_TO_BYTES, "kilobyte", "KB"),
+    UNIT_KILOBYTES(1024, "kilobyte", "KB"),
     UNIT_MEGABYTES(1024, "megabyte", "MB"),
     UNIT_GIGABYTES(1024, "gigabyte", "GB"),
     UNIT_TERABYTES(1024, "terabyte", "TB"),
