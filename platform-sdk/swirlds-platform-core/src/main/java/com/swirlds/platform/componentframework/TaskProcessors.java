@@ -20,6 +20,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class TaskProcessors {
 	private static final Set<String> IGNORED_METHODS = Set.of("getProcessingMethods");
 	private final Map<Class<? extends TaskProcessor>, ProcessorParts> parts;
+	private boolean started = false;
 
 	public TaskProcessors(final List<Class<? extends TaskProcessor>> taskProcessorDefs) {
 		Objects.requireNonNull(taskProcessorDefs);
@@ -69,6 +70,7 @@ public class TaskProcessors {
 	}
 
 	public <T extends TaskProcessor> void addImplementation(final T implementation) {
+		throwIfStarted();
 		Objects.requireNonNull(implementation);
 		parts.values()
 				.stream()
@@ -89,6 +91,7 @@ public class TaskProcessors {
 	}
 
 	public <T extends TaskProcessor> void addImplementation(T component, Class<T> componentClass) {
+		throwIfStarted();
 		Objects.requireNonNull(component);
 		Objects.requireNonNull(componentClass);
 		parts.get(componentClass).setImplementation(component);
@@ -102,6 +105,7 @@ public class TaskProcessors {
 
 	@SuppressWarnings("unchecked")
 	public void start() {
+		throwIfStarted();
 		parts.values().stream().filter(p -> p.getImplementation() == null).forEach(p -> {
 			throw new IllegalStateException(String.format(
 					"TaskProcessor %s has no implementation set",
@@ -126,13 +130,28 @@ public class TaskProcessors {
 							.build(true);
 			processorParts.setQueueThread(queueThread);
 		}
+		started = true;
 	}
 
 	public QueueThread<?> getQueueThread(final Class<? extends TaskProcessor> processorClass) {
+		throwIfNotStarted();
 		return parts.get(processorClass).getQueueThread();
 	}
 
 	public void stop() {
+		throwIfNotStarted();
 		parts.values().forEach(p -> p.getQueueThread().stop());
+	}
+
+	private void throwIfStarted() {
+		if (started) {
+			throw new IllegalStateException("Cannot perform this operation after starting");
+		}
+	}
+
+	public void throwIfNotStarted() {
+		if (!started) {
+			throw new IllegalStateException("Cannot perform this operation before starting");
+		}
 	}
 }

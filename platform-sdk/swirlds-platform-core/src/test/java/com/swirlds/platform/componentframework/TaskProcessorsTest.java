@@ -1,17 +1,17 @@
 package com.swirlds.platform.componentframework;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@Timeout(10)
 class TaskProcessorsTest {
 
 	@ParameterizedTest
