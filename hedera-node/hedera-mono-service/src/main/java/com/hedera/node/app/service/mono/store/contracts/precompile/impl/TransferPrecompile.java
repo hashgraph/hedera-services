@@ -250,15 +250,19 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final Map<ByteString, EntityNum> completedLazyCreates = new HashMap<>();
         for (int i = 0, n = changes.size(); i < n; i++) {
             final var change = changes.get(i);
-            validateFalseOrRevert(isSystemAccountDetected(change), CONTRACT_REVERT_EXECUTED);
 
             final var units = change.getAggregatedUnits();
+            final var isDebit = units < 0;
+            final var isCredit = units > 0;
+
+            //check whether the balance change is negative e.g. for "from" field, if not validate the "to" field.
+            if(isCredit && !change.isForCustomFee()){
+                validateFalseOrRevert(isSystemAccountDetected(change), CONTRACT_REVERT_EXECUTED);
+            }
+
             if (change.hasAlias()) {
                 replaceAliasWithId(change, changes, completedLazyCreates);
             }
-
-            final var isDebit = units < 0;
-            final var isCredit = units > 0;
 
             if (change.isForCustomFee() && isDebit) {
                 if (change.includesFallbackFee())
@@ -842,7 +846,10 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     private boolean isSystemAccountDetected(final BalanceChange change) {
-        final var address = change.getAccount().asEvmAddress();
-        return address.numberOfLeadingZeroBytes() >= 18 && Integer.compareUnsigned(address.getInt(16), 750) <= 0;
+        final var accountNum = change.counterPartyAccountId() != null ?
+                change.counterPartyAccountId().getAccountNum() :
+                change.getAccount().num();
+
+        return accountNum != 0 && accountNum <= 750;
     }
 }

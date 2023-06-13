@@ -75,12 +75,12 @@ public class HTSTestsUtil {
     public static final long TEST_CONSENSUS_TIME = 1_640_000_000L; // Monday, December 20, 2021 11:33:20 AM UTC
     public static final TokenID token = IdUtils.asToken("0.0.1");
     public static final AccountID payer = IdUtils.asAccount("0.0.12345");
-    public static final AccountID sender = IdUtils.asAccount("0.0.2");
+    public static final AccountID sender = IdUtils.asAccount("0.0.2345");
     public static final EntityId payerId = EntityId.fromGrpcAccountId(payer);
     public static final EntityId senderId = EntityId.fromGrpcAccountId(sender);
     public static final Address payerIdConvertedToAddress = EntityIdUtils.asTypedEvmAddress(payerId);
     public static final Address senderIdConvertedToAddress = EntityIdUtils.asTypedEvmAddress(senderId);
-    public static final AccountID receiver = IdUtils.asAccount("0.0.3");
+    public static final AccountID receiver = IdUtils.asAccount("0.0.920");
     public static final AccountID receiverAliased = AccountID.newBuilder()
             .setAlias(ByteStringUtils.wrapUnsafely(new byte[20]))
             .build();
@@ -88,7 +88,7 @@ public class HTSTestsUtil {
             .setAlias(ByteStringUtils.wrapUnsafely(
                     new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}))
             .build();
-    public static final AccountID feeCollector = IdUtils.asAccount("0.0.4");
+    public static final AccountID feeCollector = IdUtils.asAccount("0.0.4456");
     public static final AccountID account = IdUtils.asAccount("0.0.3");
     public static final AccountID accountMerkleId = IdUtils.asAccount("0.0.999");
     public static final ContractID precompiledContract = IdUtils.asContract("0.0.359");
