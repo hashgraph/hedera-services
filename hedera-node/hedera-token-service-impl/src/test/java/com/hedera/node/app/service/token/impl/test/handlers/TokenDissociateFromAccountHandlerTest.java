@@ -39,10 +39,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -61,6 +61,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccoun
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -71,8 +72,18 @@ import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private ExpiryValidator expiryValidator;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private HandleContext handleContext;
+
     private static final AccountID ACCOUNT_1339 =
             AccountID.newBuilder().accountNum(MISC_ACCOUNT.getAccountNum()).build();
     private static final AccountID ACCOUNT_2020 = IdConvenienceUtils.fromAccountNum(2020);
@@ -178,7 +189,8 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             final var txn = newDissociateTxn(
                     AccountID.newBuilder().accountNum(accountNumber).build(), List.of(TOKEN_555_ID));
             given(context.body()).willReturn(txn);
-
+            given(expiryValidator.expirationStatus(eq(EntityType.ACCOUNT), eq(true), anyLong()))
+                    .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
             Assertions.assertThatThrownBy(() -> subject.handle(context))
                     .isInstanceOf(HandleException.class)
                     .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
@@ -578,9 +590,6 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
     }
 
     private HandleContext mockContext() {
-        final var handleContext = mock(HandleContext.class);
-
-        final var expiryValidator = mock(ExpiryValidator.class);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
                 .willReturn(ResponseCodeEnum.OK);

@@ -327,12 +327,13 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
         final var fixesFeeWithSelfDenomination = fixedFee.copyBuilder()
                 .denominatingTokenId(TokenID.newBuilder().tokenNum(0).build())
                 .build();
+        final var expectedFeeWithNewToken =
+                fixedFee.copyBuilder().denominatingTokenId(fungibleTokenId).build();
         final var fees = List.of(withFixedFee(fixesFeeWithSelfDenomination), withFractionalFee(fractionalFee));
         final var requireAutoAssociation = subject.validateForCreation(
                 fungibleToken, readableAccountStore, readableTokenRelStore, writableTokenStore, fees);
         assertThat(requireAutoAssociation).hasSize(1);
-        assertThat(requireAutoAssociation.contains(withFixedFee(fixesFeeWithSelfDenomination)))
-                .isTrue();
+        assertThat(requireAutoAssociation).contains(withFixedFee(expectedFeeWithNewToken));
     }
 
     @Test

@@ -33,9 +33,6 @@ package com.hedera.node.app.service.token.impl.util;
  */
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
@@ -46,6 +43,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
@@ -82,21 +80,18 @@ public class TokenHandlerHelper {
     public static Account getIfUsable(
             @NonNull final AccountID accountId,
             @NonNull final ReadableAccountStore accountStore,
-            @NonNull final ExpiryValidator expiryValidator) {
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final ResponseCodeEnum errorIfNotUsable) {
         requireNonNull(accountId);
         requireNonNull(accountStore);
         requireNonNull(expiryValidator);
+        requireNonNull(errorIfNotUsable);
 
         final var acct = accountStore.getAccountById(accountId);
-        validateTrue(acct != null, INVALID_ACCOUNT_ID);
+        validateTrue(acct != null, errorIfNotUsable);
         validateFalse(acct.deleted(), ACCOUNT_DELETED);
-        final var isSmartContract = acct.smartContract();
-        validateFalse(
-                acct.expiredAndPendingRemoval(),
-                isSmartContract ? CONTRACT_EXPIRED_AND_PENDING_REMOVAL : ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-
         final var expiryStatus = expiryValidator.expirationStatus(
-                isSmartContract ? EntityType.CONTRACT : EntityType.ACCOUNT, false, acct.tinybarBalance());
+                EntityType.ACCOUNT, acct.expiredAndPendingRemoval(), acct.tinybarBalance());
         validateTrue(expiryStatus == OK, expiryStatus);
 
         return acct;

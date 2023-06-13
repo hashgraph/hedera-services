@@ -236,7 +236,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableTokenRelStore.get(payerId, newTokenId)).isNotNull();
         final var feeCollectorRel = writableTokenRelStore.get(payerId, newTokenId);
 
-        assertThat(feeCollectorRel.balance()).isEqualTo(0L);
+        assertThat(feeCollectorRel.balance()).isZero();
         assertThat(feeCollectorRel.deleted()).isFalse();
         assertThat(feeCollectorRel.tokenNumber()).isEqualTo(newTokenId.tokenNum());
         assertThat(feeCollectorRel.accountNumber()).isEqualTo(payerId.accountNum());

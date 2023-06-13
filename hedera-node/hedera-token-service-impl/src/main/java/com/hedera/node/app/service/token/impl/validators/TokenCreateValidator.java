@@ -37,6 +37,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenSupplyType;
@@ -46,6 +47,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.EntitiesConfig;
@@ -72,6 +74,7 @@ public class TokenCreateValidator {
      * @throws PreCheckException if any of the validations fail
      */
     public void pureChecks(@NonNull final TokenCreateTransactionBody op) throws PreCheckException {
+        requireNonNull(op);
         final var initialSupply = op.initialSupply();
         final var maxSupply = op.maxSupply();
         final var decimals = op.decimals();
@@ -100,12 +103,15 @@ public class TokenCreateValidator {
      * @param config tokens config
      */
     public void validate(
-            final HandleContext context,
-            final ReadableAccountStore accountStore,
-            final TokenCreateTransactionBody op,
-            final TokensConfig config) {
-        final var treasury = accountStore.getAccountById(op.treasuryOrElse(AccountID.DEFAULT));
-        validateTrue(treasury != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+            @NonNull final HandleContext context,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final TokenCreateTransactionBody op,
+            @NonNull final TokensConfig config) {
+        TokenHandlerHelper.getIfUsable(
+                op.treasuryOrElse(AccountID.DEFAULT),
+                accountStore,
+                context.expiryValidator(),
+                INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
         final var nftsAreEnabled = config.nftsAreEnabled();
         if (op.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
@@ -136,7 +142,7 @@ public class TokenCreateValidator {
      * @param decimals decimals
      * @throws PreCheckException if validation fails
      */
-    private void validateTokenType(final TokenType type, final long initialSupply, final int decimals)
+    private void validateTokenType(@NonNull final TokenType type, final long initialSupply, final int decimals)
             throws PreCheckException {
         validateTruePreCheck(type == FUNGIBLE_COMMON || type == NON_FUNGIBLE_UNIQUE, NOT_SUPPORTED);
         if (type == FUNGIBLE_COMMON) {

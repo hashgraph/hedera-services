@@ -171,10 +171,10 @@ public class CustomFeesValidator {
      * @param tokenStore The token store.
      */
     private void validateExplicitTokenDenomination(
-            final AccountID feeCollectorNum,
-            final TokenID tokenNum,
-            final ReadableTokenRelationStore tokenRelationStore,
-            final WritableTokenStore tokenStore) {
+            @NonNull final AccountID feeCollectorNum,
+            @NonNull final TokenID tokenNum,
+            @NonNull final ReadableTokenRelationStore tokenRelationStore,
+            @NonNull final WritableTokenStore tokenStore) {
         final var denomToken = tokenStore.get(tokenNum);
         validateTrue(denomToken != null, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
         validateTrue(isFungibleCommon(denomToken.tokenType()), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
@@ -227,7 +227,7 @@ public class CustomFeesValidator {
     }
 
     private void validateRoyaltyFeeForCreation(
-            final TokenType tokenType,
+            @NonNull final TokenType tokenType,
             @NonNull final CustomFee fee,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final WritableTokenStore tokenStore) {

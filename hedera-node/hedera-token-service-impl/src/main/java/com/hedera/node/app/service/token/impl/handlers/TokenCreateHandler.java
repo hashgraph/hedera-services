@@ -254,6 +254,11 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final TokenCreateTransactionBody op,
             @NonNull final TokensConfig config) {
+        requireNonNull(context);
+        requireNonNull(accountStore);
+        requireNonNull(op);
+        requireNonNull(config);
+
         // validate different token create fields
         tokenCreateValidator.validate(context, accountStore, op, config);
 
@@ -266,8 +271,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             final var id = AccountID.newBuilder()
                     .accountNum(resolvedExpiryMeta.autoRenewNum())
                     .build();
-            final var autoRenewAccount = TokenHandlerHelper.getIfUsable(id, accountStore, context.expiryValidator());
-            validateTrue(autoRenewAccount != null, INVALID_AUTORENEW_ACCOUNT);
+            TokenHandlerHelper.getIfUsable(id, accountStore, context.expiryValidator(), INVALID_AUTORENEW_ACCOUNT);
         }
         return resolvedExpiryMeta;
     }

@@ -209,7 +209,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
             @NonNull final WritableTokenRelationStore tokenRelStore,
             @NonNull final ExpiryValidator expiryValidator) {
         // Check that the account is usable
-        final var acct = TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator);
+        final var acct = TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
 
         // Construct the dissociation for each token ID
         final var dissociations = new ArrayList<Dissociation>();
