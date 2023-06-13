@@ -30,6 +30,7 @@ import static com.hedera.hapi.node.base.TokenPauseStatus.PAUSE_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenPauseStatus.UNPAUSED;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -83,12 +84,10 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
         final var query = context.query();
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var op = query.tokenGetInfoOrThrow();
-        if (op.hasToken()) {
-            final var token = tokenStore.get(requireNonNull(op.token()));
-            validateFalsePreCheck(token == null || token.deleted(), INVALID_TOKEN_ID);
-        } else {
-            throw new PreCheckException(INVALID_TOKEN_ID);
-        }
+        validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
+
+        final var token = tokenStore.get(requireNonNull(op.token()));
+        validateFalsePreCheck(token == null, INVALID_TOKEN_ID);
     }
 
     @Override
@@ -165,9 +164,11 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
             if (!isEmpty(token.feeScheduleKey())) {
                 info.feeScheduleKey(token.feeScheduleKey());
             }
-            info.autoRenewPeriod(Duration.newBuilder().seconds(token.autoRenewSecs()));
-            if (token.autoRenewAccountNumber() != 0)
+
+            if (token.autoRenewAccountNumber() != 0) {
                 info.autoRenewAccount(AccountID.newBuilder().accountNum(token.autoRenewAccountNumber()));
+                info.autoRenewPeriod(Duration.newBuilder().seconds(token.autoRenewSecs()));
+            }
 
             if (!isEmpty(token.freezeKey())) {
                 info.freezeKey(token.freezeKey());

@@ -56,7 +56,6 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetInfoHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.converter.BytesConverter;
@@ -72,11 +71,6 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock(strictness = LENIENT)
     private QueryContext context;
-
-    @Mock
-    private Token token1, token2, token3;
-    @Mock
-    private ReadableStates readableStates1, readableStates2, readableStates3;
 
     private TokenGetInfoHandler subject;
 
@@ -137,24 +131,6 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
         final var store = new ReadableTokenStoreImpl(readableStates);
 
         final var query = createEmptyTokenGetInfoQuery();
-        when(context.query()).thenReturn(query);
-        when(context.createStore(ReadableTokenStore.class)).thenReturn(store);
-
-        assertThatThrownBy(() -> subject.validate(context))
-                .isInstanceOf(PreCheckException.class)
-                .has(responseCode(ResponseCodeEnum.INVALID_TOKEN_ID));
-    }
-
-    @Test
-    void validatesQueryIfDeletedToken() {
-        fungibleToken = fungibleToken.copyBuilder().deleted(true).build();
-        final var state = MapReadableKVState.<EntityNum, Token>builder(TOKENS)
-                .value(fungibleTokenNum, fungibleToken)
-                .build();
-        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(state);
-        final var store = new ReadableTokenStoreImpl(readableStates);
-
-        final var query = createTokenGetInfoQuery(fungibleTokenId);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(store);
 
