@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.files.DataFileCommon.dataLocationToString;
@@ -25,7 +26,6 @@ import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
 import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
 import static com.swirlds.merkledb.files.DataFileCommon.printDataLinkValidation;
 
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.CASableLongIndex;
@@ -206,7 +206,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         }
 
         final long END = System.currentTimeMillis();
-        final double tookSeconds = (END - START) * UnitConstants.MILLISECONDS_TO_SECONDS;
+        final double tookSeconds = (END - START) * MILLISECONDS_TO_SECONDS;
         logMergeStats(storeName, tookSeconds, filesToMerge, filesToMergeSize, newFilesCreated, fileCollection);
         logger.debug(
                 MERKLE_DB.getMarker(),
@@ -218,8 +218,9 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     }
 
     /**
-     * Puts this store compaction on hold, if in progress, until {@link #resumeMerging()} is called. If compaction is
-     * not in progress, calling this method will prevent new compactions from starting until resumed.
+     * Puts this store compaction on hold, if in progress, until {@link #resumeMerging()} is called.
+     * If compaction is not in progress, calling this method will prevent new compactions from
+     * starting until resumed.
      *
      * @throws IOException If an I/O error occurs.
      */
@@ -228,8 +229,8 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     }
 
     /**
-     * Resumes this store compaction if it was in progress, or unblocks a new compaction if it was blocked to start
-     * because of {@link #pauseMerging()}.
+     * Resumes this store compaction if it was in progress, or unblocks a new compaction if it was
+     * blocked to start because of {@link #pauseMerging()}.
      *
      * @throws IOException If an I/O error occurs.
      */
@@ -255,8 +256,9 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /**
      * Put a value into this store, you must be in a writing session started with startWriting()
      *
-     * @param key      The key to store value for
-     * @param dataItem Buffer containing the data's value, it should have its position and limit set correctly
+     * @param key The key to store value for
+     * @param dataItem Buffer containing the data's value, it should have its position and limit set
+     *     correctly
      * @throws IOException If there was a problem write key/value to the store
      */
     public void put(final long key, final D dataItem) throws IOException {

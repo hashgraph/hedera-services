@@ -107,20 +107,23 @@ public class StatsDemoMain implements SwirldMain {
     }
 
     /**
-     * Write a message to the log file. Also write it to the console, if there is one. In both cases, skip a line after
-     * writing, if newline is true. This method opens the file at the start and closes it at the end, to deconflict with
-     * any other process trying to read the same file. For example, this app could run headless on a server, and an FTP
-     * session could download the log file, and the file it received would have only complete log messages, never half a
-     * message.
+     * Write a message to the log file. Also write it to the console, if there is one. In both cases, skip a
+     * line after writing, if newline is true. This method opens the file at the start and closes it at the
+     * end, to deconflict with any other process trying to read the same file. For example, this app could
+     * run headless on a server, and an FTP session could download the log file, and the file it received
+     * would have only complete log messages, never half a message.
      * <p>
-     * The file is created if it doesn't exist. It will be named "StatsDemo0.csv", with the number incrementing for each
-     * member currently running on the local machine, if there is more than one. The location is the "current"
-     * directory. If run from a shell script, it will be the current folder that the shell script has. If run from
-     * Eclipse, it will be at the top of the project folder. If there is a console, it prints the location there. If
-     * not, it can be found by searching the file system for "StatsDemo0.csv".
+     * The file is created if it doesn't exist. It will be named "StatsDemo0.csv", with the number
+     * incrementing for each member currently running on the local machine, if there is more than one. The
+     * location is the "current" directory. If run from a shell script, it will be the current folder that
+     * the shell script has. If run from Eclipse, it will be at the top of the project folder. If there is a
+     * console, it prints the location there. If not, it can be found by searching the file system for
+     * "StatsDemo0.csv".
      *
-     * @param message the String to write
-     * @param newline true if a new line should be started after this one
+     * @param message
+     * 		the String to write
+     * @param newline
+     * 		true if a new line should be started after this one
      */
     private void write(String message, boolean newline) {
         path = System.getProperty("user.dir") + File.separator + "StatsDemo" + selfId + ".csv";
@@ -154,7 +157,8 @@ public class StatsDemoMain implements SwirldMain {
     /**
      * Same as writeToConsolAndFile, except it does not start a new line after it.
      *
-     * @param message the String to write
+     * @param message
+     * 		the String to write
      */
     private void write(String message) {
         write(message, false);

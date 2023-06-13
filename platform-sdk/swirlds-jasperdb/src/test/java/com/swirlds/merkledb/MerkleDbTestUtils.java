@@ -16,6 +16,8 @@
 
 package com.swirlds.merkledb;
 
+import static com.swirlds.common.units.UnitConstants.BYTES_TO_MEBIBYTES;
+import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,7 +33,6 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
@@ -65,7 +66,7 @@ public class MerkleDbTestUtils {
      * The amount of direct memory used by JVM and caches. This needs to be big enough to allow for variations in test
      * runs while being small enough to catch leaks in tests.
      */
-    private static final long DIRECT_MEMORY_BASE_USAGE = 4 * UnitConstants.MEBIBYTES_TO_BYTES;
+    private static final long DIRECT_MEMORY_BASE_USAGE = 4 * MEBIBYTES_TO_BYTES;
 
     /**
      * Run a callable test in the background and then make sure no direct memory is leaked and not databases are left
@@ -90,9 +91,9 @@ public class MerkleDbTestUtils {
         assertTrue(
                 checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
                 "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
-                        + (directMemoryUsedAtStart * UnitConstants.BYTES_TO_MEBIBYTES)
+                        + (directMemoryUsedAtStart * BYTES_TO_MEBIBYTES)
                         + "MB and is now "
-                        + (getDirectMemoryUsedBytes() * UnitConstants.BYTES_TO_MEBIBYTES)
+                        + (getDirectMemoryUsedBytes() * BYTES_TO_MEBIBYTES)
                         + "MB");
         // check db count
         assertEquals(0, MerkleDbDataSource.getCountOfOpenDatabases(), "Expected no open dbs");

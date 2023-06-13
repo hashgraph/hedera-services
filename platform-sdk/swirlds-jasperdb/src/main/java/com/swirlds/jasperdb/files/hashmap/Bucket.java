@@ -16,6 +16,7 @@
 
 package com.swirlds.jasperdb.files.hashmap;
 
+import static com.swirlds.common.units.UnitConstants.KIBIBYTES_TO_BYTES;
 import static com.swirlds.jasperdb.files.hashmap.HalfDiskHashMap.KEY_HASHCODE_SIZE;
 import static com.swirlds.jasperdb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
 import static com.swirlds.jasperdb.files.hashmap.HalfDiskHashMap.VALUE_SIZE;
@@ -23,7 +24,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.jasperdb.files.DataFileOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
@@ -60,7 +60,7 @@ public final class Bucket<K extends VirtualKey> {
      */
     private static final int CAPACITY_INCREMENT = 1024;
     /** We assume 8KB will be enough for now for most buckets. */
-    private static final int DEFAULT_BUCKET_BUFFER_SIZE = 8 * UnitConstants.KIBIBYTES_TO_BYTES;
+    private static final int DEFAULT_BUCKET_BUFFER_SIZE = 8 * KIBIBYTES_TO_BYTES;
 
     private static final int BUCKET_INDEX_SIZE = Integer.BYTES;
     private static final int BUCKET_SIZE_OFFSET = BUCKET_INDEX_SIZE;
@@ -202,11 +202,15 @@ public final class Bucket<K extends VirtualKey> {
     /**
      * Find a value for given key
      *
-     * @param keyHashCode   the int hash for the key
-     * @param key           the key object
-     * @param notFoundValue the long to return if the key is not found
+     * @param keyHashCode
+     * 		the int hash for the key
+     * @param key
+     * 		the key object
+     * @param notFoundValue
+     * 		the long to return if the key is not found
      * @return the stored value for given key or notFoundValue if nothing is stored for the key
-     * @throws IOException If there was a problem reading the value from file
+     * @throws IOException
+     * 		If there was a problem reading the value from file
      */
     public long findValue(final int keyHashCode, final K key, final long notFoundValue) throws IOException {
         final FindResult found = findEntryOffset(keyHashCode, key);
@@ -221,8 +225,10 @@ public final class Bucket<K extends VirtualKey> {
     /**
      * Put a key/value entry into this bucket.
      *
-     * @param key   the entry key
-     * @param value the entry value, this can also be special HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
+     * @param key
+     * 		the entry key
+     * @param value
+     * 		the entry value, this can also be special HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
      */
     public void putValue(final int keyHashCode, final K key, final long value) {
         try {
@@ -304,7 +310,8 @@ public final class Bucket<K extends VirtualKey> {
     /**
      * Fill this bucket with the data contained in the given ByteBuffer.
      *
-     * @param dataBuffer Buffer containing new data for this bucket
+     * @param dataBuffer
+     * 		Buffer containing new data for this bucket
      */
     public void putAllData(ByteBuffer dataBuffer) {
         ensureCapacity(dataBuffer.limit());
@@ -315,9 +322,11 @@ public final class Bucket<K extends VirtualKey> {
     /**
      * Write the complete data bytes for this bucket to a output stream.
      *
-     * @param outputStream The stream to write to
+     * @param outputStream
+     * 		The stream to write to
      * @return the number of bytes written
-     * @throws IOException If there was a problem writing
+     * @throws IOException
+     * 		If there was a problem writing
      */
     public int writeToOutputStream(final SerializableDataOutputStream outputStream) throws IOException {
         final int bucketSize = getSize();
@@ -345,13 +354,16 @@ public final class Bucket<K extends VirtualKey> {
     }
 
     /**
-     * Find the offset in bucket for an entry matching the given key, if not found then just return the offset for the
-     * end of all entries.
+     * Find the offset in bucket for an entry matching the given key, if not found then just return the offset for
+     * the end of all entries.
      *
-     * @param keyHashCode hash code for the key to search for
-     * @param key         the key to search for
+     * @param keyHashCode
+     * 		hash code for the key to search for
+     * @param key
+     * 		the key to search for
      * @return either true and offset for found key entry or false and offset for end of all entries in this bucket
-     * @throws IOException If there was a problem reading bucket
+     * @throws IOException
+     * 		If there was a problem reading bucket
      */
     private FindResult findEntryOffset(final int keyHashCode, final K key) throws IOException {
         final int entryCount = getBucketEntryCount();
@@ -378,7 +390,8 @@ public final class Bucket<K extends VirtualKey> {
     /**
      * Read the size of the key for an entry
      *
-     * @param entryOffset the offset to start of entry
+     * @param entryOffset
+     * 		the offset to start of entry
      * @return the size of the key in bytes
      */
     private int getKeySize(final int entryOffset) {
@@ -392,9 +405,11 @@ public final class Bucket<K extends VirtualKey> {
     /**
      * Read a key for a given entry
      *
-     * @param entryOffset the offset for the entry
+     * @param entryOffset
+     * 		the offset for the entry
      * @return The key deserialized from bucket
-     * @throws IOException If there was a problem reading or deserializing the key
+     * @throws IOException
+     * 		If there was a problem reading or deserializing the key
      */
     private K getKey(int entryOffset) throws IOException {
         bucketBuffer.position(entryOffset + Integer.BYTES);
@@ -404,7 +419,8 @@ public final class Bucket<K extends VirtualKey> {
     /**
      * Read a value for a given entry
      *
-     * @param entryOffset the offset for the entry
+     * @param entryOffset
+     * 		the offset for the entry
      * @return the value stored in given entry
      */
     private long getValue(int entryOffset) {
@@ -414,8 +430,10 @@ public final class Bucket<K extends VirtualKey> {
     /**
      * Read a value for a given entry
      *
-     * @param entryOffset the offset for the entry
-     * @param value       the value to set for entry
+     * @param entryOffset
+     * 		the offset for the entry
+     * @param value
+     * 		the value to set for entry
      */
     private void setValue(int entryOffset, long value) {
         bucketBuffer.putLong(entryOffset + ENTRY_VALUE_OFFSET, value);

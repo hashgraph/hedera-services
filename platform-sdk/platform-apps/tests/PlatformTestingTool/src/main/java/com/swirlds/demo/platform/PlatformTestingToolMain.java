@@ -30,6 +30,7 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_6_2;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static com.swirlds.logging.LogMarker.DEMO_INFO;
 import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
@@ -58,7 +59,6 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.MapValueData;
@@ -502,7 +502,8 @@ public class PlatformTestingToolMain implements SwirldMain {
     /**
      * A static function used to load PayloadCfgSimple from json configuration file
      *
-     * @param jsonFileName Top level json configuration for PTT App
+     * @param jsonFileName
+     * 		Top level json configuration for PTT App
      */
     public static PayloadCfgSimple getPayloadCfgSimple(final String jsonFileName) {
         try {
@@ -979,12 +980,13 @@ public class PlatformTestingToolMain implements SwirldMain {
     }
 
     /**
-     * Iterates on the {@link com.swirlds.virtualmap.VirtualMap} instances from the state of the given {@code platform}
-     * to compute the next id to be used by account and smart contract entities.
+     * Iterates on the {@link com.swirlds.virtualmap.VirtualMap} instances from the state
+     * of the given {@code platform} to compute the next id to be used by account and smart contract entities.
      *
-     * @param platform A {@link Platform instance}
-     * @return A pair of {@code Long}s, where {@code Pair.getKey()} returns the first id to be used by account entities
-     * and {@code Pair.getKey()} returns the first id to be used by smart contracts.
+     * @param platform
+     * 		A {@link Platform instance}
+     * @return A pair of {@code Long}s, where {@code Pair.getKey()} returns the first id to be used by
+     * 		account entities and {@code Pair.getKey()} returns the first id to be used by smart contracts.
      */
     private Pair<Long, Long> extractFirstIdForEntitiesFromSavedState(final Platform platform) {
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
@@ -1020,8 +1022,8 @@ public class PlatformTestingToolMain implements SwirldMain {
     }
 
     /**
-     * Register a {@link StateWriteToDiskCompleteListener} that writes an account balance export to the saved state
-     * folder.
+     * Register a {@link StateWriteToDiskCompleteListener} that writes an
+     * account balance export to the saved state folder.
      */
     private void registerAccountBalanceExportListener() {
         platform.getNotificationEngine().register(StateWriteToDiskCompleteListener.class, notification -> {
@@ -1201,7 +1203,7 @@ public class PlatformTestingToolMain implements SwirldMain {
      */
     private void queryInState() {
         // time in nanoseconds between successive queries
-        final long periodInNanos = UnitConstants.SECONDS_TO_NANOSECONDS / queriesSentPerSec;
+        final long periodInNanos = SECONDS_TO_NANOSECONDS / queriesSentPerSec;
 
         ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(3);
         ScheduledFuture<?> future = scheduledThreadPoolExecutor.scheduleAtFixedRate(

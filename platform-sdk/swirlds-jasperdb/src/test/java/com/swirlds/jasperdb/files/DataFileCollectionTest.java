@@ -16,6 +16,7 @@
 
 package com.swirlds.jasperdb.files;
 
+import static com.swirlds.common.units.UnitConstants.BYTES_TO_MEBIBYTES;
 import static com.swirlds.jasperdb.files.DataFileCommon.FOOTER_SIZE;
 import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
@@ -30,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.jasperdb.KeyRange;
 import com.swirlds.jasperdb.collections.CASable;
 import com.swirlds.jasperdb.collections.ImmutableIndexedObjectListUsingArray;
@@ -726,9 +726,9 @@ class DataFileCollectionTest {
         assertTrue(
                 checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
                 "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
-                        + (directMemoryUsedAtStart * UnitConstants.BYTES_TO_MEBIBYTES)
+                        + (directMemoryUsedAtStart * BYTES_TO_MEBIBYTES)
                         + "MB and is now "
-                        + (getDirectMemoryUsedBytes() * UnitConstants.BYTES_TO_MEBIBYTES)
+                        + (getDirectMemoryUsedBytes() * BYTES_TO_MEBIBYTES)
                         + "MB");
     }
 

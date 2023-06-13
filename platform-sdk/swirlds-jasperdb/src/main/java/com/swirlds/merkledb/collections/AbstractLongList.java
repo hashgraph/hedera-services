@@ -133,16 +133,17 @@ public abstract class AbstractLongList<C> implements LongList {
     protected final AtomicReferenceArray<C> chunkList;
 
     /**
-     * A length of a buffer that is reserved to remain intact after memory optimization that is happening in
-     * {@link LongList#updateValidRange}
+     * A length of a buffer that is reserved to remain intact after memory optimization that is
+     * happening in {@link LongList#updateValidRange}
      */
     protected final long reservedBufferLength;
 
     /**
-     * Construct a new LongList with the specified number of longs per chunk and maximum number of longs.
+     * Construct a new LongList with the specified number of longs per chunk and maximum number of
+     * longs.
      *
-     * @param numLongsPerChunk     number of longs to store in each chunk of memory allocated
-     * @param maxLongs             the maximum number of longs permissible for this LongList
+     * @param numLongsPerChunk number of longs to store in each chunk of memory allocated
+     * @param maxLongs the maximum number of longs permissible for this LongList
      * @param reservedBufferLength reserved buffer length that the list should have before minimal index in the list
      */
     protected AbstractLongList(final int numLongsPerChunk, final long maxLongs, final long reservedBufferLength) {
@@ -167,11 +168,11 @@ public abstract class AbstractLongList<C> implements LongList {
     }
 
     /**
-     * Read the file header from file channel, populating final fields. The file channel is stored in protected field
-     * this.fileChannel so that it can be used and closed by the caller. This is a little bit of an ugly hack but of the
-     * available other options like making the state fields non-final or reading the file twice it seemed the least
-     * offencive. The FileChannel will be positioned at the start of the data after the header at the end of this
-     * constructor.
+     * Read the file header from file channel, populating final fields. The file channel is stored
+     * in protected field this.fileChannel so that it can be used and closed by the caller. This is
+     * a little bit of an ugly hack but of the available other options like making the state fields
+     * non-final or reading the file twice it seemed the least offencive. The FileChannel will be
+     * positioned at the start of the data after the header at the end of this constructor.
      *
      * @param path File to read header from
      * @throws IOException If there was a problem reading the file
@@ -230,11 +231,10 @@ public abstract class AbstractLongList<C> implements LongList {
     }
 
     /**
-     * Initializes the list from the given file channel. At the moment of the call all the class metadata is already
-     * initialized from the file header.
-     *
+     * Initializes the list from the given file channel. At the moment of the call all the class metadata
+     * is already initialized from the file header.
      * @param sourceFileName the name of the file from which the list is initialized
-     * @param fileChannel    the file channel to read the list body from
+     * @param fileChannel the file channel to read the list body from
      * @throws IOException if there was a problem reading the file
      */
     protected abstract void readBodyFromFileChannelOnInit(String sourceFileName, FileChannel fileChannel)
@@ -242,7 +242,6 @@ public abstract class AbstractLongList<C> implements LongList {
 
     /**
      * Called when the list is initialized from an empty or absent source file.
-     *
      * @param path the path to the source file
      * @throws IOException if there was a problem reading the file
      */
@@ -282,7 +281,7 @@ public abstract class AbstractLongList<C> implements LongList {
      * @param index the index to use
      * @param value the long to store
      * @throws IndexOutOfBoundsException if the index is negative or beyond the max capacity of the list
-     * @throws IllegalArgumentException  if old value is zero (which could never be true)
+     * @throws IllegalArgumentException if old value is zero (which could never be true)
      */
     @Override
     public final void put(long index, long value) {
@@ -310,22 +309,22 @@ public abstract class AbstractLongList<C> implements LongList {
 
     /**
      * Stores a long in the list at the given chunk at subIndex.
-     *
-     * @param chunk    the chunk to use
+     * @param chunk the chunk to use
      * @param subIndex the subIndex to use
-     * @param value    the long to store
+     * @param value the long to store
      */
     protected abstract void putToChunk(C chunk, int subIndex, long value);
 
     /**
-     * Stores a long at the given index, on the condition that the current long therein has a given value.
+     * Stores a long at the given index, on the condition that the current long therein has a given
+     * value.
      *
-     * @param index    the index to use
+     * @param index the index to use
      * @param oldValue the value that must currently obtain at the index
      * @param newValue the new value to store
      * @return whether the newValue was set
      * @throws IndexOutOfBoundsException if the index is negative or beyond the max capacity of the list
-     * @throws IllegalArgumentException  if old value is zero (which could never be true)
+     * @throws IllegalArgumentException if old value is zero (which could never be true)
      */
     @Override
     public final boolean putIfEqual(long index, long oldValue, long newValue) {
@@ -351,7 +350,7 @@ public abstract class AbstractLongList<C> implements LongList {
      * Stores a long in a given chunk at a given sub index, on the condition that the current long therein has a given
      * value.
      *
-     * @param chunk    offset of the chunk to use
+     * @param chunk offset of the chunk to use
      * @param subIndex the index within the chunk to use
      * @param oldValue the value that must currently obtain at the index
      * @param newValue the new value to store
@@ -392,8 +391,8 @@ public abstract class AbstractLongList<C> implements LongList {
     }
 
     /**
-     * Create a stream over the data in this LongList. This is designed for testing and may be inconsistent under
-     * current modifications.
+     * Create a stream over the data in this LongList. This is designed for testing and may be
+     * inconsistent under current modifications.
      */
     @Override
     public LongStream stream() {
@@ -404,10 +403,11 @@ public abstract class AbstractLongList<C> implements LongList {
      * Write all longs in this LongList into a file
      * <p>
      * <b> It is not guaranteed what version of data will be written if the LongList is changed
-     * via put methods while this LongList is being written to a file. If you need consistency while calling put
-     * concurrently then use a BufferedLongListWrapper. </b>
+     * via put methods while this LongList is being written to a file. If you need consistency while
+     * calling put concurrently then use a BufferedLongListWrapper. </b>
      *
-     * @param file The file to write into, it should not exist but its parent directory should exist and be writable.
+     * @param file The file to write into, it should not exist but its parent directory should exist
+     *             and be writable.
      * @throws IOException If there was a problem creating or writing to the file.
      */
     @Override
@@ -451,8 +451,8 @@ public abstract class AbstractLongList<C> implements LongList {
     /**
      * Lookup a long in data
      *
-     * @param chunk    chunk to lookup in
-     * @param subIndex The sub index of the long in that chunk
+     * @param chunk chunk to lookup in
+     * @param subIndex   The sub index of the long in that chunk
      * @return The stored long value at given index
      */
     protected abstract long lookupInChunk(@NonNull final C chunk, final long subIndex);
@@ -504,7 +504,6 @@ public abstract class AbstractLongList<C> implements LongList {
 
     /**
      * Deletes values up to {@code newMinValidIndex} and releases memory chunks reserved for these values.
-     *
      * @param newMinValidIndex new minimal valid index, left boundary of the list
      */
     private void shrinkLeftSideIfNeeded(final long newMinValidIndex) {
@@ -536,8 +535,7 @@ public abstract class AbstractLongList<C> implements LongList {
     }
 
     /**
-     * Deletes values from {@code newMaxValidIndex} to the end of the list and releases memory chunks reserved for these
-     * values.
+     * Deletes values from {@code newMaxValidIndex} to the end of the list and releases memory chunks reserved for these values.
      *
      * @param oldMaxValidIndex old maximal valid index, former right boundary of the list
      * @param newMaxValidIndex new maximal valid index, new right boundary of the list
@@ -575,17 +573,15 @@ public abstract class AbstractLongList<C> implements LongList {
 
     /**
      * Releases a chunk that is no longer in use. Some implementation may preserve the chunk for further use.
-     *
      * @param chunk chunk to release
      */
     protected abstract void releaseChunk(@NonNull final C chunk);
 
     /**
      * Zeroes out a part of a chunk.
-     *
-     * @param chunk            index of the chunk to clean up
-     * @param leftSide         if true, cleans up {@code entriesToCleanUp} on the left side of the chunk, if false,
-     *                         cleans up {@code entriesToCleanUp} on the right side of the chunk
+     * @param chunk index of the chunk to clean up
+     * @param leftSide         if true, cleans up {@code entriesToCleanUp} on the left side of the chunk,
+     *                         if false, cleans up {@code entriesToCleanUp} on the right side of the chunk
      * @param entriesToCleanUp number of entries to clean up
      */
     protected abstract void partialChunkCleanup(
@@ -620,7 +616,7 @@ public abstract class AbstractLongList<C> implements LongList {
      * Checks if the value may be put into a LongList.
      *
      * @param value the value to check
-     * @throws IllegalArgumentException if the value is impermissible
+     * @throws IllegalArgumentException  if the value is impermissible
      */
     private void checkValue(final long value) {
         if (value == IMPERMISSIBLE_VALUE) {
@@ -641,7 +637,8 @@ public abstract class AbstractLongList<C> implements LongList {
     }
 
     /**
-     * This method returns a snapshot of the current {@link data}. FOR TEST PURPOSES ONLY. NOT THREAD SAFE
+     * This method returns a snapshot of the current {@link data}. FOR TEST PURPOSES ONLY. NOT
+     * THREAD SAFE
      *
      * @return a copy of data.
      */
@@ -669,7 +666,6 @@ public abstract class AbstractLongList<C> implements LongList {
 
     /**
      * Called when the list is closed. Subclasses may override this method to perform additional cleanup.
-     *
      * @throws IOException if an I/O error occurs
      */
     protected void onClose() throws IOException {

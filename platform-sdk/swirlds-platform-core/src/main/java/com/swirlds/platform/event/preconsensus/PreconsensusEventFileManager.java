@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.event.preconsensus;
 
+import static com.swirlds.common.units.UnitConstants.BYTES_TO_GIBIBYTES;
+import static com.swirlds.common.units.UnitConstants.BYTES_TO_MEBIBYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
@@ -23,7 +25,6 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.time.Time;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.ValueReference;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -588,11 +589,11 @@ public class PreconsensusEventFileManager {
     private void updateFileSizeMetrics() {
         metrics.getPreconsensusEventFileCount().set(files.size());
 
-        metrics.getPreconsensusEventFileTotalSizeGB().set(totalFileByteCount * UnitConstants.BYTES_TO_GIBIBYTES);
+        metrics.getPreconsensusEventFileTotalSizeGB().set(totalFileByteCount * BYTES_TO_GIBIBYTES);
 
         if (files.size() > 0) {
             metrics.getPreconsensusEventFileAverageSizeMB()
-                    .set(((double) totalFileByteCount) / files.size() * UnitConstants.BYTES_TO_MEBIBYTES);
+                    .set(((double) totalFileByteCount) / files.size() * BYTES_TO_MEBIBYTES);
         }
     }
 }

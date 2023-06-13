@@ -16,10 +16,12 @@
 
 package com.swirlds.platform.stats.simple;
 
+import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_MILLISECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
+
 import com.swirlds.common.metrics.FloatFormats;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.units.UnitConstants;
 
 /**
  * Tracks the average time taken for an operation by accumulating the time and the number of operation. The actual
@@ -46,7 +48,7 @@ public class AccumulatedAverageTime {
      * @param nanoTime the time in nanoseconds
      */
     public void add(final long nanoTime) {
-        accumulator.update((int) (nanoTime * UnitConstants.NANOSECONDS_TO_MICROSECONDS), 1);
+        accumulator.update((int) (nanoTime * NANOSECONDS_TO_MICROSECONDS), 1);
     }
 
     public double get() {
@@ -58,6 +60,6 @@ public class AccumulatedAverageTime {
             // avoid division by 0
             return 0;
         }
-        return ((double) sum) / count * UnitConstants.MICROSECONDS_TO_MILLISECONDS;
+        return ((double) sum) / count * MICROSECONDS_TO_MILLISECONDS;
     }
 }

@@ -17,6 +17,7 @@
 package com.swirlds.merkledb.files.hashmap;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
@@ -26,7 +27,6 @@ import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
@@ -85,9 +85,10 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
      */
     protected static final int VALUE_SIZE = Long.BYTES;
     /**
-     * This is the average number of entries per bucket we aim for when filled to mapSize. It is a heuristic used
-     * alongside LOADING_FACTOR in calculation for how many buckets to create. The larger this number the slower lookups
-     * will be but the more even distribution of entries across buckets will be. So it is a matter of balance.
+     * This is the average number of entries per bucket we aim for when filled to mapSize. It is a
+     * heuristic used alongside LOADING_FACTOR in calculation for how many buckets to create. The
+     * larger this number the slower lookups will be but the more even distribution of entries
+     * across buckets will be. So it is a matter of balance.
      */
     private static final long GOOD_AVERAGE_BUCKET_ENTRY_COUNT = 20;
     /** how full should all available bins be if we are at the specified map size */
@@ -95,22 +96,25 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     /** The limit on the number of concurrent read tasks in {@code endWriting()} */
     private static final int MAX_IN_FLIGHT = 64;
     /**
-     * Long list used for mapping bucketIndex(index into list) to disk location for latest copy of bucket
+     * Long list used for mapping bucketIndex(index into list) to disk location for latest copy of
+     * bucket
      */
     private final LongList bucketIndexToBucketLocation;
     /** DataFileCollection manages the files storing the buckets on disk */
     private final DataFileCollection<Bucket<K>> fileCollection;
     /**
-     * This is the number of buckets needed to store mapSize entries if we ere only LOADING_FACTOR percent full
+     * This is the number of buckets needed to store mapSize entries if we ere only LOADING_FACTOR
+     * percent full
      */
     private final int minimumBuckets;
     /**
-     * This is the next power of 2 bigger than minimumBuckets. It needs to be a power of two, so that we can optimize
-     * and avoid the cost of doing a % to find the bucket index from hash code.
+     * This is the next power of 2 bigger than minimumBuckets. It needs to be a power of two, so
+     * that we can optimize and avoid the cost of doing a % to find the bucket index from hash code.
      */
     private final int numOfBuckets;
     /**
-     * The requested max size for the map, this is the maximum number of key/values expected to be stored in this map.
+     * The requested max size for the map, this is the maximum number of key/values expected to be
+     * stored in this map.
      */
     private final long mapSize;
     /** The name to use for the files prefix on disk */
@@ -120,7 +124,8 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     /** Store for session data during a writing transaction */
     private IntObjectHashMap<BucketMutation<K>> oneTransactionsData = null;
     /**
-     * The thread that called startWriting. We use it to check that other writing calls are done on same thread
+     * The thread that called startWriting. We use it to check that other writing calls are done on
+     * same thread
      */
     private Thread writingThread;
 
@@ -140,18 +145,19 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     /**
      * Construct a new HalfDiskHashMap
      *
-     * @param mapSize                The maximum map number of entries. This should be more than big enough to avoid too
-     *                               many key collisions.
-     * @param keySerializer          Serializer for converting raw data to/from keys
-     * @param storeDir               The directory to use for storing data files.
-     * @param storeName              The name for the data store, this allows more than one data store in a single
-     *                               directory.
-     * @param legacyStoreName        Base name for the data store. If not null, the store will process files with this
-     *                               prefix at startup. New files in the store will be prefixed with {@code storeName}
-     * @param preferDiskBasedIndexes When true we will use disk based indexes rather than ram where possible. This will
-     *                               come with a significant performance cost, especially for writing. It is possible to
-     *                               load a data source that was written with memory indexes with disk based indexes and
-     *                               via versa.
+     * @param mapSize The maximum map number of entries. This should be more than big enough to
+     *     avoid too many key collisions.
+     * @param keySerializer Serializer for converting raw data to/from keys
+     * @param storeDir The directory to use for storing data files.
+     * @param storeName The name for the data store, this allows more than one data store in a
+     *     single directory.
+     * @param legacyStoreName Base name for the data store. If not null, the store will process
+     *     files with this prefix at startup. New files in the store will be prefixed with {@code
+     *     storeName}
+     * @param preferDiskBasedIndexes When true we will use disk based indexes rather than ram where
+     *     possible. This will come with a significant performance cost, especially for writing. It
+     *     is possible to load a data source that was written with memory indexes with disk based
+     *     indexes and via versa.
      * @throws IOException If there was a problem creating or opening a set of data files.
      */
     public HalfDiskHashMap(
@@ -250,11 +256,11 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     }
 
     /**
-     * Merge all read only files that match provided filter. Important the set of files must be contiguous in time
-     * otherwise the merged data will be invalid.
+     * Merge all read only files that match provided filter. Important the set of files must be
+     * contiguous in time otherwise the merged data will be invalid.
      *
      * @param filterForFilesToMerge filter to choose which subset of files to merge
-     * @throws IOException          if there was a problem merging
+     * @throws IOException if there was a problem merging
      * @throws InterruptedException If the merge thread was interupted
      */
     public void merge(
@@ -287,7 +293,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
                 formatSizeBytes(filesToMergeSize));
         final List<Path> newFilesCreated = fileCollection.compactFiles(bucketIndexToBucketLocation, filesToMerge);
         final long END = System.currentTimeMillis();
-        final double tookSeconds = (END - START) * UnitConstants.MILLISECONDS_TO_SECONDS;
+        final double tookSeconds = (END - START) * MILLISECONDS_TO_SECONDS;
         logMergeStats(storeName, tookSeconds, filesToMerge, filesToMergeSize, newFilesCreated, fileCollection);
         logger.debug(
                 MERKLE_DB.getMarker(),
@@ -299,8 +305,9 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     }
 
     /**
-     * Puts this store compaction on hold, if in progress, until {@link #resumeMerging()} is called. If compaction is
-     * not in progress, calling this method will prevent new compactions from starting until resumed.
+     * Puts this store compaction on hold, if in progress, until {@link #resumeMerging()} is called.
+     * If compaction is not in progress, calling this method will prevent new compactions from
+     * starting until resumed.
      *
      * @throws IOException If an I/O error occurs.
      */
@@ -309,8 +316,8 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     }
 
     /**
-     * Resumes this store compaction if it was in progress, or unblocks a new compaction if it was blocked to start
-     * because of {@link #pauseMerging()}.
+     * Resumes this store compaction if it was in progress, or unblocks a new compaction if it was
+     * blocked to start because of {@link #pauseMerging()}.
      *
      * @throws IOException If an I/O error occurs.
      */
@@ -346,8 +353,9 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     }
 
     /**
-     * Close this HalfDiskHashMap's data files. Once closed this HalfDiskHashMap can not be reused. You should make sure
-     * you call close before system exit otherwise any files being written might not be in a good state.
+     * Close this HalfDiskHashMap's data files. Once closed this HalfDiskHashMap can not be reused.
+     * You should make sure you call close before system exit otherwise any files being written
+     * might not be in a good state.
      *
      * @throws IOException If there was a problem closing the data files.
      */
@@ -361,8 +369,8 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     // Writing API - Single thead safe
 
     /**
-     * Start a writing session to the map. Each new writing session results in a new data file on disk, so you should
-     * ideally batch up map writes.
+     * Start a writing session to the map. Each new writing session results in a new data file on
+     * disk, so you should ideally batch up map writes.
      */
     public void startWriting() {
         oneTransactionsData = new IntObjectHashMap<>();
@@ -370,10 +378,10 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     }
 
     /**
-     * Put a key/value during the current writing session. The value will not be retrievable until it is committed in
-     * the endWriting() call.
+     * Put a key/value during the current writing session. The value will not be retrievable until
+     * it is committed in the endWriting() call.
      *
-     * @param key   the key to store the value for
+     * @param key the key to store the value for
      * @param value the value to store for given key
      */
     public void put(final K key, final long value) {
@@ -477,13 +485,13 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     }
 
     /**
-     * Reads a bucket with a given index from disk, updates given keys in it, and puts the bucket to a queue. If an
-     * exception is thrown, it's put to the queue instead, so the number of {@code ReadBucketResult} objects in the
-     * queue is consistent.
+     * Reads a bucket with a given index from disk, updates given keys in it, and puts the bucket to
+     * a queue. If an exception is thrown, it's put to the queue instead, so the number of {@code
+     * ReadBucketResult} objects in the queue is consistent.
      *
      * @param bucketIndex The bucket index
-     * @param keyUpdates  Key/value updates to apply to the bucket
-     * @param queue       The queue to put the bucket or exception to
+     * @param keyUpdates Key/value updates to apply to the bucket
+     * @param queue The queue to put the bucket or exception to
      */
     private void readUpdateQueueBucket(
             final int bucketIndex, final BucketMutation<K> keyUpdates, final Queue<ReadBucketResult<K>> queue) {
@@ -510,9 +518,10 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     /**
      * Get a value from this map
      *
-     * @param key           The key to get value for
+     * @param key The key to get value for
      * @param notFoundValue the value to return if the key was not found
-     * @return the value retrieved from the map or {notFoundValue} if no value was stored for the given key
+     * @return the value retrieved from the map or {notFoundValue} if no value was stored for the
+     *     given key
      * @throws IOException If there was a problem reading from the map
      */
     public long get(final K key, final long notFoundValue) throws IOException {
@@ -594,8 +603,8 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     // Private API
 
     /**
-     * Computes which bucket a key with the given hash falls. Depends on the fact the numOfBuckets is a power of two.
-     * Based on same calculation that is used in java HashMap.
+     * Computes which bucket a key with the given hash falls. Depends on the fact the numOfBuckets
+     * is a power of two. Based on same calculation that is used in java HashMap.
      *
      * @param keyHash the int hash for key
      * @return the index of the bucket that key falls in

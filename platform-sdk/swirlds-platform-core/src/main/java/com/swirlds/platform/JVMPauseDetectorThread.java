@@ -91,8 +91,10 @@ public class JVMPauseDetectorThread extends Thread {
         /**
          * A callback to report pause information
          *
-         * @param totalPauseMs      the total pause time in milliseconds
-         * @param allocationPauseMs the allocation pause time in milliseconds
+         * @param totalPauseMs
+         * 		the total pause time in milliseconds
+         * @param allocationPauseMs
+         * 		the allocation pause time in milliseconds
          */
         void pauseInfo(long totalPauseMs, long allocationPauseMs);
     }

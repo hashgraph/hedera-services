@@ -101,8 +101,8 @@ public class EventIntakeMetrics implements StaleEventObserver {
     }
 
     /**
-     * Update a statistics accumulator whenever this node creates an event with an other-parent that has no children.
-     * (The OP is "rescued".)
+     * Update a statistics accumulator whenever this node creates an event with
+     * an other-parent that has no children. (The OP is "rescued".)
      */
     public void rescuedEvent() {
         rescuedEventsPerSecond.cycle();
@@ -128,7 +128,8 @@ public class EventIntakeMetrics implements StaleEventObserver {
     /**
      * Update event task statistics
      *
-     * @param startTime a start time, in nanoseconds
+     * @param startTime
+     * 		a start time, in nanoseconds
      */
     public void processedEventTask(final long startTime) {
         // nanoseconds spent adding to hashgraph
@@ -138,7 +139,8 @@ public class EventIntakeMetrics implements StaleEventObserver {
     /**
      * Notifies the stats that the event creation phase has entered
      *
-     * @param shouldCreateEvent did the sync manager tell us to create an event?
+     * @param shouldCreateEvent
+     * 		did the sync manager tell us to create an event?
      */
     public void eventCreation(final boolean shouldCreateEvent) {
         this.shouldCreateEvent.update(shouldCreateEvent ? 1 : 0);

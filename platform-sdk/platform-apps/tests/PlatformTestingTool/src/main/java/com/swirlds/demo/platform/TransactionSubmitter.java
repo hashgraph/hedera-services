@@ -192,7 +192,8 @@ public class TransactionSubmitter {
     }
 
     /**
-     * if submit successfully return true, other false, called may retry to submit the same data next time
+     * if submit successfully return true, other false,
+     * called may retry to submit the same data next time
      */
     public boolean trySubmit(Platform platform, Pair<byte[], PAYLOAD_TYPE> data) {
         if (controlQuorum.hasQuorum(ControlAction.of(ControlType.EXIT_VALIDATION))) {

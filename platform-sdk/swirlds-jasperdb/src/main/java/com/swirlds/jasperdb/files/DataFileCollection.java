@@ -83,9 +83,9 @@ public class DataFileCollection<D> implements Snapshotable {
     private static final Logger logger = LogManager.getLogger(DataFileCollection.class);
 
     /**
-     * Since {@code com.swirlds.platform.Browser} populates configuration, and it is loaded before any application
-     * classes that might instantiate a data source, the {@link ConfigurationHolder} will have been configured by the
-     * time this static initializer runs.
+     * Since {@code com.swirlds.platform.Browser} populates configuration, and it is loaded before
+     * any application classes that might instantiate a data source, the {@link ConfigurationHolder}
+     * will have been configured by the time this static initializer runs.
      */
     private static final JasperDbConfig config = ConfigurationHolder.getConfigData(JasperDbConfig.class);
 
@@ -99,8 +99,9 @@ public class DataFileCollection<D> implements Snapshotable {
      */
     private static final int METADATA_FILE_FORMAT_VERSION = 1;
     /**
-     * Metadata file name suffix. Full metadata file name is storeName + suffix. If legacy store name is provided, and
-     * metadata file with the name above isn't found, metadata file with name legacyStoreName + suffix is tried.
+     * Metadata file name suffix. Full metadata file name is storeName + suffix. If legacy store name
+     * is provided, and metadata file with the name above isn't found, metadata file with name
+     * legacyStoreName + suffix is tried.
      */
     private static final String METADATA_FILENAME_SUFFIX = "_metadata.dfc";
     /**
@@ -146,15 +147,20 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * Construct a new DataFileCollection.
      *
-     * @param storeDir           The directory to store data files
-     * @param storeName          Base name for the data files, allowing more than one DataFileCollection to share a
-     *                           directory
-     * @param legacyStoreName    Base name for the data files. If not null, data files with this prefix are processed by
-     *                           this file collection at startup same way as files prefixed with storeName
-     * @param dataItemSerializer Serializer responsible for serializing/deserializing data items into and out of files.
-     * @param loadedDataCallback Callback for rebuilding indexes from existing files, can be null if not needed. Using
-     *                           this is expensive as it requires all files to be read and parsed.
-     * @throws IOException If there was a problem creating new data set or opening existing one
+     * @param storeDir
+     * 		The directory to store data files
+     * @param storeName
+     * 		Base name for the data files, allowing more than one DataFileCollection to share a directory
+     * @param legacyStoreName
+     * 		Base name for the data files. If not null, data files with this prefix are processed by this
+     * 		file collection at startup same way as files prefixed with storeName
+     * @param dataItemSerializer
+     * 		Serializer responsible for serializing/deserializing data items into and out of files.
+     * @param loadedDataCallback
+     * 		Callback for rebuilding indexes from existing files, can be null if not needed. Using
+     * 		this is expensive as it requires all files to be read and parsed.
+     * @throws IOException
+     * 		If there was a problem creating new data set or opening existing one
      */
     public DataFileCollection(
             final Path storeDir,
@@ -175,19 +181,22 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * Construct a new DataFileCollection.
      *
-     * @param storeDir                     The directory to store data files
-     * @param storeName                    Base name for the data files, allowing more than one DataFileCollection to
-     *                                     share a directory
-     * @param legacyStoreName              Base name for the data files. If not null, data files with this prefix are
-     *                                     processed by this file collection at startup same way as files prefixed with
-     *                                     storeName
-     * @param dataItemSerializer           Serializer responsible for serializing/deserializing data items into and out
-     *                                     of files.
-     * @param loadedDataCallback           Callback for rebuilding indexes from existing files, can be null if not
-     *                                     needed. Using this is expensive as it requires all files to be read and
-     *                                     parsed.
-     * @param indexedObjectListConstructor Constructor for creating ImmutableIndexedObjectList instances.
-     * @throws IOException If there was a problem creating new data set or opening existing one
+     * @param storeDir
+     * 		The directory to store data files
+     * @param storeName
+     * 		Base name for the data files, allowing more than one DataFileCollection to share a directory
+     * @param legacyStoreName
+     * 		Base name for the data files. If not null, data files with this prefix are processed by this
+     * 		file collection at startup same way as files prefixed with storeName
+     * @param dataItemSerializer
+     * 		Serializer responsible for serializing/deserializing data items into and out of files.
+     * @param loadedDataCallback
+     * 		Callback for rebuilding indexes from existing files, can be null if not needed. Using
+     * 		this is expensive as it requires all files to be read and parsed.
+     * @param indexedObjectListConstructor
+     * 		Constructor for creating ImmutableIndexedObjectList instances.
+     * @throws IOException
+     * 		If there was a problem creating new data set or opening existing one
      */
     protected DataFileCollection(
             final Path storeDir,
@@ -249,7 +258,8 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * Get a list of all files in this collection that have been fully finished writing and are read only
      *
-     * @param maxSizeMb all files returned are smaller than this number of MB
+     * @param maxSizeMb
+     * 		all files returned are smaller than this number of MB
      */
     public List<DataFileReader<D>> getAllFullyWrittenFiles(final int maxSizeMb) {
         final ImmutableIndexedObjectList<DataFileReader<D>> activeIndexedFiles = indexedFileList.get();
@@ -301,13 +311,16 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * Merges all files in filesToMerge
      *
-     * @param index         takes a map of moves from old location to new location. Once it is finished and returns it
-     *                      is assumed all readers will no longer be looking in old location, so old files can be safely
-     *                      deleted.
-     * @param filesToMerge  list of files to merge
-     * @param mergingPaused Semaphore to monitor if we should pause merging
+     * @param index
+     * 		takes a map of moves from old location to new location. Once it is finished and
+     * 		returns it is assumed all readers will no longer be looking in old location, so old
+     * 		files can be safely deleted.
+     * @param filesToMerge
+     * 		list of files to merge
+     * @param mergingPaused
+     * 		Semaphore to monitor if we should pause merging
      * @return list of files created during the merge
-     * @throws IOException          If there was a problem merging
+     * @throws IOException If there was a problem merging
      * @throws InterruptedException If the merge thread was interrupted
      */
     public synchronized List<Path> mergeFiles(
@@ -501,7 +514,8 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * Start writing a new data file
      *
-     * @throws IOException If there was a problem opening a new data file
+     * @throws IOException
+     * 		If there was a problem opening a new data file
      */
     public void startWriting() throws IOException {
         final DataFileWriter<D> activeDataFileWriter = currentDataFileWriter.get();
@@ -514,9 +528,11 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * Store a data item into the current file opened with startWriting().
      *
-     * @param dataItem The data item to write into file
+     * @param dataItem
+     * 		The data item to write into file
      * @return the location where data item was stored. This contains both the file and the location within the file.
-     * @throws IOException If there was a problem writing this data item to the file.
+     * @throws IOException
+     * 		If there was a problem writing this data item to the file.
      */
     public long storeDataItem(final D dataItem) throws IOException {
         final DataFileWriter<D> currentDataFileForWriting = this.currentDataFileWriter.get();
@@ -530,9 +546,12 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * End writing current data file
      *
-     * @param minimumValidKey The minimum valid data key at this point in time, can be used for cleaning out old data
-     * @param maximumValidKey The maximum valid data key at this point in time, can be used for cleaning out old data
-     * @throws IOException If there was a problem closing the data file
+     * @param minimumValidKey
+     * 		The minimum valid data key at this point in time, can be used for cleaning out old data
+     * @param maximumValidKey
+     * 		The maximum valid data key at this point in time, can be used for cleaning out old data
+     * @throws IOException
+     * 		If there was a problem closing the data file
      */
     public DataFileReader<D> endWriting(final long minimumValidKey, final long maximumValidKey) throws IOException {
         this.validKeyRange = new KeyRange(minimumValidKey, maximumValidKey);
@@ -551,12 +570,14 @@ public class DataFileCollection<D> implements Snapshotable {
      * merging, it is possible it will throw a ClosedChannelException or return null. So it should be retried if those
      * happen.
      *
-     * @param dataLocation the location of the data item to read. This contains both the file and the location within
-     *                     the file.
+     * @param dataLocation
+     * 		the location of the data item to read. This contains both the file and the location within
+     * 		the file.
      * @return Data item if the data location was found in files or null if not found
-     * @throws IOException            If there was a problem reading the data item.
-     * @throws ClosedChannelException In the very rare case merging closed the file between us checking if file is open
-     *                                and reading
+     * @throws IOException
+     * 		If there was a problem reading the data item.
+     * @throws ClosedChannelException
+     * 		In the very rare case merging closed the file between us checking if file is open and reading
      */
     protected D readDataItem(final long dataLocation) throws IOException {
         // check if found
@@ -595,8 +616,8 @@ public class DataFileCollection<D> implements Snapshotable {
      *
      * @param index        key-&gt;dataLocation index
      * @param keyIntoIndex The key to lookup in index
-     * @return Data item if the data location was found in files. If contained in the index but not in files after a
-     * number of retries then an exception is thrown.
+     * @return Data item if the data location was found in files. If contained in the
+     * index but not in files after a number of retries then an exception is thrown.
      * @throws IOException If there was a problem reading the data item.
      */
     public D readDataItemUsingIndex(final LongList index, final long keyIntoIndex) throws IOException {
@@ -714,7 +735,8 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * Used by tests to get data files for checking
      *
-     * @param index data file index
+     * @param index
+     * 		data file index
      * @return the data file if one exists at that index
      */
     DataFileReader<D> getDataFile(final int index) {
@@ -725,8 +747,10 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * Create and add a new data file reader to end of indexedFileList
      *
-     * @param filePath the path for the new data file
-     * @param metadata The metadata for the file at filePath, to save reading from file
+     * @param filePath
+     * 		the path for the new data file
+     * @param metadata
+     * 		The metadata for the file at filePath, to save reading from file
      * @return The newly added DataFileReader.
      */
     private DataFileReader<D> addNewDataFileReader(final Path filePath, final DataFileMetadata metadata)
@@ -751,8 +775,10 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * Delete a list of files from indexedFileList and then from disk
      *
-     * @param filesToDelete the list of files to delete
-     * @throws IOException If there was a problem deleting the files
+     * @param filesToDelete
+     * 		the list of files to delete
+     * @throws IOException
+     * 		If there was a problem deleting the files
      */
     private void deleteFiles(final Set<DataFileReader<D>> filesToDelete) throws IOException {
         // remove files from index
@@ -768,8 +794,10 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * Create a new data file writer
      *
-     * @param creationTime The creation time for the data in the new file. It could be now or old in case of merge.
-     * @param isMergeFile  if the new file is a merge file or not
+     * @param creationTime
+     * 		The creation time for the data in the new file. It could be now or old in case of merge.
+     * @param isMergeFile
+     * 		if the new file is a merge file or not
      * @return the newly created data file
      */
     private DataFileWriter<D> newDataFile(final Instant creationTime, final boolean isMergeFile) throws IOException {
@@ -783,9 +811,10 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * Saves the metadata to the given directory. A valid database must have the metadata.
      *
-     * @param directory The location to save the metadata. The directory will be created (and all parent directories) if
-     *                  needed.
-     * @throws IOException Thrown if a lower level IOException occurs.
+     * @param directory
+     * 		The location to save the metadata. The directory will be created (and all parent directories) if needed.
+     * @throws IOException
+     * 		Thrown if a lower level IOException occurs.
      */
     private void saveMetadata(Path directory) throws IOException {
         Files.createDirectories(directory);

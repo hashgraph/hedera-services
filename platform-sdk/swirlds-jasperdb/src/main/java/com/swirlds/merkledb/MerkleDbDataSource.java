@@ -19,6 +19,8 @@ package com.swirlds.merkledb;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
 import static com.swirlds.common.units.UnitConstants.BYTES_TO_MEBIBYTES;
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
@@ -32,7 +34,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.collections.HashList;
 import com.swirlds.merkledb.collections.HashListByteBuffer;
 import com.swirlds.merkledb.collections.LongList;
@@ -214,8 +215,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     private MerkleDbStatistics statistics;
 
     /**
-     * When we register stats for the first instance, also register the global stats. If true then this is the first
-     * time stats are being registered for an instance.
+     * When we register stats for the first instance, also register the global stats. If true then
+     * this is the first time stats are being registered for an instance.
      */
     private static final AtomicBoolean firstStatRegistration = new AtomicBoolean(true);
 
@@ -427,8 +428,9 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
-     * Start background compaction process, if it is not already running. Stop background merging, interrupting the
-     * current merge if one is happening. This will not corrupt the database but will leave files around.
+     * Start background compaction process, if it is not already running. Stop background merging,
+     * interrupting the current merge if one is happening. This will not corrupt the database but
+     * will leave files around.
      */
     @Override
     public void startBackgroundCompaction() {
@@ -468,7 +470,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
-     * Get the count of open database instances. This is databases that have been opened but not yet closed.
+     * Get the count of open database instances. This is databases that have been opened but not yet
+     * closed.
      *
      * @return Count of open databases.
      */
@@ -487,9 +490,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
-     * Pauses merging of all data file collections used by this data source. It may not stop merging immediately, but as
-     * soon as merging process needs to update data source state, which is critical for snapshots (e.g. update an
-     * index), it will be stopped until {@link #resumeMerging()}} is called.
+     * Pauses merging of all data file collections used by this data source. It may not stop merging
+     * immediately, but as soon as merging process needs to update data source state, which is
+     * critical for snapshots (e.g. update an index), it will be stopped until {@link
+     * #resumeMerging()}} is called.
      */
     void pauseMerging() throws IOException {
         if (hasDiskStoreForHashes) {
@@ -514,20 +518,21 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
     /**
      * Save a batch of data to data store.
-     * <p>
-     * If you call this method where not all data is provided to cover the change in firstLeafPath and lastLeafPath,
-     * then any reads after this call may return rubbish or throw obscure exceptions for any internals or leaves that
-     * have not been written. For example, if you were to grow the tree by more than 2x, and then called this method in
-     * batches, be aware that if you were to query for some record between batches that hadn't yet been saved, you will
-     * encounter problems.
      *
-     * @param firstLeafPath            the tree path for first leaf
-     * @param lastLeafPath             the tree path for last leaf
-     * @param hashRecordsToUpdate      stream of records with hashes to update, it is assumed this is sorted by path and
-     *                                 each path only appears once.
+     * If you call this method where not all data is provided to cover the change in
+     * firstLeafPath and lastLeafPath, then any reads after this call may return rubbish or throw
+     * obscure exceptions for any internals or leaves that have not been written. For example, if
+     * you were to grow the tree by more than 2x, and then called this method in batches, be aware
+     * that if you were to query for some record between batches that hadn't yet been saved, you
+     * will encounter problems.
+     *
+     * @param firstLeafPath the tree path for first leaf
+     * @param lastLeafPath the tree path for last leaf
+     * @param hashRecordsToUpdate stream of records with hashes to update, it is assumed this is sorted by
+     *     path and each path only appears once.
      * @param leafRecordsToAddOrUpdate stream of new leaf nodes and updated leaf nodes
-     * @param leafRecordsToDelete      stream of new leaf nodes to delete, The leaf record's key and path have to be
-     *                                 populated, all other data can be null.
+     * @param leafRecordsToDelete stream of new leaf nodes to delete, The leaf record's key and path
+     *     have to be populated, all other data can be null.
      * @throws IOException If there was a problem saving changes to data source
      */
     @Override
@@ -804,8 +809,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
-     * Write a snapshot of the current state of the database at this moment in time. This will block till the snapshot
-     * is completely created.
+     * Write a snapshot of the current state of the database at this moment in time. This will block
+     * till the snapshot is completely created.
      *
      *
      * <b> Only one snapshot can happen at a time, this will throw an IllegalStateException if
@@ -814,8 +819,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      * <b> IMPORTANT, after this is completed the caller owns the directory. It is responsible
      * for deleting it when it is no longer needed. </b>
      *
-     * @param snapshotDirectory Directory to put snapshot into, it will be created if it doesn't exist.
-     * @throws IOException           If there was a problem writing the current database out to the given directory
+     * @param snapshotDirectory Directory to put snapshot into, it will be created if it doesn't
+     *     exist.
+     * @throws IOException If there was a problem writing the current database out to the given
+     *     directory
      * @throws IllegalStateException If there is already a snapshot happening
      */
     @SuppressWarnings("ConstantConditions")
@@ -882,7 +889,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     MERKLE_DB.getMarker(),
                     "[{}] Snapshot all finished in {} seconds",
                     tableName,
-                    (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS);
+                    (System.currentTimeMillis() - START) * MILLISECONDS_TO_SECONDS);
         } finally {
             snapshotInProgress.set(false);
         }
@@ -951,7 +958,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
-     * Table config for this data source. Includes key and value serializers, internal nodes RAM/disk threshold, etc.
+     * Table config for this data source. Includes key and value serializers, internal nodes
+     * RAM/disk threshold, etc.
      *
      * @return Table config
      */
@@ -1034,8 +1042,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     // private methods
 
     /**
-     * Update all the file size and count statistics, called by save and merge as those are the only two places where
-     * files are added or removed.
+     * Update all the file size and count statistics, called by save and merge as those are the only
+     * two places where files are added or removed.
      */
     private void updateFileStats() {
         if (hashStoreDisk != null) {
@@ -1097,12 +1105,13 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
-     * Run a runnable on background thread using snapshot ExecutorService, counting down latch when done.
+     * Run a runnable on background thread using snapshot ExecutorService, counting down latch when
+     * done.
      *
-     * @param shouldRun      when true, run runnable otherwise just countdown latch
+     * @param shouldRun when true, run runnable otherwise just countdown latch
      * @param countDownLatch latch to count down when done
-     * @param taskName       the name of the task for logging
-     * @param runnable       the code to run
+     * @param taskName the name of the task for logging
+     * @param runnable the code to run
      */
     private void runWithSnapshotExecutor(
             final boolean shouldRun,
@@ -1119,7 +1128,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                             "[{}] Snapshot {} complete in {} seconds",
                             tableName,
                             taskName,
-                            (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS);
+                            (System.currentTimeMillis() - START) * MILLISECONDS_TO_SECONDS);
                     return true; // turns this into a callable, so it can throw checked
                     // exceptions
                 } finally {
@@ -1232,12 +1241,13 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
     /**
      * Invalidates the given key in virtual leaf record cache, if the cache is enabled.
-     * <p>
-     * If the key is deleted, it's still updated in the cache. It means no record with the given key exists in the data
-     * source, so further lookups for the key are skipped.
-     * <p>
-     * Cache index is calculated as the key's hash code % cache size. The cache is only updated, if the current record
-     * at this index has the given key. If the key is different, no update is performed.
+     *
+     * If the key is deleted, it's still updated in the cache. It means no record with the given
+     * key exists in the data source, so further lookups for the key are skipped.
+     *
+     * Cache index is calculated as the key's hash code % cache size. The cache is only updated,
+     * if the current record at this index has the given key. If the key is different, no update is
+     * performed.
      *
      * @param key Virtual leaf record key
      */
@@ -1254,17 +1264,18 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
-     * Start a Merge if needed, this is called by default every 30 seconds if a merge is not already running. This
-     * implements the logic for how often and with what files we merge.
+     * Start a Merge if needed, this is called by default every 30 seconds if a merge is not already
+     * running. This implements the logic for how often and with what files we merge.
      *
      * <b> IMPORTANT: This method is called on a thread that can be interrupted, so it needs to
      * gracefully stop when it is interrupted. </b>
      *
      * <b> IMPORTANT: The set of files we merge must always be contiguous in order of time
-     * contained data created. As merged files have a later index but old data the index can not be used alone to work
-     * out order of files to merge. </b>
+     * contained data created. As merged files have a later index but old data the index can not be
+     * used alone to work out order of files to merge. </b>
      *
-     * @return true if merging completed successfully, false if it was interrupted or an exception occurred.
+     * @return true if merging completed successfully, false if it was interrupted or an exception
+     *     occurred.
      */
     @SuppressWarnings({"rawtypes", "unchecked", "ConstantConditions"})
     boolean doMerge() {
@@ -1343,37 +1354,37 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             // isSmallMerge/isMediumMerge/isLargeMerge
             if (isSmallMerge) {
                 if (hasDiskStoreForHashes) {
-                    statistics.setInternalHashesStoreSmallMergeTime(firstMergeDuration.toSeconds()
-                            + firstMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
+                    statistics.setInternalHashesStoreSmallMergeTime(
+                            firstMergeDuration.toSeconds() + firstMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
                 }
                 if (!isLongKeyMode) {
-                    statistics.setLeafKeyToPathStoreSmallMergeTime(secondMergeDuration.toSeconds()
-                            + secondMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
+                    statistics.setLeafKeyToPathStoreSmallMergeTime(
+                            secondMergeDuration.toSeconds() + secondMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
                 }
-                statistics.setLeafPathToHashKeyValueStoreSmallMergeTime(thirdMergeDuration.toSeconds()
-                        + thirdMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
+                statistics.setLeafPathToHashKeyValueStoreSmallMergeTime(
+                        thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
             } else if (isMediumMerge) {
                 if (hasDiskStoreForHashes) {
-                    statistics.setInternalHashesStoreMediumMergeTime(firstMergeDuration.toSeconds()
-                            + firstMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
+                    statistics.setInternalHashesStoreMediumMergeTime(
+                            firstMergeDuration.toSeconds() + firstMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
                 }
                 if (!isLongKeyMode) {
-                    statistics.setLeafKeyToPathStoreMediumMergeTime(secondMergeDuration.toSeconds()
-                            + secondMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
+                    statistics.setLeafKeyToPathStoreMediumMergeTime(
+                            secondMergeDuration.toSeconds() + secondMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
                 }
-                statistics.setLeafPathToHashKeyValueStoreMediumMergeTime(thirdMergeDuration.toSeconds()
-                        + thirdMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
+                statistics.setLeafPathToHashKeyValueStoreMediumMergeTime(
+                        thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
             } else if (isLargeMerge) {
                 if (hasDiskStoreForHashes) {
-                    statistics.setInternalHashesStoreLargeMergeTime(firstMergeDuration.toSeconds()
-                            + firstMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
+                    statistics.setInternalHashesStoreLargeMergeTime(
+                            firstMergeDuration.toSeconds() + firstMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
                 }
                 if (!isLongKeyMode) {
-                    statistics.setLeafKeyToPathStoreLargeMergeTime(secondMergeDuration.toSeconds()
-                            + secondMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
+                    statistics.setLeafKeyToPathStoreLargeMergeTime(
+                            secondMergeDuration.toSeconds() + secondMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
                 }
-                statistics.setLeafPathToHashKeyValueStoreLargeMergeTime(thirdMergeDuration.toSeconds()
-                        + thirdMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
+                statistics.setLeafPathToHashKeyValueStoreLargeMergeTime(
+                        thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
             }
             // update file stats (those statistics don't care about small vs medium vs large merge size)
             updateFileStats();

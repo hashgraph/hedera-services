@@ -124,7 +124,7 @@ public final class DataFileCommon {
     /**
      * Create a filter to only return all new files that are smaller than given size
      *
-     * @param sizeMB                  max file size to accept in MB
+     * @param sizeMB max file size to accept in MB
      * @param maxNumberOfFilesInMerge The maximum number of files to process in a single merge
      * @return filter to filter list of files
      */
@@ -156,10 +156,14 @@ public final class DataFileCommon {
     /**
      * Get path for file given prefix, index and parent directory. This standardizes out file naming convention.
      *
-     * @param filePrefix      the prefix for file name
-     * @param dataFileDir     the files parent directory
-     * @param index           the file index
-     * @param creationInstant the date and time the file was created
+     * @param filePrefix
+     * 		the prefix for file name
+     * @param dataFileDir
+     * 		the files parent directory
+     * @param index
+     * 		the file index
+     * @param creationInstant
+     * 		the date and time the file was created
      * @return path to file
      */
     static Path createDataFilePath(
@@ -179,8 +183,10 @@ public final class DataFileCommon {
     /**
      * Get the packed data location from file index and byte offset.
      *
-     * @param fileIndex  the index for the file
-     * @param byteOffset the offset for the data within the file in bytes
+     * @param fileIndex
+     * 		the index for the file
+     * @param byteOffset
+     * 		the offset for the data within the file in bytes
      * @return packed data location
      */
     public static long dataLocation(final int fileIndex, final long byteOffset) {
@@ -191,10 +197,11 @@ public final class DataFileCommon {
     }
 
     /**
-     * Get a friendly string with the disk data location split into its file and offset parts. Very useful for debugging
-     * and logging.
+     * Get a friendly string with the disk data location split into its file and offset parts. Very useful for
+     * debugging and logging.
      *
-     * @param dataLocation Packed disk location containing file and offset.
+     * @param dataLocation
+     * 		Packed disk location containing file and offset.
      * @return String with split file and offset
      */
     public static String dataLocationToString(final long dataLocation) {
@@ -204,7 +211,8 @@ public final class DataFileCommon {
     /**
      * Extract the file index from packed data location, this is the upper 24 bits. So in the range of 0 to 16 million.
      *
-     * @param dataLocation packed data location
+     * @param dataLocation
+     * 		packed data location
      * @return file index
      */
     public static int fileIndexFromDataLocation(final long dataLocation) {
@@ -216,7 +224,8 @@ public final class DataFileCommon {
      * Extract the data byte offset from packed data location, this is the lower 40 bits so in the 0 to 1 trillion
      * range.
      *
-     * @param dataLocation packed data location
+     * @param dataLocation
+     * 		packed data location
      * @return data offset in bytes
      */
     static long byteOffsetFromDataLocation(final long dataLocation) {
@@ -226,8 +235,10 @@ public final class DataFileCommon {
     /**
      * Check if a file at path, is a data file based on name. Also checks if there is an existing write lock file.
      *
-     * @param filePrefix the prefix for the set of data files
-     * @param path       the path to the data file
+     * @param filePrefix
+     * 		the prefix for the set of data files
+     * @param path
+     * 		the path to the data file
      * @return true if the name starts with prefix and has right extension
      */
     static boolean isFullyWrittenDataFile(final String filePrefix, final Path path) {
@@ -297,9 +308,11 @@ public final class DataFileCommon {
     /**
      * Get total size fo a collection of files.
      *
-     * @param filePaths collection of paths to files
+     * @param filePaths
+     * 		collection of paths to files
      * @return total number of bytes take for all the files in filePaths
-     * @throws IOException If there was a problem getting file sizes
+     * @throws IOException
+     * 		If there was a problem getting file sizes
      */
     public static long getSizeOfFilesByPath(final Iterable<Path> filePaths) throws IOException {
         long totalSize = 0;
@@ -312,7 +325,8 @@ public final class DataFileCommon {
     /**
      * Get total size fo a collection of files.
      *
-     * @param filePaths collection of paths to files
+     * @param filePaths
+     * 		collection of paths to files
      * @return total number of bytes take for all the files in filePaths
      */
     public static <D> long getSizeOfFiles(final Iterable<DataFileReader<D>> filePaths) {
@@ -326,7 +340,8 @@ public final class DataFileCommon {
     /**
      * Return a nice string for size of bytes.
      *
-     * @param numOfBytes number of bytes
+     * @param numOfBytes
+     * 		number of bytes
      * @return formatted string
      */
     public static String formatSizeBytes(final long numOfBytes) {
@@ -353,7 +368,8 @@ public final class DataFileCommon {
     /**
      * Round a decimal to two decimal places
      *
-     * @param d number to round
+     * @param d
+     * 		number to round
      * @return rounded number
      */
     public static double roundTwoDecimals(final double d) {
@@ -394,7 +410,8 @@ public final class DataFileCommon {
     /**
      * Delete a directory and all its contents if it exists. Does nothing if directory does not exist.
      *
-     * @param dir The directory to delete
+     * @param dir
+     * 		The directory to delete
      */
     public static void deleteDirectoryAndContents(final Path dir) {
         if (Files.exists(dir) && Files.isDirectory(dir)) {

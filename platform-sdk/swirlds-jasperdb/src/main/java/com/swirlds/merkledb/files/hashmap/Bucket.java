@@ -16,13 +16,13 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
+import static com.swirlds.common.units.UnitConstants.KIBIBYTES_TO_BYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.KEY_HASHCODE_SIZE;
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.VALUE_SIZE;
 
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.Closeable;
@@ -36,7 +36,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Class for accessing the data in a bucket. This is designed to be used from a single thread.
- * <p>
+ *
  * Each bucket has a header containing:
  *
  * <ul>
@@ -44,7 +44,7 @@ import org.apache.logging.log4j.Logger;
  *   <li><b>int</b> - Bucket size, total number of bytes taken by bucket including header</li>
  *   <li><b>int</b> - Number of entries in this bucket</li>
  * </ul>
- * <p>
+ *
  * Then comes an array of entries. Each Entry contains:
  *
  * <ul>
@@ -60,7 +60,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     /** When increasing the capacity of a bucket, increase it by this many bytes. */
     private static final int CAPACITY_INCREMENT = 1024;
     /** We assume 8KB will be enough for now for most buckets. */
-    private static final int DEFAULT_BUCKET_BUFFER_SIZE = 8 * UnitConstants.KIBIBYTES_TO_BYTES;
+    private static final int DEFAULT_BUCKET_BUFFER_SIZE = 8 * KIBIBYTES_TO_BYTES;
 
     private static final int BUCKET_INDEX_SIZE = Integer.BYTES;
     private static final int BUCKET_SIZE_OFFSET = BUCKET_INDEX_SIZE;
@@ -238,8 +238,9 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     /**
      * Put a key/value entry into this bucket.
      *
-     * @param key   the entry key
-     * @param value the entry value, this can also be special HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
+     * @param key the entry key
+     * @param value the entry value, this can also be special
+     *     HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE to mean delete
      */
     public void putValue(final K key, final long value) {
         final int keyHashCode = key.hashCode();
@@ -344,8 +345,8 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     // Private API
 
     /**
-     * Expand the capacity of this bucket to make sure it is at least big enough to contain neededSize and sets bucket
-     * buffer limit to the requested size.
+     * Expand the capacity of this bucket to make sure it is at least big enough to contain
+     * neededSize and sets bucket buffer limit to the requested size.
      */
     private void ensureCapacity(int neededSize) {
         int capacity = bucketBuffer.capacity();
@@ -362,12 +363,13 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     }
 
     /**
-     * Find the offset in bucket for an entry matching the given key, if not found then just return the offset for the
-     * end of all entries.
+     * Find the offset in bucket for an entry matching the given key, if not found then just return
+     * the offset for the end of all entries.
      *
      * @param keyHashCode hash code for the key to search for
-     * @param key         the key to search for
-     * @return either true and offset for found key entry or false and offset for end of all entries in this bucket
+     * @param key the key to search for
+     * @return either true and offset for found key entry or false and offset for end of all entries
+     *     in this bucket
      * @throws IOException If there was a problem reading bucket
      */
     private FindResult findEntryOffset(final int keyHashCode, final K key) throws IOException {
@@ -469,10 +471,11 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     // FindResult class
 
     /**
-     * Simple record for entry lookup results. If an entry is found, "found" is set to true, "entryOffset" is the entry
-     * offset in bytes in the bucket buffer, "entryIndex" is the entry index in the array of entries, and "entryValue"
-     * is the entry value. If no entity is found, "found" is false, "entryOffset" is the total size of the bucket
-     * buffer, "entryIndex" and "entryValue" are undefined.
+     * Simple record for entry lookup results. If an entry is found, "found" is set to true,
+     * "entryOffset" is the entry offset in bytes in the bucket buffer, "entryIndex" is the
+     * entry index in the array of entries, and "entryValue" is the entry value. If no entity
+     * is found, "found" is false, "entryOffset" is the total size of the bucket buffer,
+     * "entryIndex" and "entryValue" are undefined.
      */
     private record FindResult(int entryOffset, int entryIndex, boolean found, long entryValue) {}
 

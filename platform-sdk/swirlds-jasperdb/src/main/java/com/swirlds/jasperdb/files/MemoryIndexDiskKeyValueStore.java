@@ -16,6 +16,7 @@
 
 package com.swirlds.jasperdb.files;
 
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_SECONDS;
 import static com.swirlds.jasperdb.files.DataFileCommon.dataLocationToString;
 import static com.swirlds.jasperdb.files.DataFileCommon.fileIndexFromDataLocation;
 import static com.swirlds.jasperdb.files.DataFileCommon.formatSizeBytes;
@@ -26,7 +27,6 @@ import static com.swirlds.jasperdb.files.DataFileCommon.printDataLinkValidation;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.jasperdb.KeyRange;
 import com.swirlds.jasperdb.Snapshotable;
 import com.swirlds.jasperdb.collections.CASable;
@@ -135,10 +135,10 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /**
      * Merge all files that match the given filter
      *
-     * @param filterForFilesToMerge   filter to choose which subset of files to merge
-     * @param mergingPaused           Semaphore to monitor if we should pause merging
+     * @param filterForFilesToMerge filter to choose which subset of files to merge
+     * @param mergingPaused Semaphore to monitor if we should pause merging
      * @param minNumberOfFilesToMerge The minimum number of files to consider for a merge
-     * @throws IOException          if there was a problem merging
+     * @throws IOException if there was a problem merging
      * @throws InterruptedException if the merge thread was interupted
      */
     public void merge(
@@ -195,7 +195,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
 
         logMergeStats(
                 storeName,
-                (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS,
+                (System.currentTimeMillis() - START) * MILLISECONDS_TO_SECONDS,
                 filesToMergeSize,
                 getSizeOfFilesByPath(newFilesCreated),
                 fileCollection,
@@ -206,7 +206,8 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /**
      * Start a writing session ready for calls to put()
      *
-     * @throws IOException If there was a problem opening a writing session
+     * @throws IOException
+     * 		If there was a problem opening a writing session
      */
     public void startWriting() throws IOException {
         fileCollection.startWriting();
@@ -215,9 +216,12 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /**
      * Put a value into this store, you must be in a writing session started with startWriting()
      *
-     * @param key      The key to store value for
-     * @param dataItem Buffer containing the data's value, it should have its position and limit set correctly
-     * @throws IOException If there was a problem write key/value to the store
+     * @param key
+     * 		The key to store value for
+     * @param dataItem
+     * 		Buffer containing the data's value, it should have its position and limit set correctly
+     * @throws IOException
+     * 		If there was a problem write key/value to the store
      */
     public void put(final long key, final D dataItem) throws IOException {
         long dataLocation = fileCollection.storeDataItem(dataItem);
@@ -228,9 +232,12 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /**
      * End a session of writing
      *
-     * @param minimumValidKey The minimum valid key at this point in time.
-     * @param maximumValidKey The maximum valid key at this point in time.
-     * @throws IOException If there was a problem closing the writing session
+     * @param minimumValidKey
+     * 		The minimum valid key at this point in time.
+     * @param maximumValidKey
+     * 		The maximum valid key at this point in time.
+     * @throws IOException
+     * 		If there was a problem closing the writing session
      */
     public void endWriting(final long minimumValidKey, final long maximumValidKey) throws IOException {
         final DataFileReader<D> dataFileReader = fileCollection.endWriting(minimumValidKey, maximumValidKey);
@@ -248,9 +255,11 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /**
      * Get a value by reading it from disk.
      *
-     * @param key The key to find and read value for
+     * @param key
+     * 		The key to find and read value for
      * @return Array of serialization version for data if the value was read or null if not found
-     * @throws IOException If there was a problem reading the value from file
+     * @throws IOException
+     * 		If there was a problem reading the value from file
      */
     public D get(final long key) throws IOException {
         // Check if out of range
@@ -270,7 +279,8 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /**
      * Close all files being used
      *
-     * @throws IOException If there was a problem closing files
+     * @throws IOException
+     * 		If there was a problem closing files
      */
     public void close() throws IOException {
         fileCollection.close();

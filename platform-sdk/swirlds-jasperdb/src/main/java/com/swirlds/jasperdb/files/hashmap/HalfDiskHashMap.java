@@ -16,6 +16,7 @@
 
 package com.swirlds.jasperdb.files.hashmap;
 
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_SECONDS;
 import static com.swirlds.jasperdb.files.DataFileCommon.formatSizeBytes;
 import static com.swirlds.jasperdb.files.DataFileCommon.getSizeOfFiles;
 import static com.swirlds.jasperdb.files.DataFileCommon.getSizeOfFilesByPath;
@@ -23,7 +24,6 @@ import static com.swirlds.jasperdb.files.DataFileCommon.logMergeStats;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.jasperdb.Snapshotable;
 import com.swirlds.jasperdb.collections.LongList;
 import com.swirlds.jasperdb.collections.LongListDisk;
@@ -90,22 +90,25 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     /** how full should all available bins be if we are at the specified map size */
     public static final double LOADING_FACTOR = 0.6;
     /**
-     * Long list used for mapping bucketIndex(index into list) to disk location for latest copy of bucket
+     * Long list used for mapping bucketIndex(index into list) to disk location for latest copy of
+     * bucket
      */
     private final LongList bucketIndexToBucketLocation;
     /** DataFileCollection manages the files storing the buckets on disk */
     private final DataFileCollection<Bucket<K>> fileCollection;
     /**
-     * This is the number of buckets needed to store mapSize entries if we ere only LOADING_FACTOR percent full
+     * This is the number of buckets needed to store mapSize entries if we ere only LOADING_FACTOR
+     * percent full
      */
     private final int minimumBuckets;
     /**
-     * This is the next power of 2 bigger than minimumBuckets. It needs to be a power of two, so that we can optimize
-     * and avoid the cost of doing a % to find the bucket index from hash code.
+     * This is the next power of 2 bigger than minimumBuckets. It needs to be a power of two, so
+     * that we can optimize and avoid the cost of doing a % to find the bucket index from hash code.
      */
     private final int numOfBuckets;
     /**
-     * The requested max size for the map, this is the maximum number of key/values expected to be stored in this map.
+     * The requested max size for the map, this is the maximum number of key/values expected to be
+     * stored in this map.
      */
     private final long mapSize;
     /** The name to use for the files prefix on disk */
@@ -115,25 +118,27 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     /** Store for session data during a writing transaction */
     private IntObjectHashMap<BucketMutation<K>> oneTransactionsData = null;
     /**
-     * The thread that called startWriting. We use it to check that other writing calls are done on same thread
+     * The thread that called startWriting. We use it to check that other writing calls are done on
+     * same thread
      */
     private Thread writingThread;
 
     /**
      * Construct a new HalfDiskHashMap
      *
-     * @param mapSize                The maximum map number of entries. This should be more than big enough to avoid too
-     *                               many key collisions.
-     * @param keySerializer          Serializer for converting raw data to/from keys
-     * @param storeDir               The directory to use for storing data files.
-     * @param storeName              The name for the data store, this allows more than one data store in a single
-     *                               directory.
-     * @param legacyStoreName        Base name for the data store. If not null, the store will process files with this
-     *                               prefix at startup. New files in the store will be prefixed with {@code storeName}
-     * @param preferDiskBasedIndexes When true we will use disk based indexes rather than ram where possible. This will
-     *                               come with a significant performance cost, especially for writing. It is possible to
-     *                               load a data source that was written with memory indexes with disk based indexes and
-     *                               via versa.
+     * @param mapSize The maximum map number of entries. This should be more than big enough to
+     *     avoid too many key collisions.
+     * @param keySerializer Serializer for converting raw data to/from keys
+     * @param storeDir The directory to use for storing data files.
+     * @param storeName The name for the data store, this allows more than one data store in a
+     *     single directory.
+     * @param legacyStoreName Base name for the data store. If not null, the store will process
+     *     files with this prefix at startup. New files in the store will be prefixed with {@code
+     *     storeName}
+     * @param preferDiskBasedIndexes When true we will use disk based indexes rather than ram where
+     *     possible. This will come with a significant performance cost, especially for writing. It
+     *     is possible to load a data source that was written with memory indexes with disk based
+     *     indexes and via versa.
      * @throws IOException If there was a problem creating or opening a set of data files.
      */
     public HalfDiskHashMap(
@@ -238,12 +243,12 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     }
 
     /**
-     * Merge all read only files that match provided filter. Important the set of files must be contiguous in time
-     * otherwise the merged data will be invalid.
+     * Merge all read only files that match provided filter. Important the set of files must be
+     * contiguous in time otherwise the merged data will be invalid.
      *
      * @param filterForFilesToMerge filter to choose which subset of files to merge
-     * @param mergingPaused         Semaphore to monitor if we should pause merging
-     * @throws IOException          if there was a problem merging
+     * @param mergingPaused Semaphore to monitor if we should pause merging
+     * @throws IOException if there was a problem merging
      * @throws InterruptedException If the merge thread was interupted
      */
     public void merge(
@@ -279,7 +284,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
                 fileCollection.mergeFiles(bucketIndexToBucketLocation, filesToMerge, mergingPaused);
         logMergeStats(
                 storeName,
-                (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS,
+                (System.currentTimeMillis() - START) * MILLISECONDS_TO_SECONDS,
                 filesToMergeSize,
                 getSizeOfFilesByPath(newFilesCreated),
                 fileCollection,
@@ -315,8 +320,9 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     }
 
     /**
-     * Close this HalfDiskHashMap's data files. Once closed this HalfDiskHashMap can not be reused. You should make sure
-     * you call close before system exit otherwise any files being written might not be in a good state.
+     * Close this HalfDiskHashMap's data files. Once closed this HalfDiskHashMap can not be reused.
+     * You should make sure you call close before system exit otherwise any files being written
+     * might not be in a good state.
      *
      * @throws IOException If there was a problem closing the data files.
      */
@@ -330,8 +336,8 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     // Writing API - Single thead safe
 
     /**
-     * Start a writing session to the map. Each new writing session results in a new data file on disk, so you should
-     * ideally batch up map writes.
+     * Start a writing session to the map. Each new writing session results in a new data file on
+     * disk, so you should ideally batch up map writes.
      */
     public void startWriting() {
         oneTransactionsData = new IntObjectHashMap<>();
@@ -339,10 +345,10 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     }
 
     /**
-     * Put a key/value during the current writing session. The value will not be retrievable until it is committed in
-     * the endWriting() call.
+     * Put a key/value during the current writing session. The value will not be retrievable until
+     * it is committed in the endWriting() call.
      *
-     * @param key   the key to store the value for
+     * @param key the key to store the value for
      * @param value the value to store for given key
      */
     public void put(final K key, final long value) {
@@ -452,9 +458,10 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     /**
      * Get a value from this map
      *
-     * @param key           The key to get value for
+     * @param key The key to get value for
      * @param notFoundValue the value to return if the key was not found
-     * @return the value retrieved from the map or {notFoundValue} if no value was stored for the given key
+     * @return the value retrieved from the map or {notFoundValue} if no value was stored for the
+     *     given key
      * @throws IOException If there was a problem reading from the map
      */
     public long get(final K key, final long notFoundValue) throws IOException {
@@ -534,8 +541,8 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     // Private API
 
     /**
-     * Computes which bucket a key with the given hash falls. Depends on the fact the numOfBuckets is a power of two.
-     * Based on same calculation that is used in java HashMap.
+     * Computes which bucket a key with the given hash falls. Depends on the fact the numOfBuckets
+     * is a power of two. Based on same calculation that is used in java HashMap.
      *
      * @param keyHash the int hash for key
      * @return the index of the bucket that key falls in

@@ -187,9 +187,9 @@ public class ExpirationUtils {
     }
 
     /**
-     * We can take for granted that records are added in monotonic increasing order of expiry. If
-     * accountsWithExpiringRecords contains this mapKey, which denotes this account already has one entry (with earlier
-     * expiration time than this record) in expirationQueue, we don't have replace it
+     * We can take for granted that records are added in monotonic increasing order of expiry.
+     * If accountsWithExpiringRecords contains this mapKey, which denotes this account already has one entry (with
+     * earlier expiration time than this record) in expirationQueue, we don't have replace it
      *
      * @param record
      * @param mapKey

@@ -57,7 +57,8 @@ public class SwirldTransactionSubmitter {
     /**
      * Submits a transaction to the consumer if it passes validity checks.
      *
-     * @param trans the transaction to submit
+     * @param trans
+     * 		the transaction to submit
      * @return true if the transaction passed all validity checks and was accepted by the consumer
      */
     public boolean submitTransaction(final SwirldTransaction trans) {

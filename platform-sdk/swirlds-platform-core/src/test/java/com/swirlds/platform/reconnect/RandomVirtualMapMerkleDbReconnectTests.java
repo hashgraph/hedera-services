@@ -284,7 +284,7 @@ class RandomVirtualMapMerkleDbReconnectTests extends VirtualMapReconnectTestBase
     }
 
     /**
-     * #5926: Virtual map hashing goes into infinite loop after reconnect
+     * 	#5926: Virtual map hashing goes into infinite loop after reconnect
      */
     @Test
     @DisplayName("#5926 regression test")

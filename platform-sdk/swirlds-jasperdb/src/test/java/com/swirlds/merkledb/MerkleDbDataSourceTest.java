@@ -18,6 +18,7 @@ package com.swirlds.merkledb;
 
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyFalse;
+import static com.swirlds.common.units.UnitConstants.BYTES_TO_MEBIBYTES;
 import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static com.swirlds.merkledb.MerkleDbTestUtils.hash;
@@ -31,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -88,9 +88,9 @@ class MerkleDbDataSourceTest {
         assertTrue(
                 checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
                 "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
-                        + (directMemoryUsedAtStart * UnitConstants.BYTES_TO_MEBIBYTES)
+                        + (directMemoryUsedAtStart * BYTES_TO_MEBIBYTES)
                         + "MB and is now "
-                        + (getDirectMemoryUsedBytes() * UnitConstants.BYTES_TO_MEBIBYTES)
+                        + (getDirectMemoryUsedBytes() * BYTES_TO_MEBIBYTES)
                         + "MB");
     }
 

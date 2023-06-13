@@ -68,8 +68,10 @@ public class TransactionHandler {
     /**
      * Applies a consensus round to SwirldState, handles any exceptions gracefully, and updates relevant statistics.
      *
-     * @param round the round to apply
-     * @param state the state to apply {@code round} to
+     * @param round
+     * 		the round to apply
+     * @param state
+     * 		the state to apply {@code round} to
      */
     public void handleRound(final ConsensusRound round, final State state) {
         try {
