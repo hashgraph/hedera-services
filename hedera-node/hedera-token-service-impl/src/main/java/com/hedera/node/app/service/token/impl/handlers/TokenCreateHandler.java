@@ -34,6 +34,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -41,6 +42,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -97,57 +99,82 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var txn = context.body();
         final var op = txn.tokenCreationOrThrow();
         // Create or get needed config and stores
-        final var config = context.configuration().getConfigData(TokensConfig.class);
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var accountStore = context.writableStore(WritableAccountStore.class);
         final var tokenStore = context.writableStore(WritableTokenStore.class);
         final var tokenRelationStore = context.writableStore(WritableTokenRelationStore.class);
 
         // validate fields in the transaction body that involves checking with
         // dynamic properties or state.
-        final var resolvedExpiryMeta = validateSemantics(context, accountStore, op, config);
+        final var resolvedExpiryMeta = validateSemantics(context, accountStore, op, tokensConfig);
+
         // build a new token
-        final var newTokenId = context.newEntityNum();
-        final var newToken = buildToken(newTokenId, op, resolvedExpiryMeta);
+        final var newTokenNum = context.newEntityNum();
+        final var newTokenId = TokenID.newBuilder().tokenNum(newTokenNum).build();
+        final var newToken = buildToken(newTokenNum, op, resolvedExpiryMeta);
 
         // validate custom fees and get back list of fees with created token denomination
         final var feesSetNeedingCollectorAutoAssociation = customFeesValidator.validateForCreation(
                 newToken, accountStore, tokenRelationStore, tokenStore, op.customFeesOrElse(emptyList()));
+
+        // Put token into modifications map
+        tokenStore.put(newToken);
         // associate token with treasury and collector ids of custom fees whose token denomination
         // is set to sentinel value
-        associateAccounts(newToken, accountStore, tokenRelationStore, feesSetNeedingCollectorAutoAssociation);
+        associateAccounts(context, newToken, accountStore, tokenRelationStore, feesSetNeedingCollectorAutoAssociation);
 
         if (op.initialSupply() > 0) {
             // Since we have associated treasury and needed fee collector accounts in the previous step,
             // this relation should exist. Mint the provided initial supply of tokens
-            final var treasuryRel = tokenRelationStore.get(
-                    op.treasuryOrThrow(),
-                    TokenID.newBuilder().tokenNum(newToken.tokenNumber()).build());
+            final var treasuryRel = tokenRelationStore.get(op.treasuryOrThrow(), newTokenId);
+            // This keeps modified token with minted balance into modifications in token store
             mintFungible(newToken, treasuryRel, op.initialSupply(), true, accountStore, tokenStore, tokenRelationStore);
         }
-
-        // Keep token into modifications in token store.
-        // New token relations are already put to modification in associateAccounts
-        tokenStore.put(newToken);
+        // Update record with newly created token id
+        final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
+        recordBuilder.tokenID(newTokenId);
     }
 
+    /**
+     * Associate treasury account and the collector accounts of custom fees whose token denomination
+     * is set to sentinel value, to use denomination as newly created token.
+     * @param newToken newly created token
+     * @param accountStore account store
+     * @param tokenRelStore token relation store
+     * @param requireCollectorAutoAssociation set of custom fees whose token denomination is set to sentinel value
+     */
     private void associateAccounts(
+            final HandleContext context,
             Token newToken,
             WritableAccountStore accountStore,
             WritableTokenRelationStore tokenRelStore,
             Set<CustomFee> requireCollectorAutoAssociation) {
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
+
         // This should exist as it is validated in validateSemantics
         final var treasury = accountStore.get(AccountID.newBuilder()
                 .accountNum(newToken.treasuryAccountNumber())
                 .build());
+        tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, treasury, newToken, tokenRelStore);
+
         createAndLinkTokenRels(treasury, List.of(newToken), accountStore, tokenRelStore);
 
         for (final var customFee : requireCollectorAutoAssociation) {
             // This should exist as it is validated in validateSemantics
             final var collector = accountStore.get(customFee.feeCollectorAccountIdOrThrow());
+            tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
             createAndLinkTokenRels(collector, List.of(newToken), accountStore, tokenRelStore);
         }
     }
 
+    /**
+     * Create a new token with the given parameters.
+     * @param newTokenNum new token number
+     * @param op token creation transaction body
+     * @param resolvedExpiryMeta resolved expiry meta
+     * @return newly created token
+     */
     private Token buildToken(long newTokenNum, TokenCreateTransactionBody op, ExpiryMeta resolvedExpiryMeta) {
         return new Token(
                 newTokenNum,
@@ -178,6 +205,12 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 op.customFees());
     }
 
+    /**
+     * Get the expiry metadata for the token to be created from the transaction body.
+     * @param consensusTime consensus time
+     * @param op token creation transaction body
+     * @return given expiry metadata
+     */
     private ExpiryMeta getExpiryMeta(final long consensusTime, final TokenCreateTransactionBody op) {
         final var impliedExpiry =
                 consensusTime + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
@@ -190,17 +223,22 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA);
     }
 
+    /**
+     * Validate the semantics of the token creation transaction body, that involves checking with
+     * dynamic properties or state.
+     * @param context  handle context
+     * @param accountStore account store
+     * @param op token creation transaction body
+     * @param config tokens configuration
+     * @return resolved expiry metadata
+     */
     private ExpiryMeta validateSemantics(
             final HandleContext context,
             final ReadableAccountStore accountStore,
             final TokenCreateTransactionBody op,
             final TokensConfig config) {
-        // validate treasury exists
-        final var treasury = accountStore.getAccountById(op.treasuryOrElse(AccountID.DEFAULT));
-        validateTrue(treasury != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-        tokenCreateValidator.validate(op, config);
-        // validate custom fees length
-        validateTrue(op.customFees().size() <= config.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);
+        // validate different token create fields
+        tokenCreateValidator.validate(context, accountStore, op, config);
 
         // validate expiration and auto-renew account if present
         final var givenExpiryMeta = getExpiryMeta(context.consensusNow().getEpochSecond(), op);

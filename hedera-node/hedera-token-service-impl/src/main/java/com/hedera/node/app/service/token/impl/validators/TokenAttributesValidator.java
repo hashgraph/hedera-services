@@ -30,6 +30,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
@@ -37,36 +38,42 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Provides validation for token fields like token type,  token supply type, token symbol etc.,.
  * It is used in pureChecks for token creation.
  */
-public class TokenFieldsValidator extends CommonValidator {
+@Singleton
+public class TokenAttributesValidator {
     private final ConfigProvider configProvider;
     public static final Key IMMUTABILITY_SENTINEL_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
 
     @Inject
-    public TokenFieldsValidator(@NonNull final ConfigProvider configProvider) {
-        super(configProvider);
+    public TokenAttributesValidator(@NonNull final ConfigProvider configProvider) {
         this.configProvider = configProvider;
     }
 
-    public void validateTokenSymbol(@NonNull final String symbol) {
+    public void validateTokenSymbol(@Nullable final String symbol) {
         final var tokensConfig = configProvider.getConfiguration().getConfigData(TokensConfig.class);
         tokenStringCheck(symbol, tokensConfig.maxSymbolUtf8Bytes(), MISSING_TOKEN_SYMBOL, TOKEN_SYMBOL_TOO_LONG);
     }
 
-    public void validateTokenName(@NonNull final String name) {
+    public void validateTokenName(@Nullable final String name) {
         final var tokensConfig = configProvider.getConfiguration().getConfigData(TokensConfig.class);
         tokenStringCheck(name, tokensConfig.maxTokenNameUtf8Bytes(), MISSING_TOKEN_NAME, TOKEN_NAME_TOO_LONG);
     }
 
     private void tokenStringCheck(
-            final String s, final int maxLen, final ResponseCodeEnum onMissing, final ResponseCodeEnum onTooLong) {
+            @Nullable final String s,
+            final int maxLen,
+            @NonNull final ResponseCodeEnum onMissing,
+            @NonNull final ResponseCodeEnum onTooLong) {
+        validateTrue(s != null, onMissing);
         final int numUtf8Bytes = s.getBytes(StandardCharsets.UTF_8).length;
         validateTrue(numUtf8Bytes != 0, onMissing);
         validateTrue(numUtf8Bytes <= maxLen, onTooLong);
@@ -75,19 +82,19 @@ public class TokenFieldsValidator extends CommonValidator {
 
     public void checkKeys(
             final boolean hasAdminKey,
-            final Key adminKey,
+            @Nullable final Key adminKey,
             final boolean hasKycKey,
-            final Key kycKey,
+            @Nullable final Key kycKey,
             final boolean hasWipeKey,
-            final Key wipeKey,
+            @Nullable final Key wipeKey,
             final boolean hasSupplyKey,
-            final Key supplyKey,
+            @Nullable final Key supplyKey,
             final boolean hasFreezeKey,
-            final Key freezeKey,
+            @Nullable final Key freezeKey,
             final boolean hasFeeScheduleKey,
-            final Key feeScheduleKey,
+            @Nullable final Key feeScheduleKey,
             final boolean hasPauseKey,
-            final Key pauseKey) {
+            @Nullable final Key pauseKey) {
         if (hasAdminKey && !isKeyRemoval(adminKey)) {
             validateTrue(isValid(adminKey), INVALID_ADMIN_KEY);
         }
@@ -111,7 +118,8 @@ public class TokenFieldsValidator extends CommonValidator {
         }
     }
 
-    private static boolean isKeyRemoval(final Key source) {
+    private static boolean isKeyRemoval(@NonNull final Key source) {
+        requireNonNull(source);
         return IMMUTABILITY_SENTINEL_KEY.equals(source);
     }
 }
