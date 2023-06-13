@@ -218,7 +218,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                     contractNonces.put(contractNonceItem.getContractId(), contractNonceItem.getNonce());
                 }
                 assertEquals(expectedNonce, contractNonces.get(contractID), "Wrong nonce expectations");
-            } catch (Throwable t) {
+            } catch (Exception t) {
                 return List.of(t);
             }
             return EMPTY_LIST;

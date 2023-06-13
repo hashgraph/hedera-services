@@ -103,7 +103,7 @@ public class ContractCreateSuite extends HapiSuite {
 
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
     public static final String PARENT_INFO = "parentInfo";
-    private static final long GAS_TO_OFFER = 300_000L;
+    private static final String PAYER = "payer";
     private static final String CONTRACTS_NONCES_EXTERNALIZATION_ENABLED = "contracts.nonces.externalization.enabled";
 
     public static void main(String... args) {
@@ -352,10 +352,10 @@ public class ContractCreateSuite extends HapiSuite {
 
     private HapiSpec rejectsInsufficientFee() {
         return defaultHapiSpec("RejectsInsufficientFee")
-                .given(cryptoCreate("payer"), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
+                .given(cryptoCreate(PAYER), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                        .payingWith("payer")
+                        .payingWith(PAYER)
                         .fee(1L)
                         .hasPrecheck(INSUFFICIENT_TX_FEE));
     }
@@ -626,7 +626,6 @@ public class ContractCreateSuite extends HapiSuite {
     private HapiSpec contractCreateNoncesExternalizationHappyPath() {
         final var contract = "NoncesExternalization";
         final var contractCreateTxn = "contractCreateTxn";
-        final var payer = "payer";
 
         final var getParentContractByInex = "getParentContractsByIndex";
 
@@ -642,27 +641,27 @@ public class ContractCreateSuite extends HapiSuite {
                 .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
                 .given(
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
-                        cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(PAYER).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract).via(contractCreateTxn))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(contract, getParentContractByInex, BigInteger.valueOf(0L))
-                                .payingWith(payer)
+                                .payingWith(PAYER)
                                 .via(firstContractTxn)
                                 .exposingResultTo(result -> {
                                     final var addr = (Address) result[0];
                                     firstContractId.set(addr.value().longValueExact());
                                 }),
                         contractCall(contract, getParentContractByInex, BigInteger.valueOf(1L))
-                                .payingWith(payer)
+                                .payingWith(PAYER)
                                 .via(secondContractTxn)
                                 .exposingResultTo(result -> {
                                     final var addr = (Address) result[0];
                                     secondContractId.set(addr.value().longValueExact());
                                 }),
                         contractCall(contract, getParentContractByInex, BigInteger.valueOf(2L))
-                                .payingWith(payer)
+                                .payingWith(PAYER)
                                 .via(thirdContractTxn)
                                 .exposingResultTo(result -> {
                                     final var addr = (Address) result[0];
