@@ -78,8 +78,6 @@ import java.time.Duration;
  * @param databaseDirectory                               the directory where preconsensus events will be stored,
  *                                                        relative to
  *                                                        {@link com.swirlds.common.config.StateConfig#savedStateDirectory()}.
- * @param recycleBinDirectory                             the directory where invalid preconsensus event files will be
- *                                                        moved if a discontinuity is detected
  * @param enableStorage                                   if true, then stream preconsensus events to files on disk. If
  *                                                        this is disabled then a network wide crash (perhaps due to a
  *                                                        bug) can cause transactions that previously reached consensus
@@ -105,7 +103,6 @@ public record PreconsensusEventStreamConfig(
         @ConfigProperty(defaultValue = "5") int minimumGenerationalCapacity,
         @ConfigProperty(defaultValue = "false") boolean permitGaps,
         @ConfigProperty(defaultValue = "preconsensus-events") Path databaseDirectory,
-        @ConfigProperty(defaultValue = "preconsensus-events-debug") Path recycleBinDirectory,
         // FUTURE WORK: once tested make this default true
         @ConfigProperty(defaultValue = "false") boolean enableStorage,
         // FUTURE WORK: once tested make this default true
