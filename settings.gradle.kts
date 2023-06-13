@@ -33,7 +33,7 @@ plugins {
     id("me.champeau.includegit").version("0.1.6")
 }
 
-includeBuild("app-platform")
+includeBuild("hedera-platform")
 
 include(":hedera-node")
 

@@ -75,8 +75,8 @@ repositories {
 }
 
 dependencies {
-    annotationProcessor(platform("com.hedera.hashgraph:app-platform"))
-    api(platform("com.hedera.hashgraph:app-platform"))
+    annotationProcessor(platform("com.hedera.hashgraph:hedera-platform"))
+    api(platform("com.hedera.hashgraph:hedera-platform"))
 }
 javaModuleDependencies {
     versionsFromConsistentResolution(":app")
