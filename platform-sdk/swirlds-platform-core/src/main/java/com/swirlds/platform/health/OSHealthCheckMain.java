@@ -16,8 +16,7 @@
 
 package com.swirlds.platform.health;
 
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MILLISECONDS;
-
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.platform.health.clock.OSClockSourceSpeedCheck;
 import com.swirlds.platform.health.entropy.OSEntropyCheck;
 import com.swirlds.platform.health.filesystem.OSFileSystemCheck;
@@ -45,7 +44,7 @@ public final class OSHealthCheckMain {
         try {
             final OSFileSystemCheck.Report report = OSFileSystemCheck.execute(fileToRead);
             if (report.code() == OSFileSystemCheck.TestResultCode.SUCCESS) {
-                final double elapsedMillis = report.readNanos() * NANOSECONDS_TO_MILLISECONDS;
+                final double elapsedMillis = report.readNanos() * UnitConstants.NANOSECONDS_TO_MILLISECONDS;
                 System.out.printf(
                         "File system check passed, took %d nanos (%s millis) "
                                 + "to open the file and read 1 byte (data=%s)%n",
@@ -75,7 +74,7 @@ public final class OSHealthCheckMain {
         try {
             final OSEntropyCheck.Report randomSpeed = OSEntropyCheck.execute();
             if (randomSpeed.success()) {
-                final double elapsedMillis = randomSpeed.elapsedNanos() * NANOSECONDS_TO_MILLISECONDS;
+                final double elapsedMillis = randomSpeed.elapsedNanos() * UnitConstants.NANOSECONDS_TO_MILLISECONDS;
                 System.out.printf(
                         "First random number generation time: %d nanos (%s millis), generated long=%d%n",
                         randomSpeed.elapsedNanos(), elapsedMillis, randomSpeed.randomLong());

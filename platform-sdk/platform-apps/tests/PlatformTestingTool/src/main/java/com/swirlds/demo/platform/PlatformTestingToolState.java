@@ -164,7 +164,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     private static RunningAverageMetric htFCQMicroSec;
 
     /**
-     * Has init() been called on this copy or an ancestor copy of this object?
+     * Has init() been called on this copy
+     * or an ancestor copy of this object?
      */
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 

@@ -54,9 +54,9 @@ import java.util.Locale;
 import java.util.Random;
 
 /**
- * This demo collects statistics on the running of the network and consensus systems. It writes them to the screen, and
- * also saves them to disk in a comma separated value (.csv) file. Each transaction is 100 random bytes. So
- * StatsDemoState.handleTransaction doesn't actually do anything.
+ * This demo collects statistics on the running of the network and consensus systems. It writes them to the
+ * screen, and also saves them to disk in a comma separated value (.csv) file. Each transaction is 100
+ * random bytes. So StatsDemoState.handleTransaction doesn't actually do anything.
  */
 public class StatsDemoMain implements SwirldMain {
     // the first four come from the parameters in the config.txt file
@@ -97,10 +97,12 @@ public class StatsDemoMain implements SwirldMain {
     }
 
     /**
-     * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a particular
-     * SwirldMain class as the one to run, then it can run in Eclipse (with the green triangle icon).
+     * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a
+     * particular SwirldMain class as the one to run, then it can run in Eclipse (with the green triangle
+     * icon).
      *
-     * @param args these are not used
+     * @param args
+     * 		these are not used
      */
     public static void main(String[] args) {
         Browser.parseCommandLineArgsAndLaunch(args);

@@ -31,14 +31,15 @@ import java.util.stream.LongStream;
 import java.util.stream.StreamSupport;
 
 /**
- * A simple, random access list of <b>non-zero</b> longs designed to allow lock-free concurrency control. Unlike a
- * {@link java.util.List}, the size of a {@link LongList} can exceed {@code Integer.MAX_VALUE}.
- * <p>
+ * A simple, random access list of <b>non-zero</b> longs designed to allow lock-free concurrency control.
+ * Unlike a {@link java.util.List}, the size of a {@link LongList} can exceed {@code Integer.MAX_VALUE}.
+ *
  * Zero is treated as a sentinel value, marking indexes that have never been used with a {@code put()} call.
- * <p>
- * Implementations should support both concurrent reads and writes. Writing to an index beyond the current capacity of
- * the the list (but less than the max capacity) should <b>not</b> fail, but instead trigger an automatic expansion of
- * the list's capacity. Thus a {@link LongList} behaves more like a long-to-long map than a traditional list.
+ *
+ * Implementations should support both concurrent reads and writes. Writing to an index beyond
+ * the current capacity of the the list (but less than the max capacity) should <b>not</b> fail,
+ * but instead trigger an automatic expansion of the list's capacity. Thus a {@link LongList}
+ * behaves more like a long-to-long map than a traditional list.
  */
 public abstract class LongList implements CASable, Closeable {
     /**

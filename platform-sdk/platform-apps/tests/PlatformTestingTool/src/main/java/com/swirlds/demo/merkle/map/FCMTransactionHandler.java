@@ -397,12 +397,8 @@ public class FCMTransactionHandler {
             final MapKey toKey,
             final MerkleMap<MapKey, MapValueData> map,
             final ExpectedFCMFamily expectedMap) {
-        if (entityMissingFromMap(fromKey, map, expectedMap)) {
-            return null;
-        }
-        if (entityMissingFromMap(toKey, map, expectedMap)) {
-            return null;
-        }
+        if (entityMissingFromMap(fromKey, map, expectedMap)) return null;
+        if (entityMissingFromMap(toKey, map, expectedMap)) return null;
 
         final MapValueData valueFrom = map.getForModify(fromKey);
         final MapValueData valueTo = map.getForModify(toKey);

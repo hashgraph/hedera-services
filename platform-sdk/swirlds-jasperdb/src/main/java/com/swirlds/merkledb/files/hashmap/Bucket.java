@@ -16,13 +16,13 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
-import static com.swirlds.common.units.UnitConstants.KIBIBYTES_TO_BYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.KEY_HASHCODE_SIZE;
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.VALUE_SIZE;
 
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.Closeable;
@@ -60,7 +60,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     /** When increasing the capacity of a bucket, increase it by this many bytes. */
     private static final int CAPACITY_INCREMENT = 1024;
     /** We assume 8KB will be enough for now for most buckets. */
-    private static final int DEFAULT_BUCKET_BUFFER_SIZE = 8 * KIBIBYTES_TO_BYTES;
+    private static final int DEFAULT_BUCKET_BUFFER_SIZE = 8 * UnitConstants.KIBIBYTES_TO_BYTES;
 
     private static final int BUCKET_INDEX_SIZE = Integer.BYTES;
     private static final int BUCKET_SIZE_OFFSET = BUCKET_INDEX_SIZE;
@@ -79,9 +79,9 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     private int keySerializationVersion;
 
     /**
-     * Byte buffer that holds this bucket data, including bucket index, size in bytes, number of entries, and entry
-     * data. Buffer is expanded as needed, when new entries are added. Buffer limit is kept equal to the bucket size in
-     * bytes.
+     * Byte buffer that holds this bucket data, including bucket index, size in bytes, number of
+     * entries, and entry data. Buffer is expanded as needed, when new entries are added. Buffer
+     * limit is kept equal to the bucket size in bytes.
      */
     private ByteBuffer bucketBuffer;
 
@@ -89,7 +89,8 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     private ByteBuffer reusableBuffer;
 
     /**
-     * Bucket pool this bucket is managed by, optional. If not null, the bucket is released back to the pool on close.
+     * Bucket pool this bucket is managed by, optional. If not null, the bucket is
+     * released back to the pool on close.
      */
     private final ReusableBucketPool<K> bucketPool;
 
@@ -219,8 +220,8 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     /**
      * Find a value for given key
      *
-     * @param keyHashCode   the int hash for the key
-     * @param key           the key object
+     * @param keyHashCode the int hash for the key
+     * @param key the key object
      * @param notFoundValue the long to return if the key is not found
      * @return the stored value for given key or notFoundValue if nothing is stored for the key
      * @throws IOException If there was a problem reading the value from file

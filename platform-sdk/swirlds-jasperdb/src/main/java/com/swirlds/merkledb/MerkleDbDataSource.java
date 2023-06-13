@@ -19,8 +19,6 @@ package com.swirlds.merkledb;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
 import static com.swirlds.common.units.UnitConstants.BYTES_TO_MEBIBYTES;
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_SECONDS;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
@@ -34,6 +32,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.collections.HashList;
 import com.swirlds.merkledb.collections.HashListByteBuffer;
 import com.swirlds.merkledb.collections.LongList;
@@ -93,9 +92,9 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     private static final Logger logger = LogManager.getLogger(MerkleDbDataSource.class);
 
     /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any application classes
-     * that might instantiate a data source, the {@link ConfigurationHolder} holder will have been configured by the
-     * time this static initializer runs.
+     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
+     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
+     * holder will have been configured by the time this static initializer runs.
      */
     private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
 
@@ -117,8 +116,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
-     * The number of threads to use for merging thread pool. THIS IS ALWAYS 1. As merging is not designed for multiple
-     * merges happening concurrently.
+     * The number of threads to use for merging thread pool. THIS IS ALWAYS 1. As merging is not
+     * designed for multiple merges happening concurrently.
      */
     private static final int NUMBER_OF_MERGING_THREADS = 1;
 
@@ -148,9 +147,9 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     private final LongList pathToDiskLocationLeafNodes;
 
     /**
-     * In memory off-heap store for node hashes. This data is never stored on disk so on load from disk, this will be
-     * empty. That should cause all internal node hashes to have to be computed on the first round which will be
-     * expensive.
+     * In memory off-heap store for node hashes. This data is never stored on disk so on load from disk, this
+     * will be empty. That should cause all internal node hashes to have to be computed on the first round
+     * which will be expensive.
      */
     private final HashList hashStoreRam;
 
@@ -164,13 +163,14 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     private final boolean hasDiskStoreForHashes;
 
     /**
-     * In memory off-heap store for key to path map, this is used when isLongKeyMode=true and keys are longs
+     * In memory off-heap store for key to path map, this is used when isLongKeyMode=true and keys
+     * are longs
      */
     private final LongList longKeyToPath;
 
     /**
-     * Mixed disk and off-heap memory store for key to path map, this is used if isLongKeyMode=false, and we have
-     * complex keys.
+     * Mixed disk and off-heap memory store for key to path map, this is used if
+     * isLongKeyMode=false, and we have complex keys.
      */
     private final HalfDiskHashMap<K> objectKeyToPath;
 
@@ -178,15 +178,16 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     private final MemoryIndexDiskKeyValueStore<VirtualLeafRecord<K, V>> pathToKeyValue;
 
     /**
-     * Cache size for reading virtual leaf records. Initialized in data source creation time from JasperDB settings. If
-     * the value is zero, leaf records cache isn't used.
+     * Cache size for reading virtual leaf records. Initialized in data source creation time from
+     * JasperDB settings. If the value is zero, leaf records cache isn't used.
      */
     private final int leafRecordCacheSize;
 
     /**
-     * Virtual leaf records cache. It's a simple array indexed by leaf keys % cache size. Cache eviction is not needed,
-     * as array size is fixed and can be configured in JasperDB settings. Index conflicts are resolved in a very
-     * straightforward way: whatever entry is read last, it's put to the cache.
+     * Virtual leaf records cache. It's a simple array indexed by leaf keys % cache size. Cache
+     * eviction is not needed, as array size is fixed and can be configured in JasperDB settings.
+     * Index conflicts are resolved in a very straightforward way: whatever entry is read last, it's
+     * put to the cache.
      */
     @SuppressWarnings("rawtypes")
     private final VirtualLeafRecord[] leafRecordCache;
@@ -889,7 +890,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     MERKLE_DB.getMarker(),
                     "[{}] Snapshot all finished in {} seconds",
                     tableName,
-                    (System.currentTimeMillis() - START) * MILLISECONDS_TO_SECONDS);
+                    (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS);
         } finally {
             snapshotInProgress.set(false);
         }
@@ -1128,7 +1129,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                             "[{}] Snapshot {} complete in {} seconds",
                             tableName,
                             taskName,
-                            (System.currentTimeMillis() - START) * MILLISECONDS_TO_SECONDS);
+                            (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS);
                     return true; // turns this into a callable, so it can throw checked
                     // exceptions
                 } finally {
@@ -1354,37 +1355,37 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             // isSmallMerge/isMediumMerge/isLargeMerge
             if (isSmallMerge) {
                 if (hasDiskStoreForHashes) {
-                    statistics.setInternalHashesStoreSmallMergeTime(
-                            firstMergeDuration.toSeconds() + firstMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                    statistics.setInternalHashesStoreSmallMergeTime(firstMergeDuration.toSeconds()
+                            + firstMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
                 if (!isLongKeyMode) {
-                    statistics.setLeafKeyToPathStoreSmallMergeTime(
-                            secondMergeDuration.toSeconds() + secondMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                    statistics.setLeafKeyToPathStoreSmallMergeTime(secondMergeDuration.toSeconds()
+                            + secondMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
-                statistics.setLeafPathToHashKeyValueStoreSmallMergeTime(
-                        thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                statistics.setLeafPathToHashKeyValueStoreSmallMergeTime(thirdMergeDuration.toSeconds()
+                        + thirdMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
             } else if (isMediumMerge) {
                 if (hasDiskStoreForHashes) {
-                    statistics.setInternalHashesStoreMediumMergeTime(
-                            firstMergeDuration.toSeconds() + firstMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                    statistics.setInternalHashesStoreMediumMergeTime(firstMergeDuration.toSeconds()
+                            + firstMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
                 if (!isLongKeyMode) {
-                    statistics.setLeafKeyToPathStoreMediumMergeTime(
-                            secondMergeDuration.toSeconds() + secondMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                    statistics.setLeafKeyToPathStoreMediumMergeTime(secondMergeDuration.toSeconds()
+                            + secondMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
-                statistics.setLeafPathToHashKeyValueStoreMediumMergeTime(
-                        thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                statistics.setLeafPathToHashKeyValueStoreMediumMergeTime(thirdMergeDuration.toSeconds()
+                        + thirdMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
             } else if (isLargeMerge) {
                 if (hasDiskStoreForHashes) {
-                    statistics.setInternalHashesStoreLargeMergeTime(
-                            firstMergeDuration.toSeconds() + firstMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                    statistics.setInternalHashesStoreLargeMergeTime(firstMergeDuration.toSeconds()
+                            + firstMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
                 if (!isLongKeyMode) {
-                    statistics.setLeafKeyToPathStoreLargeMergeTime(
-                            secondMergeDuration.toSeconds() + secondMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                    statistics.setLeafKeyToPathStoreLargeMergeTime(secondMergeDuration.toSeconds()
+                            + secondMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
-                statistics.setLeafPathToHashKeyValueStoreLargeMergeTime(
-                        thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                statistics.setLeafPathToHashKeyValueStoreLargeMergeTime(thirdMergeDuration.toSeconds()
+                        + thirdMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
             }
             // update file stats (those statistics don't care about small vs medium vs large merge size)
             updateFileStats();

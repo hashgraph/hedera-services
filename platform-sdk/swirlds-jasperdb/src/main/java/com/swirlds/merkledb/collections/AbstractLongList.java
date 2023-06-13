@@ -41,14 +41,14 @@ import java.util.stream.StreamSupport;
 import sun.misc.Unsafe;
 
 /**
- * Common parent class for long list implementations. It takes care of loading a snapshot from disk, chunk management
- * and other common functionality.
+ * Common parent class for long list implementations. It takes care of loading a snapshot from disk,
+ * chunk management and other common functionality.
  *
  * @param <C> a type that represents a chunk (byte buffer, array or long that represents an offset of the chunk)
  */
 public abstract class AbstractLongList<C> implements LongList {
 
-    /** Access to sun.misc.Unsafe required for operations on direct bytebuffers */
+    /** Access to sun.misc.Unsafe required for operations on direct bytebuffers*/
     protected static final Unsafe UNSAFE;
 
     public static final String MAX_CHUNKS_EXCEEDED_MSG = "The maximum number of memory chunks should not exceed %s. "
@@ -74,15 +74,15 @@ public abstract class AbstractLongList<C> implements LongList {
     /** A suitable default for the number of longs to store per chunk. */
     protected static final int DEFAULT_NUM_LONGS_PER_CHUNK = toIntExact(8L * (MEBIBYTES_TO_BYTES / Long.BYTES));
 
-    /**
-     * A suitable default for the reserved buffer length that the list should have before minimal index in the list
+    /** A suitable default for the reserved buffer length that the list should have before minimal
+     * index in the list
      */
     public static final int DEFAULT_RESERVED_BUFFER_LENGTH = toIntExact(2L * MEBIBYTES_TO_BYTES / Long.BYTES);
 
-    /** Maximum number of chunks allowed. */
+    /** Maximum number of chunks allowed.*/
     public static final int MAX_NUM_CHUNKS = 2 << 14;
 
-    /** Initial file format */
+    /**Initial file format*/
     private static final int INITIAL_VERSION = 1;
     /** File format that supports min valid index */
     private static final int MIN_VALID_INDEX_SUPPORT_VERSION = 2;
@@ -90,14 +90,16 @@ public abstract class AbstractLongList<C> implements LongList {
     private static final int CURRENT_FILE_FORMAT_VERSION = MIN_VALID_INDEX_SUPPORT_VERSION;
     /** The number of bytes required to store file version */
     protected static final int VERSION_METADATA_SIZE = Integer.BYTES;
-    /**
-     * The number of bytes to read for format metadata, v1: <br> - number of longs per chunk<br> - max index that can be
-     * stored<br> - max number of longs supported by the list<br>
+    /** The number of bytes to read for format metadata, v1: <br>
+     * - number of longs per chunk<br>
+     * - max index that can be stored<br>
+     * - max number of longs supported by the list<br>
      */
     protected static final int FORMAT_METADATA_SIZE_V1 = Integer.BYTES + Long.BYTES + Long.BYTES;
-    /**
-     * The number of bytes to read for format metadata, v2: - number of longs per chunk<br> - max number of longs
-     * supported by the list<br> - min valid index<br>
+    /** The number of bytes to read for format metadata, v2:
+     * - number of longs per chunk<br>
+     * - max number of longs supported by the list<br>
+     * - min valid index<br>
      */
     protected static final int FORMAT_METADATA_SIZE_V2 = Integer.BYTES + Long.BYTES + Long.BYTES;
     /** The number for bytes to read for file header, v1 */
@@ -108,21 +110,20 @@ public abstract class AbstractLongList<C> implements LongList {
     protected final int currentFileHeaderSize;
 
     /**
-     * The number of longs to store in each allocated buffer. Must be a positive integer. If the value is small, then we
-     * will end up allocating a very large number of buffers. If the value is large, then we will waste a lot of memory
-     * in the unfilled buffer.
+     * The number of longs to store in each allocated buffer. Must be a positive integer. If the
+     * value is small, then we will end up allocating a very large number of buffers. If the value
+     * is large, then we will waste a lot of memory in the unfilled buffer.
      */
     protected final int numLongsPerChunk;
     /** Size in bytes for each memory chunk to allocate */
     protected final int memoryChunkSize;
-    /**
-     * The number of longs that this list would contain if it was not optimized by {@link LongList#updateValidRange}.
-     * Practically speaking, it defines the list's right boundary.
-     */
+    /** The number of longs that this list would contain if it was not optimized by {@link LongList#updateValidRange}.
+     * Practically speaking, it defines the list's right boundary. */
     protected final AtomicLong size = new AtomicLong(0);
     /**
-     * The maximum number of longs to ever store in this data structure. This is used as a safety measure to make sure
-     * no bug causes an out of memory issue by causing us to allocate more buffers than the system can handle.
+     * The maximum number of longs to ever store in this data structure. This is used as a safety
+     * measure to make sure no bug causes an out of memory issue by causing us to allocate more
+     * buffers than the system can handle.
      */
     protected final long maxLongs;
 

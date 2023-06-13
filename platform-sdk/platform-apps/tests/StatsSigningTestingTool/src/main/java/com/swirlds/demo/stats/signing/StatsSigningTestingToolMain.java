@@ -134,7 +134,8 @@ public class StatsSigningTestingToolMain implements SwirldMain {
      * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a particular
      * SwirldMain class as the one to run, then it can run in Eclipse (with the green triangle icon).
      *
-     * @param args these are not used
+     * @param args
+     * 		these are not used
      */
     public static void main(final String[] args) {
         Browser.parseCommandLineArgsAndLaunch(args);

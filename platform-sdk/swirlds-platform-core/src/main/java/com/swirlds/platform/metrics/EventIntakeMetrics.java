@@ -83,9 +83,12 @@ public class EventIntakeMetrics implements StaleEventObserver {
     /**
      * Constructor of {@code EventIntakeMetrics}
      *
-     * @param metrics a reference to the metrics-system
-     * @param time    provides wall clock time
-     * @throws IllegalArgumentException if {@code metrics} is {@code null}
+     * @param metrics
+     * 		a reference to the metrics-system
+     * @param time
+     * 		provides wall clock time
+     * @throws IllegalArgumentException
+     * 		if {@code metrics} is {@code null}
      */
     public EventIntakeMetrics(final Metrics metrics, final Time time) {
         CommonUtils.throwArgNull(metrics, "metrics");

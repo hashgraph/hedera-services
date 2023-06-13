@@ -26,8 +26,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * A key serializer used by {@link HalfDiskVirtualKeySet} when JPDB is operating in long key mode. This key serializer
- * only implements methods require to serialize a long key, and is not a general purpose key serializer.
+ * A key serializer used by {@link HalfDiskVirtualKeySet} when JPDB is operating in long key mode.
+ * This key serializer only implements methods require to serialize a long key, and is not a general
+ * purpose key serializer.
  */
 @ConstructableIgnored
 public class VirtualKeySetSerializer implements KeySerializer<VirtualLongKey> {

@@ -46,9 +46,12 @@ public final class NetworkStatsTransmitter implements Startable, Stoppable {
     private final BasicConfig basicConfig;
 
     /**
-     * @param platformContext      the context of this platform
-     * @param transactionSubmitter a submitter of non-priority system transactions
-     * @param networkMetrics       metrics related to the network
+     * @param platformContext
+     * 		the context of this platform
+     * @param transactionSubmitter
+     * 		a submitter of non-priority system transactions
+     * @param networkMetrics
+     * 		metrics related to the network
      */
     public NetworkStatsTransmitter(
             final PlatformContext platformContext,

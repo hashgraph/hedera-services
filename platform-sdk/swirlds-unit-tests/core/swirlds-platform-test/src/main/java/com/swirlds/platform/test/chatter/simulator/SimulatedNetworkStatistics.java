@@ -153,7 +153,8 @@ public class SimulatedNetworkStatistics {
     /**
      * Capture statistics for a sent message.
      *
-     * @param message the message that was sent
+     * @param message
+     * 		the message that was sent
      */
     public void captureSendStatistics(final SimulatedMessage message) {
         final NodeId source = message.getSource();

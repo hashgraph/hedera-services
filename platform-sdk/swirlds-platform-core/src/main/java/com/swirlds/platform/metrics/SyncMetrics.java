@@ -24,12 +24,12 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_5_3;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.system.PlatformStatNames;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
@@ -125,8 +125,10 @@ public class SyncMetrics {
     /**
      * Constructor of {@code SyncMetrics}
      *
-     * @param metrics a reference to the metrics-system
-     * @throws IllegalArgumentException if {@code metrics} is {@code null}
+     * @param metrics
+     * 		a reference to the metrics-system
+     * @throws IllegalArgumentException
+     * 		if {@code metrics} is {@code null}
      */
     public SyncMetrics(final Metrics metrics) {
         avgBytesPerSecSync = metrics.getOrCreate(AVG_BYTES_PER_SEC_SYNC_CONFIG);
@@ -226,8 +228,10 @@ public class SyncMetrics {
     /**
      * Supplies the generation numbers of a sync for statistics
      *
-     * @param self  generations of our graph at the start of the sync
-     * @param other generations of their graph at the start of the sync
+     * @param self
+     * 		generations of our graph at the start of the sync
+     * @param other
+     * 		generations of their graph at the start of the sync
      */
     public void generations(final GraphGenerations self, final GraphGenerations other) {
         syncGenerationDiff.update(self.getMaxRoundGeneration() - other.getMaxRoundGeneration());
@@ -266,7 +270,7 @@ public class SyncMetrics {
         avgSyncDuration5.update(timing.getTimePoint(4), timing.getTimePoint(5));
 
         avgSyncDuration.update(timing.getTimePoint(0), timing.getTimePoint(5));
-        final double syncDurationSec = timing.getPointDiff(5, 0) * NANOSECONDS_TO_SECONDS;
+        final double syncDurationSec = timing.getPointDiff(5, 0) * UnitConstants.NANOSECONDS_TO_SECONDS;
         final double speed = Math.max(
                         conn.getDis().getSyncByteCounter().getCount(),
                         conn.getDos().getSyncByteCounter().getCount())

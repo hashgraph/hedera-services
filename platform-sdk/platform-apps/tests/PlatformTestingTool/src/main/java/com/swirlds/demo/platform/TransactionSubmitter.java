@@ -56,8 +56,8 @@ public class TransactionSubmitter {
     /**
      * Force canSubmitMore to halt temporarily or allow it to run normally
      *
-     * @return true: canSubmitMore is forced to halt generating transactions false: permit canSubmitMore to run it's
-     * normal internal logic w.r.t. generating transactions
+     * @return true: canSubmitMore is forced to halt generating transactions
+     * 		false: permit canSubmitMore to run it's normal internal logic w.r.t. generating transactions
      */
     public static AtomicBoolean getForcePauseCanSubmitMore() {
         return forcePauseCanSubmitMore;

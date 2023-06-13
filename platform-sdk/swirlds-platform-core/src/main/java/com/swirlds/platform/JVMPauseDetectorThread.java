@@ -21,8 +21,9 @@ import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS
 import java.util.concurrent.TimeUnit;
 
 /**
- * For detecting JVM pause Originally written by Gil Tene of Azul Systems source:
- * https://github.com/clojure-goes-fast/jvm-hiccup-meter/blob/master/src/jvm_hiccup_meter/MeterThread.java
+ * For detecting JVM pause
+ * Originally written by Gil Tene of Azul Systems
+ * source: https://github.com/clojure-goes-fast/jvm-hiccup-meter/blob/master/src/jvm_hiccup_meter/MeterThread.java
  */
 public class JVMPauseDetectorThread extends Thread {
 

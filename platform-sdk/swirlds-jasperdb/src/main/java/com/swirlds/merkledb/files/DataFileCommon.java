@@ -50,7 +50,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Common static content for data files. As much as possible is package protected but some is used outside.
+ * Common static content for data files. As much as possible is package protected but some is used
+ * outside.
  */
 @SuppressWarnings("rawtypes")
 public final class DataFileCommon {

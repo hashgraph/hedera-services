@@ -113,9 +113,9 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
     private final NodeId selfId;
 
     /**
-     * Time when this platform received the first event created by someone else in the most recent round. This is used
-     * to calculate Statistics.avgFirstEventInRoundReceivedTime which is "time for event, from receiving the first event
-     * in a round to the first event in the next round".
+     * Time when this platform received the first event created by someone else in the most recent round.
+     * This is used to calculate Statistics.avgFirstEventInRoundReceivedTime which is "time for event, from
+     * receiving the first event in a round to the first event in the next round".
      */
     private static volatile Instant firstEventInLastRoundTime = null;
     /**
@@ -126,9 +126,12 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
     /**
      * Constructor of {@code ConsensusMetricsImpl}
      *
-     * @param selfId  the {@link NodeId} of this node
-     * @param metrics a reference to the metrics-system
-     * @throws IllegalArgumentException if one of the parameters is {@code null}
+     * @param selfId
+     * 		the {@link NodeId} of this node
+     * @param metrics
+     * 		a reference to the metrics-system
+     * @throws IllegalArgumentException
+     * 		if one of the parameters is {@code null}
      */
     public ConsensusMetricsImpl(final NodeId selfId, final Metrics metrics) {
         this.selfId = CommonUtils.throwArgNull(selfId, "selfId");

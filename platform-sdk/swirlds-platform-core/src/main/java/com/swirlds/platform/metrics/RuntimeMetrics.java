@@ -24,13 +24,13 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_0;
 import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.common.units.UnitConstants.BYTES_TO_MEBIBYTES;
 
 import com.sun.management.HotSpotDiagnosticMXBean;
 import com.sun.management.OperatingSystemMXBean;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.platform.state.signed.SignedState;
@@ -141,7 +141,8 @@ public final class RuntimeMetrics {
     /**
      * Setup all metrics related to the runtime
      *
-     * @param metrics a reference to the metrics-system
+     * @param metrics
+     * 		a reference to the metrics-system
      */
     public static void setup(final Metrics metrics) {
         if (SETUP_STARTED.compareAndSet(false, true)) {
@@ -222,7 +223,7 @@ public final class RuntimeMetrics {
                 // just use the present value, namely Runtime.getRuntime().maxMemory().
             }
         }
-        return maxDirectMemoryInBytes * BYTES_TO_MEBIBYTES;
+        return maxDirectMemoryInBytes * UnitConstants.BYTES_TO_MEBIBYTES;
     }
 
     private void update() {
@@ -247,7 +248,7 @@ public final class RuntimeMetrics {
             }
             return;
         }
-        final double megabytesUsed = bytesUsed * BYTES_TO_MEBIBYTES;
+        final double megabytesUsed = bytesUsed * UnitConstants.BYTES_TO_MEBIBYTES;
         directMemInMB.update(megabytesUsed);
         if (maximumDirectMemSizeInMB > 0) {
             directMemPercent.update(megabytesUsed * WHOLE_PERCENT / maximumDirectMemSizeInMB);

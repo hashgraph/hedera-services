@@ -122,8 +122,10 @@ public class AddedEventMetrics implements EventAddedObserver {
     /**
      * The constructor of {@code AddedEventMetrics}
      *
-     * @param selfId  the {@link NodeId} of this node
-     * @param metrics a reference to the metrics-system
+     * @param selfId
+     * 		the {@link NodeId} of this node
+     * @param metrics
+     * 		a reference to the metrics-system
      * @throws IllegalArgumentException if one of the parameters is {@code null}
      */
     public AddedEventMetrics(final NodeId selfId, final Metrics metrics) {

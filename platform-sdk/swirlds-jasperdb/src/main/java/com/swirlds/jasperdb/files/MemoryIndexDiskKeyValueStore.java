@@ -16,7 +16,6 @@
 
 package com.swirlds.jasperdb.files;
 
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_SECONDS;
 import static com.swirlds.jasperdb.files.DataFileCommon.dataLocationToString;
 import static com.swirlds.jasperdb.files.DataFileCommon.fileIndexFromDataLocation;
 import static com.swirlds.jasperdb.files.DataFileCommon.formatSizeBytes;
@@ -27,6 +26,7 @@ import static com.swirlds.jasperdb.files.DataFileCommon.printDataLinkValidation;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.jasperdb.KeyRange;
 import com.swirlds.jasperdb.Snapshotable;
 import com.swirlds.jasperdb.collections.CASable;
@@ -50,12 +50,13 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
  * A specialized map like disk based data store with long keys. It is assumed the keys are a single sequential block of
  * numbers that does not need to start at zero. The index from long key to disk location for value is in RAM and the
  * value data is stored in a set of files on disk.
- * <p>
+ *
  * There is an assumption that keys are a contiguous range of incrementing numbers. This allows easy deletion during
  * merging by accepting any key/value with a key outside this range is not needed any more. This design comes from being
  * used where keys are leaf paths in a binary tree.
  *
- * @param <D> type for data items
+ * @param <D>
+ * 		type for data items
  */
 @SuppressWarnings({"DuplicatedCode"})
 public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshotable {
@@ -81,20 +82,24 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /**
      * Construct a new MemoryIndexDiskKeyValueStore
      *
-     * @param storeDir               The directory to store data files in
-     * @param storeName              The name for the data store, this allows more than one data store in a single
-     *                               directory.
-     * @param legacyStoreName        Base name for the data store. If not null, the store will process files with this
-     *                               prefix at startup. New files in the store will be prefixed with {@code storeName}
-     * @param dataItemSerializer     Serializer for converting raw data to/from data items
-     * @param loadedDataCallback     call back for handing loaded data from existing files on startup. Can be null if
-     *                               not needed.
-     * @param keyToDiskLocationIndex The index to use for keys to disk locations. Having this passed in allows multiple
-     *                               MemoryIndexDiskKeyValueStore stores to share the same index if there key ranges do
-     *                               not overlap. For example with internal node and leaf paths in a virtual map tree.
-     *                               It also lets the caller decide the LongList implementation to use. This does mean
-     *                               the caller is responsible for snapshot of the index.
-     * @throws IOException If there was a problem opening data files
+     * @param storeDir
+     * 		The directory to store data files in
+     * @param storeName
+     * 		The name for the data store, this allows more than one data store in a single directory.
+     * @param legacyStoreName
+     * 		Base name for the data store. If not null, the store will process files with this prefix at
+     * 		startup. New files in the store will be prefixed with {@code storeName}
+     * @param dataItemSerializer
+     * 		Serializer for converting raw data to/from data items
+     * @param loadedDataCallback
+     * 		call back for handing loaded data from existing files on startup. Can be null if not needed.
+     * @param keyToDiskLocationIndex
+     * 		The index to use for keys to disk locations. Having this passed in allows multiple
+     * 		MemoryIndexDiskKeyValueStore stores to share the same index if there key ranges do not overlap. For example
+     * 		with internal node and leaf paths in a virtual map tree. It also lets the caller decide the LongList
+     * 		implementation to use. This does mean the caller is responsible for snapshot of the index.
+     * @throws IOException
+     * 		If there was a problem opening data files
      */
     public MemoryIndexDiskKeyValueStore(
             final Path storeDir,
@@ -195,7 +200,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
 
         logMergeStats(
                 storeName,
-                (System.currentTimeMillis() - START) * MILLISECONDS_TO_SECONDS,
+                (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS,
                 filesToMergeSize,
                 getSizeOfFilesByPath(newFilesCreated),
                 fileCollection,

@@ -17,7 +17,6 @@
 package com.swirlds.merkledb.files.hashmap;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
@@ -27,6 +26,7 @@ import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
@@ -56,13 +56,13 @@ import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 /**
- * This is a hash map implementation where the bucket index is in RAM and the buckets are on disk. It maps a VirtualKey
- * to a long value. This allows very large maps with minimal RAM usage and the best performance profile as by using an
- * in memory index we avoid the need for random disk writes. Random disk writes are horrible performance wise in our
- * testing.
- * <p>
- * This implementation depends on good hashCode() implementation on the keys, if there are too many hash collisions the
- * performance can get bad.
+ * This is a hash map implementation where the bucket index is in RAM and the buckets are on disk.
+ * It maps a VirtualKey to a long value. This allows very large maps with minimal RAM usage and the
+ * best performance profile as by using an in memory index we avoid the need for random disk writes.
+ * Random disk writes are horrible performance wise in our testing.
+ *
+ * This implementation depends on good hashCode() implementation on the keys, if there are too
+ * many hash collisions the performance can get bad.
  *
  * <b>IMPORTANT: This implementation assumes a single writing thread. There can be multiple
  * readers while writing is happening.</b>
@@ -81,7 +81,8 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     /** The amount of data used for storing key hash code */
     protected static final int KEY_HASHCODE_SIZE = Integer.BYTES;
     /**
-     * The amount of data used for storing value in bucket, our values are longs as this is a key to long map
+     * The amount of data used for storing value in bucket, our values are longs as this is a key to
+     * long map
      */
     protected static final int VALUE_SIZE = Long.BYTES;
     /**
@@ -293,7 +294,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
                 formatSizeBytes(filesToMergeSize));
         final List<Path> newFilesCreated = fileCollection.compactFiles(bucketIndexToBucketLocation, filesToMerge);
         final long END = System.currentTimeMillis();
-        final double tookSeconds = (END - START) * MILLISECONDS_TO_SECONDS;
+        final double tookSeconds = (END - START) * UnitConstants.MILLISECONDS_TO_SECONDS;
         logMergeStats(storeName, tookSeconds, filesToMerge, filesToMergeSize, newFilesCreated, fileCollection);
         logger.debug(
                 MERKLE_DB.getMarker(),

@@ -16,9 +16,8 @@
 
 package com.swirlds.platform.stats.cycle;
 
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
-
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.units.UnitConstants;
 
 /**
  * Tracks the fraction of busy time to idle in a cycle
@@ -41,18 +40,20 @@ public class CycleBusyTime extends PercentageMetric {
     /**
      * Add the amount of time the thread was busy
      *
-     * @param nanoTime the number of nanoseconds a thread was busy
+     * @param nanoTime
+     * 		the number of nanoseconds a thread was busy
      */
     public void addBusyTime(final long nanoTime) {
-        super.update((int) (nanoTime * NANOSECONDS_TO_MICROSECONDS), 0);
+        super.update((int) (nanoTime * UnitConstants.NANOSECONDS_TO_MICROSECONDS), 0);
     }
 
     /**
      * Add the amount of time the thread was idle
      *
-     * @param nanoTime the number of nanoseconds a thread was idle
+     * @param nanoTime
+     * 		the number of nanoseconds a thread was idle
      */
     public void addIdleTime(final long nanoTime) {
-        super.update(0, (int) (nanoTime * NANOSECONDS_TO_MICROSECONDS));
+        super.update(0, (int) (nanoTime * UnitConstants.NANOSECONDS_TO_MICROSECONDS));
     }
 }

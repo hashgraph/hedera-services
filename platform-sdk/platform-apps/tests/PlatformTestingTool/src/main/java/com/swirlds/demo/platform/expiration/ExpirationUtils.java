@@ -176,7 +176,8 @@ public class ExpirationUtils {
     }
 
     /**
-     * If the top most record in FCQueue has ExpirationTime before or equal to lastPurgeTimestamp return true
+     * If the top most record in FCQueue has ExpirationTime before or equal to
+     * lastPurgeTimestamp return true
      *
      * @param records
      * @param lastPurgeTimestamp

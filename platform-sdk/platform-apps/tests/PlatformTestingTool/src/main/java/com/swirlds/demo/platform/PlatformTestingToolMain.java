@@ -30,7 +30,6 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_6_2;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static com.swirlds.logging.LogMarker.DEMO_INFO;
 import static com.swirlds.merkle.map.test.lifecycle.EntityType.Crypto;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
@@ -59,6 +58,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.MapValueData;
@@ -117,8 +117,8 @@ import org.apache.logging.log4j.MarkerManager;
 
 /**
  * This demo tests platform features and collects statistics on the running of the network and consensus systems. It
- * writes them to the screen, and also saves them to disk in a comma separated value (.csv) file. Each transaction
- * consists of an optional sequence number and random bytes.
+ * writes them to the screen, and also saves them to disk in a comma separated value (.csv) file.
+ * Each transaction consists of an optional sequence number and random bytes.
  */
 public class PlatformTestingToolMain implements SwirldMain {
 
@@ -138,10 +138,11 @@ public class PlatformTestingToolMain implements SwirldMain {
     private static final String FCM_CATEGORY = "FCM";
     private static final String VM_CATEGORY = "VM";
     /**
-     * save internal file logs and expected map to file while freezing; for restart test we should set
-     * `saveExpectedMapAtFreeze` to be true, so that ExpectedFCMFamily could be recovered at restart. Note: it might not
-     * work with TPS higher than 5k, because the nodes might not be able to finish writing file to disk before being
-     * shut down for restart.
+     * save internal file logs and expected map to file while freezing;
+     * for restart test we should set `saveExpectedMapAtFreeze` to be true, so that
+     * ExpectedFCMFamily could be recovered at restart.
+     * Note: it might not work with TPS higher than 5k, because the nodes might not be able to finish writing file to
+     * disk before being shut down for restart.
      */
     boolean saveExpectedMapAtFreeze = false;
     /////////////////////////////////////////////////////////////////////
@@ -154,8 +155,8 @@ public class PlatformTestingToolMain implements SwirldMain {
     /**
      * whether enable check after test run. When enableCheck is false TYPE_TEST_PAUSE and TYPE_TEST_SYNC transactions
      * are not needed in sequential test. As there is no TYPE_TEST_PAUSE before delete transactions, if one node is
-     * slower than other nodes, other nodes might handle slower nodes transactions after entities are deleted. This
-     * might cause performOnDeleted errors. So performOnDeleted is set to true when enableCheck is false
+     * slower than other nodes, other nodes might handle slower nodes transactions after entities are deleted.
+     * This might cause performOnDeleted errors. So performOnDeleted is set to true when enableCheck is false
      */
     private boolean enableCheck = true;
 
@@ -290,10 +291,11 @@ public class PlatformTestingToolMain implements SwirldMain {
     }
 
     /**
-     * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a particular
-     * SwirldMain class as the one to run, then it can run in Eclipse (with the green triangle icon).
+     * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a
+     * particular SwirldMain class as the one to run, then it can run in Eclipse (with the green triangle icon).
      *
-     * @param args these are not used
+     * @param args
+     * 		these are not used
      */
     public static void main(String[] args) {
         Browser.parseCommandLineArgsAndLaunch(args);
@@ -1203,7 +1205,7 @@ public class PlatformTestingToolMain implements SwirldMain {
      */
     private void queryInState() {
         // time in nanoseconds between successive queries
-        final long periodInNanos = SECONDS_TO_NANOSECONDS / queriesSentPerSec;
+        final long periodInNanos = UnitConstants.SECONDS_TO_NANOSECONDS / queriesSentPerSec;
 
         ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(3);
         ScheduledFuture<?> future = scheduledThreadPoolExecutor.scheduleAtFixedRate(

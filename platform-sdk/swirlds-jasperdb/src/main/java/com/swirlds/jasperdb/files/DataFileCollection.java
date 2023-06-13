@@ -65,10 +65,10 @@ import org.apache.logging.log4j.Logger;
 /**
  * DataFileCollection manages a set of data files and the compaction of them over time. It stores data items which are
  * key,value pairs and returns a long representing the location it was stored. You can then retrieve that data item
- * later using the location you got when storing. There is not understanding of what the keys mean and no way to look up
- * data by key. The reason the keys are separate from the values is so that we can merge data items with matching keys.
- * We only keep the newest data item for any matching key. It may look like a map, but it is not. You need an external
- * index outside this class to be able to store key-to-data location mappings.
+ * later using the location you got when storing. There is not understanding of what the keys mean and no way to look
+ * up data by key. The reason the keys are separate from the values is so that we can merge data items with matching
+ * keys. We only keep the newest data item for any matching key. It may look like a map, but it is not. You need an
+ * external index outside this class to be able to store key-to-data location mappings.
  * <p>
  * The keys are assumed to be a contiguous block of long values. We do not have an explicit way of deleting data, we
  * depend on the range of valid keys. Any data items with keys outside the current valid range will be deleted the next
@@ -76,7 +76,8 @@ import org.apache.logging.log4j.Logger;
  * range of path keys for internal and leaf nodes. It allows very easy and efficient deleting without the need to
  * maintain a list of deleted keys.
  *
- * @param <D> type for data items
+ * @param <D>
+ * 		type for data items
  */
 @SuppressWarnings({"unused", "unchecked"})
 public class DataFileCollection<D> implements Snapshotable {
@@ -117,10 +118,8 @@ public class DataFileCollection<D> implements Snapshotable {
     private final Path storeDir;
     /** Base name for the data files, allowing more than one DataFileCollection to share a directory */
     private final String storeName;
-    /**
-     * Another base name for the data files. If files with this base name exist, they are loaded by this file collection
-     * at startup. New files will have storeName as the prefix, not legacyStoreName
-     **/
+    /** Another base name for the data files. If files with this base name exist, they are loaded by this
+     * file collection at startup. New files will have storeName as the prefix, not legacyStoreName **/
     private final String legacyStoreName;
     /** Serializer responsible for serializing/deserializing data items into and out of files */
     private final DataItemSerializer<D> dataItemSerializer;

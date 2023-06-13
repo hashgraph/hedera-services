@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.files.DataFileCommon.dataLocationToString;
@@ -26,6 +25,7 @@ import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
 import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
 import static com.swirlds.merkledb.files.DataFileCommon.printDataLinkValidation;
 
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.CASableLongIndex;
@@ -47,13 +47,13 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 /**
- * A specialized map like disk based data store with long keys. It is assumed the keys are a single sequential block of
- * numbers that does not need to start at zero. The index from long key to disk location for value is in RAM and the
- * value data is stored in a set of files on disk.
+ * A specialized map like disk based data store with long keys. It is assumed the keys are a single
+ * sequential block of numbers that does not need to start at zero. The index from long key to disk
+ * location for value is in RAM and the value data is stored in a set of files on disk.
  * <p>
- * There is an assumption that keys are a contiguous range of incrementing numbers. This allows easy deletion during
- * merging by accepting any key/value with a key outside this range is not needed any more. This design comes from being
- * used where keys are leaf paths in a binary tree.
+ * There is an assumption that keys are a contiguous range of incrementing numbers. This allows
+ * easy deletion during merging by accepting any key/value with a key outside this range is not
+ * needed any more. This design comes from being used where keys are leaf paths in a binary tree.
  *
  * @param <D> type for data items
  */
@@ -64,45 +64,44 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /** This is useful for debugging and validating but is too expensive to enable in production. */
     protected static boolean enableDeepValidation = logger.isTraceEnabled();
     /**
-     * Index mapping, it uses our key as the index within the list and the value is the dataLocation in fileCollection
-     * where the key/value pair is stored.
+     * Index mapping, it uses our key as the index within the list and the value is the dataLocation
+     * in fileCollection where the key/value pair is stored.
      */
     private final LongList index;
     /** On disk set of DataFiles that contain our key/value pairs */
     private final DataFileCollection<D> fileCollection;
     /**
-     * The name for the data store, this allows more than one data store in a single directory. Also, useful for
-     * identifying what files are used by what part of the code.
+     * The name for the data store, this allows more than one data store in a single directory.
+     * Also, useful for identifying what files are used by what part of the code.
      */
     private final String storeName;
 
-    /**
-     * The minimum key that is valid for this store. Set in {@link MemoryIndexDiskKeyValueStore#startWriting} to be
-     * reused in {@link MemoryIndexDiskKeyValueStore#endWriting()}
+    /** The minimum key that is valid for this store. Set in {@link MemoryIndexDiskKeyValueStore#startWriting} to
+     * be reused in {@link MemoryIndexDiskKeyValueStore#endWriting()}
      */
     private final AtomicLong minValidKey;
-    /**
-     * The maximum key that is valid for this store.  Set in {@link MemoryIndexDiskKeyValueStore#startWriting} to be
-     * reused in {@link MemoryIndexDiskKeyValueStore#endWriting()}
+    /** The maximum key that is valid for this store.  Set in {@link MemoryIndexDiskKeyValueStore#startWriting} to
+     * be reused in {@link MemoryIndexDiskKeyValueStore#endWriting()}
      */
     private final AtomicLong maxValidKey;
 
     /**
      * Construct a new MemoryIndexDiskKeyValueStore
      *
-     * @param storeDir               The directory to store data files in
-     * @param storeName              The name for the data store, this allows more than one data store in a single
-     *                               directory.
-     * @param legacyStoreName        Base name for the data store. If not null, the store will process files with this
-     *                               prefix at startup. New files in the store will be prefixed with {@code storeName}
-     * @param dataItemSerializer     Serializer for converting raw data to/from data items
-     * @param loadedDataCallback     call back for handing loaded data from existing files on startup. Can be null if
-     *                               not needed.
-     * @param keyToDiskLocationIndex The index to use for keys to disk locations. Having this passed in allows multiple
-     *                               MemoryIndexDiskKeyValueStore stores to share the same index if there key ranges do
-     *                               not overlap. For example with internal node and leaf paths in a virtual map tree.
-     *                               It also lets the caller decide the LongList implementation to use. This does mean
-     *                               the caller is responsible for snapshot of the index.
+     * @param storeDir The directory to store data files in
+     * @param storeName The name for the data store, this allows more than one data store in a
+     *     single directory.
+     * @param legacyStoreName Base name for the data store. If not null, the store will process
+     *     files with this prefix at startup. New files in the store will be prefixed with {@code
+     *     storeName}
+     * @param dataItemSerializer Serializer for converting raw data to/from data items
+     * @param loadedDataCallback call back for handing loaded data from existing files on startup.
+     *     Can be null if not needed.
+     * @param keyToDiskLocationIndex The index to use for keys to disk locations. Having this passed
+     *     in allows multiple MemoryIndexDiskKeyValueStore stores to share the same index if there
+     *     key ranges do not overlap. For example with internal node and leaf paths in a virtual map
+     *     tree. It also lets the caller decide the LongList implementation to use. This does mean
+     *     the caller is responsible for snapshot of the index.
      * @throws IOException If there was a problem opening data files
      */
     public MemoryIndexDiskKeyValueStore(
@@ -143,9 +142,9 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
     /**
      * Merge all files that match the given filter
      *
-     * @param filterForFilesToMerge   filter to choose which subset of files to merge
+     * @param filterForFilesToMerge filter to choose which subset of files to merge
      * @param minNumberOfFilesToMerge The minimum number of files to consider for a merge
-     * @throws IOException          if there was a problem merging
+     * @throws IOException if there was a problem merging
      * @throws InterruptedException if the merge thread was interupted
      */
     public void merge(
@@ -206,7 +205,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         }
 
         final long END = System.currentTimeMillis();
-        final double tookSeconds = (END - START) * MILLISECONDS_TO_SECONDS;
+        final double tookSeconds = (END - START) * UnitConstants.MILLISECONDS_TO_SECONDS;
         logMergeStats(storeName, tookSeconds, filesToMerge, filesToMergeSize, newFilesCreated, fileCollection);
         logger.debug(
                 MERKLE_DB.getMarker(),

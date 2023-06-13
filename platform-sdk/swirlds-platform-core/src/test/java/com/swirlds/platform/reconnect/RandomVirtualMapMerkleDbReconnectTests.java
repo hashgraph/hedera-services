@@ -121,18 +121,27 @@ class RandomVirtualMapMerkleDbReconnectTests extends VirtualMapReconnectTestBase
     }
 
     /**
-     * @param description       a description of the parameters, used to name test run
-     * @param initialMapSize    how many key/values to store in both teacherMap and learnerMap before the reconnect
-     * @param maximumKey        how many distict Key values are allowed to exist
-     * @param operations        how many create/update/delete operations to perform on just the teacherMap, prior to the
-     *                          reconnect
-     * @param operationsPerCopy how often (in terms of operations) to create a new copy of the teacherMap, prior to
-     *                          reconnect
-     * @param maxCopiesInMemory how many copies are allowed to exist before we manually start to release them (oldest
-     *                          first)
-     * @param createWeight      relative weight of create operations compared to updates and deletes
-     * @param updateWeight      relative weight of update operations compared to creates and deletes
-     * @param deleteWeight      relative weight of delete operations compared to creates and updates
+     * @param description
+     * 		a description of the parameters, used to name test run
+     * @param initialMapSize
+     * 		how many key/values to store in both teacherMap and learnerMap before the reconnect
+     * @param maximumKey
+     * 		how many distict Key values are allowed to exist
+     * @param operations
+     * 		how many create/update/delete operations to perform on just the teacherMap, prior to the
+     * 		reconnect
+     * @param operationsPerCopy
+     * 		how often (in terms of operations) to create a new copy of the teacherMap, prior to
+     * 		reconnect
+     * @param maxCopiesInMemory
+     * 		how many copies are allowed to exist before we manually start to release them (oldest
+     * 		first)
+     * @param createWeight
+     * 		relative weight of create operations compared to updates and deletes
+     * @param updateWeight
+     * 		relative weight of update operations compared to creates and deletes
+     * @param deleteWeight
+     * 		relative weight of delete operations compared to creates and updates
      */
     private record RandomOperationsConfig(
             String description,

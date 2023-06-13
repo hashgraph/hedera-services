@@ -47,10 +47,13 @@ public class TransactionHandler {
     }
 
     /**
-     * Applies an event to the {@link SwirldState#preHandle(Event)} method and handles any exceptions gracefully.
+     * Applies an event to the {@link SwirldState#preHandle(Event)} method and handles any
+     * exceptions gracefully.
      *
-     * @param event       the event to apply
-     * @param swirldState the swirld state to apply {@code event} to
+     * @param event
+     * 		the event to apply
+     * @param swirldState
+     * 		the swirld state to apply {@code event} to
      */
     public void preHandle(final EventImpl event, final SwirldState swirldState) {
         try {

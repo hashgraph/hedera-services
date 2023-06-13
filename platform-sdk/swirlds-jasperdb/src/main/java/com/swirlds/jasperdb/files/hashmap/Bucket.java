@@ -16,7 +16,6 @@
 
 package com.swirlds.jasperdb.files.hashmap;
 
-import static com.swirlds.common.units.UnitConstants.KIBIBYTES_TO_BYTES;
 import static com.swirlds.jasperdb.files.hashmap.HalfDiskHashMap.KEY_HASHCODE_SIZE;
 import static com.swirlds.jasperdb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
 import static com.swirlds.jasperdb.files.hashmap.HalfDiskHashMap.VALUE_SIZE;
@@ -24,6 +23,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.jasperdb.files.DataFileOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
@@ -60,7 +60,7 @@ public final class Bucket<K extends VirtualKey> {
      */
     private static final int CAPACITY_INCREMENT = 1024;
     /** We assume 8KB will be enough for now for most buckets. */
-    private static final int DEFAULT_BUCKET_BUFFER_SIZE = 8 * KIBIBYTES_TO_BYTES;
+    private static final int DEFAULT_BUCKET_BUFFER_SIZE = 8 * UnitConstants.KIBIBYTES_TO_BYTES;
 
     private static final int BUCKET_INDEX_SIZE = Integer.BYTES;
     private static final int BUCKET_SIZE_OFFSET = BUCKET_INDEX_SIZE;
@@ -82,7 +82,8 @@ public final class Bucket<K extends VirtualKey> {
     /**
      * Create a new bucket with the default size.
      *
-     * @param keySerializer The serializer responsible for converting keys to/from bytes
+     * @param keySerializer
+     * 		The serializer responsible for converting keys to/from bytes
      */
     Bucket(KeySerializer<K> keySerializer) {
         setKeySerializer(keySerializer);
@@ -114,7 +115,8 @@ public final class Bucket<K extends VirtualKey> {
      * Change this bucket over to use new key serializer. It is a no-op if called with the same key serializer we are
      * configured with already.
      *
-     * @param keySerializer The new key serializer
+     * @param keySerializer
+     * 		The new key serializer
      */
     public void setKeySerializer(KeySerializer<K> keySerializer) {
         if (keySerializer != this.keySerializer) {

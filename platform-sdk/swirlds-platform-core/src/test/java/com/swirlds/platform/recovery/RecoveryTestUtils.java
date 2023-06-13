@@ -69,10 +69,11 @@ public final class RecoveryTestUtils {
     private RecoveryTestUtils() {}
 
     /**
-     * Generate a random event. Fields inside event are filled mostly with random nonsense data, and a little realistic
-     * data (i.e. the event's round).
+     * Generate a random event. Fields inside event are filled mostly with random nonsense data,
+     * and a little realistic data (i.e. the event's round).
      *
-     * @param random a source of randomness
+     * @param random
+     * 		a source of randomness
      * @return an event
      */
     public static EventImpl generateRandomEvent(

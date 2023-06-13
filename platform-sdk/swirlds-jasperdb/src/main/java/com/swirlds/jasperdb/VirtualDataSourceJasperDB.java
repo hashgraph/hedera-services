@@ -17,9 +17,6 @@
 package com.swirlds.jasperdb;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.common.units.UnitConstants.BYTES_TO_MEBIBYTES;
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_SECONDS;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.jasperdb.KeyRange.INVALID_KEY_RANGE;
 import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
@@ -32,6 +29,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.jasperdb.collections.HashList;
 import com.swirlds.jasperdb.collections.HashListByteBuffer;
 import com.swirlds.jasperdb.collections.LongList;
@@ -132,9 +130,9 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     private static final int NUMBER_OF_MERGING_THREADS = 1;
 
     /**
-     * Since {@code com.swirlds.platform.Browser} populates configuration, and it is loaded before any application
-     * classes that might instantiate a data source, the {@link ConfigurationHolder} will have been configured by the
-     * time this static initializer runs.
+     * Since {@code com.swirlds.platform.Browser} populates configuration, and it is loaded before
+     * any application classes that might instantiate a data source, the {@link ConfigurationHolder}
+     * will have been configured by the time this static initializer runs.
      */
     private final JasperDbConfig config = ConfigurationHolder.getConfigData(JasperDbConfig.class);
 
@@ -164,8 +162,8 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     private final LongList leafPathToDiskLocation;
 
     /**
-     * In memory off-heap store for node hashes. This data is never stored on disk so on load from disk, this will be
-     * empty. That should cause all internal node hashes to have to be computed on the first round which will be
+     * In memory off-heap store for node hashes. This data is never stored on disk so on load from disk, this
+     * will be empty. That should cause all internal node hashes to have to be computed on the first round which will be
      * expensive.
      */
     private final HashList pathToHashRam;
@@ -195,8 +193,8 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     private final LongList longKeyToPath;
 
     /**
-     * Mixed disk and off-heap memory store for key to path map, this is used if isLongKeyMode=false, and we have
-     * complex keys.
+     * Mixed disk and off-heap memory store for key to path map, this is used if isLongKeyMode=false,
+     * and we have complex keys.
      */
     private final HalfDiskHashMap<K> objectKeyToPath;
 
@@ -206,15 +204,16 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     private final MemoryIndexDiskKeyValueStore<VirtualLeafRecord<K, V>> pathToKeyValue;
 
     /**
-     * Cache size for reading virtual leaf records. Initialized in data source creation time from JasperDB settings. If
-     * the value is zero, leaf records cache isn't used.
+     * Cache size for reading virtual leaf records. Initialized in data source creation time from
+     * JasperDB settings. If the value is zero, leaf records cache isn't used.
      */
     private final int leafRecordCacheSize;
 
     /**
-     * Virtual leaf records cache. It's a simple array indexed by leaf keys % cache size. Cache eviction is not needed,
-     * as array size is fixed and can be configured in JasperDB settings. Index conflicts are resolved in a very
-     * straightforward way: whatever entry is read last, it's put to the cache.
+     * Virtual leaf records cache. It's a simple array indexed by leaf keys % cache size. Cache
+     * eviction is not needed, as array size is fixed and can be configured in JasperDB settings.
+     * Index conflicts are resolved in a very straightforward way: whatever entry is read last,
+     * it's put to the cache.
      */
     @SuppressWarnings("rawtypes")
     private final VirtualLeafRecord[] leafRecordCache;
@@ -252,16 +251,18 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
 
     /**
      * A semaphore to sync data source snapshots and store compactions.
-     * <p>
-     * One of the goals is to lock the snapshot thread as little as possible. Compaction can be paused and resumed at
-     * any moment. That's why the semaphore is acquired for the whole run of snapshot(), while during compaction it is
-     * acquired and released for very short periods: when indices are updated and when merged files are removed. If
-     * compaction threads are doing anything else, e.g. iterating through files to merge, it can be run in parallel to
-     * snapshotting, until compaction thread starts updating store index.
-     * <p>
-     * Since compaction thread can be paused at various points, it's possible that snapshot will capture files that are
-     * already merged (no index entries pointing to them). Some index entries can be updated to use the new file, some
-     * can point to old files, but since both old and new files are in the snapshot, it shouldn't be a problem.
+     *
+     * One of the goals is to lock the snapshot thread as little as possible. Compaction can
+     * be paused and resumed at any moment. That's why the semaphore is acquired for the whole
+     * run of snapshot(), while during compaction it is acquired and released for very short
+     * periods: when indices are updated and when merged files are removed. If compaction threads
+     * are doing anything else, e.g. iterating through files to merge, it can be run in parallel
+     * to snapshotting, until compaction thread starts updating store index.
+     *
+     * Since compaction thread can be paused at various points, it's possible that snapshot will
+     * capture files that are already merged (no index entries pointing to them). Some index
+     * entries can be updated to use the new file, some can point to old files, but since both
+     * old and new files are in the snapshot, it shouldn't be a problem.
      */
     private final Semaphore mergingPaused = new Semaphore(1);
 
@@ -824,7 +825,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
      * @param path
      * 		Node path
      * @return
-     *        Node hash if the node was stored for the given path or null if not stored
+     * 		Node hash if the node was stored for the given path or null if not stored
      * @throws IOException
      * 		If there was an I/O problem
      */
@@ -1024,7 +1025,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
                     JASPER_DB.getMarker(),
                     "[{}] Snapshot all finished in {} seconds",
                     label,
-                    (System.currentTimeMillis() - START) * MILLISECONDS_TO_SECONDS);
+                    (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS);
         } finally {
             snapshotInProgress.set(false);
             // unpause merging
@@ -1091,16 +1092,18 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
         if (pathToHashDisk != null) {
             final LongSummaryStatistics hashesFileSizeStats = pathToHashDisk.getFilesSizeStatistics();
             statistics.setPathToHashStoreFileCount((int) hashesFileSizeStats.getCount());
-            statistics.setPathToHashTotalFileSizeInMB(hashesFileSizeStats.getSum() * BYTES_TO_MEBIBYTES);
+            statistics.setPathToHashTotalFileSizeInMB(hashesFileSizeStats.getSum() * UnitConstants.BYTES_TO_MEBIBYTES);
         }
         if (!isLongKeyMode) {
             final LongSummaryStatistics leafKeyFileSizeStats = objectKeyToPath.getFilesSizeStatistics();
             statistics.setLeafKeyToPathStoreFileCount((int) leafKeyFileSizeStats.getCount());
-            statistics.setLeafKeyToPathStoreTotalFileSizeInMB(leafKeyFileSizeStats.getSum() * BYTES_TO_MEBIBYTES);
+            statistics.setLeafKeyToPathStoreTotalFileSizeInMB(
+                    leafKeyFileSizeStats.getSum() * UnitConstants.BYTES_TO_MEBIBYTES);
         }
         final LongSummaryStatistics leafDataFileSizeStats = pathToKeyValue.getFilesSizeStatistics();
         statistics.setPathToKeyValueStoreFileCount((int) leafDataFileSizeStats.getCount());
-        statistics.setPathToKeyValueStoreTotalFileSizeInMB(leafDataFileSizeStats.getSum() * BYTES_TO_MEBIBYTES);
+        statistics.setPathToKeyValueStoreTotalFileSizeInMB(
+                leafDataFileSizeStats.getSum() * UnitConstants.BYTES_TO_MEBIBYTES);
     }
 
     /**
@@ -1154,7 +1157,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
                             "[{}] Snapshot {} complete in {} seconds",
                             label,
                             taskName,
-                            (System.currentTimeMillis() - START) * MILLISECONDS_TO_SECONDS);
+                            (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS);
                     return true; // turns this into a callable, so it can throw checked exceptions
                 } finally {
                     countDownLatch.countDown();
@@ -1378,37 +1381,37 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
             // update the 3 appropriate "Merge" statistics, based on isSmallMerge/isMediumMerge/isLargeMerge
             if (isSmallMerge) {
                 if (hasDiskStoreForHashes) {
-                    statistics.setPathToHashSmallMergeTime(
-                            firstMergeDuration.toSeconds() + firstMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                    statistics.setPathToHashSmallMergeTime(firstMergeDuration.toSeconds()
+                            + firstMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
                 if (!isLongKeyMode) {
-                    statistics.setLeafKeyToPathStoreSmallMergeTime(
-                            secondMergeDuration.toSeconds() + secondMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                    statistics.setLeafKeyToPathStoreSmallMergeTime(secondMergeDuration.toSeconds()
+                            + secondMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
-                statistics.setPathToKeyValueStoreSmallMergeTime(
-                        thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                statistics.setPathToKeyValueStoreSmallMergeTime(thirdMergeDuration.toSeconds()
+                        + thirdMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
             } else if (isMediumMerge) {
                 if (hasDiskStoreForHashes) {
-                    statistics.setPathToHashMediumMergeTime(
-                            firstMergeDuration.toSeconds() + firstMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                    statistics.setPathToHashMediumMergeTime(firstMergeDuration.toSeconds()
+                            + firstMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
                 if (!isLongKeyMode) {
-                    statistics.setLeafKeyToPathStoreMediumMergeTime(
-                            secondMergeDuration.toSeconds() + secondMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                    statistics.setLeafKeyToPathStoreMediumMergeTime(secondMergeDuration.toSeconds()
+                            + secondMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
-                statistics.setPathToKeyValueStoreMediumMergeTime(
-                        thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                statistics.setPathToKeyValueStoreMediumMergeTime(thirdMergeDuration.toSeconds()
+                        + thirdMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
             } else if (isLargeMerge) {
                 if (hasDiskStoreForHashes) {
-                    statistics.setPathToHashLargeMergeTime(
-                            firstMergeDuration.toSeconds() + firstMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                    statistics.setPathToHashLargeMergeTime(firstMergeDuration.toSeconds()
+                            + firstMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
                 if (!isLongKeyMode) {
-                    statistics.setLeafKeyToPathStoreLargeMergeTime(
-                            secondMergeDuration.toSeconds() + secondMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                    statistics.setLeafKeyToPathStoreLargeMergeTime(secondMergeDuration.toSeconds()
+                            + secondMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
-                statistics.setPathToKeyValueStoreLargeMergeTime(
-                        thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * NANOSECONDS_TO_SECONDS);
+                statistics.setPathToKeyValueStoreLargeMergeTime(thirdMergeDuration.toSeconds()
+                        + thirdMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
             }
             // update file stats (those statistics don't care about small vs medium vs large merge size)
             updateFileStats();

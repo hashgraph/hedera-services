@@ -32,8 +32,10 @@ public final class SwirldStateManagerUtils {
     /**
      * Performs a fast copy on a {@link State}. The {@code state} must not be modified during execution of this method.
      *
-     * @param state the state object to fast copy
-     * @param stats object to record stats in
+     * @param state
+     * 		the state object to fast copy
+     * @param stats
+     * 		object to record stats in
      * @return the newly created state copy
      */
     public static State fastCopy(final State state, final SwirldStateMetrics stats) {

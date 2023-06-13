@@ -37,10 +37,14 @@ public class SwirldTransactionSubmitter {
     /**
      * Creates a new instance.
      *
-     * @param platformStatusSupplier supplier of the current status of the platform
-     * @param settings               provider of static settings
-     * @param addToTransactionPool   a function that adds the transaction to the transaction pool, if room is available
-     * @param transactionMetrics     stats relevant to transactions
+     * @param platformStatusSupplier
+     * 		supplier of the current status of the platform
+     * @param settings
+     * 		provider of static settings
+     * @param addToTransactionPool
+     * 		a function that adds the transaction to the transaction pool, if room is available
+     * @param transactionMetrics
+     * 		stats relevant to transactions
      */
     public SwirldTransactionSubmitter(
             final Supplier<PlatformStatus> platformStatusSupplier,

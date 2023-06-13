@@ -75,8 +75,9 @@ public final class DataFileCommon {
     public static final long NON_EXISTENT_DATA_LOCATION = 0;
 
     /**
-     * The data item byte offset is packed into lower 40 bits and file index upper 24 bits. This allows for 16 million
-     * files 1 trillion bytes of data. So at one file per minute we have 30 years of 1Tb files.
+     * The data item byte offset is packed into lower 40 bits and file index upper 24 bits.
+     * This allows for 16 million files 1 trillion bytes of data.
+     * So at one file per minute we have 30 years of 1Tb files.
      */
     /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3927 */
     private static final int DATA_ITEM_OFFSET_BITS = 40;
@@ -387,9 +388,9 @@ public final class DataFileCommon {
         logger.info(
                 JASPER_DB.getMarker(),
                 """
-                        [{}] Merged {} files into {} files in {} seconds. Read at {} Written at {}
-                                filesToMerge = {} allMergeableFiles = {}
-                                allFilesAfter = {}""",
+						[{}] Merged {} files into {} files in {} seconds. Read at {} Written at {}
+						        filesToMerge = {} allMergeableFiles = {}
+						        allFilesAfter = {}""",
                 storeName,
                 formatSizeBytes(filesToMergeSize),
                 formatSizeBytes(mergedFilesCreatedSize),
