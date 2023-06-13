@@ -351,7 +351,7 @@ public class SwirldsPlatform implements Platform, Startable {
         registerAddressBookMetrics(metrics, initialAddressBook, selfId);
 
         try {
-            recycleBin = new RecycleBin(platformContext.getConfiguration(), selfId);
+            recycleBin = RecycleBin.create(platformContext.getConfiguration(), selfId);
             if (softwareUpgrade) {
                 recycleBin.clear();
             }
@@ -995,7 +995,7 @@ public class SwirldsPlatform implements Platform, Startable {
     @NonNull
     private PreconsensusEventFileManager buildPreconsensusEventFileManager() {
         try {
-            return new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), selfId);
+            return new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), recycleBin, selfId);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }
