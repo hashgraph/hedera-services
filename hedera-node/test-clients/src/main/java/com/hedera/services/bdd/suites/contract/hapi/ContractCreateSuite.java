@@ -111,27 +111,27 @@ public class ContractCreateSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                //                createEmptyConstructor(),
-                //                insufficientPayerBalanceUponCreation(),
-                //                rejectsInvalidMemo(),
-                //                rejectsInsufficientFee(),
-                //                rejectsInvalidBytecode(),
-                //                revertsNonzeroBalance(),
-                //                createFailsIfMissingSigs(),
-                //                rejectsInsufficientGas(),
-                //                createsVanillaContractAsExpectedWithOmittedAdminKey(),
-                //                childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-                //                cannotCreateTooLargeContract(),
-                //                revertedTryExtCallHasNoSideEffects(),
-                //                receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
-                //                cannotSendToNonExistentAccount(),
-                //                delegateContractIdRequiredForTransferInDelegateCall(),
-                //                vanillaSuccess(),
-                //                blockTimestampChangesWithinFewSeconds(),
-                //                contractWithAutoRenewNeedSignatures(),
-                //                createContractWithStakingFields(),
-                contractCreateNoncesExternalization());
-        //                contractCreateNoncesExternalizationHappyPath());
+                createEmptyConstructor(),
+                insufficientPayerBalanceUponCreation(),
+                rejectsInvalidMemo(),
+                rejectsInsufficientFee(),
+                rejectsInvalidBytecode(),
+                revertsNonzeroBalance(),
+                createFailsIfMissingSigs(),
+                rejectsInsufficientGas(),
+                createsVanillaContractAsExpectedWithOmittedAdminKey(),
+                childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+                cannotCreateTooLargeContract(),
+                revertedTryExtCallHasNoSideEffects(),
+                receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+                cannotSendToNonExistentAccount(),
+                delegateContractIdRequiredForTransferInDelegateCall(),
+                vanillaSuccess(),
+                blockTimestampChangesWithinFewSeconds(),
+                contractWithAutoRenewNeedSignatures(),
+                createContractWithStakingFields(),
+                contractCreateNoncesExternalizationHappyPath(),
+                contractCreateFollowedByContractCallNoncesExternalization());
     }
 
     @Override
@@ -635,24 +635,20 @@ public class ContractCreateSuite extends HapiSuite {
                 .then(withOpContext((spec, opLog) -> {
                     HapiGetTxnRecord op = getTxnRecord(contractCreateTxn)
                             .hasPriority(recordWith()
-                                    .contractWithIdHasContractNonces(
-                                            spec.registry().getContractId(contract), 4L));
+                                    .contractCreateResult(resultWith()
+                                            .contractWithNonce(spec.registry().getContractId(contract), 4L)));
                     allRunFor(spec, op);
                 }));
     }
 
-    private HapiSpec contractCreateNoncesExternalization() {
+    private HapiSpec contractCreateFollowedByContractCallNoncesExternalization() {
         final var contract = "NoncesExternalization";
         final var payer = "payer";
         final var deployParentContract = "deployParentContract";
-        final var deployChildFromParentFn = "deployChildFromParentContract";
 
         final var deployContractTxn = "deployContractTxn";
-        final var deployContractTxnTwo = "deployContractTxnTwo";
-        final var deployChildFromParentTxn = "deployChildFromParentContractTx";
-        final var deployChildFromParentTxn2 = "deployChildFromParentContractTxTwo";
 
-        return propertyPreservingHapiSpec("ContractCreateNoncesExternalization")
+        return propertyPreservingHapiSpec("contractCreateFollowedByContractCallNoncesExternalization")
                 .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
                 .given(
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
@@ -665,33 +661,14 @@ public class ContractCreateSuite extends HapiSuite {
                                 .payingWith(payer)
                                 .via(deployContractTxn)
                                 .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(SUCCESS)
-                        //                        contractCall(contract, deployParentContract)
-                        //                                .payingWith(payer)
-                        //                                .via(deployContractTxnTwo)
-                        //                                .gas(GAS_TO_OFFER)
-                        //                                .hasKnownStatus(SUCCESS),
-                        //                        contractCall(contract, deployChildFromParentFn, BigInteger.valueOf(0))
-                        //                                .payingWith(payer)
-                        //                                .via(deployChildFromParentTxn)
-                        //                                .gas(GAS_TO_OFFER)
-                        //                                .hasKnownStatus(SUCCESS),
-                        //                        contractCall(contract, deployChildFromParentFn, BigInteger.valueOf(0))
-                        //                                .payingWith(payer)
-                        //                                .via(deployChildFromParentTxn2)
-                        //                                .gas(GAS_TO_OFFER)
-                        //                                .hasKnownStatus(SUCCESS)
-                )))
-                .then(
-                        getTxnRecord(deployContractTxn).andAllChildRecords().logged()
-                        //                        getTxnRecord(deployContractTxnTwo).andAllChildRecords().logged(),
-                        //                        getTxnRecord(deployChildFromParentTxn)
-                        //                                .andAllChildRecords()
-                        //                                .logged(),
-                        //                        getTxnRecord(deployChildFromParentTxn2)
-                        //                                .andAllChildRecords()
-                        //                                .logged()
-                );
+                                .hasKnownStatus(SUCCESS))))
+                .then(withOpContext((spec, opLog) -> {
+                    HapiGetTxnRecord op = getTxnRecord(deployContractTxn)
+                            .hasPriority(recordWith()
+                                    .contractCallResult(resultWith()
+                                            .contractWithNonce(spec.registry().getContractId(contract), 5L)));
+                    allRunFor(spec, op);
+                }));
     }
 
     @Override

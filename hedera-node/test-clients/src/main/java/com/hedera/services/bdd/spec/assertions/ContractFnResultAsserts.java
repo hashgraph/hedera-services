@@ -18,6 +18,7 @@ package com.hedera.services.bdd.spec.assertions;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
@@ -33,7 +34,9 @@ import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -309,6 +312,15 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
         return this;
     }
 
+    public ContractFnResultAsserts contractWithNonce(final ContractID contractID, final Long expectedNonce) {
+        registerProvider((spec, o) -> {
+            ContractFunctionResult result = (ContractFunctionResult) o;
+            Map<ContractID, Long> contractNonces = new HashMap<>();
+            for (final var contractNonceItem : result.getContractNoncesList()) {
+                contractNonces.put(contractNonceItem.getContractId(), contractNonceItem.getNonce());
             }
+            assertEquals(expectedNonce, contractNonces.get(contractID), "Wrong nonce expectations");
+        });
+        return this;
     }
 }
