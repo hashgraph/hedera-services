@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
@@ -35,6 +38,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.records.TokenCreateRecordBuilder;
+import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -61,7 +65,11 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
     @Inject
     public TokenCreateHandler(
-            @NonNull CustomFeesValidator customFeesValidator, @NonNull TokenCreateValidator tokenCreateValidator) {
+            @NonNull final CustomFeesValidator customFeesValidator,
+            @NonNull final TokenCreateValidator tokenCreateValidator) {
+        requireNonNull(customFeesValidator);
+        requireNonNull(tokenCreateValidator);
+
         this.customFeesValidator = customFeesValidator;
         this.tokenCreateValidator = tokenCreateValidator;
     }
@@ -105,7 +113,9 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var tokenRelationStore = context.writableStore(WritableTokenRelationStore.class);
 
         /* Validate if the current token can be created */
-        validateTrue(tokenStore.sizeOfState() + 1 <= tokensConfig.maxNumber(), TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+        validateTrue(
+                tokenStore.sizeOfState() + 1 <= tokensConfig.maxNumber(),
+                MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
         // validate fields in the transaction body that involves checking with
         // dynamic properties or state.
@@ -148,10 +158,10 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
      */
     private void associateAccounts(
             final HandleContext context,
-            Token newToken,
-            WritableAccountStore accountStore,
-            WritableTokenRelationStore tokenRelStore,
-            Set<CustomFee> requireCollectorAutoAssociation) {
+            final Token newToken,
+            final WritableAccountStore accountStore,
+            @NonNull final WritableTokenRelationStore tokenRelStore,
+            final Set<CustomFee> requireCollectorAutoAssociation) {
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
 
@@ -181,7 +191,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
      * @param resolvedExpiryMeta resolved expiry meta
      * @return newly created token
      */
-    private Token buildToken(long newTokenNum, TokenCreateTransactionBody op, ExpiryMeta resolvedExpiryMeta) {
+    private Token buildToken(
+            final long newTokenNum, final TokenCreateTransactionBody op, final ExpiryMeta resolvedExpiryMeta) {
         return new Token(
                 newTokenNum,
                 op.name(),
@@ -217,7 +228,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
      * @param op token creation transaction body
      * @return given expiry metadata
      */
-    private ExpiryMeta getExpiryMeta(final long consensusTime, final TokenCreateTransactionBody op) {
+    private ExpiryMeta getExpiryMeta(final long consensusTime, @NonNull final TokenCreateTransactionBody op) {
         final var impliedExpiry =
                 consensusTime + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
         return new ExpiryMeta(
@@ -239,10 +250,10 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
      * @return resolved expiry metadata
      */
     private ExpiryMeta validateSemantics(
-            final HandleContext context,
-            final ReadableAccountStore accountStore,
-            final TokenCreateTransactionBody op,
-            final TokensConfig config) {
+            @NonNull final HandleContext context,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final TokenCreateTransactionBody op,
+            @NonNull final TokensConfig config) {
         // validate different token create fields
         tokenCreateValidator.validate(context, accountStore, op, config);
 
@@ -255,7 +266,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
             final var id = AccountID.newBuilder()
                     .accountNum(resolvedExpiryMeta.autoRenewNum())
                     .build();
-            final var autoRenewAccount = accountStore.getAccountById(id);
+            final var autoRenewAccount = TokenHandlerHelper.getIfUsable(id, accountStore, context.expiryValidator());
             validateTrue(autoRenewAccount != null, INVALID_AUTORENEW_ACCOUNT);
         }
         return resolvedExpiryMeta;
@@ -307,7 +318,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
      * @param collector the ID of the collector
      * @param alwaysAdd if true, will always add the key
      */
-    private void addAccount(final PreHandleContext context, final AccountID collector, final boolean alwaysAdd)
+    private void addAccount(
+            @NonNull final PreHandleContext context, @NonNull final AccountID collector, final boolean alwaysAdd)
             throws PreCheckException {
         if (alwaysAdd) {
             context.requireKeyOrThrow(collector, INVALID_CUSTOM_FEE_COLLECTOR);

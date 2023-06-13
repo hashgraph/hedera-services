@@ -213,13 +213,12 @@ public class CustomFeesValidator {
             // For these fees the collector should be auto-associated to the token.
             if (fixedFee.denominatingTokenIdOrThrow().tokenNum() == 0L) {
                 validateTrue(isFungibleCommon(tokenType), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
-                fee.copyBuilder()
-                        .fixedFee(fixedFee.copyBuilder()
-                                .denominatingTokenId(TokenID.newBuilder()
-                                        .tokenNum(createdToken.tokenNumber())
-                                        .build()))
-                        .build();
-                feesWithCollectorsToAutoAssociate.add(fee);
+                final var copy = fee.copyBuilder();
+                copy.fixedFee(fixedFee.copyBuilder()
+                        .denominatingTokenId(TokenID.newBuilder()
+                                .tokenNum(createdToken.tokenNumber())
+                                .build()));
+                feesWithCollectorsToAutoAssociate.add(copy.build());
             } else {
                 validateExplicitTokenDenomination(
                         fee.feeCollectorAccountId(), fixedFee.denominatingTokenId(), tokenRelationStore, tokenStore);
