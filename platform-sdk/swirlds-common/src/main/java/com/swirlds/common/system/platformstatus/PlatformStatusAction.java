@@ -29,7 +29,7 @@ public enum PlatformStatusAction {
      */
     DONE_REPLAYING_EVENTS,
     /**
-     * An own event was observed reaching consensus.
+     * A self event was observed reaching consensus.
      */
     OWN_EVENT_REACHED_CONSENSUS,
     /**

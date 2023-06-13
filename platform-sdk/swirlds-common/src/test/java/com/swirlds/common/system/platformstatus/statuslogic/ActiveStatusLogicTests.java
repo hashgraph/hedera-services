@@ -64,7 +64,7 @@ class ActiveStatusLogicTests {
         // restart the timer that will trigger the status change to checking
         triggerActionAndAssertNoTransition(logic, PlatformStatusAction.OWN_EVENT_REACHED_CONSENSUS);
 
-        // if the own event reaching consensus successfully restarted the timer, then the status should still be active
+        // if the self event reaching consensus successfully restarted the timer, then the status should still be active
         time.tick(Duration.ofSeconds(4));
         triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
 

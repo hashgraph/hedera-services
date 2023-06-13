@@ -29,7 +29,7 @@ import java.time.Instant;
  */
 public class ActiveStatusLogic extends AbstractStatusLogic {
     /**
-     * The last time an own event was observed reaching consensus
+     * The last time a self event was observed reaching consensus
      */
     private Instant lastTimeOwnEventReachedConsensus;
 
@@ -42,7 +42,7 @@ public class ActiveStatusLogic extends AbstractStatusLogic {
     public ActiveStatusLogic(@NonNull final Time time, @NonNull final PlatformStatusConfig config) {
         super(time, config);
 
-        // an own event had to reach consensus to arrive at the ACTIVE status
+        // a self event had to reach consensus to arrive at the ACTIVE status
         this.lastTimeOwnEventReachedConsensus = time.now();
     }
 
@@ -54,7 +54,7 @@ public class ActiveStatusLogic extends AbstractStatusLogic {
     public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
         return switch (action) {
             case OWN_EVENT_REACHED_CONSENSUS -> {
-                // record the time an own event reached consensus, resetting the timer that would trigger a transition
+                // record the time a self event reached consensus, resetting the timer that would trigger a transition
                 // to CHECKING
                 lastTimeOwnEventReachedConsensus = getTime().now();
                 yield getStatus();
@@ -67,8 +67,8 @@ public class ActiveStatusLogic extends AbstractStatusLogic {
                 if (Duration.between(lastTimeOwnEventReachedConsensus, getTime().now())
                                 .compareTo(getConfig().activeStatusDelay())
                         > 0) {
-                    // if an own event hasn't been observed reaching consensus in the configured duration, go back to
-                    // CHECKING
+                    // if a self event hasn't been observed reaching consensus in the configured duration,
+                    // go back to CHECKING
                     yield PlatformStatus.CHECKING;
                 } else {
                     yield getStatus();
