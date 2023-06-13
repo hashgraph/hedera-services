@@ -25,12 +25,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockStates;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockWritableStates;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenDissociateScenarios.TOKEN_DISSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET;
@@ -60,24 +54,19 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Nested;
@@ -585,28 +574,6 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             Assertions.assertThat(token555Rel).isNull();
             final var token666Rel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_666_ID);
             Assertions.assertThat(token666Rel).isNull();
-        }
-
-        private ReadableTokenStore newReadableStoreWithTokens(Token... tokens) {
-            final var backingMap = new HashMap<EntityNum, Token>();
-            for (final Token token : tokens) {
-                backingMap.put(
-                        EntityNum.fromTokenId(fromPbj(IdConvenienceUtils.fromTokenNum(token.tokenNumber()))), token);
-            }
-
-            final var wrappingState = new MapWritableKVState<>(TOKENS_KEY, backingMap);
-            return new ReadableTokenStoreImpl(mockStates(Map.of(TOKENS_KEY, wrappingState)));
-        }
-
-        private WritableAccountStore newWritableStoreWithAccounts(Account... accounts) {
-            final var backingMap = new HashMap<AccountID, Account>();
-            for (final Account account : accounts) {
-                backingMap.put(IdConvenienceUtils.fromAccountNum(account.accountNumber()), account);
-            }
-
-            final var wrappingState = new MapWritableKVState<>(ACCOUNTS_KEY, backingMap);
-            return new WritableAccountStore(mockWritableStates(Map.of(
-                    ACCOUNTS_KEY, wrappingState, ALIASES_KEY, new MapWritableKVState<>(ALIASES_KEY, new HashMap<>()))));
         }
     }
 
