@@ -16,23 +16,29 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
+import static com.hedera.hapi.node.base.TokenFreezeStatus.FREEZE_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenFreezeStatus.FROZEN;
 import static com.hedera.hapi.node.base.TokenFreezeStatus.UNFROZEN;
 import static com.hedera.hapi.node.base.TokenKycStatus.GRANTED;
+import static com.hedera.hapi.node.base.TokenKycStatus.KYC_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenKycStatus.REVOKED;
 import static com.hedera.hapi.node.base.TokenPauseStatus.PAUSED;
+import static com.hedera.hapi.node.base.TokenPauseStatus.PAUSE_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenPauseStatus.UNPAUSED;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKENS;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
@@ -56,7 +62,6 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -179,13 +184,86 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    @DisplayName("OK response is correctly handled in findResponse")
+    void getsResponseIfInvalidToken() {
+        final var state = MapReadableKVState.<EntityNum, Token>builder(TOKENS).build();
+        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(state);
+        final var store = new ReadableTokenStoreImpl(readableStates);
+
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .build();
+
+        final var query = createTokenGetInfoQuery(fungibleTokenId);
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableTokenStore.class)).thenReturn(store);
+
+        final var config = new HederaTestConfigBuilder()
+                .withValue("tokens.maxRelsPerInfoQuery", 1000)
+                .getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
+
+        final var response = subject.findResponse(context, responseHeader);
+        final var op = response.tokenGetInfoOrThrow();
+        assertNull(op.tokenInfo());
+    }
+
+    @Test
     void getsResponseIfOkResponse() {
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
         final var expectedInfo = getExpectedInfo();
 
+        checkResponse(responseHeader, expectedInfo, readableTokenStore);
+    }
+
+    @Test
+    void getsResponseIfOkWithAnswerOnlyHead() {
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .responseType(ANSWER_ONLY)
+                .build();
+        final var expectedInfo = getExpectedInfo();
+
+        checkResponse(responseHeader, expectedInfo, readableTokenStore);
+    }
+
+    @Test
+    void getsResponseIfOkWithDefaultKey() {
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .build();
+        final var expectedInfo = getExpectInfoDefaultKeys();
+
+        fungibleToken = setFungibleTokenKeys();
+        final var state = MapReadableKVState.<EntityNum, Token>builder(TOKENS)
+                .value(fungibleTokenNum, fungibleToken)
+                .build();
+        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(state);
+        final var store = new ReadableTokenStoreImpl(readableStates);
+
+        checkResponse(responseHeader, expectedInfo, store);
+    }
+
+    @Test
+    void getsResponseIfOkWithDefaultStatus() {
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .build();
+        final var expectedInfo = getExpectInfoDefaultStatus();
+
+        fungibleToken = setFungibleTokenDefaultStatus();
+        final var state = MapReadableKVState.<EntityNum, Token>builder(TOKENS)
+                .value(fungibleTokenNum, fungibleToken)
+                .build();
+        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(state);
+        final var store = new ReadableTokenStoreImpl(readableStates);
+
+        checkResponse(responseHeader, expectedInfo, store);
+    }
+
+    private void checkResponse(
+            final ResponseHeader responseHeader, final TokenInfo expectedInfo, ReadableTokenStore readableTokenStore) {
         final var query = createTokenGetInfoQuery(fungibleTokenId);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
@@ -228,6 +306,53 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .defaultKycStatus(fungibleToken.accountsKycGrantedByDefault() ? GRANTED : REVOKED)
                 .pauseStatus(fungibleToken.paused() ? PAUSED : UNPAUSED)
                 .customFees(fungibleToken.customFees())
+                .build();
+    }
+
+    private TokenInfo getExpectInfoDefaultKeys() {
+        final var info = getExpectedInfo();
+        return info.copyBuilder()
+                .supplyKey((Key) null)
+                .wipeKey((Key) null)
+                .freezeKey((Key) null)
+                .kycKey((Key) null)
+                .adminKey((Key) null)
+                .feeScheduleKey((Key) null)
+                .pauseKey((Key) null)
+                .defaultFreezeStatus(FREEZE_NOT_APPLICABLE)
+                .defaultKycStatus(KYC_NOT_APPLICABLE)
+                .pauseStatus(PAUSE_NOT_APPLICABLE)
+                .build();
+    }
+
+    private TokenInfo getExpectInfoDefaultStatus() {
+        final var info = getExpectedInfo();
+        return info.copyBuilder()
+                .defaultFreezeStatus(FROZEN)
+                .defaultKycStatus(GRANTED)
+                .pauseStatus(PAUSED)
+                .build();
+    }
+
+    private Token setFungibleTokenKeys() {
+        return fungibleToken
+                .copyBuilder()
+                .supplyKey(Key.DEFAULT)
+                .wipeKey(Key.DEFAULT)
+                .freezeKey(Key.DEFAULT)
+                .kycKey(Key.DEFAULT)
+                .adminKey(Key.DEFAULT)
+                .feeScheduleKey(Key.DEFAULT)
+                .pauseKey(Key.DEFAULT)
+                .build();
+    }
+
+    private Token setFungibleTokenDefaultStatus() {
+        return fungibleToken
+                .copyBuilder()
+                .accountsFrozenByDefault(true)
+                .accountsKycGrantedByDefault(true)
+                .paused(true)
                 .build();
     }
 
