@@ -231,6 +231,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     public static final String CREATE_TX = "createTX";
     public static final String CREATE_TX_REC = "createTXRec";
     public static final String FALSE = "false";
+    public static final int GAS_TO_OFFER = 1_000_000;
     private static final Logger log = LogManager.getLogger(LeakyContractTestsSuite.class);
     private static final String PAYER = "payer";
     private static final String CONTRACTS_NONCES_EXTERNALIZATION_ENABLED = "contracts.nonces.externalization.enabled";
@@ -2124,14 +2125,14 @@ public class LeakyContractTestsSuite extends HapiSuite {
                     // Asserts nonce of parent contract
                     HapiGetTxnRecord opAssertParent = getTxnRecord(contractCreateTxn)
                             .hasPriority(recordWith()
-                                    .contractCallResult(resultWith().contractWithNonce(parentContractId, 4L)));
+                                    .contractCreateResult(resultWith().contractWithNonce(parentContractId, 4L)));
                     allRunFor(spec, opAssertParent);
 
                     // Asserts nonces of all newly deployed contracts through the constructor
                     for (final var contractNonceInfo : childContracts) {
                         HapiGetTxnRecord op = getTxnRecord(contractCreateTxn)
                                 .hasPriority(recordWith()
-                                        .contractCallResult(
+                                        .contractCreateResult(
                                                 resultWith().contractWithNonce(contractNonceInfo.getContractId(), 1L)));
                         allRunFor(spec, op);
                     }
