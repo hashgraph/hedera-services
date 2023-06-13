@@ -1,0 +1,888 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.service.token.impl.test.handlers;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_FOR_TOKEN_WITHOUT_SUPPLY;
+import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_WITH_MISSING_TOKEN;
+import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_WITH_SUPPLY_KEYED_TOKEN;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_SUPPLY_KT;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.common.UniqueTokenId;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.token.TokenBurnTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableNftStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
+import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
+import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
+import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
+import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.data.TokensConfig;
+import java.util.HashMap;
+import java.util.Map;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class TokenBurnHandlerTest extends ParityTestBase {
+    private static final AccountID ACCOUNT_1339 = IdConvenienceUtils.fromAccountNum(1339);
+    private static final TokenID TOKEN_123 = IdConvenienceUtils.fromTokenNum(123);
+
+    private ConfigProvider configProvider = mock(ConfigProvider.class);
+    private TokenSupplyChangeOpsValidator validator = new TokenSupplyChangeOpsValidator(configProvider);
+    private final TokenBurnHandler subject = new TokenBurnHandler(validator);
+
+    @Nested
+    class PureChecks {
+        @Test
+        void noTokenPresent() {
+            final var txn = newBurnTxn(null, 1);
+            Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(INVALID_TOKEN_ID));
+        }
+
+        @Test
+        void fungibleAndNonFungibleGiven() {
+            final var txn = newBurnTxn(TOKEN_123, 1, 1L);
+            Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(INVALID_TRANSACTION_BODY));
+        }
+
+        @Test
+        void nonPositiveFungibleAmountGiven() {
+            final var txn = newBurnTxn(TOKEN_123, -1);
+            Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(INVALID_TOKEN_BURN_AMOUNT));
+        }
+
+        @Test
+        void invalidNftSerialNumber() {
+            final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 0L);
+            Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(INVALID_NFT_ID));
+        }
+    }
+
+    @Nested
+    // Tests that check prehandle parity with old prehandle code
+    class PreHandle {
+        @SuppressWarnings("DataFlowIssue")
+        @Test
+        void nullArgsThrows() {
+            assertThatThrownBy(() -> subject.preHandle(null)).isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        void parity_getsTokenBurnWithValidId() throws PreCheckException {
+            final var theTxn = txnFrom(BURN_WITH_SUPPLY_KEYED_TOKEN);
+
+            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+            context.registerStore(ReadableTokenStore.class, readableTokenStore);
+            subject.preHandle(context);
+
+            assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+            assertEquals(1, context.requiredNonPayerKeys().size());
+            assertThat(context.requiredNonPayerKeys(), contains(TOKEN_SUPPLY_KT.asPbjKey()));
+        }
+
+        @Test
+        void parity_getsTokenBurnWithMissingToken() throws PreCheckException {
+            final var theTxn = txnFrom(BURN_WITH_MISSING_TOKEN);
+
+            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+            context.registerStore(ReadableTokenStore.class, readableTokenStore);
+            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
+        }
+
+        @Test
+        void parity_getsTokenBurnWithoutSupplyKey() throws PreCheckException {
+            final var theTxn = txnFrom(BURN_FOR_TOKEN_WITHOUT_SUPPLY);
+
+            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
+            context.registerStore(ReadableTokenStore.class, readableTokenStore);
+            subject.preHandle(context);
+
+            assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
+            assertEquals(0, context.requiredNonPayerKeys().size());
+        }
+    }
+
+    @Nested
+    class Handle {
+        private WritableTokenStore writableTokenStore;
+        private WritableNftStore writableNftStore;
+
+        @SuppressWarnings("DataFlowIssue")
+        @Test
+        void nullArg() {
+            assertThatThrownBy(() -> subject.handle(null)).isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        void invalidFungibleAmount() {
+            mockConfig();
+            final var txn = newBurnTxn(TOKEN_123, -1);
+            final var context = mockContext(txn);
+
+            assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INVALID_TOKEN_BURN_AMOUNT));
+        }
+
+        @Test
+        void tokenIdNotFound() {
+            mockConfig();
+            writableTokenStore = newWritableStoreWithTokens();
+            final var txn = newBurnTxn(IdConvenienceUtils.fromTokenNum(999), 1);
+            final var context = mockContext(txn);
+
+            assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INVALID_TOKEN_ID));
+        }
+
+        @Test
+        void tokenIsDeleted() {
+            mockConfig();
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .deleted(true) // Intentionally deleted
+                    .build());
+
+            final var txn = newBurnTxn(TOKEN_123, 1);
+            final var context = mockContext(txn);
+
+            assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(TOKEN_WAS_DELETED));
+        }
+
+        @Test
+        void tokenIsPaused() {
+            mockConfig();
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .paused(true) // Intentionally paused
+                    .build());
+            final var txn = newBurnTxn(TOKEN_123, 1);
+            final var context = mockContext(txn);
+
+            assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(TOKEN_IS_PAUSED));
+        }
+
+        @Test
+        void tokenDoesntHaveSupplyKey() {
+            mockConfig();
+            final var totalFungibleSupply = 5;
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey((Key) null) // Intentionally missing supply key
+                    .totalSupply(totalFungibleSupply)
+                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .balance(totalFungibleSupply)
+                    .build());
+            final var txn = newBurnTxn(TOKEN_123, totalFungibleSupply + 1);
+            final var context = mockContext(txn);
+
+            assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(TOKEN_HAS_NO_SUPPLY_KEY));
+        }
+
+        @Test
+        void tokenTreasuryRelDoesntExist() {
+            mockConfig();
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .build());
+            // Intentionally has no token rels:
+            writableTokenRelStore = newWritableStoreWithTokenRels();
+            final var txn = newBurnTxn(TOKEN_123, 1);
+            final var context = mockContext(txn);
+
+            assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+        }
+
+        @Test
+        void fungibleTokenTreasuryAccountDoesntExist() {
+            mockConfig();
+            // Intentionally has no treasury account:
+            writableAccountStore = newWritableStoreWithAccounts();
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .totalSupply(10)
+                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .balance(10)
+                    .build());
+            final var txn = newBurnTxn(TOKEN_123, 10);
+            final var context = mockContext(txn);
+
+            assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
+        }
+
+        @Test
+        void fungibleAmountExceedsSupply() {
+            mockConfig();
+            final var totalFungibleSupply = 5;
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .totalSupply(totalFungibleSupply)
+                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .balance(totalFungibleSupply)
+                    .build());
+            final var txn = newBurnTxn(TOKEN_123, totalFungibleSupply + 1);
+            final var context = mockContext(txn);
+
+            assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INVALID_TOKEN_BURN_AMOUNT));
+        }
+
+        @Test
+        void fungibleAmountExceedsBalance() {
+            mockConfig();
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .totalSupply(10)
+                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .balance(8)
+                    .build());
+            // The token treasury has a balance of 8. The token supply is 10, so a fungible amount of 9 exceed the total
+            // supply of available tokens, but 9 is one more than the current treasury balance, so this scenario should
+            // throw an exception
+            final var txn = newBurnTxn(TOKEN_123, 9);
+            final var context = mockContext(txn);
+
+            assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INSUFFICIENT_TOKEN_BALANCE));
+        }
+
+        @Test
+        void fungibleAmountBurnedWithLeftoverTreasuryBalance() {
+            mockConfig();
+            writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .numberTreasuryTitles(1)
+                    .numberPositiveBalances(1)
+                    .build());
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .totalSupply(10)
+                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .balance(9)
+                    .build());
+            final var txn = newBurnTxn(TOKEN_123, 8);
+            final var context = mockContext(txn);
+
+            subject.handle(context);
+
+            final var updatedToken = writableTokenStore.get(TOKEN_123);
+            // Total supply of 10 is reduced by the burn of 8 units, so the new total supply should be 2
+            Assertions.assertThat(updatedToken.totalSupply()).isEqualTo(2);
+            final var updatedTreasuryRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_123);
+            Assertions.assertThat(updatedTreasuryRel.balance()).isEqualTo(1);
+            final var updatedTreasuryAcct = writableAccountStore.get(ACCOUNT_1339);
+            Assertions.assertThat(updatedTreasuryAcct.numberTreasuryTitles()).isEqualTo(1);
+            // There is still a positive balance in the treasury account, so its positive balances shouldn't change
+            Assertions.assertThat(updatedTreasuryAcct.numberPositiveBalances()).isEqualTo(1);
+        }
+
+        @Test
+        void fungibleAmountBurnedWithZeroTreasuryBalance() {
+            mockConfig();
+            writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .numberTreasuryTitles(1)
+                    .numberPositiveBalances(1)
+                    .build());
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.FUNGIBLE_COMMON)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .totalSupply(10)
+                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .balance(8)
+                    .build());
+            final var txn = newBurnTxn(TOKEN_123, 8);
+            final var context = mockContext(txn);
+
+            subject.handle(context);
+
+            final var updatedToken = writableTokenStore.get(TOKEN_123);
+            // Total supply of 10 is reduced by the burn of 8 units, so the new total supply should be 2
+            Assertions.assertThat(updatedToken.totalSupply()).isEqualTo(2);
+            final var updatedTreasuryRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_123);
+            Assertions.assertThat(updatedTreasuryRel.balance()).isZero();
+            final var updatedTreasuryAcct = writableAccountStore.get(ACCOUNT_1339);
+            // The treasury account is still listed as the treasury for the token, so its number of treasury titles
+            // shouldn't decrease
+            Assertions.assertThat(updatedTreasuryAcct.numberTreasuryTitles()).isEqualTo(1);
+            // There is no balance left in the treasury account, so its positive balances should be reduced
+            Assertions.assertThat(updatedTreasuryAcct.numberPositiveBalances()).isZero();
+        }
+
+        @Test
+        void nftsGivenButNotEnabled() {
+            mockConfig(100, false, 100);
+            validator = new TokenSupplyChangeOpsValidator(configProvider);
+
+            final var txn = newBurnTxn(TOKEN_123, 0, 1L);
+            final var context = mockContext(txn);
+
+            Assertions.assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(NOT_SUPPORTED));
+        }
+
+        @Test
+        void nftSerialCountExceedsBatchSize() {
+            mockConfig(1, true, 100);
+            validator = new TokenSupplyChangeOpsValidator(configProvider);
+
+            final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
+            final var context = mockContext(txn);
+
+            Assertions.assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(BATCH_SIZE_LIMIT_EXCEEDED));
+        }
+
+        @Test
+        void invalidNftSerial() {
+            mockConfig();
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .totalSupply(10)
+                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .build());
+            writableNftStore = newWritableStoreWithNfts();
+            final var txn = newBurnTxn(TOKEN_123, 0, -1L);
+            final var context = mockContext(txn);
+
+            Assertions.assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INVALID_NFT_ID));
+        }
+
+        @Test
+        void nftSerialNotFound() {
+            mockConfig();
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .totalSupply(10)
+                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .balance(10)
+                    .build());
+            writableNftStore = new WritableNftStore(new MapWritableStates(
+                    Map.of("NFTS", MapWritableKVState.builder("NFTS").build())));
+
+            final var txn = newBurnTxn(TOKEN_123, 0, 1L);
+            final var context = mockContext(txn);
+
+            Assertions.assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INVALID_NFT_ID));
+        }
+
+        @Test
+        void nftSerialNumsEmpty() {
+            mockConfig();
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .totalSupply(10)
+                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .balance(10)
+                    .build());
+            final var txn = newBurnTxn(TOKEN_123, 0);
+            final var context = mockContext(txn);
+
+            Assertions.assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INVALID_TOKEN_BURN_METADATA));
+        }
+
+        @Test
+        void nftNotOwnedByTreasury() {
+            mockConfig();
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .totalSupply(10)
+                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .balance(10)
+                    .build());
+            // this owner number isn't the treasury
+            writableNftStore = newWritableStoreWithNfts(Nft.newBuilder()
+                    .id(UniqueTokenId.newBuilder()
+                            .tokenTypeNumber(TOKEN_123.tokenNum())
+                            .serialNumber(1L)
+                            .build())
+                    .ownerNumber(999)
+                    .build());
+
+            final var txn = newBurnTxn(TOKEN_123, 0, 1L);
+            final var context = mockContext(txn);
+
+            Assertions.assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(TREASURY_MUST_OWN_BURNED_NFT));
+        }
+
+        @Test
+        void nftTreasuryAccountDoesntExist() {
+            mockConfig();
+            // Intentionally has no treasury account:
+            writableAccountStore = newWritableStoreWithAccounts();
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .totalSupply(10)
+                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .balance(10)
+                    .build());
+            writableNftStore = newWritableStoreWithNfts(Nft.newBuilder()
+                    .id(UniqueTokenId.newBuilder()
+                            .tokenTypeNumber(TOKEN_123.tokenNum())
+                            .serialNumber(1L)
+                            .build())
+                    .ownerNumber(0)
+                    .build());
+            final var txn = newBurnTxn(TOKEN_123, 0, 1L);
+            final var context = mockContext(txn);
+
+            assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
+        }
+
+        @Test
+        void numNftSerialsExceedsNftSupply() {
+            mockConfig();
+            writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .numberTreasuryTitles(1)
+                    .numberPositiveBalances(1)
+                    .build());
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .totalSupply(1)
+                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .balance(1)
+                    .build());
+            writableNftStore = newWritableStoreWithNfts(
+                    Nft.newBuilder()
+                            .id(UniqueTokenId.newBuilder()
+                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .serialNumber(1L)
+                                    .build())
+                            .ownerNumber(0)
+                            .build(),
+                    Nft.newBuilder()
+                            .id(UniqueTokenId.newBuilder()
+                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .serialNumber(2L)
+                                    .build())
+                            .ownerNumber(0)
+                            .build());
+            final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
+            final var context = mockContext(txn);
+
+            Assertions.assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(FAIL_INVALID));
+        }
+
+        @Test
+        void nftSerialsBurnedWithLeftoverTreasuryBalance() {
+            mockConfig();
+            writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .numberTreasuryTitles(1)
+                    .numberPositiveBalances(1)
+                    .numberOwnedNfts(3)
+                    .build());
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .totalSupply(3)
+                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .balance(3)
+                    .build());
+            writableNftStore = newWritableStoreWithNfts(
+                    Nft.newBuilder()
+                            .id(UniqueTokenId.newBuilder()
+                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .serialNumber(1L)
+                                    .build())
+                            .ownerNumber(0)
+                            .build(),
+                    Nft.newBuilder()
+                            .id(UniqueTokenId.newBuilder()
+                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .serialNumber(2L)
+                                    .build())
+                            .ownerNumber(0)
+                            .build(),
+                    Nft.newBuilder()
+                            .id(UniqueTokenId.newBuilder()
+                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .serialNumber(3L)
+                                    .build())
+                            .ownerNumber(0)
+                            .build());
+            final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
+            final var context = mockContext(txn);
+
+            subject.handle(context);
+            final var treasuryAcct = writableAccountStore.get(ACCOUNT_1339);
+            Assertions.assertThat(treasuryAcct.numberTreasuryTitles()).isEqualTo(1);
+            // The treasury still owns at least one of the NFTs, so its positive balances shouldn't change
+            Assertions.assertThat(treasuryAcct.numberPositiveBalances()).isEqualTo(1);
+            Assertions.assertThat(treasuryAcct.numberOwnedNfts()).isEqualTo(1);
+            final var treasuryRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_123);
+            Assertions.assertThat(treasuryRel.balance()).isEqualTo(1);
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 1L)).isNull();
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 2L)).isNull();
+            // Only serials 1 and 2 were removed, not serial 3
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 3L)).isNotNull();
+        }
+
+        @Test
+        void nftSerialsBurnedWithNoLeftoverTreasuryBalance() {
+            mockConfig();
+            writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .numberTreasuryTitles(1)
+                    .numberPositiveBalances(1)
+                    .numberOwnedNfts(3)
+                    .build());
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .totalSupply(10)
+                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .balance(3)
+                    .build());
+            writableNftStore = newWritableStoreWithNfts(
+                    Nft.newBuilder()
+                            .id(UniqueTokenId.newBuilder()
+                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .serialNumber(1L)
+                                    .build())
+                            .ownerNumber(0)
+                            .build(),
+                    Nft.newBuilder()
+                            .id(UniqueTokenId.newBuilder()
+                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .serialNumber(2L)
+                                    .build())
+                            .ownerNumber(0)
+                            .build(),
+                    Nft.newBuilder()
+                            .id(UniqueTokenId.newBuilder()
+                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .serialNumber(3L)
+                                    .build())
+                            .ownerNumber(0)
+                            .build());
+            final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L);
+            final var context = mockContext(txn);
+
+            subject.handle(context);
+            final var treasuryAcct = writableAccountStore.get(ACCOUNT_1339);
+            Assertions.assertThat(treasuryAcct).isNotNull();
+            Assertions.assertThat(treasuryAcct.numberTreasuryTitles()).isEqualTo(1);
+            // The treasury no longer owns any NFTs, so its positive balances should decrease by 1
+            Assertions.assertThat(treasuryAcct.numberPositiveBalances()).isZero();
+            Assertions.assertThat(treasuryAcct.numberOwnedNfts()).isZero();
+            final var treasuryRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_123);
+            Assertions.assertThat(treasuryRel).isNotNull();
+            Assertions.assertThat(treasuryRel.balance()).isZero();
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 1L)).isNull();
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 2L)).isNull();
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 3L)).isNull();
+        }
+
+        @Test
+        void duplicateNftSerials() {
+            // This is a success case, and should be identical to the case without no duplicates above
+            mockConfig();
+            writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .numberTreasuryTitles(1)
+                    .numberPositiveBalances(1)
+                    .build());
+            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
+                    .totalSupply(10)
+                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
+                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenNumber(TOKEN_123.tokenNum())
+                    .balance(3)
+                    .build());
+            writableNftStore = newWritableStoreWithNfts(
+                    Nft.newBuilder()
+                            .id(UniqueTokenId.newBuilder()
+                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .serialNumber(1L)
+                                    .build())
+                            .ownerNumber(0)
+                            .build(),
+                    Nft.newBuilder()
+                            .id(UniqueTokenId.newBuilder()
+                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .serialNumber(2L)
+                                    .build())
+                            .ownerNumber(0)
+                            .build(),
+                    Nft.newBuilder()
+                            .id(UniqueTokenId.newBuilder()
+                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .serialNumber(3L)
+                                    .build())
+                            .ownerNumber(0)
+                            .build());
+            final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L, 1L, 2L, 3L, 3L, 1L, 1L, 2L);
+            final var context = mockContext(txn);
+
+            subject.handle(context);
+            final var treasuryAcct = writableAccountStore.get(ACCOUNT_1339);
+            Assertions.assertThat(treasuryAcct).isNotNull();
+            Assertions.assertThat(treasuryAcct.numberTreasuryTitles()).isEqualTo(1);
+            // The treasury no longer owns any NFTs, so its positive balances should decrease by 1
+            Assertions.assertThat(treasuryAcct.numberPositiveBalances()).isZero();
+            final var treasuryRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_123);
+            Assertions.assertThat(treasuryRel).isNotNull();
+            Assertions.assertThat(treasuryRel.balance()).isZero();
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 1L)).isNull();
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 2L)).isNull();
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 3L)).isNull();
+        }
+
+        private HandleContext mockContext(TransactionBody txn) {
+            final var context = mock(HandleContext.class);
+
+            given(context.body()).willReturn(txn);
+
+            given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+            given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+            given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+
+            return context;
+        }
+
+        private void mockConfig() {
+            mockConfig(100, true, 100);
+        }
+
+        private void mockConfig(final int maxBatchSize, final boolean nftsEnabled, final int maxMetadataBytes) {
+            final var mockTokensConfig = mock(TokensConfig.class);
+            lenient().when(mockTokensConfig.nftsMaxBatchSizeBurn()).thenReturn(maxBatchSize);
+            lenient().when(mockTokensConfig.nftsAreEnabled()).thenReturn(nftsEnabled);
+            lenient().when(mockTokensConfig.nftsMaxMetadataBytes()).thenReturn(maxMetadataBytes);
+
+            final var mockConfig = mock(VersionedConfiguration.class);
+            lenient().when(mockConfig.getConfigData(TokensConfig.class)).thenReturn(mockTokensConfig);
+
+            given(configProvider.getConfiguration()).willReturn(mockConfig);
+        }
+
+        protected WritableTokenRelationStore newWritableStoreWithTokenRels(final TokenRelation... tokenRels) {
+            final var backingMap = new HashMap<EntityNumPair, TokenRelation>();
+            for (final TokenRelation tokenRel : tokenRels) {
+                backingMap.put(EntityNumPair.fromLongs(tokenRel.accountNumber(), tokenRel.tokenNumber()), tokenRel);
+            }
+
+            final var wrappingState = new MapWritableKVState<>(ACCOUNTS_KEY, backingMap);
+            return new WritableTokenRelationStore(
+                    new MapWritableStates(Map.of(TokenServiceImpl.TOKEN_RELS_KEY, wrappingState)));
+        }
+
+        private WritableNftStore newWritableStoreWithNfts(Nft... nfts) {
+            final var nftStateBuilder = MapWritableKVState.<UniqueTokenId, Nft>builder(TokenServiceImpl.NFTS_KEY);
+            for (final Nft nft : nfts) {
+                nftStateBuilder.value(nft.id(), nft);
+            }
+            return new WritableNftStore(
+                    new MapWritableStates(Map.of(TokenServiceImpl.NFTS_KEY, nftStateBuilder.build())));
+        }
+    }
+
+    private TransactionBody newBurnTxn(TokenID token, long fungibleAmount, Long... nftSerialNums) {
+        TokenBurnTransactionBody.Builder burnTxnBodyBuilder = TokenBurnTransactionBody.newBuilder();
+        if (token != null) burnTxnBodyBuilder.token(token);
+        burnTxnBodyBuilder.amount(fungibleAmount);
+        burnTxnBodyBuilder.serialNumbers(nftSerialNums);
+        return TransactionBody.newBuilder()
+                .transactionID(
+                        TransactionID.newBuilder().accountID(ACCOUNT_1339).build())
+                .tokenBurn(burnTxnBodyBuilder)
+                .build();
+    }
+}
