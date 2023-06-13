@@ -72,7 +72,7 @@ public class CustomSelfDestructOperation extends AbstractOperation {
             final var tbdAddress = frame.getRecipientAddress();
             final var proxyWorldUpdater = (ProxyWorldUpdater) frame.getWorldUpdater();
             // Enforce Hedera-specific restrictions on account deletion
-            final var maybeHaltReason = proxyWorldUpdater.tryToTrackDeletion(tbdAddress, beneficiaryAddress);
+            final var maybeHaltReason = proxyWorldUpdater.tryTrackingDeletion(tbdAddress, beneficiaryAddress);
             if (maybeHaltReason.isPresent()) {
                 return haltFor(null, 0, maybeHaltReason.get());
             }

@@ -14,20 +14,25 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec;
+package com.hedera.node.app.service.contract.impl;
 
-import static java.util.Map.entry;
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_030;
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_034;
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_038;
 
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV030;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV034;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV038;
+import com.hedera.node.app.service.contract.impl.annotations.ServicesVersionKey;
+import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule;
 import com.hedera.node.app.service.contract.impl.exec.v030.V030Module;
 import com.hedera.node.app.service.contract.impl.exec.v034.V034Module;
 import com.hedera.node.app.service.contract.impl.exec.v038.V038Module;
 import dagger.Binds;
 import dagger.Module;
-import dagger.Provides;
+import dagger.multibindings.IntoMap;
 import dagger.multibindings.Multibinds;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
@@ -42,12 +47,8 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  * and Hedera {@link PrecompiledContract} instances that have not changed since the
  * first EVM version we explicitly support (which is {@code v0.30}).
  */
-@Module(includes = {V030Module.class, V034Module.class, V038Module.class})
+@Module(includes = {V030Module.class, V034Module.class, V038Module.class, ProcessorModule.class})
 public interface ServiceModule {
-    String VERSION_030 = "v0.30";
-    String VERSION_034 = "v0.34";
-    String VERSION_038 = "v0.38";
-
     @Binds
     @Singleton
     GasCalculator bindGasCalculator(@NonNull final CustomGasCalculator gasCalculator);
@@ -55,15 +56,18 @@ public interface ServiceModule {
     @Multibinds
     Map<Address, PrecompiledContract> bindHederaPrecompiles();
 
-    @Provides
-    @Singleton
-    static Map<String, TransactionProcessor> provideTransactionProcessors(
-            @ServicesV030 @NonNull final TransactionProcessor v030Processor,
-            @ServicesV034 @NonNull final TransactionProcessor v034Processor,
-            @ServicesV038 @NonNull final TransactionProcessor v038Processor) {
-        return Map.ofEntries(
-                entry(VERSION_030, v030Processor),
-                entry(VERSION_034, v034Processor),
-                entry(VERSION_038, v038Processor));
-    }
+    @Binds
+    @IntoMap
+    @ServicesVersionKey(VERSION_030)
+    TransactionProcessor bindV030Processor(@ServicesV030 @NonNull final TransactionProcessor processor);
+
+    @Binds
+    @IntoMap
+    @ServicesVersionKey(VERSION_034)
+    TransactionProcessor bindV034Processor(@ServicesV034 @NonNull final TransactionProcessor processor);
+
+    @Binds
+    @IntoMap
+    @ServicesVersionKey(VERSION_038)
+    TransactionProcessor bindV038Processor(@ServicesV038 @NonNull final TransactionProcessor processor);
 }

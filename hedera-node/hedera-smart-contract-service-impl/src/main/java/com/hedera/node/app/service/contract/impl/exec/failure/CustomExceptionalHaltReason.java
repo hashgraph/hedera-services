@@ -30,7 +30,9 @@ public enum CustomExceptionalHaltReason implements ExceptionalHaltReason {
     TOKEN_HOLDER_SELFDESTRUCT("Accounts still holding tokens cannot be deleted"),
     SELFDESTRUCT_TO_SELF("Selfdestruct must give a different beneficiary"),
     INVALID_RECEIVER_SIGNATURE("Receiver signature required but not provided"),
-    INVALID_VALUE_TRANSFER("Value transfer not allowed to system accounts");
+    TOO_MANY_CHILD_RECORDS("Too many child records for available slots"),
+    ACCOUNTS_LIMIT_REACHED("Accounts limit reached"),
+    INVALID_VALUE_TRANSFER("Value transfer not allowed to system or expired accounts");
 
     private final String description;
 

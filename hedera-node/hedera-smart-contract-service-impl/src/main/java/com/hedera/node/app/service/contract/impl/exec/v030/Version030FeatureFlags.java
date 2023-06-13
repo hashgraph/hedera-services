@@ -33,7 +33,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class Version030FeatureFlags implements FeatureFlags {
     @Inject
     public Version030FeatureFlags() {
-        // Dagger
+        // Dagger2
     }
 
     @Override

@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.gas;
+package com.hedera.node.app.service.contract.impl;
 
-import javax.inject.Inject;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionProcessor;
+import dagger.Component;
 import javax.inject.Singleton;
-import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 
-/**
- * Need to clean up and refactor {@link com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22}
- * to get its price and exchange rate from the transaction's {@link com.hedera.node.app.spi.meta.bni.Scope}.
- */
 @Singleton
-public class CustomGasCalculator extends LondonGasCalculator {
-    @Inject
-    public CustomGasCalculator() {
-        // Dagger2
-    }
+@Component(modules = {ServiceModule.class})
+public interface ServiceComponent {
+    HederaEvmTransactionProcessor transactionProcessor();
 }

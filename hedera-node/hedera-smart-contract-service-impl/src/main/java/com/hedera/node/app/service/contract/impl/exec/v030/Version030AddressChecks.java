@@ -36,8 +36,7 @@ public class Version030AddressChecks implements AddressChecks {
     public Version030AddressChecks(@NonNull final Map<Address, PrecompiledContract> hederaPrecompiles) {
         precompileAccountNumbers = new int[hederaPrecompiles.size()];
         int i = 0;
-        for (final var iter = hederaPrecompiles.keySet().iterator(); iter.hasNext(); ) {
-            final var address = iter.next();
+        for (final var address : hederaPrecompiles.keySet()) {
             if (address.numberOfLeadingZeroBytes() != 18) {
                 throw new IllegalArgumentException("Precompile address " + address + " is outside system range");
             }

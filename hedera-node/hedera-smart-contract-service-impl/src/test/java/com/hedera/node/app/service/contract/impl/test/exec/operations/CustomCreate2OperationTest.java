@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.assertSameResult;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSameResult;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;

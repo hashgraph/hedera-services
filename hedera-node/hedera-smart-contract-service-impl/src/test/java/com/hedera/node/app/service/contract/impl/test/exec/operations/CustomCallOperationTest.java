@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.EIP_1014_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.REQUIRED_GAS;
-import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.SYSTEM_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.assertSameResult;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REQUIRED_GAS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SYSTEM_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSameResult;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -30,7 +30,7 @@ import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
-import com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers;
+import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;

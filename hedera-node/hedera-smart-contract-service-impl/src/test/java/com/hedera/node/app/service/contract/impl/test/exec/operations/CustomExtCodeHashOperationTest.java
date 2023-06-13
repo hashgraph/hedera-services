@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.assertSameResult;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSameResult;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;

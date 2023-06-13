@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.v038;
 
+import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
+import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.REQUIRE_CODE_DEPOSIT_TO_SUCCEED;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerShanghaiOperations;
 
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV038;
@@ -27,6 +29,8 @@ import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOpera
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomChainIdOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreate2Operation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreateOperation;
+import com.hedera.node.app.service.contract.impl.exec.processors.CustomContractCreationProcessor;
+import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.v034.Version034FeatureFlags;
 import dagger.Binds;
 import dagger.Module;
@@ -34,11 +38,14 @@ import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Singleton;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.EvmSpecVersion;
+import org.hyperledger.besu.evm.contractvalidation.ContractValidationRule;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.Operation;
@@ -73,9 +80,14 @@ public interface V038Module {
     @ServicesV038
     static ContractCreationProcessor provideContractCreationProcessor(
             @ServicesV038 @NonNull final EVM evm,
-            @ServicesV038 @NonNull final PrecompileContractRegistry precompileContractRegistry,
-            @NonNull final Map<String, PrecompiledContract> hederaSystemContracts) {
-        throw new AssertionError("Not implemented");
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final Set<ContractValidationRule> validationRules) {
+        return new CustomContractCreationProcessor(
+                evm,
+                gasCalculator,
+                REQUIRE_CODE_DEPOSIT_TO_SUCCEED,
+                List.copyOf(validationRules),
+                INITIAL_CONTRACT_NONCE);
     }
 
     @Provides
@@ -83,9 +95,10 @@ public interface V038Module {
     @ServicesV038
     static MessageCallProcessor provideMessageCallProcessor(
             @ServicesV038 @NonNull final EVM evm,
-            @ServicesV038 @NonNull final PrecompileContractRegistry precompileContractRegistry,
-            @NonNull final Map<String, PrecompiledContract> hederaSystemContracts) {
-        throw new AssertionError("Not implemented");
+            @ServicesV038 @NonNull final AddressChecks addressChecks,
+            @ServicesV038 @NonNull final PrecompileContractRegistry registry,
+            @NonNull final Map<Address, PrecompiledContract> hederaPrecompiles) {
+        return new CustomMessageCallProcessor(evm, registry, addressChecks, hederaPrecompiles);
     }
 
     @Provides

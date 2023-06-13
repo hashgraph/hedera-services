@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.state;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
-import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;

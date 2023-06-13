@@ -16,7 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.v030;
 
-import static com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HTS_PRECOMPILE_ADDRESS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
@@ -58,14 +59,17 @@ class Version030AddressChecksTest {
     @BeforeEach
     void setUp() {
         subject = new Version030AddressChecks(Map.of(
-                Address.fromHexString("0x167"), mockHtsPrecompile,
-                Address.fromHexString("0x168"), mockRatesPrecompile,
-                Address.fromHexString("0x169"), mockPrngPrecompile));
+                HTS_PRECOMPILE_ADDRESS,
+                mockHtsPrecompile,
+                Address.fromHexString("0x168"),
+                mockRatesPrecompile,
+                Address.fromHexString("0x169"),
+                mockPrngPrecompile));
     }
 
     @Test
     void classifiesPrecompiles() {
-        assertTrue(subject.isHederaPrecompile(Address.fromHexString("0x167")));
+        assertTrue(subject.isHederaPrecompile(HTS_PRECOMPILE_ADDRESS));
         assertTrue(subject.isHederaPrecompile(Address.fromHexString("0x168")));
         assertTrue(subject.isHederaPrecompile(Address.fromHexString("0x169")));
         assertFalse(subject.isHederaPrecompile(Address.fromHexString("0x16a")));
@@ -74,7 +78,7 @@ class Version030AddressChecksTest {
     @Test
     void precompilesAlwaysPresent() {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        assertTrue(subject.isPresent(Address.fromHexString("0x167"), frame));
+        assertTrue(subject.isPresent(HTS_PRECOMPILE_ADDRESS, frame));
         assertTrue(subject.isPresent(Address.fromHexString("0x168"), frame));
         assertTrue(subject.isPresent(Address.fromHexString("0x169"), frame));
         assertFalse(subject.isPresent(Address.fromHexString("0x16a"), frame));
@@ -89,6 +93,6 @@ class Version030AddressChecksTest {
 
     @Test
     void nothingIsSystemAccount() {
-        assertFalse(subject.isSystemAccount(Address.fromHexString("0x167")));
+        assertFalse(subject.isSystemAccount(HTS_PRECOMPILE_ADDRESS));
     }
 }

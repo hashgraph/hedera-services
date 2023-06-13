@@ -21,7 +21,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomChainIdOperation;
-import com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers;
+import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import org.apache.tuweni.bytes.Bytes32;

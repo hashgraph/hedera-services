@@ -41,4 +41,8 @@ public class FrameUtils {
     public static boolean transfersValue(@NonNull final MessageFrame frame) {
         return !frame.getValue().isZero();
     }
+
+    public static boolean alreadyHalted(@NonNull final MessageFrame frame) {
+        return frame.getState() == MessageFrame.State.EXCEPTIONAL_HALT;
+    }
 }

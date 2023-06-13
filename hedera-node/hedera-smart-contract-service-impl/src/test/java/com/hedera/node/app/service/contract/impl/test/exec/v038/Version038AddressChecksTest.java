@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.contract.impl.exec.v038.Version038AddressChecks;
-import com.hedera.node.app.service.contract.impl.test.exec.utils.TestHelpers;
+import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import java.util.Map;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;

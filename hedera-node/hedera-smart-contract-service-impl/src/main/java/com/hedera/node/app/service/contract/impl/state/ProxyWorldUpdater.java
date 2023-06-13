@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.ma
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.meta.bni.Scope;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -36,6 +37,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 /**
@@ -50,7 +52,7 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
  * <p><i>Note:</i> The {@code sbhRefund} field in the {@code mono-service} {@link WorldUpdater}
  * hierarchy is---as best I can tell---now always zero. So it does not appear here.
  */
-public class ProxyWorldUpdater implements WorldUpdater {
+public class ProxyWorldUpdater implements HederaWorldUpdater {
     private static final String CANNOT_CREATE = "Cannot create ";
 
     /**
@@ -105,22 +107,10 @@ public class ProxyWorldUpdater implements WorldUpdater {
         this.evmFrameState = evmFrameStateFactory.createIn(scope);
     }
 
-    // --- Some Hedera-specific methods ---
     /**
-     * Tries to transfer the given amount from a sending contract to the recipient. The sender
-     * has already authorized this action, in the sense that it is the address that has initiated
-     * either a message call with value or a {@code selfdestruct}. The recipient, however, must
-     * still be checked for authorization based on the Hedera concept of receiver signature
-     * requirements.
-     *
-     * <p>Returns true if the receiver authorization and transfer succeeded, false otherwise.
-     *
-     * @param sendingContract the sender of the transfer, already authorized
-     * @param recipient       the recipient of the transfer, not yet authorized
-     * @param amount          the amount to transfer
-     * @param delegateCall    whether this transfer is done via code executed by a delegate call
-     * @return a optional with the reason to halt if the transfer failed, or empty if it succeeded
+     * {@inheritDoc}
      */
+    @Override
     public Optional<ExceptionalHaltReason> tryTransferFromContract(
             @NonNull final Address sendingContract,
             @NonNull final Address recipient,
@@ -130,71 +120,56 @@ public class ProxyWorldUpdater implements WorldUpdater {
     }
 
     /**
-     * Returns whether this address refers to a hollow account (i.e. a lazy-created account that
-     * has not yet been completed as either an EOA with a cryptographic key, or a contract created
-     * with CREATE2.)
-     *
-     * @param address the address to check
-     * @return whether the address refers to a hollow account
+     * {@inheritDoc}
      */
+    @Override
+    public Optional<ExceptionalHaltReason> tryLazyCreation(
+            @NonNull final Address recipient, @NonNull final MessageFrame frame) {
+        throw new AssertionError("Not implemented");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean isHollowAccount(@NonNull final Address address) {
         return evmFrameState.isHollowAccount(address);
     }
 
     /**
-     * Given the possibly zero address of the recipient of a {@code CONTRACT_CREATION} message,
-     * sets up the {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete
-     * the creation of the new account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)};
-     * returns the "long-zero" address to be assigned to the new account.
-     *
-     * @param receiver the address of the recipient of a {@code CONTRACT_CREATION} message, zero if a top-level message
-     * @return the "long-zero" address to be assigned to the new account
+     * {@inheritDoc}
      */
+    @Override
     public Address setupCreate(@NonNull final Address receiver) {
         setupPendingCreation(receiver, null);
         return requireNonNull(pendingCreation).address();
     }
 
     /**
-     * Given the possibly zero address of the recipient of a {@code CONTRACT_CREATION} message,
-     * and the EIP-1014 address computed by an in-progress {@code CREATE2} operation, sets up the
-     * {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete the creation of
-     * the new account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
-     *
-     * <p>Does not return anything, as the {@code CREATE2} address is already known.
-     *
-     * @param receiver the address of the recipient of a {@code CONTRACT_CREATION} message, zero if a top-level message
-     * @param alias    the EIP-1014 address computed by an in-progress {@code CREATE2} operation
+     * {@inheritDoc}
      */
+    @Override
     public void setupCreate2(@NonNull final Address receiver, @NonNull final Address alias) {
         setupPendingCreation(receiver, alias);
     }
 
     /**
-     * Finalizes the creation of a hollow account as a contract created via CREATE2. This step doesn't
-     * exist in Besu because there contracts are just normal accounts with code; but in Hedera, there
-     * are a few other properties that need to be set to "convert" an account into a contract.
-     *
-     * @param alias the hollow account to be finalized as a contract
+     * {@inheritDoc}
      */
+    @Override
     public void finalizeHollowAccount(@NonNull final Address alias) {
         evmFrameState.finalizeHollowAccount(alias);
     }
 
     /**
-     * Attempts to track the given deletion of an account with the designated beneficiary, returning an optional
-     * {@link ExceptionalHaltReason} to indicate whether the deletion could be successfully tracked.
-     *
-     * @param deleted     the address of the account being deleted
-     * @param beneficiary the address of the beneficiary of the deletion
-     * @return an optional {@link ExceptionalHaltReason} with the reason deletion could not be tracked
+     * {@inheritDoc}
      */
-    public Optional<ExceptionalHaltReason> tryToTrackDeletion(
+    @Override
+    public Optional<ExceptionalHaltReason> tryTrackingDeletion(
             @NonNull final Address deleted, @NonNull final Address beneficiary) {
         throw new AssertionError("Not implemented");
     }
 
-    // --- The Besu WorldUpdater interface ---
     /**
      * {@inheritDoc}
      */

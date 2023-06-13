@@ -16,18 +16,19 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
+import com.hedera.node.app.service.contract.impl.hevm.*;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
-import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
- * Will be modeled after the Besu {@code MainnetTransactionProcessor}, so that all four HAPI
+ * Modeled after the Besu {@code MainnetTransactionProcessor}, so that all four HAPI
  * contract operations ({@code ContractCall}, {@code ContractCreate}, {@code EthereumTransaction},
- * {@code ContractCallLocal}) will all reduce to a relatively straightforward call to a
- * {@link TransactionProcessor#processTransaction(WorldUpdater)} method.
+ * {@code ContractCallLocal}) can reduce to a single code path.
  */
 public class TransactionProcessor {
     public static final String CONFIG_CONTEXT_VARIABLE = "contractsConfig";
@@ -45,7 +46,12 @@ public class TransactionProcessor {
         this.contractCreationProcessor = Objects.requireNonNull(contractCreationProcessor);
     }
 
-    public void processTransaction(@NonNull final WorldUpdater worldUpdater) {
+    public HederaEvmTransactionResult processTransaction(
+            @NonNull final HederaEvmTransaction transaction,
+            @NonNull final HederaWorldUpdater worldUpdater,
+            @NonNull final HederaEvmContext context,
+            @NonNull final OperationTracer tracer,
+            @NonNull final Configuration config) {
         throw new AssertionError("Not implemented");
     }
 }

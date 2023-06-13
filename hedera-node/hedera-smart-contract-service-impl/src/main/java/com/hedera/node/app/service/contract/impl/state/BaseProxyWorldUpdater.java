@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.STORAGE_KEY;
+import static com.hedera.node.app.service.contract.impl.state.ContractSchema.STORAGE_KEY;
 
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
 import com.hedera.node.app.spi.meta.bni.Scope;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -52,8 +52,8 @@ public interface EvmFrameState {
     static EvmFrameState from(@NonNull final Scope scope) {
         return new DispatchingEvmFrameState(
                 scope.dispatch(),
-                scope.writableContractState().get(ContractServiceImpl.STORAGE_KEY),
-                scope.writableContractState().get(ContractServiceImpl.BYTECODE_KEY));
+                scope.writableContractState().get(ContractSchema.STORAGE_KEY),
+                scope.writableContractState().get(ContractSchema.BYTECODE_KEY));
     }
 
     /**
@@ -73,6 +73,28 @@ public interface EvmFrameState {
      */
     Optional<ExceptionalHaltReason> tryTransferFromContract(
             @NonNull Address sendingContract, @NonNull Address recipient, long amount, boolean delegateCall);
+
+    /**
+     * Tries to initialize a "lazy-created" account at the given address. The standard creation pattern for a
+     * Hedera account gives the account's key immediately. Lazy creation does not, instead initializing the
+     * account with just the EVM address <i>derived from</i> an ECDSA public key.
+     *
+     * <p>Once we encounter a HAPI transaction with a full-prefix signature from this key, we can then finalize
+     * the account by giving it the full key.
+     *
+     * <p>Lazy creation can fail for at least three reasons:
+     * <ol>
+     *   <li>There may be no more preceding child records available to externalize the creation.</li>
+     *   <li>The Hedera accounts limit may be have been reached.</li>
+     *   <li>There could already be an expired account at the given address.</li>
+     * </ol>
+     * Note the {@link CustomCallOperation} will have already confirmed that the Hedera EVM in use supports
+     * lazy creation, and that it is enabled by properties.
+     *
+     * @param address the address of the account to try to lazy-create
+     * @return an optional {@link ExceptionalHaltReason} with the reason lazy creation could not be done
+     */
+    Optional<ExceptionalHaltReason> tryLazyCreation(@NonNull Address address);
 
     /**
      * Returns whether the account with the given address is a "hollow account"; that is, an account
@@ -95,7 +117,7 @@ public interface EvmFrameState {
      * @param beneficiary the address of the beneficiary of the deletion
      * @return an optional {@link ExceptionalHaltReason} with the reason deletion could not be tracked
      */
-    Optional<ExceptionalHaltReason> tryToTrackDeletion(@NonNull Address deleted, @NonNull Address beneficiary);
+    Optional<ExceptionalHaltReason> tryTrackingDeletion(@NonNull Address deleted, @NonNull Address beneficiary);
 
     /**
      * Returns the read-only account with the given address, or {@code null} if the account is missing,
