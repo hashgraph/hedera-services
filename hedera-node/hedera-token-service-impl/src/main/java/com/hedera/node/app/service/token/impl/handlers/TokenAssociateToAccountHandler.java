@@ -21,6 +21,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static com.hedera.node.app.service.token.impl.util.IdConvenienceUtils.isValidTokenNum;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -58,7 +60,7 @@ import org.slf4j.LoggerFactory;
  * HederaFunctionality#TOKEN_ASSOCIATE_TO_ACCOUNT}.
  */
 @Singleton
-public class TokenAssociateToAccountHandler extends TokenHandlerHelper implements TransactionHandler {
+public class TokenAssociateToAccountHandler implements TransactionHandler {
     private static final Logger log = LoggerFactory.getLogger(TokenAssociateToAccountHandler.class);
 
     @Inject
@@ -148,13 +150,9 @@ public class TokenAssociateToAccountHandler extends TokenHandlerHelper implement
             // tokenRels at the beginning of the list of existing token numbers first. We start by
             // retrieving the token rel object with the currentHeadTokenNum at the head of the
             // account
-            final var headTokenRel = tokenRelStore
-                    .get(
-                            AccountID.newBuilder()
-                                    .accountNum(account.accountNumber())
-                                    .build(),
-                            TokenID.newBuilder().tokenNum(currentHeadTokenNum).build())
-                    .orElse(null);
+            final var headTokenRel = tokenRelStore.get(
+                    AccountID.newBuilder().accountNum(account.accountNumber()).build(),
+                    TokenID.newBuilder().tokenNum(currentHeadTokenNum).build());
             if (headTokenRel != null) {
                 // Recreate the current head token's tokenRel, but with its previous pointer set to
                 // the last of the new tokenRels. This links the new token rels to the rest of the
@@ -248,7 +246,7 @@ public class TokenAssociateToAccountHandler extends TokenHandlerHelper implement
 
         // Check that a token rel doesn't already exist for each new token ID
         for (final TokenID tokenId : tokenIds) {
-            final var existingTokenRel = tokenRelStore.get(accountId, tokenId).orElse(null);
+            final var existingTokenRel = tokenRelStore.get(accountId, tokenId);
             validateTrue(existingTokenRel == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
         }
 
@@ -279,8 +277,4 @@ public class TokenAssociateToAccountHandler extends TokenHandlerHelper implement
     }
 
     private record Validated(@NonNull Account account, @NonNull List<Token> tokens) {}
-
-    private static boolean isValidTokenNum(final long tokenNum) {
-        return tokenNum > 0;
-    }
 }

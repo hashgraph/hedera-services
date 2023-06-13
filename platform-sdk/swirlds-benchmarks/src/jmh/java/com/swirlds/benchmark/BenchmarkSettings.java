@@ -17,10 +17,6 @@
 package com.swirlds.benchmark;
 
 import com.swirlds.common.settings.ParsingUtils;
-import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
-import com.swirlds.platform.MerkleDbSettingsImpl;
-import com.swirlds.platform.VirtualMapSettingsImpl;
-import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.lang.reflect.Field;
@@ -42,16 +38,6 @@ public final class BenchmarkSettings {
     static final File settingsPath = new File(".", "settings.txt");
 
     /**
-     * Settings controlling VirtualMap.
-     */
-    static VirtualMapSettingsImpl virtualMap = new VirtualMapSettingsImpl();
-
-    /**
-     * Settings controlling MerkleDb.
-     */
-    static MerkleDbSettingsImpl merkleDb = new MerkleDbSettingsImpl();
-
-    /**
      * Placeholder for BenchmarkConfig properties
      */
     static class BenchmarkConfigStub {
@@ -70,8 +56,6 @@ public final class BenchmarkSettings {
 
     public static void init() {
         loadSettings();
-        VirtualMapSettingsFactory.configure(virtualMap);
-        MerkleDbSettingsFactory.configure(merkleDb);
     }
 
     private BenchmarkSettings() {}
