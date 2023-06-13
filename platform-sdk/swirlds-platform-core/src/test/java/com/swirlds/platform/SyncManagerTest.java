@@ -73,6 +73,7 @@ public class SyncManagerTest {
         public SyncManagerImpl syncManager;
         public CriticalQuorum criticalQuorum;
         public DummyEventQueue eventQueue;
+        public Configuration configuration;
 
         public SyncManagerTestData() {
             this(spy(SwirldStateManager.class));
@@ -112,8 +113,10 @@ public class SyncManagerTest {
                     return null;
                 }
             };
-            final Configuration configuration = new TestConfigBuilder()
+            configuration = new TestConfigBuilder()
                     .withValue("reconnect.fallenBehindThreshold", "0.25")
+                    .withValue("event.eventIntakeQueueThrottleSize", "100")
+                    .withValue("event.staleEventPreventionThreshold", "10")
                     .getOrCreateConfig();
             final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
             final EventConfig eventConfig = configuration.getConfigData(EventConfig.class);
@@ -393,7 +396,7 @@ public class SyncManagerTest {
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId ID = addressBook.getNodeId(0);
         final NodeId OTHER_ID = addressBook.getNodeId(1);
-        final EventConfig config = new TestConfigBuilder().getOrCreateConfig().getConfigData(EventConfig.class);
+        final EventConfig config = test.configuration.getConfigData(EventConfig.class);
 
         // If events read is too large then do not create an event
         test.hashgraph.isInCriticalQuorum.put(ID, true);
