@@ -325,6 +325,7 @@ class HederaCreateOperationExternalizerTest {
         given(childFrame.getContractAddress()).willReturn(PRETEND_CONTRACT_ADDRESS);
 
         // when:
+        subject.updateParentContractNonce(PRETEND_CONTRACT_ADDRESS, 1L);
         subject.externalize(frame, childFrame);
 
         // then:
