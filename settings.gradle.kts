@@ -82,7 +82,7 @@ include(":node-app-service-evm-impl", "hedera-evm-impl")
 
 include(":node-app-service-mono", "hedera-mono-service")
 
-include(":services-cli", "cli-clients")
+include(":node-services-cli", "cli-clients")
 
 include(":hedera-node:test-clients")
 

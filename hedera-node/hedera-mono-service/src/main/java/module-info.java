@@ -46,7 +46,7 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.networkadmin.impl,
             com.hedera.node.app.service.consensus.impl.test,
             com.hedera.node.app.service.networkadmin.impl.test,
-            com.hedera.services.cli,
+            com.hedera.node.services.cli,
             com.hedera.node.app.service.file.impl,
             com.hedera.node.app.service.file.impl.test,
             com.hedera.node.app.service.network.admin.impl;
