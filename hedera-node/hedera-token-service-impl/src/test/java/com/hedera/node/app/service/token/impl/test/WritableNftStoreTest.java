@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import java.util.Collections;
 import java.util.Set;
@@ -111,7 +112,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void removes() {
+    void removesByUniqueTokenId() {
         // Set up the NFT state with an existing NFT
         final var nftToRemove =
                 UniqueTokenId.newBuilder().tokenTypeNumber(1).serialNumber(1).build();
@@ -126,6 +127,27 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
         assertNotNull(writableNftStore.get(nftToRemove));
 
         writableNftStore.remove(nftToRemove);
+
+        // Assert the NFT is removed
+        assertNull(writableNftStore.get(nftToRemove));
+    }
+
+    @Test
+    void removesByTokenIdAndSerialNum() {
+        // Set up the NFT state with an existing NFT
+        final var nftToRemove =
+                UniqueTokenId.newBuilder().tokenTypeNumber(1).serialNumber(1).build();
+        writableNftState = emptyWritableNftStateBuilder()
+                .value(
+                        nftToRemove,
+                        Nft.newBuilder().id(nftToRemove).ownerNumber(12345).build())
+                .build();
+        assertTrue(writableNftState.contains(nftToRemove));
+        given(writableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(writableNftState);
+        writableNftStore = new WritableNftStore(writableStates);
+        assertNotNull(writableNftStore.get(nftToRemove));
+
+        writableNftStore.remove(BaseTokenHandler.asToken(nftToRemove.tokenTypeNumber()), nftToRemove.serialNumber());
 
         // Assert the NFT is removed
         assertNull(writableNftStore.get(nftToRemove));

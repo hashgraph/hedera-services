@@ -65,7 +65,6 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
@@ -672,13 +671,10 @@ class TokenBurnHandlerTest extends ParityTestBase {
             Assertions.assertThat(treasuryAcct.numberPositiveBalances()).isEqualTo(1);
             final var treasuryRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_123);
             Assertions.assertThat(treasuryRel.balance()).isEqualTo(1);
-            Assertions.assertThat(writableNftStore.get(BaseTokenHandler.asUniqueTokenId(TOKEN_123, 1L)))
-                    .isNull();
-            Assertions.assertThat(writableNftStore.get(BaseTokenHandler.asUniqueTokenId(TOKEN_123, 2L)))
-                    .isNull();
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 1L)).isNull();
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 2L)).isNull();
             // Only serials 1 and 2 were removed, not serial 3
-            Assertions.assertThat(writableNftStore.get(BaseTokenHandler.asUniqueTokenId(TOKEN_123, 3L)))
-                    .isNotNull();
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 3L)).isNotNull();
         }
 
         @Test
@@ -735,12 +731,9 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var treasuryRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_123);
             Assertions.assertThat(treasuryRel).isNotNull();
             Assertions.assertThat(treasuryRel.balance()).isZero();
-            Assertions.assertThat(writableNftStore.get(BaseTokenHandler.asUniqueTokenId(TOKEN_123, 1L)))
-                    .isNull();
-            Assertions.assertThat(writableNftStore.get(BaseTokenHandler.asUniqueTokenId(TOKEN_123, 2L)))
-                    .isNull();
-            Assertions.assertThat(writableNftStore.get(BaseTokenHandler.asUniqueTokenId(TOKEN_123, 3L)))
-                    .isNull();
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 1L)).isNull();
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 2L)).isNull();
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 3L)).isNull();
         }
 
         @Test
@@ -798,12 +791,9 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var treasuryRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_123);
             Assertions.assertThat(treasuryRel).isNotNull();
             Assertions.assertThat(treasuryRel.balance()).isZero();
-            Assertions.assertThat(writableNftStore.get(BaseTokenHandler.asUniqueTokenId(TOKEN_123, 1L)))
-                    .isNull();
-            Assertions.assertThat(writableNftStore.get(BaseTokenHandler.asUniqueTokenId(TOKEN_123, 2L)))
-                    .isNull();
-            Assertions.assertThat(writableNftStore.get(BaseTokenHandler.asUniqueTokenId(TOKEN_123, 3L)))
-                    .isNull();
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 1L)).isNull();
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 2L)).isNull();
+            Assertions.assertThat(writableNftStore.get(TOKEN_123, 3L)).isNull();
         }
 
         private HandleContext mockContext(TransactionBody txn) {

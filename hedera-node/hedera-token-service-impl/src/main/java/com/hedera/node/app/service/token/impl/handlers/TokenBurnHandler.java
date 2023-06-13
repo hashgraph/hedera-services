@@ -129,7 +129,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
         } else {
             // Load and validate the nfts
             for (final Long nftSerial : nftSerialNums) {
-                final var nft = nftStore.get(asUniqueTokenId(tokenId, nftSerial));
+                final var nft = nftStore.get(tokenId, nftSerial);
                 validateTrue(nft != null, INVALID_NFT_ID);
 
                 final var nftOwner = nft.ownerNumber();
@@ -147,7 +147,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
                     tokenRelStore);
 
             // Remove the nft objects
-            nftSerialNums.forEach(serialNum -> nftStore.remove(asUniqueTokenId(tokenId, serialNum)));
+            nftSerialNums.forEach(serialNum -> nftStore.remove(tokenId, serialNum));
         }
     }
 

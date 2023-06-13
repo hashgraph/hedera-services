@@ -24,7 +24,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -143,20 +142,5 @@ public class BaseTokenHandler {
     @NonNull
     public static TokenID asToken(final long num) {
         return TokenID.newBuilder().tokenNum(num).build();
-    }
-
-    /**
-     * Convenience method for building a unique token ID
-     *
-     * @param tokenId the unique token's token ID
-     * @param serialNum the unique token's serial number
-     * @return the unique token ID object
-     */
-    @NonNull
-    public static UniqueTokenId asUniqueTokenId(final @NonNull TokenID tokenId, final long serialNum) {
-        return UniqueTokenId.newBuilder()
-                .tokenTypeNumber(tokenId.tokenNum())
-                .serialNumber(serialNum)
-                .build();
     }
 }
