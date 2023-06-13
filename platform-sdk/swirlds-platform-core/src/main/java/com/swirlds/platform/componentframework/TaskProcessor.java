@@ -1,10 +1,10 @@
-package com.swirlds.platform.componentframework.framework;
+package com.swirlds.platform.componentframework;
 
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 
 import java.util.Map;
 
-public interface TaskProcessor extends Component {
+public interface TaskProcessor {
 
 	Map<Class<?>, InterruptableConsumer<?>> getProcessingMethods();
 

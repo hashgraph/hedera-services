@@ -1,6 +1,6 @@
-package com.swirlds.platform.componentframework.framework;
+package com.swirlds.platform.componentframework;
 
-import com.swirlds.platform.componentframework.LongProcessor;
+import com.swirlds.platform.componentframework.internal.QueueSubmitter;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 

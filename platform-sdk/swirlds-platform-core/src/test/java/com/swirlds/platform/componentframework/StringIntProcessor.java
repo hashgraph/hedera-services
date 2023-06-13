@@ -1,7 +1,6 @@
 package com.swirlds.platform.componentframework;
 
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.platform.componentframework.framework.TaskProcessor;
 
 import java.util.Map;
 

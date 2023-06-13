@@ -3,6 +3,7 @@ package com.swirlds.platform.componentframework;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -11,7 +12,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ComponentsTest {
+class TaskProcessorsTest {
+
 	@Test
 	void singleTaskProcessor() throws InterruptedException {
 		final long initialLong = 0;
@@ -34,17 +36,17 @@ class ComponentsTest {
 			}
 		};
 
-		final Components components = new Components(
+		final TaskProcessors taskProcessors = new TaskProcessors(
 				List.of(LongProcessor.class)
 		);
-		components.addImplementation(processor);
-		components.start();
+		taskProcessors.addImplementation(processor);
+		taskProcessors.start();
 
 		assertEquals(initialLong, lastProcessed.get(), "Last processed should be the initial value");
 
 		final Random random = new Random();
 		final long randomLong = random.nextLong();
-		components.getComponent(LongProcessor.class).processLong(randomLong);
+		taskProcessors.getSubmitter(LongProcessor.class).processLong(randomLong);
 		processingDone.acquire();
 		assertEquals(randomLong, lastProcessed.get(), "Last processed should be the random value we passed in");
 	}

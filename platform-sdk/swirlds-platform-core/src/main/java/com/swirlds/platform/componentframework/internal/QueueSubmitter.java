@@ -1,9 +1,8 @@
-package com.swirlds.platform.componentframework.framework;
+package com.swirlds.platform.componentframework.internal;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
 
 public class QueueSubmitter implements InvocationHandler {
