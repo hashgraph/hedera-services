@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.grpc;
+package com.swirlds.platform.recovery.emergencyfile;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import io.helidon.grpc.server.GrpcServer;
-import java.util.List;
-import java.util.function.Consumer;
-
-/** Defines a type able to configure and start the gRPC servers. */
-public interface GrpcServerManager {
-    @NonNull
-    List<GrpcServer> start(int port, int tlsPort, Consumer<String> println);
-}
+/**
+ * The intervals at which various stream files are written, in milliseconds.
+ * @param record record stream files are written at this interval, in milliseconds
+ * @param event event stream files are written at this interval, in milliseconds
+ * @param balances balance files are written at this interval, in milliseconds
+ */
+public record Intervals(long record, long event, long balances) {}
