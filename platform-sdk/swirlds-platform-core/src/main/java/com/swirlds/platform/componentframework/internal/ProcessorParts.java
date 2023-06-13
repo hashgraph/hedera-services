@@ -1,5 +1,6 @@
 package com.swirlds.platform.componentframework.internal;
 
+import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.platform.componentframework.TaskProcessor;
 
 import java.util.concurrent.BlockingQueue;
@@ -9,6 +10,7 @@ public class ProcessorParts {
 	private final BlockingQueue<Object> queue;
 	private final TaskProcessor submitter;
 	private TaskProcessor implementation;
+	private QueueThread<?> queueThread;
 
 	public ProcessorParts(final Class<? extends TaskProcessor> definition, final BlockingQueue<Object> queue,
 			final TaskProcessor submitter) {
@@ -18,7 +20,14 @@ public class ProcessorParts {
 	}
 
 	public void setImplementation(final TaskProcessor implementation) {
+		if (this.implementation != null) {
+			throw new IllegalStateException("Implementation already set");
+		}
 		this.implementation = implementation;
+	}
+
+	public void setQueueThread(final QueueThread<?> queueThread) {
+		this.queueThread = queueThread;
 	}
 
 	public boolean isComplete() {
@@ -39,5 +48,9 @@ public class ProcessorParts {
 
 	public TaskProcessor getImplementation() {
 		return implementation;
+	}
+
+	public QueueThread<?> getQueueThread() {
+		return queueThread;
 	}
 }

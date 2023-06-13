@@ -1,5 +1,6 @@
 package com.swirlds.platform.componentframework;
 
+import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
@@ -12,10 +13,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class TaskProcessors {
+	private static final Set<String> IGNORED_METHODS = Set.of("getProcessingMethods");
 	private final Map<Class<? extends TaskProcessor>, ProcessorParts> parts;
 
 	public TaskProcessors(final List<Class<? extends TaskProcessor>> taskProcessorDefs) {
@@ -33,7 +36,7 @@ public class TaskProcessors {
 			}
 			final Method[] methods = def.getDeclaredMethods();
 			for (final Method method : methods) {
-				if (method.getName().equals("getProcessingMethods")) {
+				if (IGNORED_METHODS.contains(method.getName())) {
 					continue;
 				}
 				if (method.getParameterCount() != 1) {
@@ -55,6 +58,12 @@ public class TaskProcessors {
 
 		for (Class<? extends TaskProcessor> def : taskProcessorDefs) {
 			BlockingQueue<Object> queue = new LinkedBlockingQueue<>();
+			if (parts.containsKey(def)) {
+				throw new IllegalArgumentException(String.format(
+						"Duplicate TaskProcessor definition: %s",
+						def.getName()
+				));
+			}
 			parts.put(def, new ProcessorParts(def, queue, QueueSubmitter.create(def, queue)));
 		}
 	}
@@ -93,6 +102,13 @@ public class TaskProcessors {
 
 	@SuppressWarnings("unchecked")
 	public void start() {
+		parts.values().stream().filter(p -> p.getImplementation() == null).forEach(p -> {
+			throw new IllegalStateException(String.format(
+					"TaskProcessor %s has no implementation set",
+					p.getDefinition().getName()
+			));
+		});
+
 		for (final ProcessorParts processorParts : parts.values()) {
 			final Map<Class<?>, InterruptableConsumer<?>> processingMethods =
 					processorParts.getImplementation().getProcessingMethods();
@@ -103,10 +119,20 @@ public class TaskProcessors {
 				handler = new MultiHandler(processingMethods)::handle;
 			}
 
-			new QueueThreadConfiguration<>(AdHocThreadManager.getStaticThreadManager())
-					.setQueue(processorParts.getQueue())
-					.setHandler((InterruptableConsumer<Object>) handler)
-					.build(true);
+			final QueueThread<Object> queueThread =
+					new QueueThreadConfiguration<>(AdHocThreadManager.getStaticThreadManager())
+							.setQueue(processorParts.getQueue())
+							.setHandler((InterruptableConsumer<Object>) handler)
+							.build(true);
+			processorParts.setQueueThread(queueThread);
 		}
+	}
+
+	public QueueThread<?> getQueueThread(final Class<? extends TaskProcessor> processorClass) {
+		return parts.get(processorClass).getQueueThread();
+	}
+
+	public void stop() {
+		parts.values().forEach(p -> p.getQueueThread().stop());
 	}
 }
