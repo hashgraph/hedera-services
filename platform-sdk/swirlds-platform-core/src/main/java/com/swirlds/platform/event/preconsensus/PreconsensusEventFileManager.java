@@ -585,6 +585,20 @@ public class PreconsensusEventFileManager {
     }
 
     /**
+     * Delete all files in the stream.
+     */
+    public void clear() throws IOException { // TODO test
+        // Delete files in reverse order so that if we crash in the
+        // middle of clearing we leave a consistent stream behind.
+        while (files.size() > 0) {
+            final PreconsensusEventFile file = files.removeLast();
+            file.deleteFile(databaseDirectory, recycleBin);
+        }
+        totalFileByteCount = 0;
+        updateFileSizeMetrics();
+    }
+
+    /**
      * Update metrics with the latest data on file size.
      */
     private void updateFileSizeMetrics() {

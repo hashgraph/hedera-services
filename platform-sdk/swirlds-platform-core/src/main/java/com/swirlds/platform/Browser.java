@@ -53,6 +53,7 @@ import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsProvider;
@@ -118,6 +119,7 @@ import java.awt.GraphicsEnvironment;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -647,10 +649,18 @@ public class Browser {
                 // the name of this swirld
                 final String swirldName = appDefinition.getSwirldName();
                 final SoftwareVersion appVersion = appMain.getSoftwareVersion();
+
+                final RecycleBin recycleBin;
+                try {
+                    recycleBin = RecycleBin.create(configuration, nodeId);
+                } catch (IOException e) {
+                    throw new UncheckedIOException("unable to create recycle bin", e);
+                }
+
                 // We can't send a "real" dispatch, since the dispatcher will not have been started by the
                 // time this class is used.
                 final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
-                        shutdown::shutdown, Settings.getInstance().getEmergencyRecoveryFileLoadDir());
+                        shutdown::shutdown, Settings.getInstance().getEmergencyRecoveryFileLoadDir(), recycleBin);
 
                 final ReservedSignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
                         platformContext,
@@ -683,6 +693,7 @@ public class Browser {
                 final SwirldsPlatform platform = new SwirldsPlatform(
                         platformContext,
                         crypto.get(nodeId),
+                        recycleBin,
                         initialAddressBook,
                         nodeId,
                         mainClassName,

@@ -36,6 +36,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import com.swirlds.platform.internal.SignedStateLoadingException;
@@ -309,7 +310,7 @@ public class SavedStateLoaderTests {
     }
 
     private void initEmergencyRecoveryManager() {
-        emergencyRecoveryManager = new EmergencyRecoveryManager(shutdownTrigger, tmpDir);
+        emergencyRecoveryManager = new EmergencyRecoveryManager(shutdownTrigger, tmpDir, TestRecycleBin.getInstance());
     }
 
     @Test

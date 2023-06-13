@@ -17,12 +17,17 @@
 package com.swirlds.platform.recovery;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.system.SystemExitCode.EMERGENCY_RECOVERY_ERROR;
 
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,18 +39,30 @@ public class EmergencyRecoveryManager {
     private final ShutdownRequestedTrigger shutdownRequestedTrigger;
     private final EmergencyRecoveryFile emergencyRecoveryFile;
     private volatile boolean emergencyStateRequired;
+    private final RecycleBin recycleBin;
 
     /**
-     * @param shutdownRequestedTrigger
-     * 		a trigger that requests the platform to shut down
-     * @param emergencyRecoveryDir
-     * 		the directory to look for an emergency recovery file in
+     * @param shutdownRequestedTrigger a trigger that requests the platform to shut down
+     * @param emergencyRecoveryDir     the directory to look for an emergency recovery file in
      */
     public EmergencyRecoveryManager(
-            final ShutdownRequestedTrigger shutdownRequestedTrigger, final Path emergencyRecoveryDir) {
-        this.shutdownRequestedTrigger = shutdownRequestedTrigger;
+            @NonNull final ShutdownRequestedTrigger shutdownRequestedTrigger,
+            @NonNull final Path emergencyRecoveryDir,
+            @NonNull final RecycleBin recycleBin) {
+
+        this.shutdownRequestedTrigger = Objects.requireNonNull(shutdownRequestedTrigger);
+        this.recycleBin = Objects.requireNonNull(recycleBin);
         this.emergencyRecoveryFile = readEmergencyRecoveryFile(emergencyRecoveryDir);
         emergencyStateRequired = emergencyRecoveryFile != null;
+    }
+
+    /**
+     * Returns whether an emergency recovery file was present at node boot time.
+     *
+     * @return {@code true} if an emergency recovery file was present, {@code false} otherwise
+     */
+    public boolean isEmergencyRecoveryFilePresent() {
+        return emergencyRecoveryFile != null;
     }
 
     /**
@@ -61,8 +78,20 @@ public class EmergencyRecoveryManager {
     /**
      * Invoked when an emergency state has been loaded into the system.
      */
-    public void emergencyStateLoaded() {
+    public void emergencyStateLoaded() { // TODO test
         emergencyStateRequired = false;
+
+        final Path emergencyRecoveryFilePath = Path.of(EmergencyRecoveryFile.INPUT_FILENAME);
+        logger.info(
+                STARTUP.getMarker(),
+                "This node has acquired a state that is legal to use in the current epoch. "
+                        + "Removing emergency recovery file {}",
+                emergencyRecoveryFilePath);
+        try {
+            recycleBin.recycle(emergencyRecoveryFilePath);
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to remove emergency recovery file", e);
+        }
     }
 
     /**

@@ -290,6 +290,7 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param platformContext          the context for this platform
      * @param crypto                   an object holding all the public/private key pairs and the CSPRNG state for this
      *                                 member
+     * @param recycleBin               used to delete files that may be useful for later debugging
      * @param initialAddressBook       the address book listing all members in the community
      * @param id                       the ID number for this member (if this computer has multiple members in one
      *                                 swirld)
@@ -304,6 +305,7 @@ public class SwirldsPlatform implements Platform, Startable {
     SwirldsPlatform(
             @NonNull final PlatformContext platformContext,
             @NonNull final Crypto crypto,
+            @NonNull final RecycleBin recycleBin,
             @NonNull final AddressBook initialAddressBook,
             @NonNull final NodeId id,
             @NonNull final String mainClassName,
@@ -350,13 +352,13 @@ public class SwirldsPlatform implements Platform, Startable {
 
         registerAddressBookMetrics(metrics, initialAddressBook, selfId);
 
-        try {
-            recycleBin = RecycleBin.create(platformContext.getConfiguration(), selfId);
-            if (softwareUpgrade) {
+        this.recycleBin = recycleBin;
+        if (softwareUpgrade) {
+            try {
                 recycleBin.clear();
+            } catch (final IOException e) {
+                throw new UncheckedIOException("Failed to clear recycle bin", e);
             }
-        } catch (final IOException e) {
-            throw new UncheckedIOException("Failed to initialize recycle bin", e);
         }
 
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
@@ -380,7 +382,7 @@ public class SwirldsPlatform implements Platform, Startable {
         final AppCommunicationComponent appCommunicationComponent =
                 wiring.wireAppCommunicationComponent(notificationEngine);
 
-        preconsensusEventFileManager = buildPreconsensusEventFileManager();
+        preconsensusEventFileManager = buildPreconsensusEventFileManager(emergencyRecoveryManager);
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
 
         stateManagementComponent = wiring.wireStateManagementComponent(
@@ -993,9 +995,21 @@ public class SwirldsPlatform implements Platform, Startable {
      * Build the preconsensus event file manager.
      */
     @NonNull
-    private PreconsensusEventFileManager buildPreconsensusEventFileManager() {
+    private PreconsensusEventFileManager buildPreconsensusEventFileManager(
+            final EmergencyRecoveryManager emergencyRecoveryManager) {
         try {
-            return new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), recycleBin, selfId);
+            final PreconsensusEventFileManager manager =
+                    new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), recycleBin, selfId);
+
+            if (emergencyRecoveryManager.isEmergencyRecoveryFilePresent()) {
+                logger.info(
+                        STARTUP.getMarker(),
+                        "This node was started in emergency recovery mode, "
+                                + "clearing the preconsensus event stream.");
+                manager.clear();
+            }
+
+            return manager;
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }
