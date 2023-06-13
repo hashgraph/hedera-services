@@ -205,6 +205,7 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
         final var response = subject.findResponse(context, responseHeader);
         final var op = response.tokenGetInfoOrThrow();
         assertNull(op.tokenInfo());
+        assertEquals(ResponseCodeEnum.INVALID_TOKEN_ID, op.header().nodeTransactionPrecheckCode());
     }
 
     @Test

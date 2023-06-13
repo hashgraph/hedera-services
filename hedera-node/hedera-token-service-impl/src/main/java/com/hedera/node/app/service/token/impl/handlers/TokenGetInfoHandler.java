@@ -106,7 +106,13 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
         response.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
             final var optionalInfo = infoForToken(tokenID, tokenStore, config);
-            optionalInfo.ifPresent(response::tokenInfo);
+            if (optionalInfo.isPresent()) {
+                response.tokenInfo(optionalInfo.get());
+            } else {
+                response.header(ResponseHeader.newBuilder()
+                        .nodeTransactionPrecheckCode(INVALID_TOKEN_ID)
+                        .cost(0)); // from mono service, need to validate in the future
+            }
         }
 
         return Response.newBuilder().tokenGetInfo(response).build();
