@@ -26,6 +26,7 @@ dependencies {
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
 
+        testImplementation(project(":app-service-mono"))
         testImplementation(gav("awaitility"))
         testImplementation(gav("com.swirlds.config"))
         testImplementation(gav("io.github.classgraph"))

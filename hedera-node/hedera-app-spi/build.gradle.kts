@@ -23,6 +23,7 @@ description = "Hedera Application - SPI"
 
 dependencies {
     javaModuleDependencies {
+        testImplementation(project(":app-spi"))
         testImplementation(gav("org.apache.commons.lang3"))
         testImplementation(gav("org.assertj.core"))
         testImplementation(gav("org.junit.jupiter.api"))

@@ -5,6 +5,6 @@ module com.hedera.node.app.service.token {
 
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.hapi;
-    requires com.hedera.pbj.runtime;
     requires com.github.spotbugs.annotations;
+    requires com.hedera.pbj.runtime;
 }

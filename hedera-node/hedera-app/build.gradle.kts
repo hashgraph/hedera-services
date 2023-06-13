@@ -26,6 +26,7 @@ dependencies {
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
 
+        testImplementation(project(":app"))
         testImplementation(testFixtures(project(":config")))
         testImplementation(testFixtures(project(":app-service-mono")))
         testImplementation(testFixtures(project(":app-spi")))
