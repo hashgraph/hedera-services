@@ -19,6 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.common.system.EventCreationRuleResponse.CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.DONT_CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
+import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -48,6 +49,7 @@ import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
+import java.util.Random;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -82,7 +84,8 @@ public class SyncManagerTest {
         public SyncManagerTestData(final SwirldStateManager swirldStateManager) {
             freezeManager = mock(FreezeManager.class);
             startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
-            hashgraph = new DummyHashgraph(0);
+            final Random random = getRandomPrintSeed();
+            hashgraph = new DummyHashgraph(random, 0);
             eventTransactionPool = spy(new EventTransactionPool(new NoOpMetrics(), null, null));
 
             this.swirldStateManager = swirldStateManager;
@@ -182,7 +185,7 @@ public class SyncManagerTest {
         }
 
         // add the report that will go over the [fallenBehindThreshold]
-        test.syncManager.reportFallenBehind(new NodeId(neighbors[10]));
+        test.syncManager.reportFallenBehind(test.addressBook.getNodeId(neighbors[10]));
 
         // we should now say we have fallen behind
         assertTrue(test.syncManager.hasFallenBehind());

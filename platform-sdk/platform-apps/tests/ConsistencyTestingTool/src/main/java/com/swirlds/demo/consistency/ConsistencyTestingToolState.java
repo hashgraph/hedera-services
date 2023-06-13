@@ -35,6 +35,8 @@ import com.swirlds.common.utility.NonCryptographicHashing;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -102,7 +104,16 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
         final ConsistencyTestingToolConfig testingToolConfig =
                 platform.getContext().getConfiguration().getConfigData(ConsistencyTestingToolConfig.class);
 
-        final Path logFilePath = stateConfig.savedStateDirectory().resolve(testingToolConfig.logfileName());
+        final Path logFileDirectory = stateConfig
+                .savedStateDirectory()
+                .resolve(testingToolConfig.logfileDirectory())
+                .resolve(Long.toString(platform.getSelfId().id()));
+        try {
+            Files.createDirectories(logFileDirectory);
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to set up file system for consistency data", e);
+        }
+        final Path logFilePath = logFileDirectory.resolve("ConsistencyTestLog.csv");
 
         transactionHandlingHistory.init(logFilePath);
     }

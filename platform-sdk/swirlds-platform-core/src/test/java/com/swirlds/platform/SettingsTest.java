@@ -120,6 +120,20 @@ class SettingsTest {
 
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
+    @DisplayName("Checks that loading settings with migrated settings does not throw an exception")
+    public void checkOnlyConfigSettingsFile() {
+        // given
+        final Settings settings = Settings.getInstance();
+        final File emptyFile =
+                new File(SettingsTest.class.getResource("settings13.txt").getFile());
+
+        // then
+        Assertions.assertTrue(emptyFile.exists());
+        Assertions.assertDoesNotThrow(() -> settings.loadSettings(emptyFile));
+    }
+
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Checks that null value for file not allowed")
     public void checkNullFile() {
         // given
