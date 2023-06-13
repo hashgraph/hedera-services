@@ -186,7 +186,27 @@ public final class SettingConstants {
             "state.requireStateLoad",
             "state.emergencyStateFileName",
             "state.checkSignedStateFromDisk",
-            "signedStateFreq");
+            "signedStateFreq",
+            "maxEventQueueForCons",
+            "eventIntakeQueueThrottleSize",
+            "eventIntakeQueueSize",
+            "randomEventProbability",
+            "staleEventPreventionThreshold",
+            "rescueChildlessInverseProbability",
+            "eventStreamQueueCapacity",
+            "eventsLogPeriod",
+            "eventsLogDir",
+            "enableEventStreaming",
+            "event.maxEventQueueForCons",
+            "event.eventIntakeQueueThrottleSize",
+            "event.eventIntakeQueueSize",
+            "event.randomEventProbability",
+            "event.staleEventPreventionThreshold",
+            "event.rescueChildlessInverseProbability",
+            "event.eventStreamQueueCapacity",
+            "event.eventsLogPeriod",
+            "event.eventsLogDir",
+            "event.enableEventStreaming");
 
     private SettingConstants() {}
 }
