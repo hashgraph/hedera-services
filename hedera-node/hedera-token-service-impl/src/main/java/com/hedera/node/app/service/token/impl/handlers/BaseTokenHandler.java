@@ -76,6 +76,10 @@ public class BaseTokenHandler {
     /**
      * Since token mint and token burn change the supply on the token and treasury account,
      * this method is used to change the supply.
+     *
+     * <p>
+     * <b>Note:</b> This method assumes the given token has a non-null supply key!
+     *
      * @param token the token that is minted or burned
      * @param treasuryRel the treasury relation for the token
      * @param amount the amount to mint or burn

@@ -115,7 +115,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.config;
     exports com.hedera.node.app.service.mono.ledger.accounts.staking to
             com.hedera.node.config,
-            com.hedera.node.app;
+            com.hedera.node.app,
+            com.hedera.node.app.service.token.impl;
     exports com.hedera.node.app.service.mono.context.init to
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.state.initialization to
