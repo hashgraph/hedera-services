@@ -105,8 +105,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var tokenRelationStore = context.writableStore(WritableTokenRelationStore.class);
 
         /* Validate if the current token can be created */
-        validateTrue(tokenStore.sizeOfState() + 1 <= tokensConfig.maxNumber(),
-                TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+        validateTrue(tokenStore.sizeOfState() + 1 <= tokensConfig.maxNumber(), TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
         // validate fields in the transaction body that involves checking with
         // dynamic properties or state.

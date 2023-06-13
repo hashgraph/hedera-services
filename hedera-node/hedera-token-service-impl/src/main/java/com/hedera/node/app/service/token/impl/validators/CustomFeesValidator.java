@@ -84,8 +84,8 @@ public class CustomFeesValidator {
                 case FRACTIONAL_FEE -> validateTrue(
                         isFungibleCommon(tokenType), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
                 case ROYALTY_FEE -> validateRoyaltyFeeForCreation(tokenType, fee, tokenRelationStore, tokenStore);
-                default -> throw new IllegalStateException(
-                        "Unexpected value: " + fee.fee().kind());
+                default -> throw new IllegalArgumentException(
+                        "Unexpected value for custom fee type: " + fee.fee().kind());
             }
         }
         return fees;

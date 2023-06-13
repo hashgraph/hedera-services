@@ -32,6 +32,7 @@ import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -179,9 +180,9 @@ public class TokenCreateValidator {
             @NonNull final Account account,
             @NonNull final Token token,
             @NonNull final WritableTokenRelationStore tokenRelStore) {
-        validateTrue(
+        validateFalse(
                 entitiesConfig.limitTokenAssociations()
-                        && account.numberAssociations() + 1 <= tokensConfig.maxPerAccount(),
+                        && account.numberAssociations() + 1 > tokensConfig.maxPerAccount(),
                 TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
         validateTrue(
                 tokenRelStore.get(asAccount(account.accountNumber()), asToken(token.tokenNumber())) == null,
