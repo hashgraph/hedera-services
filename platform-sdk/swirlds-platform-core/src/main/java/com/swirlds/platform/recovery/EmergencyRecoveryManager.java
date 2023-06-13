@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state;
+package com.swirlds.platform.recovery;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.system.SystemExitCode.EMERGENCY_RECOVERY_ERROR;
 
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
