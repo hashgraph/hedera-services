@@ -105,6 +105,7 @@ dependencies.constraints {
         api(gav("org.slf4j", "2.0.3"))
         api(gav("org.testcontainers", testContainersVersion))
         api(gav("org.testcontainers.junit.jupiter", testContainersVersion))
+        api(gav("org.yaml.snakeyaml", "1.33"))
         api(gav("tuweni.bytes", tuweniVersion))
         api(gav("tuweni.units", tuweniVersion))
         api(gav("uk.org.webcompere.systemstubs.core", systemStubsVersion))
