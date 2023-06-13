@@ -73,7 +73,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OV
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -84,7 +83,6 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -627,16 +625,6 @@ public class ContractCreateSuite extends HapiSuite {
         final var contract = "NoncesExternalization";
         final var contractCreateTxn = "contractCreateTxn";
 
-        final var getParentContractByInex = "getParentContractsByIndex";
-
-        final var firstContractTxn = "firstContractTxn";
-        final var secondContractTxn = "secondContractTxn";
-        final var thirdContractTxn = "thirdContractTxn";
-
-        final var firstContractId = new AtomicLong();
-        final var secondContractId = new AtomicLong();
-        final var thirdContractId = new AtomicLong();
-
         return propertyPreservingHapiSpec("ContractCreateNoncesExternalizationHappyPath")
                 .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
                 .given(
@@ -644,44 +632,37 @@ public class ContractCreateSuite extends HapiSuite {
                         cryptoCreate(PAYER).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract).via(contractCreateTxn))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        contractCall(contract, getParentContractByInex, BigInteger.valueOf(0L))
-                                .payingWith(PAYER)
-                                .via(firstContractTxn)
-                                .exposingResultTo(result -> {
-                                    final var addr = (Address) result[0];
-                                    firstContractId.set(addr.value().longValueExact());
-                                }),
-                        contractCall(contract, getParentContractByInex, BigInteger.valueOf(1L))
-                                .payingWith(PAYER)
-                                .via(secondContractTxn)
-                                .exposingResultTo(result -> {
-                                    final var addr = (Address) result[0];
-                                    secondContractId.set(addr.value().longValueExact());
-                                }),
-                        contractCall(contract, getParentContractByInex, BigInteger.valueOf(2L))
-                                .payingWith(PAYER)
-                                .via(thirdContractTxn)
-                                .exposingResultTo(result -> {
-                                    final var addr = (Address) result[0];
-                                    thirdContractId.set(addr.value().longValueExact());
-                                }))))
+                .when()
                 .then(withOpContext((spec, opLog) -> {
-                    HapiGetTxnRecord op = getTxnRecord(contractCreateTxn)
-                            .hasPriority(recordWith()
-                                    .contractWithIdHasContractNonces(
-                                            spec.registry().getContractId(contract), 4L));
-                    allRunFor(spec, op);
-                }));
-    }
+                    final var opContractTxnRecord = getTxnRecord(contractCreateTxn);
 
-    private ContractID buildContractIdFromAtomicLongAddress(AtomicLong address) {
-        return ContractID.newBuilder()
-                .setShardNum(0L)
-                .setRealmNum(0L)
-                .setContractNum(address.longValue())
-                .build();
+                    allRunFor(spec, opContractTxnRecord);
+
+                    final var parentContractId = spec.registry().getContractId(contract);
+                    final var childContracts = opContractTxnRecord
+                            .getResponse()
+                            .getTransactionGetRecord()
+                            .getTransactionRecord()
+                            .getContractCreateResult()
+                            .getContractNoncesList()
+                            .stream()
+                            .filter(contractNonceInfo ->
+                                    !contractNonceInfo.getContractId().equals(parentContractId))
+                            .toList();
+
+                    // Asserts nonce of parent contract
+                    HapiGetTxnRecord opAssertParent = getTxnRecord(contractCreateTxn)
+                            .hasPriority(recordWith().contractWithIdHasContractNonces(parentContractId, 4L));
+                    allRunFor(spec, opAssertParent);
+
+                    // Asserts nonces of all newly deployed contracts through the constructor
+                    for (final var contractNonceInfo : childContracts) {
+                        HapiGetTxnRecord op = getTxnRecord(contractCreateTxn)
+                                .hasPriority(recordWith()
+                                        .contractWithIdHasContractNonces(contractNonceInfo.getContractId(), 1L));
+                        allRunFor(spec, op);
+                    }
+                }));
     }
 
     @Override

@@ -680,9 +680,13 @@ class TxnAwareRecordsHistorianTest {
         assertEquals(topLevelNow, topLevelRso.getTimestamp());
 
         if (funcName.equals(ContractCreate)) {
-            assertEquals(expectedContractNonces, topLevelRecord.getContractCreateResult().getContractNonces());
+            assertEquals(
+                    expectedContractNonces,
+                    topLevelRecord.getContractCreateResult().getContractNonces());
         } else if (funcName.equals(ContractCall)) {
-            assertEquals(expectedContractNonces, topLevelRecord.getContractCallResult().getContractNonces());
+            assertEquals(
+                    expectedContractNonces,
+                    topLevelRecord.getContractCallResult().getContractNonces());
         }
     }
 
