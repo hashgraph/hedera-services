@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.utility;
+package com.swirlds.common.units;
 
 /**
  * Contains a variety constants useful when converting between units.
- *
- * All constants are in the form "UNIT1_TO_UNIT2" where you multiply by the constant to go from UNIT1 to UNIT2,
- * or divide by the constant to go from UNIT2 to UNIT1.
+ * <p>
+ * All constants are in the form "UNIT1_TO_UNIT2" where you multiply by the constant to go from UNIT1 to UNIT2, or
+ * divide by the constant to go from UNIT2 to UNIT1.
  */
-public final class Units {
+public final class UnitConstants {
 
-    private Units() {}
+    private UnitConstants() {}
 
     /**
      * Unit of nanoseconds
@@ -177,10 +177,10 @@ public final class Units {
     public static final double KIBIBYTES_TO_MEBIBYTES = 1.0 / MEBIBYTES_TO_KIBIBYTES;
 
     /**
-     * Multiply by these values for converting GB to bytes ("giga" meaning 10^9, "gibi" meaning 2^30).
-     * Unlike KIBI/KILO and MEBI/MEGA, these are defined as longs, because Integer.MAX_VALUE is one less than
-     * 2*GIBIBYTES_TO_BYTES, so multiplying by anything larger than 1 is very likely to require a long to hold
-     * the result.  (2 GIGABYTES can fit in an int, just not 2 GIBIBYES, but that's entirely a different matter.)
+     * Multiply by these values for converting GB to bytes ("giga" meaning 10^9, "gibi" meaning 2^30). Unlike KIBI/KILO
+     * and MEBI/MEGA, these are defined as longs, because Integer.MAX_VALUE is one less than 2*GIBIBYTES_TO_BYTES, so
+     * multiplying by anything larger than 1 is very likely to require a long to hold the result.  (2 GIGABYTES can fit
+     * in an int, just not 2 GIBIBYES, but that's entirely a different matter.)
      */
     public static final long GIBIBYTES_TO_BYTES = 1024L * MEBIBYTES_TO_BYTES;
 

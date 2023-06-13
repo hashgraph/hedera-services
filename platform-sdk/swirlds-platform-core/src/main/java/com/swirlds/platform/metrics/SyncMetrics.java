@@ -16,7 +16,12 @@
 
 package com.swirlds.platform.metrics;
 
-import static com.swirlds.common.metrics.FloatFormats.*;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_14_7;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_15_3;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_5_3;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 
@@ -24,7 +29,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.system.PlatformStatNames;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
@@ -120,10 +125,8 @@ public class SyncMetrics {
     /**
      * Constructor of {@code SyncMetrics}
      *
-     * @param metrics
-     * 		a reference to the metrics-system
-     * @throws IllegalArgumentException
-     * 		if {@code metrics} is {@code null}
+     * @param metrics a reference to the metrics-system
+     * @throws IllegalArgumentException if {@code metrics} is {@code null}
      */
     public SyncMetrics(final Metrics metrics) {
         avgBytesPerSecSync = metrics.getOrCreate(AVG_BYTES_PER_SEC_SYNC_CONFIG);
@@ -223,10 +226,8 @@ public class SyncMetrics {
     /**
      * Supplies the generation numbers of a sync for statistics
      *
-     * @param self
-     * 		generations of our graph at the start of the sync
-     * @param other
-     * 		generations of their graph at the start of the sync
+     * @param self  generations of our graph at the start of the sync
+     * @param other generations of their graph at the start of the sync
      */
     public void generations(final GraphGenerations self, final GraphGenerations other) {
         syncGenerationDiff.update(self.getMaxRoundGeneration() - other.getMaxRoundGeneration());
@@ -235,10 +236,8 @@ public class SyncMetrics {
     /**
      * Supplies information about the rate of receiving events when all events are read
      *
-     * @param nanosStart
-     * 		The {@link System#nanoTime()} when we started receiving events
-     * @param numberReceived
-     * 		the number of events received
+     * @param nanosStart     The {@link System#nanoTime()} when we started receiving events
+     * @param numberReceived the number of events received
      */
     public void eventsReceived(final long nanosStart, final int numberReceived) {
         if (numberReceived == 0) {
@@ -252,10 +251,8 @@ public class SyncMetrics {
     /**
      * Record all stats related to sync timing
      *
-     * @param timing
-     * 		object that holds the timing data
-     * @param conn
-     * 		the sync connections
+     * @param timing object that holds the timing data
+     * @param conn   the sync connections
      */
     public void recordSyncTiming(final SyncTiming timing, final Connection conn) {
         avgSyncDuration1.update(timing.getTimePoint(0), timing.getTimePoint(1));
@@ -265,7 +262,7 @@ public class SyncMetrics {
         avgSyncDuration5.update(timing.getTimePoint(4), timing.getTimePoint(5));
 
         avgSyncDuration.update(timing.getTimePoint(0), timing.getTimePoint(5));
-        final double syncDurationSec = timing.getPointDiff(5, 0) * Units.NANOSECONDS_TO_SECONDS;
+        final double syncDurationSec = timing.getPointDiff(5, 0) * UnitConstants.NANOSECONDS_TO_SECONDS;
         final double speed = Math.max(
                         conn.getDis().getSyncByteCounter().getCount(),
                         conn.getDos().getSyncByteCounter().getCount())
@@ -279,8 +276,7 @@ public class SyncMetrics {
      * Records the size of the known set during a sync. This is the most compute intensive part of the sync, so this is
      * useful information to validate sync performance.
      *
-     * @param knownSetSize
-     * 		the size of the known set
+     * @param knownSetSize the size of the known set
      */
     public void knownSetSize(final int knownSetSize) {
         this.knownSetSize.update(knownSetSize);
@@ -289,8 +285,7 @@ public class SyncMetrics {
     /**
      * Notifies the stats that a sync is done
      *
-     * @param info
-     * 		information about the sync that occurred
+     * @param info information about the sync that occurred
      */
     public void syncDone(final SyncResult info) {
         if (info.isCaller()) {
@@ -308,30 +303,27 @@ public class SyncMetrics {
      * Called by {@link ShadowGraphSynchronizer} to update the {@code tips/sync} statistic with the number of creators
      * that have more than one {@code sendTip} in the current synchronization.
      *
-     * @param multiTipCount
-     * 		the number of creators in the current synchronization that have more than one sending tip.
+     * @param multiTipCount the number of creators in the current synchronization that have more than one sending tip.
      */
     public void updateMultiTipsPerSync(final int multiTipCount) {
         multiTipsPerSync.update(multiTipCount);
     }
 
     /**
-     * Called by {@link ShadowGraphSynchronizer} to update the {@code tips/sync} statistic with the number of {@code
-     * sendTips} in the current synchronization.
+     * Called by {@link ShadowGraphSynchronizer} to update the {@code tips/sync} statistic with the number of
+     * {@code sendTips} in the current synchronization.
      *
-     * @param tipCount
-     * 		the number of sending tips in the current synchronization.
+     * @param tipCount the number of sending tips in the current synchronization.
      */
     public void updateTipsPerSync(final int tipCount) {
         tipsPerSync.update(tipCount);
     }
 
     /**
-     * Called by {@link ShadowGraph} to update the number of generations that should
-     * be expired but can't be yet due to reservations.
+     * Called by {@link ShadowGraph} to update the number of generations that should be expired but can't be yet due to
+     * reservations.
      *
-     * @param numGenerations
-     * 		the new number of generations
+     * @param numGenerations the new number of generations
      */
     public void updateGensWaitingForExpiry(final long numGenerations) {
         gensWaitingForExpiry.update(numGenerations);

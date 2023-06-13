@@ -28,7 +28,7 @@ package com.swirlds.demo.stats;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 
 import com.swirlds.common.Console;
@@ -54,9 +54,9 @@ import java.util.Locale;
 import java.util.Random;
 
 /**
- * This demo collects statistics on the running of the network and consensus systems. It writes them to the
- * screen, and also saves them to disk in a comma separated value (.csv) file. Each transaction is 100
- * random bytes. So StatsDemoState.handleTransaction doesn't actually do anything.
+ * This demo collects statistics on the running of the network and consensus systems. It writes them to the screen, and
+ * also saves them to disk in a comma separated value (.csv) file. Each transaction is 100 random bytes. So
+ * StatsDemoState.handleTransaction doesn't actually do anything.
  */
 public class StatsDemoMain implements SwirldMain {
     // the first four come from the parameters in the config.txt file
@@ -97,35 +97,30 @@ public class StatsDemoMain implements SwirldMain {
     }
 
     /**
-     * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a
-     * particular SwirldMain class as the one to run, then it can run in Eclipse (with the green triangle
-     * icon).
+     * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a particular
+     * SwirldMain class as the one to run, then it can run in Eclipse (with the green triangle icon).
      *
-     * @param args
-     * 		these are not used
+     * @param args these are not used
      */
     public static void main(String[] args) {
         Browser.parseCommandLineArgsAndLaunch(args);
     }
 
     /**
-     * Write a message to the log file. Also write it to the console, if there is one. In both cases, skip a
-     * line after writing, if newline is true. This method opens the file at the start and closes it at the
-     * end, to deconflict with any other process trying to read the same file. For example, this app could
-     * run headless on a server, and an FTP session could download the log file, and the file it received
-     * would have only complete log messages, never half a message.
+     * Write a message to the log file. Also write it to the console, if there is one. In both cases, skip a line after
+     * writing, if newline is true. This method opens the file at the start and closes it at the end, to deconflict with
+     * any other process trying to read the same file. For example, this app could run headless on a server, and an FTP
+     * session could download the log file, and the file it received would have only complete log messages, never half a
+     * message.
      * <p>
-     * The file is created if it doesn't exist. It will be named "StatsDemo0.csv", with the number
-     * incrementing for each member currently running on the local machine, if there is more than one. The
-     * location is the "current" directory. If run from a shell script, it will be the current folder that
-     * the shell script has. If run from Eclipse, it will be at the top of the project folder. If there is a
-     * console, it prints the location there. If not, it can be found by searching the file system for
-     * "StatsDemo0.csv".
+     * The file is created if it doesn't exist. It will be named "StatsDemo0.csv", with the number incrementing for each
+     * member currently running on the local machine, if there is more than one. The location is the "current"
+     * directory. If run from a shell script, it will be the current folder that the shell script has. If run from
+     * Eclipse, it will be at the top of the project folder. If there is a console, it prints the location there. If
+     * not, it can be found by searching the file system for "StatsDemo0.csv".
      *
-     * @param message
-     * 		the String to write
-     * @param newline
-     * 		true if a new line should be started after this one
+     * @param message the String to write
+     * @param newline true if a new line should be started after this one
      */
     private void write(String message, boolean newline) {
         path = System.getProperty("user.dir") + File.separator + "StatsDemo" + selfId + ".csv";
@@ -159,8 +154,7 @@ public class StatsDemoMain implements SwirldMain {
     /**
      * Same as writeToConsolAndFile, except it does not start a new line after it.
      *
-     * @param message
-     * 		the String to write
+     * @param message the String to write
      */
     private void write(String message) {
         write(message, false);

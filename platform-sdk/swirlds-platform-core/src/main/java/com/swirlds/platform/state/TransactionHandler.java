@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.system.NodeId;
@@ -47,13 +47,10 @@ public class TransactionHandler {
     }
 
     /**
-     * Applies an event to the {@link SwirldState#preHandle(Event)} method and handles any
-     * exceptions gracefully.
+     * Applies an event to the {@link SwirldState#preHandle(Event)} method and handles any exceptions gracefully.
      *
-     * @param event
-     * 		the event to apply
-     * @param swirldState
-     * 		the swirld state to apply {@code event} to
+     * @param event       the event to apply
+     * @param swirldState the swirld state to apply {@code event} to
      */
     public void preHandle(final EventImpl event, final SwirldState swirldState) {
         try {
@@ -71,10 +68,8 @@ public class TransactionHandler {
     /**
      * Applies a consensus round to SwirldState, handles any exceptions gracefully, and updates relevant statistics.
      *
-     * @param round
-     * 		the round to apply
-     * @param state
-     * 		the state to apply {@code round} to
+     * @param round the round to apply
+     * @param state the state to apply {@code round} to
      */
     public void handleRound(final ConsensusRound round, final State state) {
         try {

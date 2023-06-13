@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.network;
 
-import static com.swirlds.common.utility.Units.MILLISECONDS_TO_MICROSECONDS;
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_MICROSECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.Startable;
@@ -46,12 +46,9 @@ public final class NetworkStatsTransmitter implements Startable, Stoppable {
     private final BasicConfig basicConfig;
 
     /**
-     * @param platformContext
-     * 		the context of this platform
-     * @param transactionSubmitter
-     * 		a submitter of non-priority system transactions
-     * @param networkMetrics
-     * 		metrics related to the network
+     * @param platformContext      the context of this platform
+     * @param transactionSubmitter a submitter of non-priority system transactions
+     * @param networkMetrics       metrics related to the network
      */
     public NetworkStatsTransmitter(
             final PlatformContext platformContext,

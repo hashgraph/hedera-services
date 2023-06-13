@@ -20,7 +20,7 @@ import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 import static com.swirlds.platform.health.OSHealthCheckUtils.reportHeader;
 
 import com.swirlds.common.config.OSHealthCheckConfig;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.platform.Settings;
 import java.util.concurrent.TimeUnit;
 
@@ -45,18 +45,15 @@ public final class OSFileSystemChecker {
     /**
      * Append the results of the file system check report to the string builder.
      *
-     * @param sb
-     * 		the string builder to append to
-     * @param fileSystemReport
-     * 		the file system check report
-     * @param maxFileReadMillis
-     * 		the maximum number of millis the file read may take before it is considered failed
+     * @param sb                the string builder to append to
+     * @param fileSystemReport  the file system check report
+     * @param maxFileReadMillis the maximum number of millis the file read may take before it is considered failed
      * @return {@code true} if the check passed, {@code false} otherwise
      */
     private static boolean appendReport(
             final StringBuilder sb, final OSFileSystemCheck.Report fileSystemReport, final long maxFileReadMillis) {
         if (fileSystemReport.code() == OSFileSystemCheck.TestResultCode.SUCCESS) {
-            final double readMillis = fileSystemReport.readNanos() * Units.NANOSECONDS_TO_MILLISECONDS;
+            final double readMillis = fileSystemReport.readNanos() * UnitConstants.NANOSECONDS_TO_MILLISECONDS;
             if (TimeUnit.NANOSECONDS.toMillis(fileSystemReport.readNanos()) > maxFileReadMillis) {
                 reportHeader(sb, OSFileSystemCheck.Report.name(), false);
                 addLine(

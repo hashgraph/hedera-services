@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.collections;
 
-import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
+import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.merkledb.collections.AbstractLongList.DEFAULT_MAX_LONGS_TO_STORE;
 import static com.swirlds.merkledb.collections.AbstractLongList.DEFAULT_NUM_LONGS_PER_CHUNK;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -106,7 +106,8 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {0, 1, 5000, 9999, 10000}) // chunk size is 10K longs
+    @ValueSource(ints = {0, 1, 5000, 9999, 10000})
+    // chunk size is 10K longs
     void testPersistListWithNonZeroMinValidIndex(final int chunkOffset) throws IOException {
         try (final LongListOffHeap list = createFullyParameterizedLongListWith(
                 getSampleSize() / 100, // 100 chunks
@@ -130,7 +131,8 @@ class LongListOffHeapTest extends AbstractLongListTest<LongListOffHeap> {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {0, 1, 5000, 9999, 10000}) // chunk size is 10K longs
+    @ValueSource(ints = {0, 1, 5000, 9999, 10000})
+    // chunk size is 10K longs
     void testPersistShrunkList(final int chunkOffset) throws IOException {
         try (final LongListOffHeap list = createFullyParameterizedLongListWith(
                 getSampleSize() / 100, // 100 chunks

@@ -147,6 +147,10 @@ module com.swirlds.common {
 
     exports com.swirlds.common.metrics.extensions;
     exports com.swirlds.common.system.platformstatus;
+    exports com.swirlds.common.units.internal;
+
+    opens com.swirlds.common.units.internal to
+            com.fasterxml.jackson.databind;
 
     requires transitive com.swirlds.base;
     requires com.swirlds.config;

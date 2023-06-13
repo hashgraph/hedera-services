@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import java.time.Instant;
@@ -32,10 +32,8 @@ public final class SwirldStateManagerUtils {
     /**
      * Performs a fast copy on a {@link State}. The {@code state} must not be modified during execution of this method.
      *
-     * @param state
-     * 		the state object to fast copy
-     * @param stats
-     * 		object to record stats in
+     * @param state the state object to fast copy
+     * @param stats object to record stats in
      * @return the newly created state copy
      */
     public static State fastCopy(final State state, final SwirldStateMetrics stats) {
@@ -57,10 +55,8 @@ public final class SwirldStateManagerUtils {
     /**
      * Determines if a {@code timestamp} is in a freeze period according to the provided state.
      *
-     * @param timestamp
-     * 		the timestamp to check
-     * @param consensusState
-     * 		the state that contains the freeze periods
+     * @param timestamp      the timestamp to check
+     * @param consensusState the state that contains the freeze periods
      * @return true is the {@code timestamp} is in a freeze period
      */
     public static boolean isInFreezePeriod(final Instant timestamp, final State consensusState) {

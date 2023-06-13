@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
+import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
@@ -59,20 +59,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * DataFileCollection manages a set of data files and the compaction of them over time. It stores
- * data items which are key,value pairs and returns a long representing the location it was stored.
- * You can then retrieve that data item later using the location you got when storing. There is not
- * understanding of what the keys mean and no way to look up data by key. The reason the keys are
- * separate from the values is so that we can merge data items with matching keys. We only keep the
- * newest data item for any matching key. It may look like a map, but it is not. You need an
- * external index outside this class to be able to store key-to-data location mappings.
- *
- * The keys are assumed to be a contiguous block of long values. We do not have an explicit way
- * of deleting data, we depend on the range of valid keys. Any data items with keys outside the
- * current valid range will be deleted the next time they are merged. This works for our VirtualMap
- * use cases where the key is always a path and there is a valid range of path keys for internal and
- * leaf nodes. It allows very easy and efficient deleting without the need to maintain a list of
- * deleted keys.
+ * DataFileCollection manages a set of data files and the compaction of them over time. It stores data items which are
+ * key,value pairs and returns a long representing the location it was stored. You can then retrieve that data item
+ * later using the location you got when storing. There is not understanding of what the keys mean and no way to look up
+ * data by key. The reason the keys are separate from the values is so that we can merge data items with matching keys.
+ * We only keep the newest data item for any matching key. It may look like a map, but it is not. You need an external
+ * index outside this class to be able to store key-to-data location mappings.
+ * <p>
+ * The keys are assumed to be a contiguous block of long values. We do not have an explicit way of deleting data, we
+ * depend on the range of valid keys. Any data items with keys outside the current valid range will be deleted the next
+ * time they are merged. This works for our VirtualMap use cases where the key is always a path and there is a valid
+ * range of path keys for internal and leaf nodes. It allows very easy and efficient deleting without the need to
+ * maintain a list of deleted keys.
  *
  * @param <D> type for data items
  */
@@ -81,17 +79,15 @@ public class DataFileCollection<D> implements Snapshotable {
     private static final Logger logger = LogManager.getLogger(DataFileCollection.class);
 
     /**
-     * Maximum number of data items that can be in a data file. This is dictated by the maximum size
-     * of the movesMap used during merge, which in turn is limited by the maximum RAM to be used for
-     * merging.
+     * Maximum number of data items that can be in a data file. This is dictated by the maximum size of the movesMap
+     * used during merge, which in turn is limited by the maximum RAM to be used for merging.
      */
     private static final int MOVE_LIST_CHUNK_SIZE = 500_000;
     /** The version number for format of current data files. */
     private static final int METADATA_FILE_FORMAT_VERSION = 1;
     /**
-     * Metadata file name suffix. Full metadata file name is storeName + suffix. If legacy store
-     * name is provided, and metadata file with the name above isn't found, metadata file with name
-     * legacyStoreName + suffix is tried.
+     * Metadata file name suffix. Full metadata file name is storeName + suffix. If legacy store name is provided, and
+     * metadata file with the name above isn't found, metadata file with name legacyStoreName + suffix is tried.
      */
     private static final String METADATA_FILENAME_SUFFIX = "_metadata.dfc";
 
@@ -105,9 +101,8 @@ public class DataFileCollection<D> implements Snapshotable {
      */
     private final String storeName;
     /**
-     * Another base name for the data files. If files with this base name exist, they are loaded by
-     * this file collection at startup. New files will have storeName as the prefix, not
-     * legacyStoreName *
+     * Another base name for the data files. If files with this base name exist, they are loaded by this file collection
+     * at startup. New files will have storeName as the prefix, not legacyStoreName *
      */
     private final String legacyStoreName;
     /** Serializer responsible for serializing/deserializing data items into and out of files */
@@ -120,39 +115,36 @@ public class DataFileCollection<D> implements Snapshotable {
     private volatile KeyRange validKeyRange = INVALID_KEY_RANGE;
 
     /**
-     * The list of current files in this data file collection. The files are added to this list
-     * during flushes in {@link #endWriting(long, long)}, after the file is completely written. They
-     * are also added during compaction in {@link #compactFiles(CASableLongIndex, List)}, even
-     * before compaction is complete. In the end of compaction, all the compacted files are removed
-     * from this list.
-     *
-     * The list is used to read data items and to make snapshots. Reading from the file, which is
-     * being written to during compaction, is possible because both readers and writers use Java
-     * file channel APIs. Snapshots are an issue, though. Snapshots must be as fast as possible, so
-     * they are implemented as to make hard links in the target folder to all data files in
-     * collection. If compaction is in progress, the last file in the list isn't fully written yet,
-     * so it can't be hard linked easily. To solve it, before a snapshot is taken, the current
-     * compaction file is flushed to disk, and compaction is put on hold using {@link
-     * #snapshotCompactionLock} and then resumed after snapshot is complete.
+     * The list of current files in this data file collection. The files are added to this list during flushes in
+     * {@link #endWriting(long, long)}, after the file is completely written. They are also added during compaction in
+     * {@link #compactFiles(CASableLongIndex, List)}, even before compaction is complete. In the end of compaction, all
+     * the compacted files are removed from this list.
+     * <p>
+     * The list is used to read data items and to make snapshots. Reading from the file, which is being written to
+     * during compaction, is possible because both readers and writers use Java file channel APIs. Snapshots are an
+     * issue, though. Snapshots must be as fast as possible, so they are implemented as to make hard links in the target
+     * folder to all data files in collection. If compaction is in progress, the last file in the list isn't fully
+     * written yet, so it can't be hard linked easily. To solve it, before a snapshot is taken, the current compaction
+     * file is flushed to disk, and compaction is put on hold using {@link #snapshotCompactionLock} and then resumed
+     * after snapshot is complete.
      */
     private final AtomicReference<ImmutableIndexedObjectList<DataFileReader<D>>> dataFiles = new AtomicReference<>();
 
     /**
-     * The current open file writer, if we are in the middle of writing a new file during flush, or
-     * null if not writing.
+     * The current open file writer, if we are in the middle of writing a new file during flush, or null if not
+     * writing.
      */
     private final AtomicReference<DataFileWriter<D>> currentDataFileWriter = new AtomicReference<>();
     /**
-     * Data file reader for the file, which is being written with the writer above, or null if not
-     * writing. The reader is created right after writing to the file is started.
+     * Data file reader for the file, which is being written with the writer above, or null if not writing. The reader
+     * is created right after writing to the file is started.
      */
     private final AtomicReference<DataFileReader<D>> currentDataFileReader = new AtomicReference<>();
     /** Constructor for creating ImmutableIndexedObjectLists */
     private final Function<List<DataFileReader<D>>, ImmutableIndexedObjectList<DataFileReader<D>>>
             indexedObjectListConstructor;
     /**
-     * Set if all indexes of new files currently being written. This is only maintained if logging
-     * is trace level.
+     * Set if all indexes of new files currently being written. This is only maintained if logging is trace level.
      */
     private final ConcurrentSkipListSet<Integer> setOfNewFileIndexes =
             logger.isTraceEnabled() ? new ConcurrentSkipListSet<>() : null;
@@ -162,47 +154,42 @@ public class DataFileCollection<D> implements Snapshotable {
     /** Start time of the current compaction, or null if compaction isn't running */
     private final AtomicReference<Instant> currentCompactionStartTime = new AtomicReference<>();
     /**
-     * Current data file writer during compaction, or null if compaction isn't running. The writer
-     * is created at compaction start. If compaction is interrupted by a snapshot, the writer is
-     * closed before the snapshot, and then a new writer / new file is created after the snapshot is
-     * taken.
+     * Current data file writer during compaction, or null if compaction isn't running. The writer is created at
+     * compaction start. If compaction is interrupted by a snapshot, the writer is closed before the snapshot, and then
+     * a new writer / new file is created after the snapshot is taken.
      */
     private final AtomicReference<DataFileWriter<D>> currentCompactionWriter = new AtomicReference<>();
     /** Currrent data file reader for the compaction writer above. */
     private final AtomicReference<DataFileReader<D>> currentCompactionReader = new AtomicReference<>();
     /**
-     * The list of new files created during compaction. Usually, all files to process are compacted
-     * to a single new file, but if compaction is interrupted by a snapshot, there may be more than
-     * one file created.
+     * The list of new files created during compaction. Usually, all files to process are compacted to a single new
+     * file, but if compaction is interrupted by a snapshot, there may be more than one file created.
      */
     private final List<Path> newCompactedFiles = new ArrayList<>();
     /**
-     * A lock used for synchronization between snapshots and compactions. While a compaction is in
-     * progress, it runs on its own without any synchronization. However, a few critical sections
-     * are protected with this lock: to create a new compaction writer/reader when compaction is
-     * started, to copy data items to the current writer and update the corresponding index item,
-     * and to close the compaction writer. This mechanism allows snapshots to effectively put
-     * compaction on hold, which is critical as snapshots should be as fast as possible, while
-     * compactions are just background processes.
+     * A lock used for synchronization between snapshots and compactions. While a compaction is in progress, it runs on
+     * its own without any synchronization. However, a few critical sections are protected with this lock: to create a
+     * new compaction writer/reader when compaction is started, to copy data items to the current writer and update the
+     * corresponding index item, and to close the compaction writer. This mechanism allows snapshots to effectively put
+     * compaction on hold, which is critical as snapshots should be as fast as possible, while compactions are just
+     * background processes.
      */
     private final Semaphore snapshotCompactionLock = new Semaphore(1);
     /**
-     * Indicates whether compaction is in progress at the time when {@link #pauseCompaction()}
-     * is called. This flag is then checked in {@link #resumeCompaction()} to start a new
-     * compacted file or not.
+     * Indicates whether compaction is in progress at the time when {@link #pauseCompaction()} is called. This flag is
+     * then checked in {@link #resumeCompaction()} to start a new compacted file or not.
      */
     private final AtomicBoolean compactionWasInProgress = new AtomicBoolean(false);
 
     /**
      * Construct a new DataFileCollection.
      *
-     * @param storeDir The directory to store data files
-     * @param storeName Base name for the data files, allowing more than one DataFileCollection to
-     *     share a directory
-     * @param dataItemSerializer Serializer responsible for serializing/deserializing data items
-     *     into and out of files.
-     * @param loadedDataCallback Callback for rebuilding indexes from existing files, can be null if
-     *     not needed. Using this is expensive as it requires all files to be read and parsed.
+     * @param storeDir           The directory to store data files
+     * @param storeName          Base name for the data files, allowing more than one DataFileCollection to share a
+     *                           directory
+     * @param dataItemSerializer Serializer responsible for serializing/deserializing data items into and out of files.
+     * @param loadedDataCallback Callback for rebuilding indexes from existing files, can be null if not needed. Using
+     *                           this is expensive as it requires all files to be read and parsed.
      * @throws IOException If there was a problem creating new data set or opening existing one
      */
     public DataFileCollection(
@@ -221,20 +208,18 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * Construct a new DataFileCollection with a custom legacy store name. If data files and/or
-     * metadata file exist with the legacy store name prefix, they will be processed by this file
-     * collection. New data files will be written with {@code storeName} as the prefix.
+     * Construct a new DataFileCollection with a custom legacy store name. If data files and/or metadata file exist with
+     * the legacy store name prefix, they will be processed by this file collection. New data files will be written with
+     * {@code storeName} as the prefix.
      *
-     * @param storeDir The directory to store data files
-     * @param storeName Base name for the data files, allowing more than one DataFileCollection to
-     *     share a directory
-     * @param legacyStoreName Base name for the data files. If not null, data files with this prefix
-     *     are processed by this file collection at startup same way as files prefixed with
-     *     storeName
-     * @param dataItemSerializer Serializer responsible for serializing/deserializing data items
-     *     into and out of files.
-     * @param loadedDataCallback Callback for rebuilding indexes from existing files, can be null if
-     *     not needed. Using this is expensive as it requires all files to be read and parsed.
+     * @param storeDir           The directory to store data files
+     * @param storeName          Base name for the data files, allowing more than one DataFileCollection to share a
+     *                           directory
+     * @param legacyStoreName    Base name for the data files. If not null, data files with this prefix are processed by
+     *                           this file collection at startup same way as files prefixed with storeName
+     * @param dataItemSerializer Serializer responsible for serializing/deserializing data items into and out of files.
+     * @param loadedDataCallback Callback for rebuilding indexes from existing files, can be null if not needed. Using
+     *                           this is expensive as it requires all files to be read and parsed.
      * @throws IOException If there was a problem creating new data set or opening existing one
      */
     public DataFileCollection(
@@ -254,23 +239,22 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * Construct a new DataFileCollection with custom legacy store name and indexed object list
-     * constructor. If data files and/or metadata file exist with the legacy store name prefix, they
-     * will be processed by this file collection. New data files will be written with {@code
-     * storeName} as the prefix.
+     * Construct a new DataFileCollection with custom legacy store name and indexed object list constructor. If data
+     * files and/or metadata file exist with the legacy store name prefix, they will be processed by this file
+     * collection. New data files will be written with {@code storeName} as the prefix.
      *
-     * @param storeDir The directory to store data files
-     * @param storeName Base name for the data files, allowing more than one DataFileCollection to
-     *     share a directory
-     * @param legacyStoreName Base name for the data files. If not null, data files with this prefix
-     *     are processed by this file collection at startup same way as files prefixed with
-     *     storeName
-     * @param dataItemSerializer Serializer responsible for serializing/deserializing data items
-     *     into and out of files.
-     * @param loadedDataCallback Callback for rebuilding indexes from existing files, can be null if
-     *     not needed. Using this is expensive as it requires all files to be read and parsed.
-     * @param indexedObjectListConstructor Constructor for creating ImmutableIndexedObjectList
-     *     instances.
+     * @param storeDir                     The directory to store data files
+     * @param storeName                    Base name for the data files, allowing more than one DataFileCollection to
+     *                                     share a directory
+     * @param legacyStoreName              Base name for the data files. If not null, data files with this prefix are
+     *                                     processed by this file collection at startup same way as files prefixed with
+     *                                     storeName
+     * @param dataItemSerializer           Serializer responsible for serializing/deserializing data items into and out
+     *                                     of files.
+     * @param loadedDataCallback           Callback for rebuilding indexes from existing files, can be null if not
+     *                                     needed. Using this is expensive as it requires all files to be read and
+     *                                     parsed.
+     * @param indexedObjectListConstructor Constructor for creating ImmutableIndexedObjectList instances.
      * @throws IOException If there was a problem creating new data set or opening existing one
      */
     protected DataFileCollection(
@@ -301,8 +285,8 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * Get the valid range of keys for data items currently stored by this data file collection. Any
-     * data items with keys below this can be deleted during a merge.
+     * Get the valid range of keys for data items currently stored by this data file collection. Any data items with
+     * keys below this can be deleted during a merge.
      *
      * @return valid key range
      */
@@ -311,8 +295,7 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * Get if this data file collection was loaded from an existing set of files or if it was a new
-     * empty collection
+     * Get if this data file collection was loaded from an existing set of files or if it was a new empty collection
      *
      * @return true if loaded from existing, false if new set of files
      */
@@ -326,8 +309,8 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * Get a list of all files in this collection that have been fully finished writing, are read
-     * only, ready to be compacted, and don't exceed the specified size in MB.
+     * Get a list of all files in this collection that have been fully finished writing, are read only, ready to be
+     * compacted, and don't exceed the specified size in MB.
      *
      * @param maxSizeMb all files returned are smaller than this number of MB
      */
@@ -346,8 +329,8 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * Get a list of all files in this collection that have been fully finished writing, are read
-     * only and ready to be compacted.
+     * Get a list of all files in this collection that have been fully finished writing, are read only and ready to be
+     * compacted.
      */
     public List<DataFileReader<D>> getAllCompletedFiles() {
         return getAllCompletedFiles(Integer.MAX_VALUE);
@@ -371,12 +354,12 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * Merges all files in filesToMerge.
      *
-     * @param index takes a map of moves from old location to new location. Once it is finished and
-     *     returns it is assumed all readers will no longer be looking in old location, so old files
-     *     can be safely deleted.
+     * @param index        takes a map of moves from old location to new location. Once it is finished and returns it is
+     *                     assumed all readers will no longer be looking in old location, so old files can be safely
+     *                     deleted.
      * @param filesToMerge list of files to merge
      * @return list of files created during the merge
-     * @throws IOException If there was a problem merging
+     * @throws IOException          If there was a problem merging
      * @throws InterruptedException If the merge thread was interrupted
      */
     public synchronized List<Path> compactFiles(
@@ -477,11 +460,10 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * Opens a new file for writing during compaction. This method is called, when compaction is
-     * started. If compaction is interrupted and resumed by data source snapshot using {@link
-     * #pauseCompaction()} and {@link #resumeCompaction()}, a new file is created for writing using
-     * this method before compaction is resumed.
-     *
+     * Opens a new file for writing during compaction. This method is called, when compaction is started. If compaction
+     * is interrupted and resumed by data source snapshot using {@link #pauseCompaction()} and
+     * {@link #resumeCompaction()}, a new file is created for writing using this method before compaction is resumed.
+     * <p>
      * This method must be called under snapshot/compaction lock.
      *
      * @throws IOException If an I/O error occurs
@@ -499,10 +481,9 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * Closes the current compaction file. This method is called in the end of compaction process,
-     * and also before a snapshot is taken to make sure the current file is fully written and safe
-     * to include to snapshots.
-     *
+     * Closes the current compaction file. This method is called in the end of compaction process, and also before a
+     * snapshot is taken to make sure the current file is fully written and safe to include to snapshots.
+     * <p>
      * This method must be called under snapshot/compaction lock.
      *
      * @throws IOException If an I/O error occurs
@@ -516,18 +497,17 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * Puts file compaction on hold, if it's currently in progress. If not in progress, it will
-     * prevent compaction from starting until {@link #resumeCompaction()} is called. The most
-     * important thing this method does is it makes data files consistent and read only, so they can
-     * be included to snapshots as easily as to create hard links. In particular, if compaction is
-     * in progress, and a new data file is being written to, this file is flushed to disk, no files
-     * are created and no index entries are updated until compaction is resumed.
-     *
+     * Puts file compaction on hold, if it's currently in progress. If not in progress, it will prevent compaction from
+     * starting until {@link #resumeCompaction()} is called. The most important thing this method does is it makes data
+     * files consistent and read only, so they can be included to snapshots as easily as to create hard links. In
+     * particular, if compaction is in progress, and a new data file is being written to, this file is flushed to disk,
+     * no files are created and no index entries are updated until compaction is resumed.
+     * <p>
      * This method should not be called on the compaction thread.
      *
      * <b>This method must be always balanced with and called before {@link #resumeCompaction()}. If
-     * there are more / less calls to resume compactions than to pause, or if they are called in a
-     * wrong order, it will result in deadlocks.</b>
+     * there are more / less calls to resume compactions than to pause, or if they are called in a wrong order, it will
+     * result in deadlocks.</b>
      *
      * @throws IOException If an I/O error occurs
      */
@@ -549,13 +529,13 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * Resumes compaction previously put on hold with {@link #pauseCompaction()}. If there was no
-     * compaction running at that moment, but new compaction was started (and blocked) since {@link
-     * #pauseCompaction()}, this new compaction is resumed.
+     * Resumes compaction previously put on hold with {@link #pauseCompaction()}. If there was no compaction running at
+     * that moment, but new compaction was started (and blocked) since {@link #pauseCompaction()}, this new compaction
+     * is resumed.
      *
      * <b>This method must be always balanced with and called after {@link #pauseCompaction()}. If
-     * there are more / less calls to resume compactions than to pause, or if they are called in a
-     * wrong order, it will result in deadlocks.</b>
+     * there are more / less calls to resume compactions than to pause, or if they are called in a wrong order, it will
+     * result in deadlocks.</b>
      *
      * @throws IOException If an I/O error occurs
      */
@@ -610,8 +590,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * Store a data item into the current file opened with startWriting().
      *
      * @param dataItem The data item to write into file
-     * @return the location where data item was stored. This contains both the file and the location
-     *     within the file.
+     * @return the location where data item was stored. This contains both the file and the location within the file.
      * @throws IOException If there was a problem writing this data item to the file.
      */
     public long storeDataItem(final D dataItem) throws IOException {
@@ -624,14 +603,12 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * End writing current data file and returns the corresponding reader. The reader isn't marked
-     * as completed (fully written, read only, and ready to compact), as the caller may need some
-     * additional processing, e.g. to update indices, before the file can be compacted.
+     * End writing current data file and returns the corresponding reader. The reader isn't marked as completed (fully
+     * written, read only, and ready to compact), as the caller may need some additional processing, e.g. to update
+     * indices, before the file can be compacted.
      *
-     * @param minimumValidKey The minimum valid data key at this point in time, can be used for
-     *     cleaning out old data
-     * @param maximumValidKey The maximum valid data key at this point in time, can be used for
-     *     cleaning out old data
+     * @param minimumValidKey The minimum valid data key at this point in time, can be used for cleaning out old data
+     * @param maximumValidKey The maximum valid data key at this point in time, can be used for cleaning out old data
      * @throws IOException If there was a problem closing the data file
      */
     public DataFileReader<D> endWriting(final long minimumValidKey, final long maximumValidKey) throws IOException {
@@ -651,23 +628,22 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * Read a data item from any file that has finished being written. This is not 100% thread safe
-     * with concurrent merging, it is possible it will throw a ClosedChannelException or return
-     * null. So it should be retried if those happen.
+     * Read a data item from any file that has finished being written. This is not 100% thread safe with concurrent
+     * merging, it is possible it will throw a ClosedChannelException or return null. So it should be retried if those
+     * happen.
      *
-     * @param dataLocation the location of the data item to read. This contains both the file and
-     *     the location within the file.
+     * @param dataLocation the location of the data item to read. This contains both the file and the location within
+     *                     the file.
      * @return Data item if the data location was found in files. <br>
-     *     <br>
-     *     A null is returned :
-     *     <ol>
-     *       <li>if not found
-     *       <li>if deserialize flag is false
-     *     </ol>
-     *
-     * @throws IOException If there was a problem reading the data item.
-     * @throws ClosedChannelException In the very rare case merging closed the file between us
-     *     checking if file is open and reading
+     * <br>
+     * A null is returned :
+     * <ol>
+     *   <li>if not found
+     *   <li>if deserialize flag is false
+     * </ol>
+     * @throws IOException            If there was a problem reading the data item.
+     * @throws ClosedChannelException In the very rare case merging closed the file between us checking if file is open
+     *                                and reading
      */
     protected D readDataItem(final long dataLocation) throws IOException {
         // check if found
@@ -703,19 +679,17 @@ public class DataFileCollection<D> implements Snapshotable {
     }
 
     /**
-     * Read a data item from any file that has finished being written. Uses a LongList that maps
-     * key-&gt;dataLocation, this allows for multiple retries going back to the index each time. The
-     * allows us to cover the cracks where threads can slip though.
+     * Read a data item from any file that has finished being written. Uses a LongList that maps key-&gt;dataLocation,
+     * this allows for multiple retries going back to the index each time. The allows us to cover the cracks where
+     * threads can slip though.
+     * <p>
+     * This depends on the fact that LongList has a nominal value of LongList.IMPERMISSIBLE_VALUE=0 for non-existent
+     * values.
      *
-     * This depends on the fact that LongList has a nominal value of
-     * LongList.IMPERMISSIBLE_VALUE=0 for non-existent values.
-     *
-     * @param index key-&gt;dataLocation index
+     * @param index        key-&gt;dataLocation index
      * @param keyIntoIndex The key to lookup in index
-     * @return Data item if the data location was found in files. If contained in the index but not
-     *     in files after a number of retries then an exception is thrown. <br>
-     *     A null is returned if not found in index
-     *
+     * @return Data item if the data location was found in files. If contained in the index but not in files after a
+     * number of retries then an exception is thrown. <br> A null is returned if not found in index
      * @throws IOException If there was a problem reading the data item.
      */
     public D readDataItemUsingIndex(final LongList index, final long keyIntoIndex) throws IOException {
@@ -812,8 +786,7 @@ public class DataFileCollection<D> implements Snapshotable {
     // Index Callback Class
 
     /**
-     * Simple callback class during reading an existing set of files during startup, so that indexes
-     * can be built
+     * Simple callback class during reading an existing set of files during startup, so that indexes can be built
      */
     @FunctionalInterface
     public interface LoadedDataCallback {
@@ -878,8 +851,7 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * Create a new data file writer
      *
-     * @param creationTime The creation time for the data in the new file. It could be now or old in
-     *     case of merge.
+     * @param creationTime The creation time for the data in the new file. It could be now or old in case of merge.
      * @return the newly created data file
      */
     private DataFileWriter<D> newDataFile(final Instant creationTime) throws IOException {
@@ -893,8 +865,8 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * Saves the metadata to the given directory. A valid database must have the metadata.
      *
-     * @param directory The location to save the metadata. The directory will be created (and all
-     *     parent directories) if needed.
+     * @param directory The location to save the metadata. The directory will be created (and all parent directories) if
+     *                  needed.
      * @throws IOException Thrown if a lower level IOException occurs.
      */
     private void saveMetadata(final Path directory) throws IOException {

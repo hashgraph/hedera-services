@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.platform.expiration;
 
-import static com.swirlds.common.utility.Units.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.demo.merkle.map.FCMFamily;
@@ -176,8 +176,7 @@ public class ExpirationUtils {
     }
 
     /**
-     * If the top most record in FCQueue has ExpirationTime before or equal to
-     * lastPurgeTimestamp return true
+     * If the top most record in FCQueue has ExpirationTime before or equal to lastPurgeTimestamp return true
      *
      * @param records
      * @param lastPurgeTimestamp
@@ -188,9 +187,9 @@ public class ExpirationUtils {
     }
 
     /**
-     * We can take for granted that records are added in monotonic increasing order of expiry.
-     * If accountsWithExpiringRecords contains this mapKey, which denotes this account already has one entry (with
-     * earlier expiration time than this record) in expirationQueue, we don't have replace it
+     * We can take for granted that records are added in monotonic increasing order of expiry. If
+     * accountsWithExpiringRecords contains this mapKey, which denotes this account already has one entry (with earlier
+     * expiration time than this record) in expirationQueue, we don't have replace it
      *
      * @param record
      * @param mapKey

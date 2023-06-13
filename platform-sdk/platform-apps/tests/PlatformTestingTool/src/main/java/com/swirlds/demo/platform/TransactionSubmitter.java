@@ -17,7 +17,7 @@
 package com.swirlds.demo.platform;
 
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.common.utility.Units.SECONDS_TO_MILLISECONDS;
+import static com.swirlds.common.units.UnitConstants.SECONDS_TO_MILLISECONDS;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.Platform;
@@ -56,8 +56,8 @@ public class TransactionSubmitter {
     /**
      * Force canSubmitMore to halt temporarily or allow it to run normally
      *
-     * @return true: canSubmitMore is forced to halt generating transactions
-     * 		false: permit canSubmitMore to run it's normal internal logic w.r.t. generating transactions
+     * @return true: canSubmitMore is forced to halt generating transactions false: permit canSubmitMore to run it's
+     * normal internal logic w.r.t. generating transactions
      */
     public static AtomicBoolean getForcePauseCanSubmitMore() {
         return forcePauseCanSubmitMore;
@@ -192,8 +192,7 @@ public class TransactionSubmitter {
     }
 
     /**
-     * if submit successfully return true, other false,
-     * called may retry to submit the same data next time
+     * if submit successfully return true, other false, called may retry to submit the same data next time
      */
     public boolean trySubmit(Platform platform, Pair<byte[], PAYLOAD_TYPE> data) {
         if (controlQuorum.hasQuorum(ControlAction.of(ControlType.EXIT_VALIDATION))) {

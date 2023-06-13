@@ -16,7 +16,7 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 
 import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.common.system.platformstatus.PlatformStatus;
@@ -37,14 +37,10 @@ public class SwirldTransactionSubmitter {
     /**
      * Creates a new instance.
      *
-     * @param platformStatusSupplier
-     * 		supplier of the current status of the platform
-     * @param settings
-     * 		provider of static settings
-     * @param addToTransactionPool
-     * 		a function that adds the transaction to the transaction pool, if room is available
-     * @param transactionMetrics
-     * 		stats relevant to transactions
+     * @param platformStatusSupplier supplier of the current status of the platform
+     * @param settings               provider of static settings
+     * @param addToTransactionPool   a function that adds the transaction to the transaction pool, if room is available
+     * @param transactionMetrics     stats relevant to transactions
      */
     public SwirldTransactionSubmitter(
             final Supplier<PlatformStatus> platformStatusSupplier,
@@ -61,8 +57,7 @@ public class SwirldTransactionSubmitter {
     /**
      * Submits a transaction to the consumer if it passes validity checks.
      *
-     * @param trans
-     * 		the transaction to submit
+     * @param trans the transaction to submit
      * @return true if the transaction passed all validity checks and was accepted by the consumer
      */
     public boolean submitTransaction(final SwirldTransaction trans) {

@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.collections.LongListHeap;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.test.framework.TestQualifierTags;
@@ -54,8 +54,8 @@ class MemoryIndexDiskKeyValueStoreTest {
     // Helper Methods
 
     /**
-     * For tests, we want to have all different dta sizes, so we use this function to choose how
-     * many times to repeat the data value long
+     * For tests, we want to have all different dta sizes, so we use this function to choose how many times to repeat
+     * the data value long
      */
     private static int getRepeatCountForKey(final long key) {
         return (int) (key % 20L);
@@ -162,9 +162,9 @@ class MemoryIndexDiskKeyValueStoreTest {
         assertTrue(
                 checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
                 "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
-                        + (directMemoryUsedAtStart * Units.BYTES_TO_MEBIBYTES)
+                        + (directMemoryUsedAtStart * UnitConstants.BYTES_TO_MEBIBYTES)
                         + "MB and is now "
-                        + (getDirectMemoryUsedBytes() * Units.BYTES_TO_MEBIBYTES)
+                        + (getDirectMemoryUsedBytes() * UnitConstants.BYTES_TO_MEBIBYTES)
                         + "MB");
     }
 

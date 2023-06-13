@@ -20,8 +20,8 @@ import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.RandomUtils.randomHash;
 import static com.swirlds.common.test.RandomUtils.randomSignature;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
-import static com.swirlds.common.utility.Units.SECONDS_TO_NANOSECONDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 
@@ -69,11 +69,10 @@ public final class RecoveryTestUtils {
     private RecoveryTestUtils() {}
 
     /**
-     * Generate a random event. Fields inside event are filled mostly with random nonsense data,
-     * and a little realistic data (i.e. the event's round).
+     * Generate a random event. Fields inside event are filled mostly with random nonsense data, and a little realistic
+     * data (i.e. the event's round).
      *
-     * @param random
-     * 		a source of randomness
+     * @param random a source of randomness
      * @return an event
      */
     public static EventImpl generateRandomEvent(
@@ -114,16 +113,11 @@ public final class RecoveryTestUtils {
     /**
      * Generate a list of random events.
      *
-     * @param random
-     * 		a source of randomness
-     * @param firstRound
-     * 		the round of the first event
-     * @param timeToSimulate
-     * 		the length of time that should be simulated
-     * @param roundsPerSecond
-     * 		the number of rounds per second
-     * @param evensPerRound
-     * 		the number of events in each round
+     * @param random          a source of randomness
+     * @param firstRound      the round of the first event
+     * @param timeToSimulate  the length of time that should be simulated
+     * @param roundsPerSecond the number of rounds per second
+     * @param evensPerRound   the number of events in each round
      * @return a list of events
      */
     public static List<EventImpl> generateRandomEvents(
@@ -168,14 +162,10 @@ public final class RecoveryTestUtils {
     /**
      * Write a list of events to event stream files.
      *
-     * @param random
-     * 		a source of randomness (for generating signatures)
-     * @param destination
-     * 		the directory where the files should be written
-     * @param secondsPerFile
-     * 		the number of seconds of data in each file
-     * @param events
-     * 		a list of events to be written
+     * @param random         a source of randomness (for generating signatures)
+     * @param destination    the directory where the files should be written
+     * @param secondsPerFile the number of seconds of data in each file
+     * @param events         a list of events to be written
      */
     public static void writeRandomEventStream(
             final Random random, final Path destination, final int secondsPerFile, final List<EventImpl> events)
@@ -279,11 +269,9 @@ public final class RecoveryTestUtils {
     /**
      * Remove the second half of a file. Updates the file on disk.
      *
-     * @param file
-     * 		the file to truncate
-     * @param truncateOnObjectBoundary
-     * 		if true then truncate the file on an exact object boundary,
-     * 		if false then truncate the file somewhere that isn't an object boundary
+     * @param file                     the file to truncate
+     * @param truncateOnObjectBoundary if true then truncate the file on an exact object boundary, if false then
+     *                                 truncate the file somewhere that isn't an object boundary
      * @return the number of valid objects in the truncated file
      */
     public static int truncateFile(final Path file, boolean truncateOnObjectBoundary) throws IOException {

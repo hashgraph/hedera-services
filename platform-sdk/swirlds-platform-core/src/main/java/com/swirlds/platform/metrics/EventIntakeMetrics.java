@@ -23,7 +23,7 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
@@ -83,12 +83,9 @@ public class EventIntakeMetrics implements StaleEventObserver {
     /**
      * Constructor of {@code EventIntakeMetrics}
      *
-     * @param metrics
-     * 		a reference to the metrics-system
-     * @param time
-     * 		provides wall clock time
-     * @throws IllegalArgumentException
-     * 		if {@code metrics} is {@code null}
+     * @param metrics a reference to the metrics-system
+     * @param time    provides wall clock time
+     * @throws IllegalArgumentException if {@code metrics} is {@code null}
      */
     public EventIntakeMetrics(final Metrics metrics, final Time time) {
         CommonUtils.throwArgNull(metrics, "metrics");
@@ -104,8 +101,8 @@ public class EventIntakeMetrics implements StaleEventObserver {
     }
 
     /**
-     * Update a statistics accumulator whenever this node creates an event with
-     * an other-parent that has no children. (The OP is "rescued".)
+     * Update a statistics accumulator whenever this node creates an event with an other-parent that has no children.
+     * (The OP is "rescued".)
      */
     public void rescuedEvent() {
         rescuedEventsPerSecond.cycle();
@@ -131,8 +128,7 @@ public class EventIntakeMetrics implements StaleEventObserver {
     /**
      * Update event task statistics
      *
-     * @param startTime
-     * 		a start time, in nanoseconds
+     * @param startTime a start time, in nanoseconds
      */
     public void processedEventTask(final long startTime) {
         // nanoseconds spent adding to hashgraph
@@ -142,8 +138,7 @@ public class EventIntakeMetrics implements StaleEventObserver {
     /**
      * Notifies the stats that the event creation phase has entered
      *
-     * @param shouldCreateEvent
-     * 		did the sync manager tell us to create an event?
+     * @param shouldCreateEvent did the sync manager tell us to create an event?
      */
     public void eventCreation(final boolean shouldCreateEvent) {
         this.shouldCreateEvent.update(shouldCreateEvent ? 1 : 0);

@@ -16,10 +16,15 @@
 
 package com.swirlds.platform.metrics;
 
-import static com.swirlds.common.metrics.FloatFormats.*;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_13_2;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_0;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_17_1;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_5_3;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
@@ -117,10 +122,8 @@ public class AddedEventMetrics implements EventAddedObserver {
     /**
      * The constructor of {@code AddedEventMetrics}
      *
-     * @param selfId
-     * 		the {@link NodeId} of this node
-     * @param metrics
-     * 		a reference to the metrics-system
+     * @param selfId  the {@link NodeId} of this node
+     * @param metrics a reference to the metrics-system
      * @throws IllegalArgumentException if one of the parameters is {@code null}
      */
     public AddedEventMetrics(final NodeId selfId, final Metrics metrics) {

@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.merkle.map;
 
-import static com.swirlds.common.utility.Units.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
 import static com.swirlds.demo.merkle.map.FCMTransactionPool.DEMO_TRANSACTION_INFO;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionState.HANDLED;
 import static com.swirlds.merkle.map.test.lifecycle.TransactionType.Create;
@@ -397,8 +397,12 @@ public class FCMTransactionHandler {
             final MapKey toKey,
             final MerkleMap<MapKey, MapValueData> map,
             final ExpectedFCMFamily expectedMap) {
-        if (entityMissingFromMap(fromKey, map, expectedMap)) return null;
-        if (entityMissingFromMap(toKey, map, expectedMap)) return null;
+        if (entityMissingFromMap(fromKey, map, expectedMap)) {
+            return null;
+        }
+        if (entityMissingFromMap(toKey, map, expectedMap)) {
+            return null;
+        }
 
         final MapValueData valueFrom = map.getForModify(fromKey);
         final MapValueData valueTo = map.getForModify(toKey);

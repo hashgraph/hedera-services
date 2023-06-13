@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.jasperdb.KeyRange;
 import com.swirlds.jasperdb.collections.CASable;
 import com.swirlds.jasperdb.collections.ImmutableIndexedObjectListUsingArray;
@@ -84,8 +84,8 @@ class DataFileCollectionTest {
     // Helper Methods
 
     /**
-     * For tests, we want to have all different data sizes, so we use this function to choose how
-     * many times to repeat the data value long
+     * For tests, we want to have all different data sizes, so we use this function to choose how many times to repeat
+     * the data value long
      */
     private static int getRepeatCountForKey(final long key) {
         return (int) (key % 20L);
@@ -339,9 +339,8 @@ class DataFileCollectionTest {
     }
 
     /**
-     * Special slow wrapper on ImmutableIndexedObjectListUsingArray that slows down gets, this
-     * causing threading bugs during merging where deletion and reading race each other, to be
-     * always reproducible.
+     * Special slow wrapper on ImmutableIndexedObjectListUsingArray that slows down gets, this causing threading bugs
+     * during merging where deletion and reading race each other, to be always reproducible.
      */
     private static class SlowImmutableIndexedObjectListUsingArray<T extends IndexedObject>
             extends ImmutableIndexedObjectListUsingArray<T> {
@@ -712,8 +711,7 @@ class DataFileCollectionTest {
     }
 
     /**
-     * Keep track of initial direct memory used already, so we can check if we leek over and above
-     * what we started with
+     * Keep track of initial direct memory used already, so we can check if we leek over and above what we started with
      */
     private long directMemoryUsedAtStart;
 
@@ -728,9 +726,9 @@ class DataFileCollectionTest {
         assertTrue(
                 checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
                 "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
-                        + (directMemoryUsedAtStart * Units.BYTES_TO_MEBIBYTES)
+                        + (directMemoryUsedAtStart * UnitConstants.BYTES_TO_MEBIBYTES)
                         + "MB and is now "
-                        + (getDirectMemoryUsedBytes() * Units.BYTES_TO_MEBIBYTES)
+                        + (getDirectMemoryUsedBytes() * UnitConstants.BYTES_TO_MEBIBYTES)
                         + "MB");
     }
 

@@ -18,7 +18,7 @@ package com.swirlds.platform.test.chatter.simulator;
 
 import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
 import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.printHeader;
 import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.roundDecimal;
 
@@ -153,8 +153,7 @@ public class SimulatedNetworkStatistics {
     /**
      * Capture statistics for a sent message.
      *
-     * @param message
-     * 		the message that was sent
+     * @param message the message that was sent
      */
     public void captureSendStatistics(final SimulatedMessage message) {
         final NodeId source = message.getSource();
@@ -176,8 +175,7 @@ public class SimulatedNetworkStatistics {
     /**
      * Capture statistics for a received message.
      *
-     * @param message
-     * 		the message that was received
+     * @param message the message that was received
      */
     public void captureReceiveStatistics(final SimulatedMessage message) {
         final NodeId destination = message.getDestination();

@@ -16,8 +16,8 @@
 
 package com.swirlds.common.utility.throttle;
 
+import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
-import static com.swirlds.common.utility.Units.SECONDS_TO_NANOSECONDS;
 
 import com.swirlds.common.time.Time;
 import java.time.Duration;
@@ -25,13 +25,13 @@ import java.time.Instant;
 
 /**
  * <p>
- * A simple utility designed to limit the frequency of an event, e.g. making sure a particular log message
- * isn't written too often.
+ * A simple utility designed to limit the frequency of an event, e.g. making sure a particular log message isn't written
+ * too often.
  * </p>
  *
  * <p>
- * This object is not thread safe. This object was designed for simplicity and ease of use. This object
- * may not be suitable for code pathways with extremely high performance requirements.
+ * This object is not thread safe. This object was designed for simplicity and ease of use. This object may not be
+ * suitable for code pathways with extremely high performance requirements.
  * </p>
  */
 public class RateLimiter {
@@ -59,10 +59,8 @@ public class RateLimiter {
     /**
      * Create a new rate limiter.
      *
-     * @param time
-     * 		provides the current time
-     * @param minimumPeriod
-     * 		the minimum time that must pass between operations
+     * @param time          provides the current time
+     * @param minimumPeriod the minimum time that must pass between operations
      */
     public RateLimiter(final Time time, final Duration minimumPeriod) {
         this.time = time;
@@ -72,18 +70,16 @@ public class RateLimiter {
     /**
      * Create a new rate limiter.
      *
-     * @param time
-     * 		provides the current time
-     * @param maxFrequency
-     * 		the maximum frequency of the operation, in hz
+     * @param time         provides the current time
+     * @param maxFrequency the maximum frequency of the operation, in hz
      */
     public RateLimiter(final Time time, final double maxFrequency) {
         this(time, Duration.ofNanos((long) (1.0 / maxFrequency * SECONDS_TO_NANOSECONDS)));
     }
 
     /**
-     * Request permission to perform an operation. Returns true if it is ok to perform the operation,
-     * returns false if the operation has been performed too recently in the past.
+     * Request permission to perform an operation. Returns true if it is ok to perform the operation, returns false if
+     * the operation has been performed too recently in the past.
      *
      * @return true if the operation can be performed without violating rate limits, otherwise false
      */

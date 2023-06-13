@@ -16,9 +16,9 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.common.utility.Units.GIBIBYTES_TO_BYTES;
-import static com.swirlds.common.utility.Units.KIBIBYTES_TO_BYTES;
-import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
+import static com.swirlds.common.units.UnitConstants.GIBIBYTES_TO_BYTES;
+import static com.swirlds.common.units.UnitConstants.KIBIBYTES_TO_BYTES;
+import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 
@@ -50,8 +50,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Common static content for data files. As much as possible is package protected but some is used
- * outside.
+ * Common static content for data files. As much as possible is package protected but some is used outside.
  */
 @SuppressWarnings("rawtypes")
 public final class DataFileCommon {
@@ -63,15 +62,14 @@ public final class DataFileCommon {
     /** Size of right-justified field to use when printing indexes. */
     private static final int PRINTED_INDEX_FIELD_WIDTH = 10;
     /**
-     * Nominal value to indicate a non-existent data location. This was carefully crafted to be 0 so
-     * that a new long array of data location pointers will be initialized to be all non-existent.
+     * Nominal value to indicate a non-existent data location. This was carefully crafted to be 0 so that a new long
+     * array of data location pointers will be initialized to be all non-existent.
      */
     public static final long NON_EXISTENT_DATA_LOCATION = 0;
 
     /**
-     * The data item byte offset is packed into lower 40 bits and file index upper 24 bits. This
-     * allows for 16 million files 1 trillion bytes of data. So at one file per minute we have 30
-     * years of 1Tb files.
+     * The data item byte offset is packed into lower 40 bits and file index upper 24 bits. This allows for 16 million
+     * files 1 trillion bytes of data. So at one file per minute we have 30 years of 1Tb files.
      */
     /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3927 */
     private static final int DATA_ITEM_OFFSET_BITS = 40;
@@ -88,8 +86,7 @@ public final class DataFileCommon {
     /** Extension to use for Merkle DB data files :-) */
     private static final String FILE_EXTENSION = ".jdb";
     /**
-     * System page size used in calculations, could be read from system but for linux we are pretty
-     * safe assuming 4k
+     * System page size used in calculations, could be read from system but for linux we are pretty safe assuming 4k
      */
     public static final int PAGE_SIZE = 4096;
     /** Size of metadata footer written at end of file */
@@ -108,7 +105,7 @@ public final class DataFileCommon {
     /**
      * Create a filter to only return all new files that are smaller than given size
      *
-     * @param sizeMB max file size to accept in MB
+     * @param sizeMB                  max file size to accept in MB
      * @param maxNumberOfFilesInMerge The maximum number of files to process in a single merge
      * @return filter to filter list of files
      */
@@ -138,12 +135,11 @@ public final class DataFileCommon {
     }
 
     /**
-     * Get path for file given prefix, index and parent directory. This standardizes out file naming
-     * convention.
+     * Get path for file given prefix, index and parent directory. This standardizes out file naming convention.
      *
-     * @param filePrefix the prefix for file name
-     * @param dataFileDir the files parent directory
-     * @param index the file index
+     * @param filePrefix      the prefix for file name
+     * @param dataFileDir     the files parent directory
+     * @param index           the file index
      * @param creationInstant the date and time the file was created
      * @return path to file
      */
@@ -165,7 +161,7 @@ public final class DataFileCommon {
     /**
      * Get the packed data location from file index and byte offset.
      *
-     * @param fileIndex the index for the file
+     * @param fileIndex  the index for the file
      * @param byteOffset the offset for the data within the file in bytes
      * @return packed data location
      */
@@ -177,8 +173,8 @@ public final class DataFileCommon {
     }
 
     /**
-     * Get a friendly string with the disk data location split into its file and offset parts. Very
-     * useful for debugging and logging.
+     * Get a friendly string with the disk data location split into its file and offset parts. Very useful for debugging
+     * and logging.
      *
      * @param dataLocation Packed disk location containing file and offset.
      * @return String with split file and offset
@@ -188,8 +184,7 @@ public final class DataFileCommon {
     }
 
     /**
-     * Extract the file index from packed data location, this is the upper 24 bits. So in the range
-     * of 0 to 16 million.
+     * Extract the file index from packed data location, this is the upper 24 bits. So in the range of 0 to 16 million.
      *
      * @param dataLocation packed data location
      * @return file index
@@ -200,8 +195,8 @@ public final class DataFileCommon {
     }
 
     /**
-     * Extract the data byte offset from packed data location, this is the lower 40 bits so in the 0
-     * to 1 trillion range.
+     * Extract the data byte offset from packed data location, this is the lower 40 bits so in the 0 to 1 trillion
+     * range.
      *
      * @param dataLocation packed data location
      * @return data offset in bytes
@@ -211,11 +206,10 @@ public final class DataFileCommon {
     }
 
     /**
-     * Check if a file at path, is a data file based on name. Also checks if there is an existing
-     * write lock file.
+     * Check if a file at path, is a data file based on name. Also checks if there is an existing write lock file.
      *
      * @param filePrefix the prefix for the set of data files
-     * @param path the path to the data file
+     * @param path       the path to the data file
      * @return true if the name starts with prefix and has right extension
      */
     static boolean isFullyWrittenDataFile(final String filePrefix, final Path path) {
@@ -385,8 +379,7 @@ public final class DataFileCommon {
     }
 
     /**
-     * Delete a directory and all its contents if it exists. Does nothing if directory does not
-     * exist.
+     * Delete a directory and all its contents if it exists. Does nothing if directory does not exist.
      *
      * @param dir The directory to delete
      */

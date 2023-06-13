@@ -17,7 +17,7 @@
 package com.swirlds.platform.stats.cycle;
 
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 
 /**
  * Tracks the fraction of time spent in a single interval of a cycle
@@ -35,16 +35,14 @@ public class IntervalPercentageMetric extends PercentageMetric {
     /**
      * Update the time taken for this interval
      *
-     * @param cycleNanoTime
-     * 		the number of nanoseconds the whole cycle lasted
-     * @param intervalNanoTime
-     * 		the number of nanoseconds this interval lasted
+     * @param cycleNanoTime    the number of nanoseconds the whole cycle lasted
+     * @param intervalNanoTime the number of nanoseconds this interval lasted
      */
     public void updateTime(final long cycleNanoTime, final long intervalNanoTime) {
         super.update(toMicros(cycleNanoTime), toMicros(intervalNanoTime));
     }
 
     private int toMicros(final long nanos) {
-        return (int) (nanos * Units.NANOSECONDS_TO_MICROSECONDS);
+        return (int) (nanos * UnitConstants.NANOSECONDS_TO_MICROSECONDS);
     }
 }

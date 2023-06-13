@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
-import static com.swirlds.common.utility.Units.BYTES_PER_LONG;
+import static com.swirlds.common.units.UnitConstants.BYTES_PER_LONG;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.merkledb.serialize.AbstractFixedSizeKeySerializer;
@@ -25,9 +25,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * A key serializer used by {@link HalfDiskVirtualKeySet} when MerkleDb is operating in long key
- * mode. This key serializer only implements methods require to serialize a long key, and is not a
- * general purpose key serializer.
+ * A key serializer used by {@link HalfDiskVirtualKeySet} when MerkleDb is operating in long key mode. This key
+ * serializer only implements methods require to serialize a long key, and is not a general purpose key serializer.
  */
 @ConstructableIgnored
 public class VirtualKeySetSerializer extends AbstractFixedSizeKeySerializer<VirtualLongKey> {

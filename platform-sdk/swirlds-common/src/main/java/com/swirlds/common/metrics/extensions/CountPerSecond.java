@@ -27,13 +27,13 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.time.IntegerEpochTime;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.common.time.Time;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 
 /**
  * Platform-implementation of {@link CountPerSecond}. The granularity of this metric is a millisecond. This metric needs
  * to be reset once every 25 days in order to remain accurate. If not reset at this interval, it will no longer provide
- * accurate data. Every time a snapshot is taken (which is way more frequent than 25 days) the value is reset, because of
- * this, it is highly unlikely to get inaccurate data.
+ * accurate data. Every time a snapshot is taken (which is way more frequent than 25 days) the value is reset, because
+ * of this, it is highly unlikely to get inaccurate data.
  */
 public class CountPerSecond {
     /** An instance that provides the current time */
@@ -45,8 +45,7 @@ public class CountPerSecond {
     /**
      * The default constructor, uses the {@link OSTime}
      *
-     * @param config
-     * 		the configuration for this metric
+     * @param config the configuration for this metric
      */
     public CountPerSecond(final Metrics metrics, final CountPerSecond.Config config) {
         this(metrics, config, new IntegerEpochTime(OSTime.getInstance()));
@@ -55,10 +54,8 @@ public class CountPerSecond {
     /**
      * A constructor where a custom {@link Time} instance could be supplied
      *
-     * @param config
-     * 		the configuration for this metric
-     * @param time
-     * 		provides the current time
+     * @param config the configuration for this metric
+     * @param time   provides the current time
      */
     public CountPerSecond(final Metrics metrics, final CountPerSecond.Config config, final IntegerEpochTime time) {
         this.time = time;
@@ -90,8 +87,7 @@ public class CountPerSecond {
     /**
      * Increase the count by the value provided
      *
-     * @param count
-     * 		the amount to increase the count by
+     * @param count the amount to increase the count by
      */
     public void count(final int count) {
         accumulator.update(0, count);
@@ -100,10 +96,8 @@ public class CountPerSecond {
     /**
      * Calculates the count per second from the time provided time until now
      *
-     * @param startTime
-     * 		the time at which we started counting
-     * @param count
-     * 		the count
+     * @param startTime the time at which we started counting
+     * @param count     the count
      * @return the count per second
      */
     private double perSecond(final int startTime, final int count) {
@@ -113,12 +107,12 @@ public class CountPerSecond {
             // to have passed
             millisElapsed = 1;
         }
-        return count / (millisElapsed * Units.MILLISECONDS_TO_SECONDS);
+        return count / (millisElapsed * UnitConstants.MILLISECONDS_TO_SECONDS);
     }
 
     /**
-     * This method resets a {@code Metric}. It is for example called after startup to ensure that the
-     * startup time is not taken into consideration.
+     * This method resets a {@code Metric}. It is for example called after startup to ensure that the startup time is
+     * not taken into consideration.
      */
     public void reset() {
         accumulator.reset();
@@ -146,10 +140,8 @@ public class CountPerSecond {
         /**
          * Constructor of {@link CountPerSecond.Config}
          *
-         * @param category
-         * 		the kind of metric (metrics are grouped or filtered by this)
-         * @param name
-         * 		a short name for the metric
+         * @param category the kind of metric (metrics are grouped or filtered by this)
+         * @param name     a short name for the metric
          */
         public Config(final String category, final String name) {
             this(category, name, name, "1/s", FORMAT_10_2);
@@ -198,11 +190,10 @@ public class CountPerSecond {
         /**
          * Sets the {@link Metric#getDescription() Metric.description} in fluent style.
          *
-         * @param description
-         * 		the description
+         * @param description the description
          * @return a new configuration-object with updated {@code description}
-         * @throws IllegalArgumentException
-         * 		if {@code description} is {@code null}, too long or consists only of whitespaces
+         * @throws IllegalArgumentException if {@code description} is {@code null}, too long or consists only of
+         *                                  whitespaces
          */
         public CountPerSecond.Config withDescription(final String description) {
             return new CountPerSecond.Config(getCategory(), getName(), description, getUnit(), getFormat());
@@ -220,11 +211,9 @@ public class CountPerSecond {
         /**
          * Sets the {@link Metric#getUnit() Metric.unit} in fluent style.
          *
-         * @param unit
-         * 		the unit
+         * @param unit the unit
          * @return a new configuration-object with updated {@code unit}
-         * @throws IllegalArgumentException
-         * 		if {@code unit} is {@code null}
+         * @throws IllegalArgumentException if {@code unit} is {@code null}
          */
         public CountPerSecond.Config withUnit(final String unit) {
             return new CountPerSecond.Config(getCategory(), getName(), getDescription(), unit, getFormat());
@@ -242,11 +231,9 @@ public class CountPerSecond {
         /**
          * Sets the {@link Metric#getFormat() Metric.format} in fluent style.
          *
-         * @param format
-         * 		the format-string
+         * @param format the format-string
          * @return a new configuration-object with updated {@code format}
-         * @throws IllegalArgumentException
-         * 		if {@code format} is {@code null} or consists only of whitespaces
+         * @throws IllegalArgumentException if {@code format} is {@code null} or consists only of whitespaces
          */
         public CountPerSecond.Config withFormat(final String format) {
             return new CountPerSecond.Config(getCategory(), getName(), getDescription(), getUnit(), format);

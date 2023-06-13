@@ -27,9 +27,9 @@ package com.swirlds.demo.stats.signing;
  */
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.common.utility.Units.MILLISECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.metrics.Metrics;
@@ -134,8 +134,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
      * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a particular
      * SwirldMain class as the one to run, then it can run in Eclipse (with the green triangle icon).
      *
-     * @param args
-     * 		these are not used
+     * @param args these are not used
      */
     public static void main(final String[] args) {
         Browser.parseCommandLineArgsAndLaunch(args);

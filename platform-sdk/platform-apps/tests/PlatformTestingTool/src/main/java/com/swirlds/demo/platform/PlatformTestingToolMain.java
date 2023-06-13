@@ -58,8 +58,8 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.common.utility.Units;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.MapValueFCQ;
@@ -117,8 +117,8 @@ import org.apache.logging.log4j.MarkerManager;
 
 /**
  * This demo tests platform features and collects statistics on the running of the network and consensus systems. It
- * writes them to the screen, and also saves them to disk in a comma separated value (.csv) file.
- * Each transaction consists of an optional sequence number and random bytes.
+ * writes them to the screen, and also saves them to disk in a comma separated value (.csv) file. Each transaction
+ * consists of an optional sequence number and random bytes.
  */
 public class PlatformTestingToolMain implements SwirldMain {
 
@@ -138,11 +138,10 @@ public class PlatformTestingToolMain implements SwirldMain {
     private static final String FCM_CATEGORY = "FCM";
     private static final String VM_CATEGORY = "VM";
     /**
-     * save internal file logs and expected map to file while freezing;
-     * for restart test we should set `saveExpectedMapAtFreeze` to be true, so that
-     * ExpectedFCMFamily could be recovered at restart.
-     * Note: it might not work with TPS higher than 5k, because the nodes might not be able to finish writing file to
-     * disk before being shut down for restart.
+     * save internal file logs and expected map to file while freezing; for restart test we should set
+     * `saveExpectedMapAtFreeze` to be true, so that ExpectedFCMFamily could be recovered at restart. Note: it might not
+     * work with TPS higher than 5k, because the nodes might not be able to finish writing file to disk before being
+     * shut down for restart.
      */
     boolean saveExpectedMapAtFreeze = false;
     /////////////////////////////////////////////////////////////////////
@@ -155,8 +154,8 @@ public class PlatformTestingToolMain implements SwirldMain {
     /**
      * whether enable check after test run. When enableCheck is false TYPE_TEST_PAUSE and TYPE_TEST_SYNC transactions
      * are not needed in sequential test. As there is no TYPE_TEST_PAUSE before delete transactions, if one node is
-     * slower than other nodes, other nodes might handle slower nodes transactions after entities are deleted.
-     * This might cause performOnDeleted errors. So performOnDeleted is set to true when enableCheck is false
+     * slower than other nodes, other nodes might handle slower nodes transactions after entities are deleted. This
+     * might cause performOnDeleted errors. So performOnDeleted is set to true when enableCheck is false
      */
     private boolean enableCheck = true;
 
@@ -291,11 +290,10 @@ public class PlatformTestingToolMain implements SwirldMain {
     }
 
     /**
-     * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a
-     * particular SwirldMain class as the one to run, then it can run in Eclipse (with the green triangle icon).
+     * This is just for debugging: it allows the app to run in Eclipse. If the config.txt exists and lists a particular
+     * SwirldMain class as the one to run, then it can run in Eclipse (with the green triangle icon).
      *
-     * @param args
-     * 		these are not used
+     * @param args these are not used
      */
     public static void main(String[] args) {
         Browser.parseCommandLineArgsAndLaunch(args);
@@ -504,8 +502,7 @@ public class PlatformTestingToolMain implements SwirldMain {
     /**
      * A static function used to load PayloadCfgSimple from json configuration file
      *
-     * @param jsonFileName
-     * 		Top level json configuration for PTT App
+     * @param jsonFileName Top level json configuration for PTT App
      */
     public static PayloadCfgSimple getPayloadCfgSimple(final String jsonFileName) {
         try {
@@ -982,13 +979,12 @@ public class PlatformTestingToolMain implements SwirldMain {
     }
 
     /**
-     * Iterates on the {@link com.swirlds.virtualmap.VirtualMap} instances from the state
-     * of the given {@code platform} to compute the next id to be used by account and smart contract entities.
+     * Iterates on the {@link com.swirlds.virtualmap.VirtualMap} instances from the state of the given {@code platform}
+     * to compute the next id to be used by account and smart contract entities.
      *
-     * @param platform
-     * 		A {@link Platform instance}
-     * @return A pair of {@code Long}s, where {@code Pair.getKey()} returns the first id to be used by
-     * 		account entities and {@code Pair.getKey()} returns the first id to be used by smart contracts.
+     * @param platform A {@link Platform instance}
+     * @return A pair of {@code Long}s, where {@code Pair.getKey()} returns the first id to be used by account entities
+     * and {@code Pair.getKey()} returns the first id to be used by smart contracts.
      */
     private Pair<Long, Long> extractFirstIdForEntitiesFromSavedState(final Platform platform) {
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
@@ -1024,8 +1020,8 @@ public class PlatformTestingToolMain implements SwirldMain {
     }
 
     /**
-     * Register a {@link StateWriteToDiskCompleteListener} that writes an
-     * account balance export to the saved state folder.
+     * Register a {@link StateWriteToDiskCompleteListener} that writes an account balance export to the saved state
+     * folder.
      */
     private void registerAccountBalanceExportListener() {
         platform.getNotificationEngine().register(StateWriteToDiskCompleteListener.class, notification -> {
@@ -1205,7 +1201,7 @@ public class PlatformTestingToolMain implements SwirldMain {
      */
     private void queryInState() {
         // time in nanoseconds between successive queries
-        final long periodInNanos = Units.SECONDS_TO_NANOSECONDS / queriesSentPerSec;
+        final long periodInNanos = UnitConstants.SECONDS_TO_NANOSECONDS / queriesSentPerSec;
 
         ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(3);
         ScheduledFuture<?> future = scheduledThreadPoolExecutor.scheduleAtFixedRate(

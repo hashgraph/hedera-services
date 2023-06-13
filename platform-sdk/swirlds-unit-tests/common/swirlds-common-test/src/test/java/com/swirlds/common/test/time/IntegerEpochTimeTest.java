@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.time.IntegerEpochTime;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,8 +66,8 @@ class IntegerEpochTimeTest {
     }
 
     /**
-     * Only about 24 days worth of milliseconds can be accurately represented by a signed int. This test
-     * verifies that the elapsed time is accurate for that period, and then that it is no longer accurate
+     * Only about 24 days worth of milliseconds can be accurately represented by a signed int. This test verifies that
+     * the elapsed time is accurate for that period, and then that it is no longer accurate
      */
     @Test
     void millisElapsedExceeded() {
@@ -83,20 +83,20 @@ class IntegerEpochTimeTest {
     }
 
     /**
-     * Only about 35 minutes worth of microseconds can be accurately represented by a signed int. This test
-     * verifies that the elapsed time is accurate for that period, and then that it is no longer accurate
+     * Only about 35 minutes worth of microseconds can be accurately represented by a signed int. This test verifies
+     * that the elapsed time is accurate for that period, and then that it is no longer accurate
      */
     @Test
     void microsElapsedExceeded() {
         final int start = epochClock.getMicroTime();
         clock.tick(Duration.ofMinutes(35));
         assertEquals(
-                Duration.ofMinutes(35).toNanos() / Units.MICROSECONDS_TO_NANOSECONDS,
+                Duration.ofMinutes(35).toNanos() / UnitConstants.MICROSECONDS_TO_NANOSECONDS,
                 epochClock.microsElapsed(start),
                 "the elapsed time should be accurate");
         clock.tick(Duration.ofMinutes(1));
         assertNotEquals(
-                Duration.ofMinutes(36).toNanos() / Units.MICROSECONDS_TO_NANOSECONDS,
+                Duration.ofMinutes(36).toNanos() / UnitConstants.MICROSECONDS_TO_NANOSECONDS,
                 epochClock.microsElapsed(start),
                 "the elapsed time can no longer be accurate");
     }
@@ -105,13 +105,13 @@ class IntegerEpochTimeTest {
     void microsIntOverflow() {
         assertEquals(0, epochClock.getMicroTime(), "the clock should start at 0");
         // set the clock so that the micro epoch is just before the int overflow
-        clock.tick((long) (Integer.MAX_VALUE - 1) * Units.MICROSECONDS_TO_NANOSECONDS);
+        clock.tick((long) (Integer.MAX_VALUE - 1) * UnitConstants.MICROSECONDS_TO_NANOSECONDS);
         assertEquals(Integer.MAX_VALUE - 1, epochClock.getMicroTime(), "the metric clock should be just below max int");
         final int start = epochClock.getMicroTime();
-        clock.tick(Units.MICROSECONDS_TO_NANOSECONDS);
+        clock.tick(UnitConstants.MICROSECONDS_TO_NANOSECONDS);
         assertEquals(0, epochClock.getMicroTime(), "the clock should have overflown and should now be 0");
         assertEquals(1, epochClock.microsElapsed(start), "the elapsed time should be 1 microsecond");
-        clock.tick(55 * Units.MICROSECONDS_TO_NANOSECONDS);
+        clock.tick(55 * UnitConstants.MICROSECONDS_TO_NANOSECONDS);
         assertEquals(56, epochClock.microsElapsed(start), "the elapsed time should be 56 microseconds");
     }
 }
