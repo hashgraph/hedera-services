@@ -81,10 +81,11 @@ dependencies {
         implementation(gav("tuweni.units"))
 
         itestImplementation(project(path))
+        itestImplementation(project(":hedera-node:node-hapi"))
+        itestImplementation(gav("org.apache.commons.lang3"))
+        itestImplementation(gav("org.junit.jupiter.api"))
         itestImplementation(gav("org.testcontainers"))
         itestImplementation(gav("org.testcontainers.junit.jupiter"))
-        itestImplementation(project(":hedera-node:node-hapi"))
-        itestImplementation(gav("org.junit.jupiter.api"))
 
         eetImplementation(project(path))
         eetImplementation(gav("org.junit.jupiter.api"))

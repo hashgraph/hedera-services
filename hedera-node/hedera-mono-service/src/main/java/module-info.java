@@ -292,6 +292,7 @@ module com.hedera.node.app.service.mono {
     requires com.swirlds.logging;
     requires com.swirlds.platform;
     requires io.helidon.common.configurable;
+    requires io.helidon.config;
     requires io.helidon.grpc.core;
     requires io.helidon.grpc.server;
     requires org.apache.commons.collections4;

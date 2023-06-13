@@ -22,8 +22,9 @@ dependencies {
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
 
-        testImplementation(project(":hedera-node:node-app-service-token-impl"))
         testImplementation(project(":hedera-node:node-app"))
+        testImplementation(project(":hedera-node:node-app-service-network-admin-impl"))
+        testImplementation(project(":hedera-node:node-app-service-token-impl"))
         testImplementation(testFixtures(project(":hedera-node:node-config")))
         testImplementation(testFixtures(project(":hedera-node:node-app")))
         testImplementation(testFixtures(project(":hedera-node:node-app-spi")))

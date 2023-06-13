@@ -7,15 +7,17 @@ module com.hedera.node.app.service.token.impl {
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive javax.inject;
+    requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.app.service.evm;
     requires com.github.spotbugs.annotations;
     requires com.google.common;
     requires com.google.protobuf;
+    requires com.swirlds.common;
     requires com.swirlds.config;
     requires com.swirlds.jasperdb;
     requires org.apache.commons.lang3;
+    requires org.apache.logging.log4j;
     requires org.slf4j;
-    requires tuweni.bytes;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;

@@ -27,7 +27,6 @@ dependencies {
         testImplementation(testFixtures(project(":hedera-node:node-app-service-mono")))
         testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
         testImplementation(testFixtures(project(":hedera-node:node-config")))
-        testImplementation(gav("com.swirlds.common"))
         testImplementation(gav("org.assertj.core"))
         testImplementation(gav("org.hamcrest"))
         testImplementation(gav("org.junit.jupiter.api"))
