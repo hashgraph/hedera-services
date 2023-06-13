@@ -16,7 +16,7 @@
 
 package com.swirlds.platform;
 
-import java.util.List;
+import java.util.Set;
 
 /**
  * @deprecated will be replaced by the {@link com.swirlds.config.api.Configuration} API in near future. If you need
@@ -103,7 +103,7 @@ public final class SettingConstants {
     static final String PLAYBACK_END_TIME_STAMP_DEFAULT_VALUE = "";
     static final boolean GOSSIP_WITH_DIFFERENT_VERSIONS_DEFAULT_VALUE = false;
 
-    static final List<String> REMOVED_SETTINGS = List.of(
+    static final Set<String> REMOVED_SETTINGS = Set.of(
             "reconnectg.active",
             "reconnectg.reconnectWindowSeconds",
             "reconnectg.fallenBehindThreshold",
