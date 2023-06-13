@@ -300,7 +300,6 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param genesisStateBuilder      used to construct a genesis state if no suitable state from disk can be found
      * @param loadedSignedState        used to initialize the loaded state
      * @param emergencyRecoveryManager used in emergency recovery.
-     * @param softwareUpgrade          if true this is a software upgrade, if false then this is just a restart
      */
     SwirldsPlatform(
             @NonNull final PlatformContext platformContext,
@@ -313,8 +312,7 @@ public class SwirldsPlatform implements Platform, Startable {
             @NonNull final SoftwareVersion appVersion,
             @NonNull final Supplier<SwirldState> genesisStateBuilder,
             @NonNull final ReservedSignedState loadedSignedState,
-            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
-            final boolean softwareUpgrade) {
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
         final Time time = OSTime.getInstance();
@@ -352,14 +350,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         registerAddressBookMetrics(metrics, initialAddressBook, selfId);
 
-        this.recycleBin = recycleBin;
-        if (softwareUpgrade) {
-            try {
-                recycleBin.clear();
-            } catch (final IOException e) {
-                throw new UncheckedIOException("Failed to clear recycle bin", e);
-            }
-        }
+        this.recycleBin = Objects.requireNonNull(recycleBin);
 
         this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
 

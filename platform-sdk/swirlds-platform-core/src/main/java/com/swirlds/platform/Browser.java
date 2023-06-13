@@ -675,6 +675,15 @@ public class Browser {
                 final boolean softwareUpgrade =
                         BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState.getNullable());
 
+                if (softwareUpgrade) {
+                    try {
+                        logger.info(STARTUP.getMarker(), "Clearing recycle bin as part of software upgrade workflow.");
+                        recycleBin.clear();
+                    } catch (final IOException e) {
+                        throw new UncheckedIOException("Failed to clear recycle bin", e);
+                    }
+                }
+
                 // Initialize the address book from the configuration and platform saved state.
                 final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
                         appVersion,
@@ -701,8 +710,7 @@ public class Browser {
                         appVersion,
                         appMain::newState,
                         loadedSignedState,
-                        emergencyRecoveryManager,
-                        softwareUpgrade);
+                        emergencyRecoveryManager);
                 platforms.add(platform);
 
                 new InfoMember(infoSwirld, instanceNumber, platform);
