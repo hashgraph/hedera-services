@@ -159,7 +159,7 @@ public class OutboundConnectionCreator {
      */
     private byte[] getConnectAddressIpv4(final Address from, final Address to) {
         boolean fromIsLocal = AddressBookNetworkUtils.isLocal(from);
-        boolean toIsLocal = AddressBookNetworkUtils.isLocal(to);
+        final boolean toIsLocal = AddressBookNetworkUtils.isLocal(to);
         if (fromIsLocal && toIsLocal && settings.useLoopbackIp()) {
             return LOCALHOST;
         } else if (to.isLocalTo(from)) {
