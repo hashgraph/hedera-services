@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -148,6 +149,14 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
                     tokenStore,
                     tokenRelStore);
 
+            // Update treasury's NFT count
+            final var treasuryAcct = accountStore.get(asAccount(token.treasuryAccountNumber()));
+            final var updatedTreasuryAcct = treasuryAcct
+                    .copyBuilder()
+                    .numberOwnedNfts(treasuryAcct.numberOwnedNfts() - nftSerialNums.size())
+                    .build();
+            accountStore.put(updatedTreasuryAcct);
+
             // Remove the nft objects
             nftSerialNums.forEach(serialNum -> nftStore.remove(tokenId, serialNum));
         }
@@ -166,7 +175,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
         validateTrue(token.supplyKey() != null, TOKEN_HAS_NO_SUPPLY_KEY);
 
-        final var treasuryAcctId = BaseCryptoHandler.asAccount(token.treasuryAccountNumber());
+        final var treasuryAcctId = asAccount(token.treasuryAccountNumber());
         final var treasuryRel = TokenHandlerHelper.getIfUsable(treasuryAcctId, tokenId, tokenRelStore);
         return new ValidationResult(token, treasuryRel);
     }

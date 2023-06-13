@@ -650,6 +650,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .accountNumber(ACCOUNT_1339.accountNumOrThrow())
                     .numberTreasuryTitles(1)
                     .numberPositiveBalances(1)
+                    .numberOwnedNfts(3)
                     .build());
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
                     .tokenNumber(TOKEN_123.tokenNum())
@@ -693,6 +694,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             Assertions.assertThat(treasuryAcct.numberTreasuryTitles()).isEqualTo(1);
             // The treasury still owns at least one of the NFTs, so its positive balances shouldn't change
             Assertions.assertThat(treasuryAcct.numberPositiveBalances()).isEqualTo(1);
+            Assertions.assertThat(treasuryAcct.numberOwnedNfts()).isEqualTo(1);
             final var treasuryRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_123);
             Assertions.assertThat(treasuryRel.balance()).isEqualTo(1);
             Assertions.assertThat(writableNftStore.get(TOKEN_123, 1L)).isNull();
@@ -708,6 +710,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .accountNumber(ACCOUNT_1339.accountNumOrThrow())
                     .numberTreasuryTitles(1)
                     .numberPositiveBalances(1)
+                    .numberOwnedNfts(3)
                     .build());
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
                     .tokenNumber(TOKEN_123.tokenNum())
@@ -752,6 +755,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             Assertions.assertThat(treasuryAcct.numberTreasuryTitles()).isEqualTo(1);
             // The treasury no longer owns any NFTs, so its positive balances should decrease by 1
             Assertions.assertThat(treasuryAcct.numberPositiveBalances()).isZero();
+            Assertions.assertThat(treasuryAcct.numberOwnedNfts()).isZero();
             final var treasuryRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_123);
             Assertions.assertThat(treasuryRel).isNotNull();
             Assertions.assertThat(treasuryRel.balance()).isZero();
