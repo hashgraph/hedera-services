@@ -37,6 +37,13 @@ public final class AddressBookNetworkUtils {
 
     private AddressBookNetworkUtils() {}
 
+    /**
+     * Check if the address is local to the machine.
+     *
+     * @param address the address to check
+     * @return true if the address is local to the machine, false otherwise
+     * @throws IllegalStateException if there is an error while checking if the address is local.
+     */
     public static boolean isLocal(@NonNull final Address address) {
         Objects.requireNonNull(address, "The address must not be null.");
         try {
@@ -48,7 +55,7 @@ public final class AddressBookNetworkUtils {
                     address.getAddressInternalIpv4(),
                     address.getNodeId(),
                     e);
-            throw new IllegalStateException("Error while checking if ip of address was local", e);
+            return false;
         }
     }
 
@@ -60,7 +67,7 @@ public final class AddressBookNetworkUtils {
      * @param addressBook the address book to check
      * @return the number of local addresses
      */
-    public static int getOwnHostCount(final AddressBook addressBook) {
+    public static int getLocalAddressCount(final AddressBook addressBook) {
         int count = 0;
         for (final Address address : addressBook) {
             if (isLocal(address)) {

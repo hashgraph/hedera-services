@@ -28,7 +28,7 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHie
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setInsets;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
-import static com.swirlds.platform.state.address.AddressBookNetworkUtils.getOwnHostCount;
+import static com.swirlds.platform.state.address.AddressBookNetworkUtils.getLocalAddressCount;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
@@ -792,7 +792,7 @@ public class Browser {
             SignedStateFileUtils.cleanStateDirectory(mainClassName);
         }
 
-        final int ownHostCount = Math.min(getOwnHostCount(addressBook), appMains.size());
+        final int ownHostCount = Math.min(getLocalAddressCount(addressBook), appMains.size());
         logger.info(STARTUP.getMarker(), "there are {} nodes with local IP addresses", ownHostCount);
 
         // if the local machine did not match any address in the address book then we should log an error and exit

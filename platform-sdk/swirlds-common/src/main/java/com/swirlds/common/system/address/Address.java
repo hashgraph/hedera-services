@@ -49,6 +49,7 @@ public class Address implements SelfSerializable {
         public static final int ORIGINAL = 3;
         /**
          * The NodeId is SelfSerializable.
+         *
          * @since 0.39.0
          */
         public static final int SELF_SERIALIZABLE_NODE_ID = 4;
@@ -806,11 +807,11 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Checks for equality with another addresses without checking the equality of weight or ownHost values.
+     * Checks for equality with another addresses without checking the equality of weight.
      *
      * @param address The other address to check for equality with this address.
-     * @return true if all values in the other address match this address without consideration of weight or ownHost
-     * values, false otherwise.
+     * @return true if all values in the other address match this address without consideration of weight, false
+     * otherwise.
      */
     public boolean equalsWithoutWeight(@NonNull final Address address) {
         return Objects.equals(id, address.id)

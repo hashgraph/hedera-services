@@ -34,11 +34,12 @@ public class AddressBookUtils {
     private AddressBookUtils() {}
 
     /**
-     * Serializes an AddresBook to text in the form used by config.txt.
+     * Serializes an AddressBook to text in the form used by config.txt.
      *
      * @param addressBook the address book to serialize.
      * @return the config.txt compatible text representation of the address book.
      */
+    @NonNull
     public static String addressBookConfigText(@NonNull final AddressBook addressBook) {
         Objects.requireNonNull(addressBook, "The addressBook must not be null.");
         final TextTable table = new TextTable().setBordersEnabled(false);
@@ -93,6 +94,7 @@ public class AddressBookUtils {
      * @return the parsed address or null if the line is a comment.
      * @throws ParseException if there is any problem with parsing the address.
      */
+    @NonNull
     public static Address parseAddressText(@NonNull final String addressText) throws ParseException {
         Objects.requireNonNull(addressText, "The addressText must not be null.");
         // lines may have comments which start with the first # character.

@@ -106,7 +106,7 @@ public final class GuiUtils {
         final int rightGap = (SystemUtils.IS_OS_WINDOWS ? 50 : 0); // extra space at right screen edge
         final Rectangle screenSize =
                 GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
-        final int winCount = AddressBookNetworkUtils.getOwnHostCount(addressBook);
+        final int winCount = AddressBookNetworkUtils.getLocalAddressCount(addressBook);
         final int contentWidth =
                 (screenSize.width - leftGap - rightGap - getInsets().left - getInsets().right) / winCount;
         final int x = screenSize.x + leftGap + contentWidth * winNum;

@@ -50,11 +50,21 @@ public class LegacyConfigProperties {
 
     private AddressBook addressBook = null;
 
+    /**
+     * Set the address book.
+     *
+     * @param addressBook the address book
+     */
     public void setAddressBook(@NonNull final AddressBook addressBook) {
         Objects.requireNonNull(addressBook, "addressBook");
         this.addressBook = addressBook.copy();
     }
 
+    /**
+     * Get the address book. If no address book is set, an empty address book is returned.
+     *
+     * @return the address book
+     */
     @NonNull
     public AddressBook getAddressBook() {
         if (addressBook == null) {

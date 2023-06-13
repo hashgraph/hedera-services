@@ -116,9 +116,9 @@ class TopologyTest {
     @ParameterizedTest
     @MethodSource("fullyConnected")
     void testFullyConnectedUnidirectionalTopology(final int numNodes, final int numNeighbors, final long ignoredSeed) {
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator().setSize(numNodes).build();
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
-            final AddressBook addressBook =
-                    new RandomAddressBookGenerator().setSize(numNodes).build();
             final NodeId outOfBoundsId = addressBook.getNextNodeId();
             final NodeId thisNodeId = addressBook.getNodeId(thisNode);
             final NetworkTopology topology = new StaticTopology(addressBook, thisNodeId, numNeighbors);
