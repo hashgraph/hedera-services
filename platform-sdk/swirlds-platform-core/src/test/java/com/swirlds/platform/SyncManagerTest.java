@@ -112,7 +112,7 @@ public class SyncManagerTest {
                     return null;
                 }
             };
-            Configuration configuration = new TestConfigBuilder()
+            final Configuration configuration = new TestConfigBuilder()
                     .withValue("reconnect.fallenBehindThreshold", "0.25")
                     .getOrCreateConfig();
             final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);

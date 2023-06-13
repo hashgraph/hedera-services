@@ -190,10 +190,10 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator().build();
 
-        Configuration configuration = new TestConfigBuilder()
+        final Configuration configuration = new TestConfigBuilder()
                 .withValue("event.maxEventQueueForCons", 500)
                 .getOrCreateConfig();
-        PlatformContext platformContext = TestPlatformContextBuilder.create()
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)
                 .build();
 

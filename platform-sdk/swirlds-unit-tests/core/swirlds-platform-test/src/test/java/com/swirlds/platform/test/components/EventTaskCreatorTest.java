@@ -47,6 +47,7 @@ import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -91,6 +92,7 @@ class EventTaskCreatorTest {
                 () -> random);
     }
 
+    @NonNull
     private EventConfig configRandomEventProbability() {
         return new TestConfigBuilder()
                 .withValue("event.randomEventProbability", 1)
@@ -98,6 +100,7 @@ class EventTaskCreatorTest {
                 .getConfigData(EventConfig.class);
     }
 
+    @NonNull
     private EventConfig configRescueChildlessInverseProbability() {
         return new TestConfigBuilder()
                 .withValue("event.rescueChildlessInverseProbability", 5)
