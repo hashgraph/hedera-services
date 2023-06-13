@@ -181,6 +181,73 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    void handleWorksForFungibleCreateWithSelfDenominatedToken() {
+        setUpTxnContext();
+        final var customFees = List.of(
+                withFixedFee(fixedFee.copyBuilder()
+                        .denominatingTokenId(TokenID.newBuilder().tokenNum(0L).build())
+                        .build()),
+                withFractionalFee(fractionalFee));
+        txn = new TokenCreateBuilder().withCustomFees(customFees).build();
+        given(handleContext.body()).willReturn(txn);
+
+        assertThat(writableTokenStore.get(newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(payerId, newTokenId)).isNull();
+
+        subject.handle(handleContext);
+
+        assertThat(writableTokenStore.get(newTokenId)).isNotNull();
+        final var token = writableTokenStore.get(newTokenId);
+
+        assertThat(token.treasuryAccountNumber()).isEqualTo(treasuryId.accountNum());
+        assertThat(token.tokenNumber()).isEqualTo(newTokenId.tokenNum());
+        assertThat(token.totalSupply()).isEqualTo(1000L);
+        assertThat(token.tokenType()).isEqualTo(TokenType.FUNGIBLE_COMMON);
+        assertThat(token.expiry())
+                .isEqualTo(consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond());
+        assertThat(token.freezeKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.kycKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.adminKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.wipeKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.supplyKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.feeScheduleKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.autoRenewSecs()).isEqualTo(autoRenewSecs);
+        assertThat(token.autoRenewAccountNumber()).isEqualTo(autoRenewAccountId.accountNum());
+        assertThat(token.decimals()).isZero();
+        assertThat(token.name()).isEqualTo("TestToken");
+        assertThat(token.symbol()).isEqualTo("TT");
+        assertThat(token.memo()).isEqualTo("test token");
+        assertThat(token.customFees()).isEqualTo(customFees);
+
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNotNull();
+        final var tokenRel = writableTokenRelStore.get(treasuryId, newTokenId);
+
+        assertThat(tokenRel.balance()).isEqualTo(1000L);
+        assertThat(tokenRel.deleted()).isFalse();
+        assertThat(tokenRel.tokenNumber()).isEqualTo(newTokenId.tokenNum());
+        assertThat(tokenRel.accountNumber()).isEqualTo(treasuryId.accountNum());
+        assertThat(tokenRel.kycGranted()).isFalse();
+        assertThat(tokenRel.automaticAssociation()).isFalse();
+        assertThat(tokenRel.frozen()).isFalse();
+        assertThat(tokenRel.nextToken()).isZero();
+        assertThat(tokenRel.previousToken()).isZero();
+
+        assertThat(writableTokenRelStore.get(payerId, newTokenId)).isNotNull();
+        final var feeCollectorRel = writableTokenRelStore.get(payerId, newTokenId);
+
+        assertThat(feeCollectorRel.balance()).isEqualTo(0L);
+        assertThat(feeCollectorRel.deleted()).isFalse();
+        assertThat(feeCollectorRel.tokenNumber()).isEqualTo(newTokenId.tokenNum());
+        assertThat(feeCollectorRel.accountNumber()).isEqualTo(payerId.accountNum());
+        assertThat(feeCollectorRel.kycGranted()).isFalse();
+        assertThat(feeCollectorRel.automaticAssociation()).isFalse();
+        assertThat(feeCollectorRel.frozen()).isFalse();
+        assertThat(feeCollectorRel.nextToken()).isZero();
+        assertThat(feeCollectorRel.previousToken()).isZero();
+    }
+
+    @Test
     void failsIfAssociationLimitExceeded() {
         setUpTxnContext();
         configuration = new HederaTestConfigBuilder()
@@ -225,6 +292,14 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsIfAssociationLimitExceededWhileAssociatingCollector() {
         setUpTxnContext();
+        final var customFees = List.of(
+                withFixedFee(fixedFee.copyBuilder()
+                        .denominatingTokenId(TokenID.newBuilder().tokenNum(0L).build())
+                        .build()),
+                withFractionalFee(fractionalFee));
+        txn = new TokenCreateBuilder().withCustomFees(customFees).build();
+        given(handleContext.body()).willReturn(txn);
+
         configuration = new HederaTestConfigBuilder()
                 .withValue("entities.limitTokenAssociations", "true")
                 .withValue("tokens.maxPerAccount", "1")
@@ -233,6 +308,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThat(writableTokenStore.get(newTokenId)).isNull();
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(payerId, newTokenId)).isNull();
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -242,6 +318,14 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsIfAssociationAlreadyExistsWhileAssociatingCollector() {
         setUpTxnContext();
+        final var customFees = List.of(
+                withFixedFee(fixedFee.copyBuilder()
+                        .denominatingTokenId(TokenID.newBuilder().tokenNum(0L).build())
+                        .build()),
+                withFractionalFee(fractionalFee));
+        txn = new TokenCreateBuilder().withCustomFees(customFees).build();
+        given(handleContext.body()).willReturn(txn);
+
         configuration = new HederaTestConfigBuilder()
                 .withValue("entities.limitTokenAssociations", "true")
                 .withValue("tokens.maxPerAccount", "10")
@@ -254,10 +338,10 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         // Just to simulate existing token association , add to store. Only for testing
         writableTokenRelStore.put(TokenRelation.newBuilder()
                 .tokenNumber(newTokenId.tokenNum())
-                .accountNumber(treasuryId.accountNum())
+                .accountNumber(payerId.accountNum())
                 .balance(1000L)
                 .build());
-        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNotNull();
+        assertThat(writableTokenRelStore.get(payerId, newTokenId)).isNotNull();
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
