@@ -44,6 +44,8 @@ RUN mkdir /opt/hedera/services/test-clients
 COPY hedera-node/test-clients /opt/hedera/services/test-clients
 RUN mkdir /opt/hedera/services/build-logic
 COPY build-logic /opt/hedera/services/build-logic
+RUN mkdir /opt/hedera/services/hedera-platform
+COPY hedera-platform /opt/hedera/services/hedera-platform
 RUN mkdir /opt/hedera/services/gradle
 COPY gradle /opt/hedera/services/gradle
 COPY gradlew /opt/hedera/services/gradlew
