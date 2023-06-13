@@ -33,6 +33,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_ST
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
@@ -56,6 +58,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -157,7 +160,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.feeScheduleKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.autoRenewSecs()).isEqualTo(autoRenewSecs);
         assertThat(token.autoRenewAccountNumber()).isEqualTo(autoRenewAccountId.accountNum());
-        assertThat(token.decimals()).isEqualTo(0);
+        assertThat(token.decimals()).isZero();
         assertThat(token.name()).isEqualTo("TestToken");
         assertThat(token.symbol()).isEqualTo("TT");
         assertThat(token.memo()).isEqualTo("test token");
@@ -173,8 +176,92 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(tokenRel.kycGranted()).isFalse();
         assertThat(tokenRel.automaticAssociation()).isFalse();
         assertThat(tokenRel.frozen()).isFalse();
-        assertThat(tokenRel.nextToken()).isEqualTo(0L);
-        assertThat(tokenRel.previousToken()).isEqualTo(0L);
+        assertThat(tokenRel.nextToken()).isZero();
+        assertThat(tokenRel.previousToken()).isZero();
+    }
+
+    @Test
+    void failsIfAssociationLimitExceeded() {
+        setUpTxnContext();
+        configuration = new HederaTestConfigBuilder()
+                .withValue("entities.limitTokenAssociations", "true")
+                .withValue("tokens.maxPerAccount", "0")
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(configuration);
+
+        assertThat(writableTokenStore.get(newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED));
+    }
+
+    @Test
+    void failsIfAssociationAlreadyExists() {
+        setUpTxnContext();
+        configuration = new HederaTestConfigBuilder()
+                .withValue("entities.limitTokenAssociations", "true")
+                .withValue("tokens.maxPerAccount", "10")
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(configuration);
+
+        assertThat(writableTokenStore.get(newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
+
+        // Just to simulate existing token association , add to store. Only for testing
+        writableTokenRelStore.put(TokenRelation.newBuilder()
+                .tokenNumber(newTokenId.tokenNum())
+                .accountNumber(treasuryId.accountNum())
+                .balance(1000L)
+                .build());
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNotNull();
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT));
+    }
+
+    @Test
+    void failsIfAssociationLimitExceededWhileAssociatingCollector() {
+        setUpTxnContext();
+        configuration = new HederaTestConfigBuilder()
+                .withValue("entities.limitTokenAssociations", "true")
+                .withValue("tokens.maxPerAccount", "1")
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(configuration);
+
+        assertThat(writableTokenStore.get(newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED));
+    }
+
+    @Test
+    void failsIfAssociationAlreadyExistsWhileAssociatingCollector() {
+        setUpTxnContext();
+        configuration = new HederaTestConfigBuilder()
+                .withValue("entities.limitTokenAssociations", "true")
+                .withValue("tokens.maxPerAccount", "10")
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(configuration);
+
+        assertThat(writableTokenStore.get(newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
+
+        // Just to simulate existing token association , add to store. Only for testing
+        writableTokenRelStore.put(TokenRelation.newBuilder()
+                .tokenNumber(newTokenId.tokenNum())
+                .accountNumber(treasuryId.accountNum())
+                .balance(1000L)
+                .build());
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNotNull();
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT));
     }
 
     @Test
@@ -215,7 +302,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThat(token.treasuryAccountNumber()).isEqualTo(treasuryId.accountNum());
         assertThat(token.tokenNumber()).isEqualTo(newTokenId.tokenNum());
-        assertThat(token.totalSupply()).isEqualTo(0L);
+        assertThat(token.totalSupply()).isZero();
         assertThat(token.tokenType()).isEqualTo(TokenType.NON_FUNGIBLE_UNIQUE);
         assertThat(token.expiry())
                 .isEqualTo(consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond());
@@ -227,7 +314,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.feeScheduleKey()).isEqualTo(A_COMPLEX_KEY);
         assertThat(token.autoRenewSecs()).isEqualTo(autoRenewSecs);
         assertThat(token.autoRenewAccountNumber()).isEqualTo(autoRenewAccountId.accountNum());
-        assertThat(token.decimals()).isEqualTo(0);
+        assertThat(token.decimals()).isZero();
         assertThat(token.name()).isEqualTo("TestToken");
         assertThat(token.symbol()).isEqualTo("TT");
         assertThat(token.memo()).isEqualTo("test token");
@@ -236,15 +323,15 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNotNull();
         final var tokenRel = writableTokenRelStore.get(treasuryId, newTokenId);
 
-        assertThat(tokenRel.balance()).isEqualTo(0L);
+        assertThat(tokenRel.balance()).isZero();
         assertThat(tokenRel.deleted()).isFalse();
         assertThat(tokenRel.tokenNumber()).isEqualTo(newTokenId.tokenNum());
         assertThat(tokenRel.accountNumber()).isEqualTo(treasuryId.accountNum());
         assertThat(tokenRel.kycGranted()).isFalse();
         assertThat(tokenRel.automaticAssociation()).isFalse();
         assertThat(tokenRel.frozen()).isFalse();
-        assertThat(tokenRel.nextToken()).isEqualTo(0L);
-        assertThat(tokenRel.previousToken()).isEqualTo(0L);
+        assertThat(tokenRel.nextToken()).isZero();
+        assertThat(tokenRel.previousToken()).isZero();
     }
 
     @Test
@@ -494,6 +581,14 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    void succeedsIfFreezeDefaultWithFreezeKey() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withFreezeDefault().build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
+    }
+
+    @Test
     void failsOnInvalidMemo() {
         setUpTxnContext();
         txn = new TokenCreateBuilder().withMemo("\0").build();
@@ -575,6 +670,13 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(TOKEN_HAS_NO_SUPPLY_KEY));
+    }
+
+    @Test
+    void succeedsWithSupplyKeyOnNftCreateInPureChecks() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withUniqueToken().build();
+        assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
     }
     /* --------------------------------- Helpers */
     /**

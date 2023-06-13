@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows.dispatcher;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionRecord;
@@ -86,6 +85,8 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case CRYPTO_CREATE_ACCOUNT -> dispatchCryptoCreate(context);
             case CRYPTO_DELETE -> dispatchCryptoDelete(context);
             case CRYPTO_UPDATE_ACCOUNT -> dispatchCryptoUpdate(context);
+            case CRYPTO_APPROVE_ALLOWANCE -> dispatchCryptoApproveAllowance(context);
+            case CRYPTO_DELETE_ALLOWANCE -> dispatchCryptoDeleteAllowance(context);
                 /* ------------------ token -------------------------- */
             case TOKEN_ASSOCIATE -> dispatchTokenAssociate(context);
             case TOKEN_DISSOCIATE -> dispatchTokenDissociate(context);
@@ -97,6 +98,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case TOKEN_UNPAUSE -> dispatchTokenUnpause(context);
             case TOKEN_CREATION -> dispatchTokenCreate(context);
             case TOKEN_FEE_SCHEDULE_UPDATE -> dispatchTokenFeeScheduleUpdate(context);
+            case TOKEN_DELETION -> dispatchTokenDeletion(context);
                 /* ------------------ admin -------------------------- */
             case FREEZE -> dispatchFreeze(context);
                 /* ------------------ util -------------------------- */
@@ -104,6 +106,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             default -> throw new IllegalArgumentException(TYPE_NOT_SUPPORTED);
         }
     }
+
     // For all the below methods, commit is not called from stores, as it is responsibility of
     // handle workflow to call commit on WritableKVState.
     private void dispatchConsensusCreateTopic(@NonNull final HandleContext handleContext) {
@@ -249,16 +252,22 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
         requireNonNull(handleContext);
         final var handler = handlers.tokenCreateHandler();
         handler.handle(handleContext);
-        finishTokenCreate(handleContext);
-    }
-
-    protected void finishTokenCreate(@NonNull final HandleContext handleContext) {
-        // If token can't be created, due to the usage of a price regime, throw an exception
-        validateTrue(usageLimits.areCreatableTokens(1), MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
     }
 
     private void dispatchTokenDeletion(@NonNull final HandleContext handleContext) {
         final var handler = handlers.tokenDeleteHandler();
         handler.handle(handleContext);
+    }
+
+    private void dispatchCryptoApproveAllowance(final HandleContext handleContext) {
+        final var handler = handlers.cryptoApproveAllowanceHandler();
+        handler.handle(handleContext);
+        finishConsensusCreateTopic(handleContext);
+    }
+
+    private void dispatchCryptoDeleteAllowance(final HandleContext handleContext) {
+        final var handler = handlers.cryptoDeleteAllowanceHandler();
+        handler.handle(handleContext);
+        finishConsensusCreateTopic(handleContext);
     }
 }

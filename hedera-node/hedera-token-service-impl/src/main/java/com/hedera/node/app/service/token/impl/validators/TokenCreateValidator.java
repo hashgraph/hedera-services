@@ -22,20 +22,19 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_INITIAL_S
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.TokenSupplyType.FINITE;
 import static com.hedera.hapi.node.base.TokenSupplyType.INFINITE;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -163,18 +162,29 @@ public class TokenCreateValidator {
         }
     }
 
+    /**
+     * Validates if the token and account already have relationship and if the account has reached the limit of
+     * associations.
+     * These checks need to be done before the token is created and associated to treasury or any custom
+     * fee collector accounts.
+     * @param entitiesConfig entities config
+     * @param tokensConfig tokens config
+     * @param account account to associate with
+     * @param token token to associate with
+     * @param tokenRelStore token relation store
+     */
     public void validateAssociation(
-            final EntitiesConfig entitiesConfig,
-            final TokensConfig tokensConfig,
-            final Account treasury,
-            final Token newToken,
-            final WritableTokenRelationStore tokenRelStore) {
-        validateFalse(
+            @NonNull final EntitiesConfig entitiesConfig,
+            @NonNull final TokensConfig tokensConfig,
+            @NonNull final Account account,
+            @NonNull final Token token,
+            @NonNull final WritableTokenRelationStore tokenRelStore) {
+        validateTrue(
                 entitiesConfig.limitTokenAssociations()
-                        && treasury.numberAssociations() + 1 > tokensConfig.maxPerAccount(),
+                        && account.numberAssociations() + 1 <= tokensConfig.maxPerAccount(),
                 TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-        validateFalse(
-                tokenRelStore.get(asAccount(treasury.accountNumber()), asToken(newToken.tokenNumber())) != null,
+        validateTrue(
+                tokenRelStore.get(asAccount(account.accountNumber()), asToken(token.tokenNumber())) == null,
                 TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
     }
 }

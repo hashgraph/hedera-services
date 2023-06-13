@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.spi.validation;
 
-import static com.hedera.node.app.spi.key.KeyUtils.isValid;
-
 import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -70,8 +68,4 @@ public interface AttributeValidator {
      * @return true if immutable entity with the key
      */
     boolean isImmutableKey(@NonNull Key key);
-
-    default boolean isValidKey(Key key) {
-        return isValid(key);
-    }
 }

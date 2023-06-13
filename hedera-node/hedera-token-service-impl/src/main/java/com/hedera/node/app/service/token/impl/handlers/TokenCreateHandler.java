@@ -104,6 +104,10 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var tokenStore = context.writableStore(WritableTokenStore.class);
         final var tokenRelationStore = context.writableStore(WritableTokenRelationStore.class);
 
+        /* Validate if the current token can be created */
+        validateTrue(tokenStore.sizeOfState() + 1 <= tokensConfig.maxNumber(),
+                TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+
         // validate fields in the transaction body that involves checking with
         // dynamic properties or state.
         final var resolvedExpiryMeta = validateSemantics(context, accountStore, op, tokensConfig);
@@ -156,13 +160,16 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var treasury = accountStore.get(AccountID.newBuilder()
                 .accountNum(newToken.treasuryAccountNumber())
                 .build());
+        // Validate if token relation can be created between treasury and new token
+        // If this succeeds, create and link token relation.
         tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, treasury, newToken, tokenRelStore);
-
         createAndLinkTokenRels(treasury, List.of(newToken), accountStore, tokenRelStore);
 
         for (final var customFee : requireCollectorAutoAssociation) {
             // This should exist as it is validated in validateSemantics
             final var collector = accountStore.get(customFee.feeCollectorAccountIdOrThrow());
+            // Validate if token relation can be created between collector and new token
+            // If this succeeds, create and link token relation.
             tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, collector, newToken, tokenRelStore);
             createAndLinkTokenRels(collector, List.of(newToken), accountStore, tokenRelStore);
         }
