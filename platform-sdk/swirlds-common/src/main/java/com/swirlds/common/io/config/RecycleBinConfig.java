@@ -17,7 +17,6 @@
 package com.swirlds.common.io.config;
 
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
@@ -25,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 
 /**
- * Configuration for the {@link RecycleBin} class.
+ * Configuration for the {@link com.swirlds.common.io.utility.RecycleBin} class.
  *
  * @param recycleBinPath the directory where recycled files are stored, relative to the saved state directory defined by
  *                       {@link StateConfig#savedStateDirectory()}.

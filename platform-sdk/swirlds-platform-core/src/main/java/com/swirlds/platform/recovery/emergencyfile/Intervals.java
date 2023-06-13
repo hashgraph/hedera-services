@@ -14,17 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.demo.consistency;
-
-import com.swirlds.config.api.ConfigData;
-import com.swirlds.config.api.ConfigProperty;
+package com.swirlds.platform.recovery.emergencyfile;
 
 /**
- * Config for consistency testing tool
- *
- * @param logfileDirectory the directory where consistency information is stored, relative to
- * {@link com.swirlds.common.config.StateConfig#savedStateDirectory()}.
+ * The intervals at which various stream files are written, in milliseconds.
+ * @param record record stream files are written at this interval, in milliseconds
+ * @param event event stream files are written at this interval, in milliseconds
+ * @param balances balance files are written at this interval, in milliseconds
  */
-@ConfigData("consistencyTestingTool")
-public record ConsistencyTestingToolConfig(
-        @ConfigProperty(defaultValue = "consistency-test") String logfileDirectory) {}
+public record Intervals(long record, long event, long balances) {}
