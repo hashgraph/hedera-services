@@ -19,6 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.common.system.EventCreationRuleResponse.CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.DONT_CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
+import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -46,6 +47,7 @@ import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
+import java.util.Random;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -79,7 +81,8 @@ public class SyncManagerTest {
         public SyncManagerTestData(final SwirldStateManager swirldStateManager) {
             freezeManager = mock(FreezeManager.class);
             startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
-            hashgraph = new DummyHashgraph(new NodeId());
+            final Random random = getRandomPrintSeed();
+            hashgraph = new DummyHashgraph(random, 0);
             eventTransactionPool = spy(new EventTransactionPool(new NoOpMetrics(), null, null));
 
             this.swirldStateManager = swirldStateManager;
@@ -123,7 +126,7 @@ public class SyncManagerTest {
                     new EventCreationRules(List.of(startUpEventFrozenManager, freezeManager)),
                     criticalQuorum,
                     hashgraph.getAddressBook(),
-                    new FallenBehindManagerImpl(selfId, connectionGraph, () -> {}, () -> {}, config));
+                    new FallenBehindManagerImpl(addressBook, selfId, connectionGraph, () -> {}, () -> {}, config));
         }
     }
 
@@ -131,7 +134,6 @@ public class SyncManagerTest {
         Settings.getInstance().setEventIntakeQueueThrottleSize(100);
         Settings.getInstance().setMaxIncomingSyncsInc(10);
         Settings.getInstance().setMaxOutgoingSyncs(10);
-        Settings.getInstance().getState().saveStatePeriod = 100;
         Settings.getInstance().setStaleEventPreventionThreshold(10);
     }
 
@@ -152,8 +154,8 @@ public class SyncManagerTest {
         assertNull(test.syncManager.getNeededForFallenBehind());
 
         // neighbors 0 and 1 report fallen behind
-        test.syncManager.reportFallenBehind(new NodeId(neighbors[0]));
-        test.syncManager.reportFallenBehind(new NodeId(neighbors[1]));
+        test.syncManager.reportFallenBehind(test.addressBook.getNodeId(neighbors[0]));
+        test.syncManager.reportFallenBehind(test.addressBook.getNodeId(neighbors[1]));
 
         // we still dont have enough reports that we have fallen behind, we need more than [fallenBehindThreshold] of
         // the neighbors
@@ -161,23 +163,23 @@ public class SyncManagerTest {
 
         // add more reports
         for (int i = 2; i < 10; i++) {
-            test.syncManager.reportFallenBehind(new NodeId(neighbors[i]));
+            test.syncManager.reportFallenBehind(test.addressBook.getNodeId(neighbors[i]));
         }
 
         // we are still missing 1 report
         assertFalse(test.syncManager.hasFallenBehind());
 
         // get the list of nodes we need to call
-        final List<Long> list = test.syncManager.getNeededForFallenBehind();
-        for (final Long nodeId : list) {
+        final List<NodeId> list = test.syncManager.getNeededForFallenBehind();
+        for (final NodeId nodeId : list) {
             // none of the nodes we need to call should be those who already reported we have fallen behind
             for (int i = 0; i < 10; i++) {
-                assertTrue(nodeId != neighbors[i]);
+                assertTrue(test.addressBook.getIndexOfNodeId(nodeId) != neighbors[i]);
             }
         }
 
         // add the report that will go over the [fallenBehindThreshold]
-        test.syncManager.reportFallenBehind(new NodeId(neighbors[10]));
+        test.syncManager.reportFallenBehind(test.addressBook.getNodeId(neighbors[10]));
 
         // we should now say we have fallen behind
         assertTrue(test.syncManager.hasFallenBehind());
@@ -245,10 +247,13 @@ public class SyncManagerTest {
 
         // Test of the current algorithm
         for (int i = 0; i < 10; i++) {
-            final List<Long> next = test.syncManager.getNeighborsToCall();
+            final List<NodeId> next = test.syncManager.getNeighborsToCall();
+            final int firstIndex = addressBook.getIndexOfNodeId(firstNode);
+            final int nextIndex = addressBook.getIndexOfNodeId(next.get(0));
+            final int selfIndex = addressBook.getIndexOfNodeId(selfId);
             assertNotEquals(null, next);
             assertEquals(1, next.size());
-            assertTrue(next.get(0) >= firstNode.id() && next.get(0) <= lastNode.id() && next.get(0) != selfId.id());
+            assertTrue(nextIndex >= firstIndex && nextIndex <= lastIndex && nextIndex != selfIndex);
         }
     }
 
@@ -334,7 +339,6 @@ public class SyncManagerTest {
         resetTestSettings();
 
         final AddressBook addressBook = test.hashgraph.getAddressBook();
-        final NodeId ID = addressBook.getNodeId(0);
         final NodeId OTHER_ID = addressBook.getNodeId(1);
 
         // If one node has fallen behind then do not create new events.

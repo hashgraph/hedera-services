@@ -23,10 +23,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import com.swirlds.merkledb.settings.MerkleDbSettings;
-import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -105,10 +106,12 @@ class MerkleDbBuilderTest {
                             .resolve("tables")
                             .resolve("test2-" + merkleDbDataSource.getTableId()),
                     merkleDbDataSource.getStorageDir());
-            MerkleDbSettings settings = MerkleDbSettingsFactory.get();
+
+            final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+            final MerkleDbConfig merkleDbConfig = configuration.getConfigData(MerkleDbConfig.class);
             assertFalse(merkleDbDataSource.isPreferDiskBasedIndexes());
-            assertEquals(settings.getMaxNumOfKeys(), merkleDbDataSource.getMaxNumberOfKeys());
-            assertEquals(settings.getHashesRamToDiskThreshold(), merkleDbDataSource.getHashesRamToDiskThreshold());
+            assertEquals(merkleDbConfig.maxNumOfKeys(), merkleDbDataSource.getMaxNumberOfKeys());
+            assertEquals(merkleDbConfig.hashesRamToDiskThreshold(), merkleDbDataSource.getHashesRamToDiskThreshold());
             // set explicitly above
             assertFalse(merkleDbDataSource.isCompactionEnabled());
         } finally {

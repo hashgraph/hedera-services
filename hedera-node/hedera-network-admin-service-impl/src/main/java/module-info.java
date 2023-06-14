@@ -11,7 +11,11 @@ module com.hedera.node.app.service.network.admin.impl {
     requires transitive com.swirlds.config;
     requires transitive dagger;
     requires transitive javax.inject;
+    requires com.hedera.node.app.service.evm;
+    requires com.hedera.node.app.service.token;
+    requires com.hedera.node.config;
     requires com.github.spotbugs.annotations;
+    requires com.google.common;
     requires org.apache.logging.log4j;
 
     provides com.hedera.node.app.service.networkadmin.FreezeService with
@@ -20,11 +24,8 @@ module com.hedera.node.app.service.network.admin.impl {
             com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 
     exports com.hedera.node.app.service.networkadmin.impl to
-            com.hedera.node.app,
-            com.hedera.node.app.service.network.admin.impl.test;
+            com.hedera.node.app;
     exports com.hedera.node.app.service.networkadmin.impl.handlers;
     exports com.hedera.node.app.service.networkadmin.impl.codec;
-    exports com.hedera.node.app.service.networkadmin.impl.serdes to
-            com.hedera.node.app.service.networkadmin.impl.test;
     exports com.hedera.node.app.service.networkadmin.impl.config;
 }

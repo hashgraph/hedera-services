@@ -45,7 +45,7 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.tokenGetInfoOrThrow().header();
+        return query.tokenGetNftInfoOrThrow().header();
     }
 
     @Override

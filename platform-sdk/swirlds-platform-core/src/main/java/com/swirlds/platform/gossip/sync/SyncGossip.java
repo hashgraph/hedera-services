@@ -65,7 +65,7 @@ import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectProtocol;
 import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -223,8 +223,8 @@ public class SyncGossip extends AbstractGossip {
                     .setPriority(Thread.NORM_PRIORITY)
                     .setNodeId(selfId)
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
-                    .setOtherNodeId(otherId.id())
-                    .setThreadName("SyncProtocolWith" + otherId.id())
+                    .setOtherNodeId(otherId)
+                    .setThreadName("SyncProtocolWith" + otherId)
                     .setHangingThreadPeriod(hangingThreadDuration)
                     .setWork(new NegotiatorThread(
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
@@ -324,6 +324,7 @@ public class SyncGossip extends AbstractGossip {
     @Override
     protected FallenBehindManagerImpl buildFallenBehindManager() {
         return new FallenBehindManagerImpl(
+                addressBook,
                 selfId,
                 topology.getConnectionGraph(),
                 updatePlatformStatus,

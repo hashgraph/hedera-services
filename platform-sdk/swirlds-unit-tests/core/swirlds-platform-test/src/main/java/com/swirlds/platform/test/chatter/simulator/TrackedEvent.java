@@ -16,8 +16,11 @@
 
 package com.swirlds.platform.test.chatter.simulator;
 
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,10 +31,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class TrackedEvent {
 
-    private final long creatorId;
+    private final NodeId creatorId;
     private final Instant creationTime;
 
-    private final Set<Long> nodesThatHaveEvent = ConcurrentHashMap.newKeySet();
+    private final Set<NodeId> nodesThatHaveEvent = ConcurrentHashMap.newKeySet();
     private final Queue<Duration> propagationTimes = new ConcurrentLinkedQueue<>();
 
     /**
@@ -42,9 +45,9 @@ public class TrackedEvent {
      * @param creationTime
      * 		the creation time of the event
      */
-    public TrackedEvent(final long creatorId, final Instant creationTime) {
-        this.creatorId = creatorId;
-        this.creationTime = creationTime;
+    public TrackedEvent(@NonNull final NodeId creatorId, @NonNull final Instant creationTime) {
+        this.creatorId = Objects.requireNonNull(creatorId, "creatorId must not be null");
+        this.creationTime = Objects.requireNonNull(creationTime, "creationTime must not be null");
         nodesThatHaveEvent.add(creatorId);
     }
 
@@ -56,7 +59,9 @@ public class TrackedEvent {
      * @param timestamp
      * 		the time when the event was received
      */
-    public void registerEventPropagation(final long nodeId, final Instant timestamp) {
+    public void registerEventPropagation(@NonNull final NodeId nodeId, @NonNull final Instant timestamp) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(timestamp, "timestamp must not be null");
         if (nodesThatHaveEvent.add(nodeId)) {
             propagationTimes.add(Duration.between(creationTime, timestamp));
         }
@@ -74,13 +79,15 @@ public class TrackedEvent {
     /**
      * Get the ID of this event's creator.
      */
-    public long getCreatorId() {
+    @NonNull
+    public NodeId getCreatorId() {
         return creatorId;
     }
 
     /**
      * Get the creation time of this event.
      */
+    @NonNull
     public Instant getCreationTime() {
         return creationTime;
     }
@@ -88,6 +95,7 @@ public class TrackedEvent {
     /**
      * Get a list of event propagation times.
      */
+    @NonNull
     public Queue<Duration> getPropagationTimes() {
         return propagationTimes;
     }
