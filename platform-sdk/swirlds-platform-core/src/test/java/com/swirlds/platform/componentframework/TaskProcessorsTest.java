@@ -70,9 +70,10 @@ class TaskProcessorsTest {
 
 	@Test
 	void badConstructorArguments() {
-		assertThrows(NullPointerException.class, () -> new TaskProcessors(null),
+		assertThrows(NullPointerException.class, () -> new TaskProcessors((List<Class<? extends TaskProcessor>>) null),
 				"Null constructor argument should throw NPE");
-		assertThrows(IllegalArgumentException.class, () -> new TaskProcessors(List.of()),
+		final List<Class<? extends TaskProcessor>> emptyList = List.of();
+		assertThrows(IllegalArgumentException.class, () -> new TaskProcessors(emptyList),
 				"Empty constructor argument should throw IAE");
 		assertThrows(IllegalArgumentException.class,
 				() -> new TaskProcessors(List.of(LongProcessor.class, LongProcessor.class)),
@@ -81,6 +82,22 @@ class TaskProcessorsTest {
 				"Class with no methods should throw IAE");
 		assertThrows(IllegalArgumentException.class, () -> new TaskProcessors(List.of(StringIntImpl.class)),
 				"Non-interface should throw IAE");
+	}
+
+	@Test
+	void illegalStateTest(){
+		final TaskProcessors taskProcessors = new TaskProcessors(List.of(LongProcessor.class));
+		assertThrows(IllegalStateException.class, taskProcessors::start,
+				"Should throw IllegalStateException when not started");
+		assertThrows(IllegalStateException.class, ()->taskProcessors.getQueueThread(LongProcessor.class),
+				"Should throw IllegalStateException when not started");
+		taskProcessors.addImplementation(new LongProcessorImpl());
+		taskProcessors.start();
+		assertThrows(IllegalStateException.class, ()->taskProcessors.addImplementation(new LongProcessorImpl()),
+				"Should throw IllegalStateException when started");
+		assertThrows(IllegalStateException.class, taskProcessors::start,
+				"Should throw IllegalStateException when not started");
+		taskProcessors.stop();
 	}
 
 }

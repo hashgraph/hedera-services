@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.threading.framework.internal;
+package com.swirlds.common.threading.framework.util;
 
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.threading.framework.internal.AbstractBlockingQueue;
+
 import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -31,10 +33,10 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * Internally a new metric will be created and applied to the queue when it is enabled by configuration.
  */
-class MeasuredBlockingQueue<T> extends AbstractBlockingQueue<T> {
+public class MeasuredBlockingQueue<T> extends AbstractBlockingQueue<T> {
 
-    static final String QUEUE_MAX_SIZE_SUFFIX = "-queueMaxSize";
-    static final String QUEUE_MIN_SIZE_SUFFIX = "-queueMinSize";
+    public static final String QUEUE_MAX_SIZE_SUFFIX = "-queueMaxSize";
+    public static final String QUEUE_MIN_SIZE_SUFFIX = "-queueMinSize";
 
     private final IntegerAccumulator maxSizeMetric;
     private final IntegerAccumulator minSizeMetric;
@@ -261,7 +263,7 @@ class MeasuredBlockingQueue<T> extends AbstractBlockingQueue<T> {
     /**
      * Configuration for {@link MeasuredBlockingQueue}
      */
-    static final class Config {
+    public static final class Config {
 
         private final Metrics metrics;
         private final String category;

@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.threading.framework.internal;
+package com.swirlds.common.threading.framework.util;
 
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
+import com.swirlds.common.threading.framework.internal.AbstractQueueThreadConfiguration;
+import com.swirlds.common.threading.framework.util.MeasuredBlockingQueue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -24,7 +26,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * Static utility methods for the threading framework
  */
-final class ThreadBuildingUtils {
+public final class ThreadBuildingUtils {
     private ThreadBuildingUtils() {}
 
     /**
@@ -34,7 +36,7 @@ final class ThreadBuildingUtils {
      *
      * @return the queue that should be used
      */
-    static <T> BlockingQueue<T> getOrBuildQueue(@NonNull final AbstractQueueThreadConfiguration<?, T> config) {
+    public static <T> BlockingQueue<T> getOrBuildQueue(@NonNull final AbstractQueueThreadConfiguration<?, T> config) {
         BlockingQueue<T> queue = config.getQueue();
         if (queue == null) {
             // if no queue is set, build a default queue

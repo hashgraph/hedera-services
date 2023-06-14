@@ -77,7 +77,9 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
         this.maxBufferSize = that.maxBufferSize;
         this.handler = that.handler;
         this.queue = that.queue;
-        this.metricsConfiguration = that.metricsConfiguration;
+        this.metricsConfiguration = that.metricsConfiguration == null
+                ? null
+                : new QueueThreadMetricsConfiguration(that.metricsConfiguration);
     }
 
     /**

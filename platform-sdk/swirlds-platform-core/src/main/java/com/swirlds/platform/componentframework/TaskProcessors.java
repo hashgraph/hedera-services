@@ -7,65 +7,57 @@ import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.common.threading.utility.MultiHandler;
 import com.swirlds.platform.componentframework.internal.ProcessorParts;
 import com.swirlds.platform.componentframework.internal.QueueSubmitter;
+import com.swirlds.platform.componentframework.internal.TaskProcessorUtils;
 
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class TaskProcessors {
-	private static final Set<String> IGNORED_METHODS = Set.of("getProcessingMethods");
-	private final Map<Class<? extends TaskProcessor>, ProcessorParts> parts;
+
+	private final Map<Class<? extends TaskProcessor>, ProcessorParts> parts = new HashMap<>();
+	private final QueueThreadConfiguration<Object> defaultConfiguration;
 	private boolean started = false;
 
 	public TaskProcessors(final List<Class<? extends TaskProcessor>> taskProcessorDefs) {
+		this(
+				new QueueThreadConfiguration<>(AdHocThreadManager.getStaticThreadManager()),
+				taskProcessorDefs.stream()
+						.map(d -> new TaskProcessorConfig(d, "a name", null))
+						.toList()
+		);
+	}
+
+	public TaskProcessors(
+			final QueueThreadConfiguration<Object> defaultConfiguration,
+			final List<TaskProcessorConfig> taskProcessorDefs) {
+		this.defaultConfiguration = Objects.requireNonNull(defaultConfiguration);
 		Objects.requireNonNull(taskProcessorDefs);
 		if (taskProcessorDefs.isEmpty()) {
 			throw new IllegalArgumentException("Must supply at least one TaskProcessor definition");
 		}
+		taskProcessorDefs.stream()
+				.map(TaskProcessorConfig::definition)
+				.forEach(TaskProcessorUtils::checkTaskProcessorDefinition);
 
-		for (Class<? extends TaskProcessor> def : taskProcessorDefs) {
-			if (!def.isInterface()) {
-				throw new IllegalArgumentException(String.format(
-						"A TaskProcessor must be an interface. %s is not an interface",
-						def.getName()
-				));
-			}
-			final Method[] methods = def.getDeclaredMethods();
-			for (final Method method : methods) {
-				if (IGNORED_METHODS.contains(method.getName())) {
-					continue;
-				}
-				if (method.getParameterCount() != 1) {
-					throw new IllegalArgumentException(String.format(
-							"A TaskProcessor method must have exactly one parameter. The method %s is invalid",
-							method
-					));
-				}
-				if (method.getReturnType() != void.class) {
-					throw new IllegalArgumentException(String.format(
-							"A TaskProcessor method must return void. The method %s is invalid",
-							method
-					));
-				}
-			}
-		}
-
-		parts = new HashMap<>();
-
-		for (Class<? extends TaskProcessor> def : taskProcessorDefs) {
-			BlockingQueue<Object> queue = new LinkedBlockingQueue<>();
-			if (parts.containsKey(def)) {
+		for (final TaskProcessorConfig config : taskProcessorDefs) {
+			final BlockingQueue<Object> queue = new LinkedBlockingQueue<>();
+			if (parts.containsKey(config.definition())) {
 				throw new IllegalArgumentException(String.format(
 						"Duplicate TaskProcessor definition: %s",
-						def.getName()
+						config.definition().getName()
 				));
 			}
-			parts.put(def, new ProcessorParts(def, queue, QueueSubmitter.create(def, queue)));
+			parts.put(
+					config.definition(),
+					new ProcessorParts(
+							config.definition(),
+							config,
+							queue,
+							QueueSubmitter.create(config.definition(), queue)));
 		}
 	}
 
@@ -124,7 +116,8 @@ public class TaskProcessors {
 			}
 
 			final QueueThread<Object> queueThread =
-					new QueueThreadConfiguration<>(AdHocThreadManager.getStaticThreadManager())
+					defaultConfiguration
+							.copy()
 							.setQueue(processorParts.getQueue())
 							.setHandler((InterruptableConsumer<Object>) handler)
 							.build(true);
@@ -149,7 +142,7 @@ public class TaskProcessors {
 		}
 	}
 
-	public void throwIfNotStarted() {
+	private void throwIfNotStarted() {
 		if (!started) {
 			throw new IllegalStateException("Cannot perform this operation before starting");
 		}

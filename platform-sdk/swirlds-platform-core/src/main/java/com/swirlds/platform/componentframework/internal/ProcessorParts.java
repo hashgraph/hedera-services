@@ -2,19 +2,23 @@ package com.swirlds.platform.componentframework.internal;
 
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.platform.componentframework.TaskProcessor;
+import com.swirlds.platform.componentframework.TaskProcessorConfig;
 
 import java.util.concurrent.BlockingQueue;
 
 public class ProcessorParts {
 	private final Class<? extends TaskProcessor> definition;
+	private final TaskProcessorConfig config;
 	private final BlockingQueue<Object> queue;
 	private final TaskProcessor submitter;
 	private TaskProcessor implementation;
 	private QueueThread<?> queueThread;
 
-	public ProcessorParts(final Class<? extends TaskProcessor> definition, final BlockingQueue<Object> queue,
+	public ProcessorParts(final Class<? extends TaskProcessor> definition, final TaskProcessorConfig config,
+			final BlockingQueue<Object> queue,
 			final TaskProcessor submitter) {
 		this.definition = definition;
+		this.config = config;
 		this.queue = queue;
 		this.submitter = submitter;
 	}

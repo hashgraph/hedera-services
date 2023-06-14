@@ -51,6 +51,22 @@ public class QueueThreadMetricsConfiguration {
     }
 
     /**
+     * Copy constructor
+     *
+     * @param that
+     * 		The configuration to copy
+     */
+    public QueueThreadMetricsConfiguration(@NonNull final QueueThreadMetricsConfiguration that) {
+        throwArgNull(that, "that");
+        this.metrics = that.metrics;
+        this.category = that.category;
+        this.time = that.time;
+        this.maxSizeMetricEnabled = that.maxSizeMetricEnabled;
+        this.minSizeMetricEnabled = that.minSizeMetricEnabled;
+        this.busyTimeMetricEnabled = that.busyTimeMetricEnabled;
+    }
+
+    /**
      * Set the category to use for metrics
      *
      * @param category
