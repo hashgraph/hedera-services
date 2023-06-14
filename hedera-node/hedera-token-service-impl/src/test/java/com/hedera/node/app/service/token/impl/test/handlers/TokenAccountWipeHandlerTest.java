@@ -317,12 +317,8 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                     Account.newBuilder()
                             .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
                             .build());
-            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
-                    .totalSupply(5)
+            writableTokenStore = newWritableStoreWithTokens(newFungibleToken531(5)
+                    .copyBuilder()
                     .deleted(true) // Intentionally deleted
                     .build());
             final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, 1);
@@ -344,12 +340,8 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                     Account.newBuilder()
                             .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
                             .build());
-            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
-                    .totalSupply(5)
+            writableTokenStore = newWritableStoreWithTokens(newNftToken531(5)
+                    .copyBuilder()
                     .paused(true) // Intentionally paused
                     .build());
             final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, 1);
@@ -372,18 +364,11 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                             .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
                             .build());
             final var totalFungibleSupply = 5;
-            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
+            writableTokenStore = newWritableStoreWithTokens(newFungibleToken531(totalFungibleSupply)
+                    .copyBuilder()
                     .wipeKey((Key) null) // Intentionally missing wipe key
-                    .totalSupply(totalFungibleSupply)
                     .build());
-            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_4680.accountNumOrThrow())
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .balance(totalFungibleSupply)
-                    .build());
+            writableTokenRelStore = newWritableStoreWithTokenRels(newAccount4680Token531Rel(totalFungibleSupply));
             final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, totalFungibleSupply + 1);
             final var context = mockContext(txn);
 
@@ -403,13 +388,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                     Account.newBuilder()
                             .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
                             .build());
-            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
-                    .totalSupply(5)
-                    .build());
+            writableTokenStore = newWritableStoreWithTokens(newNftToken531(5));
             // Intentionally has no token rels:
             writableTokenRelStore = newWritableStoreWithTokenRels();
             final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, 1);
@@ -431,17 +410,8 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                     Account.newBuilder()
                             .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
                             .build());
-            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
-                    .totalSupply(5)
-                    .build());
-            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .build());
+            writableTokenStore = newWritableStoreWithTokens(newNftToken531(5));
+            writableTokenRelStore = newWritableStoreWithTokenRels(newTreasuryToken531Rel(0));
             final var txn = newWipeTxn(TREASURY_ACCOUNT_9876, TOKEN_531, 1);
             final var context = mockContext(txn);
 
@@ -466,24 +436,9 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                             .numberPositiveBalances(0)
                             .build());
             final var totalTokenSupply = 5;
-            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
-                    .totalSupply(totalTokenSupply)
-                    .build());
+            writableTokenStore = newWritableStoreWithTokens(newFungibleToken531(totalTokenSupply));
             writableTokenRelStore = newWritableStoreWithTokenRels(
-                    TokenRelation.newBuilder()
-                            .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                            .tokenNumber(TOKEN_531.tokenNum())
-                            .balance(0)
-                            .build(),
-                    TokenRelation.newBuilder()
-                            .accountNumber(ACCOUNT_4680.accountNumOrThrow())
-                            .tokenNumber(TOKEN_531.tokenNum())
-                            .balance(totalTokenSupply)
-                            .build());
+                    newTreasuryToken531Rel(0), newAccount4680Token531Rel(totalTokenSupply));
             final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, totalTokenSupply + 1);
             final var context = mockContext(txn);
 
@@ -508,24 +463,9 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                             .numberPositiveBalances(0)
                             .build());
             final var currentTokenBalance = 3;
-            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
-                    .totalSupply(currentTokenBalance + 2)
-                    .build());
+            writableTokenStore = newWritableStoreWithTokens(newFungibleToken531(currentTokenBalance + 2));
             writableTokenRelStore = newWritableStoreWithTokenRels(
-                    TokenRelation.newBuilder()
-                            .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                            .tokenNumber(TOKEN_531.tokenNum())
-                            .balance(0)
-                            .build(),
-                    TokenRelation.newBuilder()
-                            .accountNumber(ACCOUNT_4680.accountNumOrThrow())
-                            .tokenNumber(TOKEN_531.tokenNum())
-                            .balance(currentTokenBalance)
-                            .build());
+                    newTreasuryToken531Rel(0), newAccount4680Token531Rel(currentTokenBalance));
             // The fungible amount is less than the total token supply, but one more than the token balance. Therefore,
             // we should see an error thrown
             final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, currentTokenBalance + 1);
@@ -551,24 +491,9 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                             .numberTreasuryTitles(1)
                             .numberPositiveBalances(1)
                             .build());
-            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
-                    .totalSupply(5)
-                    .build());
-            writableTokenRelStore = newWritableStoreWithTokenRels(
-                    TokenRelation.newBuilder()
-                            .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                            .tokenNumber(TOKEN_531.tokenNum())
-                            .balance(1)
-                            .build(),
-                    TokenRelation.newBuilder()
-                            .accountNumber(ACCOUNT_4680.accountNumOrThrow())
-                            .tokenNumber(TOKEN_531.tokenNum())
-                            .balance(4)
-                            .build());
+            writableTokenStore = newWritableStoreWithTokens(newFungibleToken531(5));
+            writableTokenRelStore =
+                    newWritableStoreWithTokenRels(newTreasuryToken531Rel(1), newAccount4680Token531Rel(4));
             final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, 3);
             final var context = mockContext(txn);
 
@@ -603,31 +528,16 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                             .numberTreasuryTitles(1)
                             .numberPositiveBalances(1)
                             .build());
-            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
-                    .totalSupply(5)
-                    .build());
-            writableTokenRelStore = newWritableStoreWithTokenRels(
-                    TokenRelation.newBuilder()
-                            .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                            .tokenNumber(TOKEN_531.tokenNum())
-                            .balance(3)
-                            .build(),
-                    TokenRelation.newBuilder()
-                            .accountNumber(ACCOUNT_4680.accountNumOrThrow())
-                            .tokenNumber(TOKEN_531.tokenNum())
-                            .balance(2)
-                            .build());
+            writableTokenStore = newWritableStoreWithTokens(newFungibleToken531(5));
+            writableTokenRelStore =
+                    newWritableStoreWithTokenRels(newTreasuryToken531Rel(3), newAccount4680Token531Rel(2));
             final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, 2);
             final var context = mockContext(txn);
 
             subject.handle(context);
 
             final var acct = writableAccountStore.get(ACCOUNT_4680);
-            Assertions.assertThat(acct.numberPositiveBalances()).isEqualTo(0);
+            Assertions.assertThat(acct.numberPositiveBalances()).isZero();
             final var treasuryAcct = writableAccountStore.get(TREASURY_ACCOUNT_9876);
             Assertions.assertThat(treasuryAcct.numberTreasuryTitles()).isEqualTo(1);
             Assertions.assertThat(treasuryAcct.numberPositiveBalances()).isEqualTo(1);
@@ -652,17 +562,8 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                             .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
                             .numberTreasuryTitles(1)
                             .build());
-            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
-                    .totalSupply(10)
-                    .build());
-            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_4680.accountNumOrThrow())
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .build());
+            writableTokenStore = newWritableStoreWithTokens(newNftToken531(10));
+            writableTokenRelStore = newWritableStoreWithTokenRels(newAccount4680Token531Rel(0));
             writableNftStore = newWritableStoreWithNfts(); // Intentionally empty
 
             final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, 0, 1L);
@@ -685,17 +586,8 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                             .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
                             .numberTreasuryTitles(1)
                             .build());
-            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
-                    .totalSupply(10)
-                    .build());
-            writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_4680.accountNumOrThrow())
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .build());
+            writableTokenStore = newWritableStoreWithTokens(newNftToken531(10));
+            writableTokenRelStore = newWritableStoreWithTokenRels(newAccount4680Token531Rel(0));
             writableNftStore = newWritableStoreWithNfts(Nft.newBuilder()
                     .id(UniqueTokenId.newBuilder()
                             .tokenTypeNumber(TOKEN_531.tokenNum())
@@ -728,24 +620,36 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                             .numberPositiveBalances(0)
                             .build());
             final var totalTokenSupply = 1;
-            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
-                    .totalSupply(totalTokenSupply)
-                    .build());
+            writableTokenStore = newWritableStoreWithTokens(newNftToken531(totalTokenSupply));
             writableTokenRelStore = newWritableStoreWithTokenRels(
-                    TokenRelation.newBuilder()
-                            .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                            .tokenNumber(TOKEN_531.tokenNum())
-                            .build(),
-                    TokenRelation.newBuilder()
-                            .accountNumber(ACCOUNT_4680.accountNumOrThrow())
-                            .tokenNumber(TOKEN_531.tokenNum())
-                            .balance(totalTokenSupply)
-                            .build());
+                    newTreasuryToken531Rel(0), newAccount4680Token531Rel(totalTokenSupply));
             final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, 0, 1L, 2L);
+            final var context = mockContext(txn);
+
+            assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INVALID_WIPING_AMOUNT));
+        }
+
+        @Test
+        void nftSerialNumsIsEmpty() {
+            mockConfig();
+            mockOkExpiryValidator();
+            writableAccountStore = newWritableStoreWithAccounts(
+                    Account.newBuilder()
+                            .accountNumber(ACCOUNT_4680.accountNumOrThrow())
+                            .numberTreasuryTitles(0)
+                            .numberPositiveBalances(1)
+                            .build(),
+                    Account.newBuilder()
+                            .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
+                            .numberTreasuryTitles(1)
+                            .numberPositiveBalances(0)
+                            .build());
+            writableTokenStore = newWritableStoreWithTokens(newNftToken531(5));
+            writableTokenRelStore =
+                    newWritableStoreWithTokenRels(newTreasuryToken531Rel(0), newAccount4680Token531Rel(5));
+            final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, 0);
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
@@ -772,24 +676,9 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                             .numberPositiveBalances(1)
                             .numberOwnedNfts(1)
                             .build());
-            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
-                    .totalSupply(10)
-                    .build());
-            writableTokenRelStore = newWritableStoreWithTokenRels(
-                    TokenRelation.newBuilder()
-                            .accountNumber(ACCOUNT_4680.accountNumOrThrow())
-                            .tokenNumber(TOKEN_531.tokenNum())
-                            .balance(3)
-                            .build(),
-                    TokenRelation.newBuilder()
-                            .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                            .tokenNumber(TOKEN_531.tokenNum())
-                            .balance(1)
-                            .build());
+            writableTokenStore = newWritableStoreWithTokens(newNftToken531(10));
+            writableTokenRelStore =
+                    newWritableStoreWithTokenRels(newAccount4680Token531Rel(3), newTreasuryToken531Rel(1));
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
@@ -866,24 +755,9 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                             .numberPositiveBalances(1)
                             .numberOwnedNfts(1)
                             .build());
-            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
-                    .totalSupply(10)
-                    .build());
-            writableTokenRelStore = newWritableStoreWithTokenRels(
-                    TokenRelation.newBuilder()
-                            .accountNumber(ACCOUNT_4680.accountNumOrThrow())
-                            .tokenNumber(TOKEN_531.tokenNum())
-                            .balance(3)
-                            .build(),
-                    TokenRelation.newBuilder()
-                            .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                            .tokenNumber(TOKEN_531.tokenNum())
-                            .balance(1)
-                            .build());
+            writableTokenStore = newWritableStoreWithTokens(newNftToken531(10));
+            writableTokenRelStore =
+                    newWritableStoreWithTokenRels(newAccount4680Token531Rel(3), newTreasuryToken531Rel(1));
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
@@ -962,24 +836,9 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                             .numberPositiveBalances(1)
                             .numberOwnedNfts(1)
                             .build());
-            writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_531.tokenNum())
-                    .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
-                    .totalSupply(10)
-                    .build());
-            writableTokenRelStore = newWritableStoreWithTokenRels(
-                    TokenRelation.newBuilder()
-                            .accountNumber(ACCOUNT_4680.accountNumOrThrow())
-                            .tokenNumber(TOKEN_531.tokenNum())
-                            .balance(3)
-                            .build(),
-                    TokenRelation.newBuilder()
-                            .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
-                            .tokenNumber(TOKEN_531.tokenNum())
-                            .balance(1)
-                            .build());
+            writableTokenStore = newWritableStoreWithTokens(newNftToken531(10));
+            writableTokenRelStore =
+                    newWritableStoreWithTokenRels(newAccount4680Token531Rel(3), newTreasuryToken531Rel(1));
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
@@ -1037,6 +896,40 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                     .isNull();
             Assertions.assertThat(writableNftStore.get(new UniqueTokenId(TOKEN_531.tokenNum(), 4)))
                     .isNull();
+        }
+
+        private Token newFungibleToken531(final long totalSupply) {
+            return newToken531(TokenType.FUNGIBLE_COMMON, totalSupply);
+        }
+
+        private Token newNftToken531(final long totalSupply) {
+            return newToken531(TokenType.NON_FUNGIBLE_UNIQUE, totalSupply);
+        }
+
+        private Token newToken531(final TokenType type, final long totalSupply) {
+            return Token.newBuilder()
+                    .tokenNumber(TOKEN_531.tokenNum())
+                    .tokenType(type)
+                    .treasuryAccountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
+                    .wipeKey(TOKEN_WIPE_KT.asPbjKey())
+                    .totalSupply(totalSupply)
+                    .build();
+        }
+
+        private TokenRelation newTreasuryToken531Rel(final long balance) {
+            return newToken531Rel(TREASURY_ACCOUNT_9876, balance);
+        }
+
+        private TokenRelation newAccount4680Token531Rel(final long balance) {
+            return newToken531Rel(ACCOUNT_4680, balance);
+        }
+
+        private TokenRelation newToken531Rel(final AccountID accountId, final long balance) {
+            final var builder = TokenRelation.newBuilder()
+                    .accountNumber(accountId.accountNumOrThrow())
+                    .tokenNumber(TOKEN_531.tokenNum());
+            if (balance > 0) builder.balance(balance);
+            return builder.build();
         }
 
         private void mockOkExpiryValidator() {

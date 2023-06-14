@@ -109,7 +109,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
         final var op = txn.tokenWipeOrThrow();
         final var accountId = op.account();
         final var tokenId = op.token();
-        final var fungibleBurnCount = op.amount();
+        final var fungibleWipeCount = op.amount();
         // Wrapping the serial nums this way de-duplicates the serial nums:
         final var nftSerialNums = new ArrayList<>(new LinkedHashSet<>(op.serialNumbers()));
 
@@ -117,7 +117,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
         final var validated = validateSemantics(
                 accountId,
                 tokenId,
-                fungibleBurnCount,
+                fungibleWipeCount,
                 nftSerialNums,
                 accountStore,
                 tokenStore,
@@ -128,19 +128,22 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
 
         final long newTotalSupply;
         final long newAccountBalance;
-        final Account.Builder updatedAcctBuilder = validated.account().copyBuilder();
+        final Account.Builder updatedAcctBuilder = acct.copyBuilder();
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
             // Check that the new total supply will not be negative
-            newTotalSupply = token.totalSupply() - fungibleBurnCount;
+            newTotalSupply = token.totalSupply() - fungibleWipeCount;
             validateTrue(newTotalSupply >= 0, INVALID_WIPING_AMOUNT);
 
             // Check that the new token balance will not be negative
-            newAccountBalance = validated.accountTokenRel().balance() - fungibleBurnCount;
+            newAccountBalance = validated.accountTokenRel().balance() - fungibleWipeCount;
             validateTrue(newAccountBalance >= 0, INVALID_WIPING_AMOUNT);
         } else {
             // Check that the new total supply will not be negative
             newTotalSupply = token.totalSupply() - nftSerialNums.size();
             validateTrue(newTotalSupply >= 0, INVALID_WIPING_AMOUNT);
+
+            // Validate that there is at least one NFT to wipe
+            validateFalse(nftSerialNums.isEmpty(), INVALID_WIPING_AMOUNT);
 
             // Load and validate the nfts
             for (final Long nftSerial : nftSerialNums) {
@@ -178,18 +181,18 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
     private ValidationResult validateSemantics(
             @NonNull final AccountID accountId,
             @NonNull final TokenID tokenId,
-            final long fungibleBurnCount,
+            final long fungibleWipeCount,
             @NonNull final List<Long> nftSerialNums,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelStore,
             @NonNull final ExpiryValidator expiryValidator) {
-        validateTrue(fungibleBurnCount > -1, INVALID_WIPING_AMOUNT);
+        validateTrue(fungibleWipeCount > -1, INVALID_WIPING_AMOUNT);
 
         final var account =
                 TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
 
-        validator.validateWipe(fungibleBurnCount, nftSerialNums);
+        validator.validateWipe(fungibleWipeCount, nftSerialNums);
 
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
         validateTrue(token.wipeKey() != null, ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY);
