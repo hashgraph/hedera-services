@@ -20,6 +20,8 @@ import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.AutoClosableResourceLock;
 import com.swirlds.common.threading.locks.locked.LockedResource;
 import com.swirlds.common.threading.locks.locked.MaybeLockedResource;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -30,7 +32,7 @@ import java.util.concurrent.locks.Lock;
  * @param <T>
  * 		the type of resource
  */
-public class ResourceLock<T> implements AutoClosableResourceLock<T> {
+public final class ResourceLock<T> implements AutoClosableResourceLock<T> {
 
     private final Lock lock;
 
@@ -38,7 +40,7 @@ public class ResourceLock<T> implements AutoClosableResourceLock<T> {
 
     private final MaybeLockedResource<T> notAcquired;
 
-    public ResourceLock(final Lock lock, final T resource) {
+    public ResourceLock(@NonNull final Lock lock, @Nullable final T resource) {
         this.lock = lock;
         acquired = new AcquiredResource<>(lock::unlock, resource);
         notAcquired = new NotAcquiredResource<>();
@@ -48,6 +50,7 @@ public class ResourceLock<T> implements AutoClosableResourceLock<T> {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public LockedResource<T> lock() {
         lock.lock();
         return acquired;
@@ -57,6 +60,7 @@ public class ResourceLock<T> implements AutoClosableResourceLock<T> {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public LockedResource<T> lockInterruptibly() throws InterruptedException {
         lock.lockInterruptibly();
         return acquired;
@@ -66,6 +70,7 @@ public class ResourceLock<T> implements AutoClosableResourceLock<T> {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public MaybeLockedResource<T> tryLock() {
         if (lock.tryLock()) {
             return acquired;
@@ -77,7 +82,8 @@ public class ResourceLock<T> implements AutoClosableResourceLock<T> {
      * {@inheritDoc}
      */
     @Override
-    public MaybeLockedResource<T> tryLock(final long time, final TimeUnit unit) throws InterruptedException {
+    @NonNull
+    public MaybeLockedResource<T> tryLock(final long time, @NonNull final TimeUnit unit) throws InterruptedException {
         if (lock.tryLock(time, unit)) {
             return acquired;
         }
@@ -88,6 +94,7 @@ public class ResourceLock<T> implements AutoClosableResourceLock<T> {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public Condition newCondition() {
         return lock.newCondition();
     }

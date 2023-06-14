@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.test.simulated;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.test.simulated.config.NetworkConfig;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;

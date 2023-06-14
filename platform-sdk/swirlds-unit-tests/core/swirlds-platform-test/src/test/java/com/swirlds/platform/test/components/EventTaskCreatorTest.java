@@ -26,13 +26,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.EventTaskCreator;
 import com.swirlds.platform.event.CreateEventTask;
@@ -44,9 +44,10 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
-import org.junit.jupiter.api.BeforeEach;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -60,22 +61,22 @@ class EventTaskCreatorTest {
     NodeId selfId;
     EventIntakeMetrics eventIntakeMetrics;
     BlockingQueue<EventIntakeTask> eventQueueThread;
-    SettingsProvider setting;
     SyncManager syncManager;
     EventTaskCreator taskCreator;
     Random random;
 
-    @BeforeEach
-    void newMocks() {
+    private void init() {
+        final var config = new TestConfigBuilder().getOrCreateConfig().getConfigData(EventConfig.class);
+        init(config);
+    }
+
+    private void init(final EventConfig config) {
         eventMapper = mock(EventMapper.class);
-        addressBook = mock(AddressBook.class);
+        addressBook = prepareAddressBook();
         address = mock(Address.class);
-        when(addressBook.getAddress(any())).thenReturn(address);
-        when(addressBook.copy()).thenReturn(addressBook);
         selfId = new NodeId(1);
         eventIntakeMetrics = mock(EventIntakeMetrics.class);
         eventQueueThread = mock(BlockingQueue.class);
-        setting = mock(SettingsProvider.class);
         syncManager = mock(SyncManager.class);
         random = new MockRandom();
         taskCreator = new EventTaskCreator(
@@ -84,9 +85,31 @@ class EventTaskCreatorTest {
                 selfId,
                 eventIntakeMetrics,
                 eventQueueThread,
-                setting,
+                config,
                 syncManager,
                 () -> random);
+    }
+
+    private AddressBook prepareAddressBook() {
+        // this is a work around instead of refactoring the whole unit test file.
+        // the implementation of rescue children now iterates over the addresses in the address book.
+        return new RandomAddressBookGenerator().setSize(5).build();
+    }
+
+    @NonNull
+    private EventConfig configRandomEventProbability() {
+        return new TestConfigBuilder()
+                .withValue("event.randomEventProbability", 1)
+                .getOrCreateConfig()
+                .getConfigData(EventConfig.class);
+    }
+
+    @NonNull
+    private EventConfig configRescueChildlessInverseProbability(final int value) {
+        return new TestConfigBuilder()
+                .withValue("event.rescueChildlessInverseProbability", value)
+                .getOrCreateConfig()
+                .getConfigData(EventConfig.class);
     }
 
     @Test
@@ -94,6 +117,7 @@ class EventTaskCreatorTest {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("test createEvent()")
     void testCreateEvent() throws InterruptedException {
+        init();
         final NodeId otherId = new NodeId(7);
 
         // regular call
@@ -116,6 +140,7 @@ class EventTaskCreatorTest {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("test addEvent()")
     void testAddEvent() throws InterruptedException {
+        init();
         GossipEvent task = new GossipEvent(mock(BaseEventHashedData.class), mock(BaseEventUnhashedData.class));
         taskCreator.addEvent(task);
         verify(eventQueueThread).put(task);
@@ -126,15 +151,10 @@ class EventTaskCreatorTest {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("test addEvent()")
     void testEventRescue() throws InterruptedException {
-        when(setting.getRescueChildlessInverseProbability()).thenReturn(5);
-        when(addressBook.getSize()).thenReturn(5);
-        // this is a work around instead of refactoring the whole unit test file.
-        // the implementation of rescue children now iterates over the addresses in the address book.
-        final AddressBook newAddressBook =
-                new RandomAddressBookGenerator().setSize(5).build();
-        when(addressBook.iterator()).thenReturn(newAddressBook.iterator());
+        init(configRescueChildlessInverseProbability(5));
+
         EventImpl eventToRescue = mock(EventImpl.class);
-        when(eventToRescue.getCreatorId()).thenReturn(newAddressBook.getNodeId(2));
+        when(eventToRescue.getCreatorId()).thenReturn(addressBook.getNodeId(2));
         when(eventMapper.getMostRecentEvent(eventToRescue.getCreatorId())).thenReturn(eventToRescue);
 
         taskCreator.rescueChildlessEvents();
@@ -145,12 +165,21 @@ class EventTaskCreatorTest {
                 eventToRescue.getCreatorId(),
                 captor.getValue().getOtherId(),
                 "otherId should match the senderId of the rescued event");
+    }
 
-        reset(eventQueueThread);
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.PLATFORM)
+    @DisplayName("test addEvent()")
+    void testEventNotRescue() throws InterruptedException {
+        init(configRescueChildlessInverseProbability(0));
 
-        // test with feature off
-        when(setting.getRescueChildlessInverseProbability()).thenReturn(0);
+        final EventImpl eventToRescue = mock(EventImpl.class);
+        when(eventToRescue.getCreatorId()).thenReturn(addressBook.getNodeId(2));
+        when(eventMapper.getMostRecentEvent(eventToRescue.getCreatorId())).thenReturn(eventToRescue);
+
         taskCreator.rescueChildlessEvents();
+
         verify(eventQueueThread, times(0)).put(any());
     }
 
@@ -159,6 +188,7 @@ class EventTaskCreatorTest {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("test syncDone()")
     void testSyncDone_ShouldNotCreateEvent() {
+        init();
         when(syncManager.shouldCreateEvent(any())).thenReturn(false);
 
         taskCreator.syncDone(mock(SyncResult.class));
@@ -171,6 +201,7 @@ class EventTaskCreatorTest {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("test syncDone()")
     void testSyncDone_ShouldCreateEvent() throws InterruptedException {
+        init();
         when(syncManager.shouldCreateEvent(any())).thenReturn(true);
 
         SyncResult syncResult = mock(SyncResult.class);
@@ -186,8 +217,8 @@ class EventTaskCreatorTest {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("test syncDone randomEvent")
     void testSyncDoneRandomEvent() throws InterruptedException {
+        init(configRandomEventProbability());
         when(syncManager.shouldCreateEvent(any())).thenReturn(true);
-        when(setting.getRandomEventProbability()).thenReturn(1);
 
         SyncResult syncResult = mock(SyncResult.class);
         when(syncResult.getOtherId()).thenReturn(new NodeId(2));

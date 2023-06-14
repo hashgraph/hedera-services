@@ -18,6 +18,7 @@ package com.swirlds.platform.gossip;
 
 import static com.swirlds.logging.LogMarker.STARTUP;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
@@ -26,7 +27,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.FreezeManager;

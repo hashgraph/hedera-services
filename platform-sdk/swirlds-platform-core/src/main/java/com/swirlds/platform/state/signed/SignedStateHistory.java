@@ -18,8 +18,8 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.formatting.TextTable;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.StackTrace;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
