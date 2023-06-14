@@ -97,7 +97,6 @@ public class ContractCreateSuite extends HapiSuite {
     public static final String PARENT_INFO = "parentInfo";
     private static final String PAYER = "payer";
     private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
-    private static final long GAS_TO_OFFER = 300_000L;
 
     public static void main(String... args) {
         new ContractCreateSuite().runSuiteAsync();
