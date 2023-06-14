@@ -42,8 +42,16 @@ import java.time.Duration;
  *         The frequency, in milliseconds, at which values are written to the statistics CSV file.
  * @param metricsDocFileName
  *         the file name to be used for Metrics document generation
+ * @param halfLife
+ * 		   half life of some of the various statistics (give half the weight to the last halfLife seconds)
+ * @param prometheusEndpointEnabled
+ *         Indicates if a prometheus endpoint should be offered
+ * @param prometheusEndpointPortNumber
+ *         Port of the Prometheus endpoint
+ * @param prometheusEndpointMaxBacklogAllowed
+ *         Backlog of the Prometheus endpoint (= number of incoming TCP connections the system will queue)
  */
-@ConfigData
+@ConfigData("metrics")
 public record MetricsConfig(
         @Min(0) @ConfigProperty(defaultValue = "1000") long metricsUpdatePeriodMillis,
         @ConfigProperty(defaultValue = "false") boolean disableMetricsOutput,
@@ -51,7 +59,12 @@ public record MetricsConfig(
         @ConfigProperty(defaultValue = "") String csvFileName,
         @ConfigProperty(defaultValue = "false") boolean csvAppend,
         @Min(0) @ConfigProperty(defaultValue = "3000") int csvWriteFrequency,
-        @ConfigProperty(defaultValue = "metricsDoc.tsv") String metricsDocFileName) {
+        @ConfigProperty(defaultValue = "metricsDoc.tsv") String metricsDocFileName,
+        @ConfigProperty(defaultValue = "10") double halfLife,
+        @ConfigProperty(defaultValue = "false") boolean prometheusEndpointEnabled,
+        @ConfigProperty(defaultValue = "9999") int prometheusEndpointPortNumber,
+        @ConfigProperty(defaultValue = "1") int prometheusEndpointMaxBacklogAllowed) {
+
 
     /**
      * Returns the metrics update interval time as a {@link Duration}.

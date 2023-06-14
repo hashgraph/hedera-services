@@ -26,13 +26,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.statistics.StatsBuffered;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Disabled;
@@ -47,8 +48,9 @@ class DefaultSpeedometerMetricTest {
     private static final String DESCRIPTION = "DeScRiPtIoN";
     private static final String UNIT = "UnIt";
     private static final String FORMAT = "FoRmAt";
-
     private static final double EPSILON = 1e-6;
+    private static final MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig()
+            .getConfigData(MetricsConfig.class);
 
     @SuppressWarnings("removal")
     @Test
@@ -218,8 +220,8 @@ class DefaultSpeedometerMetricTest {
 
         // when
         sendCycles(metric, time, 0, 1000, 1000);
-        sendCycles(metric, time, 1000, 1000 + (int) SettingsCommon.halfLife, 2000);
-        time.set(Duration.ofSeconds(1000 + (int) SettingsCommon.halfLife));
+        sendCycles(metric, time, 1000, 1000 + (int) metricsConfig.halfLife(), 2000);
+        time.set(Duration.ofSeconds(1000 + (int) metricsConfig.halfLife()));
         double rate = metric.get();
 
         // then
@@ -238,9 +240,10 @@ class DefaultSpeedometerMetricTest {
 
         // when
         sendCycles(metric, time, 0, 1000, 1000);
-        sendCycles(metric, time, 1000, 1000 + (int) SettingsCommon.halfLife, 5000);
-        sendCycles(metric, time, 1000 + (int) SettingsCommon.halfLife, 1000 + 2 * (int) SettingsCommon.halfLife, 7000);
-        time.set(Duration.ofSeconds(1000 + 2 * (int) SettingsCommon.halfLife));
+        sendCycles(metric, time, 1000, 1000 + (int) metricsConfig.halfLife(), 5000);
+        sendCycles(metric, time, 1000 + (int) metricsConfig.halfLife(), 1000 + 2 * (int) metricsConfig.halfLife(),
+                7000);
+        time.set(Duration.ofSeconds(1000 + 2 * (int) metricsConfig.halfLife()));
         double rate = metric.get();
 
         // then
@@ -260,8 +263,8 @@ class DefaultSpeedometerMetricTest {
 
         // when
         sendCycles(metric, time, 0, 1000, 1000);
-        sendCycles(metric, time, 1000, 1000 + (int) SettingsCommon.halfLife, 500);
-        time.set(Duration.ofSeconds(1000 + (int) SettingsCommon.halfLife));
+        sendCycles(metric, time, 1000, 1000 + (int) metricsConfig.halfLife(), 500);
+        time.set(Duration.ofSeconds(1000 + (int) metricsConfig.halfLife()));
         double rate = metric.get();
 
         // then
@@ -280,9 +283,10 @@ class DefaultSpeedometerMetricTest {
 
         // when
         sendCycles(metric, time, 0, 1000, 7000);
-        sendCycles(metric, time, 1000, 1000 + (int) SettingsCommon.halfLife, 5000);
-        sendCycles(metric, time, 1000 + (int) SettingsCommon.halfLife, 1000 + 2 * (int) SettingsCommon.halfLife, 2000);
-        time.set(Duration.ofSeconds(1000 + 2 * (int) SettingsCommon.halfLife));
+        sendCycles(metric, time, 1000, 1000 + (int) metricsConfig.halfLife(), 5000);
+        sendCycles(metric, time, 1000 + (int) metricsConfig.halfLife(), 1000 + 2 * (int) metricsConfig.halfLife(),
+                2000);
+        time.set(Duration.ofSeconds(1000 + 2 * (int) metricsConfig.halfLife()));
         double rate = metric.get();
 
         // then

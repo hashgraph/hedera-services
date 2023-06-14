@@ -52,8 +52,6 @@ import java.time.Duration;
  * 		number of connections maintained by each member (syncs happen on random connections from that set
  * @param bufferSize
  * 		for BufferedInputStream and BufferedOutputStream for syncing
- * @param halfLife
- * 		half life of some of the various statistics (give half the weight to the last halfLife seconds)
  * @param logStack
  * 		when converting an exception to a string for logging, should it include the stack trace?
  * @param doUpnp
@@ -195,7 +193,6 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "104857600") int throttle7maxBytes,
         @ConfigProperty(defaultValue = "40") int numConnections,
         @ConfigProperty(defaultValue = "8192") int bufferSize,
-        @ConfigProperty(defaultValue = "10") double halfLife,
         @ConfigProperty(defaultValue = "true") boolean logStack,
         @ConfigProperty(defaultValue = "true") boolean doUpnp,
         @ConfigProperty(defaultValue = "true") boolean useLoopbackIp,
@@ -219,7 +216,7 @@ public record BasicConfig(
         @ConfigProperty(value = "eventIntakeQueueSize", defaultValue = "10000") int eventIntakeQueueSize,
         @ConfigProperty(value = "randomEventProbability", defaultValue = "0") int randomEventProbability,
         @ConfigProperty(value = "rescueChildlessInverseProbability", defaultValue = "10")
-                int rescueChildlessInverseProbability,
+        int rescueChildlessInverseProbability,
         @ConfigProperty(value = "runPauseCheckTimer", defaultValue = "false") boolean runPauseCheckTimer,
         @ConfigProperty(value = "enableEventStreaming", defaultValue = "false") boolean enableEventStreaming,
         @ConfigProperty(value = "eventStreamQueueCapacity", defaultValue = "500") int eventStreamQueueCapacity,
@@ -233,7 +230,7 @@ public record BasicConfig(
         @ConfigProperty(value = "playbackStreamFileDirectory", defaultValue = "") String playbackStreamFileDirectory,
         @ConfigProperty(value = "playbackEndTimeStamp", defaultValue = "") String playbackEndTimeStamp,
         @ConfigProperty(value = "gossipWithDifferentVersions", defaultValue = "false")
-                boolean gossipWithDifferentVersions,
+        boolean gossipWithDifferentVersions,
         @ConfigProperty(value = "enablePingTrans", defaultValue = "true") boolean enablePingTrans,
         @ConfigProperty(value = "pingTransFreq", defaultValue = "1") long pingTransFreq,
         @ConfigProperty(value = "staleEventPreventionThreshold", defaultValue = "5") int staleEventPreventionThreshold,
@@ -245,4 +242,5 @@ public record BasicConfig(
         @ConfigProperty(value = "maxOutgoingSyncs", defaultValue = "2") int maxOutgoingSyncs,
         @ConfigProperty(value = "logPath", defaultValue = "log4j2.xml") Path logPath,
         @ConfigProperty(value = "hangingThreadDuration", defaultValue = "60s") Duration hangingThreadDuration,
-        @ConfigProperty(value = "genesisFreezeTime", defaultValue = "0") long genesisFreezeTime) {}
+        @ConfigProperty(value = "genesisFreezeTime", defaultValue = "0") long genesisFreezeTime) {
+}
