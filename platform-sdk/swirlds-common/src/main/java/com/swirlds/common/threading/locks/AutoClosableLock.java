@@ -18,6 +18,7 @@ package com.swirlds.common.threading.locks;
 
 import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
@@ -32,11 +33,13 @@ public interface AutoClosableLock {
      *
      * @return an instance used to release the lock
      */
+    @NonNull
     Locked lock();
 
     /**
      * Same as {@link #lock()}, but can unblock if interrupted
      */
+    @NonNull
     Locked lockInterruptibly() throws InterruptedException;
 
     /**
@@ -50,7 +53,8 @@ public interface AutoClosableLock {
     /**
      * {@link #tryLock()} but with a timeout
      */
-    MaybeLocked tryLock(long time, TimeUnit unit) throws InterruptedException;
+    @NonNull
+    MaybeLocked tryLock(long time, @NonNull TimeUnit unit) throws InterruptedException;
 
     /**
      * Returns a new {@link Condition} instance that is bound to this
@@ -63,5 +67,6 @@ public interface AutoClosableLock {
      *
      * @return A new {@link Condition} instance for this {@code Lock} instance
      */
+    @NonNull
     Condition newCondition();
 }
