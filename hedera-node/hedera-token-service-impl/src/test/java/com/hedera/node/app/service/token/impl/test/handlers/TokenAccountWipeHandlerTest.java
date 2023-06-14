@@ -210,6 +210,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
     class Handle {
         @Mock
         private ExpiryValidator validator;
+
         private WritableTokenStore writableTokenStore;
         private WritableNftStore writableNftStore;
 
