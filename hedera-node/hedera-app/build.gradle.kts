@@ -44,6 +44,7 @@ dependencies {
         itestImplementation(project(":hedera-node:node-app-spi"))
         itestImplementation(project(":hedera-node:node-hapi"))
         itestImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+        itestImplementation(testFixtures(project(":hedera-node:node-config")))
         itestImplementation(gav("com.github.spotbugs.annotations"))
         itestImplementation(gav("com.hedera.pbj.runtime"))
         itestImplementation(gav("com.swirlds.common"))
