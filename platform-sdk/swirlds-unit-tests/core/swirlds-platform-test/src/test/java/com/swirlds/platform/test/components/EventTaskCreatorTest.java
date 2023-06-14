@@ -72,10 +72,8 @@ class EventTaskCreatorTest {
 
     private void init(final EventConfig config) {
         eventMapper = mock(EventMapper.class);
-        addressBook = mock(AddressBook.class);
+        addressBook = prepareAddressBook();
         address = mock(Address.class);
-        when(addressBook.getAddress(any())).thenReturn(address);
-        when(addressBook.copy()).thenReturn(addressBook);
         selfId = new NodeId(1);
         eventIntakeMetrics = mock(EventIntakeMetrics.class);
         eventQueueThread = mock(BlockingQueue.class);
@@ -92,6 +90,12 @@ class EventTaskCreatorTest {
                 () -> random);
     }
 
+    private AddressBook prepareAddressBook() {
+        // this is a work around instead of refactoring the whole unit test file.
+        // the implementation of rescue children now iterates over the addresses in the address book.
+        return new RandomAddressBookGenerator().setSize(5).build();
+    }
+
     @NonNull
     private EventConfig configRandomEventProbability() {
         return new TestConfigBuilder()
@@ -101,9 +105,9 @@ class EventTaskCreatorTest {
     }
 
     @NonNull
-    private EventConfig configRescueChildlessInverseProbability() {
+    private EventConfig configRescueChildlessInverseProbability(int value) {
         return new TestConfigBuilder()
-                .withValue("event.rescueChildlessInverseProbability", 5)
+                .withValue("event.rescueChildlessInverseProbability", value)
                 .getOrCreateConfig()
                 .getConfigData(EventConfig.class);
     }
@@ -147,15 +151,10 @@ class EventTaskCreatorTest {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("test addEvent()")
     void testEventRescue() throws InterruptedException {
-        init(configRescueChildlessInverseProbability());
-        when(addressBook.getSize()).thenReturn(5);
-        // this is a work around instead of refactoring the whole unit test file.
-        // the implementation of rescue children now iterates over the addresses in the address book.
-        final AddressBook newAddressBook =
-                new RandomAddressBookGenerator().setSize(5).build();
-        when(addressBook.iterator()).thenReturn(newAddressBook.iterator());
+        init(configRescueChildlessInverseProbability(5));
+
         EventImpl eventToRescue = mock(EventImpl.class);
-        when(eventToRescue.getCreatorId()).thenReturn(newAddressBook.getNodeId(2));
+        when(eventToRescue.getCreatorId()).thenReturn(addressBook.getNodeId(2));
         when(eventMapper.getMostRecentEvent(eventToRescue.getCreatorId())).thenReturn(eventToRescue);
 
         taskCreator.rescueChildlessEvents();
@@ -166,11 +165,21 @@ class EventTaskCreatorTest {
                 eventToRescue.getCreatorId(),
                 captor.getValue().getOtherId(),
                 "otherId should match the senderId of the rescued event");
+    }
 
-        reset(eventQueueThread);
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.PLATFORM)
+    @DisplayName("test addEvent()")
+    void testEventNotRescue() throws InterruptedException {
+        init(configRescueChildlessInverseProbability(0));
 
-        // test with feature off
+        EventImpl eventToRescue = mock(EventImpl.class);
+        when(eventToRescue.getCreatorId()).thenReturn(addressBook.getNodeId(2));
+        when(eventMapper.getMostRecentEvent(eventToRescue.getCreatorId())).thenReturn(eventToRescue);
+
         taskCreator.rescueChildlessEvents();
+
         verify(eventQueueThread, times(0)).put(any());
     }
 
