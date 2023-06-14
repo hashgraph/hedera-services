@@ -45,6 +45,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -96,6 +97,7 @@ class SignatureVerificationTest implements Scenarios {
                 OK,
                 null,
                 verificationResults,
+                Map.of(),
                 null,
                 DEFAULT_CONFIG_VERSION);
         assertThat(result.verificationFor(ERIN.account().alias()))
@@ -132,6 +134,7 @@ class SignatureVerificationTest implements Scenarios {
                 OK,
                 null,
                 verificationResults,
+                Map.of(),
                 null,
                 DEFAULT_CONFIG_VERSION);
         assertThat(result.verificationFor(keyToVerify))

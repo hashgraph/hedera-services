@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -26,6 +27,7 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Represents the context of a single {@code handle()}-call.
@@ -74,12 +76,28 @@ public interface HandleContext {
     TransactionBody body();
 
     /**
+     * Gets the payer {@link AccountID}.
+     *
+     * @return the {@link AccountID} of the payer in this context
+     */
+    @NonNull
+    AccountID payer();
+
+    /**
      * Returns the current {@link Configuration} for the node.
      *
      * @return the {@code Configuration}
      */
     @NonNull
     Configuration configuration();
+
+    /**
+     * Getter for the payer key
+     *
+     * @return the payer key
+     */
+    @Nullable
+    Key payerKey();
 
     /**
      * Returns the next entity number, for use by handlers that create entities.
@@ -114,21 +132,32 @@ public interface HandleContext {
      * there will be no corresponding {@link SignatureVerification}. If the key was provided during pre-handle, then the
      * corresponding {@link SignatureVerification} will be returned with the result of that verification operation.
      *
+     * <p>The signatures of required keys are guaranteed to be verified. Optional signatures may still be in the
+     * process of being verified (and therefore may time out). The timeout can be configured via the configuration
+     * {@code hedera.workflow.verificationTimeoutMS}
+     *
      * @param key the key to get the verification for
-     * @return the verification for the given key, or {@code null} if no such key was provided during pre-handle
+     * @return the verification for the given key
      * @throws NullPointerException if {@code key} is {@code null}
+     * @throws TimeoutException if the verification for the given key timed out
      */
-    @Nullable
-    SignatureVerification verificationFor(@NonNull Key key);
+    @NonNull
+    SignatureVerification verificationFor(@NonNull Key key) throws TimeoutException;
 
     /**
      * Gets the {@link SignatureVerification} for the given hollow account.
      *
+     * <p>The signatures of required accounts are guaranteed to be verified. Optional accounts may still be in the
+     * process of being verified (and therefore may time out). The timeout can be configured via the configuration
+     * {@code hedera.workflow.verificationTimeoutMS}
+     *
      * @param evmAlias The evm alias to lookup verification for.
      * @return the verification for the given hollow account.
+     * @throws NullPointerException if {@code evmAlias} is {@code null}
+     * @throws TimeoutException if the verification for the given alias timed out
      */
-    @Nullable
-    SignatureVerification verificationFor(@NonNull final Bytes evmAlias);
+    @NonNull
+    SignatureVerification verificationFor(@NonNull final Bytes evmAlias) throws TimeoutException;
 
     /**
      * Get a readable store given the store's interface. This gives read-only access to the store.

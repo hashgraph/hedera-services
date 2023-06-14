@@ -73,4 +73,6 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows.handle.validation;
     exports com.hedera.node.app.state.recordcache to
             com.swirlds.common;
+    exports com.hedera.node.app.signature to
+            com.hedera.node.app.test.fixtures;
 }

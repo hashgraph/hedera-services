@@ -61,6 +61,8 @@ class MonoExpiryValidatorTest {
     private static final long bPeriod = 777_777L;
     private static final long anAutoRenewNum = 888;
     private static final long DEFAULT_CONFIG_VERSION = 1;
+    private static final VersionedConfiguration DEFAULT_CONFIGURATION =
+            new VersionedConfigImpl(new HederaTestConfigBuilder().getOrCreateConfig(), DEFAULT_CONFIG_VERSION);
 
     @Mock
     private AttributeValidator attributeValidator;
@@ -80,17 +82,13 @@ class MonoExpiryValidatorTest {
     @Mock(strictness = Strictness.LENIENT)
     private ConfigProvider configProvider;
 
-    private VersionedConfiguration configuration;
-
     private MonoExpiryValidator subject;
 
     @BeforeEach
     void setUp() {
         subject =
                 new MonoExpiryValidator(accountStore, attributeValidator, consensusSecondNow, numbers, configProvider);
-        configuration =
-                new VersionedConfigImpl(new HederaTestConfigBuilder().getOrCreateConfig(), DEFAULT_CONFIG_VERSION);
-        given(configProvider.getConfiguration()).willReturn(configuration);
+        given(configProvider.getConfiguration()).willReturn(DEFAULT_CONFIGURATION);
     }
 
     @Test

@@ -20,6 +20,7 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -50,6 +51,8 @@ import java.time.Instant;
 public class HandleContextImpl implements HandleContext {
 
     private final TransactionBody txBody;
+    private final AccountID payer;
+    private final Key payerKey;
     private final TransactionCategory category;
     private final SingleTransactionRecordBuilder recordBuilder;
     private final SavepointStackImpl stack;
@@ -66,6 +69,8 @@ public class HandleContextImpl implements HandleContext {
      * Constructs a {@link HandleContextImpl}.
      *
      * @param txBody The {@link TransactionBody} of the transaction
+     * @param payer The {@link AccountID} of the payer
+     * @param payerKey The {@link Key} of the payer
      * @param category The {@link TransactionCategory} of the transaction (either user, preceding, or child)
      * @param recordBuilder The main {@link SingleTransactionRecordBuilder}
      * @param stack The {@link SavepointStackImpl} used to manage savepoints
@@ -77,6 +82,8 @@ public class HandleContextImpl implements HandleContext {
      */
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,
+            @NonNull final AccountID payer,
+            @NonNull final Key payerKey,
             @NonNull final TransactionCategory category,
             @NonNull final SingleTransactionRecordBuilder recordBuilder,
             @NonNull final SavepointStackImpl stack,
@@ -86,6 +93,8 @@ public class HandleContextImpl implements HandleContext {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final ServiceScopeLookup serviceScopeLookup) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
+        this.payer = requireNonNull(payer, "payer must not be null");
+        this.payerKey = requireNonNull(payerKey, "payerKey must not be null");
         this.category = requireNonNull(category, "category must not be null");
         this.recordBuilder = requireNonNull(recordBuilder, "recordBuilder must not be null");
         this.stack = requireNonNull(stack, "stack must not be null");
@@ -115,6 +124,18 @@ public class HandleContextImpl implements HandleContext {
         return txBody;
     }
 
+    @NonNull
+    @Override
+    public AccountID payer() {
+        return payer;
+    }
+
+    @Nullable
+    @Override
+    public Key payerKey() {
+        return payerKey;
+    }
+
     @Override
     @NonNull
     public Configuration configuration() {
@@ -139,14 +160,14 @@ public class HandleContextImpl implements HandleContext {
     }
 
     @Override
-    @Nullable
+    @NonNull
     public SignatureVerification verificationFor(@NonNull final Key key) {
         requireNonNull(key, "key must not be null");
         return verifier.verificationFor(key);
     }
 
     @Override
-    @Nullable
+    @NonNull
     public SignatureVerification verificationFor(@NonNull final Bytes evmAlias) {
         requireNonNull(evmAlias, "evmAlias must not be null");
         return verifier.verificationFor(evmAlias);
@@ -264,7 +285,7 @@ public class HandleContextImpl implements HandleContext {
         final var childStack = new SavepointStackImpl(current().state(), configuration());
         final var childContext = new HandleContextImpl(
                 txBody,
-                childCategory,
+                payer, payerKey, childCategory,
                 childRecordBuilder,
                 childStack,
                 verifier,

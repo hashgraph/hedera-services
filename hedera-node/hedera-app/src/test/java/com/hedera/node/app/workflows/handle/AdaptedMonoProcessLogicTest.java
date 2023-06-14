@@ -101,6 +101,7 @@ class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
                 Status.SO_FAR_SO_GOOD,
                 OK,
                 null,
+                Set.of(),
                 verificationResults(PAYER_KEY_PBJ),
                 null,
                 DEFAULT_CONFIG_VERSION);
@@ -132,6 +133,7 @@ class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
                 Status.NODE_DUE_DILIGENCE_FAILURE,
                 INVALID_ACCOUNT_ID,
                 null,
+                Set.of(),
                 verificationResults(PAYER_KEY_PBJ),
                 null,
                 DEFAULT_CONFIG_VERSION);
@@ -163,6 +165,7 @@ class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
                 Status.NODE_DUE_DILIGENCE_FAILURE,
                 INVALID_ACCOUNT_ID,
                 null,
+                Set.of(),
                 verificationResults(PAYER_KEY_PBJ),
                 null,
                 DEFAULT_CONFIG_VERSION);
@@ -196,6 +199,7 @@ class AdaptedMonoProcessLogicTest extends AppTestBase implements Scenarios {
                 Status.NODE_DUE_DILIGENCE_FAILURE,
                 INVALID_ACCOUNT_ID,
                 null,
+                Set.of(),
                 Map.of(),
                 null,
                 DEFAULT_CONFIG_VERSION);
