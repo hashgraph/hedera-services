@@ -52,6 +52,7 @@ import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfigura
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.framework.internal.QueueThreadMetrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
@@ -996,5 +997,85 @@ class QueueThreadTests {
         assertTrue(finishedWaitingLatch.await(100, MILLISECONDS));
 
         queue.stop();
+    }
+
+    @Test
+    @DisplayName("Idle Callback Test")
+    void idleCallbackTest() throws InterruptedException {
+        final AtomicBoolean error = new AtomicBoolean(false);
+
+        final AtomicBoolean idleCallbackPermitted = new AtomicBoolean(false);
+        final AtomicBoolean idleCallbackCalled = new AtomicBoolean(false);
+        final InterruptableRunnable idleCallback = () -> {
+            if (idleCallbackPermitted.get()) {
+                idleCallbackCalled.set(true);
+            } else {
+                error.set(true);
+            }
+        };
+
+        final QueueThread<Runnable> queue = new QueueThreadConfiguration<Runnable>(getStaticThreadManager())
+                .setThreadName("test")
+                .setIdleCallback(idleCallback)
+                .setHandler(Runnable::run)
+                .setWaitForWorkDuration(Duration.ofMillis(1))
+                .build();
+
+        final CountDownLatch latch1 = new CountDownLatch(1);
+        final CountDownLatch latch2 = new CountDownLatch(1);
+        final CountDownLatch latch3 = new CountDownLatch(1);
+
+        queue.add(() -> {
+            try {
+                latch1.await();
+            } catch (final InterruptedException ignored) {
+                error.set(true);
+                Thread.currentThread().interrupt();
+            }
+        });
+        queue.add(() -> {
+            try {
+                latch2.await();
+            } catch (final InterruptedException ignored) {
+                error.set(true);
+                Thread.currentThread().interrupt();
+            }
+        });
+        queue.add(() -> {
+            try {
+                latch3.await();
+            } catch (final InterruptedException ignored) {
+                error.set(true);
+                Thread.currentThread().interrupt();
+            }
+        });
+        queue.start();
+
+        // The queue should call the idle callback during this time,
+        // but give it some time to do bad things if it's going to do bad things.
+        MILLISECONDS.sleep(10);
+
+        latch1.countDown();
+
+        // The queue should call the idle callback during this time,
+        // but give it some time to do bad things if it's going to do bad things.
+        MILLISECONDS.sleep(10);
+
+        latch2.countDown();
+
+        // The queue should call the idle callback during this time,
+        // but give it some time to do bad things if it's going to do bad things.
+        MILLISECONDS.sleep(10);
+
+        // Once job 3 is permitted to complete, we expect for the idle callback to be invoked shortly afterwards.
+        idleCallbackPermitted.set(true);
+
+        latch3.countDown();
+
+        assertEventuallyTrue(idleCallbackCalled::get, Duration.ofSeconds(1), "Idle callback was not called");
+
+        queue.stop();
+
+        assertFalse(error.get());
     }
 }

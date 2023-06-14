@@ -22,6 +22,10 @@ import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfigura
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadManager;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -57,6 +61,16 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
     private BlockingQueue<T> queue;
 
     private QueueThreadMetricsConfiguration metricsConfiguration;
+
+    /**
+     * The callback to run periodically when the queue is idle.
+     */
+    private InterruptableRunnable idleCallback;
+
+    /**
+     * When waiting for work, the amount of time to block.
+     */
+    private Duration waitForWorkDuration = Duration.ofMillis(10);
 
     protected AbstractQueueThreadConfiguration(final ThreadManager threadManager) {
         super(threadManager);
@@ -164,6 +178,45 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
     protected C setHandler(final InterruptableConsumer<T> handler) {
         throwIfImmutable();
         this.handler = handler;
+        return (C) this;
+    }
+
+    /**
+     * Set the idle callback that will be called periodically when the queue is empty.
+     *
+     * @return this object
+     */
+    @SuppressWarnings("unchecked")
+    public C setIdleCallback(@NonNull final InterruptableRunnable idleCallback) {
+        this.idleCallback = idleCallback;
+        return (C) this;
+    }
+
+    /**
+     * Get the idle callback that will be called periodically when the queue is empty.
+     */
+    @Nullable
+    public InterruptableRunnable getIdleCallback() {
+        return idleCallback;
+    }
+
+    /**
+     * Get the amount of time that the thread blocks while waiting for work.
+     */
+    @NonNull
+    public Duration getWaitForWorkDuration() {
+        return waitForWorkDuration;
+    }
+
+    /**
+     * Set the amount of time that the thread blocks while waiting for work.
+     *
+     * @param waitForWorkDuration the amount of time to wait
+     * @return this object
+     */
+    @SuppressWarnings("unchecked")
+    public C setWaitForWorkDuration(@NonNull final Duration waitForWorkDuration) {
+        this.waitForWorkDuration = Objects.requireNonNull(waitForWorkDuration);
         return (C) this;
     }
 

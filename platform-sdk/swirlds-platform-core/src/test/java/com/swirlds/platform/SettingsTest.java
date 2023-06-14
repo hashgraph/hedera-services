@@ -28,12 +28,6 @@ import static com.swirlds.platform.SettingConstants.DATA_STRING;
 import static com.swirlds.platform.SettingConstants.DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DELAY_SHUFFLE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DO_UPNP_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.ENABLE_EVENT_STREAMING_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.EVENTS_LOG_DIR_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.EVENTS_LOG_PERIOD_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.EVENT_INTAKE_QUEUE_SIZE_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.EVENT_INTAKE_QUEUE_THROTTLE_SIZE_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.EVENT_STREAM_QUEUE_CAPACITY_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.FREEZE_SECONDS_AFTER_STARTUP_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.GOSSIP_WITH_DIFFERENT_VERSIONS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.HALF_LIFE_DEFAULT_VALUE;
@@ -44,21 +38,17 @@ import static com.swirlds.platform.SettingConstants.LOAD_KEYS_FROM_PFX_FILES_DEF
 import static com.swirlds.platform.SettingConstants.LOG4J2_CONFIG_FILE;
 import static com.swirlds.platform.SettingConstants.LOG_STACK_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_ADDRESS_SIZE_ALLOWED_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.MAX_EVENT_QUEUE_FOR_CONS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_INCOMING_SYNCS_INC_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_OUTGOING_SYNCS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.NUM_CONNECTIONS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.NUM_CRYPTO_THREADS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.RANDOM_EVENT_PROBABILITY_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.RESCUE_CHILDLESS_INVERSE_PROBABILITY_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SETTINGS_TXT;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_CALLER_SKIPS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_HEARTBEAT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SOCKET_IP_TOS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.STALE_EVENT_PREVENTION_THRESHOLD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.STATS_SKIP_SECONDS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.TCP_NO_DELAY_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.THREAD_DUMP_LOG_DIR_DEFAULT_VALUE;
@@ -122,6 +112,20 @@ class SettingsTest {
         final Settings settings = Settings.getInstance();
         final File emptyFile =
                 new File(SettingsTest.class.getResource("settings1.txt").getFile());
+
+        // then
+        Assertions.assertTrue(emptyFile.exists());
+        Assertions.assertDoesNotThrow(() -> settings.loadSettings(emptyFile));
+    }
+
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @DisplayName("Checks that loading settings with migrated settings does not throw an exception")
+    public void checkOnlyConfigSettingsFile() {
+        // given
+        final Settings settings = Settings.getInstance();
+        final File emptyFile =
+                new File(SettingsTest.class.getResource("settings13.txt").getFile());
 
         // then
         Assertions.assertTrue(emptyFile.exists());
@@ -220,7 +224,6 @@ class SettingsTest {
         Assertions.assertEquals(NUM_CRYPTO_THREADS_DEFAULT_VALUE, settings.getNumCryptoThreads());
         Assertions.assertEquals(SHOW_INTERNAL_STATS_DEFAULT_VALUE, settings.isShowInternalStats());
         Assertions.assertEquals(VERBOSE_STATISTICS_DEFAULT_VALUE, settings.isVerboseStatistics());
-        Assertions.assertEquals(MAX_EVENT_QUEUE_FOR_CONS_DEFAULT_VALUE, settings.getMaxEventQueueForCons());
         Assertions.assertEquals(
                 THROTTLE_TRANSACTION_QUEUE_SIZE_DEFAULT_VALUE, settings.getThrottleTransactionQueueSize());
         Assertions.assertEquals(NUM_CONNECTIONS_DEFAULT_VALUE, settings.getNumConnections());
@@ -260,18 +263,6 @@ class SettingsTest {
         Assertions.assertEquals(CSV_FILE_NAME_DEFAULT_VALUE, settings.getCsvFileName());
         Assertions.assertEquals(CSV_WRITE_FREQUENCY_DEFAULT_VALUE, settings.getCsvWriteFrequency());
         Assertions.assertEquals(CSV_APPEND_DEFAULT_VALUE, settings.isCsvAppend());
-        Assertions.assertEquals(
-                EVENT_INTAKE_QUEUE_THROTTLE_SIZE_DEFAULT_VALUE, settings.getEventIntakeQueueThrottleSize());
-        Assertions.assertEquals(EVENT_INTAKE_QUEUE_SIZE_DEFAULT_VALUE, settings.getEventIntakeQueueSize());
-        Assertions.assertEquals(RANDOM_EVENT_PROBABILITY_DEFAULT_VALUE, settings.getRandomEventProbability());
-        Assertions.assertEquals(
-                STALE_EVENT_PREVENTION_THRESHOLD_DEFAULT_VALUE, settings.getStaleEventPreventionThreshold());
-        Assertions.assertEquals(
-                RESCUE_CHILDLESS_INVERSE_PROBABILITY_DEFAULT_VALUE, settings.getRescueChildlessInverseProbability());
-        Assertions.assertEquals(ENABLE_EVENT_STREAMING_DEFAULT_VALUE, settings.isEnableEventStreaming());
-        Assertions.assertEquals(EVENT_STREAM_QUEUE_CAPACITY_DEFAULT_VALUE, settings.getEventStreamQueueCapacity());
-        Assertions.assertEquals(EVENTS_LOG_PERIOD_DEFAULT_VALUE, settings.getEventsLogPeriod());
-        Assertions.assertEquals(EVENTS_LOG_DIR_DEFAULT_VALUE, settings.getEventsLogDir());
         Assertions.assertEquals(THREAD_DUMP_PERIOD_MS_DEFAULT_VALUE, settings.getThreadDumpPeriodMs());
         Assertions.assertEquals(THREAD_DUMP_LOG_DIR_DEFAULT_VALUE, settings.getThreadDumpLogDir());
         Assertions.assertEquals(JVM_PAUSE_DETECTOR_SLEEP_MS_DEFAULT_VALUE, settings.getJVMPauseDetectorSleepMs());
@@ -316,7 +307,6 @@ class SettingsTest {
         Assertions.assertEquals(16, settings.getNumCryptoThreads());
         Assertions.assertTrue(settings.isShowInternalStats());
         Assertions.assertTrue(settings.isVerboseStatistics());
-        Assertions.assertEquals(600, settings.getMaxEventQueueForCons());
         Assertions.assertEquals(200000, settings.getThrottleTransactionQueueSize());
         Assertions.assertEquals(50, settings.getNumConnections());
         Assertions.assertEquals(3, settings.getMaxOutgoingSyncs());
@@ -349,15 +339,6 @@ class SettingsTest {
         Assertions.assertEquals("csvFile", settings.getCsvFileName());
         Assertions.assertEquals(4000, settings.getCsvWriteFrequency());
         Assertions.assertTrue(settings.isCsvAppend());
-        Assertions.assertEquals(2000, settings.getEventIntakeQueueThrottleSize());
-        Assertions.assertEquals(15000, settings.getEventIntakeQueueSize());
-        Assertions.assertEquals(1, settings.getRandomEventProbability());
-        Assertions.assertEquals(10, settings.getStaleEventPreventionThreshold());
-        Assertions.assertEquals(15, settings.getRescueChildlessInverseProbability());
-        Assertions.assertTrue(settings.isEnableEventStreaming());
-        Assertions.assertEquals(1000, settings.getEventStreamQueueCapacity());
-        Assertions.assertEquals(70, settings.getEventsLogPeriod());
-        Assertions.assertEquals("badEventsStream", settings.getEventsLogDir());
         Assertions.assertEquals(1, settings.getThreadDumpPeriodMs());
         Assertions.assertEquals("badData/badThreadDump", settings.getThreadDumpLogDir());
         Assertions.assertEquals(2000, settings.getJVMPauseDetectorSleepMs());
