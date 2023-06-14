@@ -32,9 +32,14 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * Class containing the state machine logic for the {@link PlatformStatus#ACTIVE ACTIVE} status.
+ * Class containing the state machine logic for the {@link PlatformStatus#ACTIVE} status.
  */
-public class ActiveStatusLogic extends AbstractStatusLogic {
+public class ActiveStatusLogic implements PlatformStatusLogic {
+    /**
+     * The platform status config
+     */
+    private final PlatformStatusConfig config;
+
     /**
      * The last time a self event was observed reaching consensus
      */
@@ -43,76 +48,125 @@ public class ActiveStatusLogic extends AbstractStatusLogic {
     /**
      * Constructor
      *
-     * @param config the platform status config
+     * @param startTime the time when the platform transitioned to the {@link PlatformStatus#ACTIVE} status
+     * @param config    the platform status config
      */
     public ActiveStatusLogic(@NonNull final Instant startTime, @NonNull final PlatformStatusConfig config) {
-        super(config);
-
         // a self event had to reach consensus to arrive at the ACTIVE status
         this.lastTimeOwnEventReachedConsensus = startTime;
+        this.config = config;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * {@link PlatformStatus#ACTIVE} status unconditionally transitions to {@link PlatformStatus#CATASTROPHIC_FAILURE}
+     * when a {@link CatastrophicFailureAction} is processed.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processCatastrophicFailureAction(@NonNull CatastrophicFailureAction action) {
-        return new CatastrophicFailureStatusLogic(getConfig());
+        return new CatastrophicFailureStatusLogic();
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link DoneReplayingEventsAction} while in {@link PlatformStatus#ACTIVE} throws an exception, since
+     * this is not conceivable in standard operation.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull DoneReplayingEventsAction action) {
         throw new IllegalStateException(getUnexpectedStatusActionLog(action));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * {@link PlatformStatus#ACTIVE} status unconditionally transitions to {@link PlatformStatus#BEHIND} when a
+     * {@link FallenBehindAction} is processed.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processFallenBehindAction(@NonNull FallenBehindAction action) {
-        return new BehindStatusLogic(getConfig());
+        return new BehindStatusLogic(config);
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * {@link PlatformStatus#ACTIVE} status unconditionally transitions to {@link PlatformStatus#FREEZING} when a
+     * {@link FreezePeriodEnteredAction} is processed.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull FreezePeriodEnteredAction action) {
-        return new FreezingStatusLogic(action.freezeRound(), getConfig());
+        return new FreezingStatusLogic(action.freezeRound());
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link ReconnectCompleteAction} while in {@link PlatformStatus#ACTIVE} throws an exception, since
+     * this is not conceivable in standard operation.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processReconnectCompleteAction(@NonNull ReconnectCompleteAction action) {
         throw new IllegalStateException(getUnexpectedStatusActionLog(action));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link SelfEventReachedConsensusAction} while in {@link PlatformStatus#ACTIVE} doesn't ever result in
+     * a status transition, but this logic method does record the time the event reached consensus.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processSelfEventReachedConsensusAction(@NonNull SelfEventReachedConsensusAction action) {
-
-        // record the time a self event reached consensus, resetting the timer that would trigger a
-        // transition to CHECKING
         lastTimeOwnEventReachedConsensus = action.instant();
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link StartedReplayingEventsAction} while in {@link PlatformStatus#ACTIVE} throws an exception,
+     * since this is not conceivable in standard operation.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull StartedReplayingEventsAction action) {
         throw new IllegalStateException(getUnexpectedStatusActionLog(action));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link StateWrittenToDiskAction} while in {@link PlatformStatus#ACTIVE} has no effect on the state
+     * machine.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull StateWrittenToDiskAction action) {
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * When a {@link TimeElapsedAction} is received while in {@link PlatformStatus#ACTIVE}, we must evaluate whether too
+     * much time has elapsed since seeing a self event reach consensus. If too much time has elapsed, the status
+     * transitions to {@link PlatformStatus#CHECKING}. Otherwise, the status remains {@link PlatformStatus#ACTIVE}.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processTimeElapsedAction(@NonNull TimeElapsedAction action) {
-        if (Duration.between(lastTimeOwnEventReachedConsensus, action.instant())
-                        .compareTo(getConfig().activeStatusDelay())
+        if (Duration.between(lastTimeOwnEventReachedConsensus, action.instant()).compareTo(config.activeStatusDelay())
                 > 0) {
-            // if a self event hasn't been observed reaching consensus in the configured duration,
-            // go back to CHECKING
-            return new CheckingStatusLogic(getConfig());
+            return new CheckingStatusLogic(config);
         } else {
             return this;
         }

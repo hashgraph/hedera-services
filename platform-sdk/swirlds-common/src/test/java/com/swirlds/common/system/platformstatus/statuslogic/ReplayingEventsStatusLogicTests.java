@@ -19,13 +19,13 @@ package com.swirlds.common.system.platformstatus.statuslogic;
 import static com.swirlds.common.system.platformstatus.statuslogic.StatusLogicTestUtils.triggerActionAndAssertException;
 import static com.swirlds.common.system.platformstatus.statuslogic.StatusLogicTestUtils.triggerActionAndAssertNoTransition;
 import static com.swirlds.common.system.platformstatus.statuslogic.StatusLogicTestUtils.triggerActionAndAssertTransition;
-import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
 import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
 import com.swirlds.common.system.platformstatus.statusactions.FallenBehindAction;
+import com.swirlds.common.system.platformstatus.statusactions.FreezePeriodEnteredAction;
 import com.swirlds.common.system.platformstatus.statusactions.ReconnectCompleteAction;
 import com.swirlds.common.system.platformstatus.statusactions.SelfEventReachedConsensusAction;
 import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEventsAction;
@@ -34,7 +34,6 @@ import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
-import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -69,6 +68,33 @@ class ReplayingEventsStatusLogicTests {
                 logic::processCatastrophicFailureAction,
                 new CatastrophicFailureAction(),
                 PlatformStatus.CATASTROPHIC_FAILURE);
+    }
+
+    @Test
+    @DisplayName("Wait in REPLAYING_EVENTS until freeze state is written if boundary is crossed")
+    void freezeBoundaryCrossed() {
+        triggerActionAndAssertNoTransition(
+                logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(6L), logic.getStatus());
+        triggerActionAndAssertNoTransition(
+                logic::processDoneReplayingEventsAction, new DoneReplayingEventsAction(time.now()), logic.getStatus());
+        // if the state written to disk isn't the freeze state, we shouldn't transition
+        triggerActionAndAssertNoTransition(
+                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(5), logic.getStatus());
+        triggerActionAndAssertTransition(
+                logic::processStateWrittenToDiskAction,
+                new StateWrittenToDiskAction(6),
+                PlatformStatus.FREEZE_COMPLETE);
+    }
+
+    @Test
+    @DisplayName("Go immediately to FREEZE_COMPLETE when a freeze state is written, even if replay isn't done yet")
+    void fastFreeze() {
+        triggerActionAndAssertNoTransition(
+                logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(6L), logic.getStatus());
+        triggerActionAndAssertTransition(
+                logic::processStateWrittenToDiskAction,
+                new StateWrittenToDiskAction(6),
+                PlatformStatus.FREEZE_COMPLETE);
     }
 
     @Test

@@ -17,7 +17,6 @@
 package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
-import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
 import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
 import com.swirlds.common.system.platformstatus.statusactions.FallenBehindAction;
@@ -30,9 +29,9 @@ import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Class containing the state machine logic for the {@link PlatformStatus#FREEZING FREEZING} status.
+ * Class containing the state machine logic for the {@link PlatformStatus#FREEZING} status.
  */
-public class FreezingStatusLogic extends AbstractStatusLogic {
+public class FreezingStatusLogic implements PlatformStatusLogic {
     /**
      * The round number when the freeze started
      */
@@ -42,70 +41,119 @@ public class FreezingStatusLogic extends AbstractStatusLogic {
      * Constructor
      *
      * @param freezeRound the round number when the freeze started
-     * @param config      the platform status config
      */
-    public FreezingStatusLogic(final long freezeRound, @NonNull final PlatformStatusConfig config) {
-
-        super(config);
-
+    public FreezingStatusLogic(final long freezeRound) {
         this.freezeRound = freezeRound;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * {@link PlatformStatus#FREEZING} status unconditionally transitions to {@link PlatformStatus#CATASTROPHIC_FAILURE}
+     * when a {@link CatastrophicFailureAction} is processed.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processCatastrophicFailureAction(@NonNull CatastrophicFailureAction action) {
-        return new CatastrophicFailureStatusLogic(getConfig());
+        return new CatastrophicFailureStatusLogic();
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link DoneReplayingEventsAction} while in {@link PlatformStatus#FREEZING} throws an exception, since
+     * this is not conceivable in standard operation.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull DoneReplayingEventsAction action) {
         throw new IllegalStateException(getUnexpectedStatusActionLog(action));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link FallenBehindAction} while in {@link PlatformStatus#FREEZING} has no effect on the state
+     * machine.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processFallenBehindAction(@NonNull FallenBehindAction action) {
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link FreezePeriodEnteredAction} while in {@link PlatformStatus#FREEZING} throws an exception, since
+     * this is not conceivable in standard operation.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull FreezePeriodEnteredAction action) {
         throw new IllegalStateException(getUnexpectedStatusActionLog(action));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link ReconnectCompleteAction} while in {@link PlatformStatus#FREEZING} throws an exception, since
+     * this is not conceivable in standard operation.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processReconnectCompleteAction(@NonNull ReconnectCompleteAction action) {
         throw new IllegalStateException(getUnexpectedStatusActionLog(action));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link SelfEventReachedConsensusAction} while in {@link PlatformStatus#FREEZING} has no effect on the
+     * state machine.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processSelfEventReachedConsensusAction(@NonNull SelfEventReachedConsensusAction action) {
-
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link StartedReplayingEventsAction} while in {@link PlatformStatus#FREEZING} throws an exception,
+     * since this is not conceivable in standard operation.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull StartedReplayingEventsAction action) {
         throw new IllegalStateException(getUnexpectedStatusActionLog(action));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * If the {@link StateWrittenToDiskAction} received by this method indicates that the freeze state has been written
+     * to disk, then we transition to {@link PlatformStatus#FREEZE_COMPLETE}.
+     * <p>
+     * If the state written to disk isn't the freeze state, then we remain in {@link PlatformStatus#FREEZING}.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull StateWrittenToDiskAction action) {
-        // it's possible that a different state has been written to disk. only transition from this status
-        // if the freeze state has been written to disk.
         if (action.round() == freezeRound) {
-            return new FreezeCompleteStatusLogic(getConfig());
+            return new FreezeCompleteStatusLogic();
         } else {
             return this;
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link TimeElapsedAction} while in {@link PlatformStatus#FREEZING} has no effect on the state
+     * machine.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processTimeElapsedAction(@NonNull TimeElapsedAction action) {

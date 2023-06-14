@@ -51,14 +51,15 @@ class ReconnectCompleteStatusLogicTests {
         time = new FakeTime();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         logic = new ReconnectCompleteStatusLogic(
-                reconnectStateRound, configuration.getConfigData(PlatformStatusConfig.class));
+                reconnectStateRound, null, configuration.getConfigData(PlatformStatusConfig.class));
     }
 
     @Test
     @DisplayName("Go to CHECKING when the round written precisely matches the reconnect state round")
     void toCheckingWithPreciseRoundMatch() {
         triggerActionAndAssertTransition(
-                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(reconnectStateRound),
+                logic::processStateWrittenToDiskAction,
+                new StateWrittenToDiskAction(reconnectStateRound),
                 PlatformStatus.CHECKING);
     }
 
@@ -66,7 +67,8 @@ class ReconnectCompleteStatusLogicTests {
     @DisplayName("Go to CHECKING when the round written doesn't precisely match the reconnect state round")
     void toCheckingWithImpreciseRoundMatch() {
         triggerActionAndAssertTransition(
-                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(reconnectStateRound + 3),
+                logic::processStateWrittenToDiskAction,
+                new StateWrittenToDiskAction(reconnectStateRound + 3),
                 PlatformStatus.CHECKING);
     }
 
@@ -83,7 +85,8 @@ class ReconnectCompleteStatusLogicTests {
         triggerActionAndAssertNoTransition(
                 logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());
         triggerActionAndAssertTransition(
-                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(reconnectStateRound),
+                logic::processStateWrittenToDiskAction,
+                new StateWrittenToDiskAction(reconnectStateRound),
                 PlatformStatus.FREEZING);
     }
 
@@ -93,7 +96,23 @@ class ReconnectCompleteStatusLogicTests {
         triggerActionAndAssertNoTransition(
                 logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());
         triggerActionAndAssertTransition(
-                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(reconnectStateRound + 5),
+                logic::processStateWrittenToDiskAction,
+                new StateWrittenToDiskAction(reconnectStateRound + 5),
+                PlatformStatus.FREEZING);
+    }
+
+    @Test
+    @DisplayName("Go to FREEZING when the logic object was constructed with a non-null freeze boundary")
+    void toFreezingWithPriorFreezeBoundary() {
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        // this logic is being constructed as if the freeze boundary was crossed while in the BEHIND status
+        logic = new ReconnectCompleteStatusLogic(
+                reconnectStateRound, 10L, configuration.getConfigData(PlatformStatusConfig.class));
+
+        // TODO make sure we aren't receiving multiple freeze deadlines where it's being stored
+        triggerActionAndAssertTransition(
+                logic::processStateWrittenToDiskAction,
+                new StateWrittenToDiskAction(reconnectStateRound),
                 PlatformStatus.FREEZING);
     }
 
@@ -115,6 +134,11 @@ class ReconnectCompleteStatusLogicTests {
                 logic.getStatus());
         triggerActionAndAssertNoTransition(
                 logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
+        // if the state written is prior to the reconnect state, it should be ignored
+        triggerActionAndAssertNoTransition(
+                logic::processStateWrittenToDiskAction,
+                new StateWrittenToDiskAction(reconnectStateRound - 1),
+                logic.getStatus());
     }
 
     @Test

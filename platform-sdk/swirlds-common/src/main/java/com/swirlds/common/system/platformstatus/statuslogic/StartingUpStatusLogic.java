@@ -30,67 +30,125 @@ import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Class containing the state machine logic for the {@link PlatformStatus#STARTING_UP STARTING_UP} status.
+ * Class containing the state machine logic for the {@link PlatformStatus#STARTING_UP} status.
  */
-public class StartingUpStatusLogic extends AbstractStatusLogic {
+public class StartingUpStatusLogic implements PlatformStatusLogic {
+    /**
+     * The platform status config
+     */
+    private final PlatformStatusConfig config;
+
     /**
      * Constructor
      *
      * @param config the platform status config
      */
     public StartingUpStatusLogic(@NonNull final PlatformStatusConfig config) {
-        super(config);
+        this.config = config;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * {@link PlatformStatus#STARTING_UP} status unconditionally transitions to
+     * {@link PlatformStatus#CATASTROPHIC_FAILURE} when a {@link CatastrophicFailureAction} is processed.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processCatastrophicFailureAction(@NonNull CatastrophicFailureAction action) {
-        return new CatastrophicFailureStatusLogic(getConfig());
+        return new CatastrophicFailureStatusLogic();
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link DoneReplayingEventsAction} while in {@link PlatformStatus#STARTING_UP} throws an exception,
+     * since this is not conceivable in standard operation.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull DoneReplayingEventsAction action) {
         throw new IllegalStateException(getUnexpectedStatusActionLog(action));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link FallenBehindAction} while in {@link PlatformStatus#STARTING_UP} throws an exception, since
+     * this is not conceivable in standard operation.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processFallenBehindAction(@NonNull FallenBehindAction action) {
         throw new IllegalStateException(getUnexpectedStatusActionLog(action));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link FreezePeriodEnteredAction} while in {@link PlatformStatus#STARTING_UP} throws an exception,
+     * since this is not conceivable in standard operation.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull FreezePeriodEnteredAction action) {
         throw new IllegalStateException(getUnexpectedStatusActionLog(action));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link ReconnectCompleteAction} while in {@link PlatformStatus#STARTING_UP} throws an exception,
+     * since this is not conceivable in standard operation.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processReconnectCompleteAction(@NonNull ReconnectCompleteAction action) {
         throw new IllegalStateException(getUnexpectedStatusActionLog(action));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link SelfEventReachedConsensusAction} while in {@link PlatformStatus#STARTING_UP} throws an
+     * exception, since this is not conceivable in standard operation.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processSelfEventReachedConsensusAction(@NonNull SelfEventReachedConsensusAction action) {
-
         throw new IllegalStateException(getUnexpectedStatusActionLog(action));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * {@link PlatformStatus#STARTING_UP} status unconditionally transitions to {@link PlatformStatus#REPLAYING_EVENTS}
+     * when a {@link StartedReplayingEventsAction} is processed.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull StartedReplayingEventsAction action) {
-        return new ReplayingEventsStatusLogic(getConfig());
+        return new ReplayingEventsStatusLogic(config);
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link StateWrittenToDiskAction} while in {@link PlatformStatus#STARTING_UP} throws an exception,
+     * since this is not conceivable in standard operation.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull StateWrittenToDiskAction action) {
         throw new IllegalStateException(getUnexpectedStatusActionLog(action));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link TimeElapsedAction} while in {@link PlatformStatus#STARTING_UP} has no effect on the state
+     * machine.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processTimeElapsedAction(@NonNull TimeElapsedAction action) {

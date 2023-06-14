@@ -17,7 +17,6 @@
 package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
-import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
 import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
 import com.swirlds.common.system.platformstatus.statusactions.FallenBehindAction;
@@ -30,68 +29,86 @@ import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Class containing the state machine logic for the {@link PlatformStatus#CATASTROPHIC_FAILURE CATASTROPHIC_FAILURE}
- * status.
+ * Class containing the state machine logic for the {@link PlatformStatus#CATASTROPHIC_FAILURE} status.
+ * <p>
+ * This status is terminal, and no action can cause the status to transition from it.
  */
-public class CatastrophicFailureStatusLogic extends AbstractStatusLogic {
+public class CatastrophicFailureStatusLogic implements PlatformStatusLogic {
     /**
-     * Constructor
-     *
-     * @param config the platform status config
+     * {@inheritDoc}
      */
-    public CatastrophicFailureStatusLogic(@NonNull final PlatformStatusConfig config) {
-        super(config);
-    }
-
     @NonNull
     @Override
     public PlatformStatusLogic processCatastrophicFailureAction(@NonNull CatastrophicFailureAction action) {
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull DoneReplayingEventsAction action) {
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processFallenBehindAction(@NonNull FallenBehindAction action) {
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull FreezePeriodEnteredAction action) {
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processReconnectCompleteAction(@NonNull ReconnectCompleteAction action) {
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processSelfEventReachedConsensusAction(@NonNull SelfEventReachedConsensusAction action) {
-
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull StartedReplayingEventsAction action) {
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull StateWrittenToDiskAction action) {
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processTimeElapsedAction(@NonNull TimeElapsedAction action) {

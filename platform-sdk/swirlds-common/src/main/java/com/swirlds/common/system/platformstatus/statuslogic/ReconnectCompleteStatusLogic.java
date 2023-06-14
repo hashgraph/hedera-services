@@ -28,12 +28,17 @@ import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEv
 import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
 import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Class containing the state machine logic for the {@link PlatformStatus#RECONNECT_COMPLETE RECONNECT_COMPLETE}
- * status.
+ * Class containing the state machine logic for the {@link PlatformStatus#RECONNECT_COMPLETE} status.
  */
-public class ReconnectCompleteStatusLogic extends AbstractStatusLogic {
+public class ReconnectCompleteStatusLogic implements PlatformStatusLogic {
+    /**
+     * The platform status config
+     */
+    private final PlatformStatusConfig config;
+
     /**
      * The round number of the reconnect state that was received
      */
@@ -42,39 +47,68 @@ public class ReconnectCompleteStatusLogic extends AbstractStatusLogic {
     /**
      * The round number of the freeze period if one has been entered, otherwise null
      */
-    private Long freezeRound = null;
+    private Long freezeRound;
 
     /**
      * Constructor
      *
      * @param reconnectStateRound the round number of the reconnect state that was received
+     * @param freezeRound         the round number of the freeze period if one has been entered, otherwise null
      * @param config              the platform status config
      */
-    public ReconnectCompleteStatusLogic(final long reconnectStateRound, @NonNull final PlatformStatusConfig config) {
-
-        super(config);
-
+    public ReconnectCompleteStatusLogic(
+            final long reconnectStateRound,
+            final @Nullable Long freezeRound,
+            @NonNull final PlatformStatusConfig config) {
+        // TODO write tests where freeze round is both null and not null
         this.reconnectStateRound = reconnectStateRound;
+        this.freezeRound = freezeRound;
+        this.config = config;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * {@link PlatformStatus#RECONNECT_COMPLETE} status unconditionally transitions to
+     * {@link PlatformStatus#CATASTROPHIC_FAILURE} when a {@link CatastrophicFailureAction} is processed.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processCatastrophicFailureAction(@NonNull CatastrophicFailureAction action) {
-        return new CatastrophicFailureStatusLogic(getConfig());
+        return new CatastrophicFailureStatusLogic();
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link DoneReplayingEventsAction} while in {@link PlatformStatus#RECONNECT_COMPLETE} throws an
+     * exception, since this is not conceivable in standard operation.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull DoneReplayingEventsAction action) {
         throw new IllegalStateException(getUnexpectedStatusActionLog(action));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * {@link PlatformStatus#RECONNECT_COMPLETE} status unconditionally transitions to {@link PlatformStatus#BEHIND}
+     * when a {@link FallenBehindAction} is processed.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processFallenBehindAction(@NonNull FallenBehindAction action) {
-        return new BehindStatusLogic(getConfig());
+        return new BehindStatusLogic(config);
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link FreezePeriodEnteredAction} while in {@link PlatformStatus#RECONNECT_COMPLETE} doesn't ever
+     * result in a status transition, but this logic method does record the freeze round, which will inform the status
+     * progression once the reconnect state has been saved.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull FreezePeriodEnteredAction action) {
@@ -82,25 +116,52 @@ public class ReconnectCompleteStatusLogic extends AbstractStatusLogic {
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link ReconnectCompleteAction} while in {@link PlatformStatus#RECONNECT_COMPLETE} throws an
+     * exception, since this is not conceivable in standard operation.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processReconnectCompleteAction(@NonNull ReconnectCompleteAction action) {
         throw new IllegalStateException(getUnexpectedStatusActionLog(action));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link SelfEventReachedConsensusAction} while in {@link PlatformStatus#RECONNECT_COMPLETE} has no
+     * effect on the state machine.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processSelfEventReachedConsensusAction(@NonNull SelfEventReachedConsensusAction action) {
-
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link StartedReplayingEventsAction} while in {@link PlatformStatus#RECONNECT_COMPLETE} throws an
+     * exception, since this is not conceivable in standard operation.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull StartedReplayingEventsAction action) {
         throw new IllegalStateException(getUnexpectedStatusActionLog(action));
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * If the state written to disk is prior to the reconnect state round, it's old, so we need to wait until the
+     * reconnected state is written to disk (or a later state).
+     * <p>
+     * If the state written to disk is the reconnected state or later, then we can transition to a new status. If a
+     * freeze boundary has been crossed, we transition to {@link PlatformStatus#FREEZING} status. Otherwise, we
+     * transition to {@link PlatformStatus#CHECKING} status.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull StateWrittenToDiskAction action) {
@@ -112,12 +173,18 @@ public class ReconnectCompleteStatusLogic extends AbstractStatusLogic {
 
         // always transition to a new status once the reconnect state has been written to disk
         if (freezeRound != null) {
-            return new FreezingStatusLogic(freezeRound, getConfig());
+            return new FreezingStatusLogic(freezeRound);
         } else {
-            return new CheckingStatusLogic(getConfig());
+            return new CheckingStatusLogic(config);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving a {@link TimeElapsedAction} while in {@link PlatformStatus#RECONNECT_COMPLETE} has no effect on the
+     * state machine.
+     */
     @NonNull
     @Override
     public PlatformStatusLogic processTimeElapsedAction(@NonNull TimeElapsedAction action) {

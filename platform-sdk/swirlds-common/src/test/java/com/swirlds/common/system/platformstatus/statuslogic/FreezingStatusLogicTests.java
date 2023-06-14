@@ -21,7 +21,6 @@ import static com.swirlds.common.system.platformstatus.statuslogic.StatusLogicTe
 import static com.swirlds.common.system.platformstatus.statuslogic.StatusLogicTestUtils.triggerActionAndAssertTransition;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
-import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
 import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
 import com.swirlds.common.system.platformstatus.statusactions.FallenBehindAction;
@@ -30,9 +29,8 @@ import com.swirlds.common.system.platformstatus.statusactions.ReconnectCompleteA
 import com.swirlds.common.system.platformstatus.statusactions.SelfEventReachedConsensusAction;
 import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEventsAction;
 import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
+import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import com.swirlds.common.test.fixtures.FakeTime;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,10 +46,7 @@ class FreezingStatusLogicTests {
     @BeforeEach
     void setup() {
         time = new FakeTime();
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("platformStatus.freezingStatusDelay", "5s")
-                .getOrCreateConfig();
-        logic = new FreezingStatusLogic(testFreezeRound, configuration.getConfigData(PlatformStatusConfig.class));
+        logic = new FreezingStatusLogic(testFreezeRound);
     }
 
     @Test
@@ -64,6 +59,15 @@ class FreezingStatusLogicTests {
     }
 
     @Test
+    @DisplayName("Go to FREEZE_COMPLETE")
+    void toFreezeComplete() {
+        triggerActionAndAssertTransition(
+                logic::processStateWrittenToDiskAction,
+                new StateWrittenToDiskAction(testFreezeRound),
+                PlatformStatus.FREEZE_COMPLETE);
+    }
+
+    @Test
     @DisplayName("Irrelevant actions shouldn't cause transitions")
     void irrelevantActions() {
         triggerActionAndAssertNoTransition(
@@ -72,6 +76,9 @@ class FreezingStatusLogicTests {
                 logic.getStatus());
         triggerActionAndAssertNoTransition(
                 logic::processFallenBehindAction, new FallenBehindAction(), logic.getStatus());
+        triggerActionAndAssertNoTransition(
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
+        // If the round number of the state written to disk doesn't match the freeze round, no transition should occur
         triggerActionAndAssertNoTransition(
                 logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0), logic.getStatus());
     }

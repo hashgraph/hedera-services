@@ -18,7 +18,6 @@ package com.swirlds.common.system.platformstatus.statuslogic;
 
 import static com.swirlds.common.system.platformstatus.statuslogic.StatusLogicTestUtils.triggerActionAndAssertNoTransition;
 
-import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
 import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
 import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
 import com.swirlds.common.system.platformstatus.statusactions.FallenBehindAction;
@@ -29,8 +28,6 @@ import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEv
 import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
 import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import com.swirlds.common.test.fixtures.FakeTime;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,8 +42,7 @@ class FreezeCompleteStateStatusLogicTests {
     @BeforeEach
     void setup() {
         time = new FakeTime();
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        logic = new FreezeCompleteStatusLogic(configuration.getConfigData(PlatformStatusConfig.class));
+        logic = new FreezeCompleteStatusLogic();
     }
 
     @Test
