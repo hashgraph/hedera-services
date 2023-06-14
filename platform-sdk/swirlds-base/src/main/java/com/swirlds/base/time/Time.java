@@ -46,4 +46,13 @@ public interface Time {
      * @return the curren time relative to the epoch
      */
     Instant now();
+
+    /**
+     * Returns a {@link Time} instance
+     *
+     * @return a {@link Time} instance
+     */
+    static Time getCurrent() {
+        return OSTime.getInstance();
+    }
 }

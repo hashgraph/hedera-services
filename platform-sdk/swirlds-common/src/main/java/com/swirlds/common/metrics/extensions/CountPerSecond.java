@@ -20,13 +20,13 @@ import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
 import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
 
+import com.swirlds.base.time.OSTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.time.IntegerEpochTime;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.common.utility.Units;
 
 /**
@@ -49,7 +49,7 @@ public class CountPerSecond {
      * 		the configuration for this metric
      */
     public CountPerSecond(final Metrics metrics, final CountPerSecond.Config config) {
-        this(metrics, config, new IntegerEpochTime(OSTime.getInstance()));
+        this(metrics, config, new IntegerEpochTime(Time.getCurrent()));
     }
 
     /**

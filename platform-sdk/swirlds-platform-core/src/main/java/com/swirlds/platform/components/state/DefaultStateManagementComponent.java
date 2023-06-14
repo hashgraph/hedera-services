@@ -20,6 +20,7 @@ import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -31,7 +32,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
 import com.swirlds.platform.components.state.output.IssConsumer;
@@ -205,7 +205,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         this.signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
         this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
-        this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, OSTime.getInstance());
+        this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, Time.getCurrent());
 
         dispatchBuilder =
                 new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
@@ -220,7 +220,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 platformContext,
                 threadManager,
                 signedStateMetrics,
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 mainClassName,
                 selfId,
                 swirldName,
@@ -245,14 +245,14 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 combinedStateLacksSignaturesConsumer);
 
         consensusHashManager = new ConsensusHashManager(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 addressBook,
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 stateConfig);
 
         final IssHandler issHandler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 selfId,
