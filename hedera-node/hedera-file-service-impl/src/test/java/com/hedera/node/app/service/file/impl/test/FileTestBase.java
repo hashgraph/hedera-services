@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.file.impl.test.handlers;
+package com.hedera.node.app.service.file.impl.test;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -34,6 +34,8 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -41,13 +43,14 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class FileHandlerTestBase {
+public class FileTestBase {
     protected static final String FILES = "FILES";
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
@@ -58,10 +61,19 @@ public class FileHandlerTestBase {
     protected final Bytes contentsBytes = Bytes.wrap(contents);
 
     protected final KeyList keys = A_KEY_LIST.keyList();
+    protected final JKeyList jKeyList = new JKeyList(List.of(
+            new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()),
+            new JEd25519Key("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()),
+            new JEd25519Key("cccccccccccccccccccccccccccccccc".getBytes())));
+
     protected final KeyList anotherKeys = B_KEY_LIST.keyList();
 
     protected final FileID fileId = FileID.newBuilder().fileNum(1_234L).build();
     protected final FileID fileSystemfileId = FileID.newBuilder().fileNum(250L).build();
+    protected final com.hederahashgraph.api.proto.java.FileID monoFileID =
+            com.hederahashgraph.api.proto.java.FileID.newBuilder()
+                    .setFileNum(1_234L)
+                    .build();
     protected final Duration WELL_KNOWN_AUTO_RENEW_PERIOD =
             Duration.newBuilder().seconds(100).build();
     protected final Timestamp WELL_KNOWN_EXPIRY =
