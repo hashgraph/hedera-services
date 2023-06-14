@@ -78,7 +78,7 @@ public class EmergencyRecoveryManager {
     /**
      * Invoked when an emergency state has been loaded into the system.
      */
-    public void emergencyStateLoaded() { // TODO test
+    public void emergencyStateLoaded() {
         emergencyStateRequired = false;
 
         final Path emergencyRecoveryFilePath = Path.of(EmergencyRecoveryFile.INPUT_FILENAME);

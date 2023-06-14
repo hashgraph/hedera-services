@@ -587,7 +587,7 @@ public class PreconsensusEventFileManager {
     /**
      * Delete all files in the stream.
      */
-    public void clear() throws IOException { // TODO test
+    public void clear() throws IOException {
         // Delete files in reverse order so that if we crash in the
         // middle of clearing we leave a consistent stream behind.
         while (files.size() > 0) {
