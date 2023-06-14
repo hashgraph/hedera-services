@@ -100,22 +100,22 @@ class DefaultMetricsTest {
     @BeforeEach
     void setupService() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("metricsUpdatePeriodMillis", 10L)
+                .withValue("metrics.metricsUpdatePeriodMillis", 10L)
                 .getOrCreateConfig();
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
 
         when(registry.register(any(), any(), any())).thenReturn(true);
 
         doAnswer(invocation -> {
-                    invocation.getArgument(0, Runnable.class).run();
-                    return null;
-                })
+            invocation.getArgument(0, Runnable.class).run();
+            return null;
+        })
                 .when(executor)
                 .execute(any());
         doAnswer(invocation -> {
-                    invocation.getArgument(0, Runnable.class).run();
-                    return null;
-                })
+            invocation.getArgument(0, Runnable.class).run();
+            return null;
+        })
                 .when(executor)
                 .scheduleAtFixedRate(any(), anyLong(), anyLong(), any());
 
@@ -577,7 +577,7 @@ class DefaultMetricsTest {
     void testDisabledUpdater(@Mock final Runnable updater) {
         // given
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("metricsUpdatePeriodMillis", 0L)
+                .withValue("metrics.metricsUpdatePeriodMillis", 0L)
                 .getOrCreateConfig();
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final DefaultMetrics metrics = new DefaultMetrics(NODE_ID, registry, executor, factory, metricsConfig);

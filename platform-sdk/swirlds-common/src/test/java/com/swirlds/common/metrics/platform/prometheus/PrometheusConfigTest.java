@@ -41,11 +41,11 @@ class PrometheusConfigTest {
         final PrometheusConfig prometheusConfig = configuration.getConfigData(PrometheusConfig.class);
 
         assertThat(prometheusConfig).isNotNull();
-        assertThat(prometheusConfig.prometheusEndpointEnabled())
+        assertThat(prometheusConfig.endpointEnabled())
                 .isEqualTo(Boolean.valueOf(DEFAULT_PROMETHEUS_ENDPOINT_ENABLED));
-        assertThat(prometheusConfig.prometheusEndpointPortNumber())
+        assertThat(prometheusConfig.endpointPortNumber())
                 .isEqualTo(Integer.valueOf(DEFAULT_PROMETHEUS_ENDPOINT_PORT_NUMBER));
-        assertThat(prometheusConfig.prometheusEndpointMaxBacklogAllowed())
+        assertThat(prometheusConfig.endpointMaxBacklogAllowed())
                 .isEqualTo(Integer.valueOf(DEFAULT_PROMETHEUS_ENDPOINT_MAX_BACKLOG_ALLOWED));
     }
 
@@ -61,8 +61,8 @@ class PrometheusConfigTest {
         final PrometheusConfig prometheusConfig = configuration.getConfigData(PrometheusConfig.class);
 
         assertThat(prometheusConfig).isNotNull();
-        assertThat(prometheusConfig.prometheusEndpointEnabled()).isTrue();
-        assertThat(prometheusConfig.prometheusEndpointPortNumber()).isEqualTo(9999);
-        assertThat(prometheusConfig.prometheusEndpointMaxBacklogAllowed()).isEqualTo(2);
+        assertThat(prometheusConfig.endpointEnabled()).isTrue();
+        assertThat(prometheusConfig.endpointPortNumber()).isEqualTo(9998);
+        assertThat(prometheusConfig.endpointMaxBacklogAllowed()).isEqualTo(2);
     }
 }

@@ -61,8 +61,8 @@ class LegacyCsvWriterTest {
     @BeforeEach
     void setStandardSettings() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("csvOutputFolder", tempDir.toString())
-                .withValue("csvAppend", "false")
+                .withValue("metrics.csvOutputFolder", tempDir.toString())
+                .withValue("metrics.csvAppend", "false")
                 .getOrCreateConfig();
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
 
@@ -149,24 +149,24 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				Counter:,Counter,
-				DoubleGauge:,DoubleGauge,
-				FunctionGauge:,FunctionGauge,
-				IntegerAccumulator:,IntegerAccumulator,
-				IntegerGauge:,IntegerGauge,
-				IntegerPairAccumulator:,IntegerPairAccumulator,
-				LongAccumulator:,LongAccumulator,
-				LongGauge:,LongGauge,
-				RunningAverageMetric:,RunningAverageMetric,
-				SpeedometerMetric:,SpeedometerMetric,
-				StatEntry:,StatEntry,
+                                filename:,.*,
+                                Counter:,Counter,
+                                DoubleGauge:,DoubleGauge,
+                                FunctionGauge:,FunctionGauge,
+                                IntegerAccumulator:,IntegerAccumulator,
+                                IntegerGauge:,IntegerGauge,
+                                IntegerPairAccumulator:,IntegerPairAccumulator,
+                                LongAccumulator:,LongAccumulator,
+                                LongGauge:,LongGauge,
+                                RunningAverageMetric:,RunningAverageMetric,
+                                SpeedometerMetric:,SpeedometerMetric,
+                                StatEntry:,StatEntry,
 
-				,,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,
-				,,Counter,DoubleGauge,FunctionGauge,IntegerAccumulator,IntegerGauge,IntegerPairAccumulator,LongAccumulator,LongGauge,RunningAverageMetric,SpeedometerMetric,StatEntry,
-				,,0,0\\.0,Hello FunctionGauge,0,0,0.0,0,0,0\\.0,0\\.0,Hello StatEntry,
-				,,1,3\\.1,Hello FunctionGauge,42,42,112\\.2,42,4711,1000\\.0,\\d*\\.\\d,Hello StatEntry,
-				""");
+                                ,,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,
+                                ,,Counter,DoubleGauge,FunctionGauge,IntegerAccumulator,IntegerGauge,IntegerPairAccumulator,LongAccumulator,LongGauge,RunningAverageMetric,SpeedometerMetric,StatEntry,
+                                ,,0,0\\.0,Hello FunctionGauge,0,0,0.0,0,0,0\\.0,0\\.0,Hello StatEntry,
+                                ,,1,3\\.1,Hello FunctionGauge,42,42,112\\.2,42,4711,1000\\.0,\\d*\\.\\d,Hello StatEntry,
+                                """);
     }
 
     @Test
@@ -203,11 +203,11 @@ class LegacyCsvWriterTest {
         // then
         final String content = Files.readString(csvFilePath);
         assertThat(content).matches("""
-				(.*\\n){5}.*
-				,,0,0.0,
-				,,0,0.0,
-				,,0,0.0,
-				""");
+                (.*\\n){5}.*
+                ,,0,0.0,
+                ,,0,0.0,
+                ,,0,0.0,
+                """);
     }
 
     @Test
@@ -231,22 +231,22 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				Counter:,Counter,
-				DoubleGauge:,DoubleGauge,
+                                filename:,.*,
+                                Counter:,Counter,
+                                DoubleGauge:,DoubleGauge,
 
-				,,platform,platform,
-				,,Counter,DoubleGauge,
-				,,0,0.0,
-				""");
+                                ,,platform,platform,
+                                ,,Counter,DoubleGauge,
+                                ,,0,0.0,
+                                """);
     }
 
     @Test
     void testWriteWithAppendedModeAndExistingFile() throws IOException {
         // given
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("csvOutputFolder", tempDir.toString())
-                .withValue("csvAppend", "true")
+                .withValue("metrics.csvOutputFolder", tempDir.toString())
+                .withValue("metrics.csvAppend", "true")
                 .getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
@@ -254,15 +254,15 @@ class LegacyCsvWriterTest {
         Files.writeString(
                 csvFilePath,
                 """
-				filename:,/tmp/tempfile.tmp,
-				Counter:,Counter,
-				DoubleGauge:,DoubleGauge,
+                        filename:,/tmp/tempfile.tmp,
+                        Counter:,Counter,
+                        DoubleGauge:,DoubleGauge,
 
-				,,platform,platform,
-				,,Counter,DoubleGauge,
-				,,1,2.0,
-				,,11,12.0,
-				""");
+                        ,,platform,platform,
+                        ,,Counter,DoubleGauge,
+                        ,,1,2.0,
+                        ,,11,12.0,
+                        """);
         final List<Metric> metrics = createShortList();
         final List<Snapshot> snapshots = metrics.stream()
                 .map(DefaultMetric.class::cast)
@@ -278,26 +278,26 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				Counter:,Counter,
-				DoubleGauge:,DoubleGauge,
+                                filename:,.*,
+                                Counter:,Counter,
+                                DoubleGauge:,DoubleGauge,
 
-				,,platform,platform,
-				,,Counter,DoubleGauge,
-				,,1,2.0,
-				,,11,12.0,
-				
-				
-				,,0,0.0,
-				""");
+                                ,,platform,platform,
+                                ,,Counter,DoubleGauge,
+                                ,,1,2.0,
+                                ,,11,12.0,
+                                				
+                                				
+                                ,,0,0.0,
+                                """);
     }
 
     @Test
     void testWriteWithAppendedModeAndNonExistingFile() throws IOException {
         // given
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("csvOutputFolder", tempDir.toString())
-                .withValue("csvAppend", "true")
+                .withValue("metrics.csvOutputFolder", tempDir.toString())
+                .withValue("metrics.csvAppend", "true")
                 .getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
@@ -318,14 +318,14 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				Counter:,Counter,
-				DoubleGauge:,DoubleGauge,
+                                filename:,.*,
+                                Counter:,Counter,
+                                DoubleGauge:,DoubleGauge,
 
-				,,platform,platform,
-				,,Counter,DoubleGauge,
-				,,0,0.0,
-				""");
+                                ,,platform,platform,
+                                ,,Counter,DoubleGauge,
+                                ,,0,0.0,
+                                """);
     }
 
     @Test
@@ -362,15 +362,15 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				Public Counter:,Public Counter,
-				Public DoubleGauge:,Public DoubleGauge,
+                                filename:,.*,
+                                Public Counter:,Public Counter,
+                                Public DoubleGauge:,Public DoubleGauge,
 
-				,,platform,platform,
-				,,Public Counter,Public DoubleGauge,
-				,,0,0.0,
-				,,3,2.7,
-				""");
+                                ,,platform,platform,
+                                ,,Public Counter,Public DoubleGauge,
+                                ,,0,0.0,
+                                ,,3,2.7,
+                                """);
     }
 
     @Test
@@ -408,17 +408,17 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				Internal Counter:,Internal Counter,
-				Public Counter:,Public Counter,
-				Internal DoubleGauge:,Internal DoubleGauge,
-				Public DoubleGauge:,Public DoubleGauge,
+                                filename:,.*,
+                                Internal Counter:,Internal Counter,
+                                Public Counter:,Public Counter,
+                                Internal DoubleGauge:,Internal DoubleGauge,
+                                Public DoubleGauge:,Public DoubleGauge,
 
-				,,internal,platform,internal,platform,
-				,,Internal Counter,Public Counter,Internal DoubleGauge,Public DoubleGauge,
-				,,0,0,0.0,0.0,
-				,,2,3,3.1,2.7,
-				""");
+                                ,,internal,platform,internal,platform,
+                                ,,Internal Counter,Public Counter,Internal DoubleGauge,Public DoubleGauge,
+                                ,,0,0,0.0,0.0,
+                                ,,2,3,3.1,2.7,
+                                """);
     }
 
     @Test
@@ -455,17 +455,17 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				RunningAverageMetric:,RunningAverageMetric,
-				SpeedometerMetric:,SpeedometerMetric,
-				RunningAverageMetric Info:,RunningAverageMetric Info,
-				SpeedometerMetric Info:,SpeedometerMetric Info,
+                                filename:,.*,
+                                RunningAverageMetric:,RunningAverageMetric,
+                                SpeedometerMetric:,SpeedometerMetric,
+                                RunningAverageMetric Info:,RunningAverageMetric Info,
+                                SpeedometerMetric Info:,SpeedometerMetric Info,
 
-				,,platform,platform,platform\\.info,platform\\.info,
-				,,RunningAverageMetric,SpeedometerMetric,RunningAverageMetric Info,SpeedometerMetric Info,
-				,,0\\.0,0\\.0,0\\.0,0\\.0,
-				,,1000\\.0,\\d*\\.\\d,3000\\.0,\\d*\\.\\d,
-				""");
+                                ,,platform,platform,platform\\.info,platform\\.info,
+                                ,,RunningAverageMetric,SpeedometerMetric,RunningAverageMetric Info,SpeedometerMetric Info,
+                                ,,0\\.0,0\\.0,0\\.0,0\\.0,
+                                ,,1000\\.0,\\d*\\.\\d,3000\\.0,\\d*\\.\\d,
+                                """);
     }
 
     @Test
@@ -503,17 +503,17 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				RunningAverageMetric:,RunningAverageMetric,
-				SpeedometerMetric:,SpeedometerMetric,
-				RunningAverageMetric Info:,RunningAverageMetric Info,
-				SpeedometerMetric Info:,SpeedometerMetric Info,
+                                filename:,.*,
+                                RunningAverageMetric:,RunningAverageMetric,
+                                SpeedometerMetric:,SpeedometerMetric,
+                                RunningAverageMetric Info:,RunningAverageMetric Info,
+                                SpeedometerMetric Info:,SpeedometerMetric Info,
 
-				,,platform,platform,platform,platform,platform,platform,platform,platform,platform\\.info,platform\\.info,
-				,,RunningAverageMetric,RunningAverageMetricMax,RunningAverageMetricMin,RunningAverageMetricStd,SpeedometerMetric,SpeedometerMetricMax,SpeedometerMetricMin,SpeedometerMetricStd,RunningAverageMetric Info,SpeedometerMetric Info,
-				,,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,
-				,,1000\\.0,1000\\.0,1000\\.0,0\\.0,\\d*\\.\\d,\\d*\\.\\d,\\d*\\.\\d,0\\.0,3000\\.0,\\d*\\.\\d,
-				""");
+                                ,,platform,platform,platform,platform,platform,platform,platform,platform,platform\\.info,platform\\.info,
+                                ,,RunningAverageMetric,RunningAverageMetricMax,RunningAverageMetricMin,RunningAverageMetricStd,SpeedometerMetric,SpeedometerMetricMax,SpeedometerMetricMin,SpeedometerMetricStd,RunningAverageMetric Info,SpeedometerMetric Info,
+                                ,,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,
+                                ,,1000\\.0,1000\\.0,1000\\.0,0\\.0,\\d*\\.\\d,\\d*\\.\\d,\\d*\\.\\d,0\\.0,3000\\.0,\\d*\\.\\d,
+                                """);
     }
 
     @Test
@@ -533,9 +533,9 @@ class LegacyCsvWriterTest {
         // then
         final String content = Files.readString(csvFilePath);
         assertThat(content).matches("""
-				(.*\\n){4}.*
-				,,,
-				""");
+                (.*\\n){4}.*
+                ,,,
+                """);
     }
 
     @Test
@@ -572,18 +572,18 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				Counter 1:,Counter 1,
-				Counter 2:,Counter 2,
-				Counter 3:,Counter 3,
-				Counter 4:,Counter 4,
-				Counter 5:,Counter 5,
+                                filename:,.*,
+                                Counter 1:,Counter 1,
+                                Counter 2:,Counter 2,
+                                Counter 3:,Counter 3,
+                                Counter 4:,Counter 4,
+                                Counter 5:,Counter 5,
 
-				,,platform,platform,platform,platform,platform,
-				,,Counter 1,Counter 2,Counter 3,Counter 4,Counter 5,
-				,,0,1,2,3,4,
-				,,,11,,33,,
-				""");
+                                ,,platform,platform,platform,platform,platform,
+                                ,,Counter 1,Counter 2,Counter 3,Counter 4,Counter 5,
+                                ,,0,1,2,3,4,
+                                ,,,11,,33,,
+                                """);
     }
 
     @Test
@@ -620,18 +620,18 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				RunningAverageMetric 1:,RunningAverageMetric 1,
-				RunningAverageMetric 2:,RunningAverageMetric 2,
-				RunningAverageMetric 3:,RunningAverageMetric 3,
-				RunningAverageMetric 4:,RunningAverageMetric 4,
-				RunningAverageMetric 5:,RunningAverageMetric 5,
+                                filename:,.*,
+                                RunningAverageMetric 1:,RunningAverageMetric 1,
+                                RunningAverageMetric 2:,RunningAverageMetric 2,
+                                RunningAverageMetric 3:,RunningAverageMetric 3,
+                                RunningAverageMetric 4:,RunningAverageMetric 4,
+                                RunningAverageMetric 5:,RunningAverageMetric 5,
 
-				,,platform,platform,platform,platform,platform,
-				,,RunningAverageMetric 1,RunningAverageMetric 2,RunningAverageMetric 3,RunningAverageMetric 4,RunningAverageMetric 5,
-				,,0\\.0,1000\\.0,2000\\.0,3000\\.0,4000\\.0,
-				,,,5\\d*\\.\\d,,16\\d*\\.\\d,,
-				""");
+                                ,,platform,platform,platform,platform,platform,
+                                ,,RunningAverageMetric 1,RunningAverageMetric 2,RunningAverageMetric 3,RunningAverageMetric 4,RunningAverageMetric 5,
+                                ,,0\\.0,1000\\.0,2000\\.0,3000\\.0,4000\\.0,
+                                ,,,5\\d*\\.\\d,,16\\d*\\.\\d,,
+                                """);
     }
 
     @Test
@@ -669,18 +669,18 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				RunningAverageMetric 1:,RunningAverageMetric 1,
-				RunningAverageMetric 2:,RunningAverageMetric 2,
-				RunningAverageMetric 3:,RunningAverageMetric 3,
-				RunningAverageMetric 4:,RunningAverageMetric 4,
-				RunningAverageMetric 5:,RunningAverageMetric 5,
+                                filename:,.*,
+                                RunningAverageMetric 1:,RunningAverageMetric 1,
+                                RunningAverageMetric 2:,RunningAverageMetric 2,
+                                RunningAverageMetric 3:,RunningAverageMetric 3,
+                                RunningAverageMetric 4:,RunningAverageMetric 4,
+                                RunningAverageMetric 5:,RunningAverageMetric 5,
 
-				,,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,
-				,,RunningAverageMetric 1,RunningAverageMetric 1Max,RunningAverageMetric 1Min,RunningAverageMetric 1Std,RunningAverageMetric 2,RunningAverageMetric 2Max,RunningAverageMetric 2Min,RunningAverageMetric 2Std,RunningAverageMetric 3,RunningAverageMetric 3Max,RunningAverageMetric 3Min,RunningAverageMetric 3Std,RunningAverageMetric 4,RunningAverageMetric 4Max,RunningAverageMetric 4Min,RunningAverageMetric 4Std,RunningAverageMetric 5,RunningAverageMetric 5Max,RunningAverageMetric 5Min,RunningAverageMetric 5Std,
-				,,0\\.0,0\\.0,0\\.0,0\\.0,1000\\.0,1000\\.0,1000\\.0,0\\.0,2000\\.0,2000\\.0,2000\\.0,0\\.0,3000\\.0,3000\\.0,3000\\.0,0\\.0,4000\\.0,4000\\.0,4000\\.0,0\\.0,
-				,,,,,,5\\d*\\.\\d,5\\d*\\.\\d,1000.0,\\d*\\.\\d,,,,,16\\d*\\.\\d,16\\d*\\.\\d,3000.0,\\d*\\.\\d,,,,,
-				""");
+                                ,,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,
+                                ,,RunningAverageMetric 1,RunningAverageMetric 1Max,RunningAverageMetric 1Min,RunningAverageMetric 1Std,RunningAverageMetric 2,RunningAverageMetric 2Max,RunningAverageMetric 2Min,RunningAverageMetric 2Std,RunningAverageMetric 3,RunningAverageMetric 3Max,RunningAverageMetric 3Min,RunningAverageMetric 3Std,RunningAverageMetric 4,RunningAverageMetric 4Max,RunningAverageMetric 4Min,RunningAverageMetric 4Std,RunningAverageMetric 5,RunningAverageMetric 5Max,RunningAverageMetric 5Min,RunningAverageMetric 5Std,
+                                ,,0\\.0,0\\.0,0\\.0,0\\.0,1000\\.0,1000\\.0,1000\\.0,0\\.0,2000\\.0,2000\\.0,2000\\.0,0\\.0,3000\\.0,3000\\.0,3000\\.0,0\\.0,4000\\.0,4000\\.0,4000\\.0,0\\.0,
+                                ,,,,,,5\\d*\\.\\d,5\\d*\\.\\d,1000.0,\\d*\\.\\d,,,,,16\\d*\\.\\d,16\\d*\\.\\d,3000.0,\\d*\\.\\d,,,,,
+                                """);
     }
 
     private List<Metric> createCompleteList() {
@@ -689,15 +689,15 @@ class LegacyCsvWriterTest {
                 metrics.getOrCreate(
                         new DoubleGauge.Config(Metrics.PLATFORM_CATEGORY, "DoubleGauge").withFormat(FORMAT_3_1)),
                 metrics.getOrCreate(new FunctionGauge.Config<>(
-                                Metrics.PLATFORM_CATEGORY, "FunctionGauge", String.class, () -> "Hello FunctionGauge")
+                        Metrics.PLATFORM_CATEGORY, "FunctionGauge", String.class, () -> "Hello FunctionGauge")
                         .withFormat("%s")),
                 metrics.getOrCreate(new IntegerAccumulator.Config(Metrics.PLATFORM_CATEGORY, "IntegerAccumulator")),
                 metrics.getOrCreate(new IntegerGauge.Config(Metrics.PLATFORM_CATEGORY, "IntegerGauge")),
                 metrics.getOrCreate(new IntegerPairAccumulator.Config<>(
-                                Metrics.PLATFORM_CATEGORY,
-                                "IntegerPairAccumulator",
-                                Double.class,
-                                IntegerPairAccumulator.AVERAGE)
+                        Metrics.PLATFORM_CATEGORY,
+                        "IntegerPairAccumulator",
+                        Double.class,
+                        IntegerPairAccumulator.AVERAGE)
                         .withFormat(FORMAT_3_1)),
                 metrics.getOrCreate(new LongAccumulator.Config(Metrics.PLATFORM_CATEGORY, "LongAccumulator")),
                 metrics.getOrCreate(new LongGauge.Config(Metrics.PLATFORM_CATEGORY, "LongGauge")),
@@ -706,7 +706,7 @@ class LegacyCsvWriterTest {
                 metrics.getOrCreate(new SpeedometerMetric.Config(Metrics.PLATFORM_CATEGORY, "SpeedometerMetric")
                         .withFormat(FORMAT_3_1)),
                 metrics.getOrCreate(new StatEntry.Config(
-                                Metrics.PLATFORM_CATEGORY, "StatEntry", String.class, () -> "Hello StatEntry")
+                        Metrics.PLATFORM_CATEGORY, "StatEntry", String.class, () -> "Hello StatEntry")
                         .withFormat("%s")));
     }
 
