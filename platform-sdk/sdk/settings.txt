@@ -17,6 +17,7 @@ maxOutgoingSyncs,                 1
 sync.syncAsProtocolEnabled,       false
 useLoopbackIp,                    false
 freezeSecondsAfterStartup,        0
+
                                           #############################
                                           # Preconsensus Event Stream #
                                           #############################
