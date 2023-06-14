@@ -105,7 +105,7 @@ class EventTaskCreatorTest {
     }
 
     @NonNull
-    private EventConfig configRescueChildlessInverseProbability(int value) {
+    private EventConfig configRescueChildlessInverseProbability(final int value) {
         return new TestConfigBuilder()
                 .withValue("event.rescueChildlessInverseProbability", value)
                 .getOrCreateConfig()
@@ -174,7 +174,7 @@ class EventTaskCreatorTest {
     void testEventNotRescue() throws InterruptedException {
         init(configRescueChildlessInverseProbability(0));
 
-        EventImpl eventToRescue = mock(EventImpl.class);
+        final EventImpl eventToRescue = mock(EventImpl.class);
         when(eventToRescue.getCreatorId()).thenReturn(addressBook.getNodeId(2));
         when(eventMapper.getMostRecentEvent(eventToRescue.getCreatorId())).thenReturn(eventToRescue);
 
