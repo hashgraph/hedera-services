@@ -82,7 +82,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_ALLOWANCES_MAX_TXN_LIMIT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_RECORD_FILE_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIG_FILE_VERSION;
@@ -283,7 +282,6 @@ public class GlobalDynamicProperties implements EvmProperties {
     private ContractStoragePriceTiers storagePriceTiers;
     private boolean compressRecordFilesOnCreation;
     private boolean tokenAutoCreationsEnabled;
-    private boolean doTraceabilityExport;
     private boolean compressAccountBalanceFilesOnCreation;
     private long traceabilityMaxExportsPerConsSec;
     private long traceabilityMinFreeToUsedGasThrottleRatio;
@@ -436,7 +434,6 @@ public class GlobalDynamicProperties implements EvmProperties {
         compressRecordFilesOnCreation = properties.getBooleanProperty(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION);
         tokenAutoCreationsEnabled = properties.getBooleanProperty(TOKENS_AUTO_CREATIONS_ENABLED);
         compressAccountBalanceFilesOnCreation = properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION);
-        doTraceabilityExport = properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION);
         traceabilityMaxExportsPerConsSec = properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC);
         traceabilityMinFreeToUsedGasThrottleRatio =
                 properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO);
@@ -899,10 +896,6 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean shouldCompressAccountBalanceFilesOnCreation() {
         return compressAccountBalanceFilesOnCreation;
-    }
-
-    public boolean shouldDoTraceabilityExport() {
-        return doTraceabilityExport;
     }
 
     public long traceabilityMinFreeToUsedGasThrottleRatio() {
