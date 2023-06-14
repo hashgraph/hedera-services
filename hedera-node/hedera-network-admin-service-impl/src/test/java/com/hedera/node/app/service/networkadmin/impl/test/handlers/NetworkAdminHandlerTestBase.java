@@ -17,17 +17,25 @@
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.transaction.TransactionReceipt;
+import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -38,9 +46,19 @@ import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
+import com.hedera.node.app.state.recordcache.RecordCacheImpl;
+import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,9 +71,9 @@ public class NetworkAdminHandlerTestBase {
 
     protected final Bytes ledgerId = Bytes.wrap(new byte[] {3});
 
-    protected final AccountID id = AccountID.newBuilder().accountNum(3).build();
+    protected final AccountID accountId = AccountID.newBuilder().accountNum(3).build();
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
-    protected final Long accountNum = id.accountNum();
+    protected final Long accountNum = accountId.accountNum();
     protected final AccountID alias =
             AccountID.newBuilder().alias(Bytes.wrap("testAlias")).build();
 
@@ -96,6 +114,29 @@ public class NetworkAdminHandlerTestBase {
     protected TokenRelation fungibleTokenRelation;
     protected TokenRelation nonFungibleTokenRelation;
 
+    protected static final AccountID PAYER_ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(1001).build();
+
+    protected TransactionID transactionID = transactionID(0);
+
+    protected TransactionID otherNonceOneTransactionID = transactionID(1);
+    protected TransactionID otherNonceTwoTransactionID = transactionID(2);
+    protected TransactionID otherNonceThreeTransactionID = transactionID(3);
+    protected TransactionID transactionIDNotInCache = transactionID(5);
+
+    private static final int MAX_QUERYABLE_PER_ACCOUNT = 10;
+
+    protected RecordCacheImpl cache;
+
+    @Mock
+    private DeduplicationCache dedupeCache;
+
+    @Mock
+    WorkingStateAccessor wsa;
+
+    @Mock
+    private ConfigProvider props;
+
     @Mock
     protected ReadableStates readableStates;
 
@@ -105,16 +146,41 @@ public class NetworkAdminHandlerTestBase {
     @Mock
     protected Account transferAccount;
 
+    @Mock
+    private VersionedConfiguration versionedConfig;
+
+    @Mock
+    private HederaConfig hederaConfig;
+
+    @Mock
+    private LedgerConfig ledgerConfig;
+
     @BeforeEach
     void commonSetUp() {
         givenValidAccount(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
         refreshStoresWithEntitiesOnlyInReadable();
+        refreshRecordCache();
     }
 
     protected void refreshStoresWithEntitiesOnlyInReadable() {
         givenAccountsInReadableStore();
         givenTokensInReadableStore();
         givenReadableTokenRelsStore();
+    }
+
+    protected void refreshRecordCache() {
+        final var state = new FakeHederaState();
+        final var registry = new FakeSchemaRegistry();
+        final var svc = new RecordCacheService();
+        svc.registerSchemas(registry);
+        registry.migrate(svc.getServiceName(), state);
+        lenient().when(wsa.getHederaState()).thenReturn(state);
+        lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
+        lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
+        lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(180L);
+        lenient().when(versionedConfig.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
+        lenient().when(ledgerConfig.recordsMaxQueryableByAccount()).thenReturn(MAX_QUERYABLE_PER_ACCOUNT);
+        givenRecordCacheState();
     }
 
     private void givenAccountsInReadableStore() {
@@ -138,9 +204,40 @@ public class NetworkAdminHandlerTestBase {
         readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates);
     }
 
+    private void givenRecordCacheState() {
+        cache = emptyRecordCacheBuilder();
+        final var receipt = TransactionReceipt.newBuilder()
+                .accountID(accountId)
+                .status(ResponseCodeEnum.UNKNOWN)
+                .build();
+        final var primaryRecord = TransactionRecord.newBuilder()
+                .transactionID(transactionID)
+                .receipt(receipt)
+                .build();
+        final var recordOne = TransactionRecord.newBuilder()
+                .transactionID(otherNonceOneTransactionID)
+                .receipt(receipt)
+                .build();
+        final var recordTwo = TransactionRecord.newBuilder()
+                .transactionID(otherNonceTwoTransactionID)
+                .receipt(receipt)
+                .build();
+        final var recordThree = TransactionRecord.newBuilder()
+                .transactionID(otherNonceThreeTransactionID)
+                .receipt(receipt)
+                .build();
+        cache.add(0, PAYER_ACCOUNT_ID, primaryRecord, Instant.now());
+        cache.add(1, PAYER_ACCOUNT_ID, primaryRecord, Instant.now());
+        cache.add(2, PAYER_ACCOUNT_ID, primaryRecord, Instant.now());
+        cache.add(3, PAYER_ACCOUNT_ID, primaryRecord, Instant.now());
+        cache.add(0, PAYER_ACCOUNT_ID, recordOne, Instant.now());
+        cache.add(0, PAYER_ACCOUNT_ID, recordTwo, Instant.now());
+        cache.add(0, PAYER_ACCOUNT_ID, recordThree, Instant.now());
+    }
+
     protected MapReadableKVState<AccountID, Account> readableAccountState() {
         return emptyReadableAccountStateBuilder()
-                .value(id, account)
+                .value(accountId, account)
                 .value(deleteAccountId, deleteAccount)
                 .value(transferAccountId, transferAccount)
                 .build();
@@ -154,6 +251,12 @@ public class NetworkAdminHandlerTestBase {
     @NonNull
     protected MapReadableKVState.Builder<EntityNumPair, TokenRelation> emptyReadableTokenRelsStateBuilder() {
         return MapReadableKVState.builder(TOKEN_RELS);
+    }
+
+    @NonNull
+    protected RecordCacheImpl emptyRecordCacheBuilder() {
+        dedupeCache = new DeduplicationCacheImpl(props);
+        return new RecordCacheImpl(dedupeCache, wsa, props);
     }
 
     @NonNull
@@ -284,6 +387,29 @@ public class NetworkAdminHandlerTestBase {
                 .automaticAssociation(true)
                 .nextToken(0L)
                 .previousToken(3L)
+                .build();
+    }
+
+    private TransactionID transactionID(int nonce) {
+        return transactionID(0, nonce);
+    }
+
+    private TransactionID transactionID(int nanos, int nonce) {
+        final var now = Instant.now();
+        return TransactionID.newBuilder()
+                .transactionValidStart(
+                        Timestamp.newBuilder().seconds(now.getEpochSecond()).nanos(nanos))
+                .accountID(PAYER_ACCOUNT_ID)
+                .nonce(nonce)
+                .build();
+    }
+
+    protected TransactionID transactionIDWithoutAccount(int nanos, int nonce) {
+        final var now = Instant.now();
+        return TransactionID.newBuilder()
+                .transactionValidStart(
+                        Timestamp.newBuilder().seconds(now.getEpochSecond()).nanos(nanos))
+                .nonce(nonce)
                 .build();
     }
 }

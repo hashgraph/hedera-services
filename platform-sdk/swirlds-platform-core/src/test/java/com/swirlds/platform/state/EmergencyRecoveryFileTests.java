@@ -25,17 +25,32 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import com.swirlds.platform.recovery.emergencyfile.Intervals;
+import com.swirlds.platform.recovery.emergencyfile.Location;
+import com.swirlds.platform.recovery.emergencyfile.Package;
+import com.swirlds.platform.recovery.emergencyfile.Recovery;
+import com.swirlds.platform.recovery.emergencyfile.State;
+import com.swirlds.platform.recovery.emergencyfile.Stream;
+import com.swirlds.test.framework.ResourceLoader;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.MockMakers;
+import org.mockito.Mockito;
 
 public class EmergencyRecoveryFileTests {
 
@@ -73,10 +88,10 @@ public class EmergencyRecoveryFileTests {
         assertEquals(toWrite.round(), readIn.round(), "round does not match");
         assertEquals(toWrite.hash(), readIn.hash(), "hash does not match");
         assertEquals(toWrite.timestamp(), readIn.timestamp(), "state timestamp does not match");
-        assertNotNull(readIn.recovery().boostrap(), "bootstrap should not be null");
+        assertNotNull(readIn.recovery().bootstrap(), "bootstrap should not be null");
         assertEquals(
-                toWrite.recovery().boostrap().timestamp(),
-                readIn.recovery().boostrap().timestamp(),
+                toWrite.recovery().bootstrap().timestamp(),
+                readIn.recovery().bootstrap().timestamp(),
                 "bootstrap timestamp does not match");
     }
 
@@ -166,6 +181,59 @@ public class EmergencyRecoveryFileTests {
         assertNull(EmergencyRecoveryFile.read(tmpDir), "Reading from a file that does not exist should return null");
     }
 
+    @Test
+    void testReadWriteLocations() throws IOException {
+        final Random r = RandomUtils.getRandomPrintSeed();
+        final EmergencyRecoveryFile file = new EmergencyRecoveryFile(new Recovery(
+                new State(r.nextLong(), randomHash(r), Instant.now()),
+                null,
+                new Package(List.of(randomLocation(r), randomLocation(r), randomLocation(r))),
+                null));
+        file.write(tmpDir);
+        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Reading a valid file should not throw");
+    }
+
+    @Test
+    void testBadUrl() throws IOException {
+        final URL badUrl = Mockito.mock(URL.class, Mockito.withSettings().mockMaker(MockMakers.INLINE));
+        Mockito.when(badUrl.toString()).thenReturn("not a url");
+        final Random r = RandomUtils.getRandomPrintSeed();
+        final EmergencyRecoveryFile file = new EmergencyRecoveryFile(new Recovery(
+                new State(r.nextLong(), randomHash(r), Instant.now()),
+                null,
+                new Package(List.of(randomLocation(r), randomLocation(r), new Location("type", badUrl, randomHash(r)))),
+                null));
+        file.write(tmpDir);
+        assertThrows(
+                Exception.class,
+                () -> EmergencyRecoveryFile.read(tmpDir),
+                "Reading a file with a bad url should throw");
+    }
+
+    @Test
+    void testReadWriteStream() throws IOException {
+        final Random r = RandomUtils.getRandomPrintSeed();
+        final EmergencyRecoveryFile file = new EmergencyRecoveryFile(new Recovery(
+                new State(r.nextLong(), randomHash(r), Instant.now()),
+                null,
+                null,
+                new Stream(new Intervals(2000, 5000, 900000))));
+        file.write(tmpDir);
+        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(tmpDir), "Reading a valid file should not throw");
+    }
+
+    @Test
+    void testReadAllFields() throws URISyntaxException {
+        final Path dir = ResourceLoader.getFile("com/swirlds/platform/recovery/emergencyfile/valid/");
+        assertDoesNotThrow(() -> EmergencyRecoveryFile.read(dir, true));
+    }
+
+    @Test
+    void testFieldMissing() throws URISyntaxException {
+        final Path dir = ResourceLoader.getFile("com/swirlds/platform/recovery/emergencyfile/invalid/");
+        assertThrows(Exception.class, () -> EmergencyRecoveryFile.read(dir, true));
+    }
+
     private EmergencyRecoveryFile createRecoveryFile(final Random r) {
         return new EmergencyRecoveryFile(r.nextLong(), randomHash(r), Instant.now());
     }
@@ -221,5 +289,12 @@ public class EmergencyRecoveryFileTests {
 
     private static String randomInstantString(final Random r) {
         return Instant.ofEpochMilli(r.nextLong()).toString();
+    }
+
+    private static Location randomLocation(final Random r) throws MalformedURLException {
+        return new Location(
+                RandomStringUtils.randomAlphabetic(10),
+                new URL(String.format("https://%s.com/", RandomStringUtils.randomAlphabetic(10))),
+                randomHash(r));
     }
 }

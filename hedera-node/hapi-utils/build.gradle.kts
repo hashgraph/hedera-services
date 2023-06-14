@@ -19,11 +19,11 @@ plugins { id("com.hedera.hashgraph.conventions") }
 description = "Hedera Services API Utilities"
 
 dependencies {
-  javaModuleDependencies {
-    annotationProcessor(gav("dagger.compiler"))
+    javaModuleDependencies {
+        annotationProcessor(gav("dagger.compiler"))
 
-    testImplementation(gav("org.junit.jupiter.api"))
-    testImplementation(gav("org.junit.jupiter.params"))
-    testImplementation(gav("org.mockito"))
-  }
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.junit.jupiter.params"))
+        testImplementation(gav("org.mockito"))
+    }
 }

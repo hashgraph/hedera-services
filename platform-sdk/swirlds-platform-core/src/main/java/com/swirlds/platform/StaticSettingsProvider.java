@@ -58,11 +58,6 @@ public final class StaticSettingsProvider implements SettingsProvider {
     }
 
     @Override
-    public int getSignedStateFreq() {
-        return settings.getSignedStateFreq();
-    }
-
-    @Override
     public long getDelayShuffle() {
         return settings.getDelayShuffle();
     }
@@ -118,15 +113,5 @@ public final class StaticSettingsProvider implements SettingsProvider {
     @Override
     public int sleepHeartbeatMillis() {
         return settings.getSleepHeartbeat();
-    }
-
-    @Override
-    public boolean isRequireStateLoad() {
-        return settings.isRequireStateLoad();
-    }
-
-    @Override
-    public boolean isCheckSignedStateFromDisk() {
-        return settings.isCheckSignedStateFromDisk();
     }
 }

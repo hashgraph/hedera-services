@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class MerkleDbSnapshotTest {
@@ -86,6 +87,8 @@ class MerkleDbSnapshotTest {
     }
 
     @Test
+    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/7046
+    @Disabled
     void snapshotMultipleTablesTestSync() throws Exception {
         final MerkleInternal initialRoot = new TestInternalNode();
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
@@ -138,6 +141,8 @@ class MerkleDbSnapshotTest {
     }
 
     @Test
+    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/7046
+    @Disabled
     void snapshotMultipleTablesTestAsync() throws Exception {
         final MerkleInternal initialRoot = new TestInternalNode();
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();

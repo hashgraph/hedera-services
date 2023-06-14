@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.state.merkle;
 
+import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.SemanticVersionComparator;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -270,8 +270,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
             var prev = itr.next();
             while (itr.hasNext()) {
                 final var ver = itr.next();
-                assertThat(SemanticVersionComparator.INSTANCE.compare(ver, prev))
-                        .isPositive();
+                assertThat(SEMANTIC_VERSION_COMPARATOR.compare(ver, prev)).isPositive();
                 prev = ver;
             }
         }

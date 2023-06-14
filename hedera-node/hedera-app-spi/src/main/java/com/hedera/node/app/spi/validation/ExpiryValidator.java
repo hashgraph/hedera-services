@@ -51,10 +51,6 @@ public interface ExpiryValidator {
     ExpiryMeta resolveUpdateAttempt(@NonNull ExpiryMeta currentMetadata, @NonNull ExpiryMeta updateMetadata);
 
     /**
-     *
-     * @return OK if the account is not expired, otherwise the appropriate error code
-     */
-    /**
      * Gets the expiration status of an entity based on the {@link EntityType}.
      * @param entityType entity type
      * @param isMarkedExpired if the entity is marked as expired and pending removal
