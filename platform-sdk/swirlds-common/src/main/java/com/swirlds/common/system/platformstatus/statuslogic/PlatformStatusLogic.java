@@ -17,26 +17,48 @@
 package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
-import com.swirlds.common.system.platformstatus.PlatformStatusAction;
+import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
+import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.FallenBehindAction;
+import com.swirlds.common.system.platformstatus.statusactions.FreezePeriodEnteredAction;
+import com.swirlds.common.system.platformstatus.statusactions.PlatformStatusAction;
+import com.swirlds.common.system.platformstatus.statusactions.ReconnectCompleteAction;
+import com.swirlds.common.system.platformstatus.statusactions.SelfEventReachedConsensusAction;
+import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
+import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 
 /**
  * Interface representing the state machine logic for an individual {@link PlatformStatus}.
  */
 public interface PlatformStatusLogic {
-    /**
-     * Process a status action.
-     * <p>
-     * If the input action causes a status transition, then this method will return the new status. Otherwise, it will
-     * return the same status as before processing the action.
-     *
-     * @param action the status action that has occurred
-     * @return the status after processing the action. may be the same status as before processing
-     * @throws IllegalArgumentException if the input action is not expected in the current status
-     */
     @NonNull
-    PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action);
+    PlatformStatusLogic processCatastrophicFailureAction(@NonNull final CatastrophicFailureAction action);
+
+    @NonNull
+    PlatformStatusLogic processDoneReplayingEventsAction(@NonNull final DoneReplayingEventsAction action);
+
+    @NonNull
+    PlatformStatusLogic processFallenBehindAction(@NonNull final FallenBehindAction action);
+
+    @NonNull
+    PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull final FreezePeriodEnteredAction action);
+
+    @NonNull
+    PlatformStatusLogic processReconnectCompleteAction(@NonNull final ReconnectCompleteAction action);
+
+    @NonNull
+    PlatformStatusLogic processSelfEventReachedConsensusAction(@NonNull final SelfEventReachedConsensusAction action);
+
+    @NonNull
+    PlatformStatusLogic processStartedReplayingEventsAction(@NonNull final StartedReplayingEventsAction action);
+
+    @NonNull
+    PlatformStatusLogic processStateWrittenToDiskAction(@NonNull final StateWrittenToDiskAction action);
+
+    @NonNull
+    PlatformStatusLogic processTimeElapsedAction(@NonNull final TimeElapsedAction action);
 
     /**
      * Get the status that this logic is for.
@@ -45,14 +67,6 @@ public interface PlatformStatusLogic {
      */
     @NonNull
     PlatformStatus getStatus();
-
-    /**
-     * Get the time that the current status was transitioned to.
-     *
-     * @return the time that the current status was transitioned to
-     */
-    @NonNull
-    Instant getStatusStartTime();
 
     /**
      * Get the log message to use when an unexpected status action is received.

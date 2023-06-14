@@ -17,54 +17,111 @@
 package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
-import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
-import com.swirlds.common.time.Time;
+import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
+import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.FallenBehindAction;
+import com.swirlds.common.system.platformstatus.statusactions.FreezePeriodEnteredAction;
+import com.swirlds.common.system.platformstatus.statusactions.ReconnectCompleteAction;
+import com.swirlds.common.system.platformstatus.statusactions.SelfEventReachedConsensusAction;
+import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
+import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Class containing the state machine logic for the {@link PlatformStatus#RECONNECT_COMPLETE RECONNECT_COMPLETE} status.
+ * Class containing the state machine logic for the {@link PlatformStatus#RECONNECT_COMPLETE RECONNECT_COMPLETE}
+ * status.
  */
 public class ReconnectCompleteStatusLogic extends AbstractStatusLogic {
     /**
-     * Whether a freeze period has been entered
+     * The round number of the reconnect state that was received
      */
-    private boolean freezePeriodEntered = false;
+    private final long reconnectStateRound;
+
+    /**
+     * The round number of the freeze period if one has been entered, otherwise null
+     */
+    private Long freezeRound = null;
 
     /**
      * Constructor
      *
-     * @param time   a source of time
-     * @param config the platform status config
+     * @param reconnectStateRound the round number of the reconnect state that was received
+     * @param config              the platform status config
      */
-    public ReconnectCompleteStatusLogic(@NonNull final Time time, @NonNull final PlatformStatusConfig config) {
-        super(time, config);
+    public ReconnectCompleteStatusLogic(final long reconnectStateRound, @NonNull final PlatformStatusConfig config) {
+
+        super(config);
+
+        this.reconnectStateRound = reconnectStateRound;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
-    public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
-        return switch (action) {
-            case FREEZE_PERIOD_ENTERED -> {
-                freezePeriodEntered = true;
-                yield getStatus();
-            }
-            case FALLEN_BEHIND -> PlatformStatus.BEHIND;
-            case STATE_WRITTEN_TO_DISK -> {
-                // always transition to a new status once a state has been written to disk
-                if (freezePeriodEntered) {
-                    yield PlatformStatus.FREEZING;
-                } else {
-                    yield PlatformStatus.CHECKING;
-                }
-            }
-            case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
-            case TIME_ELAPSED, OWN_EVENT_REACHED_CONSENSUS -> getStatus();
-            default -> throw new IllegalArgumentException(getUnexpectedStatusActionLog(action));
-        };
+    public PlatformStatusLogic processCatastrophicFailureAction(@NonNull CatastrophicFailureAction action) {
+        return new CatastrophicFailureStatusLogic(getConfig());
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull DoneReplayingEventsAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processFallenBehindAction(@NonNull FallenBehindAction action) {
+        return new BehindStatusLogic(getConfig());
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull FreezePeriodEnteredAction action) {
+        freezeRound = action.freezeRound();
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processReconnectCompleteAction(@NonNull ReconnectCompleteAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processSelfEventReachedConsensusAction(@NonNull SelfEventReachedConsensusAction action) {
+
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull StartedReplayingEventsAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull StateWrittenToDiskAction action) {
+        if (action.round() < reconnectStateRound) {
+            // if the state written to disk is prior to the reconnect state round, it's old.
+            // we need to wait until the reconnected state is written to disk (or a later state)
+            return this;
+        }
+
+        // always transition to a new status once the reconnect state has been written to disk
+        if (freezeRound != null) {
+            return new FreezingStatusLogic(freezeRound, getConfig());
+        } else {
+            return new CheckingStatusLogic(getConfig());
+        }
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processTimeElapsedAction(@NonNull TimeElapsedAction action) {
+        return this;
     }
 
     /**

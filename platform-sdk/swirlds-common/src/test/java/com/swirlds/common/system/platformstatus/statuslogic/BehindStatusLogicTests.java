@@ -21,8 +21,16 @@ import static com.swirlds.common.system.platformstatus.statuslogic.StatusLogicTe
 import static com.swirlds.common.system.platformstatus.statuslogic.StatusLogicTestUtils.triggerActionAndAssertTransition;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
-import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
+import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
+import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.FallenBehindAction;
+import com.swirlds.common.system.platformstatus.statusactions.FreezePeriodEnteredAction;
+import com.swirlds.common.system.platformstatus.statusactions.ReconnectCompleteAction;
+import com.swirlds.common.system.platformstatus.statusactions.SelfEventReachedConsensusAction;
+import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
+import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -34,43 +42,56 @@ import org.junit.jupiter.api.Test;
  * Tests for {@link BehindStatusLogic}.
  */
 class BehindStatusLogicTests {
+    private FakeTime time;
     private BehindStatusLogic logic;
 
     @BeforeEach
     void setup() {
-        final FakeTime time = new FakeTime();
+        time = new FakeTime();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        logic = new BehindStatusLogic(time, configuration.getConfigData(PlatformStatusConfig.class));
+        logic = new BehindStatusLogic(configuration.getConfigData(PlatformStatusConfig.class));
     }
 
     @Test
     @DisplayName("Go to RECONNECT_COMPLETE")
     void toReconnectComplete() {
         triggerActionAndAssertTransition(
-                logic, PlatformStatusAction.RECONNECT_COMPLETE, PlatformStatus.RECONNECT_COMPLETE);
+                logic::processReconnectCompleteAction,
+                new ReconnectCompleteAction(0),
+                PlatformStatus.RECONNECT_COMPLETE);
     }
 
     @Test
     @DisplayName("Go to CATASTROPHIC_FAILURE")
     void toCatastrophicFailure() {
         triggerActionAndAssertTransition(
-                logic, PlatformStatusAction.CATASTROPHIC_FAILURE, PlatformStatus.CATASTROPHIC_FAILURE);
+                logic::processCatastrophicFailureAction,
+                new CatastrophicFailureAction(),
+                PlatformStatus.CATASTROPHIC_FAILURE);
     }
 
     @Test
     @DisplayName("Irrelevant actions shouldn't cause transitions")
     void irrelevantActions() {
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
+        triggerActionAndAssertNoTransition(
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
+        triggerActionAndAssertNoTransition(
+                logic::processSelfEventReachedConsensusAction,
+                new SelfEventReachedConsensusAction(time.now()),
+                logic.getStatus());
+        triggerActionAndAssertNoTransition(
+                logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());
+        triggerActionAndAssertNoTransition(
+                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0), logic.getStatus());
     }
 
     @Test
     @DisplayName("Unexpected actions should cause exceptions")
     void unexpectedActions() {
-        triggerActionAndAssertException(logic, PlatformStatusAction.STARTED_REPLAYING_EVENTS);
-        triggerActionAndAssertException(logic, PlatformStatusAction.DONE_REPLAYING_EVENTS);
-        triggerActionAndAssertException(logic, PlatformStatusAction.OWN_EVENT_REACHED_CONSENSUS);
-        triggerActionAndAssertException(logic, PlatformStatusAction.FREEZE_PERIOD_ENTERED);
-        triggerActionAndAssertException(logic, PlatformStatusAction.FALLEN_BEHIND);
-        triggerActionAndAssertException(logic, PlatformStatusAction.STATE_WRITTEN_TO_DISK);
+        triggerActionAndAssertException(
+                logic::processStartedReplayingEventsAction, new StartedReplayingEventsAction(), logic.getStatus());
+        triggerActionAndAssertException(
+                logic::processDoneReplayingEventsAction, new DoneReplayingEventsAction(time.now()), logic.getStatus());
+        triggerActionAndAssertException(logic::processFallenBehindAction, new FallenBehindAction(), logic.getStatus());
     }
 }

@@ -21,8 +21,16 @@ import static com.swirlds.common.system.platformstatus.statuslogic.StatusLogicTe
 import static com.swirlds.common.system.platformstatus.statuslogic.StatusLogicTestUtils.triggerActionAndAssertTransition;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
-import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
+import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
+import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.FallenBehindAction;
+import com.swirlds.common.system.platformstatus.statusactions.FreezePeriodEnteredAction;
+import com.swirlds.common.system.platformstatus.statusactions.ReconnectCompleteAction;
+import com.swirlds.common.system.platformstatus.statusactions.SelfEventReachedConsensusAction;
+import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
+import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -44,58 +52,73 @@ class ActiveStatusLogicTests {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("platformStatus.activeStatusDelay", "5s")
                 .getOrCreateConfig();
-        logic = new ActiveStatusLogic(time, configuration.getConfigData(PlatformStatusConfig.class));
+        logic = new ActiveStatusLogic(time.now(), configuration.getConfigData(PlatformStatusConfig.class));
     }
 
     @Test
     @DisplayName("Go to FREEZING")
     void toFreezing() {
-        triggerActionAndAssertTransition(logic, PlatformStatusAction.FREEZE_PERIOD_ENTERED, PlatformStatus.FREEZING);
+        triggerActionAndAssertTransition(
+                logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), PlatformStatus.FREEZING);
     }
 
     @Test
     @DisplayName("Go to CHECKING")
     void toChecking() {
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
+        triggerActionAndAssertNoTransition(
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
 
         time.tick(Duration.ofSeconds(2));
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
+        triggerActionAndAssertNoTransition(
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
 
         // restart the timer that will trigger the status change to checking
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.OWN_EVENT_REACHED_CONSENSUS);
+        triggerActionAndAssertNoTransition(
+                logic::processSelfEventReachedConsensusAction,
+                new SelfEventReachedConsensusAction(time.now()),
+                logic.getStatus());
 
         // if the self event reaching consensus successfully restarted the timer, then the status should still be active
         time.tick(Duration.ofSeconds(4));
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
+        triggerActionAndAssertNoTransition(
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
 
         time.tick(Duration.ofSeconds(2));
-        triggerActionAndAssertTransition(logic, PlatformStatusAction.TIME_ELAPSED, PlatformStatus.CHECKING);
+        triggerActionAndAssertTransition(
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), PlatformStatus.CHECKING);
     }
 
     @Test
     @DisplayName("Go to BEHIND")
     void toBehind() {
-        triggerActionAndAssertTransition(logic, PlatformStatusAction.FALLEN_BEHIND, PlatformStatus.BEHIND);
+        triggerActionAndAssertTransition(
+                logic::processFallenBehindAction, new FallenBehindAction(), PlatformStatus.BEHIND);
     }
 
     @Test
     @DisplayName("Go to CATASTROPHIC_FAILURE")
     void toCatastrophicFailure() {
         triggerActionAndAssertTransition(
-                logic, PlatformStatusAction.CATASTROPHIC_FAILURE, PlatformStatus.CATASTROPHIC_FAILURE);
+                logic::processCatastrophicFailureAction,
+                new CatastrophicFailureAction(),
+                PlatformStatus.CATASTROPHIC_FAILURE);
     }
 
     @Test
     @DisplayName("Irrelevant actions shouldn't cause transitions")
     void irrelevantActions() {
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.STATE_WRITTEN_TO_DISK);
+        triggerActionAndAssertNoTransition(
+                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0), logic.getStatus());
     }
 
     @Test
     @DisplayName("Unexpected actions should cause exceptions")
     void unexpectedActions() {
-        triggerActionAndAssertException(logic, PlatformStatusAction.RECONNECT_COMPLETE);
-        triggerActionAndAssertException(logic, PlatformStatusAction.DONE_REPLAYING_EVENTS);
-        triggerActionAndAssertException(logic, PlatformStatusAction.STARTED_REPLAYING_EVENTS);
+        triggerActionAndAssertException(
+                logic::processReconnectCompleteAction, new ReconnectCompleteAction(0), logic.getStatus());
+        triggerActionAndAssertException(
+                logic::processDoneReplayingEventsAction, new DoneReplayingEventsAction(time.now()), logic.getStatus());
+        triggerActionAndAssertException(
+                logic::processStartedReplayingEventsAction, new StartedReplayingEventsAction(), logic.getStatus());
     }
 }

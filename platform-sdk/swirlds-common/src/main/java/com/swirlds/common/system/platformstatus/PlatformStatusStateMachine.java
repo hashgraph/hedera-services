@@ -22,12 +22,23 @@ import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
+import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
+import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.FallenBehindAction;
+import com.swirlds.common.system.platformstatus.statusactions.FreezePeriodEnteredAction;
+import com.swirlds.common.system.platformstatus.statusactions.PlatformStatusAction;
+import com.swirlds.common.system.platformstatus.statusactions.ReconnectCompleteAction;
+import com.swirlds.common.system.platformstatus.statusactions.SelfEventReachedConsensusAction;
+import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
 import com.swirlds.common.system.platformstatus.statuslogic.PlatformStatusLogic;
-import com.swirlds.common.system.platformstatus.statuslogic.StatusLogicFactory;
+import com.swirlds.common.system.platformstatus.statuslogic.StartingUpStatusLogic;
 import com.swirlds.common.time.Time;
 import com.swirlds.logging.payloads.PlatformStatusPayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,11 +55,6 @@ public class PlatformStatusStateMachine {
     private final Time time;
 
     /**
-     * The platform status config
-     */
-    private final PlatformStatusConfig config;
-
-    /**
      * For passing notifications between the platform and the application.
      */
     private final NotificationEngine notificationEngine;
@@ -57,6 +63,11 @@ public class PlatformStatusStateMachine {
      * The object containing the state machine logic for the current status
      */
     private PlatformStatusLogic currentStatusLogic;
+
+    /**
+     * The time at which the current status started
+     */
+    private Instant currentStatusStartTime;
 
     /**
      * Constructor
@@ -71,10 +82,39 @@ public class PlatformStatusStateMachine {
             @NonNull final NotificationEngine notificationEngine) {
 
         this.time = Objects.requireNonNull(time);
-        this.config = Objects.requireNonNull(config);
         this.notificationEngine = Objects.requireNonNull(notificationEngine);
 
-        this.currentStatusLogic = StatusLogicFactory.createStatusLogic(PlatformStatus.STARTING_UP, time, config);
+        this.currentStatusLogic = new StartingUpStatusLogic(config);
+        this.currentStatusStartTime = time.now();
+    }
+
+    @Nullable
+    private PlatformStatusLogic getNewLogic(@NonNull final PlatformStatusAction action) {
+        try {
+            if (action instanceof CatastrophicFailureAction catastrophicFailureAction) {
+                return currentStatusLogic.processCatastrophicFailureAction(catastrophicFailureAction);
+            } else if (action instanceof DoneReplayingEventsAction doneReplayingEventsAction) {
+                return currentStatusLogic.processDoneReplayingEventsAction(doneReplayingEventsAction);
+            } else if (action instanceof FallenBehindAction fallenBehindAction) {
+                return currentStatusLogic.processFallenBehindAction(fallenBehindAction);
+            } else if (action instanceof FreezePeriodEnteredAction freezePeriodEnteredAction) {
+                return currentStatusLogic.processFreezePeriodEnteredAction(freezePeriodEnteredAction);
+            } else if (action instanceof ReconnectCompleteAction reconnectCompleteAction) {
+                return currentStatusLogic.processReconnectCompleteAction(reconnectCompleteAction);
+            } else if (action instanceof SelfEventReachedConsensusAction selfEventReachedConsensusAction) {
+                return currentStatusLogic.processSelfEventReachedConsensusAction(selfEventReachedConsensusAction);
+            } else if (action instanceof StartedReplayingEventsAction startedReplayingEventsAction) {
+                return currentStatusLogic.processStartedReplayingEventsAction(startedReplayingEventsAction);
+            } else if (action instanceof StateWrittenToDiskAction stateWrittenToDiskAction) {
+                return currentStatusLogic.processStateWrittenToDiskAction(stateWrittenToDiskAction);
+            } else {
+                throw new IllegalArgumentException(
+                        "Unknown action type: " + action.getClass().getName());
+            }
+        } catch (final IllegalStateException e) {
+            logger.error(EXCEPTION.getMarker(), e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -87,35 +127,27 @@ public class PlatformStatusStateMachine {
     public void processStatusAction(@NonNull final PlatformStatusAction action) {
         Objects.requireNonNull(action);
 
-        final PlatformStatus newStatus;
-        try {
-            newStatus = currentStatusLogic.processStatusAction(action);
-        } catch (final IllegalArgumentException e) {
-            logger.error(EXCEPTION.getMarker(), e.getMessage());
-            return;
-        }
+        final PlatformStatusLogic newLogic = getNewLogic(action);
 
-        // if status didn't change, there isn't anything to do
-        if (newStatus.equals(currentStatusLogic.getStatus())) {
+        if (newLogic == null || newLogic == currentStatusLogic) {
+            // if status didn't change, there isn't anything to do
             return;
         }
 
         final String previousStatusName = currentStatusLogic.getStatus().name();
-        final String newStatusName = newStatus.name();
+        final String newStatusName = newLogic.getStatus().name();
 
         final String statusChangeMessage = "Platform spent %s time in %s. Now in %s"
-                .formatted(
-                        Duration.between(currentStatusLogic.getStatusStartTime(), time.now()),
-                        previousStatusName,
-                        newStatusName);
+                .formatted(Duration.between(currentStatusStartTime, time.now()), previousStatusName, newStatusName);
 
         logger.info(
                 PLATFORM_STATUS.getMarker(),
                 () -> new PlatformStatusPayload(statusChangeMessage, previousStatusName, newStatusName).toString());
 
         notificationEngine.dispatch(
-                PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newStatus));
+                PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newLogic.getStatus()));
 
-        currentStatusLogic = StatusLogicFactory.createStatusLogic(newStatus, time, config);
+        currentStatusLogic = newLogic;
+        currentStatusStartTime = time.now();
     }
 }

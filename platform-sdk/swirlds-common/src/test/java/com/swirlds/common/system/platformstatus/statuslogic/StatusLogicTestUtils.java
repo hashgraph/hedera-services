@@ -20,7 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
-import com.swirlds.common.system.platformstatus.PlatformStatusAction;
+import com.swirlds.common.system.platformstatus.statusactions.PlatformStatusAction;
+import java.util.function.Function;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
@@ -35,30 +36,32 @@ public class StatusLogicTestUtils {
     /**
      * Trigger an action and assert that the new status is as expected.
      *
-     * @param logic          the logic to test
+     * @param actionHandler  the logic method to test
      * @param action         the action to trigger
      * @param expectedStatus the expected status after the action is triggered
      */
-    public static void triggerActionAndAssertTransition(
-            @NonNull final PlatformStatusLogic logic,
-            @NonNull final PlatformStatusAction action,
+    public static <T extends PlatformStatusAction> void triggerActionAndAssertTransition(
+            @NonNull final Function<T, PlatformStatusLogic> actionHandler,
+            @NonNull final T action,
             @NonNull final PlatformStatus expectedStatus) {
 
-        final PlatformStatus newStatus = logic.processStatusAction(action);
+        final PlatformStatus newStatus = actionHandler.apply(action).getStatus();
         assertEquals(expectedStatus, newStatus);
     }
 
     /**
      * Trigger an action and assert that the status does not change.
      *
-     * @param logic  the logic to test
-     * @param action the action to trigger
+     * @param actionHandler  the logic method to test
+     * @param action         the action to trigger
+     * @param originalStatus the original status before the action is triggered
      */
-    public static void triggerActionAndAssertNoTransition(
-            @NonNull final PlatformStatusLogic logic, @NonNull final PlatformStatusAction action) {
+    public static <T extends PlatformStatusAction> void triggerActionAndAssertNoTransition(
+            @NonNull final Function<T, PlatformStatusLogic> actionHandler,
+            @NonNull final T action,
+            @NonNull final PlatformStatus originalStatus) {
 
-        final PlatformStatus originalStatus = logic.getStatus();
-        final PlatformStatus newStatus = logic.processStatusAction(action);
+        final PlatformStatus newStatus = actionHandler.apply(action).getStatus();
 
         assertEquals(originalStatus, newStatus);
     }
@@ -66,18 +69,18 @@ public class StatusLogicTestUtils {
     /**
      * Trigger an action and assert that an exception is thrown.
      *
-     * @param logic  the logic to test
-     * @param action the action to trigger
+     * @param actionHandler  the logic method to test
+     * @param action         the action to trigger
+     * @param originalStatus the original status before the action is triggered
      */
-    public static void triggerActionAndAssertException(
-            @NonNull final PlatformStatusLogic logic, @NonNull final PlatformStatusAction action) {
+    public static <T extends PlatformStatusAction> void triggerActionAndAssertException(
+            @NonNull final Function<T, PlatformStatusLogic> actionHandler,
+            @NonNull final T action,
+            @NonNull final PlatformStatus originalStatus) {
 
         assertThrows(
-                IllegalArgumentException.class,
-                () -> {
-                    logic.processStatusAction(action);
-                },
-                "Expected an exception to be thrown when triggering action " + action + " in status "
-                        + logic.getStatus());
+                IllegalStateException.class,
+                () -> actionHandler.apply(action),
+                "Expected an exception to be thrown when triggering action " + action + " in status " + originalStatus);
     }
 }

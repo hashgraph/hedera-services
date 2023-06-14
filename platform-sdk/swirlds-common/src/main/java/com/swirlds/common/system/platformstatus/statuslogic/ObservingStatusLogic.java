@@ -17,61 +17,110 @@
 package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
-import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
-import com.swirlds.common.time.Time;
+import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
+import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.FallenBehindAction;
+import com.swirlds.common.system.platformstatus.statusactions.FreezePeriodEnteredAction;
+import com.swirlds.common.system.platformstatus.statusactions.ReconnectCompleteAction;
+import com.swirlds.common.system.platformstatus.statusactions.SelfEventReachedConsensusAction;
+import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
+import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.time.Instant;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#OBSERVING OBSERVING} status.
  */
 public class ObservingStatusLogic extends AbstractStatusLogic {
     /**
-     * Whether a freeze period has been entered
+     * The time at which the platform entered the {@link PlatformStatus#OBSERVING OBSERVING} status
      */
-    private boolean freezePeriodEntered = false;
+    private final Instant statusStartTime;
+
+    /**
+     * The round number of the freeze period if one has been entered, otherwise null
+     */
+    private Long freezeRound = null;
 
     /**
      * Constructor
      *
-     * @param time   a source of time
      * @param config the platform status config
      */
-    public ObservingStatusLogic(@NonNull final Time time, @NonNull final PlatformStatusConfig config) {
-        super(time, config);
+    public ObservingStatusLogic(@NonNull final Instant statusStartTime, @NonNull final PlatformStatusConfig config) {
+        super(config);
+
+        this.statusStartTime = statusStartTime;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
-    public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
-        return switch (action) {
-            case FREEZE_PERIOD_ENTERED -> {
-                freezePeriodEntered = true;
-                yield getStatus();
-            }
-            case FALLEN_BEHIND -> PlatformStatus.BEHIND;
-            case STATE_WRITTEN_TO_DISK, OWN_EVENT_REACHED_CONSENSUS -> getStatus();
-            case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
-            case TIME_ELAPSED -> {
-                if (Duration.between(getStatusStartTime(), getTime().now())
-                                .compareTo(getConfig().observingStatusDelay())
-                        < 0) {
-                    // if the wait period hasn't elapsed, then stay in this status
-                    yield getStatus();
-                }
+    public PlatformStatusLogic processCatastrophicFailureAction(@NonNull CatastrophicFailureAction action) {
+        return new CatastrophicFailureStatusLogic(getConfig());
+    }
 
-                if (freezePeriodEntered) {
-                    yield PlatformStatus.FREEZING;
-                } else {
-                    yield PlatformStatus.CHECKING;
-                }
-            }
-            default -> throw new IllegalArgumentException(getUnexpectedStatusActionLog(action));
-        };
+    @NonNull
+    @Override
+    public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull DoneReplayingEventsAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processFallenBehindAction(@NonNull FallenBehindAction action) {
+        return new BehindStatusLogic(getConfig());
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull FreezePeriodEnteredAction action) {
+        freezeRound = action.freezeRound();
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processReconnectCompleteAction(@NonNull ReconnectCompleteAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processSelfEventReachedConsensusAction(@NonNull SelfEventReachedConsensusAction action) {
+
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull StartedReplayingEventsAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull StateWrittenToDiskAction action) {
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processTimeElapsedAction(@NonNull TimeElapsedAction action) {
+        if (Duration.between(statusStartTime, action.instant())
+                        .compareTo(getConfig().observingStatusDelay())
+                < 0) {
+            // if the wait period hasn't elapsed, then stay in this status
+            return this;
+        }
+
+        if (freezeRound != null) {
+            return new FreezingStatusLogic(freezeRound, getConfig());
+        } else {
+            return new CheckingStatusLogic(getConfig());
+        }
     }
 
     /**

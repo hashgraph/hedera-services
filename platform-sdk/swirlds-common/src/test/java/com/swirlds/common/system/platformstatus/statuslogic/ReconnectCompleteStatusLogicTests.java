@@ -21,8 +21,16 @@ import static com.swirlds.common.system.platformstatus.statuslogic.StatusLogicTe
 import static com.swirlds.common.system.platformstatus.statuslogic.StatusLogicTestUtils.triggerActionAndAssertTransition;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
-import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
+import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
+import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.FallenBehindAction;
+import com.swirlds.common.system.platformstatus.statusactions.FreezePeriodEnteredAction;
+import com.swirlds.common.system.platformstatus.statusactions.ReconnectCompleteAction;
+import com.swirlds.common.system.platformstatus.statusactions.SelfEventReachedConsensusAction;
+import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
+import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -34,53 +42,89 @@ import org.junit.jupiter.api.Test;
  * Tests for {@link ReconnectCompleteStatusLogic}.
  */
 class ReconnectCompleteStatusLogicTests {
+    private FakeTime time;
+    private final long reconnectStateRound = 42L;
     private ReconnectCompleteStatusLogic logic;
 
     @BeforeEach
     void setup() {
-        final FakeTime time = new FakeTime();
+        time = new FakeTime();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        logic = new ReconnectCompleteStatusLogic(time, configuration.getConfigData(PlatformStatusConfig.class));
+        logic = new ReconnectCompleteStatusLogic(
+                reconnectStateRound, configuration.getConfigData(PlatformStatusConfig.class));
     }
 
     @Test
-    @DisplayName("Go to CHECKING")
-    void toChecking() {
-        triggerActionAndAssertTransition(logic, PlatformStatusAction.STATE_WRITTEN_TO_DISK, PlatformStatus.CHECKING);
+    @DisplayName("Go to CHECKING when the round written precisely matches the reconnect state round")
+    void toCheckingWithPreciseRoundMatch() {
+        triggerActionAndAssertTransition(
+                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(reconnectStateRound),
+                PlatformStatus.CHECKING);
+    }
+
+    @Test
+    @DisplayName("Go to CHECKING when the round written doesn't precisely match the reconnect state round")
+    void toCheckingWithImpreciseRoundMatch() {
+        triggerActionAndAssertTransition(
+                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(reconnectStateRound + 3),
+                PlatformStatus.CHECKING);
     }
 
     @Test
     @DisplayName("Go to BEHIND")
     void toBehind() {
-        triggerActionAndAssertTransition(logic, PlatformStatusAction.FALLEN_BEHIND, PlatformStatus.BEHIND);
+        triggerActionAndAssertTransition(
+                logic::processFallenBehindAction, new FallenBehindAction(), PlatformStatus.BEHIND);
     }
 
     @Test
-    @DisplayName("Go to FREEZING")
-    void toFreezing() {
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.FREEZE_PERIOD_ENTERED);
-        triggerActionAndAssertTransition(logic, PlatformStatusAction.STATE_WRITTEN_TO_DISK, PlatformStatus.FREEZING);
+    @DisplayName("Go to FREEZING when the round written precisely matches the reconnect state round")
+    void toFreezingWithPreciseRoundMatch() {
+        triggerActionAndAssertNoTransition(
+                logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());
+        triggerActionAndAssertTransition(
+                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(reconnectStateRound),
+                PlatformStatus.FREEZING);
+    }
+
+    @Test
+    @DisplayName("Go to FREEZING when the round written doesn't precisely match the reconnect state round")
+    void toFreezingWithImpreciseRoundMatch() {
+        triggerActionAndAssertNoTransition(
+                logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());
+        triggerActionAndAssertTransition(
+                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(reconnectStateRound + 5),
+                PlatformStatus.FREEZING);
     }
 
     @Test
     @DisplayName("Go to CATASTROPHIC_FAILURE")
     void toCatastrophicFailure() {
         triggerActionAndAssertTransition(
-                logic, PlatformStatusAction.CATASTROPHIC_FAILURE, PlatformStatus.CATASTROPHIC_FAILURE);
+                logic::processCatastrophicFailureAction,
+                new CatastrophicFailureAction(),
+                PlatformStatus.CATASTROPHIC_FAILURE);
     }
 
     @Test
     @DisplayName("Irrelevant actions shouldn't cause transitions")
     void irrelevantActions() {
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.OWN_EVENT_REACHED_CONSENSUS);
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
+        triggerActionAndAssertNoTransition(
+                logic::processSelfEventReachedConsensusAction,
+                new SelfEventReachedConsensusAction(time.now()),
+                logic.getStatus());
+        triggerActionAndAssertNoTransition(
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
     }
 
     @Test
     @DisplayName("Unexpected actions should cause exceptions")
     void unexpectedActions() {
-        triggerActionAndAssertException(logic, PlatformStatusAction.STARTED_REPLAYING_EVENTS);
-        triggerActionAndAssertException(logic, PlatformStatusAction.DONE_REPLAYING_EVENTS);
-        triggerActionAndAssertException(logic, PlatformStatusAction.RECONNECT_COMPLETE);
+        triggerActionAndAssertException(
+                logic::processStartedReplayingEventsAction, new StartedReplayingEventsAction(), logic.getStatus());
+        triggerActionAndAssertException(
+                logic::processDoneReplayingEventsAction, new DoneReplayingEventsAction(time.now()), logic.getStatus());
+        triggerActionAndAssertException(
+                logic::processReconnectCompleteAction, new ReconnectCompleteAction(0), logic.getStatus());
     }
 }

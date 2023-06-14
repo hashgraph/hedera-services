@@ -17,25 +17,13 @@
 package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
-import com.swirlds.common.time.Time;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.Objects;
 
 /**
  * Abstract class that implements common logic for {@link PlatformStatusLogic} implementations.
  */
 public abstract class AbstractStatusLogic implements PlatformStatusLogic {
-    /**
-     * Source of time
-     */
-    private final Time time;
-
-    /**
-     * The time at which the status started.
-     */
-    private final Instant statusStartTime;
-
     /**
      * The configuration object containing values relevant to the
      * {@link com.swirlds.common.system.platformstatus.PlatformStatusStateMachine PlatformStatusStateMachine}
@@ -45,32 +33,10 @@ public abstract class AbstractStatusLogic implements PlatformStatusLogic {
     /**
      * Constructor
      *
-     * @param time   source of time
      * @param config the configuration object
      */
-    protected AbstractStatusLogic(@NonNull final Time time, @NonNull final PlatformStatusConfig config) {
-        this.time = Objects.requireNonNull(time);
-        this.statusStartTime = time.now();
+    protected AbstractStatusLogic(@NonNull final PlatformStatusConfig config) {
         this.config = Objects.requireNonNull(config);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public Instant getStatusStartTime() {
-        return statusStartTime;
-    }
-
-    /**
-     * Get the source of time
-     *
-     * @return the source of time
-     */
-    @NonNull
-    protected Time getTime() {
-        return time;
     }
 
     /**

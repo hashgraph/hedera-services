@@ -23,7 +23,6 @@ import com.swirlds.common.UniqueId;
  * <p>
  * NOTE: not all of these statuses can currently be reached. The status state machine is still under development. In
  * such cases, the documentation will indicate that the status is "not in use"
- *
  */
 public enum PlatformStatus implements UniqueId {
     /**
@@ -46,12 +45,14 @@ public enum PlatformStatus implements UniqueId {
      */
     BEHIND(4),
     /**
-     * A freeze timestamp has been crossed, and the platform is in the process of freezing. The platform is gossiping
-     * and creating events, but not accepting app transactions.
+     * A freeze timestamp has been crossed, and the platform is in the process of freezing. The platform is gossiping.
+     * It is permitted to create events, but will not produce any additional events after creating one with its self
+     * signature for the freeze state.
      */
     FREEZING(5),
     /**
-     * The platform has been frozen, and is idle.
+     * The platform has completed the freeze. It is still gossipping, so that signatures on the freeze state can be
+     * distributed to laggards.
      */
     FREEZE_COMPLETE(6),
     /**
@@ -86,11 +87,7 @@ public enum PlatformStatus implements UniqueId {
      * <p>
      * NOTE: not in use
      */
-    CATASTROPHIC_FAILURE(11),
-    /**
-     * The platform is done gossiping, and is in the process of writing a final freeze state to disk.
-     */
-    SAVING_FREEZE_STATE(12);
+    CATASTROPHIC_FAILURE(11);
 
     /**
      * Unique ID of the enum value

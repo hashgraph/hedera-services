@@ -17,47 +17,99 @@
 package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
-import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
-import com.swirlds.common.time.Time;
+import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
+import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.FallenBehindAction;
+import com.swirlds.common.system.platformstatus.statusactions.FreezePeriodEnteredAction;
+import com.swirlds.common.system.platformstatus.statusactions.ReconnectCompleteAction;
+import com.swirlds.common.system.platformstatus.statusactions.SelfEventReachedConsensusAction;
+import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
+import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#FREEZING FREEZING} status.
  */
 public class FreezingStatusLogic extends AbstractStatusLogic {
     /**
-     * Constructor
-     *
-     * @param time   a source of time
-     * @param config the platform status config
+     * The round number when the freeze started
      */
-    public FreezingStatusLogic(@NonNull final Time time, @NonNull final PlatformStatusConfig config) {
-        super(time, config);
-    }
+    private final long freezeRound;
 
     /**
-     * {@inheritDoc}
+     * Constructor
+     *
+     * @param freezeRound the round number when the freeze started
+     * @param config      the platform status config
      */
+    public FreezingStatusLogic(final long freezeRound, @NonNull final PlatformStatusConfig config) {
+
+        super(config);
+
+        this.freezeRound = freezeRound;
+    }
+
     @NonNull
     @Override
-    public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
-        return switch (action) {
-            case OWN_EVENT_REACHED_CONSENSUS, FALLEN_BEHIND -> getStatus();
-            case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
-            case TIME_ELAPSED -> {
-                if (Duration.between(getStatusStartTime(), getTime().now())
-                                .compareTo(getConfig().freezingStatusDelay())
-                        > 0) {
-                    // move to the saving freeze state status after the configured amount of time has elapsed
-                    yield PlatformStatus.SAVING_FREEZE_STATE;
-                } else {
-                    yield getStatus();
-                }
-            }
-            default -> throw new IllegalArgumentException(getUnexpectedStatusActionLog(action));
-        };
+    public PlatformStatusLogic processCatastrophicFailureAction(@NonNull CatastrophicFailureAction action) {
+        return new CatastrophicFailureStatusLogic(getConfig());
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull DoneReplayingEventsAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processFallenBehindAction(@NonNull FallenBehindAction action) {
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull FreezePeriodEnteredAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processReconnectCompleteAction(@NonNull ReconnectCompleteAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processSelfEventReachedConsensusAction(@NonNull SelfEventReachedConsensusAction action) {
+
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull StartedReplayingEventsAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull StateWrittenToDiskAction action) {
+        // it's possible that a different state has been written to disk. only transition from this status
+        // if the freeze state has been written to disk.
+        if (action.round() == freezeRound) {
+            return new FreezeCompleteStatusLogic(getConfig());
+        } else {
+            return this;
+        }
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processTimeElapsedAction(@NonNull TimeElapsedAction action) {
+        return this;
     }
 
     /**

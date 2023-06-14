@@ -17,9 +17,16 @@
 package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
-import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
-import com.swirlds.common.time.Time;
+import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
+import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.FallenBehindAction;
+import com.swirlds.common.system.platformstatus.statusactions.FreezePeriodEnteredAction;
+import com.swirlds.common.system.platformstatus.statusactions.ReconnectCompleteAction;
+import com.swirlds.common.system.platformstatus.statusactions.SelfEventReachedConsensusAction;
+import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
+import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -27,43 +34,84 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class ReplayingEventsStatusLogic extends AbstractStatusLogic {
     /**
-     * Whether a freeze period has been entered
+     * The round number of the freeze period if one has been entered, otherwise null
      */
-    private boolean freezePeriodEntered = false;
+    private Long freezeRound = null;
 
     /**
      * Constructor
      *
-     * @param time   a source of time
      * @param config the platform status config
      */
-    public ReplayingEventsStatusLogic(@NonNull final Time time, @NonNull final PlatformStatusConfig config) {
-        super(time, config);
+    public ReplayingEventsStatusLogic(@NonNull final PlatformStatusConfig config) {
+        super(config);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
-    public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
-        return switch (action) {
-            case DONE_REPLAYING_EVENTS -> {
-                // always transition to a new status when done replaying events
-                if (freezePeriodEntered) {
-                    yield PlatformStatus.SAVING_FREEZE_STATE;
-                } else {
-                    yield PlatformStatus.OBSERVING;
-                }
-            }
-            case FREEZE_PERIOD_ENTERED -> {
-                freezePeriodEntered = true;
-                yield getStatus();
-            }
-            case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
-            case TIME_ELAPSED -> getStatus();
-            default -> throw new IllegalArgumentException(getUnexpectedStatusActionLog(action));
-        };
+    public PlatformStatusLogic processCatastrophicFailureAction(@NonNull CatastrophicFailureAction action) {
+        return new CatastrophicFailureStatusLogic(getConfig());
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull DoneReplayingEventsAction action) {
+        // always transition to a new status when done replaying events
+        if (freezeRound != null) {
+            // if a freeze boundary was crossed, we won't transition out of this state until the freeze state
+            // has been saved
+            return this;
+        } else {
+            return new ObservingStatusLogic(action.instant(), getConfig());
+        }
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processFallenBehindAction(@NonNull FallenBehindAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull FreezePeriodEnteredAction action) {
+        freezeRound = action.freezeRound();
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processReconnectCompleteAction(@NonNull ReconnectCompleteAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processSelfEventReachedConsensusAction(@NonNull SelfEventReachedConsensusAction action) {
+
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull StartedReplayingEventsAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull StateWrittenToDiskAction action) {
+        if (freezeRound != null && action.round() == freezeRound) {
+            return new FreezeCompleteStatusLogic(getConfig());
+        } else {
+            return this;
+        }
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processTimeElapsedAction(@NonNull TimeElapsedAction action) {
+        return this;
     }
 
     /**

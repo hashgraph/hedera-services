@@ -147,6 +147,7 @@ module com.swirlds.common {
 
     exports com.swirlds.common.metrics.extensions;
     exports com.swirlds.common.system.platformstatus;
+    exports com.swirlds.common.system.platformstatus.statusactions;
 
     requires transitive com.swirlds.base;
     requires com.swirlds.config;

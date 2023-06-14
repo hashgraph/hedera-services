@@ -17,9 +17,16 @@
 package com.swirlds.common.system.platformstatus.statuslogic;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
-import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
-import com.swirlds.common.time.Time;
+import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
+import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.FallenBehindAction;
+import com.swirlds.common.system.platformstatus.statusactions.FreezePeriodEnteredAction;
+import com.swirlds.common.system.platformstatus.statusactions.ReconnectCompleteAction;
+import com.swirlds.common.system.platformstatus.statusactions.SelfEventReachedConsensusAction;
+import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
+import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -29,25 +36,65 @@ public class StartingUpStatusLogic extends AbstractStatusLogic {
     /**
      * Constructor
      *
-     * @param time   a source of time
      * @param config the platform status config
      */
-    public StartingUpStatusLogic(@NonNull final Time time, @NonNull final PlatformStatusConfig config) {
-        super(time, config);
+    public StartingUpStatusLogic(@NonNull final PlatformStatusConfig config) {
+        super(config);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
-    public PlatformStatus processStatusAction(@NonNull final PlatformStatusAction action) {
-        return switch (action) {
-            case STARTED_REPLAYING_EVENTS -> PlatformStatus.REPLAYING_EVENTS;
-            case CATASTROPHIC_FAILURE -> PlatformStatus.CATASTROPHIC_FAILURE;
-            case TIME_ELAPSED -> getStatus();
-            default -> throw new IllegalArgumentException(getUnexpectedStatusActionLog(action));
-        };
+    public PlatformStatusLogic processCatastrophicFailureAction(@NonNull CatastrophicFailureAction action) {
+        return new CatastrophicFailureStatusLogic(getConfig());
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull DoneReplayingEventsAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processFallenBehindAction(@NonNull FallenBehindAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull FreezePeriodEnteredAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processReconnectCompleteAction(@NonNull ReconnectCompleteAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processSelfEventReachedConsensusAction(@NonNull SelfEventReachedConsensusAction action) {
+
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull StartedReplayingEventsAction action) {
+        return new ReplayingEventsStatusLogic(getConfig());
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull StateWrittenToDiskAction action) {
+        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    }
+
+    @NonNull
+    @Override
+    public PlatformStatusLogic processTimeElapsedAction(@NonNull TimeElapsedAction action) {
+        return this;
     }
 
     /**

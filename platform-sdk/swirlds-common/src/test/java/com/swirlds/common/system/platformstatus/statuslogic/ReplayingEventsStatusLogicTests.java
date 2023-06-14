@@ -19,13 +19,22 @@ package com.swirlds.common.system.platformstatus.statuslogic;
 import static com.swirlds.common.system.platformstatus.statuslogic.StatusLogicTestUtils.triggerActionAndAssertException;
 import static com.swirlds.common.system.platformstatus.statuslogic.StatusLogicTestUtils.triggerActionAndAssertNoTransition;
 import static com.swirlds.common.system.platformstatus.statuslogic.StatusLogicTestUtils.triggerActionAndAssertTransition;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.system.platformstatus.PlatformStatus;
-import com.swirlds.common.system.platformstatus.PlatformStatusAction;
 import com.swirlds.common.system.platformstatus.PlatformStatusConfig;
+import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
+import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.FallenBehindAction;
+import com.swirlds.common.system.platformstatus.statusactions.ReconnectCompleteAction;
+import com.swirlds.common.system.platformstatus.statusactions.SelfEventReachedConsensusAction;
+import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEventsAction;
+import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
+import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,49 +43,54 @@ import org.junit.jupiter.api.Test;
  * Unit tests for {@link ReplayingEventsStatusLogic}.
  */
 class ReplayingEventsStatusLogicTests {
+    private FakeTime time;
     private ReplayingEventsStatusLogic logic;
 
     @BeforeEach
     void setup() {
-        final FakeTime time = new FakeTime();
+        time = new FakeTime();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        logic = new ReplayingEventsStatusLogic(time, configuration.getConfigData(PlatformStatusConfig.class));
-    }
-
-    @Test
-    @DisplayName("Go to SAVING_FREEZE_STATE")
-    void toSavingFreezeState() {
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.FREEZE_PERIOD_ENTERED);
-        triggerActionAndAssertTransition(
-                logic, PlatformStatusAction.DONE_REPLAYING_EVENTS, PlatformStatus.SAVING_FREEZE_STATE);
+        logic = new ReplayingEventsStatusLogic(configuration.getConfigData(PlatformStatusConfig.class));
     }
 
     @Test
     @DisplayName("Go to OBSERVING")
     void toObserving() {
-        triggerActionAndAssertTransition(logic, PlatformStatusAction.DONE_REPLAYING_EVENTS, PlatformStatus.OBSERVING);
+        triggerActionAndAssertTransition(
+                logic::processDoneReplayingEventsAction,
+                new DoneReplayingEventsAction(time.now()),
+                PlatformStatus.OBSERVING);
     }
 
     @Test
     @DisplayName("Go to CATASTROPHIC_FAILURE")
     void toCatastrophicFailure() {
         triggerActionAndAssertTransition(
-                logic, PlatformStatusAction.CATASTROPHIC_FAILURE, PlatformStatus.CATASTROPHIC_FAILURE);
+                logic::processCatastrophicFailureAction,
+                new CatastrophicFailureAction(),
+                PlatformStatus.CATASTROPHIC_FAILURE);
     }
 
     @Test
     @DisplayName("Irrelevant actions shouldn't cause transitions")
     void irrelevantActions() {
-        triggerActionAndAssertNoTransition(logic, PlatformStatusAction.TIME_ELAPSED);
+        triggerActionAndAssertNoTransition(
+                logic::processTimeElapsedAction, new TimeElapsedAction(time.now()), logic.getStatus());
+        triggerActionAndAssertNoTransition(
+                logic::processSelfEventReachedConsensusAction,
+                new SelfEventReachedConsensusAction(time.now()),
+                logic.getStatus());
+        triggerActionAndAssertNoTransition(
+                logic::processStateWrittenToDiskAction, new StateWrittenToDiskAction(0), logic.getStatus());
     }
 
     @Test
     @DisplayName("Unexpected actions should cause exceptions")
     void unexpectedActions() {
-        triggerActionAndAssertException(logic, PlatformStatusAction.STARTED_REPLAYING_EVENTS);
-        triggerActionAndAssertException(logic, PlatformStatusAction.OWN_EVENT_REACHED_CONSENSUS);
-        triggerActionAndAssertException(logic, PlatformStatusAction.FALLEN_BEHIND);
-        triggerActionAndAssertException(logic, PlatformStatusAction.RECONNECT_COMPLETE);
-        triggerActionAndAssertException(logic, PlatformStatusAction.STATE_WRITTEN_TO_DISK);
+        triggerActionAndAssertException(
+                logic::processStartedReplayingEventsAction, new StartedReplayingEventsAction(), logic.getStatus());
+        triggerActionAndAssertException(logic::processFallenBehindAction, new FallenBehindAction(), logic.getStatus());
+        triggerActionAndAssertException(
+                logic::processReconnectCompleteAction, new ReconnectCompleteAction(0), logic.getStatus());
     }
 }
