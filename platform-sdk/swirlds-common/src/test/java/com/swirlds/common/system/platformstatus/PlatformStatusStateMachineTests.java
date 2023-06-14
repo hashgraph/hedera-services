@@ -49,11 +49,13 @@ class PlatformStatusStateMachineTests {
     @BeforeEach
     void setup() {
         time = new FakeTime();
-        Configuration configuration = new TestConfigBuilder().withValue("platformStatus.observingStatusDelay", "5s")
-                .withValue("platformStatus.activeStatusDelay", "10s").getOrCreateConfig();
+        Configuration configuration = new TestConfigBuilder()
+                .withValue("platformStatus.observingStatusDelay", "5s")
+                .withValue("platformStatus.activeStatusDelay", "10s")
+                .getOrCreateConfig();
 
-        stateMachine = new PlatformStatusStateMachine(time, configuration.getConfigData(PlatformStatusConfig.class),
-                mock(NotificationEngine.class));
+        stateMachine = new PlatformStatusStateMachine(
+                time, configuration.getConfigData(PlatformStatusConfig.class), mock(NotificationEngine.class));
     }
 
     @Test
@@ -337,8 +339,7 @@ class PlatformStatusStateMachineTests {
     @Test
     @DisplayName("Unknown action")
     void unknownAction() {
-        class UnknownAction implements PlatformStatusAction {
-        }
+        class UnknownAction implements PlatformStatusAction {}
 
         final UnknownAction unknownAction = new UnknownAction();
         assertEquals(PlatformStatus.STARTING_UP, stateMachine.getCurrentStatus());
