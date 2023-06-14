@@ -66,9 +66,9 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
+import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
-import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -88,7 +88,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenAccountWipeHandlerTest extends ParityTestBase {
     private static final AccountID ACCOUNT_4680 = BaseCryptoHandler.asAccount(4680);
     private static final AccountID TREASURY_ACCOUNT_9876 = BaseCryptoHandler.asAccount(9876);
-    private static final TokenID TOKEN_531 = IdConvenienceUtils.fromTokenNum(531);
+    private static final TokenID TOKEN_531 = BaseTokenHandler.asToken(531);
     private final ConfigProvider configProvider = mock(ConfigProvider.class);
 
     private final TokenSupplyChangeOpsValidator validator = new TokenSupplyChangeOpsValidator(configProvider);
@@ -297,7 +297,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                             .accountNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
                             .build());
             writableTokenStore = newWritableStoreWithTokens(); // Intentionally empty
-            final var txn = newWipeTxn(ACCOUNT_4680, IdConvenienceUtils.fromTokenNum(999), 1);
+            final var txn = newWipeTxn(ACCOUNT_4680, BaseTokenHandler.asToken(999), 1);
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))

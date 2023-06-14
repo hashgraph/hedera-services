@@ -143,4 +143,14 @@ public class BaseTokenHandler {
     public static TokenID asToken(final long num) {
         return TokenID.newBuilder().tokenNum(num).build();
     }
+
+    /**
+     * Determines if a given token number is valid
+     *
+     * @param tokenNum the token number to check
+     * @return true if the token number is valid
+     */
+    public static boolean isValidTokenNum(final long tokenNum) {
+        return tokenNum > 0;
+    }
 }

@@ -57,6 +57,8 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
+import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
@@ -75,7 +77,7 @@ import org.junit.jupiter.api.Test;
 class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
     private static final AccountID ACCOUNT_1339 =
             AccountID.newBuilder().accountNum(MISC_ACCOUNT.getAccountNum()).build();
-    private static final AccountID ACCOUNT_2020 = IdConvenienceUtils.fromAccountNum(2020);
+    private static final AccountID ACCOUNT_2020 = BaseCryptoHandler.asAccount(2020);
     private static final TokenID TOKEN_555_ID =
             TokenID.newBuilder().tokenNum(555).build();
     private static final TokenID TOKEN_666_ID =
@@ -498,7 +500,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         @Test
         void multipleTokenRelsAreRemoved() {
             // Represents a token that won't be found
-            final var token444Id = IdConvenienceUtils.fromTokenNum(444);
+            final var token444Id = BaseTokenHandler.asToken(444);
             // Represents a token that is deleted
             final var token555 = Token.newBuilder()
                     .tokenNumber(TOKEN_555_ID.tokenNum())

@@ -40,6 +40,8 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
+import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
@@ -76,7 +78,7 @@ public class ParityTestBase {
     private MapWritableKVState<EntityNum, Token> newTokenStateFromTokens(Token... tokens) {
         final var backingMap = new HashMap<EntityNum, Token>();
         for (final Token token : tokens) {
-            backingMap.put(EntityNum.fromTokenId(fromPbj(IdConvenienceUtils.fromTokenNum(token.tokenNumber()))), token);
+            backingMap.put(EntityNum.fromTokenId(fromPbj(BaseTokenHandler.asToken(token.tokenNumber()))), token);
         }
 
         return new MapWritableKVState<>(TOKENS_KEY, backingMap);
@@ -95,7 +97,7 @@ public class ParityTestBase {
     protected WritableAccountStore newWritableStoreWithAccounts(Account... accounts) {
         final var backingMap = new HashMap<AccountID, Account>();
         for (final Account account : accounts) {
-            backingMap.put(IdConvenienceUtils.fromAccountNum(account.accountNumber()), account);
+            backingMap.put(BaseCryptoHandler.asAccount(account.accountNumber()), account);
         }
 
         final var wrappingState = new MapWritableKVState<>(ACCOUNTS_KEY, backingMap);

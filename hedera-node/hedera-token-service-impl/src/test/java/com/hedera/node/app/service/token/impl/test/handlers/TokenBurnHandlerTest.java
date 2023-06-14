@@ -64,6 +64,8 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
+import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
@@ -86,8 +88,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenBurnHandlerTest extends ParityTestBase {
-    private static final AccountID ACCOUNT_1339 = IdConvenienceUtils.fromAccountNum(1339);
-    private static final TokenID TOKEN_123 = IdConvenienceUtils.fromTokenNum(123);
+    private static final AccountID ACCOUNT_1339 = BaseCryptoHandler.asAccount(1339);
+    private static final TokenID TOKEN_123 = BaseTokenHandler.asToken(123);
 
     private final ConfigProvider configProvider = mock(ConfigProvider.class);
     private TokenSupplyChangeOpsValidator validator = new TokenSupplyChangeOpsValidator(configProvider);
@@ -223,7 +225,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
         void tokenIdNotFound() {
             mockConfig();
             writableTokenStore = newWritableStoreWithTokens();
-            final var txn = newBurnTxn(IdConvenienceUtils.fromTokenNum(999), 1);
+            final var txn = newBurnTxn(BaseTokenHandler.asToken(999), 1);
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
