@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -49,6 +50,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -98,7 +100,8 @@ public class ContractCreateSuite extends HapiSuite {
 
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
     public static final String PARENT_INFO = "parentInfo";
-    private static final long GAS_TO_OFFER = 300_000L;
+    private static final String PAYER = "payer";
+    private static final String CONTRACTS_NONCES_EXTERNALIZATION_ENABLED = "contracts.nonces.externalization.enabled";
 
     public static void main(String... args) {
         new ContractCreateSuite().runSuiteAsync();
@@ -345,10 +348,10 @@ public class ContractCreateSuite extends HapiSuite {
 
     private HapiSpec rejectsInsufficientFee() {
         return defaultHapiSpec("RejectsInsufficientFee")
-                .given(cryptoCreate("payer"), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
+                .given(cryptoCreate(PAYER), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                        .payingWith("payer")
+                        .payingWith(PAYER)
                         .fee(1L)
                         .hasPrecheck(INSUFFICIENT_TX_FEE));
     }
@@ -564,17 +567,45 @@ public class ContractCreateSuite extends HapiSuite {
 
     private HapiSpec contractCreateNoncesExternalizationHappyPath() {
         final var contract = "NoncesExternalization";
-        final var contractCreateFn = "deployContract";
+        final var contractCreateTxn = "contractCreateTxn";
 
-        return defaultHapiSpec("ContractCreateNoncesExternalizationHappyPath")
-                .given(uploadInitCode(contract), contractCreate(contract).via(contractCreateFn))
+        return propertyPreservingHapiSpec("ContractCreateNoncesExternalizationHappyPath")
+                .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
+                .given(
+                        overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
+                        cryptoCreate(PAYER).balance(10 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract).via(contractCreateTxn))
                 .when()
                 .then(withOpContext((spec, opLog) -> {
-                    HapiGetTxnRecord op = getTxnRecord(contractCreateFn)
-                            .hasPriority(recordWith()
-                                    .contractWithIdHasContractNonces(
-                                            spec.registry().getContractId(contract), 4L));
-                    allRunFor(spec, op);
+                    final var opContractTxnRecord = getTxnRecord(contractCreateTxn);
+
+                    allRunFor(spec, opContractTxnRecord);
+
+                    final var parentContractId = spec.registry().getContractId(contract);
+                    final var childContracts = opContractTxnRecord
+                            .getResponse()
+                            .getTransactionGetRecord()
+                            .getTransactionRecord()
+                            .getContractCreateResult()
+                            .getContractNoncesList()
+                            .stream()
+                            .filter(contractNonceInfo ->
+                                    !contractNonceInfo.getContractId().equals(parentContractId))
+                            .toList();
+
+                    // Asserts nonce of parent contract
+                    HapiGetTxnRecord opAssertParent = getTxnRecord(contractCreateTxn)
+                            .hasPriority(recordWith().contractWithIdHasContractNonces(parentContractId, 4L));
+                    allRunFor(spec, opAssertParent);
+
+                    // Asserts nonces of all newly deployed contracts through the constructor
+                    for (final var contractNonceInfo : childContracts) {
+                        HapiGetTxnRecord op = getTxnRecord(contractCreateTxn)
+                                .hasPriority(recordWith()
+                                        .contractWithIdHasContractNonces(contractNonceInfo.getContractId(), 1L));
+                        allRunFor(spec, op);
+                    }
                 }));
     }
 

@@ -146,9 +146,9 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 
         // feature flag if contracts nonces externalization is enabled
         if (dynamicProperties.isContractsNoncesExternalizationEnabled()) {
-            if (accessor.getFunction().name().equals("ContractCreate")) {
+            if (accessor.getFunction().equals(HederaFunctionality.ContractCreate)) {
                 topLevelRecord.getContractCreateResult().setContractNonces(contractNonces);
-            } else if (accessor.getFunction().name().equals("ContractCall")) {
+            } else if (accessor.getFunction().equals(HederaFunctionality.ContractCall)) {
                 topLevelRecord.getContractCallResult().setContractNonces(contractNonces);
             }
         }
@@ -366,7 +366,8 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
         }
     }
 
-    public void setContractNonces(ContractID contractId, Long contractNonce) {
+    @Override
+    public void updateContractNonces(ContractID contractId, Long contractNonce) {
         contractNonces.put(contractId, contractNonce);
     }
 

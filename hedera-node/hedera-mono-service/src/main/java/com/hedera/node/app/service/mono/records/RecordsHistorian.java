@@ -21,6 +21,7 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.stream.RecordStreamObject;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.RunningHash;
 import java.time.Instant;
@@ -183,6 +184,8 @@ public interface RecordsHistorian {
      * transaction) that matches the given predicate.
      */
     void customizeSuccessor(Predicate<InProgressChildRecord> matcher, Consumer<InProgressChildRecord> customizer);
+
+    void updateContractNonces(ContractID contractId, Long contractNonce);
 
     /**
      * Convenience method to get the {@link RunningHash} of the last record saved in this

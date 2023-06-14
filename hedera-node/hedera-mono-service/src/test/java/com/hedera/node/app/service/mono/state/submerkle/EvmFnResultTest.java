@@ -32,6 +32,7 @@ import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessin
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ContractNonceInfo;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -61,6 +62,13 @@ class EvmFnResultTest {
     private static final String error = "Oops!";
     private static final EntityId contractId = new EntityId(0L, 0L, 3L);
     private static final EntityId senderId = new EntityId(0L, 0L, 42L);
+    private static final Map<ContractID, Long> contractNonces = Map.of(
+            ContractID.newBuilder()
+                    .setShardNum(0L)
+                    .setRealmNum(0L)
+                    .setContractNum(1L)
+                    .build(),
+            1L);
     private static final Address recipient = EntityNum.fromLong(3L).toEvmAddress();
     private static final List<EntityId> createdContractIds =
             List.of(new EntityId(2L, 3L, 4L), new EntityId(3L, 4L, 5L));
@@ -520,6 +528,37 @@ class EvmFnResultTest {
         assertEquals(3, subject.getAmount());
         assertArrayEquals(oneByte, subject.getFunctionParameters());
         assertEquals(senderId, subject.getSenderId());
+    }
+
+    @Test
+    void contractNoncesExternalizationWorks() {
+        subject.setContractNonces(contractNonces);
+
+        final var actual = subject.toGrpc();
+        final var expected = ContractFunctionResult.newBuilder()
+                .setGasUsed(gasUsed)
+                .setContractCallResult(ByteString.copyFrom(result))
+                .setBloom(ByteString.copyFrom(bloom))
+                .setErrorMessage(error)
+                .setContractID(contractId.toGrpcContractId())
+                .addAllCreatedContractIDs(createdContractIds.stream()
+                        .map(EntityId::toGrpcContractId)
+                        .collect(toList()))
+                .addAllLogInfo(logs.stream().map(EvmLog::toGrpc).collect(toList()))
+                .setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
+                .setGas(gas)
+                .setAmount(amount)
+                .setFunctionParameters(ByteString.copyFrom(functionParameters))
+                .setSenderId(senderId.toGrpcAccountId())
+                .addAllContractNonces(contractNonces.entrySet().stream()
+                        .map(contractNonceInfo -> ContractNonceInfo.newBuilder()
+                                .setContractId(contractNonceInfo.getKey())
+                                .setNonce(contractNonceInfo.getValue())
+                                .build())
+                        .collect(toList()))
+                .build();
+
+        assertEquals(expected, actual);
     }
 
     private static EvmLog logFrom(final int s) {

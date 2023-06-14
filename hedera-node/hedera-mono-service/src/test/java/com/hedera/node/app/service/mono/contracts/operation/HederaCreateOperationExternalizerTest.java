@@ -67,6 +67,8 @@ import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
@@ -111,6 +113,12 @@ class HederaCreateOperationExternalizerTest {
 
     @Mock
     private ContractAliases aliases;
+
+    @Mock
+    private EvmAccount recipientAccount;
+
+    @Mock
+    private MutableAccount mutableAccount;
 
     @Mock
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
@@ -289,6 +297,47 @@ class HederaCreateOperationExternalizerTest {
         final var tracker = trackerCaptor.getValue();
         assertTrue(tracker.hasTrackedContractCreation());
         assertEquals(EntityIdUtils.asContract(hollowAccountId), tracker.getTrackedNewContractId());
+        assertArrayEquals(
+                PRETEND_CONTRACT_ADDRESS.toArrayUnsafe(),
+                tracker.getNewEntityAlias().toByteArray());
+        // and:
+        assertTrue(liveRecord.shouldNotBeExternalized());
+    }
+
+    @Test
+    void hasExpectedContractNoncesExternalized() {
+        given(dynamicProperties.isContractsNoncesExternalizationEnabled()).willReturn(true);
+        final var trackerCaptor = ArgumentCaptor.forClass(SideEffectsTracker.class);
+        final var liveRecord = ExpirableTxnRecord.newBuilder()
+                .setReceiptBuilder(TxnReceipt.newBuilder().setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
+        final var mockCreation = TransactionBody.newBuilder()
+                .setContractCreateInstance(ContractCreateTransactionBody.newBuilder()
+                        .setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
+        given(frame.getWorldUpdater()).willReturn(updater);
+        givenUpdaterWithAliases(EntityIdUtils.parseAccount("0.0.1234"), nonEmptyKey);
+        given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
+        given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
+        given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
+        given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
+        given(dynamicProperties.enabledSidecars()).willReturn(Set.of());
+
+        given(updater.getAccount(PRETEND_CONTRACT_ADDRESS)).willReturn(recipientAccount);
+        given(recipientAccount.getMutable()).willReturn(mutableAccount);
+
+        given(childFrame.getContractAddress()).willReturn(PRETEND_CONTRACT_ADDRESS);
+
+        // when:
+        subject.updateParentContractNonce(PRETEND_CONTRACT_ADDRESS, 1L);
+        subject.externalize(frame, childFrame);
+
+        // then:
+        verify(creator)
+                .createSuccessfulSyntheticRecord(eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
+        verify(updater).manageInProgressRecord(recordsHistorian, liveRecord, mockCreation, Collections.emptyList());
+        // and:
+        final var tracker = trackerCaptor.getValue();
+        assertTrue(tracker.hasTrackedContractCreation());
+        assertEquals(lastAllocated, tracker.getTrackedNewContractId());
         assertArrayEquals(
                 PRETEND_CONTRACT_ADDRESS.toArrayUnsafe(),
                 tracker.getNewEntityAlias().toByteArray());

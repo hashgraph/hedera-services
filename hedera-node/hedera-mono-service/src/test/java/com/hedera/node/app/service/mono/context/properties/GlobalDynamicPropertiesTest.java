@@ -236,6 +236,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.isLazyCreationEnabled());
         assertFalse(subject.isCryptoCreateWithAliasEnabled());
         assertFalse(subject.isAtomicCryptoTransferEnabled());
+        assertFalse(subject.isContractsNoncesExternalizationEnabled());
         assertTrue(subject.isHRCAssociateEnabled());
         assertFalse(subject.isImplicitCreationEnabled());
     }
