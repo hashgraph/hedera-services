@@ -128,6 +128,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     private static final String FIRST_MEMO = "firstMemo";
     private static final String SECOND_MEMO = "secondMemo";
     private static final String CRYPTO_TRANSFER_TXN = "cryptoTransferTxn";
+    private static final String SPENDER = "spender";
 
     public static void main(final String... args) {
         new CryptoTransferHTSSuite().runSuiteAsync();
@@ -156,7 +157,6 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     private HapiSpec hapiTransferFromForFungibleToken() {
-        final var theSpender = "spender";
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
@@ -166,7 +166,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
-                        cryptoCreate(theSpender).maxAutomaticTokenAssociations(5),
+                        cryptoCreate(SPENDER).maxAutomaticTokenAssociations(5),
                         cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
                         tokenCreate(FUNGIBLE_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -340,13 +340,12 @@ public class CryptoTransferHTSSuite extends HapiSuite {
         final var ZERO_ADDRESS = 0L;
         final var NON_EXISTING_SYSTEM_ADDRESS = 345L;
 
-        final var theSpender = "spender";
         final var allowance = 10L;
         return defaultHapiSpec("hapiTransferFromForFungibleToken")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
-                        cryptoCreate(theSpender).maxAutomaticTokenAssociations(5),
+                        cryptoCreate(SPENDER).maxAutomaticTokenAssociations(5),
                         cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
                         tokenCreate(FUNGIBLE_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -414,14 +413,13 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     private HapiSpec hapiTransferFromForNFT() {
-        final var theSpender = "spender";
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";
         return defaultHapiSpec("hapiTransferFromForNFT")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
-                        cryptoCreate(theSpender).maxAutomaticTokenAssociations(5),
+                        cryptoCreate(SPENDER).maxAutomaticTokenAssociations(5),
                         cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
                         tokenCreate(NFT_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)

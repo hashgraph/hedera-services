@@ -255,8 +255,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var isDebit = units < 0;
             final var isCredit = units > 0;
 
-            //check whether the balance change is negative e.g. for "from" field, if not validate the "to" field.
-            if(isCredit && !change.isForCustomFee()){
+            // check whether the balance change is negative e.g. for "from" field, if not validate the "to" field.
+            if (isCredit && !change.isForCustomFee()) {
                 validateFalseOrRevert(isSystemAccountDetected(change), CONTRACT_REVERT_EXECUTED);
             }
 
@@ -846,9 +846,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     private boolean isSystemAccountDetected(final BalanceChange change) {
-        final var accountNum = change.counterPartyAccountId() != null ?
-                change.counterPartyAccountId().getAccountNum() :
-                change.getAccount().num();
+        final var accountNum = change.counterPartyAccountId() != null
+                ? change.counterPartyAccountId().getAccountNum()
+                : change.getAccount().num();
 
         return accountNum != 0 && accountNum <= 750;
     }
