@@ -19,10 +19,11 @@ package com.swirlds.platform.event.preconsensus;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.Units;
 import com.swirlds.common.utility.ValueReference;
@@ -78,10 +79,9 @@ public class PreconsensusEventFileManager {
     private final Path databaseDirectory;
 
     /**
-     * The location where we will move files that are invalid due to a discontinuity. Better than deleting the files, in
-     * case the files end up being useful for debugging.
+     * If we ever have to delete files out of band, move them to the recycle bin.
      */
-    private final Path recycleBinDirectory;
+    private final RecycleBin recycleBin;
 
     /**
      * Tracks all files currently on disk.
@@ -103,10 +103,14 @@ public class PreconsensusEventFileManager {
      *
      * @param platformContext the platform context for this node
      * @param time            provides wall clock time
+     * @param recycleBin      can remove files in a way that allows them to be possibly recovered for debugging
      * @param selfId          the ID of this node
      */
     public PreconsensusEventFileManager(
-            @NonNull final PlatformContext platformContext, @NonNull final Time time, @NonNull final NodeId selfId)
+            @NonNull final PlatformContext platformContext,
+            @NonNull final Time time,
+            @NonNull final RecycleBin recycleBin,
+            @NonNull final NodeId selfId)
             throws IOException {
 
         Objects.requireNonNull(platformContext, "platformContext");
@@ -128,7 +132,7 @@ public class PreconsensusEventFileManager {
                 .resolve(preconsensusEventStreamConfig.databaseDirectory())
                 .resolve(Long.toString(selfId.id()));
 
-        this.recycleBinDirectory = savedStateDirectory.resolve(preconsensusEventStreamConfig.recycleBinDirectory());
+        this.recycleBin = Objects.requireNonNull(recycleBin);
 
         if (!Files.exists(databaseDirectory)) {
             Files.createDirectories(databaseDirectory);
@@ -400,12 +404,10 @@ public class PreconsensusEventFileManager {
         }
 
         try {
-            Files.createDirectories(recycleBinDirectory);
-
             // Delete files in reverse order, so that if we crash prior to finishing at least
             // the stream does not have gaps in sequence numbers.
             for (int index = files.size() - 1; index >= indexOfDiscontinuity; index--) {
-                files.removeLast().deleteFile(databaseDirectory, recycleBinDirectory);
+                files.removeLast().deleteFile(databaseDirectory, recycleBin);
             }
         } catch (final IOException e) {
             throw new UncheckedIOException("unable to delete file after discontinuity", e);

@@ -61,6 +61,7 @@ import static com.swirlds.platform.SettingConstants.PROMETHEUS_ENDPOINT_ENABLED_
 import static com.swirlds.platform.SettingConstants.PROMETHEUS_ENDPOINT_MAX_BACKLOG_ALLOWED_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.PROMETHEUS_ENDPOINT_PORT_NUMBER_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.RANDOM_EVENT_PROBABILITY_DEFAULT_VALUE;
+import static com.swirlds.platform.SettingConstants.REMOVED_SETTINGS;
 import static com.swirlds.platform.SettingConstants.RESCUE_CHILDLESS_INVERSE_PROBABILITY_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SAVED_STRING;
 import static com.swirlds.platform.SettingConstants.SETTINGS_TXT;
@@ -546,30 +547,33 @@ public class Settings {
             name = split[0];
             subName = split[1];
         }
-        final String val = pars.length > 1 ? pars[1].trim() : ""; // the first parameter passed in, or "" if none
-        boolean good = false; // is name a valid name of a non-final static field in Settings?
-        final Field field = getFieldByName(Settings.class.getDeclaredFields(), name);
-        if (field != null && !Modifier.isFinal(field.getModifiers())) {
-            try {
-                if (subName == null) {
-                    good = setValue(field, this, val);
-                } else {
-                    final Field subField = getFieldByName(field.getType().getDeclaredFields(), subName);
-                    if (subField != null) {
-                        good = setValue(subField, field.get(this), val);
+        if (!REMOVED_SETTINGS.contains(name)) {
+            final String val = pars.length > 1 ? pars[1].trim() : ""; // the first parameter passed in, or "" if none
+            boolean good = false; // is name a valid name of a non-final static field in Settings?
+            final Field field = getFieldByName(Settings.class.getDeclaredFields(), name);
+            if (field != null && !Modifier.isFinal(field.getModifiers())) {
+                try {
+                    if (subName == null) {
+                        good = setValue(field, this, val);
+                    } else {
+                        final Field subField = getFieldByName(field.getType().getDeclaredFields(), subName);
+                        if (subField != null) {
+                            good = setValue(subField, field.get(this), val);
+                        }
                     }
+                } catch (final IllegalArgumentException | IllegalAccessException | SettingsException e) {
+                    logger.error(
+                            EXCEPTION.getMarker(), "illegal line in settings.txt: {}, {}  {}", pars[0], pars[1], e);
                 }
-            } catch (final IllegalArgumentException | IllegalAccessException | SettingsException e) {
-                logger.error(EXCEPTION.getMarker(), "illegal line in settings.txt: {}, {}  {}", pars[0], pars[1], e);
             }
-        }
 
-        if (!good) {
-            final String err = "WARNING: " + pars[0] + " is not a valid setting name.";
-            // this only happens if settings.txt exist, so it's internal, not users, so print it
-            CommonUtils.tellUserConsole(err);
-            logger.warn(STARTUP.getMarker(), err);
-            return false;
+            if (!good) {
+                final String err = "WARNING: " + pars[0] + " is not a valid setting name.";
+                // this only happens if settings.txt exist, so it's internal, not users, so print it
+                CommonUtils.tellUserConsole(err);
+                logger.warn(STARTUP.getMarker(), err);
+                return false;
+            }
         }
         return true;
     }

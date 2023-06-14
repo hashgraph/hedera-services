@@ -16,9 +16,9 @@
 
 package com.swirlds.common.threading.framework.config;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 

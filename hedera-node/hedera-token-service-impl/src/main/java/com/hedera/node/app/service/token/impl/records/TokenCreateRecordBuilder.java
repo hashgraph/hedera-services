@@ -14,27 +14,25 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.networkadmin;
+package com.hedera.node.app.service.token.impl.records;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
 
 /**
- * Provides read-only methods for interacting with the underlying data storage mechanisms for
- * working with special files used in freeze transactions.
- * <br/>
- * @deprecated This is a temporary interface. It will be replaced by a new interface in FileService.
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code TokenCreate}
+ * transaction.
  */
-@Deprecated
-public interface ReadableSpecialFileStore {
-
+public interface TokenCreateRecordBuilder {
     /**
-     * Gets the freeze file with the given ID. If there is no file with given ID
-     * returns {@link Optional#empty()}.
+     * Tracks creation of a new token by number. Even if someday we support creating multiple
+     * tokens within a smart contract call, we will still only need to track one created token
+     * per child record.
      *
-     * @param fileId given id for the file
-     * @return the file with the given id
+     * @param tokenID the {@link AccountID} of the new token
+     * @return this builder
      */
     @NonNull
-    Optional<byte[]> get(long fileId);
+    TokenCreateRecordBuilder tokenID(@NonNull TokenID tokenID);
 }

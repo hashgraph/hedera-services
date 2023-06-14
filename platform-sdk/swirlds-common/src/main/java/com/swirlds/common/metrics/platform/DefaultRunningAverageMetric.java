@@ -16,11 +16,11 @@
 
 package com.swirlds.common.metrics.platform;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.statistics.StatsBuffered;
 import com.swirlds.common.statistics.StatsRunningAverage;
 import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
