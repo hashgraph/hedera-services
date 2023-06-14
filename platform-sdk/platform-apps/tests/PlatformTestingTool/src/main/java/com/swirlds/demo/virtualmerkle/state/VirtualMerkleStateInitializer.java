@@ -77,7 +77,9 @@ public final class VirtualMerkleStateInitializer {
      * @param virtualMerkleConfig
      */
     public static void initStateChildren(
-            final Platform platform, final long nodeId, final VirtualMerkleConfig virtualMerkleConfig,
+            final Platform platform,
+            final long nodeId,
+            final VirtualMerkleConfig virtualMerkleConfig,
             final boolean useMerkleDb) {
 
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
