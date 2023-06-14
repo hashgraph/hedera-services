@@ -65,19 +65,36 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
+import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
+import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
+import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.ConfigProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TokenCreateHandleParityTest {
+    @Mock
+    private ConfigProvider configProvider;
+
     private ReadableAccountStore accountStore;
     private TokenCreateHandler subject;
+    private CustomFeesValidator customFeesValidator;
+    private TokenAttributesValidator tokenFieldsValidator;
+    private TokenCreateValidator tokenCreateValidator;
 
     @BeforeEach
     void setUp() {
+        tokenFieldsValidator = new TokenAttributesValidator(configProvider);
+        customFeesValidator = new CustomFeesValidator();
+        tokenCreateValidator = new TokenCreateValidator(tokenFieldsValidator);
         accountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
-        subject = new TokenCreateHandler();
+        subject = new TokenCreateHandler(customFeesValidator, tokenCreateValidator);
     }
 
     @Test

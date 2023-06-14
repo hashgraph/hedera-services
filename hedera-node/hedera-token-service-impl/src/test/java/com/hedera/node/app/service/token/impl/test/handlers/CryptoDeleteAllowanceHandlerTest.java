@@ -31,7 +31,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.CryptoDeleteAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftRemoveAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteAllowanceHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.DeleteAllowanceValidator;
@@ -66,7 +65,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         givenStoresAndConfig(configProvider, handleContext);
 
         given(handleContext.configuration()).willReturn(configuration);
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+        given(configProvider.getConfiguration()).willReturn(versionedConfig);
     }
 
     @Test

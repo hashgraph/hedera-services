@@ -660,6 +660,18 @@ class MonoTransactionDispatcherTest {
     }
 
     @Test
+    void dispatchesTokenCreateAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .tokenCreation(TokenCreateTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+
+        dispatcher.dispatchHandle(handleContext);
+
+        verify(handleContext).body();
+    }
+
+    @Test
     void dispatchesCryptoCreateAsExpected() {
         final var txnBody = TransactionBody.newBuilder()
                 .cryptoCreateAccount(CryptoCreateTransactionBody.DEFAULT)
@@ -696,6 +708,24 @@ class MonoTransactionDispatcherTest {
         given(handleContext.body()).willReturn(txnBody);
 
         assertDoesNotThrow(() -> dispatcher.dispatchHandle(handleContext));
+    }
+
+    @Test
+    void dispatchesCryptoApproveAllowanceAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .cryptoApproveAllowance(CryptoApproveAllowanceTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+        dispatcher.dispatchHandle(handleContext);
+    }
+
+    @Test
+    void dispatchesCryptoDeleteAllowanceAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .cryptoDeleteAllowance(CryptoDeleteAllowanceTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+        dispatcher.dispatchHandle(handleContext);
     }
 
     @Test
