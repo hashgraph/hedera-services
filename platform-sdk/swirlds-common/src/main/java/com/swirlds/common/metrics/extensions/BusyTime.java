@@ -16,7 +16,6 @@
 
 package com.swirlds.common.metrics.extensions;
 
-import com.swirlds.base.time.OSTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.FloatFormats;
 import com.swirlds.common.metrics.FunctionGauge;
@@ -55,7 +54,7 @@ public class BusyTime {
     private final RateLimiter logLimiter;
 
     /**
-     * The default constructor, uses the {@link OSTime} instance to get the current time
+     * The default constructor, uses the {@link Time#getCurrent()} instance to get the current time
      */
     public BusyTime() {
         this(Time.getCurrent());

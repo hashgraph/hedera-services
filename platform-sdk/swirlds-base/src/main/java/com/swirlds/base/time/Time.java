@@ -16,6 +16,7 @@
 
 package com.swirlds.base.time;
 
+import com.swirlds.base.time.internal.OSTime;
 import java.time.Instant;
 
 /**

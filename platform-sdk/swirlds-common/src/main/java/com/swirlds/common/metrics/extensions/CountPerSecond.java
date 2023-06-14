@@ -20,7 +20,6 @@ import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
 import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
 
-import com.swirlds.base.time.OSTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.LongAccumulator;
@@ -43,10 +42,9 @@ public class CountPerSecond {
     private final IntegerPairAccumulator<Double> accumulator;
 
     /**
-     * The default constructor, uses the {@link OSTime}
+     * The default constructor, uses the {@link Time#getCurrent()}
      *
-     * @param config
-     * 		the configuration for this metric
+     * @param config the configuration for this metric
      */
     public CountPerSecond(final Metrics metrics, final CountPerSecond.Config config) {
         this(metrics, config, new IntegerEpochTime(Time.getCurrent()));

@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.base.time;
+package com.swirlds.base.time.internal;
 
+import com.swirlds.base.time.Time;
 import java.time.Instant;
 
 /**
