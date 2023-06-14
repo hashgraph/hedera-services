@@ -23,8 +23,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
-import com.swirlds.virtualmap.VirtualMapSettings;
-import com.swirlds.virtualmap.VirtualMapSettingsFactory;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
@@ -163,9 +163,15 @@ public class VirtualPipeline {
     private final AtomicBoolean workScheduled = new AtomicBoolean(false);
 
     /**
+     * The configuration for this pipeline. To prevent using static configuration calls, we pass it with the constructor.
+     */
+    private final VirtualMapConfig config;
+
+    /**
      * Create a new pipeline for a family of fast copies on a virtual root.
      */
-    public VirtualPipeline() {
+    public VirtualPipeline(@NonNull final VirtualMapConfig config) {
+        this.config = Objects.requireNonNull(config);
         copies = new PipelineList<>();
         unhashedCopies = new ConcurrentLinkedDeque<>();
 
@@ -203,19 +209,17 @@ public class VirtualPipeline {
      * Slow down the fast copy operation if there are too many copies that need to be flushed.
      */
     private void applyFlushBackpressure() {
-        final int backlogExcess =
-                flushBacklog.size() - VirtualMapSettingsFactory.get().getPreferredFlushQueueSize();
+        final int backlogExcess = flushBacklog.size() - config.preferredFlushQueueSize();
 
         if (backlogExcess <= 0) {
             return;
         }
 
         // Sleep time grows quadratically.
-        final Duration computedSleepTime = VirtualMapSettingsFactory.get()
-                .getFlushThrottleStepSize()
-                .multipliedBy((long) backlogExcess * backlogExcess);
+        final Duration computedSleepTime =
+                config.flushThrottleStepSize().multipliedBy((long) backlogExcess * backlogExcess);
 
-        final Duration maxSleepTime = VirtualMapSettingsFactory.get().getMaximumFlushThrottlePeriod();
+        final Duration maxSleepTime = config.maximumFlushThrottlePeriod();
         final Duration sleepTime = CompareTo.min(computedSleepTime, maxSleepTime);
 
         try {
@@ -228,10 +232,10 @@ public class VirtualPipeline {
 
     /**
      * Slow down the fast copy operation if total size of all (unreleased) virtual root copies
-     * in this pipeline exceeds {@link VirtualMapSettings#getFamilyThrottleThreshold()}.
+     * in this pipeline exceeds {@link VirtualMapConfig#familyThrottleThreshold()}.
      */
     private void applyFamilySizeBackpressure() {
-        final long sizeThreshold = VirtualMapSettingsFactory.get().getFamilyThrottleThreshold();
+        final long sizeThreshold = config.familyThrottleThreshold();
         if (sizeThreshold <= 0) {
             return;
         }
@@ -676,7 +680,7 @@ public class VirtualPipeline {
      * @param copy
      * 		Virtual root copy to check
      * @return
-     * 		True, if this pipeline already has the copy registered, false otherwise
+     *        True, if this pipeline already has the copy registered, false otherwise
      */
     private boolean isAlreadyRegistered(final VirtualRoot copy) {
         return !copies.testAll(c -> !copy.equals(c));

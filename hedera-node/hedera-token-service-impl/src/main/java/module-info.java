@@ -15,6 +15,7 @@ module com.hedera.node.app.service.token.impl {
     requires com.swirlds.jasperdb;
     requires org.apache.commons.lang3;
     requires org.slf4j;
+    requires tuweni.bytes;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;
@@ -27,4 +28,7 @@ module com.hedera.node.app.service.token.impl {
     exports com.hedera.node.app.service.token.impl.records to
             com.hedera.node.app;
     exports com.hedera.node.app.service.token.impl.validators;
+    exports com.hedera.node.app.service.token.impl.util to
+            com.hedera.node.app,
+            com.hedera.node.app.service.token.impl.test;
 }

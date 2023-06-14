@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -60,7 +61,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 public class DelegatePrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(DelegatePrecompileSuite.class);
@@ -244,11 +244,6 @@ public class DelegatePrecompileSuite extends HapiSuite {
                                                 changingFungibleBalances().including(VANILLA_TOKEN, TOKEN_TREASURY, 1))
                                         .newTotalSupply(51)),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 51));
-    }
-
-    @NotNull
-    private String getNestedContractAddress(final String outerContract, final HapiSpec spec) {
-        return AssociatePrecompileSuite.getNestedContractAddress(outerContract, spec);
     }
 
     @Override

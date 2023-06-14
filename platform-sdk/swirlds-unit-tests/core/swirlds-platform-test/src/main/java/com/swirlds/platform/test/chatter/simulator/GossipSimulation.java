@@ -23,6 +23,8 @@ import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.roundDecimal;
 import static java.time.temporal.ChronoUnit.NANOS;
 
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import java.time.Duration;
 import java.time.Instant;
@@ -43,6 +45,7 @@ public class GossipSimulation {
     private final boolean singleThreaded;
     private final Duration timeStep;
     private final Duration timeReportPeriod;
+    private final AddressBook addressBook;
     private final SimulatedNetwork network;
     private final EventTracker eventTracker;
     private final List<SimulatedNode> nodes = new ArrayList<>();
@@ -56,8 +59,7 @@ public class GossipSimulation {
     /**
      * Build a new simulator. Intentionally package private.
      *
-     * @param builder
-     * 		the builder object
+     * @param builder the builder object
      */
     GossipSimulation(final GossipSimulationBuilder builder) {
         singleThreaded = builder.isSingleThreaded();
@@ -72,6 +74,8 @@ public class GossipSimulation {
             throw new IllegalArgumentException("node count must exceed 0");
         }
 
+        addressBook = builder.getAddressBook();
+
         network = new SimulatedNetwork(builder);
         eventTracker = new EventTracker(builder);
 
@@ -79,7 +83,7 @@ public class GossipSimulation {
 
         random = new Random(builder.getSeed());
 
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             nodes.add(new SimulatedNode(builder, nodeId, random.nextLong(), network, eventTracker, () -> currentRound));
         }
 
@@ -98,8 +102,7 @@ public class GossipSimulation {
     /**
      * Simulate the system for a period of time.
      *
-     * @param time
-     * 		the length of time to simulate.
+     * @param time the length of time to simulate.
      */
     public void simulate(final Duration time) {
         final Instant start = Instant.now();

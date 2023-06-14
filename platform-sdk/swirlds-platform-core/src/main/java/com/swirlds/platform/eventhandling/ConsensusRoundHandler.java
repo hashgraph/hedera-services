@@ -25,6 +25,8 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.config.EventConfig;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -42,7 +44,6 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
-import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -84,7 +85,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     /** Stores consensus events and round generations that need to be saved in state */
     private final SignedStateEventsAndGenerations eventsAndGenerations;
 
-    private final SettingsProvider settings;
     private final ConsensusHandlingMetrics consensusHandlingMetrics;
 
     /** The queue thread that stores consensus rounds and feeds them to this class for handling. */
@@ -146,13 +146,12 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                     .withUnit("count");
 
     /**
-     * Instantiate, but don't start any threads yet. The Platform should first instantiate the {@link
-     * ConsensusRoundHandler}. Then the Platform should call start to start the queue thread.
+     * Instantiate, but don't start any threads yet. The Platform should first instantiate the
+     * {@link ConsensusRoundHandler}. Then the Platform should call start to start the queue thread.
      *
      * @param platformContext          contains various platform utilities
      * @param threadManager            responsible for creating and managing threads
      * @param selfId                   the id of this node
-     * @param settings                 a provider of static settings
      * @param swirldStateManager       the swirld state manager to send events to
      * @param consensusHandlingMetrics statistics updated by {@link ConsensusRoundHandler}
      * @param eventStreamManager       the event stream manager to send consensus events to
@@ -166,7 +165,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final NodeId selfId,
-            @NonNull final SettingsProvider settings,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
@@ -179,7 +177,6 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         this.platformContext = Objects.requireNonNull(platformContext);
         this.roundAppliedToStateConsumer = roundAppliedToStateConsumer;
         Objects.requireNonNull(selfId, "selfId must not be null");
-        this.settings = settings;
         this.swirldStateManager = swirldStateManager;
         this.consensusHandlingMetrics = consensusHandlingMetrics;
         this.eventStreamManager = eventStreamManager;
@@ -187,11 +184,12 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         this.softwareVersion = softwareVersion;
         this.enterFreezePeriod = enterFreezePeriod;
 
+        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         final ConsensusConfig consensusConfig =
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class);
 
         eventsAndGenerations = new SignedStateEventsAndGenerations(consensusConfig);
-        final ConsensusQueue queue = new ConsensusQueue(consensusHandlingMetrics, settings.getMaxEventQueueForCons());
+        final ConsensusQueue queue = new ConsensusQueue(consensusHandlingMetrics, eventConfig.maxEventQueueForCons());
         queueThread = new QueueThreadConfiguration<ConsensusRound>(threadManager)
                 .setNodeId(selfId)
                 .setHandler(this::applyConsensusRoundToState)
@@ -245,6 +243,16 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      */
     public void stop() {
         queueThread.stop();
+    }
+
+    /**
+     * Blocks until the handling thread has handled all available work and is no longer busy. May block indefinitely if
+     * more work is continually added to the queue.
+     *
+     * @throws InterruptedException if interrupted while waiting
+     */
+    public void waitUntilNotBusy() throws InterruptedException {
+        queueThread.waitUntilNotBusy();
     }
 
     @Override
@@ -440,10 +448,11 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     }
 
     private boolean timeToSignState(final long roundNum) {
-        return settings.getSignedStateFreq() > 0 // and we are signing states
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        return stateConfig.signedStateFreq() > 0 // and we are signing states
 
                 // the first round should be signed and every Nth should be signed, where N is signedStateFreq
-                && (roundNum == 1 || roundNum % settings.getSignedStateFreq() == 0);
+                && (roundNum == 1 || roundNum % stateConfig.signedStateFreq() == 0);
     }
 
     /**

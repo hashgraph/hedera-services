@@ -19,6 +19,7 @@ package com.swirlds.common.threading.locks.internal;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -27,7 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * A standard lock that provides the {@link AutoCloseable} semantics. Lock is reentrant.
  */
-public class AutoLock implements AutoClosableLock {
+public final class AutoLock implements AutoClosableLock {
 
     private final Lock lock = new ReentrantLock();
 
@@ -35,6 +36,7 @@ public class AutoLock implements AutoClosableLock {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public Locked lock() {
         lock.lock();
         return lock::unlock;
@@ -44,6 +46,7 @@ public class AutoLock implements AutoClosableLock {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public Locked lockInterruptibly() throws InterruptedException {
         lock.lockInterruptibly();
         return lock::unlock;
@@ -53,6 +56,7 @@ public class AutoLock implements AutoClosableLock {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public MaybeLocked tryLock() {
         final boolean locked = lock.tryLock();
         return new MaybeLocked() {
@@ -74,6 +78,7 @@ public class AutoLock implements AutoClosableLock {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public MaybeLocked tryLock(final long time, final TimeUnit unit) throws InterruptedException {
         final boolean locked = lock.tryLock(time, unit);
         return new MaybeLocked() {
@@ -95,6 +100,7 @@ public class AutoLock implements AutoClosableLock {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public Condition newCondition() {
         return lock.newCondition();
     }

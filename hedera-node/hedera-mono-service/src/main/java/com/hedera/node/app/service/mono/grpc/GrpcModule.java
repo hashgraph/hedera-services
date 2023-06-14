@@ -52,7 +52,7 @@ import javax.inject.Singleton;
 public interface GrpcModule {
     @Binds
     @Singleton
-    GrpcServerManager bindGrpcServerManager(NettyGrpcServerManager nettyGrpcServerManager);
+    GrpcServerManager bindGrpcServerManager(HelidonGrpcServerManager nettyGrpcServerManager);
 
     @Provides
     @ElementsIntoSet

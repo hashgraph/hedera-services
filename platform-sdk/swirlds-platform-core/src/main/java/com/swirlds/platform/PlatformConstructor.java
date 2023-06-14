@@ -194,7 +194,6 @@ public final class PlatformConstructor {
      *
      * @param threadManager               responsible for creating and managing threads
      * @param selfId                      this node's id
-     * @param settingsProvider            a static settings provider
      * @param swirldStateManager          the instance of {@link SwirldStateManager}
      * @param consensusHandlingMetrics    the class that records stats relating to {@link SwirldStateManager}
      * @param eventStreamManager          the instance that streams consensus events to disk
@@ -209,7 +208,6 @@ public final class PlatformConstructor {
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final NodeId selfId,
-            @NonNull final SettingsProvider settingsProvider,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
@@ -223,7 +221,6 @@ public final class PlatformConstructor {
                 platformContext,
                 threadManager,
                 selfId,
-                settingsProvider,
                 swirldStateManager,
                 consensusHandlingMetrics,
                 eventStreamManager,

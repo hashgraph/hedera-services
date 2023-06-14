@@ -1,8 +1,3 @@
-import com.hedera.hashgraph.gradlebuild.rules.IoGrpcDependencyMetadataRule
-import com.hedera.hashgraph.gradlebuild.rules.IoGrpcMetadataRule
-import com.hedera.hashgraph.gradlebuild.rules.IoNettyNativeEpollMetadataRule
-import com.hedera.hashgraph.gradlebuild.rules.HederaProtobufJavaApiMetadataRule
-
 /*
  * Copyright 2016-2022 Hedera Hashgraph, LLC
  *
@@ -19,6 +14,11 @@ import com.hedera.hashgraph.gradlebuild.rules.HederaProtobufJavaApiMetadataRule
  * ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
+
+import com.hedera.hashgraph.gradlebuild.rules.IoGrpcDependencyMetadataRule
+import com.hedera.hashgraph.gradlebuild.rules.IoGrpcMetadataRule
+import com.hedera.hashgraph.gradlebuild.rules.IoNettyNativeEpollMetadataRule
+import com.hedera.hashgraph.gradlebuild.rules.JavaxAnnotationMetadataRule
 
 plugins {
     id("java")
@@ -65,12 +65,13 @@ dependencies.components {
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-netty")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-protobuf")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-protobuf-lite")
+    withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-services")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-stub")
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-testing")
 
-    withModule<HederaProtobufJavaApiMetadataRule>("com.hedera.hashgraph:hedera-protobuf-java-api")
-
     withModule<IoNettyNativeEpollMetadataRule>("io.netty:netty-transport-native-epoll")
+
+    withModule<JavaxAnnotationMetadataRule>("com.google.code.findbugs:jsr305")
 }
 
 extraJavaModuleInfo {
@@ -99,6 +100,7 @@ extraJavaModuleInfo {
         requireAllDefinedDependencies()
     }
     module("com.google.code.findbugs:jsr305", "java.annotation") {
+        mergeJar("javax.annotation:javax.annotation-api")
         exports("javax.annotation")
         exports("javax.annotation.concurrent")
         exports("javax.annotation.meta")
@@ -225,6 +227,7 @@ extraJavaModuleInfo {
     knownModule("org.apache.logging.log4j:log4j-api", "org.apache.logging.log4j")
     knownModule("org.apache.logging.log4j:log4j-core", "org.apache.logging.log4j.core")
     knownModule("org.apache.logging.log4j:log4j-slf4j", "org.apache.logging.log4j.slf4j")
+    knownModule("org.apache.logging.log4j:log4j-jul", "org.apache.logging.log4j.jul")
     knownModule("org.jetbrains.kotlin:kotlin-stdlib-jdk8", "kotlin.stdlib.jdk8")
     knownModule("org.slf4j:slf4j-api", "org.slf4j")
 

@@ -407,7 +407,8 @@ public class HTSPrecompileResult implements ContractCallResult {
         final var feeCollector = expandByteArrayTo32Length(Utils.asAddress(customFee.getFeeCollectorAccountId()));
         if (customFee.getFixedFee().getAmount() > 0) {
             fixedFees.add(getFixedFeeTuple(customFee.getFixedFee(), feeCollector));
-        } else if (customFee.getFractionalFee().getMinimumAmount() > 0) {
+        } else if (customFee.getFractionalFee().getMinimumAmount() > 0
+                || customFee.getFractionalFee().getFractionalAmount().getNumerator() > 0) {
             fractionalFees.add(getFractionalFeeTuple(customFee.getFractionalFee(), feeCollector));
         } else if (customFee.getRoyaltyFee().getExchangeValueFraction().getNumerator() > 0) {
             royaltyFees.add(getRoyaltyFeeTuple(customFee.getRoyaltyFee(), feeCollector));

@@ -17,12 +17,14 @@
 package com.swirlds.common.test.threading;
 
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyFalse;
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.AssertionUtils.completeBeforeTimeout;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,6 +52,7 @@ import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfigura
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.framework.internal.QueueThreadMetrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
@@ -79,6 +82,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -104,15 +108,21 @@ class QueueThreadTests {
     }
 
     private Metrics metrics;
+    private ScheduledExecutorService executor;
 
     @BeforeEach
     void setUp() {
         final MetricKeyRegistry registry = new MetricKeyRegistry();
-        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor = Executors.newSingleThreadScheduledExecutor();
         final MetricsFactory factory = new DefaultMetricsFactory();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         metrics = new DefaultMetrics(null, registry, executor, factory, metricsConfig);
+    }
+
+    @AfterEach
+    void teardown() {
+        executor.shutdown();
     }
 
     @Test
@@ -897,9 +907,11 @@ class QueueThreadTests {
         };
         final FakeTime time = new FakeTime();
 
+        final ControllableQueue queue = new ControllableQueue();
         final QueueThread<Integer> queueThread = new QueueThreadConfiguration<Integer>(getStaticThreadManager())
                 .setThreadName(THREAD_NAME)
                 .setHandler(handler)
+                .setQueue(queue)
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
                         .setCategory(METRIC_CATEGORY)
                         .setTime(time)
@@ -920,11 +932,21 @@ class QueueThreadTests {
         handling2.release();
         // wait for handling to finish
         queueThread.waitUntilNotBusy();
+        // cause all future calls to poll() to block
+        queue.blockPolling();
+        // wait until the thread becomes blocked on poll()
+        while (queue.getPollBlockedCount() == 0) {
+            NANOSECONDS.sleep(1);
+        }
         // advance time again
         time.tick(Duration.ofSeconds(1));
+        // allow the thread to unblock from polling
+        queue.unblockPolling();
 
         // then
-        assertThat(busyTimeMetric.get()).isEqualTo(0.5);
+        assertEventuallyEquals(0.5, busyTimeMetric::get, Duration.ofSeconds(1), "busy time was not measured correctly");
+
+        queueThread.stop();
     }
 
     @Test
@@ -975,5 +997,85 @@ class QueueThreadTests {
         assertTrue(finishedWaitingLatch.await(100, MILLISECONDS));
 
         queue.stop();
+    }
+
+    @Test
+    @DisplayName("Idle Callback Test")
+    void idleCallbackTest() throws InterruptedException {
+        final AtomicBoolean error = new AtomicBoolean(false);
+
+        final AtomicBoolean idleCallbackPermitted = new AtomicBoolean(false);
+        final AtomicBoolean idleCallbackCalled = new AtomicBoolean(false);
+        final InterruptableRunnable idleCallback = () -> {
+            if (idleCallbackPermitted.get()) {
+                idleCallbackCalled.set(true);
+            } else {
+                error.set(true);
+            }
+        };
+
+        final QueueThread<Runnable> queue = new QueueThreadConfiguration<Runnable>(getStaticThreadManager())
+                .setThreadName("test")
+                .setIdleCallback(idleCallback)
+                .setHandler(Runnable::run)
+                .setWaitForWorkDuration(Duration.ofMillis(1))
+                .build();
+
+        final CountDownLatch latch1 = new CountDownLatch(1);
+        final CountDownLatch latch2 = new CountDownLatch(1);
+        final CountDownLatch latch3 = new CountDownLatch(1);
+
+        queue.add(() -> {
+            try {
+                latch1.await();
+            } catch (final InterruptedException ignored) {
+                error.set(true);
+                Thread.currentThread().interrupt();
+            }
+        });
+        queue.add(() -> {
+            try {
+                latch2.await();
+            } catch (final InterruptedException ignored) {
+                error.set(true);
+                Thread.currentThread().interrupt();
+            }
+        });
+        queue.add(() -> {
+            try {
+                latch3.await();
+            } catch (final InterruptedException ignored) {
+                error.set(true);
+                Thread.currentThread().interrupt();
+            }
+        });
+        queue.start();
+
+        // The queue should call the idle callback during this time,
+        // but give it some time to do bad things if it's going to do bad things.
+        MILLISECONDS.sleep(10);
+
+        latch1.countDown();
+
+        // The queue should call the idle callback during this time,
+        // but give it some time to do bad things if it's going to do bad things.
+        MILLISECONDS.sleep(10);
+
+        latch2.countDown();
+
+        // The queue should call the idle callback during this time,
+        // but give it some time to do bad things if it's going to do bad things.
+        MILLISECONDS.sleep(10);
+
+        // Once job 3 is permitted to complete, we expect for the idle callback to be invoked shortly afterwards.
+        idleCallbackPermitted.set(true);
+
+        latch3.countDown();
+
+        assertEventuallyTrue(idleCallbackCalled::get, Duration.ofSeconds(1), "Idle callback was not called");
+
+        queue.stop();
+
+        assertFalse(error.get());
     }
 }

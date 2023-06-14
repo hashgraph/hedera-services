@@ -449,7 +449,6 @@ class StoppableThreadTests {
 
     @Test
     @DisplayName("Max Rate Test")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void maxRateTest() throws InterruptedException {
         final AtomicInteger counter = new AtomicInteger(0);
         final InterruptableRunnable work = () -> {
@@ -579,7 +578,9 @@ class StoppableThreadTests {
                 () -> configuration.setFullyFormattedThreadName("asdf"),
                 "configuration should be immutable");
         assertThrows(
-                MutabilityException.class, () -> configuration.setOtherNodeId(0L), "configuration should be immutable");
+                MutabilityException.class,
+                () -> configuration.setOtherNodeId(new NodeId(0L)),
+                "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
                 () -> configuration.setThreadGroup(null),

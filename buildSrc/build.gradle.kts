@@ -27,7 +27,8 @@ repositories {
 
 dependencies {
     implementation("com.autonomousapps:dependency-analysis-gradle-plugin:1.20.0")
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.15.0")
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.19.0")
+    implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.3")
     implementation("gradle.plugin.com.github.johnrengelman:shadow:7.1.2")
     implementation("gradle.plugin.lazy.zoo.gradle:git-data-plugin:1.2.2")
     implementation("me.champeau.jmh:jmh-gradle-plugin:0.7.1")
