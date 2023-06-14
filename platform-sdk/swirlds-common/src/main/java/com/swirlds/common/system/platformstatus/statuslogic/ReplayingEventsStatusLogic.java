@@ -109,6 +109,12 @@ public class ReplayingEventsStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull FreezePeriodEnteredAction action) {
+        if (freezeRound != null) {
+            throw new IllegalStateException(
+                    "Received duplicate freeze period notification in REPLAYING_EVENTS status. Previous notification was for round "
+                            + freezeRound + ", new notification is for round " + action.freezeRound());
+        }
+
         freezeRound = action.freezeRound();
         return this;
     }

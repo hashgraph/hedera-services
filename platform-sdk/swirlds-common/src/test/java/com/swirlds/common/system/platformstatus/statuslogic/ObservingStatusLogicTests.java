@@ -102,6 +102,15 @@ class ObservingStatusLogicTests {
     }
 
     @Test
+    @DisplayName("Throw exception when receiving duplicate freeze round notification")
+    void duplicateFreezeRound() {
+        triggerActionAndAssertNoTransition(
+                logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());
+        triggerActionAndAssertException(
+                logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());
+    }
+
+    @Test
     @DisplayName("Irrelevant actions shouldn't cause transitions")
     void irrelevantActions() {
         triggerActionAndAssertNoTransition(

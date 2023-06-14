@@ -60,7 +60,7 @@ public class ReconnectCompleteStatusLogic implements PlatformStatusLogic {
             final long reconnectStateRound,
             final @Nullable Long freezeRound,
             @NonNull final PlatformStatusConfig config) {
-        // TODO write tests where freeze round is both null and not null
+
         this.reconnectStateRound = reconnectStateRound;
         this.freezeRound = freezeRound;
         this.config = config;
@@ -112,6 +112,12 @@ public class ReconnectCompleteStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull FreezePeriodEnteredAction action) {
+        if (freezeRound != null) {
+            throw new IllegalStateException(
+                    "Received duplicate freeze period notification in RECONNECT_COMPLETE status. Previous notification was for round "
+                            + freezeRound + ", new notification is for round " + action.freezeRound());
+        }
+
         freezeRound = action.freezeRound();
         return this;
     }

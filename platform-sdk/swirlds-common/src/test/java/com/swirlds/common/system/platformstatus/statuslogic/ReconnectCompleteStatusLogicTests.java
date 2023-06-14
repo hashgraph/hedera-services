@@ -109,7 +109,6 @@ class ReconnectCompleteStatusLogicTests {
         logic = new ReconnectCompleteStatusLogic(
                 reconnectStateRound, 10L, configuration.getConfigData(PlatformStatusConfig.class));
 
-        // TODO make sure we aren't receiving multiple freeze deadlines where it's being stored
         triggerActionAndAssertTransition(
                 logic::processStateWrittenToDiskAction,
                 new StateWrittenToDiskAction(reconnectStateRound),
@@ -123,6 +122,15 @@ class ReconnectCompleteStatusLogicTests {
                 logic::processCatastrophicFailureAction,
                 new CatastrophicFailureAction(),
                 PlatformStatus.CATASTROPHIC_FAILURE);
+    }
+
+    @Test
+    @DisplayName("Throw exception when receiving duplicate freeze round notification")
+    void duplicateFreezeRound() {
+        triggerActionAndAssertNoTransition(
+                logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());
+        triggerActionAndAssertException(
+                logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());
     }
 
     @Test
