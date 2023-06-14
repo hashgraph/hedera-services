@@ -37,6 +37,7 @@ import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.OSHealthCheckConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.WiringConfig;
@@ -232,7 +233,8 @@ public class Browser {
                 .withConfigDataType(PreconsensusEventStreamConfig.class)
                 .withConfigDataType(SyncConfig.class)
                 .withConfigDataType(UptimeConfig.class)
-                .withConfigDataType(RecycleBinConfig.class);
+                .withConfigDataType(RecycleBinConfig.class)
+                .withConfigDataType(EventConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {

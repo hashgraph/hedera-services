@@ -33,22 +33,23 @@ package com.hedera.node.app.service.token.impl.util;
  */
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -79,21 +80,18 @@ public class TokenHandlerHelper {
     public static Account getIfUsable(
             @NonNull final AccountID accountId,
             @NonNull final ReadableAccountStore accountStore,
-            @NonNull final ExpiryValidator expiryValidator) {
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final ResponseCodeEnum errorIfNotUsable) {
         requireNonNull(accountId);
         requireNonNull(accountStore);
         requireNonNull(expiryValidator);
+        requireNonNull(errorIfNotUsable);
 
         final var acct = accountStore.getAccountById(accountId);
-        validateTrue(acct != null, INVALID_ACCOUNT_ID);
+        validateTrue(acct != null, errorIfNotUsable);
         validateFalse(acct.deleted(), ACCOUNT_DELETED);
-        final var isSmartContract = acct.smartContract();
-        validateFalse(
-                acct.expiredAndPendingRemoval(),
-                isSmartContract ? CONTRACT_EXPIRED_AND_PENDING_REMOVAL : ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-
         final var expiryStatus = expiryValidator.expirationStatus(
-                isSmartContract ? EntityType.CONTRACT : EntityType.ACCOUNT, false, acct.tinybarBalance());
+                EntityType.ACCOUNT, acct.expiredAndPendingRemoval(), acct.tinybarBalance());
         validateTrue(expiryStatus == OK, expiryStatus);
 
         return acct;
@@ -116,5 +114,28 @@ public class TokenHandlerHelper {
         validateFalse(token.deleted(), TOKEN_WAS_DELETED);
         validateFalse(token.paused(), TOKEN_IS_PAUSED);
         return token;
+    }
+
+    /**
+     * Returns the token relation if it exists and is usable
+     *
+     * @param accountId the ID of the account
+     * @param tokenId the ID of the token
+     * @param tokenRelStore the {@link ReadableTokenRelationStore} to use for token relation retrieval
+     * @throws HandleException if any of the token relation conditions are not met
+     */
+    @NonNull
+    public static TokenRelation getIfUsable(
+            @NonNull final AccountID accountId,
+            @NonNull final TokenID tokenId,
+            @NonNull final ReadableTokenRelationStore tokenRelStore) {
+        requireNonNull(accountId);
+        requireNonNull(tokenId);
+        requireNonNull(tokenRelStore);
+
+        final var tokenRel = tokenRelStore.get(accountId, tokenId);
+        validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+
+        return tokenRel;
     }
 }

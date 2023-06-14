@@ -21,6 +21,7 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.state.Startable;
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -202,7 +203,8 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                         List.of(swirldStateManager.getTransactionPool(), startUpEventFrozenManager, freezeManager)),
                 criticalQuorum,
                 addressBook,
-                fallenBehindManager);
+                fallenBehindManager,
+                platformContext.getConfiguration().getConfigData(EventConfig.class));
 
         eventTaskCreator = new EventTaskCreator(
                 eventMapper,
@@ -210,7 +212,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 selfId,
                 eventIntakeMetrics,
                 intakeQueue,
-                StaticSettingsProvider.getSingleton(),
+                platformContext.getConfiguration().getConfigData(EventConfig.class),
                 syncManager,
                 ThreadLocalRandom::current);
 

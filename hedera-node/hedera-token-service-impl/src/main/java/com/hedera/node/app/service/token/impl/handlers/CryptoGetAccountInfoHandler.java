@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.hapi.node.base.TokenFreezeStatus.FREEZE_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenFreezeStatus.FROZEN;
@@ -123,12 +122,6 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         requireNonNull(context);
         requireNonNull(header);
         final var query = context.query();
-        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-        final var accountStore = context.createStore(ReadableAccountStore.class);
-        final var tokenRelationStore = context.createStore(ReadableTokenRelationStore.class);
-        final var tokenStore = context.createStore(ReadableTokenStore.class);
-        final var stakingInfoStore = context.createStore(ReadableStakingInfoStore.class);
         final var op = query.cryptoGetInfoOrThrow();
         final var response = CryptoGetInfoResponse.newBuilder();
         final var accountId = op.accountIDOrElse(AccountID.DEFAULT);
@@ -136,6 +129,12 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         response.header(header);
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
+            final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+            final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
+            final var accountStore = context.createStore(ReadableAccountStore.class);
+            final var tokenRelationStore = context.createStore(ReadableTokenRelationStore.class);
+            final var tokenStore = context.createStore(ReadableTokenStore.class);
+            final var stakingInfoStore = context.createStore(ReadableStakingInfoStore.class);
             final var optionalInfo = infoForAccount(
                     accountId,
                     accountStore,
@@ -160,8 +159,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
             } else {
                 response.header(ResponseHeader.newBuilder()
                         .nodeTransactionPrecheckCode(FAIL_INVALID)
-                        .responseType(ANSWER_ONLY)
-                        .cost(0));
+                        .cost(0)); // FUTURE: from mono service, check in EET
             }
         }
 

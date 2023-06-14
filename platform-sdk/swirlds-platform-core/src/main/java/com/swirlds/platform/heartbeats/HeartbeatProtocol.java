@@ -18,8 +18,8 @@ package com.swirlds.platform.heartbeats;
 
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkMetrics;

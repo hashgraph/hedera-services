@@ -33,11 +33,6 @@ import java.time.Duration;
  * 		show the user all statistics, including those with category "internal"?
  * @param verboseStatistics
  * 		show expand statistics values, inlcude mean, min, max, stdDev
- * @param requireStateLoad
- * 		if set to true, the platform will fail to start if it fails to load a state from disk
- * @param signedStateFreq
- * 		hash and sign a state every signedStateFreq rounds. 1 means that a state will be signed every round, 2 means
- * 		every other round, and so on. If the value is 0 or less, no states will be signed
  * @param maxEventQueueForCons
  * 		max events that can be put in the forCons queue (q2) in ConsensusRoundHandler (0 for infinity)
  * @param throttleTransactionQueueSize
@@ -103,8 +98,6 @@ import java.time.Duration;
  * 		transaction exceeds this limit then the event will contain the single transaction only
  * @param maxTransactionCountPerEvent
  * 		the maximum number of transactions that a single event may contain
- * @param emergencyStateFileName
- * 		The CSV file name of the emergency state recovery file
  * @param eventIntakeQueueSize
  * 		The size of the event intake queue,
  *        {@link com.swirlds.common.threading.framework.config.QueueThreadConfiguration#UNLIMITED_CAPACITY} for
@@ -112,9 +105,6 @@ import java.time.Duration;
  * 		TCP connections, but leaving it unbounded can cause out of memory errors, even with the
  *        {@link #eventIntakeQueueThrottleSize()}, because syncs that started before the throttle engages can grow the
  * 		queue to very large sizes on larger networks.
- * @param checkSignedStateFromDisk
- * 		If true, the platform will recalculate the hash of the signed state and check it against the written hash. It
- * 		will also verify that the signatures are valid.
  * @param randomEventProbability
  * 		The probability that after a sync, a node will create an event with a random other parent. The probability is
  * 		is 1 in X, where X is the value of randomEventProbability. A value of 0 means that a node will not create any
@@ -197,8 +187,6 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "32") int numCryptoThreads,
         @ConfigProperty(defaultValue = "false") boolean showInternalStats,
         @ConfigProperty(defaultValue = "false") boolean verboseStatistics,
-        @ConfigProperty(defaultValue = "false") boolean requireStateLoad,
-        @ConfigProperty(defaultValue = "1") int signedStateFreq,
         @ConfigProperty(defaultValue = "10000") int maxEventQueueForCons,
         @ConfigProperty(defaultValue = "100000") int throttleTransactionQueueSize,
         @ConfigProperty(defaultValue = "false") boolean throttle7,
@@ -228,10 +216,7 @@ public record BasicConfig(
         @ConfigProperty(value = "loadKeysFromPfxFiles", defaultValue = "true") boolean loadKeysFromPfxFiles,
         @ConfigProperty(value = "maxTransactionBytesPerEvent", defaultValue = "245760") int maxTransactionBytesPerEvent,
         @ConfigProperty(value = "maxTransactionCountPerEvent", defaultValue = "245760") int maxTransactionCountPerEvent,
-        @ConfigProperty(value = "emergencyStateFileName", defaultValue = "emergencyRecovery.csv")
-                String emergencyStateFileName,
         @ConfigProperty(value = "eventIntakeQueueSize", defaultValue = "10000") int eventIntakeQueueSize,
-        @ConfigProperty(value = "checkSignedStateFromDisk", defaultValue = "false") boolean checkSignedStateFromDisk,
         @ConfigProperty(value = "randomEventProbability", defaultValue = "0") int randomEventProbability,
         @ConfigProperty(value = "rescueChildlessInverseProbability", defaultValue = "10")
                 int rescueChildlessInverseProbability,

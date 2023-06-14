@@ -73,6 +73,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -203,6 +204,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     /* ---------- Misc ---------- */
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
+    protected final Instant consensusInstant = Instant.ofEpochSecond(1_234_567L);
     protected final String tokenName = "test token";
     protected final String tokenSymbol = "TT";
     protected final String memo = "test memo";
@@ -266,10 +268,12 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected WritableStates writableStates;
 
     protected Configuration configuration;
+    protected VersionedConfigImpl versionedConfig;
 
     @BeforeEach
     public void setUp() {
         configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        versionedConfig = new VersionedConfigImpl(configuration, 1);
         givenValidAccounts();
         givenValidTokens();
         givenValidTokenRelations();

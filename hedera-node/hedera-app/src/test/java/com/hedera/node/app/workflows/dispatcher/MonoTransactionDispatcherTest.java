@@ -22,6 +22,7 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static com.hedera.node.app.workflows.dispatcher.MonoTransactionDispatcher.TYPE_NOT_SUPPORTED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -547,7 +548,7 @@ class MonoTransactionDispatcherTest {
                 .build();
         given(handleContext.body()).willReturn(txnBody);
 
-        dispatcher.dispatchHandle(handleContext);
+        assertDoesNotThrow(() -> dispatcher.dispatchHandle(handleContext));
     }
 
     @Test
@@ -557,7 +558,7 @@ class MonoTransactionDispatcherTest {
                 .build();
         given(handleContext.body()).willReturn(txnBody);
 
-        dispatcher.dispatchHandle(handleContext);
+        assertDoesNotThrow(() -> dispatcher.dispatchHandle(handleContext));
     }
 
     @Test
@@ -591,7 +592,7 @@ class MonoTransactionDispatcherTest {
                 .build();
         given(handleContext.body()).willReturn(txnBody);
 
-        dispatcher.dispatchHandle(handleContext);
+        assertDoesNotThrow(() -> dispatcher.dispatchHandle(handleContext));
     }
 
     @Test
@@ -601,7 +602,7 @@ class MonoTransactionDispatcherTest {
                 .build();
         given(handleContext.body()).willReturn(txnBody);
 
-        dispatcher.dispatchHandle(handleContext);
+        assertDoesNotThrow(() -> dispatcher.dispatchHandle(handleContext));
     }
 
     @Test
@@ -611,7 +612,7 @@ class MonoTransactionDispatcherTest {
                 .build();
         given(handleContext.body()).willReturn(txnBody);
 
-        dispatcher.dispatchHandle(handleContext);
+        assertDoesNotThrow(() -> dispatcher.dispatchHandle(handleContext));
     }
 
     @Test
@@ -621,7 +622,7 @@ class MonoTransactionDispatcherTest {
                 .build();
         given(handleContext.body()).willReturn(txnBody);
 
-        dispatcher.dispatchHandle(handleContext);
+        assertDoesNotThrow(() -> dispatcher.dispatchHandle(handleContext));
     }
 
     @Test
@@ -631,13 +632,37 @@ class MonoTransactionDispatcherTest {
                 .build();
         given(handleContext.body()).willReturn(txnBody);
 
-        dispatcher.dispatchHandle(handleContext);
+        assertDoesNotThrow(() -> dispatcher.dispatchHandle(handleContext));
     }
 
     @Test
     void dispatchesTokenDeleteAsExpected() {
         final var txnBody = TransactionBody.newBuilder()
                 .tokenDeletion(TokenDeleteTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+
+        dispatcher.dispatchHandle(handleContext);
+
+        verify(handleContext).body();
+    }
+
+    @Test
+    void dispatchesTokenBurnAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .tokenBurn(TokenBurnTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+
+        dispatcher.dispatchHandle(handleContext);
+
+        verify(handleContext).body();
+    }
+
+    @Test
+    void dispatchesTokenCreateAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .tokenCreation(TokenCreateTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
 
@@ -671,7 +696,7 @@ class MonoTransactionDispatcherTest {
                 .build();
         given(handleContext.body()).willReturn(txnBody);
 
-        dispatcher.dispatchHandle(handleContext);
+        assertDoesNotThrow(() -> dispatcher.dispatchHandle(handleContext));
     }
 
     @Test
@@ -682,6 +707,24 @@ class MonoTransactionDispatcherTest {
 
         given(handleContext.body()).willReturn(txnBody);
 
+        assertDoesNotThrow(() -> dispatcher.dispatchHandle(handleContext));
+    }
+
+    @Test
+    void dispatchesCryptoApproveAllowanceAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .cryptoApproveAllowance(CryptoApproveAllowanceTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+        dispatcher.dispatchHandle(handleContext);
+    }
+
+    @Test
+    void dispatchesCryptoDeleteAllowanceAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .cryptoDeleteAllowance(CryptoDeleteAllowanceTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
         dispatcher.dispatchHandle(handleContext);
     }
 
@@ -707,6 +750,36 @@ class MonoTransactionDispatcherTest {
         final var txnBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder())
                 .uncheckedSubmit(UncheckedSubmitBody.newBuilder().build())
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+
+        assertThatThrownBy(() -> dispatcher.dispatchHandle(handleContext))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(TYPE_NOT_SUPPORTED);
+
+        verifyNoInteractions(txnCtx);
+    }
+
+    @Test
+    void dispatchesCryptoAddLiveHashAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder())
+                .cryptoAddLiveHash(CryptoAddLiveHashTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+
+        assertThatThrownBy(() -> dispatcher.dispatchHandle(handleContext))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(TYPE_NOT_SUPPORTED);
+
+        verifyNoInteractions(txnCtx);
+    }
+
+    @Test
+    void dispatchesCryptoDeleteLiveHashAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder())
+                .cryptoDeleteLiveHash(CryptoDeleteLiveHashTransactionBody.DEFAULT)
                 .build();
         given(handleContext.body()).willReturn(txnBody);
 

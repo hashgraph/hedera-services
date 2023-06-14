@@ -19,11 +19,11 @@ package com.swirlds.platform.event.preconsensus;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.Units;
 import com.swirlds.common.utility.ValueReference;

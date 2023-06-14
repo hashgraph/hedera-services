@@ -31,27 +31,6 @@ public final class StaticSettingsProvider implements SettingsProvider {
 
     private StaticSettingsProvider() {}
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getRescueChildlessInverseProbability() {
-        return settings.getRescueChildlessInverseProbability();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getRandomEventProbability() {
-        return settings.getRandomEventProbability();
-    }
-
-    @Override
-    public int getMaxEventQueueForCons() {
-        return settings.getMaxEventQueueForCons();
-    }
-
     @Override
     public int getTransactionMaxBytes() {
         return settings.getTransactionMaxBytes();
