@@ -245,7 +245,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private static final String TOKEN_TRANSFER_CONTRACT = "TokenTransferContract";
     private static final String TRANSFER_TOKEN_PUBLIC = "transferTokenPublic";
     private static final String HEDERA_ALLOWANCES_IS_ENABLED = "hedera.allowances.isEnabled";
-    public static final int GAS_TO_OFFER = 1_000_000;
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();

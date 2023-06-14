@@ -202,7 +202,7 @@ public class ContractCreateSuite extends HapiSuite {
 
     HapiSpec cannotSendToNonExistentAccount() {
         final var contract = "Multipurpose";
-        Object[] donationArgs = new Object[]{666666L, "Hey, Ma!"};
+        Object[] donationArgs = new Object[] {666666L, "Hey, Ma!"};
 
         return defaultHapiSpec("CannotSendToNonExistentAccount")
                 .given(uploadInitCode(contract))
@@ -288,7 +288,7 @@ public class ContractCreateSuite extends HapiSuite {
                     final var aNum = (int) registry.getAccountID(aBeneficiary).getAccountNum();
                     final var bNum = (int) registry.getAccountID(bBeneficiary).getAccountNum();
                     final var sendArgs =
-                            new Object[]{Long.valueOf(sendAmount), Long.valueOf(aNum), Long.valueOf(bNum)};
+                            new Object[] {Long.valueOf(sendAmount), Long.valueOf(aNum), Long.valueOf(bNum)};
 
                     final var op = contractCall(contract, "sendTo", sendArgs)
                             .gas(110_000)
@@ -522,7 +522,7 @@ public class ContractCreateSuite extends HapiSuite {
                                         .contractCallResult(resultWith()
                                                 .resultThruAbi(
                                                         getABIFor(FUNCTION, "getIndirect", contract),
-                                                        isLiteralResult(new Object[]{BigInteger.valueOf(7L)})))),
+                                                        isLiteralResult(new Object[] {BigInteger.valueOf(7L)})))),
                         getTxnRecord("getChildAddressTxn")
                                 .hasPriority(recordWith()
                                         .contractCallResult(resultWith()
