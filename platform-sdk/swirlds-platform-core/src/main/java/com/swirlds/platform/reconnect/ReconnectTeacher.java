@@ -23,6 +23,7 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.payloads.ReconnectFinishPayload;
 import com.swirlds.logging.payloads.ReconnectStartPayload;
@@ -51,8 +52,8 @@ public class ReconnectTeacher {
     private final Connection connection;
     private final int reconnectSocketTimeout;
 
-    private final long selfId;
-    private final long otherId;
+    private final NodeId selfId;
+    private final NodeId otherId;
     private final long lastRoundReceived;
 
     private final ReconnectMetrics statistics;
@@ -84,8 +85,8 @@ public class ReconnectTeacher {
             @NonNull final ThreadManager threadManager,
             @NonNull final Connection connection,
             final int reconnectSocketTimeout,
-            final long selfId,
-            final long otherId,
+            @NonNull final NodeId selfId,
+            @NonNull final NodeId otherId,
             final long lastRoundReceived,
             @Nullable final BooleanSupplier requestToStopTeaching,
             @NonNull final ReconnectMetrics statistics) {
@@ -94,8 +95,8 @@ public class ReconnectTeacher {
         this.connection = Objects.requireNonNull(connection);
         this.reconnectSocketTimeout = reconnectSocketTimeout;
 
-        this.selfId = selfId;
-        this.otherId = otherId;
+        this.selfId = Objects.requireNonNull(selfId);
+        this.otherId = Objects.requireNonNull(otherId);
         this.lastRoundReceived = lastRoundReceived;
         this.requestToStopTeaching = requestToStopTeaching;
         this.statistics = Objects.requireNonNull(statistics);
@@ -176,7 +177,11 @@ public class ReconnectTeacher {
         logger.info(
                 RECONNECT.getMarker(),
                 () -> new ReconnectStartPayload(
-                        "Starting reconnect in the role of the sender", false, selfId, otherId, lastRoundReceived));
+                        "Starting reconnect in the role of the sender",
+                        false,
+                        selfId.id(),
+                        otherId.id(),
+                        lastRoundReceived));
         logger.info(
                 RECONNECT.getMarker(),
                 "The following state will be sent to the learner:\n{}\n{}",
@@ -190,7 +195,11 @@ public class ReconnectTeacher {
         logger.info(
                 RECONNECT.getMarker(),
                 () -> new ReconnectFinishPayload(
-                        "Finished reconnect in the role of the sender.", false, selfId, otherId, lastRoundReceived));
+                        "Finished reconnect in the role of the sender.",
+                        false,
+                        selfId.id(),
+                        otherId.id(),
+                        lastRoundReceived));
     }
 
     /**

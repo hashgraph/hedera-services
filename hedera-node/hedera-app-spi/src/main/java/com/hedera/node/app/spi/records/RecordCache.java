@@ -70,6 +70,7 @@ public interface RecordCache {
      */
     @NonNull
     List<TransactionRecord> getRecords(@NonNull AccountID accountID);
+
     /**
      * Gets the "primary" receipt for the given {@link TransactionID}. A user may submit multiple transactions with the
      * same {@link TransactionID} to the network by submitting to multiple nodes. In that case, there will be multiple

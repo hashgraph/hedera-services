@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.Units;
@@ -106,11 +106,12 @@ public class PreConsensusEventFileManager {
      * @param selfId          the ID of this node
      */
     public PreConsensusEventFileManager(
-            @NonNull final PlatformContext platformContext, @NonNull final Time time, final long selfId)
+            @NonNull final PlatformContext platformContext, @NonNull final Time time, @NonNull final NodeId selfId)
             throws IOException {
 
-        throwArgNull(platformContext, "platformContext");
-        throwArgNull(time, "time");
+        Objects.requireNonNull(platformContext, "platformContext");
+        Objects.requireNonNull(time, "time");
+        Objects.requireNonNull(selfId, "selfId");
 
         final PreConsensusEventStreamConfig preConsensusEventStreamConfig =
                 platformContext.getConfiguration().getConfigData(PreConsensusEventStreamConfig.class);
@@ -125,7 +126,7 @@ public class PreConsensusEventFileManager {
 
         this.databaseDirectory = savedStateDirectory
                 .resolve(preConsensusEventStreamConfig.databaseDirectory())
-                .resolve(Long.toString(selfId));
+                .resolve(selfId.toString());
 
         this.recycleBinDirectory = savedStateDirectory.resolve(preConsensusEventStreamConfig.recycleBinDirectory());
 

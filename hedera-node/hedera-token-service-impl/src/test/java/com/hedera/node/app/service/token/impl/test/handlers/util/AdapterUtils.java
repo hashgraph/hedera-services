@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.test.handlers;
+package com.hedera.node.app.service.token.impl.test.handlers.util;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
@@ -28,10 +28,11 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_S
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG_ALIAS;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -78,9 +79,11 @@ public class AdapterUtils {
         return mockStates;
     }
 
-    private static ReadableKVState<EntityNumVirtualKey, ? extends HederaAccount> wellKnownAccountsState() {
+    private static ReadableKVState<AccountID, ? extends HederaAccount> wellKnownAccountsState() {
         final var wrappedState = new MapReadableKVState<>(ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
-        return new StateKeyAdapter<>(wrappedState, EntityNumVirtualKey::asEntityNum);
+        return new StateKeyAdapter<>(
+                wrappedState,
+                (AccountID id) -> new EntityNum(id.accountNumOrThrow().intValue()));
     }
 
     public static WritableKVState<String, EntityNumValue> wellKnownAliasState() {

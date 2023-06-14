@@ -39,7 +39,7 @@ public final class ContractServiceImpl implements ContractService {
     public static final String BYTECODE_KEY = "BYTECODE";
 
     @Override
-    public void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry) {
+    public void registerSchemas(@NonNull SchemaRegistry registry) {
         registry.register(contractSchema());
     }
 
