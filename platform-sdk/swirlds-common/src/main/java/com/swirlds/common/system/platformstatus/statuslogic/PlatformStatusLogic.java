@@ -139,6 +139,7 @@ public interface PlatformStatusLogic {
      * @return the log message to use when an unexpected status action is received
      */
     default String getUnexpectedStatusActionLog(@NonNull final PlatformStatusAction action) {
-        return "Received unexpected status action %s with current status of %s".formatted(action, getStatus());
+        return "Received unexpected status action %s with current status of %s"
+                .formatted(action.getClass().getSimpleName(), getStatus().name());
     }
 }

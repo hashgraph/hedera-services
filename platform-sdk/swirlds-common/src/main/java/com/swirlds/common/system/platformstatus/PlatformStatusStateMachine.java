@@ -31,6 +31,7 @@ import com.swirlds.common.system.platformstatus.statusactions.ReconnectCompleteA
 import com.swirlds.common.system.platformstatus.statusactions.SelfEventReachedConsensusAction;
 import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEventsAction;
 import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
+import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import com.swirlds.common.system.platformstatus.statuslogic.PlatformStatusLogic;
 import com.swirlds.common.system.platformstatus.statuslogic.StartingUpStatusLogic;
 import com.swirlds.common.time.Time;
@@ -107,6 +108,8 @@ public class PlatformStatusStateMachine {
                 return currentStatusLogic.processStartedReplayingEventsAction(startedReplayingEventsAction);
             } else if (action instanceof StateWrittenToDiskAction stateWrittenToDiskAction) {
                 return currentStatusLogic.processStateWrittenToDiskAction(stateWrittenToDiskAction);
+            } else if (action instanceof TimeElapsedAction timeElapsedAction) {
+                return currentStatusLogic.processTimeElapsedAction(timeElapsedAction);
             } else {
                 throw new IllegalArgumentException(
                         "Unknown action type: " + action.getClass().getName());
@@ -149,5 +152,14 @@ public class PlatformStatusStateMachine {
 
         currentStatusLogic = newLogic;
         currentStatusStartTime = time.now();
+    }
+
+    /**
+     * Get the current platform status
+     *
+     * @return the current platform status
+     */
+    public PlatformStatus getCurrentStatus() {
+        return currentStatusLogic.getStatus();
     }
 }

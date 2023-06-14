@@ -24,7 +24,7 @@ import java.time.Duration;
  * Configuration for the platform status state machine
  *
  * @param observingStatusDelay the amount of wall clock time to wait before transitioning out of the OBSERVING status
- * @param activeStatusDelay    the amount of wall clock time that the status will remain ACTIVE without seeing any own
+ * @param activeStatusDelay    the amount of wall clock time that the status will remain ACTIVE without seeing any self
  *                             events reach consensus
  */
 @ConfigData("platformStatus")
