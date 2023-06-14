@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.p2p.portforwarding.portmapper;
+package com.swirlds.platform.portforwarding.portmapper;
 
-import com.swirlds.p2p.portforwarding.PortForwarder;
+import com.swirlds.platform.portforwarding.PortForwarder;
 
 public class MappingRefresher implements Runnable {
     private PortForwarder forwarder;
