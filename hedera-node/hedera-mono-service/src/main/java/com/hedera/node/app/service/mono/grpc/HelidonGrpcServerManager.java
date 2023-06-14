@@ -16,11 +16,9 @@
 
 package com.hedera.node.app.service.mono.grpc;
 
-import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.utils.Pause;
+import com.hedera.node.app.service.mono.utils.SleepingPause;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.BindableService;
 import io.helidon.common.configurable.Resource;
@@ -31,12 +29,17 @@ import io.helidon.grpc.core.GrpcTlsDescriptor;
 import io.helidon.grpc.server.GrpcRouting;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.grpc.server.GrpcServerConfiguration;
+import io.helidon.grpc.server.GrpcServerConfiguration.Builder;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -50,44 +53,74 @@ public class HelidonGrpcServerManager implements GrpcServerManager {
 
     private final Set<BindableService> bindableServices;
     private final Consumer<Thread> shutdownHook;
+    private final GrpcServerSource serverSource;
     private GrpcServer server;
     private GrpcServer tlsServer;
     private final NodeLocalProperties nodeProperties;
 
+    /**
+     * Public constructor used by the Dagger injection framework.
+     * @param bindableServices a Set of BindableService instances to be bound to the GRPC server on startup.
+     * @param shutdownHook a Thread consumer that will add a shutdown hook to the JVM.  Typically a lambda
+     *         for {@link Runtime#addShutdownHook(Thread)}.
+     * @param nodeProperties The local node properties that control server behavior.  These mostly set the port
+     *        and TLS key/certificate locations.
+     */
     @Inject
     public HelidonGrpcServerManager(
             @NonNull final Set<BindableService> bindableServices,
             @NonNull final Consumer<Thread> shutdownHook,
             @NonNull final NodeLocalProperties nodeProperties) {
-        this.bindableServices = requireNonNull(bindableServices);
-        this.shutdownHook = requireNonNull(shutdownHook);
-        this.nodeProperties = requireNonNull(nodeProperties);
+        this(bindableServices, shutdownHook, nodeProperties, new GrpcServerSource());
+    }
+
+    /**
+     * Testing use only, to enable fault injection in the GRPC server instance.
+     * @param bindableServices a Set of BindableService instances to be bound to the GRPC server on startup.
+     * @param shutdownHook a Thread consumer that will add a shutdown hook to the JVM.  Typically a lambda
+     *         for {@link Runtime#addShutdownHook(Thread)}.
+     * @param nodeProperties The local node properties that control server behavior.  These mostly set the port
+     *        and TLS key/certificate locations.
+     * @param serverSource an instance of the inner class GrpcServerSource.  This is used to allow injecting a mock
+     *     GRPC server and use that for fault injection (e.g. to fail start so retry behavior is tested).
+     */
+    HelidonGrpcServerManager(
+            @NonNull final Set<BindableService> bindableServices,
+            @NonNull final Consumer<Thread> shutdownHook,
+            @NonNull final NodeLocalProperties nodeProperties,
+            @NonNull final GrpcServerSource serverSource) {
+        this.bindableServices = Objects.requireNonNull(bindableServices);
+        this.shutdownHook = Objects.requireNonNull(shutdownHook);
+        this.nodeProperties = Objects.requireNonNull(nodeProperties);
+        this.serverSource = serverSource;
     }
 
     @Override
-    public void start(int port, int tlsPort, @NonNull Consumer<String> println) {
+    @NonNull
+    public List<GrpcServer> start(int port, int tlsPort, @NonNull Consumer<String> println) {
         // Add a shutdown hook to the JVM, such that the grpc server is shutdown when the JVM is shutdown
-        this.shutdownHook.accept(new Thread(() -> {
+        shutdownHook.accept(new Thread(() -> {
             terminateOneServer(server, false, port, println);
             terminateOneServer(tlsServer, true, tlsPort, println);
         }));
-
         try {
-            server = startOneServer(false, port, println, SLEEPING_PAUSE);
-            tlsServer = startOneServer(true, tlsPort, println, SLEEPING_PAUSE);
+            server = startOneServer(false, port, println, SleepingPause.SLEEPING_PAUSE);
+            tlsServer = startOneServer(true, tlsPort, println, SleepingPause.SLEEPING_PAUSE);
         } catch (ResourceException e) {
             tlsServer = null;
             String message = logMessage("Could not start", true, tlsPort, false);
             log.warn("{} ({}).", message, e.getMessage());
             println.accept(message);
+            return server == null ? Collections.emptyList() : List.of(server);
         }
+        return List.of(server, tlsServer);
     }
 
     GrpcServer startOneServer(boolean sslEnabled, int port, Consumer<String> println, Pause pause) {
         println.accept(logMessage("Starting", sslEnabled, port, true));
 
         // Setup the GRPC Routing, such that all grpc services are registered
-        final var grpcRoutingBuilder = GrpcRouting.builder();
+        final GrpcRouting.Builder grpcRoutingBuilder = GrpcRouting.builder();
         bindableServices.forEach(grpcRoutingBuilder::register);
 
         // Create the GRPC Server
@@ -95,7 +128,7 @@ public class HelidonGrpcServerManager implements GrpcServerManager {
 
         final Config initialConfig =
                 Config.builder(getMapSource(nodeProperties)).build();
-        final var configBuilder =
+        final Builder configBuilder =
                 GrpcServerConfiguration.builder().config(initialConfig).port(port);
         /* Note:  We would like to set all of the following, but Helidon simply doesn't support it.
                  keepAliveTime(nodeProperties.nettyProdKeepAliveTime(), TimeUnit.SECONDS)
@@ -118,31 +151,29 @@ public class HelidonGrpcServerManager implements GrpcServerManager {
                     .tlsKey(Resource.create(Path.of(nodeProperties.nettyTlsKeyPath())))
                     .build());
         }
-
-        final var grpcServer = GrpcServer.create(configBuilder.build(), grpcRoutingBuilder);
+        final GrpcServer grpcServer = serverSource.getServer(configBuilder, grpcRoutingBuilder);
 
         // Start the grpc server. Note that we have to do some retry logic because our default port is
         // 50211, 50212, which are both in the ephemeral port range, and may very well be in use right
         // now. Of course this doesn't fix that, but it does give us a chance. What we really should do,
         // is stop using ports above 10K.
-        final var startRetries = nodeProperties.nettyStartRetries();
-        final var startRetryIntervalMs = nodeProperties.nettyStartRetryIntervalMs();
-        var retryNo = 1;
-        final var n = Math.max(0, startRetries);
-        for (; retryNo <= n; retryNo++) {
+        final int startRetries = nodeProperties.nettyStartRetries();
+        final long startRetryIntervalMs = nodeProperties.nettyStartRetryIntervalMs();
+        final int maxRetries = Math.max(0, startRetries);
+        int retryNo;
+        for (retryNo = 1; retryNo <= maxRetries; retryNo++) {
             try {
                 grpcServer.start();
                 break;
-            } catch (Exception e) {
-                final var summaryMsg = logMessage("Still trying to start", sslEnabled, port, true);
+            } catch (RuntimeException e) {
+                final String summaryMsg = logMessage("Still trying to start", sslEnabled, port, true);
                 log.warn("(Attempts={}) {}", retryNo, summaryMsg, e);
-                pause.forMs(startRetryIntervalMs);
+                if (!pause.forMs(startRetryIntervalMs)) break;
             }
         }
-        if (retryNo == n + 1) {
-            grpcServer.start();
+        if (retryNo > maxRetries) {
+            throw new RuntimeException("Unable to start server after %d retries.  Giving up.".formatted(retryNo));
         }
-
         println.accept(logMessage("...done starting", sslEnabled, port, false));
 
         return grpcServer;
@@ -160,15 +191,17 @@ public class HelidonGrpcServerManager implements GrpcServerManager {
         if (server == null) {
             return;
         }
-
         try {
             println.accept(logMessage("Terminating", tlsSupport, port, true));
             server.shutdown().toCompletableFuture().get(TIME_TO_AWAIT_TERMINATION, TimeUnit.SECONDS);
             println.accept(logMessage("...done terminating", tlsSupport, port, false));
-        } catch (InterruptedException ie) {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.warn("Interrupted while waiting for Helidon gRPC to terminate on port {}!", port, ie);
-        } catch (Exception e) {
+            log.warn("Interrupted while waiting for Helidon gRPC to terminate on port {}!", port, e);
+        } catch (TimeoutException e) {
+            final String message = "Timed out after {} seconds while waiting for Helidon gRPC to terminate on port {}!";
+            log.warn(message, Long.toString(TIME_TO_AWAIT_TERMINATION), Integer.toString(port), e);
+        } catch (RuntimeException | ExecutionException e) {
             log.warn("Exception while waiting for Helidon gRPC to terminate on port {}!", port, e);
         }
     }
@@ -177,5 +210,19 @@ public class HelidonGrpcServerManager implements GrpcServerManager {
         return String.format(
                 "%s Helidon gRPC%s on port %d%s",
                 action, tlsSupport ? " with TLS support" : "", port, isOpening ? "..." : ".");
+    }
+
+    /**
+     * Basic inner class to get a server.  This is necessary to enable testing to inject faults
+     * in the GRPC server, which is otherwise unavailable.  There should not be any need to ever
+     * modify this class.
+     * Note, yes, this is ugly, but it's the only way to get decent testing for failure scenarios.
+     */
+    static class GrpcServerSource {
+        @NonNull
+        public GrpcServer getServer(
+                @NonNull final Builder configBuilder, @NonNull final GrpcRouting.Builder grpcRoutingBuilder) {
+            return GrpcServer.create(configBuilder.build(), grpcRoutingBuilder);
+        }
     }
 }
