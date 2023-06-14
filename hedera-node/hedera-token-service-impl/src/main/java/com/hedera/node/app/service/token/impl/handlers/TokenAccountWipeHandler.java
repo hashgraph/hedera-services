@@ -29,6 +29,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
@@ -36,6 +37,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -154,6 +156,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
             // Check that the new token balance will not be negative
             newAccountBalance = validated.accountTokenRel().balance() - nftSerialNums.size();
             validateTrue(newAccountBalance >= 0, INVALID_WIPING_AMOUNT);
+
 
             // Update the NFT count for the account
             updatedAcctBuilder.numberOwnedNfts(acct.numberOwnedNfts() - nftSerialNums.size());
