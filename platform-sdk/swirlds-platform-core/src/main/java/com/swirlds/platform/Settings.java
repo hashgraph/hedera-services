@@ -248,7 +248,6 @@ public class Settings {
      */
     private Path emergencyRecoveryFileLoadDir =
             getAbsolutePath().resolve(DATA_STRING).resolve(SAVED_STRING);
-    /**  **/
 
     ///////////////////////////////////////////
     // Setting for thread dump
