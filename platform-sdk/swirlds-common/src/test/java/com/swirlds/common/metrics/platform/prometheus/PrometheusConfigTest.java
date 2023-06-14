@@ -41,8 +41,7 @@ class PrometheusConfigTest {
         final PrometheusConfig prometheusConfig = configuration.getConfigData(PrometheusConfig.class);
 
         assertThat(prometheusConfig).isNotNull();
-        assertThat(prometheusConfig.endpointEnabled())
-                .isEqualTo(Boolean.valueOf(DEFAULT_PROMETHEUS_ENDPOINT_ENABLED));
+        assertThat(prometheusConfig.endpointEnabled()).isEqualTo(Boolean.valueOf(DEFAULT_PROMETHEUS_ENDPOINT_ENABLED));
         assertThat(prometheusConfig.endpointPortNumber())
                 .isEqualTo(Integer.valueOf(DEFAULT_PROMETHEUS_ENDPOINT_PORT_NUMBER));
         assertThat(prometheusConfig.endpointMaxBacklogAllowed())

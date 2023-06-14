@@ -81,8 +81,7 @@ public class DefaultMetricsProvider implements MetricsProvider, Lifecycle {
         if (!metricsConfig.disableMetricsOutput() && prometheusConfig.endpointEnabled()) {
             final InetSocketAddress address = new InetSocketAddress(prometheusConfig.endpointPortNumber());
             try {
-                final HttpServer httpServer =
-                        HttpServer.create(address, prometheusConfig.endpointMaxBacklogAllowed());
+                final HttpServer httpServer = HttpServer.create(address, prometheusConfig.endpointMaxBacklogAllowed());
                 endpoint = new PrometheusEndpoint(httpServer);
 
                 globalMetrics.subscribe(endpoint::handleMetricsChange);

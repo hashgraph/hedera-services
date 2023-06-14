@@ -49,8 +49,8 @@ class DefaultSpeedometerMetricTest {
     private static final String UNIT = "UnIt";
     private static final String FORMAT = "FoRmAt";
     private static final double EPSILON = 1e-6;
-    private static final MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig()
-            .getConfigData(MetricsConfig.class);
+    private static final MetricsConfig metricsConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
 
     @SuppressWarnings("removal")
     @Test
@@ -241,8 +241,8 @@ class DefaultSpeedometerMetricTest {
         // when
         sendCycles(metric, time, 0, 1000, 1000);
         sendCycles(metric, time, 1000, 1000 + (int) metricsConfig.halfLife(), 5000);
-        sendCycles(metric, time, 1000 + (int) metricsConfig.halfLife(), 1000 + 2 * (int) metricsConfig.halfLife(),
-                7000);
+        sendCycles(
+                metric, time, 1000 + (int) metricsConfig.halfLife(), 1000 + 2 * (int) metricsConfig.halfLife(), 7000);
         time.set(Duration.ofSeconds(1000 + 2 * (int) metricsConfig.halfLife()));
         double rate = metric.get();
 
@@ -284,8 +284,8 @@ class DefaultSpeedometerMetricTest {
         // when
         sendCycles(metric, time, 0, 1000, 7000);
         sendCycles(metric, time, 1000, 1000 + (int) metricsConfig.halfLife(), 5000);
-        sendCycles(metric, time, 1000 + (int) metricsConfig.halfLife(), 1000 + 2 * (int) metricsConfig.halfLife(),
-                2000);
+        sendCycles(
+                metric, time, 1000 + (int) metricsConfig.halfLife(), 1000 + 2 * (int) metricsConfig.halfLife(), 2000);
         time.set(Duration.ofSeconds(1000 + 2 * (int) metricsConfig.halfLife()));
         double rate = metric.get();
 

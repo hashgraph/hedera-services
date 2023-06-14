@@ -107,15 +107,15 @@ class DefaultMetricsTest {
         when(registry.register(any(), any(), any())).thenReturn(true);
 
         doAnswer(invocation -> {
-            invocation.getArgument(0, Runnable.class).run();
-            return null;
-        })
+                    invocation.getArgument(0, Runnable.class).run();
+                    return null;
+                })
                 .when(executor)
                 .execute(any());
         doAnswer(invocation -> {
-            invocation.getArgument(0, Runnable.class).run();
-            return null;
-        })
+                    invocation.getArgument(0, Runnable.class).run();
+                    return null;
+                })
                 .when(executor)
                 .scheduleAtFixedRate(any(), anyLong(), anyLong(), any());
 

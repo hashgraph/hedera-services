@@ -56,7 +56,6 @@ public record MetricsConfig(
         @ConfigProperty(defaultValue = "metricsDoc.tsv") String metricsDocFileName,
         @ConfigProperty(defaultValue = "10") double halfLife) {
 
-
     /**
      * Returns the metrics update interval time as a {@link Duration}.
      *

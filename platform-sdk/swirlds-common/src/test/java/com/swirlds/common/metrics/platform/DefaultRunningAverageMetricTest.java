@@ -47,8 +47,8 @@ class DefaultRunningAverageMetricTest {
 
     private static final double EPSILON = 1e-6;
 
-    private static final MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig()
-            .getConfigData(MetricsConfig.class);
+    private static final MetricsConfig metricsConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
 
     @SuppressWarnings("removal")
     @Test

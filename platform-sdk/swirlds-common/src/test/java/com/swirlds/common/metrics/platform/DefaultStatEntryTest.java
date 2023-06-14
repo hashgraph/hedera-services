@@ -53,8 +53,8 @@ class DefaultStatEntryTest {
     private static final String UNIT = "UnIt";
     private static final String FORMAT = "FoRmAt";
     private static final double EPSILON = 1e-6;
-    private static final MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig()
-            .getConfigData(MetricsConfig.class);
+    private static final MetricsConfig metricsConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
 
     @SuppressWarnings({"unchecked", "removal"})
     @Test
