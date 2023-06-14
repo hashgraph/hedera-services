@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
-import static com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator.burnPureChecks;
+import static com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator.verifyTokenInstanceAmounts;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -89,7 +89,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
         final var op = txn.tokenWipeOrThrow();
 
         // All the pure checks for burning a token must also be checked for wiping a token
-        burnPureChecks(op.amount(), op.serialNumbers(), op.hasToken(), INVALID_WIPING_AMOUNT);
+        verifyTokenInstanceAmounts(op.amount(), op.serialNumbers(), op.hasToken(), INVALID_WIPING_AMOUNT);
 
         validateTruePreCheck(op.hasAccount(), INVALID_ACCOUNT_ID);
     }

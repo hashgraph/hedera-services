@@ -20,7 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator.burnPureChecks;
+import static com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator.verifyTokenInstanceAmounts;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -81,7 +81,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.tokenBurnOrThrow();
-        burnPureChecks(op.amount(), op.serialNumbers(), op.hasToken(), INVALID_TOKEN_BURN_AMOUNT);
+        verifyTokenInstanceAmounts(op.amount(), op.serialNumbers(), op.hasToken(), INVALID_TOKEN_BURN_AMOUNT);
     }
 
     @Override

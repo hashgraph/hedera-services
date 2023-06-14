@@ -80,7 +80,8 @@ public class TokenSupplyChangeOpsValidator {
     }
 
     /**
-     * Checks that the transaction input data for a token burn operation is valid
+     * Checks that the transaction input data for a token operation is valid, specifically for operations
+     * that change the supply of a token (i.e. a token's "instances").
      *
      * <p>
      * This method is static, so we can call it from handler pure checks methods without relying on any object instance
@@ -91,7 +92,7 @@ public class TokenSupplyChangeOpsValidator {
      * @param invalidAmountResponseCode the response code to throw if the {@code fungibleAmount} param is invalid
      * @throws PreCheckException if the transaction data is invalid
      */
-    public static void burnPureChecks(
+    public static void verifyTokenInstanceAmounts(
             final long fungibleAmount,
             final @NonNull List<Long> serialNums,
             final boolean hasToken,
