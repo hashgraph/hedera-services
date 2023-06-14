@@ -98,7 +98,7 @@ import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
@@ -558,6 +558,7 @@ public class Browser {
             if (!Files.exists(dir)) {
                 rethrowIO(() -> Files.createDirectories(dir));
             }
+            logger.info(STARTUP.getMarker(), "Starting thread dump generator and save to directory {}", dir);
             ThreadDumpGenerator.generateThreadDumpAtIntervals(
                     dir, Settings.getInstance().getThreadDumpPeriodMs());
         }
@@ -703,6 +704,9 @@ public class Browser {
                         .setThreadName("appMain")
                         .setRunnable(appMain)
                         .build();
+                // IMPORTATNT: this swirlds app thread must be non-daemon,
+                // so that the JVM will not exit when the main thread exits
+                appThread.setDaemon(false);
                 appRunThreads[ownHostIndex] = appThread;
 
                 ownHostIndex++;

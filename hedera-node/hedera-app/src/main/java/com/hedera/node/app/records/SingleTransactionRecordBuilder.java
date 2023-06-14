@@ -47,6 +47,7 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRe
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.impl.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.HapiUtils;
@@ -71,7 +72,8 @@ public class SingleTransactionRecordBuilder
                 CreateFileRecordBuilder,
                 CryptoCreateRecordBuilder,
                 PrngRecordBuilder,
-                TokenMintRecordBuilder {
+                TokenMintRecordBuilder,
+                TokenCreateRecordBuilder {
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes;
@@ -317,6 +319,15 @@ public class SingleTransactionRecordBuilder
     @Nullable
     public AccountID accountID() {
         return accountID;
+    }
+
+    /**
+     * @deprecated this method is only used temporarily during the migration
+     */
+    @Deprecated(forRemoval = true)
+    @Nullable
+    public TokenID tokenID() {
+        return tokenID;
     }
 
     public SingleTransactionRecordBuilder fileID(FileID fileID) {

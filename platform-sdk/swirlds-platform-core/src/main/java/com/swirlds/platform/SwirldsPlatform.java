@@ -27,6 +27,7 @@ import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddr
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
 import com.swirlds.base.state.Startable;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
@@ -63,7 +64,6 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
@@ -132,7 +132,7 @@ import com.swirlds.platform.metrics.TransactionMetrics;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -351,7 +351,7 @@ public class SwirldsPlatform implements Platform, Startable {
         registerAddressBookMetrics(metrics, initialAddressBook, selfId);
 
         try {
-            recycleBin = new RecycleBin(platformContext.getConfiguration(), selfId);
+            recycleBin = RecycleBin.create(platformContext.getConfiguration(), selfId);
             if (softwareUpgrade) {
                 recycleBin.clear();
             }
@@ -995,7 +995,7 @@ public class SwirldsPlatform implements Platform, Startable {
     @NonNull
     private PreconsensusEventFileManager buildPreconsensusEventFileManager() {
         try {
-            return new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), selfId);
+            return new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), recycleBin, selfId);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }
