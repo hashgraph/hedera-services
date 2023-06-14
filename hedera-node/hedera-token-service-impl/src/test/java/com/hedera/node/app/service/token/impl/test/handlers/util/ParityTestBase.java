@@ -21,24 +21,30 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockStates;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockWritableStates;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
+import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import java.util.HashMap;
 import java.util.Map;
@@ -78,12 +84,12 @@ public class ParityTestBase {
 
     protected ReadableTokenStore newReadableStoreWithTokens(Token... tokens) {
         final var wrappedState = newTokenStateFromTokens(tokens);
-        return new ReadableTokenStoreImpl(mockStates(Map.of(TOKENS_KEY, wrappedState)));
+        return new ReadableTokenStoreImpl(new MapReadableStates(Map.of(TOKENS_KEY, wrappedState)));
     }
 
     protected WritableTokenStore newWritableStoreWithTokens(Token... tokens) {
         final var wrappedState = newTokenStateFromTokens(tokens);
-        return new WritableTokenStore(mockWritableStates(Map.of(TOKENS_KEY, wrappedState)));
+        return new WritableTokenStore(new MapWritableStates(Map.of(TOKENS_KEY, wrappedState)));
     }
 
     protected WritableAccountStore newWritableStoreWithAccounts(Account... accounts) {
@@ -93,7 +99,26 @@ public class ParityTestBase {
         }
 
         final var wrappingState = new MapWritableKVState<>(ACCOUNTS_KEY, backingMap);
-        return new WritableAccountStore(mockWritableStates(Map.of(
+        return new WritableAccountStore(new MapWritableStates(Map.of(
                 ACCOUNTS_KEY, wrappingState, ALIASES_KEY, new MapWritableKVState<>(ALIASES_KEY, new HashMap<>()))));
+    }
+
+    protected WritableTokenRelationStore newWritableStoreWithTokenRels(final TokenRelation... tokenRels) {
+        final var backingMap = new HashMap<EntityNumPair, TokenRelation>();
+        for (final TokenRelation tokenRel : tokenRels) {
+            backingMap.put(EntityNumPair.fromLongs(tokenRel.accountNumber(), tokenRel.tokenNumber()), tokenRel);
+        }
+
+        final var wrappingState = new MapWritableKVState<>(ACCOUNTS_KEY, backingMap);
+        return new WritableTokenRelationStore(
+                new MapWritableStates(Map.of(TokenServiceImpl.TOKEN_RELS_KEY, wrappingState)));
+    }
+
+    protected WritableNftStore newWritableStoreWithNfts(Nft... nfts) {
+        final var nftStateBuilder = MapWritableKVState.<UniqueTokenId, Nft>builder(TokenServiceImpl.NFTS_KEY);
+        for (final Nft nft : nfts) {
+            nftStateBuilder.value(nft.id(), nft);
+        }
+        return new WritableNftStore(new MapWritableStates(Map.of(TokenServiceImpl.NFTS_KEY, nftStateBuilder.build())));
     }
 }

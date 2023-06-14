@@ -19,11 +19,9 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator.burnPureChecks;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -63,7 +61,6 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
 
     @Inject
     public TokenBurnHandler(@NonNull final TokenSupplyChangeOpsValidator validator) {
-        // Exists for injection
         this.validator = requireNonNull(validator);
     }
 
@@ -84,22 +81,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.tokenBurnOrThrow();
-        final var fungibleCount = op.amount();
-        final var serialNums = op.serialNumbers();
-
-        validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
-
-        // If a positive fungible amount is present, the NFT serial numbers must be empty
-        validateFalsePreCheck(fungibleCount > 0 && !serialNums.isEmpty(), INVALID_TRANSACTION_BODY);
-
-        validateFalsePreCheck(fungibleCount < 0, INVALID_TOKEN_BURN_AMOUNT);
-
-        // Validate the NFT serial numbers
-        if (fungibleCount < 1 && !serialNums.isEmpty()) {
-            for (final var serialNumber : op.serialNumbers()) {
-                validateTruePreCheck(serialNumber > 0, INVALID_NFT_ID);
-            }
-        }
+        burnPureChecks(op.amount(), op.serialNumbers(), op.hasToken(), INVALID_TOKEN_BURN_AMOUNT);
     }
 
     @Override
@@ -166,8 +148,8 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
             @NonNull final TokenID tokenId,
             final long fungibleBurnCount,
             @NonNull final List<Long> nftSerialNums,
-            final ReadableTokenStore tokenStore,
-            final ReadableTokenRelationStore tokenRelStore) {
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final ReadableTokenRelationStore tokenRelStore) {
         validateTrue(fungibleBurnCount >= 0, INVALID_TOKEN_BURN_AMOUNT);
 
         validator.validateBurn(fungibleBurnCount, nftSerialNums);

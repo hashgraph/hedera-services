@@ -16,11 +16,20 @@
 
 package com.hedera.node.app.service.token.impl.validators;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.METADATA_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -69,8 +78,50 @@ public class TokenSupplyChangeOpsValidator {
         validateCommon(fungibleCount, nftSerialNums.size(), TokensConfig::nftsMaxBatchSizeBurn);
     }
 
-    @SuppressWarnings("unused")
-    // @future('6389'): This method will be used when token wipe is implemented
+    /**
+     * Checks that the transaction input data for a token burn operation is valid
+     *
+     * <p>
+     * This method is static, so we can call it from handler pure checks methods without relying on any object instance
+     *
+     * @param fungibleAmount the amount of fungible tokens to burn
+     * @param serialNums the list of NFT serial numbers to burn
+     * @param hasToken whether the transaction body has a token ID
+     * @param invalidAmountResponseCode the response code to throw if the {@code fungibleAmount} param is invalid
+     * @throws PreCheckException if the transaction data is invalid
+     */
+    public static void burnPureChecks(
+            final long fungibleAmount,
+            final @NonNull List<Long> serialNums,
+            final boolean hasToken,
+            @NonNull final ResponseCodeEnum invalidAmountResponseCode)
+            throws PreCheckException {
+        validateTruePreCheck(hasToken, INVALID_TOKEN_ID);
+
+        // If a positive fungible fungibleAmount is present, the NFT serial numbers must be empty
+        validateFalsePreCheck(fungibleAmount > 0 && !serialNums.isEmpty(), INVALID_TRANSACTION_BODY);
+
+        // The fungible amount must not be negative, regardless of use case
+        validateFalsePreCheck(fungibleAmount < 0, invalidAmountResponseCode);
+
+        // If no fungible fungibleAmount is present, at least one NFT serial number must be present
+        validateFalsePreCheck(fungibleAmount == 0 && serialNums.isEmpty(), invalidAmountResponseCode);
+
+        // Validate the NFT serial numbers
+        if (fungibleAmount < 1 && !serialNums.isEmpty()) {
+            for (final var serialNumber : serialNums) {
+                validateTruePreCheck(serialNumber > 0, INVALID_NFT_ID);
+            }
+        }
+    }
+
+    /**
+     * Validate the transaction data for a token mint operation
+     *
+     * @param fungibleCount the number of fungible tokens to wipe
+     * @param nftSerialNums the list of NFT serial numbers to wipe
+     * @throws HandleException if the transaction data is invalid
+     */
     public void validateWipe(final long fungibleCount, final List<Long> nftSerialNums) {
         validateCommon(fungibleCount, nftSerialNums.size(), TokensConfig::nftsMaxBatchSizeWipe);
     }
@@ -89,7 +140,7 @@ public class TokenSupplyChangeOpsValidator {
         // Get needed configurations
         final var nftsAreEnabled = tokensConfig.nftsAreEnabled();
         final var maxNftBatchOpSize = batchSizeGetter.applyAsInt(tokensConfig);
-        // validate nft count and fungible count are valid
+        // Validate the NFT count and fungible count are valid
         validateCounts(nftCount, fungibleCount, nftsAreEnabled, maxNftBatchOpSize);
     }
 
@@ -102,6 +153,9 @@ public class TokenSupplyChangeOpsValidator {
      */
     private void validateCounts(
             final int nftCount, final long fungibleCount, final boolean nftsAreEnabled, final long maxBatchSize) {
+        if (fungibleCount > 0) {
+            validateTrue(fungibleCount <= maxBatchSize, BATCH_SIZE_LIMIT_EXCEEDED);
+        }
         if (nftCount > 0) {
             validateTrue(nftsAreEnabled, NOT_SUPPORTED);
         }
