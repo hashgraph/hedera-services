@@ -354,15 +354,10 @@ public final class CryptoStatic {
         for (int i = 0; i < n; i++) {
             final NodeId nodeId = addressBook.getNodeId(i);
             final Address address = addressBook.getAddress(nodeId);
-            try {
-                if (!AddressBookNetworkUtils.isLocal(address)) {
-                    // in case we are not creating keys but loading them from disk, we do not need to create
-                    // a KeysAndCerts object for every node, just the local ones
-                    continue;
-                }
-            } catch (final Exception e) {
-                logger.error(LogMarker.EXCEPTION.getMarker(), "Not able to determine if node is local", e);
-                throw new IllegalStateException("Not able to determine if node is local", e);
+            if (!AddressBookNetworkUtils.isLocal(address)) {
+                // in case we are not creating keys but loading them from disk, we do not need to create
+                // a KeysAndCerts object for every node, just the local ones
+                continue;
             }
             final String name = nameToAlias(addressBook.getAddress(nodeId).getSelfName());
             final KeyStore privateKS = loadKeys(keysDirPath.resolve(getPrivateKeysFileName(name)), password);

@@ -21,6 +21,7 @@ import static com.swirlds.common.system.address.Address.ipString;
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.ParseException;
@@ -94,7 +95,7 @@ public class AddressBookUtils {
      * @return the parsed address or null if the line is a comment.
      * @throws ParseException if there is any problem with parsing the address.
      */
-    @NonNull
+    @Nullable
     public static Address parseAddressText(@NonNull final String addressText) throws ParseException {
         Objects.requireNonNull(addressText, "The addressText must not be null.");
         // lines may have comments which start with the first # character.
