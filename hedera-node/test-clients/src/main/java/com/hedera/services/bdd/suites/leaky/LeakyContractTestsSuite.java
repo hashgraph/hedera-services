@@ -241,6 +241,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private static final String TOKEN_TRANSFER_CONTRACT = "TokenTransferContract";
     private static final String TRANSFER_TOKEN_PUBLIC = "transferTokenPublic";
     private static final String HEDERA_ALLOWANCES_IS_ENABLED = "hedera.allowances.isEnabled";
+    private static final String PAYER = "payer";
+    private static final String CONTRACTS_NONCES_EXTERNALIZATION_ENABLED = "contracts.nonces.externalization.enabled";
     public static final int GAS_TO_OFFER = 1_000_000;
 
     public static void main(String... args) {
@@ -283,7 +285,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 transferFailsWithIncorrectAmounts(),
                 transferDontWorkWithoutTopLevelSignatures(),
                 transferErc20TokenFromContractWithApproval(),
-                transferErc20TokenFromErc721TokenFails());
+                transferErc20TokenFromErc721TokenFails(),
+                contractCreateNoncesExternalizationHappyPath());
     }
 
     private HapiSpec transferErc20TokenFromErc721TokenFails() {
@@ -2099,6 +2102,50 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         // Instead of the callee
                         getAccountDetails(DELEGATE_ERC_CALLEE)
                                 .has(accountDetailsWith().tokenAllowancesCount(0)));
+    }
+
+    private HapiSpec contractCreateNoncesExternalizationHappyPath() {
+        final var contract = "NoncesExternalization";
+        final var contractCreateTxn = "contractCreateTxn";
+
+        return propertyPreservingHapiSpec("ContractCreateNoncesExternalizationHappyPath")
+                .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
+                .given(
+                        overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
+                        cryptoCreate(PAYER).balance(10 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract).via(contractCreateTxn))
+                .when()
+                .then(withOpContext((spec, opLog) -> {
+                    final var opContractTxnRecord = getTxnRecord(contractCreateTxn);
+
+                    allRunFor(spec, opContractTxnRecord);
+
+                    final var parentContractId = spec.registry().getContractId(contract);
+                    final var childContracts = opContractTxnRecord
+                            .getResponse()
+                            .getTransactionGetRecord()
+                            .getTransactionRecord()
+                            .getContractCreateResult()
+                            .getContractNoncesList()
+                            .stream()
+                            .filter(contractNonceInfo ->
+                                    !contractNonceInfo.getContractId().equals(parentContractId))
+                            .toList();
+
+                    // Asserts nonce of parent contract
+                    HapiGetTxnRecord opAssertParent = getTxnRecord(contractCreateTxn)
+                            .hasPriority(recordWith().contractWithIdHasContractNonces(parentContractId, 4L));
+                    allRunFor(spec, opAssertParent);
+
+                    // Asserts nonces of all newly deployed contracts through the constructor
+                    for (final var contractNonceInfo : childContracts) {
+                        HapiGetTxnRecord op = getTxnRecord(contractCreateTxn)
+                                .hasPriority(recordWith()
+                                        .contractWithIdHasContractNonces(contractNonceInfo.getContractId(), 1L));
+                        allRunFor(spec, op);
+                    }
+                }));
     }
 
     @Override
