@@ -54,8 +54,7 @@ public class HandleContextVerifier {
      * @param keyVerifications A {@link Map} with all data to verify signatures
      */
     public HandleContextVerifier(
-            @NonNull final HederaConfig config,
-            @NonNull final Map<Key, SignatureVerificationFuture> keyVerifications) {
+            @NonNull final HederaConfig config, @NonNull final Map<Key, SignatureVerificationFuture> keyVerifications) {
         this.timeout = requireNonNull(config, "config must not be null").workflowVerificationTimeoutMS();
         this.keyVerifications = requireNonNull(keyVerifications, "keyVerifications must not be null");
     }
@@ -139,7 +138,8 @@ public class HandleContextVerifier {
                 final var clampedThreshold = Math.min(Math.max(1, threshold), keys.size());
                 yield verificationFutureFor(key, keys, keys.size() - clampedThreshold);
             }
-            case CONTRACT_ID, DELEGATABLE_CONTRACT_ID, ECDSA_384, RSA_3072, UNSET -> completedFuture(failedVerification(key));
+            case CONTRACT_ID, DELEGATABLE_CONTRACT_ID, ECDSA_384, RSA_3072, UNSET -> completedFuture(
+                    failedVerification(key));
         };
     }
 

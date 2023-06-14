@@ -285,7 +285,9 @@ public class HandleContextImpl implements HandleContext {
         final var childStack = new SavepointStackImpl(current().state(), configuration());
         final var childContext = new HandleContextImpl(
                 txBody,
-                payer, payerKey, childCategory,
+                payer,
+                payerKey,
+                childCategory,
                 childRecordBuilder,
                 childStack,
                 verifier,

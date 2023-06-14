@@ -76,8 +76,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
 
     private static final long DEFAULT_CONFIG_VERSION = 1L;
-    private static final VersionedConfiguration DEFAULT_CONFIGURATION = new VersionedConfigImpl(
-            new HederaTestConfigBuilder().getOrCreateConfig(), DEFAULT_CONFIG_VERSION);
+    private static final VersionedConfiguration DEFAULT_CONFIGURATION =
+            new VersionedConfigImpl(new HederaTestConfigBuilder().getOrCreateConfig(), DEFAULT_CONFIG_VERSION);
 
     /**
      * We use a mocked dispatcher, so it is easy to fake out interaction between the workflow and some

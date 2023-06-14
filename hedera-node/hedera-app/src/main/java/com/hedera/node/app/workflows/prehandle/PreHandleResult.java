@@ -105,8 +105,8 @@ public record PreHandleResult(
      */
     @NonNull
     public static PreHandleResult unknownFailure() {
-        return new PreHandleResult(null, null, Status.UNKNOWN_FAILURE, UNKNOWN, null, null, null, null,
-                UNKNOWN_VERSION);
+        return new PreHandleResult(
+                null, null, Status.UNKNOWN_FAILURE, UNKNOWN, null, null, null, null, UNKNOWN_VERSION);
     }
 
     /**

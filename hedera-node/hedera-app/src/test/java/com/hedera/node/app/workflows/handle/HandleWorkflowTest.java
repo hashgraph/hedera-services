@@ -81,10 +81,8 @@ class HandleWorkflowTest extends AppTestBase {
     private static final Instant CONSENSUS_NOW = Instant.parse("2000-01-01T00:00:00Z");
 
     private static final long CONFIG_VERSION = 11L;
-    private static final VersionedConfiguration CONFIGURATION = new VersionedConfigImpl(
-            new HederaTestConfigBuilder().getOrCreateConfig(),
-            CONFIG_VERSION
-    );
+    private static final VersionedConfiguration CONFIGURATION =
+            new VersionedConfigImpl(new HederaTestConfigBuilder().getOrCreateConfig(), CONFIG_VERSION);
 
     private static final PreHandleResult OK_RESULT = createPreHandleResult(Status.SO_FAR_SO_GOOD, ResponseCodeEnum.OK);
 
@@ -193,124 +191,124 @@ class HandleWorkflowTest extends AppTestBase {
     void testContructorWithInvalidArguments() {
         final var time = OSTime.getInstance();
         assertThatThrownBy(() -> new HandleWorkflow(
-                null,
-                preHandleWorkflow,
-                dispatcher,
-                recordManager,
-                signatureExpander,
-                signatureVerifier,
-                checker,
-                serviceLookup,
-                configProvider,
-                time))
+                        null,
+                        preHandleWorkflow,
+                        dispatcher,
+                        recordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        time))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                nodeInfo,
-                null,
-                dispatcher,
-                recordManager,
-                signatureExpander,
-                signatureVerifier,
-                checker,
-                serviceLookup,
-                configProvider,
-                time))
+                        nodeInfo,
+                        null,
+                        dispatcher,
+                        recordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        time))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                nodeInfo,
-                preHandleWorkflow,
-                null,
-                recordManager,
-                signatureExpander,
-                signatureVerifier,
-                checker,
-                serviceLookup,
-                configProvider,
-                time))
+                        nodeInfo,
+                        preHandleWorkflow,
+                        null,
+                        recordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        time))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                nodeInfo,
-                preHandleWorkflow,
-                dispatcher,
-                null,
-                signatureExpander,
-                signatureVerifier,
-                checker,
-                serviceLookup,
-                configProvider,
-                time))
+                        nodeInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        null,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        time))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                nodeInfo,
-                preHandleWorkflow,
-                dispatcher,
-                recordManager,
-                null,
-                signatureVerifier,
-                checker,
-                serviceLookup,
-                configProvider,
-                time))
+                        nodeInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        recordManager,
+                        null,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        time))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                nodeInfo,
-                preHandleWorkflow,
-                dispatcher,
-                recordManager,
-                signatureExpander,
-                null,
-                checker,
-                serviceLookup,
-                configProvider,
-                time))
+                        nodeInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        recordManager,
+                        signatureExpander,
+                        null,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        time))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                nodeInfo,
-                preHandleWorkflow,
-                dispatcher,
-                recordManager,
-                signatureExpander,
-                signatureVerifier,
-                null,
-                serviceLookup,
-                configProvider,
-                time))
+                        nodeInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        recordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        null,
+                        serviceLookup,
+                        configProvider,
+                        time))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                nodeInfo,
-                preHandleWorkflow,
-                dispatcher,
-                recordManager,
-                signatureExpander,
-                signatureVerifier,
-                checker,
-                null,
-                configProvider,
-                time))
+                        nodeInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        recordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        null,
+                        configProvider,
+                        time))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                nodeInfo,
-                preHandleWorkflow,
-                dispatcher,
-                recordManager,
-                signatureExpander,
-                signatureVerifier,
-                checker,
-                serviceLookup,
-                null,
-                time))
+                        nodeInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        recordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        null,
+                        time))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                nodeInfo,
-                preHandleWorkflow,
-                dispatcher,
-                recordManager,
-                signatureExpander,
-                signatureVerifier,
-                checker,
-                serviceLookup,
-                configProvider,
-                null))
+                        nodeInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        recordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -591,7 +589,10 @@ class HandleWorkflowTest extends AppTestBase {
                     })
                     .when(signatureExpander)
                     .expand(eq(Set.of(bobsKey)), any(), any());
-            when(signatureVerifier.verify(any(), argThat(set -> set.size() == 1 && bobsKey.equals(set.iterator().next().key()))))
+            when(signatureVerifier.verify(
+                            any(),
+                            argThat(set -> set.size() == 1
+                                    && bobsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
 
             // when
@@ -633,7 +634,10 @@ class HandleWorkflowTest extends AppTestBase {
                     .expand(eq(Set.of(bobsKey)), any(), any());
             final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
                     bobsKey, FakeSignatureVerificationFuture.badFuture(bobsKey));
-            when(signatureVerifier.verify(any(), argThat(set -> set.size() == 1 && bobsKey.equals(set.iterator().next().key()))))
+            when(signatureVerifier.verify(
+                            any(),
+                            argThat(set -> set.size() == 1
+                                    && bobsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
 
             // when
@@ -771,7 +775,10 @@ class HandleWorkflowTest extends AppTestBase {
                     })
                     .when(signatureExpander)
                     .expand(eq(Set.of(bobsKey)), any(), any());
-            when(signatureVerifier.verify(any(), argThat(set -> set.size() == 1 && bobsKey.equals(set.iterator().next().key()))))
+            when(signatureVerifier.verify(
+                            any(),
+                            argThat(set -> set.size() == 1
+                                    && bobsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
 
             // when
@@ -814,7 +821,10 @@ class HandleWorkflowTest extends AppTestBase {
                     .expand(eq(Set.of(bobsKey)), any(), any());
             final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
                     bobsKey, FakeSignatureVerificationFuture.badFuture(bobsKey));
-            when(signatureVerifier.verify(any(), argThat(set -> set.size() == 1 && bobsKey.equals(set.iterator().next().key()))))
+            when(signatureVerifier.verify(
+                            any(),
+                            argThat(set -> set.size() == 1
+                                    && bobsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
 
             // when
@@ -832,7 +842,8 @@ class HandleWorkflowTest extends AppTestBase {
             assertThat(bobsVerification).isNotNull();
             assertThat(bobsVerification.key()).isEqualTo(bobsKey);
             assertThat(bobsVerification.evmAlias()).isNull();
-            assertThat(bobsVerification.passed()).isFalse();        }
+            assertThat(bobsVerification.passed()).isFalse();
+        }
 
         @Test
         void testComplexCase() throws PreCheckException, TimeoutException {
@@ -880,7 +891,10 @@ class HandleWorkflowTest extends AppTestBase {
                     .expand(eq(Set.of(carolsKey)), any(), any());
             final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
                     carolsKey, FakeSignatureVerificationFuture.goodFuture(carolsKey));
-            when(signatureVerifier.verify(any(), argThat(set -> set.size() == 1 && carolsKey.equals(set.iterator().next().key()))))
+            when(signatureVerifier.verify(
+                            any(),
+                            argThat(set -> set.size() == 1
+                                    && carolsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
 
             // when

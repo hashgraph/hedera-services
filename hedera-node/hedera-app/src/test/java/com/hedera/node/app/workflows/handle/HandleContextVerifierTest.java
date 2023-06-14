@@ -64,7 +64,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 class HandleContextVerifierTest {
 
-    private static final HederaConfig HEDERA_CONFIG = new HederaTestConfigBuilder().getOrCreateConfig().getConfigData(HederaConfig.class);
+    private static final HederaConfig HEDERA_CONFIG =
+            new HederaTestConfigBuilder().getOrCreateConfig().getConfigData(HederaConfig.class);
 
     @SuppressWarnings("ConstantConditions")
     @Test
@@ -74,8 +75,10 @@ class HandleContextVerifierTest {
         final var verifier = createVerifier(keyVerifications);
 
         // then
-        assertThatThrownBy(() -> new HandleContextVerifier(null, keyVerifications)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleContextVerifier(HEDERA_CONFIG, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleContextVerifier(null, keyVerifications))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleContextVerifier(HEDERA_CONFIG, null))
+                .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> verifier.verificationFor((Key) null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> verifier.verificationFor((Bytes) null)).isInstanceOf(NullPointerException.class);
@@ -108,7 +111,8 @@ class HandleContextVerifierTest {
             final var bobKey = BOB.keyInfo().publicKey(); // ED25519
             final var bobVerification = mock(SignatureVerification.class);
             final var bobFuture = new FakeSignatureVerificationFuture(bobVerification);
-            final var verificationResults = Map.<Key, SignatureVerificationFuture>of(aliceKey, aliceFuture, bobKey, bobFuture);
+            final var verificationResults =
+                    Map.<Key, SignatureVerificationFuture>of(aliceKey, aliceFuture, bobKey, bobFuture);
             final var result = createVerifier(verificationResults);
 
             assertThat(result.verificationFor(aliceKey)).isSameAs(aliceVerification);
@@ -124,7 +128,8 @@ class HandleContextVerifierTest {
             final var bobKey = BOB.keyInfo().publicKey(); // ED25519
             final var bobVerification = mock(SignatureVerification.class);
             final var bobFuture = new FakeSignatureVerificationFuture(bobVerification);
-            final var verificationResults = Map.<Key, SignatureVerificationFuture>of(aliceKey, aliceFuture, bobKey, bobFuture);
+            final var verificationResults =
+                    Map.<Key, SignatureVerificationFuture>of(aliceKey, aliceFuture, bobKey, bobFuture);
             final var result = createVerifier(verificationResults);
 
             // ERIN is another ECDSA key, but one that is not in the verification results
@@ -141,7 +146,6 @@ class HandleContextVerifierTest {
                     Arguments.of(named("ECDSA_SECP256K1", FAKE_ECDSA_KEY_INFOS[0].publicKey())));
         }
     }
-
 
     /**
      * Tests to verify that finding a {@link SignatureVerification} for compound keys (threshold keys, key lists) that
@@ -1089,9 +1093,12 @@ class HandleContextVerifierTest {
             // Given a hollow account and no verification results
             final var alias = ERIN.account().alias();
             Map<Key, SignatureVerificationFuture> verificationResults = Map.of(
-                    ALICE.keyInfo().publicKey(), goodFuture(ALICE.keyInfo().publicKey()),
-                    BOB.keyInfo().publicKey(), goodFuture(BOB.keyInfo().publicKey()),
-                    CAROL.keyInfo().publicKey(), goodFuture(CAROL.keyInfo().publicKey(), CAROL.account()),
+                    ALICE.keyInfo().publicKey(),
+                    goodFuture(ALICE.keyInfo().publicKey()),
+                    BOB.keyInfo().publicKey(),
+                    goodFuture(BOB.keyInfo().publicKey()),
+                    CAROL.keyInfo().publicKey(),
+                    goodFuture(CAROL.keyInfo().publicKey(), CAROL.account()),
                     ERIN.keyInfo().publicKey(),
                     passes
                             ? goodFuture(ERIN.keyInfo().publicKey(), ERIN.account())
@@ -1104,7 +1111,6 @@ class HandleContextVerifierTest {
                     .isEqualTo(passes);
         }
     }
-
 
     /** A simple utility method for creating a "SO_FAR_SO_GOOD" PreHandleResult */
     private HandleContextVerifier createVerifier(@NonNull final Map<Key, SignatureVerificationFuture> map) {

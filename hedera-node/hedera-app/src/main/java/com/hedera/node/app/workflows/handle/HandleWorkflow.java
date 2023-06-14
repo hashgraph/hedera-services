@@ -137,12 +137,14 @@ public class HandleWorkflow {
 
             final var preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
             recordBuilder.transaction(
-                    preHandleResult.txInfo().transaction(), preHandleResult.txInfo().signedBytes());
+                    preHandleResult.txInfo().transaction(),
+                    preHandleResult.txInfo().signedBytes());
 
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
             final var maxMillis = time.currentTimeMillis() + timeout;
-            final var payerKeyVerification = preHandleResult.verificationResults().get(preHandleResult.payerKey());
+            final var payerKeyVerification =
+                    preHandleResult.verificationResults().get(preHandleResult.payerKey());
             if (payerKeyVerification.get(timeout, TimeUnit.MILLISECONDS).failed()) {
                 throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
             }

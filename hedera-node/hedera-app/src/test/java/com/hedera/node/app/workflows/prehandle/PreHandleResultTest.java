@@ -126,7 +126,7 @@ final class PreHandleResultTest implements Scenarios {
         void preHandleFailure(@Mock TransactionInfo txInfo) {
             final var payer = AccountID.newBuilder().accountNum(1001).build();
             final var responseCode = INVALID_PAYER_ACCOUNT_ID;
-            final var result = PreHandleResult.preHandleFailure(payer, null, responseCode, txInfo, null,null);
+            final var result = PreHandleResult.preHandleFailure(payer, null, responseCode, txInfo, null, null);
 
             assertThat(result.status()).isEqualTo(PRE_HANDLE_FAILURE);
             assertThat(result.responseCode()).isEqualTo(responseCode);

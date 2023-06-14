@@ -231,6 +231,14 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
         // 7. Create and return TransactionMetadata
         return new PreHandleResult(
-                payer, payerKey, SO_FAR_SO_GOOD, OK, txInfo, context.requiredNonPayerKeys(), results, null, configuration.getVersion());
+                payer,
+                payerKey,
+                SO_FAR_SO_GOOD,
+                OK,
+                txInfo,
+                context.requiredNonPayerKeys(),
+                results,
+                null,
+                configuration.getVersion());
     }
 }

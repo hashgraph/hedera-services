@@ -95,7 +95,6 @@ public interface SignatureVerification {
      *
      * @param evmAlias The alias for which verification failed
      */
-
     static SignatureVerification failedVerification(@NonNull final Bytes evmAlias) {
         return new SignatureVerification() {
             @Nullable

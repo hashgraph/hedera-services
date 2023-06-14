@@ -74,7 +74,10 @@ public interface SignatureExpander {
      *                 that there are no duplicate entries and one prefix is not the prefix of another.
      * @param expanded Will be populated with all created {@link ExpandedSignaturePair}s
      */
-    default void expand(@NonNull Iterable<Key> keys, @NonNull List<SignaturePair> sigPairs, @NonNull Set<ExpandedSignaturePair> expanded) {
+    default void expand(
+            @NonNull Iterable<Key> keys,
+            @NonNull List<SignaturePair> sigPairs,
+            @NonNull Set<ExpandedSignaturePair> expanded) {
         for (final var key : keys) {
             expand(key, sigPairs, expanded);
         }
