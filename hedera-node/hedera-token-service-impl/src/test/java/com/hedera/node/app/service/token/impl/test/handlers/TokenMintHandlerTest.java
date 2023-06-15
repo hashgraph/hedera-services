@@ -16,7 +16,13 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.METADATA_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
@@ -72,7 +78,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void rejectsNftMintsWhenNftsNotEnabled() {
         givenMintTxn(nonFungibleTokenId, List.of(metadata1, metadata2), null);
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.nfts.areEnabled", false)
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
@@ -181,7 +187,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
     void propagatesErrorOnBadMetadata() {
         givenMintTxn(nonFungibleTokenId, List.of(Bytes.wrap("test".getBytes())), null);
 
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.nfts.maxMetadataBytes", 1)
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
@@ -196,7 +202,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
     void propagatesErrorOnMaxBatchSizeReached() {
         givenMintTxn(nonFungibleTokenId, List.of(metadata1, metadata2), null);
 
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.nfts.maxBatchSizeMint", 1)
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
@@ -211,7 +217,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
     void validatesMintingResourcesLimit() {
         givenMintTxn(nonFungibleTokenId, List.of(Bytes.wrap("test".getBytes()), Bytes.wrap("test1".getBytes())), null);
 
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.nfts.maxAllowedMints", 1)
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));

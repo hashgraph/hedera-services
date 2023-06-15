@@ -250,7 +250,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsIfAssociationLimitExceeded() {
         setUpTxnContext();
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("entities.limitTokenAssociations", "true")
                 .withValue("tokens.maxPerAccount", "0")
                 .getOrCreateConfig();
@@ -267,7 +267,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsIfAssociationAlreadyExists() {
         setUpTxnContext();
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("entities.limitTokenAssociations", "true")
                 .withValue("tokens.maxPerAccount", "10")
                 .getOrCreateConfig();
@@ -300,7 +300,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenCreateBuilder().withCustomFees(customFees).build();
         given(handleContext.body()).willReturn(txn);
 
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("entities.limitTokenAssociations", "true")
                 .withValue("tokens.maxPerAccount", "1")
                 .getOrCreateConfig();
@@ -326,7 +326,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenCreateBuilder().withCustomFees(customFees).build();
         given(handleContext.body()).willReturn(txn);
 
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("entities.limitTokenAssociations", "true")
                 .withValue("tokens.maxPerAccount", "10")
                 .getOrCreateConfig();
@@ -351,7 +351,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void uniqueNotSupportedIfNftsNotEnabled() {
         setUpTxnContext();
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.nfts.areEnabled", "false")
                 .getOrCreateConfig();
         txn = new TokenCreateBuilder().withUniqueToken().build();
@@ -366,7 +366,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void uniqueSupportedIfNftsEnabled() {
         setUpTxnContext();
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.nfts.areEnabled", "true")
                 .getOrCreateConfig();
         txn = new TokenCreateBuilder()
@@ -473,7 +473,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenCreateBuilder()
                 .withSymbol("1234567890123456789012345678901234567890123456789012345678901234567890")
                 .build();
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxSymbolUtf8Bytes", "10")
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);
@@ -514,7 +514,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenCreateBuilder()
                 .withName("1234567890123456789012345678901234567890123456789012345678901234567890")
                 .build();
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxTokenNameUtf8Bytes", "10")
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);

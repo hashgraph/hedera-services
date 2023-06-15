@@ -60,7 +60,7 @@ class TokenAttributesValidatorTest {
 
     @Test
     void failsForZeroLengthSymbol() {
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxSymbolUtf8Bytes", "10")
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
@@ -72,7 +72,7 @@ class TokenAttributesValidatorTest {
 
     @Test
     void failsForNullSymbol() {
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxSymbolUtf8Bytes", "10")
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
@@ -84,7 +84,7 @@ class TokenAttributesValidatorTest {
 
     @Test
     void failsForVeryLongSymbol() {
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxSymbolUtf8Bytes", "10")
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
@@ -97,7 +97,7 @@ class TokenAttributesValidatorTest {
 
     @Test
     void failsForZeroByteInSymbol() {
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxSymbolUtf8Bytes", "10")
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
@@ -109,7 +109,7 @@ class TokenAttributesValidatorTest {
 
     @Test
     void failsForZeroByteInName() {
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxTokenNameUtf8Bytes", "10")
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
@@ -121,7 +121,7 @@ class TokenAttributesValidatorTest {
 
     @Test
     void failsForZeroLengthName() {
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxTokenNameUtf8Bytes", "10")
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
@@ -133,7 +133,7 @@ class TokenAttributesValidatorTest {
 
     @Test
     void failsForNullName() {
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxTokenNameUtf8Bytes", "10")
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
@@ -145,7 +145,7 @@ class TokenAttributesValidatorTest {
 
     @Test
     void failsForVeryLongName() {
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxTokenNameUtf8Bytes", "10")
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
