@@ -189,6 +189,7 @@ public class EvmFnResult implements SelfSerializable {
         if (version >= RELEASE_0260_VERSION) {
             senderId = readNullableSerializable(in);
         }
+        // TODO - deserialize contractNonces deterministically here
     }
 
     @Override
@@ -205,6 +206,7 @@ public class EvmFnResult implements SelfSerializable {
         out.writeLong(amount);
         out.writeByteArray(functionParameters);
         writeNullableSerializable(senderId, out);
+        // TODO - serialize contractNonces deterministically here
     }
 
     /* --- Object --- */
@@ -335,6 +337,7 @@ public class EvmFnResult implements SelfSerializable {
     }
 
     public void setContractNonces(Map<ContractID, Long> contractNonces) {
+        System.out.println("setContractNonces: " + contractNonces);
         this.contractNonces = contractNonces;
     }
 

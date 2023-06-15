@@ -21,8 +21,7 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.*;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -2159,7 +2158,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
         final var deployContractTxn = "deployContractTxn";
 
-        return propertyPreservingHapiSpec("contractCreateFollowedByContractCallNoncesExternalization")
+        return onlyPropertyPreservingHapiSpec("contractCreateFollowedByContractCallNoncesExternalization")
                 .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
                 .given(
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
@@ -2175,11 +2174,20 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS))))
                 .then(withOpContext((spec, opLog) -> {
                     HapiGetTxnRecord op = getTxnRecord(deployContractTxn)
+                            .logged()
                             .hasPriority(recordWith()
                                     .contractCallResult(resultWith()
                                             .contractWithNonce(spec.registry().getContractId(contract), 5L)));
                     allRunFor(spec, op);
-                }));
+                }),
+                        contractCall(contract, "deployChildFromParentContract", BigInteger.ZERO)
+                                .gas(GAS_TO_OFFER)
+                                .via("committedInnerCreation"),
+                        contractCall(contract, "deployChildAndRevertFromParentContract", BigInteger.ONE)
+                                .gas(GAS_TO_OFFER)
+                                .via("revertedInnerCreation"),
+                        getTxnRecord("committedInnerCreation").andAllChildRecords().logged(),
+                        getTxnRecord("revertedInnerCreation").andAllChildRecords().logged());
     }
 
     @Override

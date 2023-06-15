@@ -146,6 +146,12 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 
         // feature flag if contracts nonces externalization is enabled
         if (dynamicProperties.isContractsNoncesExternalizationEnabled()) {
+            // TODO - copy contractNonces into a new map to use with setContractNonces() below; we can't
+            // pass contractNonces directly because this creates a race between the handleTransaction()
+            // thread which mutates this map, and the threads that call EvmFnResult.toGrpc() and
+            // EvnFnResult.serialize(). Either race condition is catastrophic, with nodes either producing
+            // non-deterministic records (breaking mirror nodes) or serializing non-deterministic state
+            // (breaking network consensus) 😰
             if (accessor.getFunction().equals(HederaFunctionality.ContractCreate)) {
                 topLevelRecord.getContractCreateResult().setContractNonces(contractNonces);
             } else if (accessor.getFunction().equals(HederaFunctionality.ContractCall)) {
