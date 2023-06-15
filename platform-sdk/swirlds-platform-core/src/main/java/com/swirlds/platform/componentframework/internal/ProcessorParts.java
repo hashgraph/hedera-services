@@ -42,6 +42,10 @@ public class ProcessorParts {
 		return definition;
 	}
 
+	public TaskProcessorConfig getConfig() {
+		return config;
+	}
+
 	public BlockingQueue<Object> getQueue() {
 		return queue;
 	}

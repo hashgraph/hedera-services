@@ -3,7 +3,6 @@ package com.swirlds.platform.componentframework;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.common.threading.utility.MultiHandler;
 import com.swirlds.platform.componentframework.internal.ProcessorParts;
 import com.swirlds.platform.componentframework.internal.QueueSubmitter;
@@ -22,19 +21,16 @@ public class TaskProcessors {
 	private final QueueThreadConfiguration<Object> defaultConfiguration;
 	private boolean started = false;
 
-	public TaskProcessors(final List<Class<? extends TaskProcessor>> taskProcessorDefs) {
-		this(
-				new QueueThreadConfiguration<>(AdHocThreadManager.getStaticThreadManager()),
-				taskProcessorDefs.stream()
-						.map(d -> new TaskProcessorConfig(d, "a name", null))
-						.toList()
-		);
-	}
-
 	public TaskProcessors(
 			final QueueThreadConfiguration<Object> defaultConfiguration,
 			final List<TaskProcessorConfig> taskProcessorDefs) {
-		this.defaultConfiguration = Objects.requireNonNull(defaultConfiguration);
+		this.defaultConfiguration = Objects.requireNonNull(defaultConfiguration).copy();
+		if (defaultConfiguration.getHandler() != null) {
+			throw new IllegalArgumentException("Default configuration cannot have a handler set.");
+		}
+		if (defaultConfiguration.getQueue() != null) {
+			throw new IllegalArgumentException("Default configuration cannot have a queue set.");
+		}
 		Objects.requireNonNull(taskProcessorDefs);
 		if (taskProcessorDefs.isEmpty()) {
 			throw new IllegalArgumentException("Must supply at least one TaskProcessor definition");
@@ -44,7 +40,9 @@ public class TaskProcessors {
 				.forEach(TaskProcessorUtils::checkTaskProcessorDefinition);
 
 		for (final TaskProcessorConfig config : taskProcessorDefs) {
-			final BlockingQueue<Object> queue = new LinkedBlockingQueue<>();
+			final BlockingQueue<Object> queue = config.customQueue() == null
+					? new LinkedBlockingQueue<>()
+					: config.customQueue();
 			if (parts.containsKey(config.definition())) {
 				throw new IllegalArgumentException(String.format(
 						"Duplicate TaskProcessor definition: %s",
@@ -118,6 +116,7 @@ public class TaskProcessors {
 			final QueueThread<Object> queueThread =
 					defaultConfiguration
 							.copy()
+							.setThreadName(processorParts.getConfig().name())
 							.setQueue(processorParts.getQueue())
 							.setHandler((InterruptableConsumer<Object>) handler)
 							.build(true);

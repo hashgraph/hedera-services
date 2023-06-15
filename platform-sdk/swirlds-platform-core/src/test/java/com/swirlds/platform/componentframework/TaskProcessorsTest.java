@@ -1,5 +1,7 @@
 package com.swirlds.platform.componentframework;
 
+import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
+import com.swirlds.common.threading.manager.AdHocThreadManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -17,7 +19,7 @@ class TaskProcessorsTest {
 	@ParameterizedTest
 	@ValueSource(booleans = { true, false })
 	void singleTaskProcessor(final boolean addAsLambda) throws InterruptedException {
-		final TaskProcessors taskProcessors = new TaskProcessors(
+		final TaskProcessors taskProcessors = build(
 				List.of(LongProcessor.class)
 		);
 		final LongProcessorImpl longProcessor = new LongProcessorImpl();
@@ -36,13 +38,14 @@ class TaskProcessorsTest {
 		final long randomLong = random.nextLong();
 		taskProcessors.getSubmitter(LongProcessor.class).processLong(randomLong);
 		taskProcessors.getQueueThread(LongProcessor.class).waitUntilNotBusy();
-		assertEquals(randomLong, longProcessor.getLastProcessed(), "Last processed should be the random value we passed in");
+		assertEquals(randomLong, longProcessor.getLastProcessed(),
+				"Last processed should be the random value we passed in");
 		taskProcessors.stop();
 	}
 
 	@Test
 	void twoProcessors() throws InterruptedException {
-		final TaskProcessors taskProcessors = new TaskProcessors(
+		final TaskProcessors taskProcessors = build(
 				List.of(LongProcessor.class, StringIntProcessor.class)
 		);
 		final LongProcessor longSubmitter = taskProcessors.getSubmitter(LongProcessor.class);
@@ -70,34 +73,43 @@ class TaskProcessorsTest {
 
 	@Test
 	void badConstructorArguments() {
-		assertThrows(NullPointerException.class, () -> new TaskProcessors((List<Class<? extends TaskProcessor>>) null),
+		assertThrows(NullPointerException.class, () -> new TaskProcessors(null, null),
 				"Null constructor argument should throw NPE");
 		final List<Class<? extends TaskProcessor>> emptyList = List.of();
-		assertThrows(IllegalArgumentException.class, () -> new TaskProcessors(emptyList),
+		assertThrows(IllegalArgumentException.class, () -> build(emptyList),
 				"Empty constructor argument should throw IAE");
 		assertThrows(IllegalArgumentException.class,
-				() -> new TaskProcessors(List.of(LongProcessor.class, LongProcessor.class)),
+				() -> build(List.of(LongProcessor.class, LongProcessor.class)),
 				"Duplicate constructor argument should throw IAE");
-		assertThrows(IllegalArgumentException.class, () -> new TaskProcessors(List.of(NoMethodProcessor.class)),
+		assertThrows(IllegalArgumentException.class, () -> build(List.of(NoMethodProcessor.class)),
 				"Class with no methods should throw IAE");
-		assertThrows(IllegalArgumentException.class, () -> new TaskProcessors(List.of(StringIntImpl.class)),
+		assertThrows(IllegalArgumentException.class, () -> build(List.of(StringIntImpl.class)),
 				"Non-interface should throw IAE");
 	}
 
 	@Test
-	void illegalStateTest(){
-		final TaskProcessors taskProcessors = new TaskProcessors(List.of(LongProcessor.class));
+	void illegalStateTest() {
+		final TaskProcessors taskProcessors = build(List.of(LongProcessor.class));
 		assertThrows(IllegalStateException.class, taskProcessors::start,
 				"Should throw IllegalStateException when not started");
-		assertThrows(IllegalStateException.class, ()->taskProcessors.getQueueThread(LongProcessor.class),
+		assertThrows(IllegalStateException.class, () -> taskProcessors.getQueueThread(LongProcessor.class),
 				"Should throw IllegalStateException when not started");
 		taskProcessors.addImplementation(new LongProcessorImpl());
 		taskProcessors.start();
-		assertThrows(IllegalStateException.class, ()->taskProcessors.addImplementation(new LongProcessorImpl()),
+		assertThrows(IllegalStateException.class, () -> taskProcessors.addImplementation(new LongProcessorImpl()),
 				"Should throw IllegalStateException when started");
 		assertThrows(IllegalStateException.class, taskProcessors::start,
 				"Should throw IllegalStateException when not started");
 		taskProcessors.stop();
+	}
+
+	private static TaskProcessors build(final List<Class<? extends TaskProcessor>> taskProcessorDefs) {
+		return new TaskProcessors(
+				new QueueThreadConfiguration<>(AdHocThreadManager.getStaticThreadManager()),
+				taskProcessorDefs.stream()
+						.map(d -> new TaskProcessorConfig(d, "a name", null))
+						.toList()
+		);
 	}
 
 }

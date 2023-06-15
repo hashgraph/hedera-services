@@ -8,5 +8,5 @@ import java.util.concurrent.BlockingQueue;
 public record TaskProcessorConfig(
 		@NonNull Class<? extends TaskProcessor> definition,
 		@NonNull String name,
-		@Nullable BlockingQueue<?> customQueue){
+		@Nullable BlockingQueue<Object> customQueue){
 }
