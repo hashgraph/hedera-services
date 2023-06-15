@@ -40,6 +40,7 @@ dependencies {
         testImplementation(gav("org.junitpioneer"))
         testImplementation(gav("org.mockito"))
         testImplementation(gav("org.mockito.junit.jupiter"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
 
         jmhImplementation(project(":hedera-node:node-app-hapi-utils"))
         jmhImplementation(project(":hedera-node:node-app-spi"))

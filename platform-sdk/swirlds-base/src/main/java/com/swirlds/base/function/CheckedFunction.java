@@ -16,9 +16,9 @@
 
 package com.swirlds.base.function;
 
-import com.swirlds.base.ArgumentUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -52,7 +52,7 @@ public interface CheckedFunction<T, R, E extends Exception> {
      */
     @NonNull
     static <T, R, E extends Exception> CheckedFunction<T, R, E> of(@NonNull final Function<T, R> function) {
-        ArgumentUtils.throwArgNull(function, "function");
+        Objects.requireNonNull(function, "function must not be null");
         return function::apply;
     }
 }

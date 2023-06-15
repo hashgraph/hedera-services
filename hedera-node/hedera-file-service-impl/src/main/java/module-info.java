@@ -10,10 +10,10 @@ module com.hedera.node.app.service.file.impl {
     requires transitive dagger;
     requires transitive javax.inject;
     requires com.fasterxml.jackson.databind;
-    requires com.github.spotbugs.annotations;
     requires com.swirlds.config;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
+    requires static com.github.spotbugs.annotations;
 
     provides com.hedera.node.app.service.file.FileService with
             FileServiceImpl;
