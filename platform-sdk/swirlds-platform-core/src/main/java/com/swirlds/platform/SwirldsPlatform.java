@@ -987,7 +987,7 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     @NonNull
     private PreconsensusEventFileManager buildPreconsensusEventFileManager(
-            final EmergencyRecoveryManager emergencyRecoveryManager) {
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
         try {
             final PreconsensusEventFileManager manager =
                     new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, selfId);
