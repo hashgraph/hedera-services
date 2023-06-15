@@ -16,6 +16,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @Timeout(10)
 class TaskProcessorsTest {
 
+	/**
+	 * A simple test with a single {@link LongProcessor} that processes a single {@link Long}.
+	 *
+	 * @param addAsLambda
+	 * 		if true, add the processor as a lambda, otherwise add it as an object
+	 */
 	@ParameterizedTest
 	@ValueSource(booleans = { true, false })
 	void singleTaskProcessor(final boolean addAsLambda) throws InterruptedException {
@@ -43,6 +49,9 @@ class TaskProcessorsTest {
 		taskProcessors.stop();
 	}
 
+	/**
+	 * A test with two {@link TaskProcessor}s, where one depends on the other.
+	 */
 	@Test
 	void twoProcessors() throws InterruptedException {
 		final TaskProcessors taskProcessors = build(
@@ -71,6 +80,9 @@ class TaskProcessorsTest {
 		taskProcessors.stop();
 	}
 
+	/**
+	 * Tests bad constructor arguments.
+	 */
 	@Test
 	void badConstructorArguments() {
 		assertThrows(NullPointerException.class, () -> new TaskProcessors(null, null),
@@ -87,6 +99,9 @@ class TaskProcessorsTest {
 				"Non-interface should throw IAE");
 	}
 
+	/**
+	 * Tests if exceptions get thrown when calling methods out of order
+	 */
 	@Test
 	void illegalStateTest() {
 		final TaskProcessors taskProcessors = build(List.of(LongProcessor.class));

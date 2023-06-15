@@ -1,4 +1,7 @@
 package com.swirlds.platform.componentframework;
 
-public interface NoMethodProcessor extends TaskProcessor{
+/**
+ * A test {@link TaskProcessor} that has no processing methods.
+ */
+public interface NoMethodProcessor extends TaskProcessor {
 }

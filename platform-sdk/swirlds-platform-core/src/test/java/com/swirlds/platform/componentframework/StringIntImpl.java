@@ -1,6 +1,10 @@
 package com.swirlds.platform.componentframework;
 
-public class StringIntImpl implements StringIntProcessor{
+/**
+ * A test {@link StringIntProcessor} that converts {@link String}s and {@link Integer}s to {@link Long}s and passes
+ * them to a {@link LongProcessor}.
+ */
+public class StringIntImpl implements StringIntProcessor {
 	private final LongProcessor longProcessor;
 
 	public StringIntImpl(final LongProcessor longProcessor) {

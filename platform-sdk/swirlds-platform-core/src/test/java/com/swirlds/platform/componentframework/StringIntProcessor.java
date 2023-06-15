@@ -4,6 +4,9 @@ import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 
 import java.util.Map;
 
+/**
+ * A test {@link StringIntProcessor} that processes two task types, {@link String}s and {@link Integer}s.
+ */
 public interface StringIntProcessor extends TaskProcessor {
 	void string(String s) throws InterruptedException;
 	void number(Integer i) throws InterruptedException;

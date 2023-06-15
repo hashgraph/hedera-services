@@ -2,7 +2,10 @@ package com.swirlds.platform.componentframework;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-public class LongProcessorImpl implements LongProcessor{
+/**
+ * A test {@link LongProcessor} that just sets an atomic variable
+ */
+public class LongProcessorImpl implements LongProcessor {
 	public static final long INITIAL_LONG = 0;
 	private final AtomicLong lastProcessed = new AtomicLong(INITIAL_LONG);
 
