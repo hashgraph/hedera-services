@@ -47,7 +47,8 @@ public class GuiUtils {
      */
     @Deprecated
     public static void initUI()
-            throws UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+            throws UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException,
+                    IllegalAccessException {
         // discover the inset size and set the look and feel
         if (!GraphicsEnvironment.isHeadless()) {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
