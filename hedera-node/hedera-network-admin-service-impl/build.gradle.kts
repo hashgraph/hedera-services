@@ -32,6 +32,7 @@ dependencies {
         testImplementation(gav("org.junit.jupiter.api"))
         testImplementation(gav("org.mockito"))
         testImplementation(gav("org.mockito.junit.jupiter"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
         testRuntimeOnly(gav("org.mockito.inline"))
     }
 }

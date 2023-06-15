@@ -3,5 +3,5 @@ module com.hedera.node.hapi.test.fixtures {
 
     requires transitive com.hedera.pbj.runtime;
     requires com.hedera.node.hapi;
-    requires com.github.spotbugs.annotations;
+    requires static com.github.spotbugs.annotations;
 }
