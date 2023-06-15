@@ -22,7 +22,6 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.utility.MultiHandler;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;

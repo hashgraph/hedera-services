@@ -19,7 +19,6 @@ package com.swirlds.common.threading.framework.internal;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.QueueThreadPool;
 import com.swirlds.common.threading.framework.ThreadSeed;
-
 import java.util.ArrayList;
 import java.util.List;
 
