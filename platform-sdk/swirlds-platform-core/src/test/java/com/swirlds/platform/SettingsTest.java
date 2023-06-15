@@ -77,16 +77,6 @@ import static com.swirlds.platform.SettingConstants.USE_LOOPBACK_IP_DEFAULT_VALU
 import static com.swirlds.platform.SettingConstants.USE_TLS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.VERBOSE_STATISTICS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.VERIFY_EVENT_SIGS_DEFAULT_VALUE;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_FLUSH_INTERVAL;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_FLUSH_THROTTLE_STEP_SIZE;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_MAXIMUM_FLUSH_THROTTLE_PERIOD;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_MAXIMUM_VIRTUAL_MAP_SIZE;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_PERCENT_CLEANER_THREADS;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_PERCENT_HASH_THREADS;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_PREFERRED_FLUSH_QUEUE_SIZE;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_VIRTUAL_MAP_WARNING_INTERVAL;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.DEFAULT_VIRTUAL_MAP_WARNING_THRESHOLD;
-import static com.swirlds.virtualmap.DefaultVirtualMapSettings.UNIT_FRACTION_PERCENT;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
@@ -94,7 +84,6 @@ import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.settings.ParsingUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.StateSettings;
@@ -498,69 +487,6 @@ class SettingsTest {
         Assertions.assertEquals(150, cryptoConfig.cpuVerifierQueueSize());
         Assertions.assertEquals(150, cryptoConfig.cpuDigestQueueSize());
         Assertions.assertFalse(cryptoConfig.forceCpu());
-    }
-
-    /**
-     * Currently disabled until the Settings class gets rewritten to not use a singleton design pattern. There are tests
-     * that are run that modify these default values before this test is run, therefore resulting in this test failing.
-     */
-    @Test
-    @Disabled
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that default virtual map sub-settings are retrieved correctly")
-    public void checkGetDefaultVirtualMapSubSettings() {
-        // given
-        final VirtualMapSettingsImpl virtualMapSettings = Settings.getInstance().getVirtualMap();
-        final int numProcessors = Runtime.getRuntime().availableProcessors();
-
-        // then
-        Assertions.assertEquals(DEFAULT_PERCENT_HASH_THREADS, virtualMapSettings.getPercentHashThreads());
-        Assertions.assertEquals(
-                (int) (numProcessors * (virtualMapSettings.getPercentHashThreads() / UNIT_FRACTION_PERCENT)),
-                virtualMapSettings.getNumHashThreads());
-        Assertions.assertEquals(DEFAULT_PERCENT_CLEANER_THREADS, virtualMapSettings.getPercentCleanerThreads());
-        Assertions.assertEquals(
-                (int) (numProcessors * (virtualMapSettings.getPercentCleanerThreads() / UNIT_FRACTION_PERCENT)),
-                virtualMapSettings.getNumCleanerThreads());
-        Assertions.assertEquals(DEFAULT_MAXIMUM_VIRTUAL_MAP_SIZE, virtualMapSettings.getMaximumVirtualMapSize());
-        Assertions.assertEquals(
-                DEFAULT_VIRTUAL_MAP_WARNING_THRESHOLD, virtualMapSettings.getVirtualMapWarningThreshold());
-        Assertions.assertEquals(
-                DEFAULT_VIRTUAL_MAP_WARNING_INTERVAL, virtualMapSettings.getVirtualMapWarningInterval());
-        Assertions.assertEquals(DEFAULT_FLUSH_INTERVAL, virtualMapSettings.getFlushInterval());
-        Assertions.assertEquals(DEFAULT_PREFERRED_FLUSH_QUEUE_SIZE, virtualMapSettings.getPreferredFlushQueueSize());
-        Assertions.assertEquals(DEFAULT_FLUSH_THROTTLE_STEP_SIZE, virtualMapSettings.getFlushThrottleStepSize());
-        Assertions.assertEquals(
-                DEFAULT_MAXIMUM_FLUSH_THROTTLE_PERIOD, virtualMapSettings.getMaximumFlushThrottlePeriod());
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("Checks that loaded virtual map sub-settings are retrieved correctly")
-    public void checkGetLoadedVirtualMapSubSettings() {
-        // given
-        final Settings settings = Settings.getInstance();
-        final File settingsFile =
-                new File(SettingsTest.class.getResource("settings9.txt").getFile());
-        Assertions.assertTrue(settingsFile.exists());
-
-        // when
-        settings.loadSettings(settingsFile);
-        final VirtualMapSettingsImpl virtualMapSettings = Settings.getInstance().getVirtualMap();
-
-        // then
-        Assertions.assertEquals(1, virtualMapSettings.getNumHashThreads());
-        Assertions.assertEquals(75.0, virtualMapSettings.getPercentHashThreads());
-        Assertions.assertEquals(1, virtualMapSettings.getNumCleanerThreads());
-        Assertions.assertEquals(50.0, virtualMapSettings.getPercentCleanerThreads());
-        Assertions.assertEquals(10, virtualMapSettings.getMaximumVirtualMapSize());
-        Assertions.assertEquals(7500000, virtualMapSettings.getVirtualMapWarningThreshold());
-        Assertions.assertEquals(150000, virtualMapSettings.getVirtualMapWarningInterval());
-        Assertions.assertEquals(30, virtualMapSettings.getFlushInterval());
-        Assertions.assertEquals(3, virtualMapSettings.getPreferredFlushQueueSize());
-        Assertions.assertEquals(ParsingUtils.parseDuration("300millis"), virtualMapSettings.getFlushThrottleStepSize());
-        Assertions.assertEquals(
-                ParsingUtils.parseDuration("6secs"), virtualMapSettings.getMaximumFlushThrottlePeriod());
     }
 
     /**

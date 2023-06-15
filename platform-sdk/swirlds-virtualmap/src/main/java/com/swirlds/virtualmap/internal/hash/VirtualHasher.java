@@ -25,14 +25,15 @@ import static com.swirlds.virtualmap.internal.Path.getParentPath;
 import static com.swirlds.virtualmap.internal.Path.getRank;
 import static com.swirlds.virtualmap.internal.Path.getSiblingPath;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import java.util.Iterator;
@@ -63,11 +64,17 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
     private static final Logger logger = LogManager.getLogger(VirtualHasher.class);
 
     /**
+     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
+     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
+     * holder will have been configured by the time this static initializer runs.
+     */
+    private static final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
+
+    /**
      * The number of threads to use when hashing. Can either be supplied by a system property, or
      * will compute a default based on "percentHashThreads".
      */
-    private static final int HASHING_THREAD_COUNT =
-            VirtualMapSettingsFactory.get().getNumHashThreads();
+    private static final int HASHING_THREAD_COUNT = config.getNumHashThreads();
 
     /**
      * A thread pool for processing hashing work. A single executor service is shared across all {@link VirtualMap}
