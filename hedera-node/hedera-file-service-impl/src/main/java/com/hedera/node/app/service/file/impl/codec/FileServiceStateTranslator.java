@@ -35,7 +35,7 @@ import org.apache.commons.codec.DecoderException;
 public class FileServiceStateTranslator {
 
     /**
-     * The method converts a {@link com.hedera.node.app.service.mono.files.HFileMeta} content and metadata  to a {@link File}
+     * The method converts a {@link com.hedera.node.app.service.mono.files.HederaFs} content and metadata  to a {@link File}
      * @param fileID old protobuf fileID that will be used to search in old state
      * @param hederaFs old state
      * @return new protobuf File
@@ -90,7 +90,7 @@ public class FileServiceStateTranslator {
     }
 
     /**
-     * The method converts a {@link File} to a {@link com.hedera.node.app.service.mono.files.HFileMeta} content and metadata
+     * The method converts a {@link File} to a {@link FileMetadataAndContent} content and metadata
      * @param file new protobuf file that will be used
      * @return File and metadata pair object
      */
