@@ -16,11 +16,10 @@
 
 package com.swirlds.common.threading.framework.config;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
-
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Configuration for the metrics that will be applied to a queue thread
@@ -46,7 +45,7 @@ public class QueueThreadMetricsConfiguration {
      * 		The metrics system that will hold metrics
      */
     public QueueThreadMetricsConfiguration(@NonNull final Metrics metrics) {
-        this.metrics = throwArgNull(metrics, "metrics");
+        this.metrics = Objects.requireNonNull(metrics, "metrics must not be null");
     }
 
     /**
