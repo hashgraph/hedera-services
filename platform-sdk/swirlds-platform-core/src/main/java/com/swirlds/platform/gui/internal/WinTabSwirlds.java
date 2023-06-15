@@ -20,6 +20,9 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
 import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
+import com.swirlds.gui.GuiConstants;
+import com.swirlds.gui.InfoEntity;
+import com.swirlds.gui.PrePaintableJPanel;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -50,7 +53,7 @@ class WinTabSwirlds extends PrePaintableJPanel {
     public WinTabSwirlds() {
         GridBagLayout gridbag = new GridBagLayout();
         setLayout(gridbag);
-        setFont(WinBrowser.FONT);
+        setFont(GuiConstants.FONT);
         chooseMemberDisplayed();
 
         instructions = new JTextPane();
@@ -230,7 +233,7 @@ class WinTabSwirlds extends PrePaintableJPanel {
     }
 
     void freeze(JTextPane text) {
-        text.setFont(WinBrowser.FONT);
+        text.setFont(GuiConstants.FONT);
         text.setEditable(false);
         text.setEnabled(false);
         text.setBackground(Color.WHITE);

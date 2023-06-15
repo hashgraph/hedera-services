@@ -17,6 +17,7 @@
 package com.swirlds.platform.gui.internal;
 
 import com.swirlds.common.system.address.Address;
+import com.swirlds.gui.InfoEntity;
 import com.swirlds.platform.SwirldsPlatform;
 import java.util.ArrayList;
 import java.util.List;

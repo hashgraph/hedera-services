@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.hashgraph.internal;
+package com.swirlds.gui.hashgraph;
 
 import java.awt.Color;
 import java.awt.GridBagConstraints;
@@ -22,8 +22,8 @@ import java.awt.GridBagLayout;
 import javax.swing.JPanel;
 
 /**
- * Used to create a {@link JPanel} that holds a {@link HashgraphPicture} and {@link HashgraphGuiControls} to change the
- * picture
+ * Used to create a {@link JPanel} that holds a {@code  HashgraphPicture} and {@code  HashgraphGuiControls} to change
+ * the picture
  */
 public final class PairPanel {
     private PairPanel() {}

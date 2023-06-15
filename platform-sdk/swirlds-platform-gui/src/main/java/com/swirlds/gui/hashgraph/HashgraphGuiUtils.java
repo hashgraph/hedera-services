@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.hashgraph.internal;
+package com.swirlds.gui.hashgraph;
 
 import com.swirlds.common.system.events.PlatformEvent;
 import java.awt.Color;
@@ -24,7 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 /**
- * Various static utils for the {@link com.swirlds.platform.gui.hashgraph.HashgraphGui}
+ * Various static utils for the {@code  com.swirlds.platform.gui.hashgraph.HashgraphGui}
  */
 public final class HashgraphGuiUtils {
     private HashgraphGuiUtils() {}

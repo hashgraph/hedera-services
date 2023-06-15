@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.internal;
+package com.swirlds.gui;
 
-import com.swirlds.gui.InfoEntity;
-import java.util.ArrayList;
-import java.util.List;
+import javax.swing.JLabel;
 
 /**
- * Metadata about an app that is installed locally.
+ * The tab in the Browser window that shows available apps, running swirlds, and saved swirlds.
  */
-public class InfoApp extends InfoEntity {
-    List<InfoSwirld> swirlds = new ArrayList<InfoSwirld>(); // children
+public class WinTabCalls extends PrePaintableJPanel {
+    private static final long serialVersionUID = 1L;
 
-    public InfoApp(String name) {
-        this.name = name;
+    public WinTabCalls() {
+        JLabel label = new JLabel("There are no recent calls.");
+        label.setFont(GuiConstants.FONT);
+        add(label);
     }
+
+    /** {@inheritDoc} */
+    public void prePaint() {}
 }

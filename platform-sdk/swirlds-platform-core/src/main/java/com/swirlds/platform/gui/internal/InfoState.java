@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.gui.internal;
 
+import com.swirlds.gui.InfoEntity;
+
 /**
  * Metadata about a state stored by a member in a swirld running on an app.
  */

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.internal;
+package com.swirlds.gui.hashgraph;
 
-import com.swirlds.gui.InfoEntity;
-import java.util.ArrayList;
-import java.util.List;
+import com.swirlds.common.system.events.PlatformEvent;
 
-/**
- * Metadata about an app that is installed locally.
- */
-public class InfoApp extends InfoEntity {
-    List<InfoSwirld> swirlds = new ArrayList<InfoSwirld>(); // children
+public interface AddressBookMetadata {
+    int getNumMembers();
 
-    public InfoApp(String name) {
-        this.name = name;
-    }
+    int getNumColumns();
+
+    int mems2col(PlatformEvent e1, PlatformEvent e2);
 }

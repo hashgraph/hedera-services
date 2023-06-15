@@ -22,6 +22,7 @@ import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.statistics.internal.StatsBuffer;
+import com.swirlds.gui.PrePaintableJPanel;
 import com.swirlds.platform.Settings;
 import java.awt.Color;
 import java.awt.Dimension;

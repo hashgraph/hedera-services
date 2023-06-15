@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.internal;
+package com.swirlds.gui;
 
-import javax.swing.JLabel;
+import javax.swing.JPanel;
 
 /**
- * The tab in the Browser window that shows available apps, running swirlds, and saved swirlds.
+ * The class that all 4 levels of the hierarchy inherit from: InfoApp, InfoSwirld, InfoMember, InfoState. This holds
+ * information common to all of them, such as the name, and the GUI component that represents it in the browser window.
  */
-class WinTabCalls extends PrePaintableJPanel {
-    private static final long serialVersionUID = 1L;
-
-    public WinTabCalls() {
-        JLabel label = new JLabel("There are no recent calls.");
-        label.setFont(WinBrowser.FONT);
-        add(label);
-    }
-
-    /** {@inheritDoc} */
-    public void prePaint() {}
+public class InfoEntity {
+    /** name of this entity */
+    public String name;
+    /** the JPanel that shows this entity in the browser window (Swirlds tab), or null if none */
+    public JPanel panel;
 }

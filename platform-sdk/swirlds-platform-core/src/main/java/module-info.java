@@ -172,4 +172,5 @@ module com.swirlds.platform {
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.dataformat.yaml;
     requires static com.github.spotbugs.annotations;
+    requires com.swirlds.gui;
 }

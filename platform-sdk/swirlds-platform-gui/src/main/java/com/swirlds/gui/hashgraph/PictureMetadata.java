@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.hashgraph.internal;
+package com.swirlds.gui.hashgraph;
 
 import com.swirlds.common.system.events.PlatformEvent;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
 
 /**
- * Metadata that is used to aid in drawing a {@link HashgraphPicture}
+ * Metadata that is used to aid in drawing a {@code HashgraphPicture}
  */
 public class PictureMetadata {
     /**

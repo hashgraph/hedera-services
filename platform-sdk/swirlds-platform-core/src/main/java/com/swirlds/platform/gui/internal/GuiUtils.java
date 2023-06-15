@@ -20,6 +20,7 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getInsets;
 import static com.swirlds.platform.state.address.AddressBookUtils.getOwnHostCount;
 
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.gui.GuiConstants;
 import java.awt.Color;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
@@ -126,7 +127,7 @@ public final class GuiUtils {
         txt.setBackground(Color.WHITE);
         txt.setForeground(Color.BLACK);
         txt.setDisabledTextColor(Color.BLACK);
-        txt.setFont(WinBrowser.FONT);
+        txt.setFont(GuiConstants.FONT);
         txt.setEditable(false);
         txt.setEnabled(false);
         txt.setText(text);

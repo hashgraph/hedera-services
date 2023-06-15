@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.gui;
 
+import com.swirlds.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.HashgraphGui;
-import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import java.awt.GridLayout;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;

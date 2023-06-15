@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.gui.internal;
 
+import com.swirlds.gui.InfoEntity;
+import com.swirlds.gui.Reference;
 import java.util.ArrayList;
 import java.util.List;
 

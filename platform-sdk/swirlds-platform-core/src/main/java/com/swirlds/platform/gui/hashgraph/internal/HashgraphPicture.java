@@ -16,13 +16,16 @@
 
 package com.swirlds.platform.gui.hashgraph.internal;
 
+import static com.swirlds.gui.hashgraph.HashgraphGuiUtils.HASHGRAPH_PICTURE_FONT;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.platform.gui.hashgraph.internal.HashgraphGuiUtils.HASHGRAPH_PICTURE_FONT;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
+import com.swirlds.gui.hashgraph.HashgraphGuiSource;
+import com.swirlds.gui.hashgraph.HashgraphGuiUtils;
+import com.swirlds.gui.hashgraph.HashgraphPictureOptions;
+import com.swirlds.gui.hashgraph.PictureMetadata;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Font;
@@ -54,8 +57,8 @@ public class HashgraphPicture extends JPanel {
     /** used to store an image when the freeze checkbox is checked */
     private BufferedImage image = null;
 
-    private AddressBookMetadata nonExpandedMetadata;
-    private AddressBookMetadata expandedMetadata;
+    private AddressBookMetadataImpl nonExpandedMetadata;
+    private AddressBookMetadataImpl expandedMetadata;
 
     public HashgraphPicture(final HashgraphGuiSource hashgraphSource, final HashgraphPictureOptions options) {
         this.hashgraphSource = hashgraphSource;
@@ -65,8 +68,8 @@ public class HashgraphPicture extends JPanel {
 
     private void createMetadata() {
         if ((expandedMetadata == null || nonExpandedMetadata == null) && hashgraphSource.isReady()) {
-            expandedMetadata = new AddressBookMetadata(hashgraphSource.getAddressBook(), true);
-            nonExpandedMetadata = new AddressBookMetadata(hashgraphSource.getAddressBook(), false);
+            expandedMetadata = new AddressBookMetadataImpl(hashgraphSource.getAddressBook(), true);
+            nonExpandedMetadata = new AddressBookMetadataImpl(hashgraphSource.getAddressBook(), false);
         }
     }
 
@@ -86,7 +89,8 @@ public class HashgraphPicture extends JPanel {
             final FontMetrics fm = g.getFontMetrics();
             final AddressBook addressBook = hashgraphSource.getAddressBook();
             final int numMem = addressBook.getSize();
-            final AddressBookMetadata currentMetadata = options.isExpanded() ? expandedMetadata : nonExpandedMetadata;
+            final AddressBookMetadataImpl currentMetadata =
+                    options.isExpanded() ? expandedMetadata : nonExpandedMetadata;
 
             PlatformEvent[] events;
             if (options.displayLatestEvents()) {

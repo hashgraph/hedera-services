@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.hashgraph;
+package com.swirlds.gui.hashgraph;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
 
 /**
- * Provides the {@link HashgraphGui} information it needs to render an image of the hashgraph
+ * Provides the {@code  HashgraphGui} information it needs to render an image of the hashgraph
  */
 public interface HashgraphGuiSource {
 

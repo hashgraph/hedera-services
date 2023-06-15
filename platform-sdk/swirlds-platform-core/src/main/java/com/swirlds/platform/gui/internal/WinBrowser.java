@@ -21,13 +21,14 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserW
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 
-import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
+import com.swirlds.gui.PrePaintableJPanel;
+import com.swirlds.gui.WinTabCalls;
+import com.swirlds.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.system.SystemExitCode;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.GraphicsEnvironment;
 import java.awt.GridBagLayout;
@@ -69,8 +70,6 @@ public class WinBrowser extends JFrame {
 
     /** refresh the screen every this many milliseconds */
     final int refreshPeriod = 500;
-    /** use this font for all text in the browser window */
-    static Font FONT = new Font("SansSerif", Font.PLAIN, 16);
     /** the InfoMember that is currently being shown by all tabs in the browser window */
     static volatile InfoMember memberDisplayed = null;
     /** have all the tabs been initialized yet? */

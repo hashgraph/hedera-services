@@ -18,6 +18,8 @@ package com.swirlds.platform.gui.hashgraph.internal;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
+import com.swirlds.gui.hashgraph.AddressBookMetadata;
+import com.swirlds.gui.hashgraph.HashgraphGuiUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -25,7 +27,7 @@ import java.util.Objects;
 /**
  * Metadata that is calculated based on a {@link AddressBook} that is used to aid in drawing a hashgraph
  */
-public class AddressBookMetadata {
+public class AddressBookMetadataImpl implements AddressBookMetadata {
     /** the address book that this metadata is based on */
     private final AddressBook addressBook;
     /** the number of members in the addressBook */
@@ -42,11 +44,11 @@ public class AddressBookMetadata {
     private final int[][] col2mems;
 
     /**
-     * In order to draw this "expanded" hashgraph (where each member has multiple columns and lines don't
-     * cross), we need several data tables. So fill in four arrays: numMembers, mems2col, col2mems, and
-     * names, if they haven't already been filled in, or if the number of members has changed.
+     * In order to draw this "expanded" hashgraph (where each member has multiple columns and lines don't cross), we
+     * need several data tables. So fill in four arrays: numMembers, mems2col, col2mems, and names, if they haven't
+     * already been filled in, or if the number of members has changed.
      */
-    public AddressBookMetadata(@NonNull final AddressBook addressBook, final boolean expand) {
+    public AddressBookMetadataImpl(@NonNull final AddressBook addressBook, final boolean expand) {
         this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
         final int m = addressBook.getSize();
         numMembers = m;
