@@ -18,31 +18,34 @@ package com.hedera.node.app.workflows.handle.stack;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Iterator;
+import java.util.function.Predicate;
 
 /**
- * An implementation of {@link WritableSingletonState} that delegates to the current {@link WritableSingletonState} in a
+ * An implementation of {@link WritableQueueState} that delegates to the current {@link WritableSingletonState} in a
  * {@link com.hedera.node.app.spi.workflows.HandleContext.SavepointStack}.
  *
  * <p>A {@link com.hedera.node.app.spi.workflows.HandleContext.SavepointStack} consists of a stack of frames, each of
  * which contains a set of modifications in regard to the state of the underlying frame. On the top of the stack is the
- * most recent state. This class delegates to the current {@link WritableSingletonState} on top of such a stack.
+ * most recent state. This class delegates to the current {@link WritableQueueState} on top of such a stack.
  *
- * <p>All changes made to the {@link WritableSingletonStateStack} are applied to the frame on top of the stack.
+ * <p>All changes made to the {@link WritableQueueStateStack} are applied to the frame on top of the stack.
  * Consequently, all frames added later on top of the current frame will see the changes. If the frame is removed
  * however, the changes are lost.
  *
- * @param <T> the type of the singleton state
+ * @param <E> The type of element held in the queue.
  */
-public class WritableSingletonStateStack<T> implements WritableSingletonState<T> {
+public class WritableQueueStateStack<E> implements WritableQueueState<E> {
 
     private final WritableStatesStack writableStatesStack;
     private final String stateKey;
 
     /**
-     * Constructs a {@link WritableSingletonStateStack} that delegates to the current {@link WritableSingletonState} in
+     * Constructs a {@link WritableQueueStateStack} that delegates to the current {@link WritableQueueState} in
      * the given {@link WritableStatesStack} for the given state key. A {@link WritableStatesStack} is an implementation
      * of {@link com.hedera.node.app.spi.state.WritableStates} that delegates to the most recent version in a
      * {@link com.hedera.node.app.spi.workflows.HandleContext.SavepointStack}
@@ -51,41 +54,43 @@ public class WritableSingletonStateStack<T> implements WritableSingletonState<T>
      * @param stateKey the state key
      * @throws NullPointerException if any of the arguments is {@code null}
      */
-    public WritableSingletonStateStack(
+    public WritableQueueStateStack(
             @NonNull final WritableStatesStack writableStatesStack, @NonNull final String stateKey) {
         this.writableStatesStack = requireNonNull(writableStatesStack, "writableStatesStack must not be null");
         this.stateKey = requireNonNull(stateKey, "stateKey must not be null");
     }
 
     @NonNull
-    private WritableSingletonState<T> getCurrent() {
-        return writableStatesStack.getCurrent().getSingleton(stateKey);
+    private WritableQueueState<E> getCurrent() {
+        return writableStatesStack.getCurrent().getQueue(stateKey);
     }
 
-    @Override
     @NonNull
+    @Override
     public String getStateKey() {
         return stateKey;
     }
 
-    @Override
     @Nullable
-    public T get() {
-        return getCurrent().get();
+    @Override
+    public E peek() {
+        return getCurrent().peek();
+    }
+
+    @NonNull
+    @Override
+    public Iterator<E> iterator() {
+        return getCurrent().iterator();
     }
 
     @Override
-    public boolean isRead() {
-        return getCurrent().isRead();
+    public void add(@NonNull E element) {
+        getCurrent().add(element);
     }
 
+    @Nullable
     @Override
-    public void put(@Nullable final T value) {
-        getCurrent().put(value);
-    }
-
-    @Override
-    public boolean isModified() {
-        return getCurrent().isModified();
+    public E removeIf(@NonNull Predicate<E> predicate) {
+        return getCurrent().removeIf(predicate);
     }
 }
