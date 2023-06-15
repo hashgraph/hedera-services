@@ -19,12 +19,13 @@ package com.hedera.node.app.workflows.prehandle;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
+import static com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture.badFuture;
+import static com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture.goodFuture;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.UNKNOWN_FAILURE;
 import static java.util.Collections.emptyMap;
-import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Named.named;
@@ -36,7 +37,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.fixtures.Scenarios;
@@ -44,13 +44,11 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -1259,49 +1257,5 @@ final class PreHandleResultTest implements Scenarios {
                         .keys(KeyList.newBuilder().keys(keys))
                         .threshold(threshold))
                 .build();
-    }
-
-    /** Convenience method for creating a SignatureVerificationFuture that passes */
-    private static FakeSignatureVerificationFuture goodFuture(@NonNull final Key key) {
-        return new FakeSignatureVerificationFuture(new SignatureVerificationImpl(key, null, true));
-    }
-
-    /** Convenience method for creating a SignatureVerificationFuture that passes */
-    private static FakeSignatureVerificationFuture goodFuture(@NonNull final Key key, @NonNull final Account account) {
-        return new FakeSignatureVerificationFuture(new SignatureVerificationImpl(key, account.alias(), true));
-    }
-
-    /** Convenience method for creating a SignatureVerificationFuture that fails */
-    private static FakeSignatureVerificationFuture badFuture(@NonNull final Key key) {
-        return new FakeSignatureVerificationFuture(new SignatureVerificationImpl(key, null, false));
-    }
-
-    /** Convenience method for creating a SignatureVerificationFuture that passes */
-    private static FakeSignatureVerificationFuture badFuture(@NonNull final Key key, @NonNull final Account account) {
-        return new FakeSignatureVerificationFuture(new SignatureVerificationImpl(key, account.alias(), false));
-    }
-
-    /** A simple implementation of {@link SignatureVerificationFuture} that is backed by a {@link CompletableFuture} */
-    private static final class FakeSignatureVerificationFuture extends CompletableFuture<SignatureVerification>
-            implements SignatureVerificationFuture {
-
-        private final SignatureVerification verification;
-
-        private FakeSignatureVerificationFuture(@NonNull final SignatureVerification verification) {
-            this.verification = verification;
-            super.complete(verification);
-        }
-
-        @Nullable
-        @Override
-        public Bytes evmAlias() {
-            return verification.evmAlias();
-        }
-
-        @NonNull
-        @Override
-        public Key key() {
-            return requireNonNull(verification.key());
-        }
     }
 }

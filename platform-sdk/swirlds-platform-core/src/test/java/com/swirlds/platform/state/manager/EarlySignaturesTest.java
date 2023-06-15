@@ -18,6 +18,8 @@ package com.swirlds.platform.state.manager;
 
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildReallyFakeSignature;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.config.StateConfig;
@@ -29,6 +31,7 @@ import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
+import java.time.Instant;
 import java.util.HashMap;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -95,6 +98,11 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
 
         long lastExpectedCompletedRound = -1;
 
+        assertNull(manager.getFirstStateTimestamp());
+        assertEquals(-1, manager.getFirstStateRound());
+        Instant firstTimestamp = null;
+        final long firstRound = 0;
+
         // Create a series of signed states.
         for (int round = 0; round < count; round++) {
             final SignedState signedState = new RandomSignedStateGenerator(random)
@@ -107,6 +115,16 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
             highestRound.set(round);
 
             manager.addState(signedState);
+
+            if (round == 0) {
+                firstTimestamp = signedState
+                        .getState()
+                        .getPlatformState()
+                        .getPlatformData()
+                        .getConsensusTimestamp();
+            }
+            assertEquals(firstTimestamp, manager.getFirstStateTimestamp());
+            assertEquals(firstRound, manager.getFirstStateRound());
 
             // Add some signatures to one of the previous states, but only if that round need signatures.
             final long roundToSign = round - roundAgeToSign;

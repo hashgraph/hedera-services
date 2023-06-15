@@ -160,9 +160,11 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -174,6 +176,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -315,6 +319,22 @@ class ERC721PrecompilesTest {
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
+
+    private enum WithHapiBlockLimit {
+        LOW,
+        HIGH
+    };
+
+    private static final Map<WithHapiBlockLimit, Consumer<GlobalDynamicProperties>> setHapiBlockLimitGivens = Map.of(
+            WithHapiBlockLimit.LOW,
+            props -> {
+                given(props.maxNumWithHapiSigsAccess()).willReturn(0L);
+            },
+            WithHapiBlockLimit.HIGH,
+            props -> {
+                given(props.maxNumWithHapiSigsAccess()).willReturn(Long.MAX_VALUE);
+                given(props.systemContractsWithTopLevelSigsAccess()).willReturn(Set.of(CryptoTransfer));
+            });
 
     private HTSPrecompiledContract subject;
     private MockedStatic<EntityIdUtils> entityIdUtils;
@@ -1280,12 +1300,12 @@ class ERC721PrecompilesTest {
         assertEquals(missingNftResult, result);
     }
 
-    @Test
-    void transferFrom() throws InvalidProtocolBufferException {
+    @ParameterizedTest
+    @EnumSource
+    void transferFrom(final WithHapiBlockLimit limit) throws InvalidProtocolBufferException {
         final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM));
         final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
-        given(dynamicProperties.maxNumWithHapiSigsAccess()).willReturn(Long.MAX_VALUE);
-        given(dynamicProperties.systemContractsWithTopLevelSigsAccess()).willReturn(Set.of(CryptoTransfer));
+        setHapiBlockLimitGivens.get(limit).accept(dynamicProperties);
         givenLedgers();
         givenPricingUtilsContext();
 
@@ -1362,14 +1382,14 @@ class ERC721PrecompilesTest {
         verify(frame).addLog(log);
     }
 
-    @Test
-    void transferFromFailsForInvalidSig() throws InvalidProtocolBufferException {
+    @ParameterizedTest
+    @EnumSource
+    void transferFromFailsForInvalidSig(final WithHapiBlockLimit limit) throws InvalidProtocolBufferException {
         final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM));
         final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
-        given(dynamicProperties.maxNumWithHapiSigsAccess()).willReturn(Long.MAX_VALUE);
+        setHapiBlockLimitGivens.get(limit).accept(dynamicProperties);
         givenPricingUtilsContext();
-        given(dynamicProperties.systemContractsWithTopLevelSigsAccess()).willReturn(Set.of(CryptoTransfer));
 
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList)))

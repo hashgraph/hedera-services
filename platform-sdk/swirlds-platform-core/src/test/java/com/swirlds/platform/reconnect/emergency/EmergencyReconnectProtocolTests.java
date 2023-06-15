@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -36,8 +36,8 @@ import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
-import com.swirlds.platform.state.EmergencyRecoveryFile;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.signed.SignedStateFinder;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -119,7 +119,7 @@ public class EmergencyReconnectProtocolTests {
     @ValueSource(booleans = {true, false})
     void testShouldAccept(final boolean teacherIsThrottled) {
         final ReconnectThrottle teacherThrottle = mock(ReconnectThrottle.class);
-        when(teacherThrottle.initiateReconnect(anyLong())).thenReturn(!teacherIsThrottled);
+        when(teacherThrottle.initiateReconnect(any())).thenReturn(!teacherIsThrottled);
 
         final FallenBehindManager fallenBehindManager = mock(FallenBehindManager.class);
         when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
@@ -143,7 +143,7 @@ public class EmergencyReconnectProtocolTests {
     @Test
     void testPermitReleased() throws InterruptedException {
         final ReconnectThrottle teacherThrottle = mock(ReconnectThrottle.class);
-        when(teacherThrottle.initiateReconnect(anyLong())).thenReturn(true);
+        when(teacherThrottle.initiateReconnect(any())).thenReturn(true);
 
         final EmergencyRecoveryManager emergencyRecoveryManager = mock(EmergencyRecoveryManager.class);
         when(emergencyRecoveryManager.isEmergencyStateRequired()).thenReturn(true);
@@ -227,6 +227,6 @@ public class EmergencyReconnectProtocolTests {
                 () -> protocol.runProtocol(throwingConnection),
                 "expected an exception to be thrown");
 
-        assertTrue(teacherThrottle.initiateReconnect(PEER_ID.id()), "Teacher throttle should be released");
+        assertTrue(teacherThrottle.initiateReconnect(PEER_ID), "Teacher throttle should be released");
     }
 }

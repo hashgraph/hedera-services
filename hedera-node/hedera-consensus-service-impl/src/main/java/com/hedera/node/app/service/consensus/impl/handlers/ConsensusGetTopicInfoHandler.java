@@ -39,10 +39,10 @@ import com.hedera.hapi.node.consensus.ConsensusTopicInfo;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -54,17 +54,8 @@ import javax.inject.Singleton;
 @Singleton
 public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
 
-    private final NetworkInfo networkInfo;
-
     @Inject
-    public ConsensusGetTopicInfoHandler() {
-        // TODO: Not sure how to get the network info here.
-        this.networkInfo = null;
-    }
-
-    public ConsensusGetTopicInfoHandler(@NonNull final NetworkInfo networkInfo) {
-        this.networkInfo = requireNonNull(networkInfo);
-    }
+    public ConsensusGetTopicInfoHandler() {}
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
@@ -112,6 +103,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         requireNonNull(context);
         requireNonNull(header);
         final var query = context.query();
+        final var config = context.configuration().getConfigData(LedgerConfig.class);
         final var topicStore = context.createStore(ReadableTopicStore.class);
         final var op = query.consensusGetTopicInfoOrThrow();
         final var response = ConsensusGetTopicInfoResponse.newBuilder();
@@ -121,7 +113,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         response.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var optionalInfo = infoForTopic(topic, topicStore);
+            final var optionalInfo = infoForTopic(topic, topicStore, config);
             optionalInfo.ifPresent(response::topicInfo);
         }
 
@@ -132,10 +124,13 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * Provides information about a topic.
      * @param topicID the topic to get information about
      * @param topicStore the topic store
+     * @param config the LedgerConfig
      * @return the information about the topic
      */
     private Optional<ConsensusTopicInfo> infoForTopic(
-            @NonNull final TopicID topicID, @NonNull final ReadableTopicStore topicStore) {
+            @NonNull final TopicID topicID,
+            @NonNull final ReadableTopicStore topicStore,
+            @NonNull final LedgerConfig config) {
         final var meta = topicStore.getTopic(topicID);
         if (meta == null) {
             return Optional.empty();
@@ -151,7 +146,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
             if (meta.autoRenewAccountNumber() != 0)
                 info.autoRenewAccount(AccountID.newBuilder().accountNum(meta.autoRenewAccountNumber()));
 
-            info.ledgerId(networkInfo.ledgerId());
+            info.ledgerId(config.id());
             return Optional.of(info.build());
         }
     }

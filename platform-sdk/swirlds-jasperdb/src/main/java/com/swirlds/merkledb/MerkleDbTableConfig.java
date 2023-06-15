@@ -16,14 +16,14 @@
 
 package com.swirlds.merkledb;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import com.swirlds.merkledb.settings.MerkleDbSettings;
-import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
@@ -48,11 +48,11 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
     }
 
     /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before
-     * any application classes that might instantiate a data source, the {@link MerkleDbSettingsFactory}
+     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
+     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
      * holder will have been configured by the time this static initializer runs.
      */
-    private static final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
+    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
 
     /**
      * Hash version.
@@ -87,7 +87,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
     /**
      * Max number of keys that can be stored in a table.
      */
-    private long maxNumberOfKeys = settings.getMaxNumOfKeys();
+    private long maxNumberOfKeys = config.maxNumOfKeys();
 
     /**
      * Threshold where we switch from storing internal hashes in ram to storing them on disk. If it is 0 then everything
@@ -95,7 +95,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
      * we swap from ram to disk. This allows a tree where the lower levels of the tree nodes hashes are in ram and the
      * upper larger less changing layers are on disk.
      */
-    private long hashesRamToDiskThreshold = settings.getHashesRamToDiskThreshold();
+    private long hashesRamToDiskThreshold = config.hashesRamToDiskThreshold();
 
     /**
      * Indicates whether to store indexes on disk or in Java heap/off-heap memory.

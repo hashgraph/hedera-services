@@ -40,6 +40,9 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
         public static final int ORIGINAL = 1;
     }
 
+    /** The undefined NodeId. */
+    public static final NodeId UNDEFINED_NODE_ID = null;
+
     /** The first allowed Node ID. */
     public static final long LOWEST_NODE_NUMBER = 0L;
 
@@ -110,17 +113,6 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
     }
 
     /**
-     * get numeric part of ID and cast to an Integer
-     *
-     * @return the numeric part of this ID, cast to an integer
-     * @deprecated use {@link #id()} instead.
-     */
-    @Deprecated(since = "0.39.0", forRemoval = true)
-    public int getIdAsInt() {
-        return (int) id;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @NonNull
@@ -129,14 +121,40 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
         return Long.toString(id);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void serialize(SerializableDataOutputStream out) throws IOException {
         out.writeLong(id);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void deserialize(SerializableDataInputStream in, int version) throws IOException {
         id = in.readLong();
+    }
+
+    /**
+     * Deserialize a NodeId from a {@link SerializableDataInputStream}.
+     *
+     * @param in
+     * 		the {@link SerializableDataInputStream} to read from
+     * @return the deserialized NodeId
+     * @throws IOException
+     * 		thrown if an exception occurs while reading from the stream or the long value is negative,
+     */
+    public static NodeId deserializeLong(SerializableDataInputStream in, boolean allowNull) throws IOException {
+        final long longValue = in.readLong();
+        if (longValue < LOWEST_NODE_NUMBER) {
+            if (allowNull) {
+                return null;
+            }
+            throw new IOException("id must be non-negative");
+        }
+        return new NodeId(longValue);
     }
 
     /**

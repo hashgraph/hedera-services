@@ -21,12 +21,14 @@ import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -52,7 +54,7 @@ public class CriticalQuorumImpl implements CriticalQuorum {
     /**
      * The number of events observed from each node in the current round.
      */
-    private final Map<Long, Integer> eventCounts;
+    private final Map<NodeId, Integer> eventCounts;
 
     /**
      * A map from possible thresholds to weights. The given weight is the weight of all nodes that do not exceed the
@@ -84,12 +86,13 @@ public class CriticalQuorumImpl implements CriticalQuorum {
      */
     public CriticalQuorumImpl(
             @NonNull final Metrics metrics,
-            final long selfId,
+            @NonNull final NodeId selfId,
             @NonNull final AddressBook addressBook,
             final boolean considerBothParents,
             final int thresholdSoftening) {
-
-        this.addressBook = Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(metrics, "metrics must not be null");
+        Objects.requireNonNull(selfId, "selfId must not be null");
+        this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
         this.considerBothParents = considerBothParents;
         this.thresholdSoftening = thresholdSoftening;
 
@@ -115,7 +118,7 @@ public class CriticalQuorumImpl implements CriticalQuorum {
      * @param addressBook the source address book
      */
     public CriticalQuorumImpl(
-            @NonNull final Metrics metrics, final long selfId, @NonNull final AddressBook addressBook) {
+            @NonNull final Metrics metrics, @NonNull final NodeId selfId, @NonNull final AddressBook addressBook) {
         this(metrics, selfId, addressBook, DEFAULT_BOTH_PARENTS, DEFAULT_THRESHOLD_SOFTENING);
     }
 
@@ -123,7 +126,10 @@ public class CriticalQuorumImpl implements CriticalQuorum {
      * {@inheritDoc}
      */
     @Override
-    public boolean isInCriticalQuorum(final long nodeId) {
+    public boolean isInCriticalQuorum(@Nullable final NodeId nodeId) {
+        if (nodeId == null) {
+            return false;
+        }
         return eventCounts.getOrDefault(nodeId, 0) <= threshold.get() + thresholdSoftening;
     }
 
@@ -151,7 +157,7 @@ public class CriticalQuorumImpl implements CriticalQuorum {
 
         handleRoundBoundary(event);
 
-        final long nodeId = event.getCreatorId();
+        final NodeId nodeId = event.getCreatorId();
         final long totalWeight = addressBook.getTotalWeight();
 
         // Increase the event count

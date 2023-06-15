@@ -162,7 +162,8 @@ public class EvmTokenUtil {
 
             evmCustomFee.setFixedFee(fixedFee);
             evmCustomFees.add(evmCustomFee);
-        } else if (customFee.getFractionalFee().getMinimumAmount() > 0) {
+        } else if (customFee.getFractionalFee().getMinimumAmount() > 0
+                || customFee.getFractionalFee().getFractionalAmount().getNumerator() > 0) {
             var fractionalFee = getFractionalFee(customFee.getFractionalFee(), feeCollector);
 
             evmCustomFee.setFractionalFee(fractionalFee);

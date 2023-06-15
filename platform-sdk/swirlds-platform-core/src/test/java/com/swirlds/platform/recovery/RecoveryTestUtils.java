@@ -88,7 +88,7 @@ public final class RecoveryTestUtils {
 
         final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
-                random.nextInt(),
+                new NodeId(random.nextLong(Long.MAX_VALUE)),
                 random.nextLong(),
                 random.nextLong(),
                 randomHash(random),
@@ -97,7 +97,8 @@ public final class RecoveryTestUtils {
                 transactions);
 
         final BaseEventUnhashedData baseEventUnhashedData = new BaseEventUnhashedData(
-                random.nextLong(), randomSignature(random).getSignatureBytes());
+                new NodeId(random.nextLong(Long.MAX_VALUE)),
+                randomSignature(random).getSignatureBytes());
 
         final ConsensusData consensusData = new ConsensusData();
         consensusData.setRoundCreated(random.nextLong());
@@ -216,7 +217,9 @@ public final class RecoveryTestUtils {
 
         // Each event will be serialized twice. Once when it is hashed, and once when it is written to disk.
         assertEventuallyTrue(
-                () -> writeCount.get() == events.size() * 2, Duration.ofSeconds(1), "event not serialized fast enough");
+                () -> writeCount.get() == events.size() * 2,
+                Duration.ofSeconds(10),
+                "event not serialized fast enough");
 
         eventEventStreamManager.stop();
     }

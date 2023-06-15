@@ -17,9 +17,9 @@
 package com.swirlds.platform.test.chatter;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
@@ -35,6 +35,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
@@ -48,12 +49,13 @@ public class SimulatedChatterFactories implements SimulatedChatterFactory {
 
     @Override
     public SimulatedChatter build(
-            final long selfId,
-            @NonNull final Iterable<Long> nodeIds,
+            @NonNull final NodeId selfId,
+            @NonNull final Iterable<NodeId> nodeIds,
             @NonNull final GossipEventObserver eventTracker,
             @Nullable final Supplier<Instant> now) {
-        ArgumentUtils.throwArgNull(nodeIds, "nodeIds");
-        ArgumentUtils.throwArgNull(eventTracker, "eventTracker");
+        Objects.requireNonNull(selfId, "selfId must not be null");
+        Objects.requireNonNull(nodeIds, "nodeIds must not be null");
+        Objects.requireNonNull(eventTracker, "eventTracker must not be null");
 
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConfigDataType(MetricsConfig.class)
@@ -62,7 +64,7 @@ public class SimulatedChatterFactories implements SimulatedChatterFactory {
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final ChatterConfig chatterConfig = configuration.getConfigData(ChatterConfig.class);
 
-        final MetricKeyRegistry registry = new MetricKeyRegistry();
+        final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
 
         final ChatterCore<ChatterEvent> core = new ChatterCore<>(
@@ -72,13 +74,13 @@ public class SimulatedChatterFactories implements SimulatedChatterFactory {
                 chatterConfig,
                 (nodeId, ping) -> {},
                 new DefaultMetrics(
-                        new NodeId(selfId),
+                        selfId,
                         registry,
                         Executors.newSingleThreadScheduledExecutor(),
                         new DefaultMetricsFactory(),
                         metricsConfig));
         final EventDedup dedup = new EventDedup(List.of(core::eventReceived, eventTracker::newEvent));
-        for (final Long nodeId : nodeIds) {
+        for (final NodeId nodeId : nodeIds) {
             core.newPeerInstance(nodeId, dedup);
         }
 

@@ -18,13 +18,15 @@ package com.swirlds.common.threading.locks.internal;
 
 import com.swirlds.common.threading.locks.IndexLock;
 import com.swirlds.common.threading.locks.locked.Locked;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Default implementation of {@link IndexLock}
  */
-public class DefaultIndexLock implements IndexLock {
+public final class DefaultIndexLock implements IndexLock {
 
     private final int parallelism;
     private final Lock[] locks;
@@ -58,7 +60,7 @@ public class DefaultIndexLock implements IndexLock {
      * {@inheritDoc}
      */
     @Override
-    public void lock(final Object object) {
+    public void lock(@Nullable final Object object) {
         final int hash = object == null ? 0 : object.hashCode();
         lock(hash);
     }
@@ -75,7 +77,7 @@ public class DefaultIndexLock implements IndexLock {
      * {@inheritDoc}
      */
     @Override
-    public void unlock(final Object object) {
+    public void unlock(@Nullable final Object object) {
         final int hash = object == null ? 0 : object.hashCode();
         unlock(hash);
     }
@@ -84,6 +86,7 @@ public class DefaultIndexLock implements IndexLock {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public Locked autoLock(final long index) {
         lock(index);
         return () -> unlock(index);
@@ -93,7 +96,8 @@ public class DefaultIndexLock implements IndexLock {
      * {@inheritDoc}
      */
     @Override
-    public Locked autoLock(final Object object) {
+    @NonNull
+    public Locked autoLock(@Nullable final Object object) {
         final int hash = object == null ? 0 : object.hashCode();
         return autoLock(hash);
     }
@@ -122,6 +126,7 @@ public class DefaultIndexLock implements IndexLock {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public Locked autoFullLock() {
         fullyLock();
         return this::fullyUnlock;

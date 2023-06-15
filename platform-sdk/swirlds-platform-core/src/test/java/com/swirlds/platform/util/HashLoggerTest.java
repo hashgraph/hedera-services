@@ -26,17 +26,18 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CyclicBarrier;
@@ -54,7 +55,9 @@ public class HashLoggerTest {
     @BeforeEach
     public void setUp() {
         mockLogger = mock(Logger.class);
-        hashLogger = new HashLogger(getStaticThreadManager(), new NodeId(123), mockLogger);
+        final StateConfig stateConfig =
+                new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
+        hashLogger = new HashLogger(getStaticThreadManager(), new NodeId(123), stateConfig, mockLogger);
         logged = new ArrayList<>();
 
         doAnswer(invocation -> {
@@ -111,20 +114,24 @@ public class HashLoggerTest {
 
     @Test
     public void noLoggingWhenDisabled() {
-        Settings.getInstance().getState().enableHashStreamLogging = false;
+        final StateConfig stateConfig = new TestConfigBuilder()
+                .withValue("state.enableHashStreamLogging", "false")
+                .getOrCreateConfig()
+                .getConfigData(StateConfig.class);
 
-        hashLogger = new HashLogger(getStaticThreadManager(), new NodeId(123), mockLogger);
+        hashLogger = new HashLogger(getStaticThreadManager(), new NodeId(123), stateConfig, mockLogger);
         hashLogger.logHashes(createSignedState(1));
         assertThat(logged).isEmpty();
         assertThat(hashLogger.queue()).isNullOrEmpty();
-
-        Settings.getInstance().getState().enableHashStreamLogging = true; // restore value
     }
 
     @Test
     public void loggerWithDefaultConstructorWorks() {
+        final StateConfig stateConfig =
+                new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
+
         assertDoesNotThrow(() -> {
-            hashLogger = new HashLogger(getStaticThreadManager(), new NodeId(123));
+            hashLogger = new HashLogger(getStaticThreadManager(), new NodeId(123), stateConfig);
             hashLogger.logHashes(createSignedState(1));
             flush();
         });

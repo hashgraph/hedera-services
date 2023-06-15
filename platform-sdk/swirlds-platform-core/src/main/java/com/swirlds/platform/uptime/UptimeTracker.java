@@ -22,13 +22,13 @@ import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
 import static com.swirlds.common.units.TimeUnit.UNIT_SECONDS;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -166,9 +166,9 @@ public class UptimeTracker {
             @NonNull final Map<NodeId, ConsensusEvent> lastEventsInRoundByCreator,
             @NonNull final Map<NodeId, ConsensusEvent> judgesByCreator) {
         round.forEach(event -> {
-            lastEventsInRoundByCreator.put(new NodeId(event.getCreatorId()), event);
+            lastEventsInRoundByCreator.put(event.getCreatorId(), event);
             if (((EventImpl) event).isFamous()) {
-                judgesByCreator.put(new NodeId(event.getCreatorId()), event);
+                judgesByCreator.put(event.getCreatorId(), event);
             }
         });
 

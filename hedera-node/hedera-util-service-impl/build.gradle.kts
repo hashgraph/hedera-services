@@ -18,24 +18,15 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera Util Service Implementation"
 
-configurations.all {
-  exclude("javax.annotation", "javax.annotation-api")
-
-  exclude("io.grpc", "grpc-core")
-  exclude("io.grpc", "grpc-context")
-  exclude("io.grpc", "grpc-api")
-  exclude("io.grpc", "grpc-testing")
-}
-
 dependencies {
-  testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
-  annotationProcessor(libs.dagger.compiler)
-  api(project(":hedera-node:hedera-util-service"))
-  implementation(project(":hedera-node:hedera-mono-service"))
-  implementation(libs.bundles.di)
-  implementation(project(":hedera-node:hedera-config"))
-  testImplementation(testLibs.bundles.mockito)
-  testImplementation(testLibs.assertj.core)
-  testImplementation(libs.swirlds.test.framework)
-  testImplementation(testFixtures(project(":hedera-node:hedera-config")))
+    javaModuleDependencies {
+        annotationProcessor(gav("dagger.compiler"))
+
+        testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+        testImplementation(testFixtures(project(":hedera-node:node-config")))
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.mockito"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+    }
 }

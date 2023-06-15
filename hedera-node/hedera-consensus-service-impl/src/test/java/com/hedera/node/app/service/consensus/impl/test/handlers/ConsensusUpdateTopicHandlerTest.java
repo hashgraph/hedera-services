@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestUtils.A_NONNULL_KEY;
@@ -165,12 +166,10 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .build();
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        willThrow(new HandleException(ResponseCodeEnum.BAD_ENCODING))
-                .given(attributeValidator)
-                .validateKey(key);
+        willThrow(new HandleException(BAD_ENCODING)).given(attributeValidator).validateKey(key);
 
         // expect:
-        assertFailsWith(ResponseCodeEnum.BAD_ENCODING, () -> subject.handle(handleContext));
+        assertFailsWith(BAD_ENCODING, () -> subject.handle(handleContext));
     }
 
     @Test
@@ -205,7 +204,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .willReturn(
                         TransactionBody.newBuilder().consensusUpdateTopic(op).build());
 
-        assertFailsWith(ResponseCodeEnum.BAD_ENCODING, () -> subject.handle(handleContext));
+        assertFailsWith(BAD_ENCODING, () -> subject.handle(handleContext));
 
         final var newTopic = writableTopicState.get(topicEntityNum);
         assertNotNull(newTopic.adminKey());
@@ -245,7 +244,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
                 .willReturn(
                         TransactionBody.newBuilder().consensusUpdateTopic(op).build());
 
-        assertFailsWith(ResponseCodeEnum.BAD_ENCODING, () -> subject.handle(handleContext));
+        assertFailsWith(BAD_ENCODING, () -> subject.handle(handleContext));
 
         final var newTopic = writableTopicState.get(topicEntityNum);
         assertNotNull(newTopic.adminKey());
@@ -261,12 +260,10 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
         final var txn = TransactionBody.newBuilder().consensusUpdateTopic(op).build();
         given(handleContext.body()).willReturn(txn);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        willThrow(new HandleException(ResponseCodeEnum.BAD_ENCODING))
-                .given(attributeValidator)
-                .validateKey(key);
+        willThrow(new HandleException(BAD_ENCODING)).given(attributeValidator).validateKey(key);
 
         // expect:
-        assertFailsWith(ResponseCodeEnum.BAD_ENCODING, () -> subject.handle(handleContext));
+        assertFailsWith(BAD_ENCODING, () -> subject.handle(handleContext));
     }
 
     @Test

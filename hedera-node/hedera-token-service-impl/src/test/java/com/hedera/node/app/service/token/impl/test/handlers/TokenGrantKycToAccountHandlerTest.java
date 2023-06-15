@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.txnFrom;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.txnFrom;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenKycGrantScenarios.VALID_GRANT_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_KYC;
@@ -48,13 +48,13 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
+import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.util.Collections;
-import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -203,7 +203,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         @Test
         @DisplayName("When getForModify returns empty, should not put or commit")
         void emptyGetForModifyShouldNotPersist() {
-            given(tokenRelStore.getForModify(notNull(), notNull())).willReturn(Optional.empty());
+            given(tokenRelStore.getForModify(notNull(), notNull())).willReturn(null);
 
             final var txnBody = newTxnBody(true, true);
             given(handleContext.body()).willReturn(txnBody);
@@ -212,7 +212,6 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
                     .has(responseCode(INVALID_TOKEN_ID));
 
             verify(tokenRelStore, never()).put(any(TokenRelation.class));
-            verify(tokenRelStore, never()).commit();
         }
 
         @Test
@@ -220,7 +219,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         void kycGrantedAndPersisted() {
             final var stateTokenRel =
                     newTokenRelationBuilder().kycGranted(false).build();
-            given(tokenRelStore.getForModify(payerId, tokenId)).willReturn(Optional.of(stateTokenRel));
+            given(tokenRelStore.getForModify(payerId, tokenId)).willReturn(stateTokenRel);
 
             final var txnBody = newTxnBody(true, true);
             given(handleContext.body()).willReturn(txnBody);

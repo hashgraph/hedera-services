@@ -21,16 +21,16 @@ package com.swirlds.logging.payloads;
  */
 public class UnableToReconnectPayload extends AbstractLogPayload {
 
-    private int nodeId;
+    private long nodeId;
 
     public UnableToReconnectPayload() {}
 
-    public UnableToReconnectPayload(final String message, final int nodeId) {
+    public UnableToReconnectPayload(final String message, final long nodeId) {
         super(message);
         this.nodeId = nodeId;
     }
 
-    public int getNodeId() {
+    public long getNodeId() {
         return nodeId;
     }
 

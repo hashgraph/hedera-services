@@ -50,12 +50,12 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenFreezeAccountHandler;
+import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -227,7 +227,7 @@ class TokenFreezeAccountHandlerTest {
             given(readableAccountStore.getAccountById(ACCOUNT_13257))
                     .willReturn(
                             Account.newBuilder().accountNumber(accountNumber).build());
-            given(tokenRelStore.getForModify(ACCOUNT_13257, token)).willReturn(Optional.empty());
+            given(tokenRelStore.getForModify(ACCOUNT_13257, token)).willReturn(null);
             final var txn = newFreezeTxn(token);
             given(context.body()).willReturn(txn);
 
@@ -246,10 +246,10 @@ class TokenFreezeAccountHandlerTest {
                     .willReturn(
                             Account.newBuilder().accountNumber(accountNumber).build());
             given(tokenRelStore.getForModify(ACCOUNT_13257, token))
-                    .willReturn(Optional.of(TokenRelation.newBuilder()
+                    .willReturn(TokenRelation.newBuilder()
                             .tokenNumber(token.tokenNum())
                             .accountNumber(accountNumber)
-                            .build()));
+                            .build());
             final var txn = newFreezeTxn(token);
             given(context.body()).willReturn(txn);
 
@@ -279,7 +279,8 @@ class TokenFreezeAccountHandlerTest {
         }
 
         private ReadableTokenStore.TokenMetadata tokenMetaWithFreezeKey(Key freezeKey) {
-            return new ReadableTokenStore.TokenMetadata(null, null, null, freezeKey, null, null, null, false, 25L);
+            return new ReadableTokenStore.TokenMetadata(
+                    null, null, null, freezeKey, null, null, null, null, false, 25L, 2);
         }
 
         private TransactionBody newFreezeTxn(TokenID token) {

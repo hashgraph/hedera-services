@@ -20,6 +20,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.sync.SyncManager;
+import java.util.Collections;
 import java.util.List;
 
 public class TestingSyncManager implements SyncManager, FallenBehindManager {
@@ -37,8 +38,8 @@ public class TestingSyncManager implements SyncManager, FallenBehindManager {
     }
 
     @Override
-    public List<Long> getNeighborsToCall() {
-        return null;
+    public List<NodeId> getNeighborsToCall() {
+        return Collections.emptyList();
     }
 
     @Override
@@ -70,12 +71,12 @@ public class TestingSyncManager implements SyncManager, FallenBehindManager {
     }
 
     @Override
-    public List<Long> getNeighborsForReconnect() {
+    public List<NodeId> getNeighborsForReconnect() {
         return null;
     }
 
     @Override
-    public List<Long> getNeededForFallenBehind() {
+    public List<NodeId> getNeededForFallenBehind() {
         return null;
     }
 
@@ -85,7 +86,7 @@ public class TestingSyncManager implements SyncManager, FallenBehindManager {
     }
 
     @Override
-    public boolean shouldReconnectFrom(final Long peerId) {
+    public boolean shouldReconnectFrom(final NodeId peerId) {
         return false;
     }
 }

@@ -34,6 +34,7 @@ import com.hedera.node.app.service.mono.keys.LegacyContractIdActivations;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper.RecomputeType;
 import com.hedera.node.app.service.mono.throttling.MapAccessType;
 import com.hedera.node.config.converter.AccountIDConverter;
+import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.CongestionMultipliersConverter;
 import com.hedera.node.config.converter.ContractIDConverter;
 import com.hedera.node.config.converter.EntityScaleFactorsConverter;
@@ -43,6 +44,7 @@ import com.hedera.node.config.converter.HederaFunctionalityConverter;
 import com.hedera.node.config.converter.KnownBlockValuesConverter;
 import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
 import com.hedera.node.config.converter.MapAccessTypeConverter;
+import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
 import com.hedera.node.config.converter.ProfileConverter;
 import com.hedera.node.config.converter.RecomputeTypeConverter;
 import com.hedera.node.config.converter.ScaleFactorConverter;
@@ -100,6 +102,7 @@ class PropertySourceBasedConfigTest {
                 .withConverter(new KnownBlockValuesConverter())
                 .withConverter(new LegacyContractIdActivationsConverter())
                 .withConverter(new MapAccessTypeConverter())
+                .withConverter(new PermissionedAccountsRangeConverter())
                 .withConverter(new RecomputeTypeConverter())
                 .withConverter(new ScaleFactorConverter())
                 .withConverter(new AccountIDConverter())
@@ -108,6 +111,7 @@ class PropertySourceBasedConfigTest {
                 .withConverter(new HederaFunctionalityConverter())
                 .withConverter(new ProfileConverter())
                 .withConverter(new SidecarTypeConverter())
+                .withConverter(new BytesConverter())
                 .withSource(new PropertySourceBasedConfigSource(propertySource))
                 .build();
 

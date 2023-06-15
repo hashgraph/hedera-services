@@ -133,7 +133,7 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
         // expect:
         subject.handle(handleContext);
 
-        final var appendedFile = writableFileState.get(fileEntityNum);
+        final var appendedFile = writableFileState.get(fileId);
         assertEquals(file.contents(), appendedFile.contents());
     }
 
@@ -154,7 +154,7 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
 
         subject.handle(handleContext);
 
-        final var appendedFile = writableFileState.get(fileEntityNum);
+        final var appendedFile = writableFileState.get(fileId);
         assertEquals(bytesNewContentExpected, appendedFile.contents());
     }
 
@@ -171,7 +171,7 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
 
         subject.handle(handleContext);
 
-        final var appendedFile = writableFileState.get(fileEntityNum);
+        final var appendedFile = writableFileState.get(fileId);
         assertEquals(file, appendedFile);
     }
 
@@ -190,6 +190,6 @@ class FileAppendHandlerTest extends FileHandlerTestBase {
     }
 
     private FileID wellKnownId() {
-        return FileID.newBuilder().fileNum(fileEntityNum.longValue()).build();
+        return FileID.newBuilder().fileNum(fileId.fileNum()).build();
     }
 }

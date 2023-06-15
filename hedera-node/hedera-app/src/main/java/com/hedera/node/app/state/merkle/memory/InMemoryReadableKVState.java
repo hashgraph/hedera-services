@@ -31,7 +31,7 @@ import java.util.Objects;
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
-public final class InMemoryReadableKVState<K extends Comparable<K>, V> extends ReadableKVStateBase<K, V> {
+public final class InMemoryReadableKVState<K, V> extends ReadableKVStateBase<K, V> {
 
     /** The underlying merkle tree data structure with the data */
     private final MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> merkle;

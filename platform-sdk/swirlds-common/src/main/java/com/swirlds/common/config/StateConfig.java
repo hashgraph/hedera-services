@@ -39,6 +39,7 @@ import java.time.Duration;
  *                                              may not be written to disk.
  * @param saveStatePeriod                       The frequency of writes of a state to disk every this many seconds (0 to
  *                                              never write).
+ * @param saveReconnectStateToDisk              If true, save the state received from a successful reconnect to disk.
  * @param signedStateDisk                       Keep at least this many of the old complete signed states on disk. This
  *                                              should be at least 2 so that  we don't delete an old state while a new
  *                                              one is in the process of writing to disk. set to 0 to not keep any
@@ -90,6 +91,15 @@ import java.time.Duration;
  * @param debugStackTracesEnabled               if true and stateHistoryEnabled is true, then stack traces are captured
  *                                              each time a signed state reference count is changed, and logged if a
  *                                              signed state reference count bug is detected.
+ * @param requireStateLoad                      if set to true, the platform will fail to start if it fails to load
+ *                                              a state from disk
+ * @param emergencyStateFileName                The name of the file that contains the emergency state.
+ * @param checkSignedStateFromDisk              If true, the platform will recalculate the hash of the signed state
+ *                                              and check it against the written hash. It will also verify that the
+ *                                              signatures are valid.
+ * @param signedStateFreq                       hash and sign a state every signedStateFreq rounds. 1 means that a state
+ *                                              will be signed every round, 2 means every other round, and so on. If the
+ *                                              value is 0 or less, no states will be signed
  */
 @ConfigData("state")
 public record StateConfig(
@@ -98,6 +108,7 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "false") boolean cleanSavedStateDirectory,
         @ConfigProperty(defaultValue = "20") int stateSavingQueueSize,
         @ConfigProperty(defaultValue = "0") int saveStatePeriod,
+        @ConfigProperty(defaultValue = "false") boolean saveReconnectStateToDisk,
         @ConfigProperty(defaultValue = "3") int signedStateDisk,
         @ConfigProperty(defaultValue = "false") boolean dumpStateOnAnyISS,
         @ConfigProperty(defaultValue = "true") boolean dumpStateOnFatal,
@@ -114,7 +125,11 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "0") int roundsToKeepAfterSigning,
         @ConfigProperty(defaultValue = "5m") Duration suspiciousSignedStateAge,
         @ConfigProperty(defaultValue = "false") boolean stateHistoryEnabled,
-        @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled) {
+        @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled,
+        @ConfigProperty(defaultValue = "false") boolean requireStateLoad,
+        @ConfigProperty(defaultValue = "emergencyRecovery.yaml") String emergencyStateFileName,
+        @ConfigProperty(defaultValue = "false") boolean checkSignedStateFromDisk,
+        @ConfigProperty(defaultValue = "1") int signedStateFreq) {
 
     /**
      * Get the main class name that should be used for signed states.

@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.event.emitter;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.generator.GraphGenerator;
 import java.util.Random;
@@ -64,7 +65,8 @@ public class ShuffledEventEmitter extends BufferingEventEmitter<ShuffledEventEmi
 
         // Emit the next event from that node if possible, otherwise choose another random event.
         while (true) {
-            final int nodeID = random.nextInt(getGraphGenerator().getNumberOfSources());
+            final int nodeIndex = random.nextInt(getGraphGenerator().getNumberOfSources());
+            final NodeId nodeID = getGraphGenerator().getAddressBook().getNodeId(nodeIndex);
             attemptToGenerateEventFromNode(nodeID);
             if (isReadyToEmitEvent(nodeID)) {
                 eventEmittedFromBuffer();

@@ -39,7 +39,7 @@ class AddressBookValidatorTests {
                 new RandomAddressBookGenerator().setSize(0).build();
         final AddressBook zeroWeightAddressBook = new RandomAddressBookGenerator()
                 .setSize(10)
-                .setCustomWeightGenerator(n -> 0)
+                .setCustomWeightGenerator(n -> 0L)
                 .build();
         final AddressBook validAddressBook =
                 new RandomAddressBookGenerator().setSize(10).build();

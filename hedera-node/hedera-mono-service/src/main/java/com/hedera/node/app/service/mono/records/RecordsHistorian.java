@@ -99,6 +99,21 @@ public interface RecordsHistorian {
     List<RecordStreamObject> getPrecedingChildRecords();
 
     /**
+     * For each following child transaction which:
+     * <ul>
+     *   <li>Is <i>not</i> a {@code ContractCall} or {@code ContractCreate} operations, consumes
+     *   capacity in the consensus throttle; and,</li>
+     *   <li>Has status {@code SUCCESS}</li>
+     * </ul>
+     * consumes the capacity required for that child transaction in the consensus throttle buckets.
+     *
+     * <p>Returns true if all the child transactions were allowed through the throttle consideration, false otherwise.
+     *
+     * @return whether the consensus throttle has capacity to allow all the successful 0x167 children
+     */
+    boolean hasThrottleCapacityForChildTransactions();
+
+    /**
      * Returns a non-negative "source id" to be used to create a group of in-progress child
      * transactions.
      *

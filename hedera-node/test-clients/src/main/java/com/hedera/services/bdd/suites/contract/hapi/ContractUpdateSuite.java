@@ -415,9 +415,10 @@ public class ContractUpdateSuite extends HapiSuite {
     }
 
     private HapiSpec updateDoesNotChangeBytecode() {
+        // HSCS-DCPR-001
         final var simpleStorageContract = "SimpleStorage";
         final var emptyConstructorContract = "EmptyConstructor";
-        return defaultHapiSpec("HSCS-DCPR-001")
+        return defaultHapiSpec("updateDoesNotChangeBytecode")
                 .given(
                         uploadInitCode(simpleStorageContract, emptyConstructorContract),
                         contractCreate(simpleStorageContract),

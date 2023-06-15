@@ -367,14 +367,14 @@ class VirtualMapHashingTest {
                 .forEach(index -> assertNotNull(root.getRecords().findHash(index)));
 
         // should not throw any exceptions
-        map.fullLeafRehash();
+        map.getRoot().fullLeafRehashIfNecessary();
     }
 
     private static void doFullRehash(VirtualRootNode<TestKey, TestValue> root) {
         root.setImmutable(true);
         root.getCache().seal();
         root.flush();
-        root.fullLeafRehash();
+        root.fullLeafRehashIfNecessary();
     }
 
     @Test

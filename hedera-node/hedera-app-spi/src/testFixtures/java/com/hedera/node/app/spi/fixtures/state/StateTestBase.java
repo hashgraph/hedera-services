@@ -42,10 +42,13 @@ public class StateTestBase extends TestBase {
     protected static final String BLACKBERRY = "BlackBerry";
     protected static final String BLUEBERRY = "BlueBerry";
     protected static final String CHERRY = "Cherry";
+    protected static final String CRANBERRY = "Cranberry";
     protected static final String DATE = "Date";
+    protected static final String DRAGONFRUIT = "DragonFruit";
     protected static final String EGGPLANT = "Eggplant";
     protected static final String ELDERBERRY = "ElderBerry";
     protected static final String FIG = "Fig";
+    protected static final String FEIJOA = "Feijoa";
     protected static final String GRAPE = "Grape";
 
     protected static final String AARDVARK = "Aardvark";

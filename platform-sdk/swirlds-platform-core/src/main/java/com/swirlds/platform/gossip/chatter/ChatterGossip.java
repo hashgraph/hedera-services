@@ -21,6 +21,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -38,7 +39,6 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.threading.utility.SequenceCycle;
 import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
@@ -82,7 +82,7 @@ import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectProtocol;
 import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.threading.PauseAndClear;
@@ -199,7 +199,7 @@ public class ChatterGossip extends AbstractGossip {
 
         // first create all instances because of thread safety
         for (final NodeId otherId : topology.getNeighbors()) {
-            chatterCore.newPeerInstance(otherId.id(), eventTaskCreator::addEvent);
+            chatterCore.newPeerInstance(otherId, eventTaskCreator::addEvent);
         }
 
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
@@ -214,7 +214,7 @@ public class ChatterGossip extends AbstractGossip {
         final ParallelExecutor parallelExecutor = new CachedPoolParallelExecutor(threadManager, "chatter");
         parallelExecutor.start();
         for (final NodeId otherId : topology.getNeighbors()) {
-            final PeerInstance chatterPeer = chatterCore.getPeerInstance(otherId.id());
+            final PeerInstance chatterPeer = chatterCore.getPeerInstance(otherId);
             final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
             shadowgraphExecutor.start();
             final ShadowGraphSynchronizer chatterSynchronizer = new ShadowGraphSynchronizer(
@@ -241,7 +241,7 @@ public class ChatterGossip extends AbstractGossip {
                     .setPriority(Thread.NORM_PRIORITY)
                     .setNodeId(selfId)
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
-                    .setOtherNodeId(otherId.id())
+                    .setOtherNodeId(otherId)
                     .setThreadName("ChatterReader")
                     .setHangingThreadPeriod(basicConfig.hangingThreadDuration())
                     .setWork(new NegotiatorThread(
@@ -364,7 +364,7 @@ public class ChatterGossip extends AbstractGossip {
     protected CriticalQuorum buildCriticalQuorum() {
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         return new CriticalQuorumImpl(
-                platformContext.getMetrics(), selfId.id(), addressBook, false, chatterConfig.criticalQuorumSoftening());
+                platformContext.getMetrics(), selfId, addressBook, false, chatterConfig.criticalQuorumSoftening());
     }
 
     /**
@@ -374,6 +374,7 @@ public class ChatterGossip extends AbstractGossip {
     @Override
     protected FallenBehindManagerImpl buildFallenBehindManager() {
         return new FallenBehindManagerImpl(
+                addressBook,
                 selfId,
                 topology.getConnectionGraph(),
                 updatePlatformStatus,
