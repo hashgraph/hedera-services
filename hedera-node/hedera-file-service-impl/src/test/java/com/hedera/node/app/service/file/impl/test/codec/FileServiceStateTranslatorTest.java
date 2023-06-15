@@ -28,7 +28,7 @@ import com.hedera.node.app.service.file.impl.codec.FileServiceStateTranslator.Fi
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
-import org.apache.commons.codec.DecoderException;
+import java.security.InvalidKeyException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +45,7 @@ public class FileServiceStateTranslatorTest extends FileTestBase {
     void setUp() {}
 
     @Test
-    void createFileMetadataAndContentFromFile() throws DecoderException {
+    void createFileMetadataAndContentFromFile() throws InvalidKeyException {
         final var existingFile = readableStore.getFileMetadata(fileId);
         assertFalse(existingFile.deleted());
 
@@ -69,7 +69,7 @@ public class FileServiceStateTranslatorTest extends FileTestBase {
     }
 
     @Test
-    void createFileMetadataAndContentFromFileWithEmptyKeysAndMemo() throws DecoderException {
+    void createFileMetadataAndContentFromFileWithEmptyKeysAndMemo() throws InvalidKeyException {
         final var existingFile = readableStore.getFileMetadata(fileId);
         assertFalse(existingFile.deleted());
 
@@ -101,7 +101,7 @@ public class FileServiceStateTranslatorTest extends FileTestBase {
     }
 
     @Test
-    void createFileMetadataAndContentFromFileWithEmptyConentForDeletedFile() throws DecoderException {
+    void createFileMetadataAndContentFromFileWithEmptyConentForDeletedFile() throws InvalidKeyException {
 
         final FileMetadataAndContent convertedFile = FileServiceStateTranslator.pbjToState(fileWithNoContent);
 
@@ -125,7 +125,7 @@ public class FileServiceStateTranslatorTest extends FileTestBase {
     }
 
     @Test
-    void createFileMetadataAndContentFromReadableFileStore() throws DecoderException {
+    void createFileMetadataAndContentFromReadableFileStore() throws InvalidKeyException {
         final var existingFile = readableStore.getFileMetadata(fileId);
         assertFalse(existingFile.deleted());
 
@@ -200,7 +200,7 @@ public class FileServiceStateTranslatorTest extends FileTestBase {
         assertEquals(createFile(), convertedFile);
     }
 
-    private FileMetadataAndContent getExpectedMonoFileMetaAndContent() throws DecoderException {
+    private FileMetadataAndContent getExpectedMonoFileMetaAndContent() throws InvalidKeyException {
         var keys = com.hedera.node.app.service.mono.legacy.core.jproto.JKey.convertKey(
                 Key.newBuilder().keyList(file.keys()).build(), 1);
         com.hedera.node.app.service.mono.files.HFileMeta hFileMeta =
@@ -214,7 +214,7 @@ public class FileServiceStateTranslatorTest extends FileTestBase {
         return new FileMetadataAndContent(file.contents().toByteArray(), hFileMeta);
     }
 
-    private FileMetadataAndContent getExpectedMonoFileMetaAndContentEmptyContent() throws DecoderException {
+    private FileMetadataAndContent getExpectedMonoFileMetaAndContentEmptyContent() throws InvalidKeyException {
         var keys = com.hedera.node.app.service.mono.legacy.core.jproto.JKey.convertKey(
                 Key.newBuilder().keyList(file.keys()).build(), 1);
         com.hedera.node.app.service.mono.files.HFileMeta hFileMeta =
