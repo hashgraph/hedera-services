@@ -159,10 +159,10 @@ public class TestConfigBuilder {
     }
 
     /**
-     * This method returns the {@link Configuration} instance. If the method is called for the first time the {@link
-     * Configuration} instance will be created. All values that have been set (see {@link #withValue(String, int)})
-     * methods will be part of the config. Next to this the config will support all config data record types (see {@link
-     * ConfigData}) that are on the classpath.
+     * This method returns the {@link Configuration} instance. If the method is called for the first time the
+     * {@link Configuration} instance will be created. All values that have been set (see
+     * {@link #withValue(String, int)}) methods will be part of the config. Next to this the config will support all
+     * config data record types (see {@link ConfigData}) that are on the classpath.
      *
      * @return the created configuration
      */
@@ -233,7 +233,7 @@ public class TestConfigBuilder {
      * @return the {@link TestConfigBuilder} instance (for fluent API)
      */
     @NonNull
-    public <T extends Record> TestConfigBuilder withValidator(@NonNull final Class<T> type) {
+    public <T extends Record> TestConfigBuilder withConfigDataType(@NonNull final Class<T> type) {
         checkConfigState();
         builder.withConfigDataType(type);
         return this;

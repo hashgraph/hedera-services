@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -52,7 +53,7 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
     private final AddressBook addressBook = new RandomAddressBookGenerator(random)
             .setSize(4)
             .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-            .setSequentialIds(true)
+            .setSequentialIds(false)
             .build();
 
     private final long firstRound = 50;
@@ -90,9 +91,9 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
 
         // Simulate a restart (i.e. loading a state from disk)
         final Hash signedHash = randomHash(random);
-        final Map<Long, Signature> signatures = new HashMap<>();
+        final Map<NodeId, Signature> signatures = new HashMap<>();
         for (final Address address : addressBook) {
-            signatures.put(address.getId(), buildFakeSignature(address.getSigPublicKey(), signedHash));
+            signatures.put(address.getNodeId(), buildFakeSignature(address.getSigPublicKey(), signedHash));
         }
 
         final SignedState stateFromDisk = new RandomSignedStateGenerator(random)
@@ -105,8 +106,17 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
         final Hash stateHash = randomHash();
         stateFromDisk.getState().setHash(stateHash);
 
+        assertNull(manager.getFirstStateTimestamp());
+        assertEquals(-1, manager.getFirstStateRound());
+
         // The manager should store this state but not assigned it to the last complete signed state
         manager.addState(stateFromDisk);
+
+        assertEquals(
+                stateFromDisk.getState().getPlatformState().getPlatformData().getConsensusTimestamp(),
+                manager.getFirstStateTimestamp());
+        assertEquals(
+                stateFromDisk.getState().getPlatformState().getPlatformData().getRound(), manager.getFirstStateRound());
 
         assertNull(manager.getLatestSignedState("test").getNullable());
         assertEquals(-1, manager.getLastCompleteRound());

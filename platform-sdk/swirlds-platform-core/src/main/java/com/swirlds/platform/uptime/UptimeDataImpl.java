@@ -22,6 +22,7 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -48,9 +50,10 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
+        public static final int SELF_SERIALIZABLE_NODE_ID = 2;
     }
 
-    private final SortedMap<Long, NodeUptimeData> data = new TreeMap<>();
+    private final SortedMap<NodeId, NodeUptimeData> data = new TreeMap<>();
 
     /**
      * Zero arg constructor required by serialization engine.
@@ -61,7 +64,7 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      * Copy constructor.
      */
     private UptimeDataImpl(@NonNull final UptimeDataImpl other) {
-        for (final Entry<Long, NodeUptimeData> entry : other.data.entrySet()) {
+        for (final Entry<NodeId, NodeUptimeData> entry : other.data.entrySet()) {
             data.put(entry.getKey(), entry.getValue().copy());
         }
     }
@@ -79,6 +82,14 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      */
     @Override
     public int getVersion() {
+        return ClassVersion.SELF_SERIALIZABLE_NODE_ID;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getMinimumSupportedVersion() {
         return ClassVersion.ORIGINAL;
     }
 
@@ -87,7 +98,8 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      */
     @Override
     @Nullable
-    public Instant getLastEventTime(final long id) {
+    public Instant getLastEventTime(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "id must not be null");
         final NodeUptimeData nodeData = data.get(id);
         if (nodeData == null) {
             return null;
@@ -99,7 +111,8 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      * {@inheritDoc}
      */
     @Override
-    public long getLastEventRound(final long id) {
+    public long getLastEventRound(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "id must not be null");
         final NodeUptimeData nodeData = data.get(id);
         if (nodeData == null) {
             return NO_ROUND;
@@ -112,7 +125,8 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      */
     @Override
     @Nullable
-    public Instant getLastJudgeTime(final long id) {
+    public Instant getLastJudgeTime(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "id must not be null");
         final NodeUptimeData nodeData = data.get(id);
         if (nodeData == null) {
             return null;
@@ -124,7 +138,8 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      * {@inheritDoc}
      */
     @Override
-    public long getLastJudgeRound(final long id) {
+    public long getLastJudgeRound(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "id must not be null");
         final NodeUptimeData nodeData = data.get(id);
         if (nodeData == null) {
             return NO_ROUND;
@@ -137,7 +152,7 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      */
     @NonNull
     @Override
-    public Set<Long> getTrackedNodes() {
+    public Set<NodeId> getTrackedNodes() {
         return new HashSet<>(data.keySet());
     }
 
@@ -174,12 +189,14 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      * {@inheritDoc}
      */
     @Override
-    public void addNode(final long node) {
+    public void addNode(@NonNull final NodeId node) {
+        Objects.requireNonNull(node, "node must not be null");
         data.put(node, new NodeUptimeData());
     }
 
     @Override
-    public void removeNode(final long node) {
+    public void removeNode(@NonNull final NodeId node) {
+        Objects.requireNonNull(node, "node must not be null");
         data.remove(node);
     }
 
@@ -189,8 +206,8 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         out.writeInt(data.size());
-        for (final Entry<Long, NodeUptimeData> entry : data.entrySet()) {
-            out.writeLong(entry.getKey());
+        for (final Entry<NodeId, NodeUptimeData> entry : data.entrySet()) {
+            out.writeSerializable(entry.getKey(), false);
             out.writeSerializable(entry.getValue(), false);
         }
     }
@@ -205,8 +222,14 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
             // Safety sanity check, don't let an attacker force us to allocate too much memory.
             throw new IOException("too many nodes");
         }
+
         for (int i = 0; i < lastConsensusEventTimesSize; i++) {
-            final long nodeId = in.readLong();
+            final NodeId nodeId;
+            if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
+                nodeId = new NodeId(in.readLong());
+            } else {
+                nodeId = in.readSerializable(false, NodeId::new);
+            }
             data.put(nodeId, in.readSerializable(false, NodeUptimeData::new));
         }
     }

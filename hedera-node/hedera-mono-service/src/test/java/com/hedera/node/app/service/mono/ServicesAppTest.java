@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.mono;
 
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -39,7 +39,7 @@ import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.context.properties.ScreenedNodeFileProps;
 import com.hedera.node.app.service.mono.grpc.GrpcStarter;
-import com.hedera.node.app.service.mono.grpc.NettyGrpcServerManager;
+import com.hedera.node.app.service.mono.grpc.HelidonGrpcServerManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.node.app.service.mono.ledger.backing.BackingAccounts;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
@@ -82,7 +82,7 @@ class ServicesAppTest {
 
     private final long selfId = 123;
     private static final String ACCOUNT_MEMO = "0.0.3";
-    private final NodeId selfNodeId = new NodeId(false, selfId);
+    private final NodeId selfNodeId = new NodeId(selfId);
 
     @Mock
     private Platform platform;
@@ -162,7 +162,7 @@ class ServicesAppTest {
         assertTrue(maybeRecoveredStateListener.isPresent());
         assertThat(maybeRecoveredStateListener.get(), instanceOf(ExportingRecoveredStateListener.class));
         assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
-        assertThat(subject.grpc(), instanceOf(NettyGrpcServerManager.class));
+        assertThat(subject.grpc(), instanceOf(HelidonGrpcServerManager.class));
         assertThat(subject.platformStatus(), instanceOf(CurrentPlatformStatus.class));
         assertThat(subject.accountsExporter(), instanceOf(ToStringAccountsExporter.class));
         assertThat(subject.balancesExporter(), instanceOf(SignedStateBalancesExporter.class));

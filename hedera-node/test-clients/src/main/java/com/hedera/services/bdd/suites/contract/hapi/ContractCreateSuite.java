@@ -35,7 +35,6 @@ import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
@@ -118,7 +117,6 @@ public class ContractCreateSuite extends HapiSuite {
                 childCreationsHaveExpectedKeysWithOmittedAdminKey(),
                 cannotCreateTooLargeContract(),
                 revertedTryExtCallHasNoSideEffects(),
-                receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
                 cannotSendToNonExistentAccount(),
                 delegateContractIdRequiredForTransferInDelegateCall(),
                 vanillaSuccess(),
@@ -212,7 +210,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     private HapiSpec createsVanillaContractAsExpectedWithOmittedAdminKey() {
-        return defaultHapiSpec("CreatesVanillaContract")
+        return defaultHapiSpec("createsVanillaContractAsExpectedWithOmittedAdminKey")
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(
@@ -264,7 +262,7 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     private HapiSpec createEmptyConstructor() {
-        return defaultHapiSpec("EmptyConstructor")
+        return defaultHapiSpec("createEmptyConstructor")
                 .given(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).hasKnownStatus(SUCCESS));
@@ -416,57 +414,6 @@ public class ContractCreateSuite extends HapiSuite {
                         getAccountBalance(beneficiary).hasTinyBars(3 * (totalToSend / 2)));
     }
 
-    private HapiSpec receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix() {
-        final var sendInternalAndDelegateContract = "SendInternalAndDelegate";
-        final var justSendContract = "JustSend";
-        final var beneficiary = "civilian";
-        final var balanceToDistribute = 1_000L;
-
-        final AtomicLong justSendContractNum = new AtomicLong();
-        final AtomicLong beneficiaryAccountNum = new AtomicLong();
-
-        return defaultHapiSpec("ReceiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix")
-                .given(
-                        cryptoCreate(beneficiary)
-                                .balance(0L)
-                                .receiverSigRequired(true)
-                                .exposingCreatedIdTo(id -> beneficiaryAccountNum.set(id.getAccountNum())),
-                        uploadInitCode(sendInternalAndDelegateContract, justSendContract))
-                .when(
-                        contractCreate(justSendContract).gas(300_000L).exposingNumTo(justSendContractNum::set),
-                        contractCreate(sendInternalAndDelegateContract)
-                                .gas(300_000L)
-                                .balance(balanceToDistribute))
-                .then(
-                        /* Sending requires receiver signature */
-                        sourcing(() -> contractCall(
-                                        sendInternalAndDelegateContract,
-                                        "sendRepeatedlyTo",
-                                        BigInteger.valueOf(justSendContractNum.get()),
-                                        BigInteger.valueOf(beneficiaryAccountNum.get()),
-                                        BigInteger.valueOf(balanceToDistribute / 2))
-                                .hasKnownStatus(INVALID_SIGNATURE)),
-                        /* But it's not enough to just sign using an incomplete prefix */
-                        sourcing(() -> contractCall(
-                                        sendInternalAndDelegateContract,
-                                        "sendRepeatedlyTo",
-                                        BigInteger.valueOf(justSendContractNum.get()),
-                                        BigInteger.valueOf(beneficiaryAccountNum.get()),
-                                        BigInteger.valueOf(balanceToDistribute / 2))
-                                .signedBy(DEFAULT_PAYER, beneficiary)
-                                .hasKnownStatus(INVALID_SIGNATURE)),
-                        /* We have to specify the full prefix so the sig can be verified async */
-                        getAccountInfo(beneficiary).logged(),
-                        sourcing(() -> contractCall(
-                                        sendInternalAndDelegateContract,
-                                        "sendRepeatedlyTo",
-                                        BigInteger.valueOf(justSendContractNum.get()),
-                                        BigInteger.valueOf(beneficiaryAccountNum.get()),
-                                        BigInteger.valueOf(balanceToDistribute / 2))
-                                .alsoSigningWithFullPrefix(beneficiary)),
-                        getAccountBalance(beneficiary).logged());
-    }
-
     private HapiSpec cannotCreateTooLargeContract() {
         ByteString contents;
         try {
@@ -477,7 +424,7 @@ public class ContractCreateSuite extends HapiSuite {
         final var FILE_KEY = "fileKey";
         final var KEY_LIST = "keyList";
         final var ACCOUNT = "acc";
-        return defaultHapiSpec("cannotCreateLargeContract")
+        return defaultHapiSpec("cannotCreateTooLargeContract")
                 .given(
                         newKeyNamed(FILE_KEY),
                         newKeyListNamed(KEY_LIST, List.of(FILE_KEY)),
@@ -499,7 +446,7 @@ public class ContractCreateSuite extends HapiSuite {
         final var firstBlock = "firstBlock";
         final var timeLoggingTxn = "timeLoggingTxn";
 
-        return defaultHapiSpec("BlockTimestampIsConsensusTime")
+        return defaultHapiSpec("blockTimestampChangesWithinFewSeconds")
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(
                         contractCall(contract, "logNow").via(firstBlock),
@@ -559,11 +506,8 @@ public class ContractCreateSuite extends HapiSuite {
         return defaultHapiSpec("VanillaSuccess")
                 .given(
                         uploadInitCode(contract),
-                        contractCreate(contract).adminKey(THRESHOLD).maxAutomaticTokenAssociations(10),
-                        getContractInfo(contract)
-                                .has(contractWith().maxAutoAssociations(10))
-                                .logged()
-                                .saveToRegistry(PARENT_INFO))
+                        contractCreate(contract).adminKey(THRESHOLD),
+                        getContractInfo(contract).saveToRegistry(PARENT_INFO))
                 .when(
                         contractCall(contract, "create").gas(1_000_000L).via("createChildTxn"),
                         contractCall(contract, "getIndirect").gas(1_000_000L).via("getChildResultTxn"),

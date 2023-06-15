@@ -28,6 +28,7 @@ import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -49,19 +50,26 @@ public class UniqueTokensMigrator {
         }
 
         final MerkleMap<EntityNumPair, MerkleUniqueToken> legacyUniqueTokens = currentData.merkleMap();
-        final VirtualMap<UniqueTokenKey, UniqueTokenValue> vmUniqueTokens =
-                virtualMapFactory.newVirtualizedUniqueTokenStorage();
+        final AtomicReference<VirtualMap<UniqueTokenKey, UniqueTokenValue>> virtualMapRef =
+                new AtomicReference<>(virtualMapFactory.newVirtualizedUniqueTokenStorage());
         final AtomicInteger count = new AtomicInteger();
 
         forEach(MerkleMapLike.from(legacyUniqueTokens), (entityNumPair, legacyToken) -> {
             final var numSerialPair = entityNumPair.asTokenNumAndSerialPair();
             final var newTokenKey = new UniqueTokenKey(numSerialPair.getLeft(), numSerialPair.getRight());
             final var newTokenValue = UniqueTokenValue.from(legacyToken);
-            vmUniqueTokens.put(newTokenKey, newTokenValue);
-            count.incrementAndGet();
+            virtualMapRef.get().put(newTokenKey, newTokenValue);
+            final int currentCount = count.incrementAndGet();
+            // Create a new virtual map copy every few tokens to make sure they can be flushed to disk
+            if (currentCount % 10000 == 0) {
+                final VirtualMap<UniqueTokenKey, UniqueTokenValue> currentCopy = virtualMapRef.get();
+                virtualMapRef.set(currentCopy.copy());
+                currentCopy.release();
+                // Future work: may need to wait until currentCopy is actually flushed to disk
+            }
         });
 
-        initializingState.setChild(StateChildIndices.UNIQUE_TOKENS, vmUniqueTokens);
+        initializingState.setChild(StateChildIndices.UNIQUE_TOKENS, virtualMapRef.get());
         LOG.info("Migrated {} unique tokens", count.get());
     }
 

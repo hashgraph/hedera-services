@@ -19,6 +19,8 @@ package com.swirlds.platform.reconnect;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.logging.payloads.ReconnectFinishPayload;
@@ -27,7 +29,6 @@ import com.swirlds.logging.payloads.ReconnectStartPayload;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.State;
-import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
@@ -48,8 +49,8 @@ import org.apache.logging.log4j.Logger;
 public class ReconnectHelper {
     private static final Logger logger = LogManager.getLogger(ReconnectHelper.class);
 
-    /** stops all gossiping */
-    private final Runnable stopGossip;
+    /** pause gossip for reconnect */
+    private final Runnable pauseGossip;
     /** clears all data that is no longer needed since we fell behind */
     private final Clearable clearAll;
     /** supplier of the initial signed state against which to perform a delta based reconnect */
@@ -64,14 +65,14 @@ public class ReconnectHelper {
     private final ReconnectLearnerFactory reconnectLearnerFactory;
 
     public ReconnectHelper(
-            final Runnable stopGossip,
+            final Runnable pauseGossip,
             final Clearable clearAll,
             final Supplier<State> workingStateSupplier,
             final LongSupplier lastCompleteRoundSupplier,
             final ReconnectLearnerThrottle reconnectLearnerThrottle,
             final Consumer<SignedState> loadSignedState,
             final ReconnectLearnerFactory reconnectLearnerFactory) {
-        this.stopGossip = stopGossip;
+        this.pauseGossip = pauseGossip;
         this.clearAll = clearAll;
         this.workingStateSupplier = workingStateSupplier;
         this.lastCompleteRoundSupplier = lastCompleteRoundSupplier;
@@ -86,7 +87,7 @@ public class ReconnectHelper {
     public void prepareForReconnect() {
         reconnectLearnerThrottle.exitIfReconnectIsDisabled();
         logger.info(RECONNECT.getMarker(), "Preparing for reconnect, stopping gossip");
-        stopGossip.run();
+        pauseGossip.run();
         logger.info(RECONNECT.getMarker(), "Preparing for reconnect, start clearing queues");
         clearAll.clear();
         logger.info(RECONNECT.getMarker(), "Queues have been cleared");
@@ -121,8 +122,8 @@ public class ReconnectHelper {
         logger.info(RECONNECT.getMarker(), () -> new ReconnectStartPayload(
                         "Starting reconnect in role of the receiver.",
                         true,
-                        conn.getSelfId().getIdAsInt(),
-                        conn.getOtherId().getIdAsInt(),
+                        conn.getSelfId().id(),
+                        conn.getOtherId().id(),
                         lastCompleteRoundSupplier.getAsLong())
                 .toString());
 
@@ -135,17 +136,18 @@ public class ReconnectHelper {
         logger.info(RECONNECT.getMarker(), () -> new ReconnectFinishPayload(
                         "Finished reconnect in the role of the receiver.",
                         true,
-                        conn.getSelfId().getIdAsInt(),
-                        conn.getOtherId().getIdAsInt(),
+                        conn.getSelfId().id(),
+                        conn.getOtherId().id(),
                         lastRoundReceived)
                 .toString());
 
+        final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
         logger.info(
                 RECONNECT.getMarker(),
                 "Information for state received during reconnect:\n{}\n{}",
                 () -> reservedState.get().getState().getPlatformState().getInfoString(),
                 () -> new MerkleTreeVisualizer(reservedState.get().getState())
-                        .setDepth(StateSettings.getDebugHashDepth())
+                        .setDepth(stateConfig.debugHashDepth())
                         .render());
 
         logger.info(

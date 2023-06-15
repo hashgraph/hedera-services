@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
+import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +34,7 @@ class TokenUnpauseHandlerParityTest extends ParityTestBase {
     private TokenUnpauseHandler subject;
 
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         super.setUp();
         subject = new TokenUnpauseHandler();
     }

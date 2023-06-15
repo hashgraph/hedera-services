@@ -33,11 +33,6 @@ import java.time.Duration;
  * 		show the user all statistics, including those with category "internal"?
  * @param verboseStatistics
  * 		show expand statistics values, inlcude mean, min, max, stdDev
- * @param requireStateLoad
- * 		if set to true, the platform will fail to start if it fails to load a state from disk
- * @param signedStateFreq
- * 		hash and sign a state every signedStateFreq rounds. 1 means that a state will be signed every round, 2 means
- * 		every other round, and so on. If the value is 0 or less, no states will be signed
  * @param maxEventQueueForCons
  * 		max events that can be put in the forCons queue (q2) in ConsensusRoundHandler (0 for infinity)
  * @param throttleTransactionQueueSize
@@ -57,8 +52,6 @@ import java.time.Duration;
  * 		number of connections maintained by each member (syncs happen on random connections from that set
  * @param bufferSize
  * 		for BufferedInputStream and BufferedOutputStream for syncing
- * @param halfLife
- * 		half life of some of the various statistics (give half the weight to the last halfLife seconds)
  * @param logStack
  * 		when converting an exception to a string for logging, should it include the stack trace?
  * @param doUpnp
@@ -103,8 +96,6 @@ import java.time.Duration;
  * 		transaction exceeds this limit then the event will contain the single transaction only
  * @param maxTransactionCountPerEvent
  * 		the maximum number of transactions that a single event may contain
- * @param emergencyStateFileName
- * 		The CSV file name of the emergency state recovery file
  * @param eventIntakeQueueSize
  * 		The size of the event intake queue,
  *        {@link com.swirlds.common.threading.framework.config.QueueThreadConfiguration#UNLIMITED_CAPACITY} for
@@ -112,9 +103,6 @@ import java.time.Duration;
  * 		TCP connections, but leaving it unbounded can cause out of memory errors, even with the
  *        {@link #eventIntakeQueueThrottleSize()}, because syncs that started before the throttle engages can grow the
  * 		queue to very large sizes on larger networks.
- * @param checkSignedStateFromDisk
- * 		If true, the platform will recalculate the hash of the signed state and check it against the written hash. It
- * 		will also verify that the signatures are valid.
  * @param randomEventProbability
  * 		The probability that after a sync, a node will create an event with a random other parent. The probability is
  * 		is 1 in X, where X is the value of randomEventProbability. A value of 0 means that a node will not create any
@@ -186,6 +174,9 @@ import java.time.Duration;
  * @param hangingThreadDuration
  *      the length of time a gossip thread is allowed to wait when it is asked to shutdown.
  *      If a gossip thread takes longer than this period to shut down, then an error message is written to the log.
+ * @param genesisFreezeTime
+ *      If this node starts from genesis, this value is used as the freeze time. This feature is deprecated and
+ *      planned for removal in a future platform version.
  */
 @ConfigData
 public record BasicConfig(
@@ -194,8 +185,6 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "32") int numCryptoThreads,
         @ConfigProperty(defaultValue = "false") boolean showInternalStats,
         @ConfigProperty(defaultValue = "false") boolean verboseStatistics,
-        @ConfigProperty(defaultValue = "false") boolean requireStateLoad,
-        @ConfigProperty(defaultValue = "1") int signedStateFreq,
         @ConfigProperty(defaultValue = "10000") int maxEventQueueForCons,
         @ConfigProperty(defaultValue = "100000") int throttleTransactionQueueSize,
         @ConfigProperty(defaultValue = "false") boolean throttle7,
@@ -204,7 +193,6 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "104857600") int throttle7maxBytes,
         @ConfigProperty(defaultValue = "40") int numConnections,
         @ConfigProperty(defaultValue = "8192") int bufferSize,
-        @ConfigProperty(defaultValue = "10") double halfLife,
         @ConfigProperty(defaultValue = "true") boolean logStack,
         @ConfigProperty(defaultValue = "true") boolean doUpnp,
         @ConfigProperty(defaultValue = "true") boolean useLoopbackIp,
@@ -225,10 +213,7 @@ public record BasicConfig(
         @ConfigProperty(value = "loadKeysFromPfxFiles", defaultValue = "true") boolean loadKeysFromPfxFiles,
         @ConfigProperty(value = "maxTransactionBytesPerEvent", defaultValue = "245760") int maxTransactionBytesPerEvent,
         @ConfigProperty(value = "maxTransactionCountPerEvent", defaultValue = "245760") int maxTransactionCountPerEvent,
-        @ConfigProperty(value = "emergencyStateFileName", defaultValue = "emergencyRecovery.csv")
-                String emergencyStateFileName,
         @ConfigProperty(value = "eventIntakeQueueSize", defaultValue = "10000") int eventIntakeQueueSize,
-        @ConfigProperty(value = "checkSignedStateFromDisk", defaultValue = "false") boolean checkSignedStateFromDisk,
         @ConfigProperty(value = "randomEventProbability", defaultValue = "0") int randomEventProbability,
         @ConfigProperty(value = "rescueChildlessInverseProbability", defaultValue = "10")
                 int rescueChildlessInverseProbability,
@@ -256,4 +241,5 @@ public record BasicConfig(
         @ConfigProperty(value = "maxIncomingSyncsInc", defaultValue = "1") int maxIncomingSyncsInc,
         @ConfigProperty(value = "maxOutgoingSyncs", defaultValue = "2") int maxOutgoingSyncs,
         @ConfigProperty(value = "logPath", defaultValue = "log4j2.xml") Path logPath,
-        @ConfigProperty(value = "hangingThreadDuration", defaultValue = "60s") Duration hangingThreadDuration) {}
+        @ConfigProperty(value = "hangingThreadDuration", defaultValue = "60s") Duration hangingThreadDuration,
+        @ConfigProperty(value = "genesisFreezeTime", defaultValue = "0") long genesisFreezeTime) {}

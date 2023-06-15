@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.common.utility.Units.GIBIBYTES_TO_BYTES;
 import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
@@ -33,8 +32,6 @@ import com.swirlds.merkledb.collections.ImmutableIndexedObjectList;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
-import com.swirlds.merkledb.settings.MerkleDbSettings;
-import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -84,13 +81,6 @@ public class DataFileCollection<D> implements Snapshotable {
     private static final Logger logger = LogManager.getLogger(DataFileCollection.class);
 
     /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
-     * application classes that might instantiate a data source, the {@link MerkleDbSettingsFactory}
-     * holder will have been configured by the time this static initializer runs.
-     */
-    private static final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
-
-    /**
      * Maximum number of data items that can be in a data file. This is dictated by the maximum size
      * of the movesMap used during merge, which in turn is limited by the maximum RAM to be used for
      * merging.
@@ -104,12 +94,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * legacyStoreName + suffix is tried.
      */
     private static final String METADATA_FILENAME_SUFFIX = "_metadata.dfc";
-    /**
-     * Maximum number of items that can be in a data file, this is computed based on the max ram we
-     * are willing to use while merging.
-     */
-    private static final int MAX_DATA_FILE_NUM_ITEMS = (int)
-            Math.max((settings.getMaxRamUsedForMergingGb() * GIBIBYTES_TO_BYTES) / (Long.BYTES * 3), Integer.MAX_VALUE);
+
     /** The number of times to retry index based reads */
     private static final int NUM_OF_READ_RETRIES = 5;
 
@@ -457,8 +442,9 @@ public class DataFileCollection<D> implements Snapshotable {
                 snapshotCompactionLock.acquire();
                 try {
                     final DataFileWriter<D> newFileWriter = currentCompactionWriter.get();
+                    long serializationVersion = reader.getMetadata().getSerializationVersion();
                     final long newLocation = newFileWriter.writeCopiedDataItem(
-                            reader.getMetadata().getSerializationVersion(), reader.readDataItemBytes(fileOffset));
+                            serializationVersion, reader.readDataItemBytes(fileOffset));
                     // update the index
                     index.putIfEqual(path, dataLocation, newLocation);
                 } catch (final IOException z) {
@@ -671,24 +657,6 @@ public class DataFileCollection<D> implements Snapshotable {
      *
      * @param dataLocation the location of the data item to read. This contains both the file and
      *     the location within the file.
-     * @return Data item if the data location was found in files or null if not found
-     * @throws IOException If there was a problem reading the data item.
-     * @throws ClosedChannelException In the very rare case merging closed the file between us
-     *     checking if file is open and reading
-     */
-    protected D readDataItem(final long dataLocation) throws IOException {
-        return readDataItem(dataLocation, true);
-    }
-
-    /**
-     * Read a data item from any file that has finished being written. This is not 100% thread safe
-     * with concurrent merging, it is possible it will throw a ClosedChannelException or return
-     * null. So it should be retried if those happen.
-     *
-     * @param dataLocation the location of the data item to read. This contains both the file and
-     *     the location within the file.
-     * @param deserialize flag to prevent deserialization, introduced for use when warming the OS
-     *     cache
      * @return Data item if the data location was found in files. <br>
      *     <br>
      *     A null is returned :
@@ -701,7 +669,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * @throws ClosedChannelException In the very rare case merging closed the file between us
      *     checking if file is open and reading
      */
-    protected D readDataItem(final long dataLocation, final boolean deserialize) throws IOException {
+    protected D readDataItem(final long dataLocation) throws IOException {
         // check if found
         if (dataLocation == 0) {
             return null;
@@ -724,7 +692,7 @@ public class DataFileCollection<D> implements Snapshotable {
         }
         // read data, check at last second that file is not closed
         if (file.isOpen()) {
-            return file.readDataItem(dataLocation, deserialize);
+            return file.readDataItem(dataLocation);
         } else {
             // Let's log this as it should happen very rarely but if we see it a lot then we should
             // have a rethink.
@@ -744,39 +712,13 @@ public class DataFileCollection<D> implements Snapshotable {
      *
      * @param index key-&gt;dataLocation index
      * @param keyIntoIndex The key to lookup in index
-     * @return Data item if the data location was found in files or null if not found in index. If
-     *     contained in the index but not in files after a number of retries then an exception is
-     *     thrown.
+     * @return Data item if the data location was found in files. If contained in the index but not
+     *     in files after a number of retries then an exception is thrown. <br>
+     *     A null is returned if not found in index
+     *
      * @throws IOException If there was a problem reading the data item.
      */
     public D readDataItemUsingIndex(final LongList index, final long keyIntoIndex) throws IOException {
-        return readDataItemUsingIndex(index, keyIntoIndex, true);
-    }
-
-    /**
-     * Read a data item from any file that has finished being written. Uses a LongList that maps
-     * key-&gt;dataLocation, this allows for multiple retries going back to the index each time. The
-     * allows us to cover the cracks where threads can slip though.
-     *
-     * This depends on the fact that LongList has a nominal value of
-     * LongList.IMPERMISSIBLE_VALUE=0 for non-existent values.
-     *
-     * @param index key-&gt;dataLocation index
-     * @param keyIntoIndex The key to lookup in index
-     * @param deserialize A flag to prevent deserialization, introduced for use when warming the OS
-     *     cache
-     * @return Data item if the data location was found in files. If contained in the index but not
-     *     in files after a number of retries then an exception is thrown. <br>
-     *     A null is returned :
-     *     <ol>
-     *       <li>if not found in index
-     *       <li>if deserialize flag is false
-     *     </ol>
-     *
-     * @throws IOException If there was a problem reading the data item.
-     */
-    public D readDataItemUsingIndex(final LongList index, final long keyIntoIndex, final boolean deserialize)
-            throws IOException {
         // Try reading up to 5 times, 99.999% should work first try but there is a small chance the
         // file was closed by
         // merging when we are half way though reading, and we will see  file.isOpen() = false or a
@@ -792,10 +734,10 @@ public class DataFileCollection<D> implements Snapshotable {
             }
             // read data
             try {
-                final D readData = readDataItem(dataLocation, deserialize);
+                final D readData = readDataItem(dataLocation);
                 // check we actually read data, this could be null if the file was closed half way
                 // though us reading
-                if ((readData != null) || !deserialize) {
+                if ((readData != null)) {
                     return readData;
                 }
             } catch (final IOException e) {

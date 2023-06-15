@@ -24,9 +24,13 @@ import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.
 
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.formatting.UnitFormatter;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Encapsulates statistics for a {@link SimulatedNetwork}.
@@ -34,9 +38,9 @@ import java.util.Map;
 public class SimulatedNetworkStatistics {
 
     /**
-     * Total number of nodes in the simulation.
+     * The Address Book
      */
-    private final long nodeCount;
+    private final AddressBook addressBook;
 
     /**
      * The duration of a single time step.
@@ -46,32 +50,32 @@ public class SimulatedNetworkStatistics {
     /**
      * The outgoing bandwidth of each node in bytes/timestep.
      */
-    private final Map<Long, Long> outgoingBandwidth;
+    private final Map<NodeId, Long> outgoingBandwidth;
 
     /**
      * The incoming bandwidth of each node in bytes/timestep.
      */
-    private final Map<Long, Long> incomingBandwidth;
+    private final Map<NodeId, Long> incomingBandwidth;
 
     /**
      * Records the number of messages sent by each node.
      */
-    private final Map<Long /* node ID */, Long /* num messages */> messagesSentByEachNode = new HashMap<>();
+    private final Map<NodeId, Long /* num messages */> messagesSentByEachNode = new HashMap<>();
 
     /**
      * Records the number of bytes sent by each node.
      */
-    private final Map<Long /* node ID */, Long /* bytes */> bytesSentByEachNode = new HashMap<>();
+    private final Map<NodeId, Long /* bytes */> bytesSentByEachNode = new HashMap<>();
 
     /**
      * Records the number of messages received by each node. Does not include dropped messages.
      */
-    private final Map<Long /* node ID */, Long /* num messages */> messagesReceivedByEachNode = new HashMap<>();
+    private final Map<NodeId, Long /* num messages */> messagesReceivedByEachNode = new HashMap<>();
 
     /**
      * Records the number of bytes received by each node. Does not include dropped messages.
      */
-    private final Map<Long /* node ID */, Long /* bytes */> bytesReceivedByEachNode = new HashMap<>();
+    private final Map<NodeId, Long /* bytes */> bytesReceivedByEachNode = new HashMap<>();
 
     /**
      * Records the number of messages sent, sorted by type of message.
@@ -106,12 +110,12 @@ public class SimulatedNetworkStatistics {
     /**
      * Sum of all available incoming bandwidth over the course of the simulation.
      */
-    private final Map<Long /* node ID */, Long /* bytes */> incomingBandwidthCapacity = new HashMap<>();
+    private final Map<NodeId, Long /* bytes */> incomingBandwidthCapacity = new HashMap<>();
 
     /**
      * Sum of all incoming bandwidth used over the course of the simulation.
      */
-    private final Map<Long /* node ID */, Long /* bytes */> outgoingBandwidthCapacity = new HashMap<>();
+    private final Map<NodeId, Long /* bytes */> outgoingBandwidthCapacity = new HashMap<>();
 
     /**
      * The total amount of time that has been simulated.
@@ -119,15 +123,15 @@ public class SimulatedNetworkStatistics {
     private Duration totalSimulatedTime = Duration.ZERO;
 
     public SimulatedNetworkStatistics(
-            final int nodeCount,
-            final Duration timeStep,
-            final Map<Long, Long> incomingBandwidth,
-            final Map<Long, Long> outgoingBandwidth) {
+            @NonNull final AddressBook addressBook,
+            @NonNull final Duration timeStep,
+            @NonNull final Map<NodeId, Long> incomingBandwidth,
+            @NonNull final Map<NodeId, Long> outgoingBandwidth) {
 
-        this.nodeCount = nodeCount;
-        this.timeStep = timeStep;
-        this.outgoingBandwidth = outgoingBandwidth;
-        this.incomingBandwidth = incomingBandwidth;
+        this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
+        this.timeStep = Objects.requireNonNull(timeStep, "timeStep must not be null");
+        this.outgoingBandwidth = Objects.requireNonNull(outgoingBandwidth, "outgoingBandwidth must not be null");
+        this.incomingBandwidth = Objects.requireNonNull(incomingBandwidth, "incomingBandwidth must not be null");
     }
 
     /**
@@ -137,7 +141,7 @@ public class SimulatedNetworkStatistics {
 
         totalSimulatedTime = totalSimulatedTime.plus(timeStep);
 
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             final long previousIncomingBandwidthCapacity = incomingBandwidthCapacity.getOrDefault(nodeId, 0L);
             incomingBandwidthCapacity.put(nodeId, previousIncomingBandwidthCapacity + incomingBandwidth.get(nodeId));
 
@@ -153,7 +157,7 @@ public class SimulatedNetworkStatistics {
      * 		the message that was sent
      */
     public void captureSendStatistics(final SimulatedMessage message) {
-        final long source = message.getSource();
+        final NodeId source = message.getSource();
         final Class<?> type = message.getPayload().getClass();
 
         final long originalSendCount = messagesSentByEachNode.getOrDefault(source, 0L);
@@ -176,7 +180,7 @@ public class SimulatedNetworkStatistics {
      * 		the message that was received
      */
     public void captureReceiveStatistics(final SimulatedMessage message) {
-        final long destination = message.getDestination();
+        final NodeId destination = message.getDestination();
         final Class<?> type = message.getPayload().getClass();
 
         final long originalReceivedCount = messagesReceivedByEachNode.getOrDefault(destination, 0L);
@@ -199,7 +203,7 @@ public class SimulatedNetworkStatistics {
         final double totalSimulationSeconds = totalSimulatedTime.toNanos() * NANOSECONDS_TO_SECONDS;
 
         long totalMessagesSent = 0;
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             totalMessagesSent += messagesSentByEachNode.getOrDefault(nodeId, 0L);
         }
         final int messagesSentPerSecond = (int) (totalMessagesSent / totalSimulationSeconds);
@@ -212,7 +216,7 @@ public class SimulatedNetworkStatistics {
 
         long totalBytesSent = 0;
         long totalSendingCapacity = 0;
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             totalBytesSent += bytesSentByEachNode.getOrDefault(nodeId, 0L);
             totalSendingCapacity += outgoingBandwidthCapacity.getOrDefault(nodeId, 0L);
         }
@@ -227,7 +231,7 @@ public class SimulatedNetworkStatistics {
                 new UnitFormatter(bytesSentPerSecond, UNIT_BYTES).render() + "/second");
 
         long totalMessagesReceived = 0;
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             totalMessagesReceived += messagesReceivedByEachNode.getOrDefault(nodeId, 0L);
         }
         final double percentReceived = ((double) totalMessagesReceived) / totalMessagesSent * 100;
@@ -241,7 +245,7 @@ public class SimulatedNetworkStatistics {
 
         long totalBytesReceived = 0;
         long totalReceiveCapacity = 0;
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             totalBytesReceived += bytesReceivedByEachNode.getOrDefault(nodeId, 0L);
             totalReceiveCapacity += incomingBandwidthCapacity.get(nodeId);
         }
@@ -266,12 +270,11 @@ public class SimulatedNetworkStatistics {
         final double totalSimulationSeconds = totalSimulatedTime.toNanos() * NANOSECONDS_TO_SECONDS;
 
         long totalMessagesSent = 0;
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             totalMessagesSent += messagesSentByEachNode.getOrDefault(nodeId, 0L);
         }
 
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
-
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             final long messagesSentByNode = messagesSentByEachNode.getOrDefault(nodeId, 0L);
             final double fractionOfWhole = ((double) messagesSentByNode) / totalMessagesSent * 100;
             final long messagesPerSecond = (long) (messagesSentByNode / totalSimulationSeconds);
@@ -294,11 +297,11 @@ public class SimulatedNetworkStatistics {
         final double totalSimulationSeconds = totalSimulatedTime.toNanos() * NANOSECONDS_TO_SECONDS;
 
         long totalBytesSent = 0;
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             totalBytesSent += bytesSentByEachNode.getOrDefault(nodeId, 0L);
         }
 
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             final long bytesSent = bytesSentByEachNode.getOrDefault(nodeId, 0L);
             final double fractionOfWhole = ((double) bytesSent / totalBytesSent) * 100;
             final double utilization = ((double) bytesSent) / outgoingBandwidthCapacity.get(nodeId) * 100;
@@ -323,7 +326,7 @@ public class SimulatedNetworkStatistics {
         final double totalSimulationSeconds = totalSimulatedTime.toNanos() * NANOSECONDS_TO_SECONDS;
 
         long totalMessagesSent = 0;
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             totalMessagesSent += messagesSentByEachNode.getOrDefault(nodeId, 0L);
         }
 
@@ -351,7 +354,7 @@ public class SimulatedNetworkStatistics {
         final double totalSimulationSeconds = totalSimulatedTime.toNanos() * NANOSECONDS_TO_SECONDS;
 
         long totalBytesSent = 0;
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             totalBytesSent += bytesSentByEachNode.getOrDefault(nodeId, 0L);
         }
 
@@ -378,12 +381,11 @@ public class SimulatedNetworkStatistics {
         final double totalSimulationSeconds = totalSimulatedTime.toNanos() * NANOSECONDS_TO_SECONDS;
 
         long totalMessagesReceived = 0;
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             totalMessagesReceived += messagesReceivedByEachNode.getOrDefault(nodeId, 0L);
         }
 
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
-
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             final long messagesReceived = messagesReceivedByEachNode.getOrDefault(nodeId, 0L);
             final double fraction =
                     totalMessagesReceived == 0 ? 0 : ((double) messagesReceived) / totalMessagesReceived * 100;
@@ -407,12 +409,11 @@ public class SimulatedNetworkStatistics {
         final double totalSimulationSeconds = totalSimulatedTime.toNanos() * NANOSECONDS_TO_SECONDS;
 
         long totalBytesReceived = 0;
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             totalBytesReceived += bytesReceivedByEachNode.getOrDefault(nodeId, 0L);
         }
 
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
-
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             final long bytesReceived = bytesReceivedByEachNode.getOrDefault(nodeId, 0L);
             final double fraction = totalBytesReceived == 0 ? 0 : ((double) bytesReceived) / totalBytesReceived * 100;
             final double utilization = ((double) bytesReceived) / incomingBandwidthCapacity.get(nodeId) * 100;
@@ -437,7 +438,7 @@ public class SimulatedNetworkStatistics {
         final double totalSimulationSeconds = totalSimulatedTime.toNanos() * NANOSECONDS_TO_SECONDS;
 
         long totalMessagesReceived = 0;
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             totalMessagesReceived += messagesReceivedByEachNode.getOrDefault(nodeId, 0L);
         }
 
@@ -465,7 +466,7 @@ public class SimulatedNetworkStatistics {
         final double totalSimulationSeconds = totalSimulatedTime.toNanos() * NANOSECONDS_TO_SECONDS;
 
         long totalBytesReceived = 0;
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
+        for (final NodeId nodeId : addressBook.getNodeIdSet()) {
             totalBytesReceived += bytesReceivedByEachNode.getOrDefault(nodeId, 0L);
         }
 

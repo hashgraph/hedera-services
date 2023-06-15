@@ -16,13 +16,16 @@
 
 package com.swirlds.platform.gossip.sync;
 
+import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.logging.LogMarker.FREEZE;
 import static com.swirlds.logging.LogMarker.SYNC;
 
+import com.swirlds.common.config.EventConfig;
+import com.swirlds.common.metrics.FunctionGauge;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.event.EventIntakeTask;
@@ -30,8 +33,10 @@ import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
 import com.swirlds.platform.network.RandomGraph;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
@@ -45,12 +50,12 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     private static final Logger logger = LogManager.getLogger(SyncManagerImpl.class);
 
     /**
-     * When looking for a neighbor to call, this is the maximum number of neighbors we query before just selecting
-     * one if a suitable neighbor is not found yet.
+     * When looking for a neighbor to call, this is the maximum number of neighbors we query before just selecting one
+     * if a suitable neighbor is not found yet.
      */
     private static final int MAXIMUM_NEIGHBORS_TO_QUERY = 10;
 
-    private final Settings settings = Settings.getInstance();
+    private final EventConfig eventConfig;
 
     /** the event intake queue */
     private final BlockingQueue<EventIntakeTask> intakeQueue;
@@ -75,34 +80,41 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     /**
      * Creates a new SyncManager
      *
-     * @param intakeQueue
-     * 		the event intake queue
-     * @param connectionGraph
-     * 		The platforms connection graph.
-     * @param selfId
-     * 		The ID of the platform.
-     * @param eventCreationRules
-     * 		Contains a list of rules for checking whether this node should create an event or not
+     * @param metrics            the metrics engine
+     * @param intakeQueue        the event intake queue
+     * @param connectionGraph    The platforms connection graph.
+     * @param selfId             The ID of the platform.
+     * @param eventCreationRules Contains a list of rules for checking whether this node should create an event or not
      */
     public SyncManagerImpl(
-            final BlockingQueue<EventIntakeTask> intakeQueue,
-            final RandomGraph connectionGraph,
-            final NodeId selfId,
-            final EventCreationRules eventCreationRules,
-            final CriticalQuorum criticalQuorum,
-            final AddressBook addressBook,
-            final FallenBehindManager fallenBehindManager) {
-        super();
+            @NonNull final Metrics metrics,
+            @NonNull final BlockingQueue<EventIntakeTask> intakeQueue,
+            @NonNull final RandomGraph connectionGraph,
+            @NonNull final NodeId selfId,
+            @NonNull final EventCreationRules eventCreationRules,
+            @NonNull final CriticalQuorum criticalQuorum,
+            @NonNull final AddressBook addressBook,
+            @NonNull final FallenBehindManager fallenBehindManager,
+            @NonNull final EventConfig eventConfig) {
 
-        this.intakeQueue = intakeQueue;
-        this.connectionGraph = connectionGraph;
-        this.selfId = selfId;
+        this.intakeQueue = Objects.requireNonNull(intakeQueue);
+        this.connectionGraph = Objects.requireNonNull(connectionGraph);
+        this.selfId = Objects.requireNonNull(selfId);
 
-        this.eventCreationRules = eventCreationRules;
-        this.criticalQuorum = criticalQuorum;
-        this.addressBook = addressBook;
+        this.eventCreationRules = Objects.requireNonNull(eventCreationRules);
+        this.criticalQuorum = Objects.requireNonNull(criticalQuorum);
+        this.addressBook = Objects.requireNonNull(addressBook);
 
-        this.fallenBehindManager = fallenBehindManager;
+        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
+        this.eventConfig = Objects.requireNonNull(eventConfig);
+
+        metrics.getOrCreate(
+                new FunctionGauge.Config<>(INTERNAL_CATEGORY, "hasFallenBehind", Object.class, this::hasFallenBehind)
+                        .withDescription("has this node fallen behind?"));
+        metrics.getOrCreate(new FunctionGauge.Config<>(
+                        INTERNAL_CATEGORY, "numReportFallenBehind", Integer.class, this::numReportedFallenBehind)
+                .withDescription("the number of nodes that have fallen behind")
+                .withUnit("count"));
     }
 
     /**
@@ -119,7 +131,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
 
         // we shouldn't sync if the event intake queue is too big
         final int intakeQueueSize = intakeQueue.size();
-        if (intakeQueueSize > settings.getEventIntakeQueueThrottleSize()) {
+        if (intakeQueueSize > eventConfig.eventIntakeQueueThrottleSize()) {
             logger.debug(
                     SYNC.getMarker(),
                     "don't accept sync because event intake queue is too big, size: {}",
@@ -142,7 +154,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
         }
 
         // we shouldn't sync if the event intake queue is too big
-        return intakeQueue.size() <= settings.getEventIntakeQueueThrottleSize();
+        return intakeQueue.size() <= eventConfig.eventIntakeQueueThrottleSize();
     }
 
     /**
@@ -151,25 +163,31 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
      * @return a list of neighbors
      */
     @Override
-    public List<Long> getNeighborsToCall() {
+    public List<NodeId> getNeighborsToCall() {
         // if there is an indication we might have fallen behind, calling nodes to establish this takes priority
-        List<Long> list = getNeededForFallenBehind();
+        List<NodeId> list = getNeededForFallenBehind();
         if (list != null) {
             return list;
         }
         list = new LinkedList<>();
+        final int selfIndex = addressBook.getIndexOfNodeId(selfId);
         for (int i = 0; i < MAXIMUM_NEIGHBORS_TO_QUERY; i++) {
-            final long neighbor = connectionGraph.randomNeighbor(selfId.getIdAsInt());
+            // Noncontiguous NodeId compatibility: connectionGraph is interpreted as addressbook indexes for NodeIds
+            final int neighbor = connectionGraph.randomNeighbor(selfIndex) % addressBook.getSize();
+            if (neighbor == selfIndex) {
+                continue;
+            }
+            final NodeId neighborId = addressBook.getNodeId(neighbor);
 
             // don't add duplicated nodes here
-            if (list.contains(neighbor)) {
+            if (list.contains(neighborId)) {
                 continue;
             }
 
             // we try to call a neighbor in the bottom 1/3 by number of events created in the latest round, if
             // we fail to find one after 10 tries, we just call the last neighbor we find
-            if (criticalQuorum.isInCriticalQuorum(neighbor) || i == MAXIMUM_NEIGHBORS_TO_QUERY - 1) {
-                list.add(neighbor);
+            if (criticalQuorum.isInCriticalQuorum(neighborId) || i == MAXIMUM_NEIGHBORS_TO_QUERY - 1) {
+                list.add(neighborId);
             }
         }
 
@@ -179,8 +197,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     /**
      * Observers halt requested dispatches. Causes gossip to permanently stop (until node reboot).
      *
-     * @param reason
-     * 		the reason why gossip is being stopped
+     * @param reason the reason why gossip is being stopped
      */
     public void haltRequestedObserver(final String reason) {
         gossipHalted.set(true);
@@ -190,14 +207,10 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     /**
      * Called by SyncUtils after a successful sync to check whether it should create an event or not
      *
-     * @param otherId
-     * 		the ID of the node we synced with
-     * @param oneNodeFallenBehind
-     * 		true if one of the nodes in the sync has fallen behind
-     * @param eventsRead
-     * 		the number of events read during the sync
-     * @param eventsWritten
-     * 		the number of events written during the sync
+     * @param otherId             the ID of the node we synced with
+     * @param oneNodeFallenBehind true if one of the nodes in the sync has fallen behind
+     * @param eventsRead          the number of events read during the sync
+     * @param eventsWritten       the number of events written during the sync
      * @return true if an event should be created, false otherwise
      */
     @Override
@@ -209,8 +222,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     /**
      * Called by {@link SyncUtils} after a successful sync to check whether it should create an event or not
      *
-     * @param info
-     * 		information about the sync
+     * @param info information about the sync
      * @return true if an event should be created, false otherwise
      */
     @Override
@@ -228,14 +240,14 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
         }
 
         // check 3: if neither node is part of the superMinority in the latest round, don't create an event
-        if (!criticalQuorum.isInCriticalQuorum(info.getOtherId().getId())
-                && !criticalQuorum.isInCriticalQuorum(selfId.getId())) {
+        if (!criticalQuorum.isInCriticalQuorum(info.getOtherId()) && !criticalQuorum.isInCriticalQuorum(selfId)) {
             return false;
         }
 
         // check 4: staleEventPrevention
-        if (settings.getStaleEventPreventionThreshold() > 0
-                && info.getEventsRead() > settings.getStaleEventPreventionThreshold() * addressBook.getSize()) {
+        final int staleEventPreventionThreshold = eventConfig.staleEventPreventionThreshold();
+        if (staleEventPreventionThreshold > 0
+                && info.getEventsRead() > staleEventPreventionThreshold * addressBook.getSize()) {
             // if we read too many events during this sync, we skip creating an event to reduce the probability of
             // having a stale event
             return false;
@@ -262,7 +274,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     }
 
     @Override
-    public List<Long> getNeededForFallenBehind() {
+    public List<NodeId> getNeededForFallenBehind() {
         return fallenBehindManager.getNeededForFallenBehind();
     }
 
@@ -278,12 +290,12 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
      * {@inheritDoc}
      */
     @Override
-    public List<Long> getNeighborsForReconnect() {
+    public List<NodeId> getNeighborsForReconnect() {
         return fallenBehindManager.getNeighborsForReconnect();
     }
 
     @Override
-    public boolean shouldReconnectFrom(final Long peerId) {
+    public boolean shouldReconnectFrom(final NodeId peerId) {
         return fallenBehindManager.shouldReconnectFrom(peerId);
     }
 

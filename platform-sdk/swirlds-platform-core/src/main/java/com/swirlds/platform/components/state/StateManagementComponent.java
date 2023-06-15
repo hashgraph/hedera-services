@@ -27,6 +27,8 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFinder;
 import com.swirlds.platform.state.signed.SignedStateInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -77,4 +79,22 @@ public interface StateManagementComponent
      */
     @Deprecated
     List<SignedStateInfo> getSignedStateInfo();
+
+    /**
+     * Get the consensus timestamp of the first state ingested by the signed state manager. Useful for computing the
+     * total consensus time that this node has been operating for.
+     *
+     * @return the consensus timestamp of the first state ingested by the signed state manager, or null if no states
+     * have been ingested yet
+     */
+    @Nullable
+    Instant getFirstStateTimestamp();
+
+    /**
+     * Get the round of the first state ingested by the signed state manager. Useful for computing the total number of
+     * elapsed rounds since startup.
+     *
+     * @return the round of the first state ingested by the signed state manager, or -1 if no states have been ingested
+     */
+    long getFirstStateRound();
 }

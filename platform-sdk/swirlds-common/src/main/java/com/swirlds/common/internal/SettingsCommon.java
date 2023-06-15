@@ -42,7 +42,6 @@ public class SettingsCommon {
     public static boolean logStack;
 
     // used by AbstractStatistics
-    public static double halfLife = 10;
     public static boolean showInternalStats;
     public static boolean verboseStatistics;
 }

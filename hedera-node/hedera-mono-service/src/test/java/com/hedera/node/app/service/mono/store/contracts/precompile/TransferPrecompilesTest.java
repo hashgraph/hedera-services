@@ -170,9 +170,12 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -186,6 +189,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -337,6 +342,8 @@ class TransferPrecompilesTest {
             "0x189a554c00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004c0000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000004bdffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffce0000000000000000000000000000000000000000000000000000000000000000");
     private static final Bytes TRANSFER_TOKEN_INPUT = Bytes.fromHexString(
             "0xeca3691700000000000000000000000000000000000000000000000000000000000004380000000000000000000000000000000000000000000000000000000000000435000000000000000000000000000000000000000000000000000000000000043a0000000000000000000000000000000000000000000000000000000000000014");
+    private static final Bytes NEGATIVE_AMOUNT_TRANSFER_TOKEN_INPUT = Bytes.fromHexString(
+            "0xeca3691700000000000000000000000000000000000000000000000000000000000004380000000000000000000000000000000000000000000000000000000000000435000000000000000000000000000000000000000000000000000000000000043afffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000");
     private static final Bytes POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT = Bytes.fromHexString(
             "0x82bba4930000000000000000000000000000000000000000000000000000000000000444000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000044100000000000000000000000000000000000000000010000000000000000004410000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000014");
     private static final Bytes POSITIVE_NEGATIVE_AMOUNT_TRANSFER_TOKENS_INPUT = Bytes.fromHexString(
@@ -345,6 +352,22 @@ class TransferPrecompilesTest {
             "0x5cfc901100000000000000000000000000000000000000000000000000000000000004680000000000000000000000000000000000000000000000000000000000000465000000000000000000000000000000000000000000000000000000000000046a0000000000000000000000000000000000000000000000000000000000000065");
     private static final Bytes TRANSFER_NFTS_INPUT = Bytes.fromHexString(
             "0x2c4ba191000000000000000000000000000000000000000000000000000000000000047a000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000047700000000000000000000000000000000000000000000000000000000000004770000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000047c000000000000000000000000000000000000000000000010000000000000047c0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
+
+    private enum WithHapiBlockLimit {
+        LOW,
+        HIGH
+    };
+
+    private static final Map<WithHapiBlockLimit, Consumer<GlobalDynamicProperties>> setHapiBlockLimitGivens = Map.of(
+            WithHapiBlockLimit.LOW,
+            props -> {
+                given(props.maxNumWithHapiSigsAccess()).willReturn(0L);
+            },
+            WithHapiBlockLimit.HIGH,
+            props -> {
+                given(props.maxNumWithHapiSigsAccess()).willReturn(Long.MAX_VALUE);
+                given(props.systemContractsWithTopLevelSigsAccess()).willReturn(Set.of(CryptoTransfer));
+            });
 
     private HTSPrecompiledContract subject;
     private MockedStatic<TransferPrecompile> transferPrecompile;
@@ -1717,15 +1740,15 @@ class TransferPrecompilesTest {
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
-    @Test
-    void transferFailsAndCatchesProperly() throws InvalidProtocolBufferException {
+    @ParameterizedTest
+    @EnumSource
+    void transferFailsAndCatchesProperly(final WithHapiBlockLimit limit) throws InvalidProtocolBufferException {
         final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
 
         givenMinimalFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
-        given(dynamicProperties.maxNumWithHapiSigsAccess()).willReturn(Long.MAX_VALUE);
-        given(dynamicProperties.systemContractsWithTopLevelSigsAccess()).willReturn(Set.of(CryptoTransfer));
+        setHapiBlockLimitGivens.get(limit).accept(dynamicProperties);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any())).willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -2339,6 +2362,19 @@ class TransferPrecompilesTest {
         assertTrue(fungibleTransfer.getDenomination().getTokenNum() > 0);
         assertEquals(20, fungibleTransfer.amount());
         assertEquals(0, hbarTransfers.size());
+    }
+
+    @Test
+    void decodeTransferTokenWithNegativeInput() {
+        transferPrecompile
+                .when(() -> decodeTransferToken(NEGATIVE_AMOUNT_TRANSFER_TOKEN_INPUT, identity(), accoundIdExists))
+                .thenCallRealMethod();
+        UnaryOperator<byte[]> identity = identity();
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> decodeTransferToken(NEGATIVE_AMOUNT_TRANSFER_TOKEN_INPUT, identity, accoundIdExists));
+
+        assertEquals("Amount must be non-negative", exception.getMessage());
     }
 
     @Test

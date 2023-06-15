@@ -82,7 +82,7 @@ public class TopicUpdateSuite extends HapiSuite {
     }
 
     private HapiSpec updateToMissingTopicFails() {
-        return defaultHapiSpec("UpdateTopicHandlesMissingTopicGracefully")
+        return defaultHapiSpec("updateToMissingTopicFails")
                 .given()
                 .when()
                 .then(updateTopic("1.2.3").hasKnownStatus(INVALID_TOPIC_ID));
@@ -116,7 +116,7 @@ public class TopicUpdateSuite extends HapiSuite {
                 .adminKey("newAdminKey")
                 .autoRenewAccountId("newAutoRenewAccount")
                 .signedBy(signers);
-        ;
+
         return defaultHapiSpec("topicUpdateSigReqsEnforcedAtConsensus")
                 .given(
                         newKeyNamed("oldAdminKey"),

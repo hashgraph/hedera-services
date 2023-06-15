@@ -48,7 +48,7 @@ class TransactionHandlerTest {
             () -> new NullPointerException("intentionally thrown"),
             () -> new RuntimeException("intentionally thrown"));
 
-    private final NodeId selfId = new NodeId(false, 0L);
+    private final NodeId selfId = new NodeId(0L);
 
     private final State state = mock(State.class);
     private final SwirldState swirldState = mock(SwirldState.class);
@@ -79,13 +79,13 @@ class TransactionHandlerTest {
         return new EventImpl(
                 new BaseEventHashedData(
                         new BasicSoftwareVersion(1),
-                        0L,
+                        new NodeId(0L),
                         0L,
                         0L,
                         CryptographyHolder.get().getNullHash(),
                         CryptographyHolder.get().getNullHash(),
                         Instant.now(),
                         transactions),
-                new BaseEventUnhashedData(0L, new byte[0]));
+                new BaseEventUnhashedData(new NodeId(0L), new byte[0]));
     }
 }

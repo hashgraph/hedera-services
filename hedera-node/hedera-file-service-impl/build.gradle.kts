@@ -18,24 +18,21 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera File Service Implementation"
 
-configurations.all {
-  exclude("javax.annotation", "javax.annotation-api")
-
-  exclude("io.grpc", "grpc-core")
-  exclude("io.grpc", "grpc-context")
-  exclude("io.grpc", "grpc-api")
-  exclude("io.grpc", "grpc-testing")
-}
-
 dependencies {
-  annotationProcessor(libs.dagger.compiler)
-  api(project(":hedera-node:hedera-file-service"))
-  implementation(libs.swirlds.virtualmap)
-  implementation(libs.swirlds.jasperdb)
-  implementation(libs.bundles.di)
-  implementation(project(":hedera-node:hedera-mono-service"))
-  testImplementation(testLibs.mockito.inline)
-  testImplementation(testLibs.bundles.testing)
-  testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
-  testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+    javaModuleDependencies {
+        annotationProcessor(gav("dagger.compiler"))
+
+        testImplementation(project(":hedera-node:node-app-service-token"))
+        testImplementation(testFixtures(project(":hedera-node:node-app-service-mono")))
+        testImplementation(testFixtures(project(":hedera-node:node-config")))
+        testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.mockito"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+        testImplementation(gav("com.google.protobuf"))
+        testImplementation(gav("com.swirlds.common"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
+        testRuntimeOnly(gav("org.mockito.inline"))
+    }
 }

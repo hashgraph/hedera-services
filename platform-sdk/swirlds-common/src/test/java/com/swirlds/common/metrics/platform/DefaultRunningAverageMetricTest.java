@@ -26,11 +26,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.test.fixtures.FakeTime;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -45,6 +46,9 @@ class DefaultRunningAverageMetricTest {
     private static final String FORMAT = "FoRmAt";
 
     private static final double EPSILON = 1e-6;
+
+    private static final MetricsConfig metricsConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
 
     @SuppressWarnings("removal")
     @Test
@@ -154,8 +158,8 @@ class DefaultRunningAverageMetricTest {
 
         // when
         recordValues(metric, time, 0, 1000, Math.E);
-        recordValues(metric, time, 1000, 1000 + (int) SettingsCommon.halfLife, Math.PI);
-        time.set(Duration.ofSeconds(1000 + (int) SettingsCommon.halfLife));
+        recordValues(metric, time, 1000, 1000 + (int) metricsConfig.halfLife(), Math.PI);
+        time.set(Duration.ofSeconds(1000 + (int) metricsConfig.halfLife()));
         double avg = metric.get();
 
         // then
@@ -174,14 +178,14 @@ class DefaultRunningAverageMetricTest {
 
         // when
         recordValues(metric, time, 0, 1000, Math.E);
-        recordValues(metric, time, 1000, 1000 + (int) SettingsCommon.halfLife, Math.PI);
+        recordValues(metric, time, 1000, 1000 + (int) metricsConfig.halfLife(), Math.PI);
         recordValues(
                 metric,
                 time,
-                1000 + (int) SettingsCommon.halfLife,
-                1000 + 2 * (int) SettingsCommon.halfLife,
+                1000 + (int) metricsConfig.halfLife(),
+                1000 + 2 * (int) metricsConfig.halfLife(),
                 Math.PI + 0.5 * (Math.PI - Math.E));
-        time.set(Duration.ofSeconds(1000 + 2 * (int) SettingsCommon.halfLife));
+        time.set(Duration.ofSeconds(1000 + 2 * (int) metricsConfig.halfLife()));
         double avg = metric.get();
 
         // then
@@ -199,8 +203,8 @@ class DefaultRunningAverageMetricTest {
 
         // when
         recordValues(metric, time, 0, 1000, Math.PI);
-        recordValues(metric, time, 1000, 1000 + (int) SettingsCommon.halfLife, Math.E);
-        time.set(Duration.ofSeconds(1000 + (int) SettingsCommon.halfLife));
+        recordValues(metric, time, 1000, 1000 + (int) metricsConfig.halfLife(), Math.E);
+        time.set(Duration.ofSeconds(1000 + (int) metricsConfig.halfLife()));
         double avg = metric.get();
 
         // then
@@ -219,14 +223,14 @@ class DefaultRunningAverageMetricTest {
 
         // when
         recordValues(metric, time, 0, 1000, Math.PI);
-        recordValues(metric, time, 1000, 1000 + (int) SettingsCommon.halfLife, Math.E);
+        recordValues(metric, time, 1000, 1000 + (int) metricsConfig.halfLife(), Math.E);
         recordValues(
                 metric,
                 time,
-                1000 + (int) SettingsCommon.halfLife,
-                1000 + 2 * (int) SettingsCommon.halfLife,
+                1000 + (int) metricsConfig.halfLife(),
+                1000 + 2 * (int) metricsConfig.halfLife(),
                 Math.E - 0.5 * (Math.PI - Math.E));
-        time.set(Duration.ofSeconds(1000 + 2 * (int) SettingsCommon.halfLife));
+        time.set(Duration.ofSeconds(1000 + 2 * (int) metricsConfig.halfLife()));
         double avg = metric.get();
 
         // then

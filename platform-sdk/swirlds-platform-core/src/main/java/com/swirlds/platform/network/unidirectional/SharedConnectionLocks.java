@@ -67,7 +67,7 @@ public class SharedConnectionLocks {
     };
 
     private final NetworkTopology topology;
-    private final Map<Long, AutoClosableResourceLock<ConnectionManager>> locks;
+    private final Map<NodeId, AutoClosableResourceLock<ConnectionManager>> locks;
 
     public SharedConnectionLocks(final NetworkTopology topology, final StaticConnectionManagers suppliers) {
         this.topology = topology;
@@ -75,7 +75,7 @@ public class SharedConnectionLocks {
         for (final NodeId peerId : topology.getNeighbors()) {
             final ConnectionManager supplier = suppliers.getManager(peerId, true);
             Objects.requireNonNull(supplier);
-            locks.put(peerId.getId(), Locks.createResourceLock(supplier));
+            locks.put(peerId, Locks.createResourceLock(supplier));
         }
     }
 
@@ -94,7 +94,7 @@ public class SharedConnectionLocks {
         if (!topology.shouldConnectTo(nodeId)) {
             return NOT_ACQUIRED;
         }
-        return locks.get(nodeId.getId()).tryLock();
+        return locks.get(nodeId).tryLock();
     }
 
     /**
@@ -113,6 +113,6 @@ public class SharedConnectionLocks {
         if (!topology.shouldConnectTo(nodeId)) {
             return NOT_ACQUIRED;
         }
-        return locks.get(nodeId.getId()).lock();
+        return locks.get(nodeId).lock();
     }
 }

@@ -37,13 +37,13 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.platform.Browser;
-import com.swirlds.platform.gui.SwirldsGui;
+import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -208,14 +208,12 @@ public class StatsDemoMain implements SwirldMain {
     @Override
     public void init(final Platform platform, final NodeId id) {
 
-        long syncDelay;
         this.platform = platform;
-        selfId = id.getId();
+        selfId = id.id();
         // parse the config.txt parameters, and allow optional _ as in 1_000_000
-        final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
+        final String[] parameters = ParameterProvider.getInstance().getParameters();
         headless = (parameters[0].equals("1"));
         writePeriod = Integer.parseInt(parameters[1].replaceAll("_", ""));
-        syncDelay = Integer.parseInt(parameters[2].replaceAll("_", ""));
         bytesPerTrans = Integer.parseInt(parameters[3].replaceAll("_", ""));
         transPerEventMax = Integer.parseInt(parameters[4].replaceAll("_", ""));
         transPerSecToCreate = Integer.parseInt(parameters[5].replaceAll("_", ""));
@@ -226,11 +224,11 @@ public class StatsDemoMain implements SwirldMain {
         if (!headless) { // create the window, make it visible
             console = createConsole(platform, true);
         }
-        SwirldsGui.setAbout(
-                platform.getSelfId().getId(),
-                "Stats Demo v. 1.2\nThis writes statistics to a log file,"
-                        + " such as the number of transactions per second.");
-        ((PlatformWithDeprecatedMethods) platform).setSleepAfterSync(syncDelay);
+        GuiPlatformAccessor.getInstance()
+                .setAbout(
+                        platform.getSelfId(),
+                        "Stats Demo v. 1.2\nThis writes statistics to a log file,"
+                                + " such as the number of transactions per second.");
     }
 
     @Override

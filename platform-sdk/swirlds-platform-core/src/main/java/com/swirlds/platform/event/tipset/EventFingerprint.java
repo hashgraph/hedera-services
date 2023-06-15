@@ -28,7 +28,7 @@ import java.util.List;
  * Uniquely identifies an event and stores basic metadata bout it.
  *
  * @param creator
- * 		the ID of the node that created this event
+ * 		the ID of the node that created this event  TODO use node ID
  * @param generation
  * 		the generation of the event
  * @param hash
@@ -48,7 +48,7 @@ public record EventFingerprint(long creator, long generation, @NonNull Hash hash
     @NonNull
     public static EventFingerprint of(@NonNull final EventImpl event) {
         return new EventFingerprint(
-                event.getCreatorId(), event.getGeneration(), event.getBaseHash(), event.getTimeCreated());
+                event.getCreatorId().id(), event.getGeneration(), event.getBaseHash(), event.getTimeCreated());
     }
 
     /**
@@ -59,7 +59,7 @@ public record EventFingerprint(long creator, long generation, @NonNull Hash hash
     @NonNull
     public static EventFingerprint of(@NonNull final GossipEvent event) {
         return new EventFingerprint(
-                event.getHashedData().getCreatorId(),
+                event.getHashedData().getCreatorId().id(),
                 event.getGeneration(),
                 event.getHashedData().getHash(),
                 event.getHashedData().getTimeCreated());
@@ -89,7 +89,7 @@ public record EventFingerprint(long creator, long generation, @NonNull Hash hash
 
         if (event.getHashedData().getSelfParentHash() != null) {
             final EventFingerprint selfParentFingerprint = new EventFingerprint(
-                    event.getHashedData().getCreatorId(),
+                    event.getHashedData().getCreatorId().id(),
                     event.getHashedData().getSelfParentGen(),
                     event.getHashedData().getSelfParentHash(),
                     Instant.EPOCH); // TODO how to figure out the correct time?
@@ -97,7 +97,7 @@ public record EventFingerprint(long creator, long generation, @NonNull Hash hash
         }
         if (event.getHashedData().getOtherParentHash() != null) {
             final EventFingerprint otherParentFingerprint = new EventFingerprint(
-                    event.getUnhashedData().getOtherId(), // TODO why is this unhashed?!
+                    event.getUnhashedData().getOtherId().id(), // TODO why is this unhashed?!
                     event.getHashedData().getOtherParentGen(),
                     event.getHashedData().getOtherParentHash(),
                     Instant.EPOCH); // TODO how to figure out the correct time?

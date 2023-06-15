@@ -44,9 +44,9 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
             @NonNull final ConfigPropertiesService propertiesService,
             @NonNull final ConverterService converterService,
             @NonNull final ConfigValidationService validationService) {
-        this.propertiesService = ArgumentUtils.throwArgNull(propertiesService, "propertiesService");
-        this.converterService = ArgumentUtils.throwArgNull(converterService, "converterService");
-        this.validationService = ArgumentUtils.throwArgNull(validationService, "validationService");
+        this.propertiesService = Objects.requireNonNull(propertiesService, "propertiesService must not be null");
+        this.converterService = Objects.requireNonNull(converterService, "converterService must not be null");
+        this.validationService = Objects.requireNonNull(validationService, "validationService must not be null");
         this.configDataService = new ConfigDataService(this, converterService);
     }
 
@@ -67,7 +67,7 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     @Override
     public <T> T getValue(@NonNull final String propertyName, @NonNull final Class<T> propertyType) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
-        ArgumentUtils.throwArgNull(propertyType, "propertyType");
+        Objects.requireNonNull(propertyType, "propertyType must not be null");
         final String rawValue = getValue(propertyName);
         if (Objects.equals(propertyType, String.class)) {
             return (T) rawValue;
@@ -80,7 +80,7 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     public <T> T getValue(
             @NonNull final String propertyName, @NonNull final Class<T> propertyType, @Nullable final T defaultValue) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
-        ArgumentUtils.throwArgNull(propertyType, "propertyType");
+        Objects.requireNonNull(propertyType, "propertyType must not be null");
         if (!exists(propertyName)) {
             return defaultValue;
         }
@@ -112,7 +112,7 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     @Override
     public <T> List<T> getValues(@NonNull final String propertyName, @NonNull final Class<T> propertyType) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
-        ArgumentUtils.throwArgNull(propertyType, "propertyType");
+        Objects.requireNonNull(propertyType, "propertyType must not be null");
         final List<String> values = getValues(propertyName);
         if (values == null) {
             return null;
@@ -129,7 +129,7 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
             @NonNull final Class<T> propertyType,
             @Nullable final List<T> defaultValue) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
-        ArgumentUtils.throwArgNull(propertyType, "propertyType");
+        Objects.requireNonNull(propertyType, "propertyType must not be null");
         if (!exists(propertyName)) {
             return defaultValue;
         }

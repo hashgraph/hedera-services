@@ -63,7 +63,7 @@ class SyncProtocolTests {
 
     @BeforeEach
     void setup() {
-        peerId = new NodeId(false, 1);
+        peerId = new NodeId(1);
         shadowGraphSynchronizer = mock(ShadowGraphSynchronizer.class);
         fallenBehindManager = mock(FallenBehindManager.class);
         permitProvider = new SyncPermitProvider(2);
@@ -77,9 +77,9 @@ class SyncProtocolTests {
         // node is not fallen behind
         Mockito.when(fallenBehindManager.hasFallenBehind()).thenReturn(false);
         // only peer with ID 1 is needed for fallen behind
-        Mockito.when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(1L));
+        Mockito.when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(new NodeId(1L)));
         // all nodes are in critical quorum
-        Mockito.when(criticalQuorum.isInCriticalQuorum(Mockito.anyLong())).thenReturn(true);
+        Mockito.when(criticalQuorum.isInCriticalQuorum(any())).thenReturn(true);
         // peer agnostic sync checks pass
         peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(() -> true));
     }
@@ -214,11 +214,11 @@ class SyncProtocolTests {
     @DisplayName("Protocol doesn't initiate if there is no reason to, even if there isn't a reason not to")
     void noReasonToInitiate() {
         // peer isn't in critical quorum
-        Mockito.when(criticalQuorum.isInCriticalQuorum(Mockito.anyLong())).thenReturn(false);
+        Mockito.when(criticalQuorum.isInCriticalQuorum(any())).thenReturn(false);
 
         // peer 6 isn't needed for fallen behind
         final SyncProtocol protocol = new SyncProtocol(
-                new NodeId(false, 6),
+                new NodeId(6),
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,
@@ -237,7 +237,7 @@ class SyncProtocolTests {
     @DisplayName("Protocol initiates if peer is needed for fallen behind")
     void initiateForFallenBehind() {
         // peer isn't in critical quorum
-        Mockito.when(criticalQuorum.isInCriticalQuorum(Mockito.anyLong())).thenReturn(false);
+        Mockito.when(criticalQuorum.isInCriticalQuorum(any())).thenReturn(false);
 
         // peer *is* needed for fallen behind (by default)
         final SyncProtocol protocol = new SyncProtocol(
@@ -261,7 +261,7 @@ class SyncProtocolTests {
     void initiateForCriticalQuorum() {
         // peer 6 isn't needed for fallen behind, but it *is* in critical quorum (by default)
         final SyncProtocol protocol = new SyncProtocol(
-                new NodeId(false, 6),
+                new NodeId(6),
                 shadowGraphSynchronizer,
                 fallenBehindManager,
                 permitProvider,

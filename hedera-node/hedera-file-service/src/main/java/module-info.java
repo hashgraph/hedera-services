@@ -4,5 +4,7 @@ module com.hedera.node.app.service.file {
     uses com.hedera.node.app.service.file.FileService;
 
     requires transitive com.hedera.node.app.spi;
-    requires com.github.spotbugs.annotations;
+    requires transitive com.hedera.node.hapi;
+    requires transitive com.hedera.pbj.runtime;
+    requires static com.github.spotbugs.annotations;
 }

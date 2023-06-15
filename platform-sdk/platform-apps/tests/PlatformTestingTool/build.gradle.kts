@@ -15,30 +15,31 @@
  */
 
 plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.application")
-  id("com.swirlds.platform.protobuf")
+    id("com.swirlds.platform.conventions")
+    id("com.swirlds.platform.application")
+    id("com.swirlds.platform.protobuf")
 }
 
 dependencies {
-  // Individual Dependencies
-  implementation(project(":swirlds-merkle"))
-  implementation(libs.commons.math3)
-  implementation(libs.commons.io)
-  implementation(libs.protobuf)
+    // Individual Dependencies
+    compileOnly(libs.spotbugs.annotations)
+    implementation(project(":swirlds-merkle"))
+    implementation(libs.commons.math3)
+    implementation(libs.commons.io)
+    implementation(libs.protobuf)
 
-  // Bundle Dependencies
-  implementation(libs.bundles.logging.impl)
+    // Bundle Dependencies
+    implementation(libs.bundles.logging.impl)
 
-  // Test Dependencies
+    // Test Dependencies
 
-  // These should not be implementation() based deps, but this requires refactoring to eliminate.
-  implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
-  implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
-  implementation(project(":swirlds-unit-tests:structures:swirlds-merkle-test"))
+    // These should not be implementation() based deps, but this requires refactoring to eliminate.
+    implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
+    implementation(project(":swirlds-unit-tests:structures:swirlds-merkle-test"))
 
-  testImplementation(testLibs.bundles.junit)
-  testImplementation(testLibs.bundles.mocking)
+    testImplementation(testLibs.bundles.junit)
+    testImplementation(testLibs.bundles.mocking)
 }
 
 tasks.withType<Javadoc>() { enabled = false }

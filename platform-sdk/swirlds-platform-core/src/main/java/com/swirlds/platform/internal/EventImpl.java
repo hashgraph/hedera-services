@@ -47,6 +47,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.InternalEventData;
 import com.swirlds.platform.util.iterator.SkippingIterator;
 import com.swirlds.platform.util.iterator.TypedIterator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
@@ -251,7 +252,7 @@ public class EventImpl extends AbstractSerializableHashable
         /* number of seconds to add to the base time */
         double sec;
 
-        if (selfId.equalsMain(getCreatorId())) {
+        if (Objects.equals(selfId, getCreatorId())) {
             // event by self
             t = getTimeCreated();
             // seconds from self creating an event to the consensus timestamp that event receives
@@ -581,11 +582,7 @@ public class EventImpl extends AbstractSerializableHashable
     }
 
     public boolean isCreatedBy(final NodeId id) {
-        return getCreatorId() == id.getId();
-    }
-
-    public boolean isCreatedBy(final long id) {
-        return getCreatorId() == id;
+        return Objects.equals(getCreatorId(), id);
     }
 
     public boolean hasUserTransactions() {
@@ -945,7 +942,8 @@ public class EventImpl extends AbstractSerializableHashable
      * {@inheritDoc}
      */
     @Override
-    public long getOtherId() {
+    @Nullable
+    public NodeId getOtherId() {
         return baseEvent.getUnhashedData().getOtherId();
     }
 
@@ -1002,7 +1000,8 @@ public class EventImpl extends AbstractSerializableHashable
      * {@inheritDoc}
      */
     @Override
-    public long getCreatorId() {
+    @NonNull
+    public NodeId getCreatorId() {
         return baseEvent.getHashedData().getCreatorId();
     }
 

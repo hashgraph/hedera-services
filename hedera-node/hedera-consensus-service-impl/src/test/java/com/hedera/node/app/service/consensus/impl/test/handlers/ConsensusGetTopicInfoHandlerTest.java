@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.test.handlers;
 
+import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
@@ -44,14 +45,15 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.converter.BytesConverter;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -61,19 +63,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
 
     @Mock
-    private NetworkInfo networkInfo;
-
-    @Mock
     private QueryContext context;
 
     private ConsensusGetTopicInfoHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ConsensusGetTopicInfoHandler(networkInfo);
+        subject = new ConsensusGetTopicInfoHandler();
     }
 
     @Test
+    @DisplayName("Query header is extracted correctly")
     void extractsHeader() {
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
         final var header = subject.extractHeader(query);
@@ -82,6 +82,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Check empty query response is created correctly")
     void createsEmptyResponse() {
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
@@ -95,6 +96,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Check node payment requirement is correct with each response type")
     void requiresPayment() {
         assertTrue(subject.requiresNodePayment(ResponseType.ANSWER_ONLY));
         assertTrue(subject.requiresNodePayment(ResponseType.ANSWER_STATE_PROOF));
@@ -103,6 +105,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Check Answer Only Cost is correct with each response type")
     void needsAnswerOnlyCostForCostAnswer() {
         assertFalse(subject.needsAnswerOnlyCost(ResponseType.ANSWER_ONLY));
         assertFalse(subject.needsAnswerOnlyCost(ResponseType.ANSWER_STATE_PROOF));
@@ -111,7 +114,8 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
-    void validatesQueryWhenValidTopic() throws Throwable {
+    @DisplayName("Validate query is good")
+    void validatesQueryWhenValidTopic() {
         givenValidTopic();
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
@@ -122,11 +126,11 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Topic Id is needed during validate")
     void validatesQueryIfInvalidTopic() throws Throwable {
         readableTopicState.reset();
-        final var state =
-                MapReadableKVState.<Long, MerkleTopic>builder("TOPICS").build();
-        given(readableStates.<Long, MerkleTopic>get(TOPICS)).willReturn(state);
+        final var state = MapReadableKVState.<Long, Topic>builder(TOPICS_KEY).build();
+        given(readableStates.<Long, Topic>get(TOPICS_KEY)).willReturn(state);
         final var store = new ReadableTopicStoreImpl(readableStates);
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
@@ -139,10 +143,28 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("Topic Id in transaction is needed during validate")
+    void validatesQueryIfInvalidTopicInTrans() throws Throwable {
+        readableTopicState.reset();
+        final var state = MapReadableKVState.<Long, Topic>builder(TOPICS_KEY).build();
+        given(readableStates.<Long, Topic>get(TOPICS_KEY)).willReturn(state);
+        final var store = new ReadableTopicStoreImpl(readableStates);
+
+        final var query = createEmptyGetTopicInfoQuery();
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableTopicStore.class)).thenReturn(store);
+
+        assertThatThrownBy(() -> subject.validate(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(ResponseCodeEnum.INVALID_TOPIC_ID));
+    }
+
+    @Test
+    @DisplayName("deleted topic is not valid")
     void validatesQueryIfDeletedTopic() throws Throwable {
         givenValidTopic(autoRenewId.accountNum(), true);
         readableTopicState = readableTopicState();
-        given(readableStates.<EntityNum, Topic>get(TOPICS)).willReturn(readableTopicState);
+        given(readableStates.<EntityNum, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
@@ -155,6 +177,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("failed response is correctly handled in findResponse")
     void getsResponseIfFailedResponse() {
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
@@ -164,6 +187,10 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
 
+        final var config =
+                new HederaTestConfigBuilder().withValue("ledger.id", "0x03").getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
+
         final var response = subject.findResponse(context, responseHeader);
         final var op = response.consensusGetTopicInfoOrThrow();
         assertEquals(ResponseCodeEnum.FAIL_FEE, op.header().nodeTransactionPrecheckCode());
@@ -171,9 +198,9 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
     }
 
     @Test
+    @DisplayName("OK response is correctly handled in findResponse")
     void getsResponseIfOkResponse() {
         givenValidTopic();
-        given(networkInfo.ledgerId()).willReturn(ledgerId);
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
@@ -182,6 +209,10 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
+
+        final var config =
+                new HederaTestConfigBuilder().withValue("ledger.id", "0x03").getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
 
         final var response = subject.findResponse(context, responseHeader);
         final var topicInfoResponse = response.consensusGetTopicInfoOrThrow();
@@ -199,7 +230,7 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
                 .submitKey(key)
                 .autoRenewAccount(AccountID.newBuilder().accountNum(topic.autoRenewAccountNumber()))
                 .autoRenewPeriod(WELL_KNOWN_AUTO_RENEW_PERIOD)
-                .ledgerId(ledgerId)
+                .ledgerId(new BytesConverter().convert("0x03"))
                 .build();
     }
 
@@ -208,6 +239,16 @@ class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
                 payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
         final var data = ConsensusGetTopicInfoQuery.newBuilder()
                 .topicID(TopicID.newBuilder().topicNum(topicId).build())
+                .header(QueryHeader.newBuilder().payment(payment).build())
+                .build();
+
+        return Query.newBuilder().consensusGetTopicInfo(data).build();
+    }
+
+    private Query createEmptyGetTopicInfoQuery() {
+        final var payment =
+                payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
+        final var data = ConsensusGetTopicInfoQuery.newBuilder()
                 .header(QueryHeader.newBuilder().payment(payment).build())
                 .build();
 

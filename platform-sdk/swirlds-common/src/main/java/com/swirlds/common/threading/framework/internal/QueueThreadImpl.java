@@ -16,7 +16,7 @@
 
 package com.swirlds.common.threading.framework.internal;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.threading.framework.QueueThread;
@@ -24,6 +24,7 @@ import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -36,8 +37,6 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * 		the type of the item in the queue
  */
 public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements QueueThread<T> {
-
-    private static final int WAIT_FOR_WORK_DELAY_MS = 10;
 
     private final int bufferSize;
 
@@ -55,9 +54,19 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
     private final AtomicLong noWorkCount = new AtomicLong();
 
     /**
+     * Tracks metrics related to this queue thread
+     */
+    private final QueueThreadMetrics metrics;
+
+    /**
      * If not null, called periodically when the queue thread is idle.
      */
-    private final Runnable idleCallback;
+    private final InterruptableRunnable idleCallback;
+
+    /**
+     * The amount of time to wait for work.
+     */
+    private final Duration waitForWorkDuration;
 
     /**
      * <p>
@@ -73,7 +82,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
      * 		the configuration object
      */
     public QueueThreadImpl(final AbstractQueueThreadConfiguration<?, T> configuration) {
-        super(configuration.getOrInitializeQueue());
+        super(ThreadBuildingUtils.getOrBuildQueue(configuration));
 
         this.configuration = configuration;
 
@@ -86,10 +95,10 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
         }
 
         buffer = new ArrayList<>(bufferSize);
-
         handler = configuration.getHandler();
-
         idleCallback = configuration.getIdleCallback();
+        this.waitForWorkDuration = configuration.getWaitForWorkDuration();
+        metrics = new QueueThreadMetrics(configuration);
 
         stoppableThread = configuration
                 .setWork(this::doWork)
@@ -137,6 +146,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
                     "can not start thread if it has already built a seed or if it has already been started");
         }
 
+        metrics.startingWork();
         stoppableThread.start();
     }
 
@@ -234,7 +244,12 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
     private void doWork() throws InterruptedException {
         drainTo(buffer, bufferSize);
         if (buffer.size() == 0) {
-            waitForItem();
+            metrics.finishedWork();
+            final T item = waitForItem();
+            metrics.startingWork();
+            if (item != null) {
+                handler.accept(item);
+            }
             return;
         }
 
@@ -245,22 +260,23 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
     }
 
     /**
-     * Wait a while for the next item to become available and handle it. If no item becomes available before
-     * a timeout then return without doing any work.
+     * Wait a while for the next item to become available and return it. If no item becomes available before
+     * a timeout then return null.
      *
      * @throws InterruptedException
      * 		if this method is interrupted during execution
      */
-    private void waitForItem() throws InterruptedException {
-        final T item = poll(WAIT_FOR_WORK_DELAY_MS, MILLISECONDS);
-        if (item != null) {
-            handler.accept(item);
-        } else {
+    private T waitForItem() throws InterruptedException {
+        final T item = poll(waitForWorkDuration.toNanos(), NANOSECONDS);
+        if (item == null) {
             noWorkCount.incrementAndGet();
             if (idleCallback != null) {
-                idleCallback.run(); // TODO test this
+                metrics.startingWork();
+                idleCallback.run();
+                metrics.finishedWork();
             }
         }
+        return item;
     }
 
     /**
@@ -288,7 +304,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
 
         final long initialCount = noWorkCount.get();
         while (noWorkCount.get() <= initialCount + 1 && getStatus() != Status.DEAD) {
-            MILLISECONDS.sleep(WAIT_FOR_WORK_DELAY_MS);
+            NANOSECONDS.sleep(waitForWorkDuration.toNanos());
         }
     }
 

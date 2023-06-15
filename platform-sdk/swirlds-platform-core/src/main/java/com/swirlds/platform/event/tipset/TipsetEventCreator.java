@@ -20,16 +20,17 @@ import static com.swirlds.platform.event.EventConstants.CREATOR_ID_UNDEFINED;
 import static com.swirlds.platform.event.EventConstants.GENERATION_UNDEFINED;
 import static com.swirlds.platform.event.tipset.EventFingerprint.getParentFingerprints;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.Signer;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
@@ -55,7 +56,7 @@ public class TipsetEventCreator { // TODO test
     private final Random random;
     private final Signer signer;
     private final AddressBook addressBook;
-    private final long selfId;
+    private final long selfId; // TODO use NodeId
     private final TipsetBuilder tipsetBuilder;
     private final TipsetScoreCalculator tipsetScoreCalculator;
     private final ChildlessEventTracker childlessEventTracker;
@@ -109,16 +110,18 @@ public class TipsetEventCreator { // TODO test
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
 
         // TODO reduce indirection in the lambdas
-        tipsetBuilder = new TipsetBuilder(addressBook.getSize(), addressBook::getIndex, index -> addressBook
-                .getAddress(addressBook.getId(index))
-                .getWeight());
+        // TODO use NodeID better
+        tipsetBuilder = new TipsetBuilder(
+                addressBook.getSize(),
+                id -> addressBook.getIndexOfNodeId(new NodeId(id)),
+                index -> addressBook.getAddress(addressBook.getNodeId(index)).getWeight());
 
         tipsetScoreCalculator = new TipsetScoreCalculator(
                 selfId,
                 tipsetBuilder,
                 addressBook.getSize(),
-                addressBook::getIndex,
-                index -> addressBook.getAddress(addressBook.getId(index)).getWeight(),
+                id -> addressBook.getIndexOfNodeId(new NodeId(id)),
+                index -> addressBook.getAddress(addressBook.getNodeId(index)).getWeight(),
                 addressBook.getTotalWeight());
 
         childlessEventTracker = new ChildlessEventTracker();
@@ -132,7 +135,7 @@ public class TipsetEventCreator { // TODO test
      * @param event the event to add
      */
     public void registerEvent(@NonNull final EventImpl event) {
-        if (event.getHashedData().getCreatorId() == selfId) {
+        if (event.getHashedData().getCreatorId().equals(new NodeId(selfId))) {
             // Self events are ingested immediately when they are created.
             // TODO what about when streaming from PCES?
             // TODO what about when we start with events in the state?
@@ -235,7 +238,7 @@ public class TipsetEventCreator { // TODO test
         int bullyScoreSum = 0;
         final List<Integer> bullyScores = new ArrayList<>(possibleOtherParents.size());
         for (final EventFingerprint nerd : possibleOtherParents) {
-            final int nodeIndex = addressBook.getIndex(nerd.creator());
+            final int nodeIndex = addressBook.getIndexOfNodeId(new NodeId(nerd.creator()));
             final int bullyScore = tipsetScoreCalculator.getBullyScoreForNodeIndex(nodeIndex);
 
             final long tipsetScore = tipsetScoreCalculator.getTheoreticalAdvancementScore(List.of(nerd));
@@ -308,9 +311,10 @@ public class TipsetEventCreator { // TODO test
             selfParentHash = lastSelfEvent.hash();
         }
 
+        // TODO use node ID
         final long otherParentId;
         if (selfParent == null) {
-            otherParentId = CREATOR_ID_UNDEFINED;
+            otherParentId = CREATOR_ID_UNDEFINED.id();
         } else {
             otherParentId = selfParent.creator();
         }
@@ -335,7 +339,7 @@ public class TipsetEventCreator { // TODO test
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 softwareVersion,
-                selfId,
+                new NodeId(selfId), // TODO
                 selfParentGeneration,
                 otherParentGeneration,
                 selfParentHash,
@@ -345,7 +349,8 @@ public class TipsetEventCreator { // TODO test
         cryptography.digestSync(hashedData);
 
         final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(
-                otherParentId, signer.sign(hashedData.getHash().getValue()).getSignatureBytes());
+                new NodeId(otherParentId),
+                signer.sign(hashedData.getHash().getValue()).getSignatureBytes()); // TODO
 
         final GossipEvent event = new GossipEvent(hashedData, unhashedData);
         event.buildDescriptor(); // TODO ugh

@@ -19,6 +19,7 @@ package com.swirlds.platform.event.creation;
 import static com.swirlds.logging.LogMarker.CREATE_EVENT;
 import static com.swirlds.platform.event.tipset.TipsetEventCreator.USE_TIPSET_ALGORITHM;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.EventCreationRuleResponse;
@@ -27,7 +28,6 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
@@ -36,7 +36,7 @@ import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.LongFunction;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,7 +57,7 @@ public class ChatterEventCreator {
     /** Consumes the events that are created */
     private final Consumer<GossipEvent> newEventHandler;
     /** This hashgraph's {@link EventMapper} */
-    private final LongFunction<GossipEvent> mostRecentEventById;
+    private final Function<NodeId, GossipEvent> mostRecentEventById;
     /** This object is used for checking whether this node should create an event or not */
     private final EventCreationRules eventCreationRules;
     /** Used for hashing the event when created */
@@ -71,7 +71,7 @@ public class ChatterEventCreator {
             @NonNull final Signer signer,
             @NonNull final TransactionSupplier transactionSupplier,
             @NonNull final Consumer<GossipEvent> newEventHandler,
-            @NonNull final LongFunction<GossipEvent> mostRecentEventById,
+            @NonNull final Function<NodeId, GossipEvent> mostRecentEventById,
             @NonNull final EventCreationRules eventCreationRules,
             @NonNull final Cryptography hasher,
             @NonNull final Time time) {
@@ -100,7 +100,8 @@ public class ChatterEventCreator {
      * 		the node ID that will supply the other parent for this event
      * @return true if the event was created, false if not
      */
-    public boolean createEvent(final long otherId) {
+    public boolean createEvent(@NonNull final NodeId otherId) {
+        Objects.requireNonNull(otherId, "the otherId must not be null");
 
         if (USE_TIPSET_ALGORITHM) {
             return false;
@@ -110,7 +111,7 @@ public class ChatterEventCreator {
         if (basicRulesResponse == EventCreationRuleResponse.DONT_CREATE) {
             return false;
         }
-        final GossipEvent selfParent = mostRecentEventById.apply(selfId.getId());
+        final GossipEvent selfParent = mostRecentEventById.apply(selfId);
         final GossipEvent otherParent = mostRecentEventById.apply(otherId);
         // if the basic rules returned a CREATE, this overrides all subsequent rules, so we don't check the parent based
         // rules
@@ -136,7 +137,7 @@ public class ChatterEventCreator {
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 softwareVersion,
-                selfId.getId(),
+                selfId,
                 EventUtils.getEventGeneration(selfParent),
                 EventUtils.getEventGeneration(otherParent),
                 EventUtils.getEventHash(selfParent),

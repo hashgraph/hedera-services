@@ -24,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -86,6 +87,14 @@ class DeletionLogicTest {
         final var op = opWithAccountObtainer(mirrorId, obtainer);
         given(validator.queryableContractStatus(id, contracts)).willReturn(CONTRACT_DELETED);
         assertEquals(CONTRACT_DELETED, subject.precheckValidity(op));
+    }
+
+    @Test
+    void rejectsPermanentDeletion() {
+        final var op = opWithAccountObtainer(aliasId, obtainer).toBuilder()
+                .setPermanentRemoval(true)
+                .build();
+        assertEquals(PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION, subject.precheckValidity(op));
     }
 
     @Test

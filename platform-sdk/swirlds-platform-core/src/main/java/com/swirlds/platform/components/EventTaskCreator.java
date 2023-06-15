@@ -20,10 +20,11 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STALE_EVENTS;
 import static com.swirlds.logging.LogMarker.SYNC;
 
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.event.CreateEventTask;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
@@ -32,6 +33,8 @@ import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.sync.SyncManager;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.Supplier;
@@ -61,8 +64,8 @@ public class EventTaskCreator {
     /** A {@link QueueThread} that handles event intake */
     private final BlockingQueue<EventIntakeTask> eventIntakeQueue;
 
-    /** provides access to settings */
-    private final SettingsProvider settings;
+    /** provides access to configuration */
+    private final EventConfig config;
 
     /** supplies the Random object */
     private final Supplier<Random> random;
@@ -84,8 +87,8 @@ public class EventTaskCreator {
      * 		tracks metrics
      * @param eventIntakeQueue
      * 		the queue add tasks to
-     * @param settings
-     * 		provides access to settings
+     * @param config
+     * 		provides access to configuration
      * @param syncManager
      * 		decides if an event should be created
      * @param random
@@ -97,7 +100,7 @@ public class EventTaskCreator {
             final NodeId selfId,
             final EventIntakeMetrics eventIntakeMetrics,
             final BlockingQueue<EventIntakeTask> eventIntakeQueue,
-            final SettingsProvider settings,
+            final EventConfig config,
             final SyncManager syncManager,
             final Supplier<Random> random) {
         this.eventMapper = eventMapper;
@@ -106,7 +109,7 @@ public class EventTaskCreator {
         this.addressBook = addressBook.copy();
         this.addressBook.seal();
         this.eventIntakeQueue = eventIntakeQueue;
-        this.settings = settings;
+        this.config = config;
         this.syncManager = syncManager;
         this.random = random;
     }
@@ -127,7 +130,7 @@ public class EventTaskCreator {
             return;
         }
 
-        createEvent(result.getOtherId().getId());
+        createEvent(result.getOtherId());
 
         logger.debug(SYNC.getMarker(), "{} created event for sync otherId:{}", selfId, result.getOtherId());
 
@@ -139,10 +142,11 @@ public class EventTaskCreator {
     private void randomEvent() {
         final Random r = random.get();
         // maybe create an event with a random other parent
-        if (settings.getRandomEventProbability() > 0 && r.nextInt(settings.getRandomEventProbability()) == 0) {
-            final long randomOtherId = r.nextInt(addressBook.getSize());
+        if (config.randomEventProbability() > 0 && r.nextInt(config.randomEventProbability()) == 0) {
+            int randomOtherIdIndex = r.nextInt(addressBook.getSize());
+            final NodeId randomOtherId = addressBook.getNodeId(randomOtherIdIndex);
             // we don't want to create an event with selfId==otherId
-            if (!selfId.equalsMain(randomOtherId)) {
+            if (!Objects.equals(selfId, randomOtherId)) {
                 createEvent(randomOtherId);
                 logger.debug(SYNC.getMarker(), "{} created random event otherId:{}", selfId, randomOtherId);
             }
@@ -156,21 +160,22 @@ public class EventTaskCreator {
      * This functionality may be deprecated in future.
      */
     public void rescueChildlessEvents() {
-        if (settings.getRescueChildlessInverseProbability() <= 0) {
+        if (config.rescueChildlessInverseProbability() <= 0) {
             return;
         }
 
-        for (int i = 0; i < addressBook.getSize(); i++) {
-            if (selfId.equalsMain(i)) {
+        for (final Address address : addressBook) {
+            final NodeId nodeId = address.getNodeId();
+            if (Objects.equals(selfId, nodeId)) {
                 // we don't rescue our own event, this might have been the cause of a reconnect issue
                 continue;
             }
 
-            if (eventMapper.doesMostRecentEventHaveDescendants(i)) {
+            if (eventMapper.doesMostRecentEventHaveDescendants(nodeId)) {
                 // not childless
                 continue;
             }
-            final EventImpl event = eventMapper.getMostRecentEvent(i);
+            final EventImpl event = eventMapper.getMostRecentEvent(nodeId);
             if (event == null) {
                 // we have no last event for this member
                 continue;
@@ -178,7 +183,7 @@ public class EventTaskCreator {
 
             // Decide, with probability = 1 / Settings.rescueChildlessInverseProbability, to create an other-child
             // for a childless event.
-            if (random.get().nextInt(settings.getRescueChildlessInverseProbability()) == 0) {
+            if (random.get().nextInt(config.rescueChildlessInverseProbability()) == 0) {
                 logger.info(STALE_EVENTS.getMarker(), "Creating child for childless event {}", event::toShortString);
                 createEvent(event.getCreatorId());
                 eventIntakeMetrics.rescuedEvent();
@@ -193,7 +198,7 @@ public class EventTaskCreator {
      * @param otherId
      * 		the ID of the other-parent of the event to be created
      */
-    public void createEvent(final long otherId) {
+    public void createEvent(@Nullable final NodeId otherId) {
         addEvent(new CreateEventTask(otherId));
     }
 

@@ -69,6 +69,22 @@ public class TxnAwareHandleThrottling implements FunctionalityThrottling {
         return delegate.allActiveThrottles();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots() {
+        return delegate.getUsageSnapshots();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots) {
+        delegate.resetUsageThrottlesTo(snapshots);
+    }
+
     @Override
     public GasLimitDeterministicThrottle gasLimitThrottle() {
         return delegate.gasLimitThrottle();

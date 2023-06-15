@@ -22,11 +22,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -40,7 +40,6 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
-import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
@@ -71,12 +70,12 @@ final class ReconnectTest {
     static void setUp() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.common");
-        registry.registerConstructable(new ClassConstructorPair(State.class, State::new));
+        registry.registerConstructables("com.swirlds.platform.state");
+        registry.registerConstructables("com.swirlds.platform.state.signed");
     }
 
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Successfully reconnects multiple times and stats are updated")
     void statsTrackSuccessfulReconnect() throws IOException, InterruptedException {
         final int numberOfReconnects = 11;
@@ -96,8 +95,8 @@ final class ReconnectTest {
 
         final long weightPerNode = 100L;
         final int numNodes = 4;
-        final List<Long> nodeIds =
-                IntStream.range(0, numNodes).mapToLong(i -> (long) i).boxed().toList();
+        final List<NodeId> nodeIds =
+                IntStream.range(0, numNodes).mapToObj(NodeId::new).toList();
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
@@ -105,7 +104,7 @@ final class ReconnectTest {
                 .setAverageWeight(weightPerNode)
                 .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
-                .setSequentialIds(true)
+                .setSequentialIds(false)
                 .build();
 
         try (final PairedStreams pairedStreams = new PairedStreams()) {
@@ -147,7 +146,7 @@ final class ReconnectTest {
         for (int i = 0; i < numAddresses; i++) {
             final Address address = mock(Address.class);
             when(address.getSigPublicKey()).thenReturn(publicKey);
-            when(address.getId()).thenReturn((long) i);
+            when(address.getNodeId()).thenReturn(new NodeId(i));
             addresses.add(address);
         }
         return new AddressBook(addresses);
@@ -159,8 +158,8 @@ final class ReconnectTest {
             final ReconnectMetrics reconnectMetrics)
             throws IOException {
 
-        final long selfId = 0;
-        final long otherId = 3;
+        final NodeId selfId = new NodeId(0);
+        final NodeId otherId = new NodeId(3);
         final long lastRoundReceived = 100;
         return new ReconnectTeacher(
                 getStaticThreadManager(),
@@ -169,6 +168,7 @@ final class ReconnectTest {
                 selfId,
                 otherId,
                 lastRoundReceived,
+                () -> false,
                 reconnectMetrics);
     }
 

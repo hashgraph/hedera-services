@@ -39,6 +39,7 @@ import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.WeightGenerator;
@@ -978,11 +979,11 @@ public final class ConsensusTestDefinitions {
         final Random random = new Random(seed);
 
         final List<Long> nodeWeights = weightGenerator.getWeights(seed, numberOfNodes);
-
+        final AtomicInteger index = new AtomicInteger(0);
         final AddressBook ab = new RandomAddressBookGenerator(random)
                 .setSequentialIds(true)
                 .setSize(numberOfNodes)
-                .setCustomWeightGenerator(id -> nodeWeights.get((int) id))
+                .setCustomWeightGenerator(id -> nodeWeights.get(index.getAndIncrement()))
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .build();
 
@@ -995,7 +996,7 @@ public final class ConsensusTestDefinitions {
 
         addAndUpdate(numEventsBeforeExclude, gen, intake, eventsNotReturned, consEvents, staleEvents, numReturned);
 
-        gen.excludeOtherParent(0);
+        gen.excludeOtherParent(new NodeId(0));
 
         addAndUpdate(numEventsAfterExclude, gen, intake, eventsNotReturned, consEvents, staleEvents, numReturned);
 
@@ -1086,10 +1087,11 @@ public final class ConsensusTestDefinitions {
         final Random random = initRandom(seedToUse);
 
         final List<Long> nodeWeights = weightGenerator.getWeights(seedToUse, numberOfNodes);
+        final AtomicInteger index = new AtomicInteger(0);
         final AddressBook ab = new RandomAddressBookGenerator(random)
                 .setSequentialIds(true)
                 .setSize(numberOfNodes)
-                .setCustomWeightGenerator(id -> nodeWeights.get((int) id))
+                .setCustomWeightGenerator(id -> nodeWeights.get(index.getAndIncrement()))
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .build();
 
@@ -1102,13 +1104,13 @@ public final class ConsensusTestDefinitions {
             cons.addEvent(gen.nextEvent(), ab);
         }
 
-        gen.excludeOtherParent(0);
+        gen.excludeOtherParent(new NodeId(0));
 
         for (int i = 0; i < numEventsAfterExclude; i++) {
             cons.addEvent(gen.nextEvent(), ab);
         }
 
-        gen.includeOtherParent(0);
+        gen.includeOtherParent(new NodeId(0));
 
         for (int i = 0; i < numEventsAfterInclude; i++) {
             cons.addEvent(gen.nextEvent(), ab);
@@ -1183,11 +1185,11 @@ public final class ConsensusTestDefinitions {
         // --------------- NOTE --------------
         // This will not work if there are any forks in the state events
         // -----------------------------------
-        final long[] lastGenInState = getLastGenerationInState(signedState.getEvents(), numberOfNodes);
+        final Map<NodeId, Long> lastGenInState = getLastGenerationInState(signedState.getEvents(), numberOfNodes);
         final StandardEventEmitter restartEmitter = emitter.cleanCopy();
         for (int i = 0; i < numEventsBeforeRestart; i++) {
             final EventImpl event = restartEmitter.emitEvent();
-            if (lastGenInState[(int) event.getCreatorId()] >= event.getGeneration()) {
+            if (lastGenInState.get(event.getCreatorId()) >= event.getGeneration()) {
                 // we dont add events that are already in the state or older
                 continue;
             }

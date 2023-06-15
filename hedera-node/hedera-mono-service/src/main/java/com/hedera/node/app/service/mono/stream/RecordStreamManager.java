@@ -142,7 +142,7 @@ public class RecordStreamManager {
                     tryDeletion,
                     globalDynamicProperties);
             writeQueueThread = new QueueThreadObjectStreamConfiguration<RecordStreamObject>(getStaticThreadManager())
-                    .setNodeId(platform.getSelfId().getId())
+                    .setNodeId(platform.getSelfId())
                     .setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
                     .setForwardTo(protobufStreamFileWriter)
                     .setThreadName("writeQueueThread")
@@ -160,7 +160,7 @@ public class RecordStreamManager {
 
         hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
         hashQueueThread = new QueueThreadObjectStreamConfiguration<RecordStreamObject>(getStaticThreadManager())
-                .setNodeId(platform.getSelfId().getId())
+                .setNodeId(platform.getSelfId())
                 .setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
                 .setForwardTo(hashCalculator)
                 .setThreadName("hashQueueThread")

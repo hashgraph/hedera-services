@@ -20,7 +20,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -30,7 +29,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -42,6 +40,7 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
@@ -51,8 +50,8 @@ import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
 import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
-import com.swirlds.platform.state.EmergencyRecoveryFile;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -81,8 +80,8 @@ import org.junit.jupiter.api.Test;
 public class EmergencyReconnectTests {
     private static final Future<Boolean> trueFuture = mock(Future.class);
     private final RandomSignedStateGenerator signedStateGenerator = new RandomSignedStateGenerator();
-    private final NodeId learnerId = new NodeId(false, 0L);
-    private final NodeId teacherId = new NodeId(false, 1L);
+    private final NodeId learnerId = new NodeId(0L);
+    private final NodeId teacherId = new NodeId(1L);
     private final ReconnectThrottle reconnectThrottle = mock(ReconnectThrottle.class);
     private final SignedStateManager signedStateManager = mock(SignedStateManager.class);
     private final ParallelExecutor executor = new CachedPoolParallelExecutor(getStaticThreadManager(), "test-executor");
@@ -94,7 +93,7 @@ public class EmergencyReconnectTests {
         ConstructableRegistry.getInstance().registerConstructables("");
 
         when(trueFuture.get()).thenReturn(true);
-        when(reconnectThrottle.initiateReconnect(anyLong())).thenReturn(true);
+        when(reconnectThrottle.initiateReconnect(any())).thenReturn(true);
 
         if (executor.isMutable()) {
             executor.start();
@@ -131,8 +130,8 @@ public class EmergencyReconnectTests {
         final Random random = RandomUtils.initRandom(null);
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
         final int numNodes = 4;
-        final List<Long> nodeIds =
-                IntStream.range(0, numNodes).mapToLong(i -> (long) i).boxed().toList();
+        final List<NodeId> nodeIds =
+                IntStream.range(0, numNodes).mapToObj(NodeId::new).toList();
         final long emergencyRound = 1L;
 
         final AddressBook addressBook = newAddressBook(random, numNodes);
@@ -233,7 +232,7 @@ public class EmergencyReconnectTests {
                         TestPlatformContextBuilder.create().build(),
                         getStaticThreadManager(),
                         addressBook,
-                        mock(ReconnectSettings.class),
+                        100_000,
                         mock(ReconnectMetrics.class)));
 
         return new ReconnectController(getStaticThreadManager(), helper, () -> {});
@@ -273,7 +272,8 @@ public class EmergencyReconnectTests {
                 signedStateManager,
                 100,
                 mock(ReconnectMetrics.class),
-                reconnectController);
+                reconnectController,
+                mock(FallenBehindManager.class));
     }
 
     private EmergencyReconnectProtocol createLearnerProtocol(
@@ -292,7 +292,8 @@ public class EmergencyReconnectTests {
                 mock(SignedStateManager.class),
                 100,
                 mock(ReconnectMetrics.class),
-                reconnectController);
+                reconnectController,
+                mock(FallenBehindManager.class));
     }
 
     private void mockTeacherHasCompatibleState(
@@ -306,7 +307,7 @@ public class EmergencyReconnectTests {
                 .setAverageWeight(100L)
                 .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
-                .setSequentialIds(true)
+                .setSequentialIds(false)
                 .build();
     }
 

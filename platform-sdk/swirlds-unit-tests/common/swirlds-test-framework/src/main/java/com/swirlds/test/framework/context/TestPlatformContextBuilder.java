@@ -93,7 +93,7 @@ public final class TestPlatformContextBuilder {
             configuration = defaultConfig;
         }
         if (metrics == null) {
-            metrics = defaultMetrics; // TODO replace this with NoOp Metrics
+            metrics = defaultMetrics; // FUTURE WORK: replace this with NoOp Metrics
         }
         if (this.cryptography == null) {
             this.cryptography = defaultCryptography;

@@ -20,9 +20,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.txnFrom;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.txnFrom;
 import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicContextAssertions;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_FOR_TOKEN_WITHOUT_KYC;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_INVALID_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_MISSING_TXN_BODY;
@@ -38,9 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -56,14 +57,18 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import java.util.NoSuchElementException;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TokenRevokeKycFromAccountHandlerTest {
 
     private static final AccountID PBJ_PAYER_ID = protoToPbj(asAccount("0.0.3"), AccountID.class);
@@ -160,38 +165,45 @@ class TokenRevokeKycFromAccountHandlerTest {
 
     @Nested
     class HandleTests {
+
+        @Mock(strictness = LENIENT)
+        private HandleContext handleContext;
+
+        @Mock
         private WritableTokenRelationStore tokenRelStore;
 
         @BeforeEach
         void setUp() {
-            tokenRelStore = mock(WritableTokenRelationStore.class);
+            given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
         }
 
         @Test
         @DisplayName("Any null input argument should throw an exception")
         @SuppressWarnings("DataFlowIssue")
         void nullArgsThrowException() {
-            assertThatThrownBy(() -> subject.handle(null, tokenRelStore)).isInstanceOf(NullPointerException.class);
-
-            assertThatThrownBy(() -> subject.handle(mock(TransactionBody.class), null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.handle(null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
         @DisplayName("When op tokenRevokeKyc is null, tokenRevokeKycOrThrow throws an " + "exception")
         void nullTokenRevokeKycThrowsException() {
             final var txnBody = TransactionBody.newBuilder().build();
+            given(handleContext.body()).willReturn(txnBody);
 
-            assertThatThrownBy(() -> subject.handle(txnBody, tokenRelStore)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
         @DisplayName("When getForModify returns empty, should not put or commit")
         void emptyGetForModifyShouldNotPersist() {
-            given(tokenRelStore.getForModify(anyLong(), anyLong())).willReturn(Optional.empty());
+            given(tokenRelStore.getForModify(notNull(), notNull())).willReturn(null);
 
             final var txnBody = newTxnBody();
-            assertThatThrownBy(() -> subject.handle(txnBody, tokenRelStore)).isInstanceOf(NoSuchElementException.class);
+            given(handleContext.body()).willReturn(txnBody);
+
+            assertThatThrownBy(() -> subject.handle(handleContext))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INVALID_TOKEN_ID));
 
             verify(tokenRelStore, never()).put(any(TokenRelation.class));
         }
@@ -204,11 +216,12 @@ class TokenRevokeKycFromAccountHandlerTest {
                     .accountNumber(ACCOUNT_100.accountNumOrThrow())
                     .kycGranted(true)
                     .build();
-            given(tokenRelStore.getForModify(TOKEN_10.tokenNum(), ACCOUNT_100.accountNumOrThrow()))
-                    .willReturn(Optional.of(stateTokenRel));
+            given(tokenRelStore.getForModify(ACCOUNT_100, TOKEN_10)).willReturn(stateTokenRel);
 
             final var txnBody = newTxnBody();
-            subject.handle(txnBody, tokenRelStore);
+            given(handleContext.body()).willReturn(txnBody);
+
+            subject.handle(handleContext);
 
             verify(tokenRelStore)
                     .put(newTokenRelationBuilder().kycGranted(false).build());

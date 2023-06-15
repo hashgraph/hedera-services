@@ -742,4 +742,12 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     public ResponseCodeEnum getActualPrecheck() {
         return actualPrecheck;
     }
+
+    public boolean hasActualStatus() {
+        return lastReceipt != null;
+    }
+
+    public ResponseCodeEnum getActualStatus() {
+        return lastReceipt.getStatus();
+    }
 }

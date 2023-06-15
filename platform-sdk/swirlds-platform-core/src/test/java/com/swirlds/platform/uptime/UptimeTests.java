@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
@@ -45,6 +46,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -61,14 +63,14 @@ class UptimeTests {
             @NonNull final Duration roundDuration,
             @NonNull final AddressBook addressBook,
             final int count,
-            @NonNull Set<Long> noEvents,
-            @NonNull Set<Long> noJudges) {
+            @NonNull Set<NodeId> noEvents,
+            @NonNull Set<NodeId> noJudges) {
 
         final List<EventImpl> events = new ArrayList<>(count);
-        final Set<Long> firstEventCreated = new HashSet<>();
+        final Set<NodeId> firstEventCreated = new HashSet<>();
         while (events.size() < count) {
 
-            final long nodeId = addressBook.getId(random.nextInt(addressBook.getSize()));
+            final NodeId nodeId = addressBook.getNodeId(random.nextInt(addressBook.getSize()));
             if (noEvents.contains(nodeId)) {
                 continue;
             }
@@ -109,14 +111,14 @@ class UptimeTests {
                 .setSize(10)
                 .setSequentialIds(false)
                 .build();
-        final long selfId = addressBook.getId(0);
+        final NodeId selfId = addressBook.getNodeId(0);
 
         final UptimeTracker uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, time);
 
         // First, simulate a round starting at genesis
         final int eventCount = 100;
-        final Set<Long> noFirstRoundEvents = Set.of(addressBook.getId(0), addressBook.getId(1));
-        final Set<Long> noFirstRoundJudges = Set.of(addressBook.getId(8), addressBook.getId(9));
+        final Set<NodeId> noFirstRoundEvents = Set.of(addressBook.getNodeId(0), addressBook.getNodeId(1));
+        final Set<NodeId> noFirstRoundJudges = Set.of(addressBook.getNodeId(8), addressBook.getNodeId(9));
         final List<EventImpl> firstRoundEvents = generateEvents(
                 random,
                 time,
@@ -129,10 +131,10 @@ class UptimeTests {
 
         final UptimeDataImpl genesisUptimeData = new UptimeDataImpl();
         for (final Address address : addressBook) {
-            assertNull(genesisUptimeData.getLastEventTime(address.getId()));
-            assertNull(genesisUptimeData.getLastJudgeTime(address.getId()));
-            assertEquals(NO_ROUND, genesisUptimeData.getLastEventRound(address.getId()));
-            assertEquals(NO_ROUND, genesisUptimeData.getLastJudgeRound(address.getId()));
+            assertNull(genesisUptimeData.getLastEventTime(address.getNodeId()));
+            assertNull(genesisUptimeData.getLastJudgeTime(address.getNodeId()));
+            assertEquals(NO_ROUND, genesisUptimeData.getLastEventRound(address.getNodeId()));
+            assertEquals(NO_ROUND, genesisUptimeData.getLastJudgeRound(address.getNodeId()));
         }
 
         final ConsensusRound roundOne =
@@ -144,37 +146,38 @@ class UptimeTests {
             ConsensusEvent lastEvent = null;
 
             for (final ConsensusEvent event : firstRoundEvents) {
-                if (event.getCreatorId() != address.getId()) {
+                if (!Objects.equals(event.getCreatorId(), address.getNodeId())) {
                     continue;
                 }
-                if (judge == null && !noFirstRoundJudges.contains(address.getId())) {
+                if (judge == null && !noFirstRoundJudges.contains(address.getNodeId())) {
                     judge = event;
                 }
                 lastEvent = event;
             }
 
             if (judge != null) {
-                assertEquals(1, genesisUptimeData.getLastJudgeRound(address.getId()));
-                assertEquals(judge.getConsensusTimestamp(), genesisUptimeData.getLastJudgeTime(address.getId()));
+                assertEquals(1, genesisUptimeData.getLastJudgeRound(address.getNodeId()));
+                assertEquals(judge.getConsensusTimestamp(), genesisUptimeData.getLastJudgeTime(address.getNodeId()));
             } else {
-                assertEquals(NO_ROUND, genesisUptimeData.getLastJudgeRound(address.getId()));
-                assertNull(genesisUptimeData.getLastJudgeTime(address.getId()));
+                assertEquals(NO_ROUND, genesisUptimeData.getLastJudgeRound(address.getNodeId()));
+                assertNull(genesisUptimeData.getLastJudgeTime(address.getNodeId()));
             }
 
             if (lastEvent != null) {
-                assertEquals(1, genesisUptimeData.getLastEventRound(address.getId()));
-                assertEquals(lastEvent.getConsensusTimestamp(), genesisUptimeData.getLastEventTime(address.getId()));
+                assertEquals(1, genesisUptimeData.getLastEventRound(address.getNodeId()));
+                assertEquals(
+                        lastEvent.getConsensusTimestamp(), genesisUptimeData.getLastEventTime(address.getNodeId()));
             } else {
-                assertEquals(NO_ROUND, genesisUptimeData.getLastEventRound(address.getId()));
-                assertNull(genesisUptimeData.getLastEventTime(address.getId()));
+                assertEquals(NO_ROUND, genesisUptimeData.getLastEventRound(address.getNodeId()));
+                assertNull(genesisUptimeData.getLastEventTime(address.getNodeId()));
             }
         }
 
         // Simulate a following round
         final UptimeDataImpl nextRoundUptimeData = genesisUptimeData.copy();
 
-        final Set<Long> noSecondRoundEvents = Set.of(addressBook.getId(0), addressBook.getId(2));
-        final Set<Long> noSecondRoundJudges = Set.of(addressBook.getId(7), addressBook.getId(9));
+        final Set<NodeId> noSecondRoundEvents = Set.of(addressBook.getNodeId(0), addressBook.getNodeId(2));
+        final Set<NodeId> noSecondRoundJudges = Set.of(addressBook.getNodeId(7), addressBook.getNodeId(9));
         final List<EventImpl> secondRoundEvents = generateEvents(
                 random,
                 time,
@@ -194,37 +197,38 @@ class UptimeTests {
             ConsensusEvent lastEvent = null;
 
             for (final ConsensusEvent event : secondRoundEvents) {
-                if (event.getCreatorId() != address.getId()) {
+                if (!Objects.equals(event.getCreatorId(), address.getNodeId())) {
                     continue;
                 }
-                if (judge == null && !noSecondRoundJudges.contains(address.getId())) {
+                if (judge == null && !noSecondRoundJudges.contains(address.getNodeId())) {
                     judge = event;
                 }
                 lastEvent = event;
             }
 
             if (judge != null) {
-                assertEquals(2, nextRoundUptimeData.getLastJudgeRound(address.getId()));
-                assertEquals(judge.getConsensusTimestamp(), nextRoundUptimeData.getLastJudgeTime(address.getId()));
+                assertEquals(2, nextRoundUptimeData.getLastJudgeRound(address.getNodeId()));
+                assertEquals(judge.getConsensusTimestamp(), nextRoundUptimeData.getLastJudgeTime(address.getNodeId()));
             } else {
                 assertEquals(
-                        genesisUptimeData.getLastJudgeRound(address.getId()),
-                        nextRoundUptimeData.getLastJudgeRound(address.getId()));
+                        genesisUptimeData.getLastJudgeRound(address.getNodeId()),
+                        nextRoundUptimeData.getLastJudgeRound(address.getNodeId()));
                 assertEquals(
-                        genesisUptimeData.getLastJudgeTime(address.getId()),
-                        nextRoundUptimeData.getLastJudgeTime(address.getId()));
+                        genesisUptimeData.getLastJudgeTime(address.getNodeId()),
+                        nextRoundUptimeData.getLastJudgeTime(address.getNodeId()));
             }
 
             if (lastEvent != null) {
-                assertEquals(2, nextRoundUptimeData.getLastEventRound(address.getId()));
-                assertEquals(lastEvent.getConsensusTimestamp(), nextRoundUptimeData.getLastEventTime(address.getId()));
+                assertEquals(2, nextRoundUptimeData.getLastEventRound(address.getNodeId()));
+                assertEquals(
+                        lastEvent.getConsensusTimestamp(), nextRoundUptimeData.getLastEventTime(address.getNodeId()));
             } else {
                 assertEquals(
-                        genesisUptimeData.getLastEventRound(address.getId()),
-                        nextRoundUptimeData.getLastEventRound(address.getId()));
+                        genesisUptimeData.getLastEventRound(address.getNodeId()),
+                        nextRoundUptimeData.getLastEventRound(address.getNodeId()));
                 assertEquals(
-                        genesisUptimeData.getLastEventTime(address.getId()),
-                        nextRoundUptimeData.getLastEventTime(address.getId()));
+                        genesisUptimeData.getLastEventTime(address.getNodeId()),
+                        nextRoundUptimeData.getLastEventTime(address.getNodeId()));
             }
         }
     }
@@ -242,14 +246,14 @@ class UptimeTests {
                 .setSize(10)
                 .setSequentialIds(false)
                 .build();
-        final long selfId = addressBook.getId(0);
+        final NodeId selfId = addressBook.getNodeId(0);
 
         final UptimeTracker uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, time);
 
         // First, simulate a round starting at genesis
         final int eventCount = 100;
-        final Set<Long> noFirstRoundEvents = Set.of(addressBook.getId(0), addressBook.getId(1));
-        final Set<Long> noFirstRoundJudges = Set.of(addressBook.getId(8), addressBook.getId(9));
+        final Set<NodeId> noFirstRoundEvents = Set.of(addressBook.getNodeId(0), addressBook.getNodeId(1));
+        final Set<NodeId> noFirstRoundJudges = Set.of(addressBook.getNodeId(8), addressBook.getNodeId(9));
         final List<EventImpl> firstRoundEvents = generateEvents(
                 random,
                 time,
@@ -262,10 +266,10 @@ class UptimeTests {
 
         final UptimeDataImpl genesisUptimeData = new UptimeDataImpl();
         for (final Address address : addressBook) {
-            assertNull(genesisUptimeData.getLastEventTime(address.getId()));
-            assertNull(genesisUptimeData.getLastJudgeTime(address.getId()));
-            assertEquals(NO_ROUND, genesisUptimeData.getLastEventRound(address.getId()));
-            assertEquals(NO_ROUND, genesisUptimeData.getLastJudgeRound(address.getId()));
+            assertNull(genesisUptimeData.getLastEventTime(address.getNodeId()));
+            assertNull(genesisUptimeData.getLastJudgeTime(address.getNodeId()));
+            assertEquals(NO_ROUND, genesisUptimeData.getLastEventRound(address.getNodeId()));
+            assertEquals(NO_ROUND, genesisUptimeData.getLastJudgeRound(address.getNodeId()));
         }
 
         final ConsensusRound roundOne =
@@ -277,42 +281,44 @@ class UptimeTests {
             ConsensusEvent lastEvent = null;
 
             for (final ConsensusEvent event : firstRoundEvents) {
-                if (event.getCreatorId() != address.getId()) {
+                if (!Objects.equals(event.getCreatorId(), address.getNodeId())) {
                     continue;
                 }
-                if (judge == null && !noFirstRoundJudges.contains(address.getId())) {
+                if (judge == null && !noFirstRoundJudges.contains(address.getNodeId())) {
                     judge = event;
                 }
                 lastEvent = event;
             }
 
             if (judge != null) {
-                assertEquals(1, genesisUptimeData.getLastJudgeRound(address.getId()));
-                assertEquals(judge.getConsensusTimestamp(), genesisUptimeData.getLastJudgeTime(address.getId()));
+                assertEquals(1, genesisUptimeData.getLastJudgeRound(address.getNodeId()));
+                assertEquals(judge.getConsensusTimestamp(), genesisUptimeData.getLastJudgeTime(address.getNodeId()));
             } else {
-                assertEquals(NO_ROUND, genesisUptimeData.getLastJudgeRound(address.getId()));
-                assertNull(genesisUptimeData.getLastJudgeTime(address.getId()));
+                assertEquals(NO_ROUND, genesisUptimeData.getLastJudgeRound(address.getNodeId()));
+                assertNull(genesisUptimeData.getLastJudgeTime(address.getNodeId()));
             }
 
             if (lastEvent != null) {
-                assertEquals(1, genesisUptimeData.getLastEventRound(address.getId()));
-                assertEquals(lastEvent.getConsensusTimestamp(), genesisUptimeData.getLastEventTime(address.getId()));
+                assertEquals(1, genesisUptimeData.getLastEventRound(address.getNodeId()));
+                assertEquals(
+                        lastEvent.getConsensusTimestamp(), genesisUptimeData.getLastEventTime(address.getNodeId()));
             } else {
-                assertEquals(NO_ROUND, genesisUptimeData.getLastEventRound(address.getId()));
-                assertNull(genesisUptimeData.getLastEventTime(address.getId()));
+                assertEquals(NO_ROUND, genesisUptimeData.getLastEventRound(address.getNodeId()));
+                assertNull(genesisUptimeData.getLastEventTime(address.getNodeId()));
             }
         }
 
         // Simulate a following round with a different address book
         final AddressBook newAddressBook = addressBook.copy();
-        final long nodeToRemove = addressBook.getId(0);
+        final NodeId nodeToRemove = addressBook.getNodeId(0);
         newAddressBook.remove(nodeToRemove);
-        final Address newAddress = addressBook.getAddress(addressBook.getId(0)).copySetId(12345);
+        final Address newAddress =
+                addressBook.getAddress(addressBook.getNodeId(0)).copySetNodeId(new NodeId(12345));
         newAddressBook.add(newAddress);
         final UptimeDataImpl nextRoundUptimeData = genesisUptimeData.copy();
 
-        final Set<Long> noSecondRoundEvents = Set.of();
-        final Set<Long> noSecondRoundJudges = Set.of();
+        final Set<NodeId> noSecondRoundEvents = Set.of();
+        final Set<NodeId> noSecondRoundJudges = Set.of();
         final List<EventImpl> secondRoundEvents = generateEvents(
                 random,
                 time,
@@ -332,7 +338,7 @@ class UptimeTests {
             ConsensusEvent lastEvent = null;
 
             for (final ConsensusEvent event : secondRoundEvents) {
-                if (event.getCreatorId() != address.getId()) {
+                if (!Objects.equals(event.getCreatorId(), address.getNodeId())) {
                     continue;
                 }
                 if (judge == null) {
@@ -342,27 +348,28 @@ class UptimeTests {
             }
 
             if (judge != null) {
-                assertEquals(2, nextRoundUptimeData.getLastJudgeRound(address.getId()));
-                assertEquals(judge.getConsensusTimestamp(), nextRoundUptimeData.getLastJudgeTime(address.getId()));
+                assertEquals(2, nextRoundUptimeData.getLastJudgeRound(address.getNodeId()));
+                assertEquals(judge.getConsensusTimestamp(), nextRoundUptimeData.getLastJudgeTime(address.getNodeId()));
             } else {
                 assertEquals(
-                        genesisUptimeData.getLastJudgeRound(address.getId()),
-                        nextRoundUptimeData.getLastJudgeRound(address.getId()));
+                        genesisUptimeData.getLastJudgeRound(address.getNodeId()),
+                        nextRoundUptimeData.getLastJudgeRound(address.getNodeId()));
                 assertEquals(
-                        genesisUptimeData.getLastJudgeTime(address.getId()),
-                        nextRoundUptimeData.getLastJudgeTime(address.getId()));
+                        genesisUptimeData.getLastJudgeTime(address.getNodeId()),
+                        nextRoundUptimeData.getLastJudgeTime(address.getNodeId()));
             }
 
             if (lastEvent != null) {
-                assertEquals(2, nextRoundUptimeData.getLastEventRound(address.getId()));
-                assertEquals(lastEvent.getConsensusTimestamp(), nextRoundUptimeData.getLastEventTime(address.getId()));
+                assertEquals(2, nextRoundUptimeData.getLastEventRound(address.getNodeId()));
+                assertEquals(
+                        lastEvent.getConsensusTimestamp(), nextRoundUptimeData.getLastEventTime(address.getNodeId()));
             } else {
                 assertEquals(
-                        genesisUptimeData.getLastEventRound(address.getId()),
-                        nextRoundUptimeData.getLastEventRound(address.getId()));
+                        genesisUptimeData.getLastEventRound(address.getNodeId()),
+                        nextRoundUptimeData.getLastEventRound(address.getNodeId()));
                 assertEquals(
-                        genesisUptimeData.getLastEventTime(address.getId()),
-                        nextRoundUptimeData.getLastEventTime(address.getId()));
+                        genesisUptimeData.getLastEventTime(address.getNodeId()),
+                        nextRoundUptimeData.getLastEventTime(address.getNodeId()));
             }
         }
 
@@ -409,34 +416,34 @@ class UptimeTests {
         final UptimeDataImpl uptimeData1 = new UptimeDataImpl();
 
         for (int i = 0; i < size; i++) {
-            uptimeData1.addNode(i);
+            uptimeData1.addNode(new NodeId(i));
 
             final EventImpl lastEvent = mock(EventImpl.class);
             when(lastEvent.getConsensusTimestamp()).thenReturn(eventTimes1.get(i));
             when(lastEvent.getRoundReceived()).thenReturn(eventRounds1.get(i));
-            when(lastEvent.getCreatorId()).thenReturn((long) i);
+            when(lastEvent.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData1.recordLastEvent(lastEvent);
 
             final EventImpl lastJudge = mock(EventImpl.class);
             when(lastJudge.getConsensusTimestamp()).thenReturn(judgeTimes1.get(i));
             when(lastJudge.getRoundReceived()).thenReturn(judgeRounds1.get(i));
-            when(lastJudge.getCreatorId()).thenReturn((long) i);
+            when(lastJudge.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData1.recordLastJudge(lastJudge);
         }
 
         for (int i = 0; i < size; i++) {
-            assertEquals(eventTimes1.get(i), uptimeData1.getLastEventTime(i));
-            assertEquals(judgeTimes1.get(i), uptimeData1.getLastJudgeTime(i));
-            assertEquals(eventRounds1.get(i), uptimeData1.getLastEventRound(i));
-            assertEquals(judgeRounds1.get(i), uptimeData1.getLastJudgeRound(i));
+            assertEquals(eventTimes1.get(i), uptimeData1.getLastEventTime(new NodeId(i)));
+            assertEquals(judgeTimes1.get(i), uptimeData1.getLastJudgeTime(new NodeId(i)));
+            assertEquals(eventRounds1.get(i), uptimeData1.getLastEventRound(new NodeId(i)));
+            assertEquals(judgeRounds1.get(i), uptimeData1.getLastJudgeRound(new NodeId(i)));
         }
 
         final UptimeDataImpl uptimeData2 = uptimeData1.copy();
         for (int i = 0; i < size; i++) {
-            assertEquals(eventTimes1.get(i), uptimeData2.getLastEventTime(i));
-            assertEquals(judgeTimes1.get(i), uptimeData2.getLastJudgeTime(i));
-            assertEquals(eventRounds1.get(i), uptimeData2.getLastEventRound(i));
-            assertEquals(judgeRounds1.get(i), uptimeData2.getLastJudgeRound(i));
+            assertEquals(eventTimes1.get(i), uptimeData2.getLastEventTime(new NodeId(i)));
+            assertEquals(judgeTimes1.get(i), uptimeData2.getLastJudgeTime(new NodeId(i)));
+            assertEquals(eventRounds1.get(i), uptimeData2.getLastEventRound(new NodeId(i)));
+            assertEquals(judgeRounds1.get(i), uptimeData2.getLastJudgeRound(new NodeId(i)));
         }
 
         final List<Instant> eventTimes2 = new ArrayList<>();
@@ -471,28 +478,28 @@ class UptimeTests {
             final EventImpl lastEvent = mock(EventImpl.class);
             when(lastEvent.getConsensusTimestamp()).thenReturn(eventTimes2.get(i));
             when(lastEvent.getRoundReceived()).thenReturn(eventRounds2.get(i));
-            when(lastEvent.getCreatorId()).thenReturn((long) i);
+            when(lastEvent.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData2.recordLastEvent(lastEvent);
 
             final EventImpl lastJudge = mock(EventImpl.class);
             when(lastJudge.getConsensusTimestamp()).thenReturn(judgeTimes2.get(i));
             when(lastJudge.getRoundReceived()).thenReturn(judgeRounds2.get(i));
-            when(lastJudge.getCreatorId()).thenReturn((long) i);
+            when(lastJudge.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData2.recordLastJudge(lastJudge);
         }
 
         for (int i = 0; i < size; i++) {
-            assertEquals(eventTimes1.get(i), uptimeData1.getLastEventTime(i));
-            assertEquals(judgeTimes1.get(i), uptimeData1.getLastJudgeTime(i));
-            assertEquals(eventRounds1.get(i), uptimeData1.getLastEventRound(i));
-            assertEquals(judgeRounds1.get(i), uptimeData1.getLastJudgeRound(i));
+            assertEquals(eventTimes1.get(i), uptimeData1.getLastEventTime(new NodeId(i)));
+            assertEquals(judgeTimes1.get(i), uptimeData1.getLastJudgeTime(new NodeId(i)));
+            assertEquals(eventRounds1.get(i), uptimeData1.getLastEventRound(new NodeId(i)));
+            assertEquals(judgeRounds1.get(i), uptimeData1.getLastJudgeRound(new NodeId(i)));
         }
 
         for (int i = 0; i < size; i++) {
-            assertEquals(eventTimes2.get(i), uptimeData2.getLastEventTime(i));
-            assertEquals(judgeTimes2.get(i), uptimeData2.getLastJudgeTime(i));
-            assertEquals(eventRounds2.get(i), uptimeData2.getLastEventRound(i));
-            assertEquals(judgeRounds2.get(i), uptimeData2.getLastJudgeRound(i));
+            assertEquals(eventTimes2.get(i), uptimeData2.getLastEventTime(new NodeId(i)));
+            assertEquals(judgeTimes2.get(i), uptimeData2.getLastJudgeTime(new NodeId(i)));
+            assertEquals(eventRounds2.get(i), uptimeData2.getLastEventRound(new NodeId(i)));
+            assertEquals(judgeRounds2.get(i), uptimeData2.getLastJudgeRound(new NodeId(i)));
         }
     }
 
@@ -533,26 +540,26 @@ class UptimeTests {
         final UptimeDataImpl uptimeData1 = new UptimeDataImpl();
 
         for (int i = 0; i < size; i++) {
-            uptimeData1.addNode(i);
+            uptimeData1.addNode(new NodeId(i));
 
             final EventImpl lastEvent = mock(EventImpl.class);
             when(lastEvent.getConsensusTimestamp()).thenReturn(eventTimes.get(i));
             when(lastEvent.getRoundReceived()).thenReturn(eventRounds.get(i));
-            when(lastEvent.getCreatorId()).thenReturn((long) i);
+            when(lastEvent.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData1.recordLastEvent(lastEvent);
 
             final EventImpl lastJudge = mock(EventImpl.class);
             when(lastJudge.getConsensusTimestamp()).thenReturn(judgeTimes.get(i));
             when(lastJudge.getRoundReceived()).thenReturn(judgeRounds.get(i));
-            when(lastJudge.getCreatorId()).thenReturn((long) i);
+            when(lastJudge.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData1.recordLastJudge(lastJudge);
         }
 
         for (int i = 0; i < size; i++) {
-            assertEquals(eventTimes.get(i), uptimeData1.getLastEventTime(i));
-            assertEquals(judgeTimes.get(i), uptimeData1.getLastJudgeTime(i));
-            assertEquals(eventRounds.get(i), uptimeData1.getLastEventRound(i));
-            assertEquals(judgeRounds.get(i), uptimeData1.getLastJudgeRound(i));
+            assertEquals(eventTimes.get(i), uptimeData1.getLastEventTime(new NodeId(i)));
+            assertEquals(judgeTimes.get(i), uptimeData1.getLastJudgeTime(new NodeId(i)));
+            assertEquals(eventRounds.get(i), uptimeData1.getLastEventRound(new NodeId(i)));
+            assertEquals(judgeRounds.get(i), uptimeData1.getLastJudgeRound(new NodeId(i)));
         }
 
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -566,10 +573,10 @@ class UptimeTests {
         final UptimeDataImpl uptimeData2 = dataInputStream.readSerializable(false, UptimeDataImpl::new);
 
         for (int i = 0; i < size; i++) {
-            assertEquals(eventTimes.get(i), uptimeData2.getLastEventTime(i));
-            assertEquals(judgeTimes.get(i), uptimeData2.getLastJudgeTime(i));
-            assertEquals(eventRounds.get(i), uptimeData2.getLastEventRound(i));
-            assertEquals(judgeRounds.get(i), uptimeData2.getLastJudgeRound(i));
+            assertEquals(eventTimes.get(i), uptimeData2.getLastEventTime(new NodeId(i)));
+            assertEquals(judgeTimes.get(i), uptimeData2.getLastJudgeTime(new NodeId(i)));
+            assertEquals(eventRounds.get(i), uptimeData2.getLastEventRound(new NodeId(i)));
+            assertEquals(judgeRounds.get(i), uptimeData2.getLastJudgeRound(new NodeId(i)));
         }
     }
 
@@ -586,7 +593,7 @@ class UptimeTests {
                 .setSize(3)
                 .setSequentialIds(false)
                 .build();
-        final long selfId = addressBook.getId(0);
+        final NodeId selfId = addressBook.getNodeId(0);
 
         final UptimeTracker uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, time);
 
@@ -597,10 +604,10 @@ class UptimeTests {
 
         final UptimeDataImpl genesisUptimeData = new UptimeDataImpl();
         for (final Address address : addressBook) {
-            assertNull(genesisUptimeData.getLastEventTime(address.getId()));
-            assertNull(genesisUptimeData.getLastJudgeTime(address.getId()));
-            assertEquals(NO_ROUND, genesisUptimeData.getLastEventRound(address.getId()));
-            assertEquals(NO_ROUND, genesisUptimeData.getLastJudgeRound(address.getId()));
+            assertNull(genesisUptimeData.getLastEventTime(address.getNodeId()));
+            assertNull(genesisUptimeData.getLastJudgeTime(address.getNodeId()));
+            assertEquals(NO_ROUND, genesisUptimeData.getLastEventRound(address.getNodeId()));
+            assertEquals(NO_ROUND, genesisUptimeData.getLastJudgeRound(address.getNodeId()));
         }
 
         final ConsensusRound roundOne =
@@ -611,7 +618,7 @@ class UptimeTests {
         time.tick(Duration.ofSeconds(30));
         final UptimeDataImpl nextRoundUptimeData = genesisUptimeData.copy();
 
-        final Set<Long> noSecondRoundEvents = Set.of(addressBook.getId(0));
+        final Set<NodeId> noSecondRoundEvents = Set.of(addressBook.getNodeId(0));
         final List<EventImpl> secondRoundEvents = generateEvents(
                 random, time, 2, Duration.ofSeconds(1), addressBook, eventCount, noSecondRoundEvents, Set.of());
 

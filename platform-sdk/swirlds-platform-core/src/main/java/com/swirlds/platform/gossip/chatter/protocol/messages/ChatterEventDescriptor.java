@@ -19,27 +19,33 @@ package com.swirlds.platform.gossip.chatter.protocol.messages;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
- * A stripped down description of an event.
+ * A stripped down description of a chatter event.
  */
-public class ChatterEventDescriptor implements SelfSerializable {
+public class ChatterEventDescriptor implements EventDescriptor {
 
     public static final long CLASS_ID = 0x825e17f25c6e2566L;
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
+        /**
+         * The creator field is serialized as a self serializable node id.
+         * @since 0.40.0
+         */
+        public static final int SELF_SERIALIZABLE_NODE_ID = 2;
     }
 
     private Hash hash;
-    private long creator;
+    private NodeId creator;
     private long generation;
 
     private int hashCode;
@@ -49,16 +55,13 @@ public class ChatterEventDescriptor implements SelfSerializable {
     /**
      * Create a new gossip event descriptor.
      *
-     * @param hash
-     * 		the hash of the event
-     * @param creator
-     * 		the creator of the event
-     * @param generation
-     * 		the age of an event, smaller is older
+     * @param hash       the hash of the event
+     * @param creator    the creator of the event
+     * @param generation the age of an event, smaller is older
      */
-    public ChatterEventDescriptor(final Hash hash, final long creator, final long generation) {
-        this.hash = Objects.requireNonNull(hash);
-        this.creator = creator;
+    public ChatterEventDescriptor(@NonNull final Hash hash, @NonNull final NodeId creator, final long generation) {
+        this.hash = Objects.requireNonNull(hash, "hash must not be null");
+        this.creator = Objects.requireNonNull(creator, "creator must not be null");
         this.generation = generation;
 
         hashCode = Objects.hash(hash, creator, generation);
@@ -78,7 +81,7 @@ public class ChatterEventDescriptor implements SelfSerializable {
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeSerializable(hash, false);
-        out.writeLong(creator);
+        out.writeSerializable(creator, false);
         out.writeLong(generation);
     }
 
@@ -88,7 +91,11 @@ public class ChatterEventDescriptor implements SelfSerializable {
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         hash = in.readSerializable(false, Hash::new);
-        creator = in.readLong();
+        if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
+            creator = new NodeId(in.readLong());
+        } else {
+            creator = in.readSerializable(false, NodeId::new);
+        }
         generation = in.readLong();
 
         hashCode = Objects.hash(hash, creator, generation);
@@ -99,31 +106,35 @@ public class ChatterEventDescriptor implements SelfSerializable {
      */
     @Override
     public int getVersion() {
+        return ClassVersion.SELF_SERIALIZABLE_NODE_ID;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getMinimumSupportedVersion() {
         return ClassVersion.ORIGINAL;
     }
 
     /**
-     * Get the hash of the event.
-     *
-     * @return the event's hash
+     * {@inheritDoc}
      */
     public Hash getHash() {
         return hash;
     }
 
     /**
-     * Get the node ID of the event's creator.
-     *
-     * @return a node ID
+     * {@inheritDoc}
      */
-    public long getCreator() {
+    @Override
+    @NonNull
+    public NodeId getCreator() {
         return creator;
     }
 
     /**
-     * Get the generation of the event described
-     *
-     * @return the generation of the event described
+     * {@inheritDoc}
      */
     public long getGeneration() {
         return generation;
@@ -147,7 +158,7 @@ public class ChatterEventDescriptor implements SelfSerializable {
             return false;
         }
 
-        return creator == that.creator && generation == that.generation && hash.equals(that.hash);
+        return Objects.equals(creator, that.creator) && generation == that.generation && hash.equals(that.hash);
     }
 
     /**

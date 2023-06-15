@@ -138,7 +138,7 @@ public class EventCreator {
      * @param otherId
      * 		the node ID that will supply the other parent for this event
      */
-    public boolean createEvent(final long otherId) {
+    public boolean createEvent(final NodeId otherId) {
 
         if (USE_TIPSET_ALGORITHM) {
             return false;
@@ -190,7 +190,7 @@ public class EventCreator {
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 softwareVersion,
-                selfId.getId(),
+                selfId,
                 EventUtils.getEventGeneration(selfParent),
                 EventUtils.getEventGeneration(otherParent),
                 EventUtils.getEventHash(selfParent),
@@ -213,8 +213,8 @@ public class EventCreator {
      * @param otherId
      * 		the ID of the node supplying the other parent
      */
-    protected boolean hasOtherParentAlreadyBeenUsed(final long otherId) {
-        return !selfId.equalsMain(otherId) && eventMapper.hasMostRecentEventBeenUsedAsOtherParent(otherId);
+    protected boolean hasOtherParentAlreadyBeenUsed(final NodeId otherId) {
+        return !Objects.equals(selfId, otherId) && eventMapper.hasMostRecentEventBeenUsedAsOtherParent(otherId);
     }
 
     /**

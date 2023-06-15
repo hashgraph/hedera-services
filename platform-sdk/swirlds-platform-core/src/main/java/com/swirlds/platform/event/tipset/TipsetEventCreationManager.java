@@ -22,16 +22,17 @@ import static com.swirlds.base.state.LifecyclePhase.STOPPED;
 
 import com.swirlds.base.state.Lifecycle;
 import com.swirlds.base.state.LifecyclePhase;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.stream.Signer;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.BlockingQueueInserter;
 import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
@@ -46,7 +47,7 @@ import java.util.function.Consumer;
 public class TipsetEventCreationManager implements Lifecycle { // TODO test
 
     private LifecyclePhase lifecyclePhase = NOT_STARTED;
-    private final long selfId;
+    private final long selfId; // TODO nodeId
     private final TipsetEventCreator eventCreator;
 
     private final MultiQueueThread workQueue;
@@ -99,7 +100,7 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
      * @param event the event to add
      */
     public void registerEvent(@NonNull final EventImpl event) throws InterruptedException {
-        if (event.getHashedData().getCreatorId() == selfId) {
+        if (event.getHashedData().getCreatorId().equals(new NodeId(selfId))) {
             // TODO this behavior needs to be different at startup time if not at genesis
             return;
         }

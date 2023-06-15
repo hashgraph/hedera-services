@@ -16,17 +16,16 @@
 
 package com.swirlds.common.threading.framework.internal;
 
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -61,27 +60,17 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
     /** An initialized queue to use. */
     private BlockingQueue<T> queue;
 
-    /**
-     * The metrics system that will hold queue metrics
-     */
-    private Metrics metrics;
-
-    /**
-     * If enabled, the max size metric will be applied to the queue.
-     */
-    private boolean maxSizeMetricEnabled;
-
-    /**
-     * If enabled, the min size metric will be applied to the queue.
-     */
-    private boolean minSizeMetricEnabled;
+    private QueueThreadMetricsConfiguration metricsConfiguration;
 
     /**
      * The callback to run periodically when the queue is idle.
      */
-    private Runnable idleCallback;
+    private InterruptableRunnable idleCallback;
 
-    // TODO also allow the sleep time to be configured, more important with idle callback
+    /**
+     * When waiting for work, the amount of time to block.
+     */
+    private Duration waitForWorkDuration = Duration.ofMillis(10);
 
     protected AbstractQueueThreadConfiguration(final ThreadManager threadManager) {
         super(threadManager);
@@ -102,9 +91,7 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
         this.maxBufferSize = that.maxBufferSize;
         this.handler = that.handler;
         this.queue = that.queue;
-        this.metrics = that.metrics;
-        this.maxSizeMetricEnabled = that.maxSizeMetricEnabled;
-        this.minSizeMetricEnabled = that.minSizeMetricEnabled;
+        this.metricsConfiguration = that.metricsConfiguration;
     }
 
     /**
@@ -195,41 +182,42 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
     }
 
     /**
-     * Build a queue. Should only be called if a queue has not been provided.
+     * Set the idle callback that will be called periodically when the queue is empty.
      *
-     * @return a newly initialized queue
+     * @return this object
      */
-    private BlockingQueue<T> buildDefaultQueue() {
-        if (capacity > 0) {
-            return new LinkedBlockingQueue<>(capacity);
-        } else {
-            return new LinkedBlockingQueue<>();
-        }
+    @SuppressWarnings("unchecked")
+    public C setIdleCallback(@NonNull final InterruptableRunnable idleCallback) {
+        this.idleCallback = idleCallback;
+        return (C) this;
     }
 
     /**
-     * Get the queue. If it doesn't exist then initialize with a default queue, and return that new queue. If the
-     * {@code metrics} field was set and any queue metrics are enabled, then {@code MeasuredBlockingQueue} will be
-     * initialized to be monitored with the enabled metrics.
-     *
-     * @return the queue that should be used
+     * Get the idle callback that will be called periodically when the queue is empty.
      */
-    protected BlockingQueue<T> getOrInitializeQueue() {
-        if (getQueue() == null) {
-            setQueue(buildDefaultQueue());
-        }
+    @Nullable
+    public InterruptableRunnable getIdleCallback() {
+        return idleCallback;
+    }
 
-        if (metrics != null) {
-            final MeasuredBlockingQueue.Config queueConfig = new MeasuredBlockingQueue.Config(
-                            metrics, INTERNAL_CATEGORY, getThreadName())
-                    .withMaxSizeMetricEnabled(maxSizeMetricEnabled)
-                    .withMinSizeMetricEnabled(minSizeMetricEnabled);
-            if (queueConfig.isMetricEnabled()) {
-                setQueue(new MeasuredBlockingQueue<>(getQueue(), queueConfig));
-            }
-        }
+    /**
+     * Get the amount of time that the thread blocks while waiting for work.
+     */
+    @NonNull
+    public Duration getWaitForWorkDuration() {
+        return waitForWorkDuration;
+    }
 
-        return getQueue();
+    /**
+     * Set the amount of time that the thread blocks while waiting for work.
+     *
+     * @param waitForWorkDuration the amount of time to wait
+     * @return this object
+     */
+    @SuppressWarnings("unchecked")
+    public C setWaitForWorkDuration(@NonNull final Duration waitForWorkDuration) {
+        this.waitForWorkDuration = Objects.requireNonNull(waitForWorkDuration);
+        return (C) this;
     }
 
     /**
@@ -258,50 +246,13 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
         return (C) this;
     }
 
-    /**
-     * Enables the metric that tracks the maximum queue size
-     *
-     * @param metrics the metrics-system
-     * @return this object
-     */
-    @SuppressWarnings("unchecked")
-    public C enableMaxSizeMetric(final Metrics metrics) {
-        throwIfImmutable();
-        this.metrics = throwArgNull(metrics, "metrics");
-        this.maxSizeMetricEnabled = true;
-        return (C) this;
+    public QueueThreadMetricsConfiguration getMetricsConfiguration() {
+        return metricsConfiguration;
     }
 
-    /**
-     * Enables the metric that tracks the minimum queue size
-     *
-     * @param metrics the metrics-system
-     * @return this object
-     */
     @SuppressWarnings("unchecked")
-    public C enableMinSizeMetric(final Metrics metrics) {
-        throwIfImmutable();
-        this.metrics = throwArgNull(metrics, "metrics");
-        this.minSizeMetricEnabled = true;
+    public C setMetricsConfiguration(final QueueThreadMetricsConfiguration metricsConfiguration) {
+        this.metricsConfiguration = metricsConfiguration;
         return (C) this;
-    }
-
-    /**
-     * Set the idle callback that will be called periodically when the queue is empty.
-     *
-     * @return this object
-     */
-    @SuppressWarnings("unchecked")
-    public C setIdleCallback(@NonNull final Runnable idleCallback) {
-        this.idleCallback = idleCallback;
-        return (C) this;
-    }
-
-    /**
-     * Get the idle callback that will be called periodically when the queue is empty.
-     */
-    @Nullable
-    public Runnable getIdleCallback() {
-        return idleCallback;
     }
 }
