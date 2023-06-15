@@ -30,6 +30,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.text.DefaultCaret;
 
 /**
@@ -45,7 +46,8 @@ public class GuiUtils {
      * @deprecated we need to refactor the ui. This method is horrible
      */
     @Deprecated
-    public static void initUI() {
+    public static void initUI()
+            throws UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException, IllegalAccessException {
         // discover the inset size and set the look and feel
         if (!GraphicsEnvironment.isHeadless()) {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
