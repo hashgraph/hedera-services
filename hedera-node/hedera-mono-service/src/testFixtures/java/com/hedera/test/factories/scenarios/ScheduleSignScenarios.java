@@ -20,16 +20,22 @@ import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryp
 import static com.hedera.test.factories.txns.ScheduleSignFactory.newSignedScheduleSign;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.txns.ScheduleUtils;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public enum ScheduleSignScenarios implements TxnHandlingScenario {
     SCHEDULE_SIGN_MISSING_SCHEDULE {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             return PlatformTxnAccessor.from(
                     newSignedScheduleSign().signing(UNKNOWN_SCHEDULE).get());
         }
