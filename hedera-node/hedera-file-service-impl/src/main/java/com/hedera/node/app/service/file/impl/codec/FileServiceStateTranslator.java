@@ -26,6 +26,7 @@ import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.commons.codec.DecoderException;
 
 /**
@@ -56,10 +57,9 @@ public class FileServiceStateTranslator {
      */
     @NonNull
     public static File stateToPbj(
-            @NonNull final byte[] data,
+            @Nullable final byte[] data,
             @NonNull final com.hedera.node.app.service.mono.files.HFileMeta metadata,
             @NonNull final com.hederahashgraph.api.proto.java.FileID fileID) {
-        requireNonNull(data);
         requireNonNull(metadata);
         requireNonNull(fileID);
         final var fileBuilder = new File.Builder();
@@ -67,7 +67,7 @@ public class FileServiceStateTranslator {
         fileBuilder.expirationTime(metadata.getExpiry());
         if (metadata.getWacl() != null)
             fileBuilder.keys(PbjConverter.asPbjKey(metadata.getWacl()).keyList());
-        fileBuilder.contents(Bytes.wrap(data));
+        if (data != null) fileBuilder.contents(Bytes.wrap(data));
         fileBuilder.memo(metadata.getMemo());
         fileBuilder.deleted(metadata.isDeleted());
 
@@ -103,7 +103,8 @@ public class FileServiceStateTranslator {
                 : null;
         com.hedera.node.app.service.mono.files.HFileMeta hFileMeta =
                 new HFileMeta(file.deleted(), keys, file.expirationTime(), file.memo());
-        return new FileMetadataAndContent(file.contents().toByteArray(), hFileMeta);
+        final byte[] data = (file.contents() == null) ? null : file.contents().toByteArray();
+        return new FileMetadataAndContent(data, hFileMeta);
     }
 
     @SuppressWarnings("java:S6218")

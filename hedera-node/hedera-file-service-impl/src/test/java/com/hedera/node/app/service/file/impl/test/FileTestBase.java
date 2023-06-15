@@ -98,6 +98,8 @@ public class FileTestBase {
 
     protected File fileWithNoKeysAndMemo;
 
+    protected File fileWithNoContent;
+
     @Mock
     protected ReadableStates readableStates;
 
@@ -175,6 +177,7 @@ public class FileTestBase {
     protected void givenValidFile(boolean deleted, boolean withKeys) {
         file = new File(fileId.fileNum(), expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
         fileWithNoKeysAndMemo = new File(fileId.fileNum(), expirationTime, null, Bytes.wrap(contents), null, deleted);
+        fileWithNoContent = new File(fileId.fileNum(), expirationTime, withKeys ? keys : null, null, memo, deleted);
         fileSystem = new File(
                 fileSystemfileId.fileNum(),
                 expirationTime,
@@ -200,6 +203,16 @@ public class FileTestBase {
                 .fileNumber(fileId.fileNum())
                 .expirationTime(expirationTime)
                 .contents(Bytes.wrap(contents))
+                .deleted(true)
+                .build();
+    }
+
+    protected File createFileWithoutContent() {
+        return new File.Builder()
+                .fileNumber(fileId.fileNum())
+                .expirationTime(expirationTime)
+                .keys(keys)
+                .memo(memo)
                 .deleted(true)
                 .build();
     }
