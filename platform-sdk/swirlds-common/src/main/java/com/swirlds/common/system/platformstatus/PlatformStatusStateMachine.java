@@ -19,6 +19,7 @@ package com.swirlds.common.system.platformstatus;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
@@ -34,7 +35,6 @@ import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDisk
 import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import com.swirlds.common.system.platformstatus.statuslogic.PlatformStatusLogic;
 import com.swirlds.common.system.platformstatus.statuslogic.StartingUpStatusLogic;
-import com.swirlds.common.time.Time;
 import com.swirlds.logging.payloads.PlatformStatusPayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
