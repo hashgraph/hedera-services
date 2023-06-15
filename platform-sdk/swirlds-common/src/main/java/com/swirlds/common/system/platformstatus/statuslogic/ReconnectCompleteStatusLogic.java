@@ -30,6 +30,7 @@ import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDisk
 import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#RECONNECT_COMPLETE} status.
@@ -64,7 +65,7 @@ public class ReconnectCompleteStatusLogic implements PlatformStatusLogic {
 
         this.reconnectStateRound = reconnectStateRound;
         this.freezeRound = freezeRound;
-        this.config = config;
+        this.config = Objects.requireNonNull(config);
     }
 
     /**
@@ -88,6 +89,8 @@ public class ReconnectCompleteStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull final DoneReplayingEventsAction action) {
+        Objects.requireNonNull(action);
+
         throw new IllegalPlatformStatusException(action, getStatus());
     }
 
@@ -132,6 +135,8 @@ public class ReconnectCompleteStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processReconnectCompleteAction(@NonNull final ReconnectCompleteAction action) {
+        Objects.requireNonNull(action);
+
         throw new IllegalPlatformStatusException(action, getStatus());
     }
 
@@ -145,6 +150,7 @@ public class ReconnectCompleteStatusLogic implements PlatformStatusLogic {
     @Override
     public PlatformStatusLogic processSelfEventReachedConsensusAction(
             @NonNull final SelfEventReachedConsensusAction action) {
+
         return this;
     }
 
@@ -157,6 +163,8 @@ public class ReconnectCompleteStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull final StartedReplayingEventsAction action) {
+        Objects.requireNonNull(action);
+
         throw new IllegalPlatformStatusException(action, getStatus());
     }
 

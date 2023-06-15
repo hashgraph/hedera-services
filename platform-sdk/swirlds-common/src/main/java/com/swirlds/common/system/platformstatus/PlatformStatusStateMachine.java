@@ -91,6 +91,8 @@ public class PlatformStatusStateMachine {
 
     @Nullable
     private PlatformStatusLogic getNewLogic(@NonNull final PlatformStatusAction action) {
+        Objects.requireNonNull(action);
+
         try {
             if (action instanceof CatastrophicFailureAction catastrophicFailureAction) {
                 return currentStatusLogic.processCatastrophicFailureAction(catastrophicFailureAction);

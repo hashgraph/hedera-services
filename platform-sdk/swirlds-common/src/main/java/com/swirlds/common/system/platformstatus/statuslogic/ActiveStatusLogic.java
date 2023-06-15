@@ -31,6 +31,7 @@ import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#ACTIVE} status.
@@ -54,8 +55,8 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
      */
     public ActiveStatusLogic(@NonNull final Instant startTime, @NonNull final PlatformStatusConfig config) {
         // a self event had to reach consensus to arrive at the ACTIVE status
-        this.lastTimeOwnEventReachedConsensus = startTime;
-        this.config = config;
+        this.lastTimeOwnEventReachedConsensus = Objects.requireNonNull(startTime);
+        this.config = Objects.requireNonNull(config);
     }
 
     /**
@@ -79,6 +80,8 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull final DoneReplayingEventsAction action) {
+        Objects.requireNonNull(action);
+
         throw new IllegalPlatformStatusException(action, getStatus());
     }
 
@@ -103,6 +106,8 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull final FreezePeriodEnteredAction action) {
+        Objects.requireNonNull(action);
+
         return new FreezingStatusLogic(action.freezeRound());
     }
 
@@ -115,6 +120,8 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processReconnectCompleteAction(@NonNull final ReconnectCompleteAction action) {
+        Objects.requireNonNull(action);
+
         throw new IllegalPlatformStatusException(action, getStatus());
     }
 
@@ -128,6 +135,7 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
     @Override
     public PlatformStatusLogic processSelfEventReachedConsensusAction(
             @NonNull final SelfEventReachedConsensusAction action) {
+
         lastTimeOwnEventReachedConsensus = action.instant();
         return this;
     }
@@ -141,6 +149,8 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull final StartedReplayingEventsAction action) {
+        Objects.requireNonNull(action);
+
         throw new IllegalPlatformStatusException(action, getStatus());
     }
 

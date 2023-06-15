@@ -29,6 +29,7 @@ import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEv
 import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
 import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#CHECKING} status.
@@ -45,8 +46,7 @@ public class CheckingStatusLogic implements PlatformStatusLogic {
      * @param config the platform status config
      */
     public CheckingStatusLogic(@NonNull final PlatformStatusConfig config) {
-        // TODO nullity notations
-        this.config = config;
+        this.config = Objects.requireNonNull(config);
     }
 
     /**
@@ -70,6 +70,8 @@ public class CheckingStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull final DoneReplayingEventsAction action) {
+        Objects.requireNonNull(action);
+
         throw new IllegalPlatformStatusException(action, getStatus());
     }
 
@@ -106,6 +108,8 @@ public class CheckingStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processReconnectCompleteAction(@NonNull final ReconnectCompleteAction action) {
+        Objects.requireNonNull(action);
+
         throw new IllegalPlatformStatusException(action, getStatus());
     }
 
@@ -119,6 +123,7 @@ public class CheckingStatusLogic implements PlatformStatusLogic {
     @Override
     public PlatformStatusLogic processSelfEventReachedConsensusAction(
             @NonNull final SelfEventReachedConsensusAction action) {
+
         return new ActiveStatusLogic(action.instant(), config);
     }
 
@@ -131,6 +136,8 @@ public class CheckingStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull final StartedReplayingEventsAction action) {
+        Objects.requireNonNull(action);
+
         throw new IllegalPlatformStatusException(action, getStatus());
     }
 

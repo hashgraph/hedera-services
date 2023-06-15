@@ -17,6 +17,9 @@
 package com.swirlds.common.system.platformstatus.statusactions;
 
 /**
- * An interface for platform status actions
+ * An interface for platform status actions.
+ * <p>
+ * A platform status action is an occurrence that has the potential to affect the
+ * {@link com.swirlds.common.system.platformstatus.PlatformStatus PlatformStatus}
  */
 public interface PlatformStatusAction {}

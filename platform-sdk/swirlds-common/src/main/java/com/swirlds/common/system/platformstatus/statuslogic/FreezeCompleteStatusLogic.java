@@ -86,6 +86,7 @@ public class FreezeCompleteStatusLogic implements PlatformStatusLogic {
     @Override
     public PlatformStatusLogic processSelfEventReachedConsensusAction(
             @NonNull final SelfEventReachedConsensusAction action) {
+
         return this;
     }
 

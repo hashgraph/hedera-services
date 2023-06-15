@@ -29,6 +29,7 @@ import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEv
 import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
 import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#REPLAYING_EVENTS} status.
@@ -50,7 +51,7 @@ public class ReplayingEventsStatusLogic implements PlatformStatusLogic {
      * @param config the platform status config
      */
     public ReplayingEventsStatusLogic(@NonNull final PlatformStatusConfig config) {
-        this.config = config;
+        this.config = Objects.requireNonNull(config);
     }
 
     /**
@@ -97,6 +98,8 @@ public class ReplayingEventsStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processFallenBehindAction(@NonNull final FallenBehindAction action) {
+        Objects.requireNonNull(action);
+
         throw new IllegalPlatformStatusException(action, getStatus());
     }
 
@@ -129,6 +132,8 @@ public class ReplayingEventsStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processReconnectCompleteAction(@NonNull final ReconnectCompleteAction action) {
+        Objects.requireNonNull(action);
+
         throw new IllegalPlatformStatusException(action, getStatus());
     }
 
@@ -142,6 +147,7 @@ public class ReplayingEventsStatusLogic implements PlatformStatusLogic {
     @Override
     public PlatformStatusLogic processSelfEventReachedConsensusAction(
             @NonNull final SelfEventReachedConsensusAction action) {
+
         return this;
     }
 
@@ -154,6 +160,8 @@ public class ReplayingEventsStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull final StartedReplayingEventsAction action) {
+        Objects.requireNonNull(action);
+
         throw new IllegalPlatformStatusException(action, getStatus());
     }
 

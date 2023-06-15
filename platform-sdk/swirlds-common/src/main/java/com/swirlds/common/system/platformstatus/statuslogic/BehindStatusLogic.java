@@ -29,6 +29,7 @@ import com.swirlds.common.system.platformstatus.statusactions.StartedReplayingEv
 import com.swirlds.common.system.platformstatus.statusactions.StateWrittenToDiskAction;
 import com.swirlds.common.system.platformstatus.statusactions.TimeElapsedAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#BEHIND} status.
@@ -74,6 +75,8 @@ public class BehindStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull final DoneReplayingEventsAction action) {
+        Objects.requireNonNull(action);
+
         throw new IllegalPlatformStatusException(action, getStatus());
     }
 
@@ -87,6 +90,8 @@ public class BehindStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processFallenBehindAction(@NonNull final FallenBehindAction action) {
+        Objects.requireNonNull(action);
+
         throw new IllegalPlatformStatusException(action, getStatus());
     }
 
@@ -132,6 +137,7 @@ public class BehindStatusLogic implements PlatformStatusLogic {
     @Override
     public PlatformStatusLogic processSelfEventReachedConsensusAction(
             @NonNull final SelfEventReachedConsensusAction action) {
+
         return this;
     }
 
@@ -144,6 +150,8 @@ public class BehindStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull final StartedReplayingEventsAction action) {
+        Objects.requireNonNull(action);
+
         throw new IllegalPlatformStatusException(action, getStatus());
     }
 
