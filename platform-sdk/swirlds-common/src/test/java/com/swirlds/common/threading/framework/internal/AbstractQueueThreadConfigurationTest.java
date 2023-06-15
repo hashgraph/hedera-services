@@ -306,7 +306,7 @@ class AbstractQueueThreadConfigurationTest {
                         .setMaxBufferSize(MAX_BUFFER_SIZE)
                         .setCapacity(CAPACITY)
                         .setHandler(handler)
-                        .setMetricsConfiguration(new QueueThreadMetricsConfiguration(null))
+                        .setMetricsConfiguration(new QueueThreadMetricsConfiguration((Metrics) null))
                         .buildQueueThread(false))
                 .isInstanceOf(NullPointerException.class);
 
@@ -317,7 +317,7 @@ class AbstractQueueThreadConfigurationTest {
                         .setMaxBufferSize(MAX_BUFFER_SIZE)
                         .setCapacity(CAPACITY)
                         .setHandler(handler)
-                        .setMetricsConfiguration(new QueueThreadMetricsConfiguration(null))
+                        .setMetricsConfiguration(new QueueThreadMetricsConfiguration((Metrics) null))
                         .buildQueueThread(false))
                 .isInstanceOf(NullPointerException.class);
     }

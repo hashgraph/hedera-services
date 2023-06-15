@@ -56,7 +56,7 @@ public class QueueThreadMetricsConfiguration {
      * 		The configuration to copy
      */
     public QueueThreadMetricsConfiguration(@NonNull final QueueThreadMetricsConfiguration that) {
-        throwArgNull(that, "that");
+        Objects.requireNonNull(that);
         this.metrics = that.metrics;
         this.category = that.category;
         this.time = that.time;
