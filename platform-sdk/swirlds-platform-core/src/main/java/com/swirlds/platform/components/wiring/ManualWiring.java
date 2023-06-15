@@ -42,8 +42,8 @@ import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.metrics.WiringMetrics;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.system.PlatformExitCode;
 import com.swirlds.platform.system.Shutdown;
-import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.util.PlatformComponents;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -200,7 +200,7 @@ public class ManualWiring {
      * Inform all components that a fatal error has occurred, log the error, and shutdown the JVM.
      */
     private void handleFatalError(
-            @Nullable final String msg, @Nullable final Throwable throwable, @NonNull final SystemExitCode exitCode) {
+            @Nullable final String msg, @Nullable final Throwable throwable, @NonNull final PlatformExitCode exitCode) {
 
         Objects.requireNonNull(exitCode);
 

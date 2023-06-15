@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.components.common.output;
 
-import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.PlatformExitCode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -38,5 +38,5 @@ public interface FatalErrorConsumer {
      * 		the exit code to use when shutting down the node, if applicable, otherwise {@code null}
      */
     void fatalError(
-            @NonNull final String msg, @Nullable final Throwable throwable, @NonNull final SystemExitCode exitCode);
+            @NonNull final String msg, @Nullable final Throwable throwable, @NonNull final PlatformExitCode exitCode);
 }

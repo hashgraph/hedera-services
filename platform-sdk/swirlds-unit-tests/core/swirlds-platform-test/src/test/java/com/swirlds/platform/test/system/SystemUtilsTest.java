@@ -18,8 +18,9 @@ package com.swirlds.platform.test.system;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.platform.system.SystemExitCode;
-import com.swirlds.platform.system.SystemExitUtils;
+import com.swirlds.common.system.SystemExitCode;
+import com.swirlds.common.system.SystemExitUtils;
+import com.swirlds.platform.system.PlatformExitCode;
 import org.junit.jupiter.api.Test;
 
 class SystemUtilsTest {
@@ -39,7 +40,7 @@ class SystemUtilsTest {
         // test with error reason
         assertThrows(
                 SystemExitException.class,
-                () -> SystemExitUtils.exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED),
+                () -> SystemExitUtils.exitSystem(PlatformExitCode.SAVED_STATE_NOT_LOADED),
                 "the method should call System.exit and throw");
 
         // reset the security manager

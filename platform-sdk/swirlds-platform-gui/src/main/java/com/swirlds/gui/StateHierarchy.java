@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.internal;
+package com.swirlds.gui;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
@@ -23,6 +23,7 @@ import com.swirlds.common.utility.CommonUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -37,7 +38,7 @@ import java.util.jar.Manifest;
  */
 public class StateHierarchy {
     /** list of the known apps, each of which may have some members, swirlds, and states */
-    List<InfoApp> apps = new ArrayList<>();
+    private final List<InfoApp> apps = new ArrayList<>();
 
     /**
      * Create the state hierarchy, by finding all .jar files in data/apps/ and also adding in a virtual one
@@ -100,10 +101,14 @@ public class StateHierarchy {
      */
     public InfoApp getInfoApp(String name) {
         for (InfoApp app : apps) {
-            if (name.equals(app.name)) {
+            if (name.equals(app.getName())) {
                 return app;
             }
         }
         return null;
+    }
+
+    public List<InfoApp> getApps() {
+        return Collections.unmodifiableList(apps);
     }
 }

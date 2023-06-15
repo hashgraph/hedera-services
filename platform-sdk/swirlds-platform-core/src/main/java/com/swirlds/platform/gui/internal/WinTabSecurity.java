@@ -16,18 +16,20 @@
 
 package com.swirlds.platform.gui.internal;
 
-import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
+import static com.swirlds.gui.GuiUtils.wrap;
 
+import com.swirlds.common.system.Platform;
 import com.swirlds.gui.PrePaintableJPanel;
 import com.swirlds.gui.Reference;
-import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.gui.WindowManager;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
+import com.swirlds.platform.gui.WinBrowser;
 import javax.swing.JTextArea;
 
 /**
  * The tab in the Browser window that shows available apps, running swirlds, and saved swirlds.
  */
-class WinTabSecurity extends PrePaintableJPanel {
+public class WinTabSecurity extends PrePaintableJPanel {
     private static final long serialVersionUID = 1L;
     Reference swirldId = null;
     JTextArea text;
@@ -40,11 +42,11 @@ class WinTabSecurity extends PrePaintableJPanel {
 
     /** {@inheritDoc} */
     public void prePaint() {
-        if (WinBrowser.memberDisplayed == null // haven't chosen yet who to display
+        if (WindowManager.memberDisplayed == null // haven't chosen yet who to display
                 || swirldId != null) { // already set this up once
             return;
         }
-        SwirldsPlatform platform = WinBrowser.memberDisplayed.platform;
+        Platform platform = WindowManager.memberDisplayed.getPlatform();
         swirldId = new Reference(GuiPlatformAccessor.getInstance().getSwirldId(platform.getSelfId()));
 
         s += "Swirld ID: \n        " + swirldId.to62() + "\n";

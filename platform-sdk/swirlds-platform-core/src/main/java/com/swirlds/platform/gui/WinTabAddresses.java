@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.internal;
+package com.swirlds.platform.gui;
 
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
-import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
+import static com.swirlds.gui.GuiUtils.wrap;
 
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.gui.PrePaintableJPanel;
+import com.swirlds.platform.Browser;
 import java.util.Arrays;
 import javax.swing.JTextArea;
 
@@ -50,8 +50,8 @@ class WinTabAddresses extends PrePaintableJPanel {
         }
         redoWindow = false;
         String s = "";
-        synchronized (getPlatforms()) {
-            for (Platform p : getPlatforms()) {
+        synchronized (Browser.platforms) {
+            for (Platform p : Browser.platforms) {
                 final Address address = p.getSelfAddress();
                 s += "\n" + address.getNodeId().id() + "   " + address.getNickname()
                         + "   " + address.getSelfName()

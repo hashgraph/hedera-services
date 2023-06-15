@@ -16,13 +16,15 @@
 
 package com.swirlds.platform.gui.internal;
 
-import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
+import static com.swirlds.gui.GuiUtils.wrap;
 
+import com.swirlds.common.system.Platform;
 import com.swirlds.gui.PrePaintableJPanel;
+import com.swirlds.gui.WindowManager;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
+import com.swirlds.platform.gui.WinBrowser;
 import com.swirlds.platform.state.signed.SignedStateInfo;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -51,10 +53,10 @@ class WinTab2Consensus extends PrePaintableJPanel {
     @Override
     public void prePaint() {
         try {
-            if (WinBrowser.memberDisplayed == null) {
+            if (WindowManager.memberDisplayed == null) {
                 return;
             }
-            SwirldsPlatform platform = WinBrowser.memberDisplayed.platform;
+            Platform platform = WindowManager.memberDisplayed.getPlatform();
             String s = "";
             s += GuiPlatformAccessor.getInstance().getPlatformName(platform.getSelfId());
             final Consensus consensus = GuiPlatformAccessor.getInstance().getConsensus(platform.getSelfId());

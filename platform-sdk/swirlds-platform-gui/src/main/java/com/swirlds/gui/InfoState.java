@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.internal;
-
-import com.swirlds.gui.InfoEntity;
-import java.util.ArrayList;
-import java.util.List;
+package com.swirlds.gui;
 
 /**
- * Metadata about an app that is installed locally.
+ * Metadata about a state stored by a member in a swirld running on an app.
  */
-public class InfoApp extends InfoEntity {
-    List<InfoSwirld> swirlds = new ArrayList<InfoSwirld>(); // children
+class InfoState extends InfoEntity {
+    private final InfoMember member;
 
-    public InfoApp(String name) {
-        this.name = name;
+    public InfoState(InfoMember member, String name) {
+        this.member = member;
+        setName(name);
+        member.getStates().add(this);
     }
 }

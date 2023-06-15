@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,24 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.internal;
+package com.swirlds.platform.gui;
 
+import static com.swirlds.common.system.SystemExitUtils.exitSystem;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserWindow;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
-import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
+import static com.swirlds.platform.gui.BrowserWindowManager.getBrowserWindow;
+import static com.swirlds.platform.gui.BrowserWindowManager.showBrowserWindow;
 
+import com.swirlds.common.system.SystemExitCode;
+import com.swirlds.gui.GuiConstants;
+import com.swirlds.gui.GuiUtils;
 import com.swirlds.gui.PrePaintableJPanel;
 import com.swirlds.gui.WinTabCalls;
+import com.swirlds.gui.WinTabPosts;
+import com.swirlds.gui.WinTabSwirlds;
+import com.swirlds.gui.WindowManager;
 import com.swirlds.gui.hashgraph.HashgraphGuiSource;
-import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.gui.internal.WinTabNetwork;
+import com.swirlds.platform.gui.internal.WinTabSecurity;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -70,8 +77,6 @@ public class WinBrowser extends JFrame {
 
     /** refresh the screen every this many milliseconds */
     final int refreshPeriod = 500;
-    /** the InfoMember that is currently being shown by all tabs in the browser window */
-    static volatile InfoMember memberDisplayed = null;
     /** have all the tabs been initialized yet? */
     private boolean didInit = false;
 
@@ -79,8 +84,6 @@ public class WinBrowser extends JFrame {
     private static Timer updater = null;
     /** gap at top of the screen (to let you click on app windows), in pixels */
     private static final int topGap = 40;
-    /** light blue used to highlight which member all the tabs are currently displaying */
-    static final Color MEMBER_HIGHLIGHT_COLOR = new Color(0.8f, 0.9f, 1.0f);
 
     static ScrollableJPanel tabSwirlds;
     static ScrollableJPanel tabAddresses;
@@ -91,8 +94,6 @@ public class WinBrowser extends JFrame {
 
     static JPanel nameBar;
     static JTextArea nameBarLabel;
-    /** the nickname and name of the member on local machine currently being viewed */
-    static JTextArea nameBarName;
 
     static JTabbedPane tabbed;
 
@@ -150,18 +151,18 @@ public class WinBrowser extends JFrame {
     }
 
     /**
-     * Perform a prePaint to recalculate the contents of each Component, maybe slowly, so that the next
-     * repaint() will trigger a fast render of everything. Then perform a repaint(). This is synchronized
-     * because it is called by a timer once a second, and is also called by the thread that manages the
-     * mouse whenever a user changes a tab in this window or changes a tab in the Network tab.
+     * Perform a prePaint to recalculate the contents of each Component, maybe slowly, so that the next repaint() will
+     * trigger a fast render of everything. Then perform a repaint(). This is synchronized because it is called by a
+     * timer once a second, and is also called by the thread that manages the mouse whenever a user changes a tab in
+     * this window or changes a tab in the Network tab.
      */
-    static synchronized void prePaintThenRepaint() {
+    public static synchronized void prePaintThenRepaint() {
         try {
             // Don't prePaint nameBar, nameBarLabel, tabbed, or any tab*.
 
             // perform the equivalent of prePaint on nameBarName:
-            if (WinBrowser.memberDisplayed != null) {
-                nameBarName.setText("    " + WinBrowser.memberDisplayed.name + "    ");
+            if (WindowManager.memberDisplayed != null) {
+                WindowManager.nameBarName.setText("    " + WindowManager.memberDisplayed.getName() + "    ");
             } else { // retry once a second until at least one member exists. Then choose the first one.
                 if (tabSwirlds != null) {
                     ((WinTabSwirlds) tabSwirlds.contents).chooseMemberDisplayed();
@@ -180,7 +181,7 @@ public class WinBrowser extends JFrame {
             WinBrowser win = getBrowserWindow();
             if (win != null) {
                 if (!win.didInit
-                        && WinBrowser.memberDisplayed != null
+                        && WindowManager.memberDisplayed != null
                         && tabSwirlds != null
                         && tabAddresses != null
                         && tabCalls != null
@@ -242,7 +243,7 @@ public class WinBrowser extends JFrame {
 
         nameBar = new JPanel();
         nameBarLabel = new JTextArea();
-        nameBarName = new JTextArea();
+        WindowManager.nameBarName = new JTextArea();
         tabbed = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.WRAP_TAB_LAYOUT);
         tabSwirlds = makeScrollableJPanel(new WinTabSwirlds());
         tabAddresses = makeScrollableJPanel(new WinTabAddresses());
@@ -275,14 +276,14 @@ public class WinBrowser extends JFrame {
         nameBarLabel.addMouseListener(listener);
         nameBarLabel.setCaretPosition(0);
 
-        nameBarName.setText(""); // this will be set again each time the member is chosen
-        nameBarName.setEditable(false);
-        nameBarName.setEnabled(false);
-        nameBarName.setDisabledTextColor(Color.BLACK);
-        nameBarName.addMouseListener(listener);
+        WindowManager.nameBarName.setText(""); // this will be set again each time the member is chosen
+        WindowManager.nameBarName.setEditable(false);
+        WindowManager.nameBarName.setEnabled(false);
+        WindowManager.nameBarName.setDisabledTextColor(Color.BLACK);
+        WindowManager.nameBarName.addMouseListener(listener);
 
         nameBar.add(nameBarLabel);
-        nameBar.add(nameBarName);
+        nameBar.add(WindowManager.nameBarName);
         nameBar.addMouseListener(listener);
         tabbed.addTab("Swirlds", tabSwirlds);
         // tabbed.addTab("Calls", tabCalls);
@@ -295,7 +296,7 @@ public class WinBrowser extends JFrame {
         setBackground(Color.WHITE); // this color flashes briefly at startup, then is hidden
         nameBar.setBackground(Color.WHITE); // color of name bar outside label and name
         nameBarLabel.setBackground(Color.WHITE); // color of name bar label
-        nameBarName.setBackground(MEMBER_HIGHLIGHT_COLOR); // color of name
+        WindowManager.nameBarName.setBackground(GuiConstants.MEMBER_HIGHLIGHT_COLOR); // color of name
         tabbed.setBackground(Color.WHITE); // color of non-highlighted tab buttons
         tabbed.setForeground(Color.BLACK); // color of words on the tab buttons
 
@@ -338,10 +339,10 @@ public class WinBrowser extends JFrame {
     }
 
     /**
-     * Instantiates and returns a JTextArea whose settings are suitable for use inside the browser window's
-     * scroll area in a tab.
+     * Instantiates and returns a JTextArea whose settings are suitable for use inside the browser window's scroll area
+     * in a tab.
      */
-    static JTextArea newJTextArea() {
+    public static JTextArea newJTextArea() {
         return GuiUtils.newJTextArea("");
     }
 }

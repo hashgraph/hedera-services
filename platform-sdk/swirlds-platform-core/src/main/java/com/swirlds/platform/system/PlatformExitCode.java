@@ -16,7 +16,9 @@
 
 package com.swirlds.platform.system;
 
-public enum SystemExitCode {
+import com.swirlds.common.system.SystemExitCode;
+
+public enum PlatformExitCode implements SystemExitCode {
     NO_ERROR(0),
     /**
      * This node encountered an ISS.
@@ -51,7 +53,7 @@ public enum SystemExitCode {
 
     private final int exitCode;
 
-    SystemExitCode(int exitCode) {
+    PlatformExitCode(int exitCode) {
         this.exitCode = exitCode;
     }
 

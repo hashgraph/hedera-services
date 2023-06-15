@@ -18,21 +18,17 @@ package com.swirlds.platform;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
+import static com.swirlds.common.system.SystemExitUtils.exitSystem;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserWindow;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.setInsets;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
+import static com.swirlds.platform.gui.BrowserWindowManager.getBrowserWindow;
+import static com.swirlds.platform.gui.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.state.address.AddressBookUtils.getOwnHostCount;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
-import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
-import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
+import static com.swirlds.platform.system.PlatformExitCode.NODE_ADDRESS_MISMATCH;
 
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.config.BasicConfig;
@@ -72,6 +68,11 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
+import com.swirlds.gui.InfoApp;
+import com.swirlds.gui.InfoMember;
+import com.swirlds.gui.InfoSwirld;
+import com.swirlds.gui.StateHierarchy;
+import com.swirlds.gui.WindowManager;
 import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
@@ -89,10 +90,6 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
-import com.swirlds.platform.gui.internal.InfoApp;
-import com.swirlds.platform.gui.internal.InfoMember;
-import com.swirlds.platform.gui.internal.InfoSwirld;
-import com.swirlds.platform.gui.internal.StateHierarchy;
 import com.swirlds.platform.health.OSHealthChecker;
 import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
@@ -106,8 +103,8 @@ import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
+import com.swirlds.platform.system.PlatformExitCode;
 import com.swirlds.platform.system.Shutdown;
-import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.MetricsDocUtils;
@@ -180,6 +177,11 @@ public class Browser {
     // @formatter:on
 
     final Shutdown shutdown = new Shutdown();
+
+    /**
+     * Platforms running in this JVM.
+     */
+    public static final Collection<SwirldsPlatform> platforms = new ArrayList<>();
 
     /**
      * Prevent this class from being instantiated.
@@ -263,7 +265,7 @@ public class Browser {
                 final JFrame jframe = new JFrame();
                 jframe.setPreferredSize(new Dimension(200, 200));
                 jframe.pack();
-                setInsets(jframe.getInsets());
+                WindowManager.setInsets(jframe.getInsets());
                 jframe.dispose();
             }
 
@@ -293,7 +295,7 @@ public class Browser {
             writeSettingsUsed(configuration);
 
             // find all the apps in data/apps and stored states in data/states
-            setStateHierarchy(new StateHierarchy(null));
+            WindowManager.setStateHierarchy(new StateHierarchy(null));
 
             // read from config.txt (in same directory as .jar, usually sdk/)
             // to fill in the following three variables, which define the
@@ -331,8 +333,8 @@ public class Browser {
                 // port forwarding
                 if (Settings.getInstance().isDoUpnp()) {
                     final List<PortMapping> portsToBeMapped = new LinkedList<>();
-                    synchronized (getPlatforms()) {
-                        for (final Platform p : getPlatforms()) {
+                    synchronized (platforms) {
+                        for (final Platform p : platforms) {
                             final Address address = p.getSelfAddress();
                             final String ip = Address.ipString(address.getListenAddressIpv4());
                             final PortMapping pm = new PortMapping(
@@ -636,8 +638,8 @@ public class Browser {
                 // this is a node to start locally.
                 final String platformName = address.getNickname()
                         + " - " + address.getSelfName()
-                        + " - " + infoSwirld.name
-                        + " - " + infoSwirld.app.name;
+                        + " - " + infoSwirld.getName()
+                        + " - " + infoSwirld.getApp().getName();
 
                 final PlatformContext platformContext =
                         new DefaultPlatformContext(nodeId, metricsProvider, configuration);
@@ -712,8 +714,8 @@ public class Browser {
                 appRunThreads[ownHostIndex] = appThread;
 
                 ownHostIndex++;
-                synchronized (getPlatforms()) {
-                    getPlatforms().add(platform);
+                synchronized (platforms) {
+                    platforms.add(platform);
                 }
             }
         }
@@ -762,7 +764,7 @@ public class Browser {
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Signed state not loaded from disk:", e);
             if (configuration.getConfigData(StateConfig.class).requireStateLoad()) {
-                exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED);
+                exitSystem(PlatformExitCode.SAVED_STATE_NOT_LOADED);
             }
         }
         return createNullReservation();
@@ -822,7 +824,7 @@ public class Browser {
         // the AddressBook is not changed after this point, so we calculate the hash now
         CryptographyHolder.get().digestSync(addressBook);
 
-        final InfoApp infoApp = getStateHierarchy().getInfoApp(appDefinition.getApplicationName());
+        final InfoApp infoApp = WindowManager.getStateHierarchy().getInfoApp(appDefinition.getApplicationName());
         final InfoSwirld infoSwirld = new InfoSwirld(infoApp, appDefinition.getSwirldId());
 
         logger.debug(STARTUP.getMarker(), "Starting platforms");
@@ -837,7 +839,7 @@ public class Browser {
                 createLocalPlatforms(appDefinition, crypto, infoSwirld, appMains, configuration, metricsProvider);
 
         // Write all metrics information to file
-        MetricsDocUtils.writeMetricsDocumentToFile(globalMetrics, getPlatforms(), configuration);
+        MetricsDocUtils.writeMetricsDocumentToFile(globalMetrics, platforms, configuration);
 
         platforms.forEach(SwirldsPlatform::start);
 

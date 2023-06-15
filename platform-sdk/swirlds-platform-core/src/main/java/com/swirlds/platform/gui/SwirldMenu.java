@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.internal;
+package com.swirlds.platform.gui;
 
+import static com.swirlds.common.system.SystemExitUtils.exitSystem;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
-import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
+import static com.swirlds.platform.gui.BrowserWindowManager.showBrowserWindow;
 
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.utility.PlatformVersion;
-import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
-import com.swirlds.platform.system.SystemExitCode;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -102,7 +100,7 @@ public class SwirldMenu extends JPanel {
      * @param size
      * 		the height and width of the icon, in pixels
      */
-    public static void addTo(SwirldsPlatform platform, JFrame window, int size) {
+    public static void addTo(Platform platform, JFrame window, int size) {
         addTo(platform, window, size, Color.BLUE, true);
     }
 

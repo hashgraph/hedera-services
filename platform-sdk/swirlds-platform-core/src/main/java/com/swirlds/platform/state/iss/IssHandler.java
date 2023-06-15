@@ -33,7 +33,7 @@ import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.error.SelfIssTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
-import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.PlatformExitCode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
@@ -157,7 +157,7 @@ public class IssHandler {
             // Automated recovery is a fancy way of saying "turn it off and on again".
             // If we are powering down, always do a state dump.
             stateDumpRequestedDispatcher.dispatch(round, ISS_DUMP_CATEGORY, true);
-            fatalErrorConsumer.fatalError("Self ISS", null, SystemExitCode.ISS);
+            fatalErrorConsumer.fatalError("Self ISS", null, PlatformExitCode.ISS);
         } else if (stateConfig.dumpStateOnAnyISS() && issDumpRateLimiter.request()) {
             stateDumpRequestedDispatcher.dispatch(round, ISS_DUMP_CATEGORY, false);
         }

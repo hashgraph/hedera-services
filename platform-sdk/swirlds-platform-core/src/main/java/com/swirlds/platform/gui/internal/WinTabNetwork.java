@@ -17,7 +17,9 @@
 package com.swirlds.platform.gui.internal;
 
 import com.swirlds.gui.PrePaintableJPanel;
+import com.swirlds.gui.WindowManager;
 import com.swirlds.gui.hashgraph.HashgraphGuiSource;
+import com.swirlds.platform.gui.WinBrowser;
 import com.swirlds.platform.gui.hashgraph.HashgraphGui;
 import java.awt.Color;
 import java.awt.Component;
@@ -31,14 +33,14 @@ import javax.swing.event.ChangeListener;
 /**
  * The tab in the Browser window that shows network speed, transactions per second, etc.
  */
-class WinTabNetwork extends PrePaintableJPanel {
+public class WinTabNetwork extends PrePaintableJPanel {
     private static final long serialVersionUID = 1L;
     /** have all the tabs been initialized yet? */
     private boolean didInit = false;
 
     /**
-     * a tabbed pane of different views of the network. Should change it from JTabbedPane to something
-     * custom that looks nicer
+     * a tabbed pane of different views of the network. Should change it from JTabbedPane to something custom that looks
+     * nicer
      */
     JTabbedPane tabbed = new JTabbedPane(JTabbedPane.LEFT, JTabbedPane.WRAP_TAB_LAYOUT);
 
@@ -91,7 +93,7 @@ class WinTabNetwork extends PrePaintableJPanel {
         if (tabbed == null) {
             return;
         }
-        if (!didInit && WinBrowser.memberDisplayed != null) {
+        if (!didInit && WindowManager.memberDisplayed != null) {
             didInit = true;
             // just do this once, so we can switch to tabs in the future and see them instantly
             tabStats.prePaint();

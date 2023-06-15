@@ -27,4 +27,20 @@ public class InfoEntity {
     public String name;
     /** the JPanel that shows this entity in the browser window (Swirlds tab), or null if none */
     public JPanel panel;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public JPanel getPanel() {
+        return panel;
+    }
+
+    public void setPanel(JPanel panel) {
+        this.panel = panel;
+    }
 }

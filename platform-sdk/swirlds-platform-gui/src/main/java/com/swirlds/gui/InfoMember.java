@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.internal;
+package com.swirlds.gui;
 
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
-import com.swirlds.gui.InfoEntity;
-import com.swirlds.platform.SwirldsPlatform;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,18 +25,26 @@ import java.util.List;
  * Metadata about a member in a swirld running on an app.
  */
 public class InfoMember extends InfoEntity {
-    public InfoSwirld swirld; // parent
-    List<InfoState> states = new ArrayList<InfoState>(); // children
+    private final InfoSwirld swirld; // parent
+    private final List<InfoState> states = new ArrayList<>(); // children
 
-    long memberId;
-    SwirldsPlatform platform;
+    private final long memberId;
+    private final Platform platform;
 
-    public InfoMember(InfoSwirld swirld, long memberId, SwirldsPlatform platform) {
+    public InfoMember(InfoSwirld swirld, long memberId, Platform platform) {
         this.swirld = swirld;
         this.memberId = memberId;
         this.platform = platform;
         final Address address = platform.getSelfAddress();
-        this.name = address.getNickname() + " - " + address.getSelfName();
-        swirld.members.add(this);
+        setName(address.getNickname() + " - " + address.getSelfName());
+        swirld.getMembers().add(this);
+    }
+
+    public List<InfoState> getStates() {
+        return states;
+    }
+
+    public Platform getPlatform() {
+        return platform;
     }
 }
