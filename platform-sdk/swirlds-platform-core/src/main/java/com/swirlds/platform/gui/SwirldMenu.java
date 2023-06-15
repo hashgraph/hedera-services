@@ -23,6 +23,7 @@ import static com.swirlds.platform.gui.BrowserWindowManager.showBrowserWindow;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.utility.PlatformVersion;
+import com.swirlds.gui.GuiAccessor;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -290,9 +291,7 @@ public class SwirldMenu extends JPanel {
                 case "About":
                     int choice = JOptionPane.showOptionDialog(
                             null, // parentCompoinent
-                            (platform == null
-                                            ? ""
-                                            : GuiPlatformAccessor.getInstance().getAbout(platform.getSelfId()))
+                            (platform == null ? "" : GuiAccessor.getInstance().getAbout(platform.getSelfId()))
                                     + "\n\n"
                                     + PlatformVersion.locateOrDefault().license(), // message
                             "About this app", // title

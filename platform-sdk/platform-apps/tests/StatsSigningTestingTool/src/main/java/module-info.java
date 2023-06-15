@@ -6,4 +6,5 @@ module com.swirlds.demo.stats.signing {
     requires org.bouncycastle.provider;
     requires org.bouncycastle.pkix;
     requires org.apache.logging.log4j;
+    requires com.swirlds.gui;
 }

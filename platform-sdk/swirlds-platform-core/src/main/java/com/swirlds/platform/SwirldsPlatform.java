@@ -120,7 +120,7 @@ import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
+import com.swirlds.platform.gui.PlatformGuiAccessor;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.AddedEventMetrics;
@@ -655,9 +655,9 @@ public class SwirldsPlatform implements Platform, Startable {
                         Pair.of(swirldStateManager, "swirldStateManager")));
 
         // To be removed once the GUI component is better integrated with the platform.
-        GuiPlatformAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
-        GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
-        GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
+        PlatformGuiAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
+        PlatformGuiAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
+        PlatformGuiAccessor.getInstance().setConsensusReference(selfId, consensusRef);
     }
 
     /**

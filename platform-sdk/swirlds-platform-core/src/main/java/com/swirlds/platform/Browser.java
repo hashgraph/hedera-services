@@ -68,6 +68,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
+import com.swirlds.gui.GuiAccessor;
 import com.swirlds.gui.InfoApp;
 import com.swirlds.gui.InfoMember;
 import com.swirlds.gui.InfoSwirld;
@@ -89,7 +90,6 @@ import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.health.OSHealthChecker;
 import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
@@ -680,9 +680,9 @@ public class Browser {
                 // set here, then given to the state in run(). A copy of it is given to hashgraph.
                 final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
 
-                GuiPlatformAccessor.getInstance().setPlatformName(nodeId, platformName);
-                GuiPlatformAccessor.getInstance().setSwirldId(nodeId, appDefinition.getSwirldId());
-                GuiPlatformAccessor.getInstance().setInstanceNumber(nodeId, instanceNumber);
+                GuiAccessor.getInstance().setPlatformName(nodeId, platformName);
+                GuiAccessor.getInstance().setSwirldId(nodeId, appDefinition.getSwirldId());
+                GuiAccessor.getInstance().setInstanceNumber(nodeId, instanceNumber);
 
                 final SwirldsPlatform platform = new SwirldsPlatform(
                         platformContext,
