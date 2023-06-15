@@ -91,7 +91,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
     private static final TokenID TOKEN_123 = BaseTokenHandler.asToken(123);
 
     private final ConfigProvider configProvider = mock(ConfigProvider.class);
-    private TokenSupplyChangeOpsValidator validator = new TokenSupplyChangeOpsValidator(configProvider);
+    private TokenSupplyChangeOpsValidator validator = new TokenSupplyChangeOpsValidator();
     private final TokenBurnHandler subject = new TokenBurnHandler(validator);
 
     @Nested
@@ -315,7 +315,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
         @Test
         void fungibleAmountExceedsBatchSize() {
             mockConfig(1, true);
-            validator = new TokenSupplyChangeOpsValidator(configProvider);
+            validator = new TokenSupplyChangeOpsValidator();
 
             final var txn = newBurnTxn(TOKEN_123, 2);
             final var context = mockContext(txn);
@@ -477,7 +477,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
         @Test
         void nftsGivenButNotEnabled() {
             mockConfig(100, false);
-            validator = new TokenSupplyChangeOpsValidator(configProvider);
+            validator = new TokenSupplyChangeOpsValidator();
 
             final var txn = newBurnTxn(TOKEN_123, 0, 1L);
             final var context = mockContext(txn);
@@ -490,7 +490,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
         @Test
         void nftSerialCountExceedsBatchSize() {
             mockConfig(1, true);
-            validator = new TokenSupplyChangeOpsValidator(configProvider);
+            validator = new TokenSupplyChangeOpsValidator();
 
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
             final var context = mockContext(txn);
