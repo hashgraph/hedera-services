@@ -16,7 +16,6 @@
 
 package com.swirlds.common.metrics.extensions;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
 import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
 
@@ -28,6 +27,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.time.IntegerEpochTime;
 import com.swirlds.common.time.OSTime;
 import com.swirlds.common.units.UnitConstants;
+import java.util.Objects;
 
 /**
  * Platform-implementation of {@link CountPerSecond}. The granularity of this metric is a millisecond. This metric needs
@@ -156,7 +156,7 @@ public class CountPerSecond {
             this.category = throwArgBlank(category, "category");
             this.name = throwArgBlank(name, "name");
             this.description = throwArgBlank(description, "description");
-            this.unit = throwArgNull(unit, "unit");
+            this.unit = Objects.requireNonNull(unit, "unit must not be null");
             this.format = throwArgBlank(format, "format");
         }
 

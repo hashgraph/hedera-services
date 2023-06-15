@@ -25,25 +25,6 @@ package com.swirlds.platform;
 @Deprecated(forRemoval = true)
 public interface SettingsProvider {
     /**
-     * Returns the inverse of a probability that we will create a child for a childless event
-     */
-    int getRescueChildlessInverseProbability();
-
-    /**
-     * The probability that after a sync, a node will create an event with a random other parent. The probability is
-     * is 1 in X, where X is the value of randomEventProbability. A value of 0 means that a node will not create any
-     * random events.
-     *
-     * This feature is used to get consensus on events with no descendants which are created by nodes who go offline.
-     */
-    int getRandomEventProbability();
-
-    /**
-     * @see Settings#maxEventQueueForCons
-     */
-    int getMaxEventQueueForCons();
-
-    /**
      * @see Settings#transactionMaxBytes
      */
     int getTransactionMaxBytes();

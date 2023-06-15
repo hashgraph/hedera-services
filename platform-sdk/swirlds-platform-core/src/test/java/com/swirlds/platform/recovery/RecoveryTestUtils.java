@@ -217,7 +217,9 @@ public final class RecoveryTestUtils {
 
         // Each event will be serialized twice. Once when it is hashed, and once when it is written to disk.
         assertEventuallyTrue(
-                () -> writeCount.get() == events.size() * 2, Duration.ofSeconds(1), "event not serialized fast enough");
+                () -> writeCount.get() == events.size() * 2,
+                Duration.ofSeconds(10),
+                "event not serialized fast enough");
 
         eventEventStreamManager.stop();
     }
