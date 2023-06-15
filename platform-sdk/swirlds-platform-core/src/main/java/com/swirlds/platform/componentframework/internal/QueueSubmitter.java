@@ -5,6 +5,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.BlockingQueue;
 
+/**
+ * A dynamic proxy that submits tasks to a queue for any method that gets called
+ */
 public class QueueSubmitter implements InvocationHandler {
 	private final BlockingQueue<Object> queue;
 
@@ -12,6 +15,15 @@ public class QueueSubmitter implements InvocationHandler {
 		this.queue = queue;
 	}
 
+	/**
+	 * Create a new {@link QueueSubmitter} for the given class and queue
+	 *
+	 * @param clazz
+	 * 		the class to create a submitter for
+	 * @param queue
+	 * 		the queue to submit tasks to
+	 * @return a new {@link QueueSubmitter} for the given class and queue
+	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T create(final Class<T> clazz, final BlockingQueue<Object> queue) {
 		return (T) Proxy.newProxyInstance(

@@ -7,6 +7,7 @@ import com.swirlds.common.threading.utility.MultiHandler;
 import com.swirlds.platform.componentframework.internal.ProcessorParts;
 import com.swirlds.platform.componentframework.internal.QueueSubmitter;
 import com.swirlds.platform.componentframework.internal.TaskProcessorUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 import java.util.HashMap;
 import java.util.List;
@@ -15,15 +16,37 @@ import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+/**
+ * A framework for setting up and running a set of {@link TaskProcessor}s. Each task processor will run in its own
+ * thread that will continuously hand it tasks to process if available. The components that need to submit tasks should
+ * do so via the submitter created by this framework. The steps to using this framework are:
+ * <ol>
+ *     <li>Create a {@link TaskProcessors} instance, declaring the processors in the constructor</li>
+ *     <li>Request any submitter if other components have dependencies on task processors declared</li>
+ *     <li>Add implementations for processors declared in the constructor</li>
+ *     <li>Start the framework</li>
+ *     <li>Stop the framework when done</li>
+ * </ol>
+ */
 public class TaskProcessors {
-
+	/** the different parts of task processors */
 	private final Map<Class<? extends TaskProcessor>, ProcessorParts> parts = new HashMap<>();
+	/** the default configuration for all task processors */
 	private final QueueThreadConfiguration<Object> defaultConfiguration;
+	/** has the framework been started */
 	private boolean started = false;
 
+	/**
+	 * Create a new TaskProcessors framework.
+	 *
+	 * @param defaultConfiguration
+	 * 		the default configuration for all task processors
+	 * @param taskProcessorDefs
+	 * 		the definitions of the task processors to create
+	 */
 	public TaskProcessors(
-			final QueueThreadConfiguration<Object> defaultConfiguration,
-			final List<TaskProcessorConfig> taskProcessorDefs) {
+			@NonNull final QueueThreadConfiguration<Object> defaultConfiguration,
+			@NonNull final List<TaskProcessorConfig> taskProcessorDefs) {
 		this.defaultConfiguration = Objects.requireNonNull(defaultConfiguration).copy();
 		if (defaultConfiguration.getHandler() != null) {
 			throw new IllegalArgumentException("Default configuration cannot have a handler set.");
@@ -59,7 +82,15 @@ public class TaskProcessors {
 		}
 	}
 
-	public <T extends TaskProcessor> void addImplementation(final T implementation) {
+	/**
+	 * Add an implementation for a task processor declared in the constructor.
+	 *
+	 * @param implementation
+	 * 		the implementation to add
+	 * @param <T>
+	 * 		the type of the implementation
+	 */
+	public <T extends TaskProcessor> void addImplementation(@NonNull final T implementation) {
 		throwIfStarted();
 		Objects.requireNonNull(implementation);
 		parts.values()
@@ -80,19 +111,36 @@ public class TaskProcessors {
 				.setImplementation(implementation);
 	}
 
-	public <T extends TaskProcessor> void addImplementation(T component, Class<T> componentClass) {
+	/**
+	 * Same as {@link #addImplementation(TaskProcessor)} but has a second parameter to explicitly specify the type. This
+	 * is useful for passing in lambdas because the type cannot be inferred.
+	 */
+	public <T extends TaskProcessor> void addImplementation(
+			@NonNull final T component,
+			@NonNull final Class<T> componentClass) {
 		throwIfStarted();
 		Objects.requireNonNull(component);
 		Objects.requireNonNull(componentClass);
 		parts.get(componentClass).setImplementation(component);
 	}
 
+	/**
+	 * Returns the submitter for the given task processor class. The submitter is used to submit tasks to the task
+	 * processor to handle asynchronously.
+	 *
+	 * @param processorClass
+	 * 		the class of the task processor to get the submitter for
+	 * @return the submitter for the given task processor class
+	 */
 	@SuppressWarnings("unchecked")
-	public <T extends TaskProcessor> T getSubmitter(Class<T> processorClass) {
+	public <T extends TaskProcessor> @NonNull T getSubmitter(@NonNull final Class<T> processorClass) {
 		Objects.requireNonNull(processorClass);
 		return (T) parts.get(processorClass).getSubmitter();
 	}
 
+	/**
+	 * Start the framework. This will start all the task processors in their own threads.
+	 */
 	@SuppressWarnings("unchecked")
 	public void start() {
 		throwIfStarted();
@@ -125,11 +173,21 @@ public class TaskProcessors {
 		started = true;
 	}
 
-	public QueueThread<?> getQueueThread(final Class<? extends TaskProcessor> processorClass) {
+	/**
+	 * Get the queue thread for the given task processor class.
+	 *
+	 * @param processorClass
+	 * 		the class of the task processor to get the queue thread for
+	 * @return the queue thread for the given task processor class
+	 */
+	public @NonNull QueueThread<?> getQueueThread(@NonNull final Class<? extends TaskProcessor> processorClass) {
 		throwIfNotStarted();
 		return parts.get(processorClass).getQueueThread();
 	}
 
+	/**
+	 * Stop the framework. This will stop all the task processors.
+	 */
 	public void stop() {
 		throwIfNotStarted();
 		parts.values().forEach(p -> p.getQueueThread().stop());

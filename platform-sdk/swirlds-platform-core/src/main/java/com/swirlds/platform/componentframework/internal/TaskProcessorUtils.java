@@ -5,10 +5,25 @@ import com.swirlds.platform.componentframework.TaskProcessor;
 import java.lang.reflect.Method;
 import java.util.Set;
 
-public class TaskProcessorUtils {
+/**
+ * Utilities for working with {@link TaskProcessor}s
+ */
+public final class TaskProcessorUtils {
 	private static final Set<String> IGNORED_METHODS = Set.of("getProcessingMethods");
 
-	public static void checkTaskProcessorDefinition(final Class<? extends TaskProcessor> def){
+	private TaskProcessorUtils() {
+		throw new UnsupportedOperationException("Utility class");
+	}
+
+	/**
+	 * Check that a {@link TaskProcessor} definition is valid
+	 *
+	 * @param def
+	 * 		the definition to check
+	 * @throws IllegalArgumentException
+	 * 		if the definition is invalid
+	 */
+	public static void checkTaskProcessorDefinition(final Class<? extends TaskProcessor> def) {
 		if (!def.isInterface()) {
 			throw new IllegalArgumentException(String.format(
 					"A TaskProcessor must be an interface. %s is not an interface",
@@ -35,7 +50,7 @@ public class TaskProcessorUtils {
 			}
 			processingMethods++;
 		}
-		if(processingMethods == 0){
+		if (processingMethods == 0) {
 			throw new IllegalArgumentException(String.format(
 					"A TaskProcessor must have at least one processing method. %s has none",
 					def.getName()
