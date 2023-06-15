@@ -74,6 +74,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
         final var configuration = new HederaTestConfigBuilder()
                 .withValue("hedera.allowances.maxTransactionLimit", 1)
                 .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(configuration);
         assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(MAX_ALLOWANCES_EXCEEDED));

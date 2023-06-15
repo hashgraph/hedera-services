@@ -331,8 +331,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var config = new HederaTestConfigBuilder()
                 .withValue("staking.isEnabled", false)
                 .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
-
+        given(handleContext.configuration()).willReturn(config);
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(STAKING_NOT_ENABLED));
@@ -347,7 +346,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var config = new HederaTestConfigBuilder()
                 .withValue("staking.isEnabled", false)
                 .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
+        given(handleContext.configuration()).willReturn(config);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
