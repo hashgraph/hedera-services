@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.threading.framework.util;
+package com.swirlds.common.threading.framework.internal;
 
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
-import com.swirlds.common.threading.framework.internal.AbstractQueueThreadConfiguration;
-import com.swirlds.common.threading.framework.util.MeasuredBlockingQueue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;

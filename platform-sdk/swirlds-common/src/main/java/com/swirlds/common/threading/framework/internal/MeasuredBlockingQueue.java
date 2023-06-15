@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.threading.framework.util;
+package com.swirlds.common.threading.framework.internal;
 
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.threading.framework.internal.AbstractBlockingQueue;
 
 import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
