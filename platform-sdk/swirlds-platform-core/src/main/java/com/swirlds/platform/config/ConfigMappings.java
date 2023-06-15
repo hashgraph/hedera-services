@@ -56,9 +56,9 @@ public final class ConfigMappings {
             new ConfigMapping("metrics.csvFileName", "csvFileName"),
             new ConfigMapping("metrics.csvAppend", "csvAppend"),
             new ConfigMapping("metrics.disableMetricsOutput", "disableMetricsOutput"),
-            new ConfigMapping("prometheus.endpointEnabled", "endpointEnabled"),
-            new ConfigMapping("prometheus.endpointPortNumber", "endpointPortNumber"),
-            new ConfigMapping("prometheus.endpointMaxBacklogAllowed", "endpointMaxBacklogAllowed"));
+            new ConfigMapping("prometheus.endpointEnabled", "prometheusEndpointEnabled"),
+            new ConfigMapping("prometheus.endpointPortNumber", "prometheusEndpointPortNumber"),
+            new ConfigMapping("prometheus.endpointMaxBacklogAllowed", "prometheusEndpointMaxBacklogAllowed"));
 
     /**
      * Add all known aliases to the provided config source
