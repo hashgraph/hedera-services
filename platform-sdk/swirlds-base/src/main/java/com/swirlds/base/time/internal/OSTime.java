@@ -17,6 +17,7 @@
 package com.swirlds.base.time.internal;
 
 import com.swirlds.base.time.Time;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
 /**
@@ -31,6 +32,7 @@ public final class OSTime implements Time {
     /**
      * Get a static instance of a standard time implementation.
      */
+    @NonNull
     public static Time getInstance() {
         return instance;
     }
@@ -54,6 +56,7 @@ public final class OSTime implements Time {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public Instant now() {
         return Instant.now();
