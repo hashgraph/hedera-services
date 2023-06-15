@@ -65,7 +65,8 @@ public class FileServiceStateTranslator {
         final var fileBuilder = new File.Builder();
         fileBuilder.fileNumber(fileID.getFileNum());
         fileBuilder.expirationTime(metadata.getExpiry());
-        fileBuilder.keys(PbjConverter.asPbjKey(metadata.getWacl()).keyList());
+        if (metadata.getWacl() != null)
+            fileBuilder.keys(PbjConverter.asPbjKey(metadata.getWacl()).keyList());
         fileBuilder.contents(Bytes.wrap(data));
         fileBuilder.memo(metadata.getMemo());
         fileBuilder.deleted(metadata.isDeleted());

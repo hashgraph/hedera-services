@@ -69,6 +69,38 @@ public class FileServiceStateTranslatorTest extends FileTestBase {
     }
 
     @Test
+    void createFileMetadataAndContentFromFileWithEmptyKeysAndMemo() throws DecoderException {
+        final var existingFile = readableStore.getFileMetadata(fileId);
+        assertFalse(existingFile.deleted());
+
+        final FileMetadataAndContent convertedFile = FileServiceStateTranslator.pbjToState(fileWithNoKeysAndMemo);
+
+        assertArrayEquals(
+                convertedFile.data(),
+                getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys().data());
+        assertEquals(
+                convertedFile.metadata().getExpiry(),
+                getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys()
+                        .metadata()
+                        .getExpiry());
+        assertEquals(
+                convertedFile.metadata().getMemo(),
+                getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys()
+                        .metadata()
+                        .getMemo());
+        assertEquals(
+                MiscUtils.describe(convertedFile.metadata().getWacl()),
+                MiscUtils.describe(getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys()
+                        .metadata()
+                        .getWacl()));
+        assertEquals(
+                convertedFile.metadata().isDeleted(),
+                getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys()
+                        .metadata()
+                        .isDeleted());
+    }
+
+    @Test
     void createFileMetadataAndContentFromReadableFileStore() throws DecoderException {
         final var existingFile = readableStore.getFileMetadata(fileId);
         assertFalse(existingFile.deleted());
@@ -106,6 +138,18 @@ public class FileServiceStateTranslatorTest extends FileTestBase {
     }
 
     @Test
+    void createFileFromMetadataContentAndFileIdWithEmptyMemoAndKeys() {
+        final byte[] data = contents;
+        final com.hedera.node.app.service.mono.files.HFileMeta metadata = new HFileMeta(true, null, expirationTime);
+
+        final com.hederahashgraph.api.proto.java.FileID fileID = monoFileID;
+
+        final File convertedFile = FileServiceStateTranslator.stateToPbj(data, metadata, fileID);
+
+        assertEquals(createFileEmptyMemoAndKeys(), convertedFile);
+    }
+
+    @Test
     void createFileFromFileIDAndHederaFs() {
 
         final com.hederahashgraph.api.proto.java.FileID fileID = monoFileID;
@@ -124,6 +168,12 @@ public class FileServiceStateTranslatorTest extends FileTestBase {
                 Key.newBuilder().keyList(file.keys()).build(), 1);
         com.hedera.node.app.service.mono.files.HFileMeta hFileMeta =
                 new HFileMeta(file.deleted(), keys, file.expirationTime(), file.memo());
+        return new FileMetadataAndContent(file.contents().toByteArray(), hFileMeta);
+    }
+
+    private FileMetadataAndContent getExpectedMonoFileMetaAndContentWithEmptyMemoAndKeys() {
+        com.hedera.node.app.service.mono.files.HFileMeta hFileMeta =
+                new HFileMeta(file.deleted(), null, file.expirationTime(), null);
         return new FileMetadataAndContent(file.contents().toByteArray(), hFileMeta);
     }
 }
