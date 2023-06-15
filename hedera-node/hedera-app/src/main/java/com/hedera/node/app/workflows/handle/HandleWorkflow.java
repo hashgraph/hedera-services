@@ -44,6 +44,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
@@ -51,6 +52,7 @@ import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.time.Time;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -226,22 +228,24 @@ public class HandleWorkflow {
             @NonNull final HederaState state,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final ConsensusTransaction platformTxn,
-            @NonNull final Configuration configuration)
+            @NonNull final VersionedConfiguration configuration)
             throws PreCheckException {
         final var metadata = platformTxn.getMetadata();
         // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
         platformTxn.setMetadata(null);
 
         // First check if pre-handle was run before (in which case metadata is a PreHandleResult)
-        if (metadata instanceof PreHandleResult previousResult) {
+        if (preHandleStillValid(configuration, metadata)) {
+            final var preHandleResult = (PreHandleResult) metadata;
+
             // In case of due diligence error, we prepare a CryptoTransfer to charge the node and return immediately.
-            if (previousResult.status() == Status.NODE_DUE_DILIGENCE_FAILURE) {
+            if (preHandleResult.status() == Status.NODE_DUE_DILIGENCE_FAILURE) {
                 return createPenaltyPayment();
             }
 
             // If pre-handle was successful, we need to add signatures that were not known at the time of pre-handle.
-            if (previousResult.status() == Status.SO_FAR_SO_GOOD) {
-                return addMissingSignatures(state, previousResult, configuration);
+            if (preHandleResult.status() == Status.SO_FAR_SO_GOOD) {
+                return addMissingSignatures(state, preHandleResult, configuration);
             }
         }
 
@@ -265,6 +269,14 @@ public class HandleWorkflow {
     private PreHandleResult createPenaltyPayment() {
         // TODO: Implement createPenaltyPayment() - https://github.com/hashgraph/hedera-services/issues/6811
         throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    private boolean preHandleStillValid(
+            @NonNull final VersionedConfiguration configuration, @Nullable final Object metadata) {
+        if (metadata instanceof PreHandleResult preHandleResult) {
+            return preHandleResult.configVersion() == configuration.getVersion();
+        }
+        return false;
     }
 
     /*

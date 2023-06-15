@@ -391,6 +391,30 @@ class HandleWorkflowTest extends AppTestBase {
         }
 
         @Test
+        @DisplayName("Run preHandle, if configuration changed")
+        void testConfigurationChanged() {
+            // given
+            final var key = ALICE.account().keyOrThrow();
+            final var preHandleResult = new PreHandleResult(
+                    ALICE.accountID(),
+                    key,
+                    Status.SO_FAR_SO_GOOD,
+                    ResponseCodeEnum.OK,
+                    new TransactionScenarioBuilder().txInfo(),
+                    Set.of(),
+                    Map.of(key, FakeSignatureVerificationFuture.goodFuture(key)),
+                    null,
+                    CONFIG_VERSION - 1L);
+            when(platformTxn.getMetadata()).thenReturn(preHandleResult);
+
+            // when
+            workflow.handleRound(state, round);
+
+            // then
+            verify(preHandleWorkflow).preHandleTransaction(any(), any(), any(), eq(platformTxn));
+        }
+
+        @Test
         @DisplayName("Handle transaction successfully, if running preHandle caused no issues")
         void testPreHandleSuccess() {
             // given
