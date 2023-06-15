@@ -18,7 +18,7 @@ package com.swirlds.common.test.fixtures;
 
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MILLISECONDS;
 
-import com.swirlds.common.time.Time;
+import com.swirlds.base.time.Time;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Calendar;

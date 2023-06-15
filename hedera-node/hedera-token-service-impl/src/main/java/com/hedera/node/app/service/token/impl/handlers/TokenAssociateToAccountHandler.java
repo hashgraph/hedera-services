@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-import static com.hedera.node.app.service.token.impl.util.IdConvenienceUtils.isValidTokenNum;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -32,7 +31,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -49,19 +47,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * HederaFunctionality#TOKEN_ASSOCIATE_TO_ACCOUNT}.
  */
 @Singleton
-public class TokenAssociateToAccountHandler implements TransactionHandler {
-    private static final Logger log = LoggerFactory.getLogger(TokenAssociateToAccountHandler.class);
+public class TokenAssociateToAccountHandler extends BaseTokenHandler implements TransactionHandler {
 
     @Inject
     public TokenAssociateToAccountHandler() {
@@ -94,104 +88,6 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
         // Now that we've validated we can link all the new token IDs to the account,
         // create the corresponding token relations and update the account
         createAndLinkTokenRels(validated.account(), validated.tokens(), accountStore, tokenRelStore);
-    }
-
-    private void createAndLinkTokenRels(
-            @NonNull final Account account,
-            @NonNull final List<Token> tokens,
-            @NonNull final WritableAccountStore accountStore,
-            @NonNull final WritableTokenRelationStore tokenRelStore) {
-        final var newTokenRels = new ArrayList<TokenRelation>();
-        for (int i = 0; i < tokens.size(); i++) {
-            final var token = tokens.get(i);
-            // Link each of the new token IDs together in a doubly-linked list way by setting each
-            // token relation's previous and next token IDs.
-
-            // Compute the previous and next token IDs. Unfortunately `TokenRelation` doesn't
-            // allow for null values, so a value of '0' will have to indicate a null pointer to
-            // the previous or next token (since no token number 0 can exist)
-            long prevTokenId = 0;
-            long nextTokenId = 0;
-            if (i - 1 >= 0) { // if there is a previous token
-                prevTokenId = Optional.ofNullable(tokens.get(i - 1))
-                        .map(Token::tokenNumber)
-                        .orElse(0L);
-            }
-            if (i + 1 < tokens.size()) { // if there is a next token
-                nextTokenId = Optional.ofNullable(tokens.get(i + 1))
-                        .map(Token::tokenNumber)
-                        .orElse(0L);
-            }
-
-            // Create the new token relation
-            final var isFrozen = token.hasFreezeKey() && token.accountsFrozenByDefault();
-            final var kycGranted = !token.hasKycKey();
-            final var newTokenRel = new TokenRelation(
-                    token.tokenNumber(),
-                    account.accountNumber(),
-                    0,
-                    isFrozen,
-                    kycGranted,
-                    false,
-                    false,
-                    prevTokenId,
-                    nextTokenId);
-            newTokenRels.add(newTokenRel);
-        }
-
-        // Now all the NEW token relations are linked together, but they are not yet linked to the account. First,
-        // compute where the account's current head token number should go in the linked list of tokens
-        final var currentHeadTokenNum = account.headTokenNumber();
-        // NOTE: if currentHeadTokenNum is less than 1, it means the account isn't associated with any tokens yet, so
-        // we'll just set the head to the first token, i.e. the first token ID list from the transaction (since the new
-        // tokenRels are all linked, and in the order of the token IDs as they appeared in the original list)
-        if (isValidTokenNum(currentHeadTokenNum)) {
-            // The account is already associated with some tokens, so we need to insert the new
-            // tokenRels at the beginning of the list of existing token numbers first. We start by
-            // retrieving the token rel object with the currentHeadTokenNum at the head of the
-            // account
-            final var headTokenRel = tokenRelStore.get(
-                    AccountID.newBuilder().accountNum(account.accountNumber()).build(),
-                    TokenID.newBuilder().tokenNum(currentHeadTokenNum).build());
-            if (headTokenRel != null) {
-                // Recreate the current head token's tokenRel, but with its previous pointer set to
-                // the last of the new tokenRels. This links the new token rels to the rest of the
-                // token rels connected via the old head token rel
-                final var lastOfNewTokenRels = newTokenRels.remove(newTokenRels.size() - 1);
-                final var headTokenAsNonHeadTokenRel = headTokenRel
-                        .copyBuilder()
-                        .previousToken(lastOfNewTokenRels.tokenNumber())
-                        .build(); // the old head token rel is no longer the head
-
-                // Also connect the last of the new tokenRels to the old head token rel
-                newTokenRels.add(lastOfNewTokenRels
-                        .copyBuilder()
-                        .nextToken(headTokenAsNonHeadTokenRel.tokenNumber())
-                        .build());
-                tokenRelStore.put(headTokenAsNonHeadTokenRel);
-            } else {
-                // This shouldn't happen, but if it does we'll log the error and continue with creating the token
-                // associations
-                log.error(
-                        "Unable to get head tokenRel for account {}, token {}! Linked-list relations are likely in a bad state",
-                        account.accountNumber(),
-                        currentHeadTokenNum);
-            }
-        }
-
-        // Now replace the account's old head token number with the new head token number. This is
-        // how we link the new tokenRels to the account
-        final var firstOfNewTokenRels = newTokenRels.get(0);
-        final var updatedAcct = account.copyBuilder()
-                // replace the head token number with the first token number of the new tokenRels
-                .headTokenNumber(firstOfNewTokenRels.tokenNumber())
-                // and also update the account's total number of token associations
-                .numberAssociations(account.numberAssociations() + newTokenRels.size())
-                .build();
-
-        // Save the results
-        accountStore.put(updatedAcct);
-        newTokenRels.forEach(tokenRelStore::put);
     }
 
     /**

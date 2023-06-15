@@ -19,6 +19,7 @@ package com.swirlds.platform.state.iss;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_HASH;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
@@ -26,7 +27,6 @@ import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.logging.payloads.IssPayload;
 import com.swirlds.platform.dispatch.DispatchBuilder;

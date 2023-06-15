@@ -16,11 +16,13 @@
 
 package com.hedera.node.app.service.token.impl.test.util;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -37,7 +39,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -62,43 +63,50 @@ class TokenHandlerHelperTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void account_getIfUsable_nullArg() {
-        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(null, accountStore, expiryValidator))
+        Assertions.assertThatThrownBy(
+                        () -> TokenHandlerHelper.getIfUsable(null, accountStore, expiryValidator, INVALID_ACCOUNT_ID))
                 .isInstanceOf(NullPointerException.class);
 
         final var acctId = ACCT_2300;
-        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(acctId, null, expiryValidator))
+        Assertions.assertThatThrownBy(
+                        () -> TokenHandlerHelper.getIfUsable(acctId, null, expiryValidator, INVALID_ACCOUNT_ID))
                 .isInstanceOf(NullPointerException.class);
 
-        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(acctId, accountStore, null))
+        Assertions.assertThatThrownBy(
+                        () -> TokenHandlerHelper.getIfUsable(acctId, accountStore, null, INVALID_ACCOUNT_ID))
+                .isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(acctId, accountStore, expiryValidator, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void account_getIfUsable_nullAccount() {
-        BDDMockito.given(accountStore.getAccountById(notNull())).willReturn(null);
+        given(accountStore.getAccountById(notNull())).willReturn(null);
 
-        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator))
+        Assertions.assertThatThrownBy(() ->
+                        TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator, INVALID_ACCOUNT_ID))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
+                .has(responseCode(INVALID_ACCOUNT_ID));
     }
 
     @Test
     void account_getIfUsable_deletedAccount() {
-        BDDMockito.given(accountStore.getAccountById(notNull()))
+        given(accountStore.getAccountById(notNull()))
                 .willReturn(Account.newBuilder()
                         .accountNumber(ACCT_2300.accountNumOrThrow())
                         .tinybarBalance(0L)
                         .deleted(true)
                         .build());
 
-        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator))
+        Assertions.assertThatThrownBy(() ->
+                        TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator, INVALID_ACCOUNT_ID))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.ACCOUNT_DELETED));
     }
 
     @Test
     void account_getIfUsable_expiredAndPendingRemovalAccount() {
-        BDDMockito.given(accountStore.getAccountById(notNull()))
+        given(accountStore.getAccountById(notNull()))
                 .willReturn(Account.newBuilder()
                         .accountNumber(ACCT_2300.accountNumOrThrow())
                         .tinybarBalance(0L)
@@ -106,31 +114,17 @@ class TokenHandlerHelperTest {
                         .smartContract(false)
                         .expiredAndPendingRemoval(true)
                         .build());
-
-        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator))
+        given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
+                .willReturn(ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        Assertions.assertThatThrownBy(() ->
+                        TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator, INVALID_ACCOUNT_ID))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
     @Test
-    void contract_getIfUsable_expiredAndPendingRemovalContract() {
-        BDDMockito.given(accountStore.getAccountById(notNull()))
-                .willReturn(Account.newBuilder()
-                        .accountNumber(ACCT_2300.accountNumOrThrow())
-                        .tinybarBalance(0L)
-                        .deleted(false)
-                        .smartContract(true)
-                        .expiredAndPendingRemoval(true)
-                        .build());
-
-        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL));
-    }
-
-    @Test
     void account_getIfUsable_accountTypeIsExpired() {
-        BDDMockito.given(accountStore.getAccountById(notNull()))
+        given(accountStore.getAccountById(notNull()))
                 .willReturn(Account.newBuilder()
                         .accountNumber(ACCT_2300.accountNumOrThrow())
                         .tinybarBalance(0L)
@@ -138,17 +132,18 @@ class TokenHandlerHelperTest {
                         .smartContract(false)
                         .expiredAndPendingRemoval(false)
                         .build());
-        BDDMockito.given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
+        given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
                 .willReturn(ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
-        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator))
+        Assertions.assertThatThrownBy(() ->
+                        TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator, INVALID_ACCOUNT_ID))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
     @Test
     void contract_getIfUsable_contractTypeIsExpired() {
-        BDDMockito.given(accountStore.getAccountById(notNull()))
+        given(accountStore.getAccountById(notNull()))
                 .willReturn(Account.newBuilder()
                         .accountNumber(ACCT_2300.accountNumOrThrow())
                         .tinybarBalance(0L)
@@ -156,17 +151,18 @@ class TokenHandlerHelperTest {
                         .smartContract(true)
                         .expiredAndPendingRemoval(false)
                         .build());
-        BDDMockito.given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
+        given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
                 .willReturn(ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL);
 
-        Assertions.assertThatThrownBy(() -> TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator))
+        Assertions.assertThatThrownBy(() ->
+                        TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator, INVALID_ACCOUNT_ID))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
     @Test
     void account_getIfUsable_usableAccount() {
-        BDDMockito.given(accountStore.getAccountById(notNull()))
+        given(accountStore.getAccountById(notNull()))
                 .willReturn(Account.newBuilder()
                         .accountNumber(ACCT_2300.accountNumOrThrow())
                         .tinybarBalance(0L)
@@ -175,16 +171,16 @@ class TokenHandlerHelperTest {
                         .expiredAndPendingRemoval(false)
                         .build());
 
-        BDDMockito.given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
+        given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
                 .willReturn(ResponseCodeEnum.OK);
 
-        final var result = TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator);
+        final var result = TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
         Assertions.assertThat(result).isNotNull();
     }
 
     @Test
     void contract_getIfUsable_usableContract() {
-        BDDMockito.given(accountStore.getAccountById(notNull()))
+        given(accountStore.getAccountById(notNull()))
                 .willReturn(Account.newBuilder()
                         .accountNumber(ACCT_2300.accountNumOrThrow())
                         .tinybarBalance(0L)
@@ -193,10 +189,10 @@ class TokenHandlerHelperTest {
                         .expiredAndPendingRemoval(false)
                         .build());
 
-        BDDMockito.given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
+        given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
                 .willReturn(ResponseCodeEnum.OK);
 
-        final var result = TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator);
+        final var result = TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
         Assertions.assertThat(result).isNotNull();
     }
 
@@ -211,7 +207,7 @@ class TokenHandlerHelperTest {
 
     @Test
     void token_getIfUsable_nullToken() {
-        BDDMockito.given(tokenStore.get(notNull())).willReturn(null);
+        given(tokenStore.get(notNull())).willReturn(null);
 
         Assertions.assertThatThrownBy(() -> getIfUsable(TOKEN_ID_45, tokenStore))
                 .isInstanceOf(HandleException.class)
@@ -220,7 +216,7 @@ class TokenHandlerHelperTest {
 
     @Test
     void token_getIfUsable_deletedToken() {
-        BDDMockito.given(tokenStore.get(notNull()))
+        given(tokenStore.get(notNull()))
                 .willReturn(Token.newBuilder()
                         .tokenNumber(TOKEN_ID_45.tokenNum())
                         .deleted(true)
@@ -234,7 +230,7 @@ class TokenHandlerHelperTest {
 
     @Test
     void token_getIfUsable_pausedToken() {
-        BDDMockito.given(tokenStore.get(notNull()))
+        given(tokenStore.get(notNull()))
                 .willReturn(Token.newBuilder()
                         .tokenNumber(TOKEN_ID_45.tokenNum())
                         .deleted(false)
@@ -248,7 +244,7 @@ class TokenHandlerHelperTest {
 
     @Test
     void token_getIfUsable_usableToken() {
-        BDDMockito.given(tokenStore.get(notNull()))
+        given(tokenStore.get(notNull()))
                 .willReturn(Token.newBuilder()
                         .tokenNumber(TOKEN_ID_45.tokenNum())
                         .deleted(false)
@@ -281,7 +277,7 @@ class TokenHandlerHelperTest {
 
     @Test
     void tokenRel_getIfUsable_usableTokenRel() {
-        BDDMockito.given(tokenRelStore.get(notNull(), notNull()))
+        given(tokenRelStore.get(notNull(), notNull()))
                 .willReturn(TokenRelation.newBuilder()
                         .accountNumber(ACCT_2300.accountNumOrThrow())
                         .tokenNumber(TOKEN_ID_45.tokenNum())

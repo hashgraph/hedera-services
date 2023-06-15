@@ -18,7 +18,6 @@ package com.swirlds.common.config.sources;
 
 import static com.swirlds.logging.LogMarker.CONFIG;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
@@ -73,7 +72,7 @@ public class MappedConfigSource extends AbstractConfigSource {
      * @param wrappedSource the wrapped config
      */
     public MappedConfigSource(@NonNull final ConfigSource wrappedSource) {
-        this.wrappedSource = ArgumentUtils.throwArgNull(wrappedSource, "wrappedSource");
+        this.wrappedSource = Objects.requireNonNull(wrappedSource, "wrappedSource must not be null");
         configMappings = new ConcurrentLinkedQueue<>();
         properties = new HashMap<>();
     }
@@ -94,7 +93,7 @@ public class MappedConfigSource extends AbstractConfigSource {
      * @param configMapping defined mapping
      */
     public void addMapping(@NonNull final ConfigMapping configMapping) {
-        ArgumentUtils.throwArgNull(configMapping, "configMapping");
+        Objects.requireNonNull(configMapping, "configMapping must not be null");
 
         if (configMappings.stream()
                 .map(ConfigMapping::mappedName)

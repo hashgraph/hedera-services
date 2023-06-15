@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.time;
+package com.swirlds.base.time.internal;
 
+import com.swirlds.base.time.Time;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
 /**
@@ -30,6 +32,7 @@ public final class OSTime implements Time {
     /**
      * Get a static instance of a standard time implementation.
      */
+    @NonNull
     public static Time getInstance() {
         return instance;
     }
@@ -53,6 +56,7 @@ public final class OSTime implements Time {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public Instant now() {
         return Instant.now();

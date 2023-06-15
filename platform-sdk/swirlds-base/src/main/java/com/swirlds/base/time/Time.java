@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.time;
+package com.swirlds.base.time;
 
+import com.swirlds.base.time.internal.OSTime;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
 /**
@@ -45,5 +47,16 @@ public interface Time {
      *
      * @return the curren time relative to the epoch
      */
+    @NonNull
     Instant now();
+
+    /**
+     * Returns a {@link Time} instance
+     *
+     * @return a {@link Time} instance
+     */
+    @NonNull
+    static Time getCurrent() {
+        return OSTime.getInstance();
+    }
 }
