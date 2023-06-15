@@ -19,6 +19,7 @@ package com.swirlds.common.system.platformstatus.statuslogic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.swirlds.common.system.platformstatus.IllegalPlatformStatusException;
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.statusactions.PlatformStatusAction;
 import java.util.function.Function;
@@ -79,7 +80,7 @@ public class StatusLogicTestUtils {
             @NonNull final PlatformStatus originalStatus) {
 
         assertThrows(
-                IllegalStateException.class,
+                IllegalPlatformStatusException.class,
                 () -> actionHandler.apply(action),
                 "Expected an exception to be thrown when triggering action " + action + " in status " + originalStatus);
     }

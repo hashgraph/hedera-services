@@ -114,7 +114,7 @@ public class PlatformStatusStateMachine {
                 throw new IllegalArgumentException(
                         "Unknown action type: " + action.getClass().getName());
             }
-        } catch (final IllegalStateException e) {
+        } catch (final IllegalPlatformStatusException e) {
             logger.error(EXCEPTION.getMarker(), e.getMessage());
             return null;
         }

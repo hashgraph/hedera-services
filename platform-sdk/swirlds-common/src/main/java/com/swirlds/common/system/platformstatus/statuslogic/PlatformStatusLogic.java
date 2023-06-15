@@ -39,7 +39,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *     <li>If the input action does not result in a status transition, the processing method should return a reference
  *     to itself, since it will continue managing the logic for the current status status moving forward</li>
  *     <li>If the input action is not a valid for the current status, the processing method should throw an
- *     {@link IllegalStateException}</li>
+ *     {@link com.swirlds.common.system.platformstatus.IllegalPlatformStatusException IllegalPlatformStatusException}</li>
  * </ul>
  */
 public interface PlatformStatusLogic {
@@ -126,20 +126,12 @@ public interface PlatformStatusLogic {
 
     /**
      * Get the status that this logic is for.
+     * <p>
+     * A class implementing PlatformStatusLogic must always return the exact same status (i.e. no changing the status at
+     * runtime within the same status logic class).
      *
      * @return the status that this logic is for
      */
     @NonNull
     PlatformStatus getStatus();
-
-    /**
-     * Get the log message to use when an unexpected status action is received.
-     *
-     * @param action the unexpected status action
-     * @return the log message to use when an unexpected status action is received
-     */
-    default String getUnexpectedStatusActionLog(@NonNull final PlatformStatusAction action) {
-        return "Received unexpected status action %s with current status of %s"
-                .formatted(action.getClass().getSimpleName(), getStatus().name());
-    }
 }

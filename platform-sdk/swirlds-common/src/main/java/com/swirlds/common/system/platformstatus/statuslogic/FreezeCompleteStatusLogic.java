@@ -39,7 +39,7 @@ public class FreezeCompleteStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processCatastrophicFailureAction(@NonNull CatastrophicFailureAction action) {
+    public PlatformStatusLogic processCatastrophicFailureAction(@NonNull final CatastrophicFailureAction action) {
         return this;
     }
 
@@ -48,7 +48,7 @@ public class FreezeCompleteStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull DoneReplayingEventsAction action) {
+    public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull final DoneReplayingEventsAction action) {
         return this;
     }
 
@@ -57,7 +57,7 @@ public class FreezeCompleteStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processFallenBehindAction(@NonNull FallenBehindAction action) {
+    public PlatformStatusLogic processFallenBehindAction(@NonNull final FallenBehindAction action) {
         return this;
     }
 
@@ -66,7 +66,7 @@ public class FreezeCompleteStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull FreezePeriodEnteredAction action) {
+    public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull final FreezePeriodEnteredAction action) {
         return this;
     }
 
@@ -75,7 +75,7 @@ public class FreezeCompleteStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processReconnectCompleteAction(@NonNull ReconnectCompleteAction action) {
+    public PlatformStatusLogic processReconnectCompleteAction(@NonNull final ReconnectCompleteAction action) {
         return this;
     }
 
@@ -84,7 +84,8 @@ public class FreezeCompleteStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processSelfEventReachedConsensusAction(@NonNull SelfEventReachedConsensusAction action) {
+    public PlatformStatusLogic processSelfEventReachedConsensusAction(
+            @NonNull final SelfEventReachedConsensusAction action) {
         return this;
     }
 
@@ -93,7 +94,7 @@ public class FreezeCompleteStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull StartedReplayingEventsAction action) {
+    public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull final StartedReplayingEventsAction action) {
         return this;
     }
 
@@ -102,7 +103,7 @@ public class FreezeCompleteStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull StateWrittenToDiskAction action) {
+    public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull final StateWrittenToDiskAction action) {
         return this;
     }
 
@@ -111,7 +112,7 @@ public class FreezeCompleteStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processTimeElapsedAction(@NonNull TimeElapsedAction action) {
+    public PlatformStatusLogic processTimeElapsedAction(@NonNull final TimeElapsedAction action) {
         return this;
     }
 

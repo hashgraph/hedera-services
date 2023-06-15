@@ -16,6 +16,7 @@
 
 package com.swirlds.common.system.platformstatus.statuslogic;
 
+import com.swirlds.common.system.platformstatus.IllegalPlatformStatusException;
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.platformstatus.statusactions.CatastrophicFailureAction;
 import com.swirlds.common.system.platformstatus.statusactions.DoneReplayingEventsAction;
@@ -54,7 +55,7 @@ public class FreezingStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processCatastrophicFailureAction(@NonNull CatastrophicFailureAction action) {
+    public PlatformStatusLogic processCatastrophicFailureAction(@NonNull final CatastrophicFailureAction action) {
         return new CatastrophicFailureStatusLogic();
     }
 
@@ -66,8 +67,8 @@ public class FreezingStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull DoneReplayingEventsAction action) {
-        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull final DoneReplayingEventsAction action) {
+        throw new IllegalPlatformStatusException(action, getStatus());
     }
 
     /**
@@ -78,7 +79,7 @@ public class FreezingStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processFallenBehindAction(@NonNull FallenBehindAction action) {
+    public PlatformStatusLogic processFallenBehindAction(@NonNull final FallenBehindAction action) {
         return this;
     }
 
@@ -90,8 +91,8 @@ public class FreezingStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull FreezePeriodEnteredAction action) {
-        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    public PlatformStatusLogic processFreezePeriodEnteredAction(@NonNull final FreezePeriodEnteredAction action) {
+        throw new IllegalPlatformStatusException(action, getStatus());
     }
 
     /**
@@ -102,8 +103,8 @@ public class FreezingStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processReconnectCompleteAction(@NonNull ReconnectCompleteAction action) {
-        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    public PlatformStatusLogic processReconnectCompleteAction(@NonNull final ReconnectCompleteAction action) {
+        throw new IllegalPlatformStatusException(action, getStatus());
     }
 
     /**
@@ -114,7 +115,8 @@ public class FreezingStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processSelfEventReachedConsensusAction(@NonNull SelfEventReachedConsensusAction action) {
+    public PlatformStatusLogic processSelfEventReachedConsensusAction(
+            @NonNull final SelfEventReachedConsensusAction action) {
         return this;
     }
 
@@ -126,8 +128,8 @@ public class FreezingStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull StartedReplayingEventsAction action) {
-        throw new IllegalStateException(getUnexpectedStatusActionLog(action));
+    public PlatformStatusLogic processStartedReplayingEventsAction(@NonNull final StartedReplayingEventsAction action) {
+        throw new IllegalPlatformStatusException(action, getStatus());
     }
 
     /**
@@ -140,7 +142,7 @@ public class FreezingStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull StateWrittenToDiskAction action) {
+    public PlatformStatusLogic processStateWrittenToDiskAction(@NonNull final StateWrittenToDiskAction action) {
         if (action.round() == freezeRound) {
             return new FreezeCompleteStatusLogic();
         } else {
@@ -156,7 +158,7 @@ public class FreezingStatusLogic implements PlatformStatusLogic {
      */
     @NonNull
     @Override
-    public PlatformStatusLogic processTimeElapsedAction(@NonNull TimeElapsedAction action) {
+    public PlatformStatusLogic processTimeElapsedAction(@NonNull final TimeElapsedAction action) {
         return this;
     }
 
