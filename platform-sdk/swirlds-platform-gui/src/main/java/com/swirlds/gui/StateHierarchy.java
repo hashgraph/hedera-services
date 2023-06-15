@@ -19,7 +19,6 @@ package com.swirlds.gui;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 
-import com.swirlds.common.utility.CommonUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -87,7 +86,7 @@ public class StateHierarchy {
             mainClassname = attributes.getValue("Main-Class");
             return mainClassname;
         } catch (Exception ex) {
-            CommonUtils.tellUserConsolePopup("ERROR", "ERROR: Couldn't load app " + appJarPath);
+            GuiUtils.tellUserConsolePopup("ERROR", "ERROR: Couldn't load app " + appJarPath);
             return null;
         }
     }

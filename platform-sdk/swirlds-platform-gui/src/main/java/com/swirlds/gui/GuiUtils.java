@@ -16,8 +16,20 @@
 
 package com.swirlds.gui;
 
+import com.swirlds.common.utility.CommonUtils;
 import java.awt.Color;
+import java.awt.Dialog;
+import java.awt.Dimension;
+import java.awt.GraphicsEnvironment;
+import java.awt.Window;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.text.DefaultCaret;
 
 /**
@@ -26,6 +38,24 @@ import javax.swing.text.DefaultCaret;
 public class GuiUtils {
 
     private GuiUtils() {}
+
+    /**
+     * Extracted from {@code Browser}
+     *
+     * @deprecated we need to refactor the ui. This method is horrible
+     */
+    @Deprecated
+    public static void initUI() {
+        // discover the inset size and set the look and feel
+        if (!GraphicsEnvironment.isHeadless()) {
+            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+            final JFrame jframe = new JFrame();
+            jframe.setPreferredSize(new Dimension(200, 200));
+            jframe.pack();
+            WindowManager.setInsets(jframe.getInsets());
+            jframe.dispose();
+        }
+    }
 
     /**
      * Insert line breaks into the given string so that each line is at most len characters long (not including trailing
@@ -87,5 +117,44 @@ public class GuiUtils {
         txt.setText(text);
         txt.setVisible(true);
         return txt;
+    }
+
+    /**
+     * This is equivalent to sending text to doing both Utilities.tellUserConsole() and writing to a popup window. It is
+     * not used for debugging; it is used for production code for communicating to the user.
+     *
+     * @param title the title of the window to pop up
+     * @param msg   the message for the user
+     */
+    public static void tellUserConsolePopup(final String title, final String msg) {
+        CommonUtils.tellUserConsole("\n***** " + msg + " *****\n");
+        if (!GraphicsEnvironment.isHeadless()) {
+            final String[] ss = msg.split("\n");
+            int w = 0;
+            for (final String str : ss) {
+                w = Math.max(w, str.length());
+            }
+            final JTextArea ta = new JTextArea(ss.length + 1, (int) (w * 0.65));
+            ta.setText(msg);
+            ta.setWrapStyleWord(true);
+            ta.setLineWrap(true);
+            ta.setCaretPosition(0);
+            ta.setEditable(false);
+            ta.addHierarchyListener(
+                    new HierarchyListener() { // make ta resizable
+                        @Override
+                        public void hierarchyChanged(final HierarchyEvent e) {
+                            final Window window = SwingUtilities.getWindowAncestor(ta);
+                            if (window instanceof Dialog) {
+                                final Dialog dialog = (Dialog) window;
+                                if (!dialog.isResizable()) {
+                                    dialog.setResizable(true);
+                                }
+                            }
+                        }
+                    });
+            final JScrollPane sp = new JScrollPane(ta);
+            JOptionPane.showMessageDialog(null, sp, title, JOptionPane.PLAIN_MESSAGE);
+        }
     }
 }

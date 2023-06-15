@@ -23,7 +23,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
-import static com.swirlds.platform.gui.BrowserWindowManager.getBrowserWindow;
 import static com.swirlds.platform.gui.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.state.address.AddressBookUtils.getOwnHostCount;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
@@ -69,6 +68,7 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.gui.GuiAccessor;
+import com.swirlds.gui.GuiUtils;
 import com.swirlds.gui.InfoApp;
 import com.swirlds.gui.InfoMember;
 import com.swirlds.gui.InfoSwirld;
@@ -90,6 +90,7 @@ import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
+import com.swirlds.platform.gui.BrowserWindowManager;
 import com.swirlds.platform.health.OSHealthChecker;
 import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
@@ -110,9 +111,6 @@ import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.MetricsDocUtils;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.awt.Dimension;
-import java.awt.Frame;
-import java.awt.GraphicsEnvironment;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -132,8 +130,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import javax.swing.JFrame;
-import javax.swing.UIManager;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -259,15 +255,7 @@ public class Browser {
                         OSFileSystemChecker::performFileSystemCheck));
 
         try {
-            // discover the inset size and set the look and feel
-            if (!GraphicsEnvironment.isHeadless()) {
-                UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-                final JFrame jframe = new JFrame();
-                jframe.setPreferredSize(new Dimension(200, 200));
-                jframe.pack();
-                WindowManager.setInsets(jframe.getInsets());
-                jframe.dispose();
-            }
+            GuiUtils.initUI();
 
             // Read from data/settings.txt (where data is in same directory as .jar, usually sdk/) to change
             // the default settings given in the Settings class. This file won't normally exist. But it can
@@ -317,11 +305,7 @@ public class Browser {
 
                 // create the browser window, which uses those Statistics objects
                 showBrowserWindow();
-                for (final Frame f : Frame.getFrames()) {
-                    if (!f.equals(getBrowserWindow())) {
-                        f.toFront();
-                    }
-                }
+                BrowserWindowManager.bringBrowserWindowToFront();
 
                 CommonUtils.tellUserConsole(
                         "This computer has an internal IP address:  " + Network.getInternalIPAddress());
@@ -388,7 +372,7 @@ public class Browser {
                 appLoader =
                         SwirldAppLoader.loadSwirldApp(appDefinition.getMainClassName(), appDefinition.getAppJarPath());
             } catch (final AppLoaderException e) {
-                CommonUtils.tellUserConsolePopup("ERROR", e.getMessage());
+                GuiUtils.tellUserConsolePopup("ERROR", e.getMessage());
                 throw e;
             }
 
@@ -601,7 +585,7 @@ public class Browser {
         try {
             return appLoader.instantiateSwirldMain();
         } catch (final Exception e) {
-            CommonUtils.tellUserConsolePopup(
+            GuiUtils.tellUserConsolePopup(
                     "ERROR",
                     "ERROR: There are problems starting class " + appDefinition.getMainClassName() + "\n"
                             + ExceptionUtils.getStackTrace(e));

@@ -16,11 +16,6 @@
 
 package com.swirlds.common.utility;
 
-import java.awt.Dialog;
-import java.awt.GraphicsEnvironment;
-import java.awt.Window;
-import java.awt.event.HierarchyEvent;
-import java.awt.event.HierarchyListener;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
@@ -36,10 +31,6 @@ import javax.sound.midi.Synthesizer;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
-import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.SwingUtilities;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.Conversion;
@@ -151,45 +142,6 @@ public class CommonUtils {
      */
     public static void tellUserConsole(final String msg) {
         System.out.println(msg);
-    }
-
-    /**
-     * This is equivalent to sending text to doing both Utilities.tellUserConsole() and writing to a popup window. It is
-     * not used for debugging; it is used for production code for communicating to the user.
-     *
-     * @param title the title of the window to pop up
-     * @param msg   the message for the user
-     */
-    public static void tellUserConsolePopup(final String title, final String msg) {
-        tellUserConsole("\n***** " + msg + " *****\n");
-        if (!GraphicsEnvironment.isHeadless()) {
-            final String[] ss = msg.split("\n");
-            int w = 0;
-            for (final String str : ss) {
-                w = Math.max(w, str.length());
-            }
-            final JTextArea ta = new JTextArea(ss.length + 1, (int) (w * 0.65));
-            ta.setText(msg);
-            ta.setWrapStyleWord(true);
-            ta.setLineWrap(true);
-            ta.setCaretPosition(0);
-            ta.setEditable(false);
-            ta.addHierarchyListener(
-                    new HierarchyListener() { // make ta resizable
-                        @Override
-                        public void hierarchyChanged(final HierarchyEvent e) {
-                            final Window window = SwingUtilities.getWindowAncestor(ta);
-                            if (window instanceof Dialog) {
-                                final Dialog dialog = (Dialog) window;
-                                if (!dialog.isResizable()) {
-                                    dialog.setResizable(true);
-                                }
-                            }
-                        }
-                    });
-            final JScrollPane sp = new JScrollPane(ta);
-            JOptionPane.showMessageDialog(null, sp, title, JOptionPane.PLAIN_MESSAGE);
-        }
     }
 
     /**

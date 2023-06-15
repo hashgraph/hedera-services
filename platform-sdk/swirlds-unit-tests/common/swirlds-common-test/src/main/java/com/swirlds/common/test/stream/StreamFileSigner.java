@@ -21,7 +21,6 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.stream.Signer;
-import com.swirlds.common.utility.CommonUtils;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -59,8 +58,6 @@ public class StreamFileSigner implements Signer {
             sigKeyPair = sigKeyGen.generateKeyPair();
         } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
             logger.error(LOGM_EXCEPTION, "Failed to generate KeyPair", e);
-            CommonUtils.tellUserConsolePopup(
-                    "ERROR", "ERROR: This Java installation does not have the needed cryptography providers installed");
         }
     }
 

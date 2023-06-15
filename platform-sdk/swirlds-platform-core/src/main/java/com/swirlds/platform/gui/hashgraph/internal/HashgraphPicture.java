@@ -21,6 +21,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
+import com.swirlds.gui.hashgraph.AddressBookMetadataImpl;
 import com.swirlds.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.gui.hashgraph.HashgraphGuiUtils;
 import com.swirlds.gui.hashgraph.HashgraphPictureOptions;

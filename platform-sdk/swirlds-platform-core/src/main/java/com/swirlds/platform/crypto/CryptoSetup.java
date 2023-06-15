@@ -29,6 +29,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.gui.GuiUtils;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.Utilities;
@@ -118,7 +119,7 @@ public final class CryptoSetup {
             logger.error(EXCEPTION.getMarker(), "Exception while loading/generating keys", e);
             if (Utilities.isRootCauseSuppliedType(e, NoSuchAlgorithmException.class)
                     || Utilities.isRootCauseSuppliedType(e, NoSuchProviderException.class)) {
-                CommonUtils.tellUserConsolePopup(
+                GuiUtils.tellUserConsolePopup(
                         "ERROR",
                         "ERROR: This Java installation does not have the needed cryptography " + "providers installed");
             }

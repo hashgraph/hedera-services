@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.internal.ConfigurationException;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.gui.GuiUtils;
 import com.swirlds.platform.Settings;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -163,6 +164,6 @@ public final class LegacyConfigPropertiesLoader {
     }
 
     private static void onError(String message) {
-        CommonUtils.tellUserConsolePopup("Error", message);
+        GuiUtils.tellUserConsolePopup("Error", message);
     }
 }

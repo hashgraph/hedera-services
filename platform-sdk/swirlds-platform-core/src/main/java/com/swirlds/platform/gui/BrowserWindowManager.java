@@ -17,6 +17,7 @@
 package com.swirlds.platform.gui;
 
 import com.swirlds.platform.gui.internal.PlatformHashgraphGuiSource;
+import java.awt.Frame;
 import java.awt.GraphicsEnvironment;
 
 /**
@@ -36,6 +37,17 @@ public final class BrowserWindowManager {
      */
     public static WinBrowser getBrowserWindow() {
         return browserWindow;
+    }
+
+    /**
+     * Bring the browser window to the front of the screen.
+     */
+    public static void bringBrowserWindowToFront() {
+        for (final Frame f : Frame.getFrames()) {
+            if (!f.equals(getBrowserWindow())) {
+                f.toFront();
+            }
+        }
     }
 
     /**

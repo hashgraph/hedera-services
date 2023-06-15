@@ -29,7 +29,6 @@ package com.swirlds.demo.crypto;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 
-import com.swirlds.common.Console;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
@@ -39,6 +38,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.gui.Console;
 import com.swirlds.gui.GuiAccessor;
 import com.swirlds.platform.Browser;
 import java.awt.event.KeyEvent;

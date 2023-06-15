@@ -31,7 +31,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 
-import com.swirlds.common.Console;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.BasicSoftwareVersion;
@@ -41,6 +40,7 @@ import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
+import com.swirlds.gui.Console;
 import com.swirlds.gui.GuiAccessor;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
