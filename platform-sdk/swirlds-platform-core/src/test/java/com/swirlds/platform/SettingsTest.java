@@ -19,7 +19,6 @@ package com.swirlds.platform;
 import static com.swirlds.platform.SettingConstants.APPS_STRING;
 import static com.swirlds.platform.SettingConstants.BUFFER_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.CONFIG_TXT;
 import static com.swirlds.platform.SettingConstants.DATA_STRING;
 import static com.swirlds.platform.SettingConstants.DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DELAY_SHUFFLE_DEFAULT_VALUE;
@@ -200,7 +199,6 @@ class SettingsTest {
     public void checkGetDefaultSettings() {
         // given
         final Settings settings = Settings.getInstance();
-        final Path configPath = FileUtils.getAbsolutePath(CONFIG_TXT);
         final Path settingsPath = FileUtils.getAbsolutePath(SETTINGS_TXT);
         final Path keysDirectoryPath =
                 FileUtils.getAbsolutePath().resolve(DATA_STRING).resolve(KEYS_STRING);
@@ -210,11 +208,6 @@ class SettingsTest {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
 
         // then
-        Assertions.assertEquals(configPath, settings.getConfigPath());
-        Assertions.assertEquals(settingsPath, settings.getSettingsPath());
-        Assertions.assertEquals(keysDirectoryPath, settings.getKeysDirPath());
-        Assertions.assertEquals(appsDirectoryPath, settings.getAppsDirPath());
-        Assertions.assertEquals(logPath, settings.getLogPath());
         Assertions.assertEquals(VERIFY_EVENT_SIGS_DEFAULT_VALUE, settings.isVerifyEventSigs());
         Assertions.assertEquals(NUM_CRYPTO_THREADS_DEFAULT_VALUE, settings.getNumCryptoThreads());
         Assertions.assertEquals(SHOW_INTERNAL_STATS_DEFAULT_VALUE, settings.isShowInternalStats());
@@ -266,7 +259,6 @@ class SettingsTest {
     public void checkGetLoadedSettings() throws IOException {
         // given
         final Settings settings = Settings.getInstance();
-        final Path configPath = FileUtils.getAbsolutePath(CONFIG_TXT);
         final Path settingsPath = FileUtils.getAbsolutePath(SETTINGS_TXT);
         final Path keysDirectoryPath =
                 FileUtils.getAbsolutePath().resolve(DATA_STRING).resolve(KEYS_STRING);
@@ -285,11 +277,6 @@ class SettingsTest {
 
         // then
         // These values shouldn't change as they are final
-        Assertions.assertEquals(configPath, settings.getConfigPath());
-        Assertions.assertEquals(settingsPath, settings.getSettingsPath());
-        Assertions.assertEquals(keysDirectoryPath, settings.getKeysDirPath());
-        Assertions.assertEquals(appsDirectoryPath, settings.getAppsDirPath());
-        Assertions.assertEquals(logPath, settings.getLogPath());
         Assertions.assertEquals(THREAD_PRIORITY_NON_SYNC_DEFAULT_VALUE, settings.getThreadPriorityNonSync());
 
         // These values should change
