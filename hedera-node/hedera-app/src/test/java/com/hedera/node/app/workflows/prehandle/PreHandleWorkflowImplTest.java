@@ -145,8 +145,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     /** Null arguments are not permitted to the constructor. */
     @Test
     @DisplayName("Null constructor args throw NPE")
-    @SuppressWarnings("DataFlowIssue")
-    // Suppress the warning about null args
+    @SuppressWarnings("DataFlowIssue") // Suppress the warning about null args
     void nullConstructorArgsTest() {
         assertThatThrownBy(() -> new PreHandleWorkflowImpl(
                         null,
@@ -176,8 +175,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     /** Null arguments are not permitted to the preHandle method */
     @Test
     @DisplayName("Null pre-handle args throw NPE")
-    @SuppressWarnings("DataFlowIssue")
-    // Suppress the warning about null args
+    @SuppressWarnings("DataFlowIssue") // Suppress the warning about null args
     void nullPreHandleArgsTest() {
         final List<Transaction> list = List.of(new SwirldTransaction(new byte[10]));
         final var transactions = list.stream();
