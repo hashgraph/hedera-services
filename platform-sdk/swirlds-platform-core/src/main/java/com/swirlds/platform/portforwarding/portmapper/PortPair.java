@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.p2p.portforwarding.portmapper;
+package com.swirlds.platform.portforwarding.portmapper;
 
 import com.offbynull.portmapper.mapper.MappedPort;
-import com.swirlds.p2p.portforwarding.PortMapping;
+import com.swirlds.platform.portforwarding.PortMapping;
 
 class PortPair {
     private final PortMapping specified;
