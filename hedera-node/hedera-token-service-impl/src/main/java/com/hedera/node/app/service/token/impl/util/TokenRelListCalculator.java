@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.util;
 
-import static com.hedera.node.app.service.token.impl.util.IdConvenienceUtils.fromAccountNum;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -24,6 +23,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -119,7 +119,7 @@ public class TokenRelListCalculator {
         final var cleanedTokenRelsToDelete = filterNullsAndDuplicates(tokenRelsToDelete);
 
         final var currentHeadTokenNum = account.headTokenNumber();
-        final var accountId = fromAccountNum(account.accountNumber());
+        final var accountId = BaseCryptoHandler.asAccount(account.accountNumber());
 
         // We'll create this mapping of (tokenId -> tokenRel) to make it easier to check if a token rel is in the list
         // of token rels to delete. It's only for ease of lookup and doesn't affect the algorithm
@@ -271,7 +271,7 @@ public class TokenRelListCalculator {
             @NonNull final Account account,
             @NonNull final Map<Long, TokenRelation> updatedTokenRels,
             @NonNull final Map<Long, TokenRelation> tokenRelsToDeleteByTokenId) {
-        final var accountId = IdConvenienceUtils.fromAccountNum(account.accountNumber());
+        final var accountId = BaseCryptoHandler.asAccount(account.accountNumber());
 
         // Calculate the new head token number by walking the linked token rels until we find a token rel that is not in
         // the list of token rels to delete

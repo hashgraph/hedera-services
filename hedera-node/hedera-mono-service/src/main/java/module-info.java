@@ -289,7 +289,6 @@ module com.hedera.node.app.service.mono {
     requires transitive tuweni.bytes;
     requires transitive tuweni.units;
     requires com.fasterxml.jackson.core;
-    requires com.github.spotbugs.annotations;
     requires com.swirlds.base;
     requires com.swirlds.logging;
     requires com.swirlds.platform;
@@ -301,4 +300,5 @@ module com.hedera.node.app.service.mono {
     requires org.bouncycastle.provider;
     requires org.eclipse.collections.impl;
     requires org.slf4j;
+    requires static com.github.spotbugs.annotations;
 }
