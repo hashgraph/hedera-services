@@ -2187,6 +2187,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .via("revertedInnerCreation"),
                         getTxnRecord("committedInnerCreation").andAllChildRecords().logged(),
+                        // TODO - this record should not have any contract_nonces entries, but it has two,
+                        // corresponding to the child contract and the creating parent contract (which
+                        // actually didn't change due to the revert); compare with the nonces logged at
+                        // end of ContractCallTransitionLogic on this branch
                         getTxnRecord("revertedInnerCreation").andAllChildRecords().logged());
     }
 
