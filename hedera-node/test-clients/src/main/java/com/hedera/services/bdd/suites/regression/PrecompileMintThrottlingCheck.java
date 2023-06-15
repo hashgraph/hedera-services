@@ -26,7 +26,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite.MINT_NFT_CONTRACT;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.GAS_TO_OFFER;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -61,6 +60,7 @@ public class PrecompileMintThrottlingCheck extends HapiSuite {
     private static final int EXPECTED_MAX_MINTS_PER_SEC = 50;
     private static final double ALLOWED_THROTTLE_NOISE_TOLERANCE = 0.05;
     private static final String NON_FUNGIBLE_TOKEN = "NON_FUNGIBLE_TOKEN";
+    public static final int GAS_TO_OFFER = 1_000_000;
 
     public static void main(String... args) {
         new PrecompileMintThrottlingCheck().runSuiteSync();
