@@ -20,7 +20,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
 /**
- * An action that is triggered when the platform is done replaying events.
+ * An action that is triggered when the platform is done replaying events from the preconsensus event stream.
  *
  * @param instant the instant at which the action was triggered
  */
