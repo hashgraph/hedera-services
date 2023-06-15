@@ -32,8 +32,8 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.test.AssertionUtils;
@@ -41,7 +41,6 @@ import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
@@ -651,7 +650,7 @@ class StateManagementComponentTests {
     @NonNull
     private DefaultStateManagementComponent newStateManagementComponent(
             @NonNull final AddressBook addressBook, @NonNull final TestConfigBuilder configBuilder) {
-        Settings.getInstance().getState().savedStateDirectory = tmpDir.toFile().toString();
+        configBuilder.withValue("state.savedStateDirectory", tmpDir.toFile().toString());
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withMetrics(new NoOpMetrics())

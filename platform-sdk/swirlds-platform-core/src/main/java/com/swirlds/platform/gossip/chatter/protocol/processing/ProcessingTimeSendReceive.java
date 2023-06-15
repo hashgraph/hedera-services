@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.gossip.chatter.protocol.processing;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.gossip.chatter.protocol.MessageHandler;
 import com.swirlds.platform.gossip.chatter.protocol.MessageProvider;
 import java.time.Duration;

@@ -91,6 +91,15 @@ import java.time.Duration;
  * @param debugStackTracesEnabled               if true and stateHistoryEnabled is true, then stack traces are captured
  *                                              each time a signed state reference count is changed, and logged if a
  *                                              signed state reference count bug is detected.
+ * @param requireStateLoad                      if set to true, the platform will fail to start if it fails to load
+ *                                              a state from disk
+ * @param emergencyStateFileName                The name of the file that contains the emergency state.
+ * @param checkSignedStateFromDisk              If true, the platform will recalculate the hash of the signed state
+ *                                              and check it against the written hash. It will also verify that the
+ *                                              signatures are valid.
+ * @param signedStateFreq                       hash and sign a state every signedStateFreq rounds. 1 means that a state
+ *                                              will be signed every round, 2 means every other round, and so on. If the
+ *                                              value is 0 or less, no states will be signed
  */
 @ConfigData("state")
 public record StateConfig(
@@ -116,7 +125,11 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "0") int roundsToKeepAfterSigning,
         @ConfigProperty(defaultValue = "5m") Duration suspiciousSignedStateAge,
         @ConfigProperty(defaultValue = "false") boolean stateHistoryEnabled,
-        @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled) {
+        @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled,
+        @ConfigProperty(defaultValue = "false") boolean requireStateLoad,
+        @ConfigProperty(defaultValue = "emergencyRecovery.yaml") String emergencyStateFileName,
+        @ConfigProperty(defaultValue = "false") boolean checkSignedStateFromDisk,
+        @ConfigProperty(defaultValue = "1") int signedStateFreq) {
 
     /**
      * Get the main class name that should be used for signed states.

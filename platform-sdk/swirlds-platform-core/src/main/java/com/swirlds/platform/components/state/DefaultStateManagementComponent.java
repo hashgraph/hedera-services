@@ -27,8 +27,8 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.time.OSTime;
@@ -210,7 +210,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         dispatchBuilder =
                 new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
 
-        hashLogger = new HashLogger(threadManager, selfId);
+        hashLogger = new HashLogger(threadManager, selfId, stateConfig);
 
         final StateHashedTrigger stateHashedTrigger =
                 dispatchBuilder.getDispatcher(this, StateHashedTrigger.class)::dispatch;

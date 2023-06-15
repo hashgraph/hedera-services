@@ -1,0 +1,972 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.service.token.impl.test.handlers;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FREEZE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_KYC_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
+
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenSupplyType;
+import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.token.TokenCreateTransactionBody;
+import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.config.VersionedConfigImpl;
+import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.service.mono.config.HederaNumbers;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
+import com.hedera.node.app.service.token.impl.records.TokenCreateRecordBuilder;
+import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
+import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
+import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
+import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
+import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
+import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidator;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
+    @Mock(strictness = LENIENT)
+    private HandleContext handleContext;
+
+    @Mock(strictness = LENIENT)
+    private ConfigProvider configProvider;
+
+    @Mock(strictness = LENIENT)
+    private PropertySource compositeProps;
+
+    @Mock(strictness = LENIENT)
+    private HederaNumbers hederaNumbers;
+
+    @Mock(strictness = LENIENT)
+    private GlobalDynamicProperties dynamicProperties;
+
+    private TokenCreateRecordBuilder recordBuilder;
+    private TokenCreateHandler subject;
+    private TransactionBody txn;
+    private CustomFeesValidator customFeesValidator;
+    private TokenAttributesValidator tokenFieldsValidator;
+    private TokenCreateValidator tokenCreateValidator;
+    private ExpiryValidator expiryValidator;
+    private AttributeValidator attributeValidator;
+
+    private static final TokenID newTokenId =
+            TokenID.newBuilder().tokenNum(3000L).build();
+    private static final Timestamp expiry =
+            Timestamp.newBuilder().seconds(1234600L).build();
+    private final AccountID autoRenewAccountId = ownerId;
+
+    @BeforeEach
+    public void setUp() {
+        super.setUp();
+        refreshWritableStores();
+        recordBuilder = new SingleTransactionRecordBuilder(consensusInstant);
+        tokenFieldsValidator = new TokenAttributesValidator(configProvider);
+        customFeesValidator = new CustomFeesValidator();
+        tokenCreateValidator = new TokenCreateValidator(tokenFieldsValidator);
+        subject = new TokenCreateHandler(customFeesValidator, tokenCreateValidator);
+        givenStoresAndConfig(configProvider, handleContext);
+    }
+
+    @Test
+    void handleWorksForFungibleCreate() {
+        setUpTxnContext();
+
+        assertThat(writableTokenStore.get(newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
+
+        subject.handle(handleContext);
+
+        assertThat(writableTokenStore.get(newTokenId)).isNotNull();
+        final var token = writableTokenStore.get(newTokenId);
+
+        assertThat(token.treasuryAccountNumber()).isEqualTo(treasuryId.accountNum());
+        assertThat(token.tokenNumber()).isEqualTo(newTokenId.tokenNum());
+        assertThat(token.totalSupply()).isEqualTo(1000L);
+        assertThat(token.tokenType()).isEqualTo(TokenType.FUNGIBLE_COMMON);
+        assertThat(token.expiry())
+                .isEqualTo(consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond());
+        assertThat(token.freezeKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.kycKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.adminKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.wipeKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.supplyKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.feeScheduleKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.autoRenewSecs()).isEqualTo(autoRenewSecs);
+        assertThat(token.autoRenewAccountNumber()).isEqualTo(autoRenewAccountId.accountNum());
+        assertThat(token.decimals()).isZero();
+        assertThat(token.name()).isEqualTo("TestToken");
+        assertThat(token.symbol()).isEqualTo("TT");
+        assertThat(token.memo()).isEqualTo("test token");
+        assertThat(token.customFees()).isEqualTo(List.of(withFixedFee(fixedFee), withFractionalFee(fractionalFee)));
+
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNotNull();
+        final var tokenRel = writableTokenRelStore.get(treasuryId, newTokenId);
+
+        assertThat(tokenRel.balance()).isEqualTo(1000L);
+        assertThat(tokenRel.deleted()).isFalse();
+        assertThat(tokenRel.tokenNumber()).isEqualTo(newTokenId.tokenNum());
+        assertThat(tokenRel.accountNumber()).isEqualTo(treasuryId.accountNum());
+        assertThat(tokenRel.kycGranted()).isFalse();
+        assertThat(tokenRel.automaticAssociation()).isFalse();
+        assertThat(tokenRel.frozen()).isFalse();
+        assertThat(tokenRel.nextToken()).isZero();
+        assertThat(tokenRel.previousToken()).isZero();
+    }
+
+    @Test
+    void handleWorksForFungibleCreateWithSelfDenominatedToken() {
+        setUpTxnContext();
+        final var customFees = List.of(
+                withFixedFee(fixedFee.copyBuilder()
+                        .denominatingTokenId(TokenID.newBuilder().tokenNum(0L).build())
+                        .build()),
+                withFractionalFee(fractionalFee));
+        txn = new TokenCreateBuilder().withCustomFees(customFees).build();
+        given(handleContext.body()).willReturn(txn);
+
+        assertThat(writableTokenStore.get(newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(payerId, newTokenId)).isNull();
+
+        subject.handle(handleContext);
+
+        assertThat(writableTokenStore.get(newTokenId)).isNotNull();
+        final var token = writableTokenStore.get(newTokenId);
+
+        assertThat(token.treasuryAccountNumber()).isEqualTo(treasuryId.accountNum());
+        assertThat(token.tokenNumber()).isEqualTo(newTokenId.tokenNum());
+        assertThat(token.totalSupply()).isEqualTo(1000L);
+        assertThat(token.tokenType()).isEqualTo(TokenType.FUNGIBLE_COMMON);
+        assertThat(token.expiry())
+                .isEqualTo(consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond());
+        assertThat(token.freezeKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.kycKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.adminKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.wipeKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.supplyKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.feeScheduleKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.autoRenewSecs()).isEqualTo(autoRenewSecs);
+        assertThat(token.autoRenewAccountNumber()).isEqualTo(autoRenewAccountId.accountNum());
+        assertThat(token.decimals()).isZero();
+        assertThat(token.name()).isEqualTo("TestToken");
+        assertThat(token.symbol()).isEqualTo("TT");
+        assertThat(token.memo()).isEqualTo("test token");
+        assertThat(token.customFees()).isEqualTo(customFees);
+
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNotNull();
+        final var tokenRel = writableTokenRelStore.get(treasuryId, newTokenId);
+
+        assertThat(tokenRel.balance()).isEqualTo(1000L);
+        assertThat(tokenRel.deleted()).isFalse();
+        assertThat(tokenRel.tokenNumber()).isEqualTo(newTokenId.tokenNum());
+        assertThat(tokenRel.accountNumber()).isEqualTo(treasuryId.accountNum());
+        assertThat(tokenRel.kycGranted()).isFalse();
+        assertThat(tokenRel.automaticAssociation()).isFalse();
+        assertThat(tokenRel.frozen()).isFalse();
+        assertThat(tokenRel.nextToken()).isZero();
+        assertThat(tokenRel.previousToken()).isZero();
+
+        assertThat(writableTokenRelStore.get(payerId, newTokenId)).isNotNull();
+        final var feeCollectorRel = writableTokenRelStore.get(payerId, newTokenId);
+
+        assertThat(feeCollectorRel.balance()).isZero();
+        assertThat(feeCollectorRel.deleted()).isFalse();
+        assertThat(feeCollectorRel.tokenNumber()).isEqualTo(newTokenId.tokenNum());
+        assertThat(feeCollectorRel.accountNumber()).isEqualTo(payerId.accountNum());
+        assertThat(feeCollectorRel.kycGranted()).isFalse();
+        assertThat(feeCollectorRel.automaticAssociation()).isFalse();
+        assertThat(feeCollectorRel.frozen()).isFalse();
+        assertThat(feeCollectorRel.nextToken()).isZero();
+        assertThat(feeCollectorRel.previousToken()).isZero();
+    }
+
+    @Test
+    void failsIfAssociationLimitExceeded() {
+        setUpTxnContext();
+        configuration = new HederaTestConfigBuilder()
+                .withValue("entities.limitTokenAssociations", "true")
+                .withValue("tokens.maxPerAccount", "0")
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(configuration);
+
+        assertThat(writableTokenStore.get(newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED));
+    }
+
+    @Test
+    void failsIfAssociationAlreadyExists() {
+        setUpTxnContext();
+        configuration = new HederaTestConfigBuilder()
+                .withValue("entities.limitTokenAssociations", "true")
+                .withValue("tokens.maxPerAccount", "10")
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(configuration);
+
+        assertThat(writableTokenStore.get(newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
+
+        // Just to simulate existing token association , add to store. Only for testing
+        writableTokenRelStore.put(TokenRelation.newBuilder()
+                .tokenNumber(newTokenId.tokenNum())
+                .accountNumber(treasuryId.accountNum())
+                .balance(1000L)
+                .build());
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNotNull();
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT));
+    }
+
+    @Test
+    void failsIfAssociationLimitExceededWhileAssociatingCollector() {
+        setUpTxnContext();
+        final var customFees = List.of(
+                withFixedFee(fixedFee.copyBuilder()
+                        .denominatingTokenId(TokenID.newBuilder().tokenNum(0L).build())
+                        .build()),
+                withFractionalFee(fractionalFee));
+        txn = new TokenCreateBuilder().withCustomFees(customFees).build();
+        given(handleContext.body()).willReturn(txn);
+
+        configuration = new HederaTestConfigBuilder()
+                .withValue("entities.limitTokenAssociations", "true")
+                .withValue("tokens.maxPerAccount", "1")
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(configuration);
+
+        assertThat(writableTokenStore.get(newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(payerId, newTokenId)).isNull();
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED));
+    }
+
+    @Test
+    void failsIfAssociationAlreadyExistsWhileAssociatingCollector() {
+        setUpTxnContext();
+        final var customFees = List.of(
+                withFixedFee(fixedFee.copyBuilder()
+                        .denominatingTokenId(TokenID.newBuilder().tokenNum(0L).build())
+                        .build()),
+                withFractionalFee(fractionalFee));
+        txn = new TokenCreateBuilder().withCustomFees(customFees).build();
+        given(handleContext.body()).willReturn(txn);
+
+        configuration = new HederaTestConfigBuilder()
+                .withValue("entities.limitTokenAssociations", "true")
+                .withValue("tokens.maxPerAccount", "10")
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(configuration);
+
+        assertThat(writableTokenStore.get(newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
+
+        // Just to simulate existing token association , add to store. Only for testing
+        writableTokenRelStore.put(TokenRelation.newBuilder()
+                .tokenNumber(newTokenId.tokenNum())
+                .accountNumber(payerId.accountNum())
+                .balance(1000L)
+                .build());
+        assertThat(writableTokenRelStore.get(payerId, newTokenId)).isNotNull();
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT));
+    }
+
+    @Test
+    void uniqueNotSupportedIfNftsNotEnabled() {
+        setUpTxnContext();
+        configuration = new HederaTestConfigBuilder()
+                .withValue("tokens.nfts.areEnabled", "false")
+                .getOrCreateConfig();
+        txn = new TokenCreateBuilder().withUniqueToken().build();
+        given(handleContext.configuration()).willReturn(configuration);
+        given(handleContext.body()).willReturn(txn);
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(NOT_SUPPORTED));
+    }
+
+    @Test
+    void uniqueSupportedIfNftsEnabled() {
+        setUpTxnContext();
+        configuration = new HederaTestConfigBuilder()
+                .withValue("tokens.nfts.areEnabled", "true")
+                .getOrCreateConfig();
+        txn = new TokenCreateBuilder()
+                .withUniqueToken()
+                .withCustomFees(List.of(withRoyaltyFee(royaltyFee)))
+                .build();
+        given(handleContext.configuration()).willReturn(configuration);
+        given(handleContext.body()).willReturn(txn);
+
+        assertThat(writableTokenStore.get(newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
+
+        subject.handle(handleContext);
+
+        assertThat(writableTokenStore.get(newTokenId)).isNotNull();
+        final var token = writableTokenStore.get(newTokenId);
+
+        assertThat(token.treasuryAccountNumber()).isEqualTo(treasuryId.accountNum());
+        assertThat(token.tokenNumber()).isEqualTo(newTokenId.tokenNum());
+        assertThat(token.totalSupply()).isZero();
+        assertThat(token.tokenType()).isEqualTo(TokenType.NON_FUNGIBLE_UNIQUE);
+        assertThat(token.expiry())
+                .isEqualTo(consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond());
+        assertThat(token.freezeKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.kycKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.adminKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.wipeKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.supplyKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.feeScheduleKey()).isEqualTo(A_COMPLEX_KEY);
+        assertThat(token.autoRenewSecs()).isEqualTo(autoRenewSecs);
+        assertThat(token.autoRenewAccountNumber()).isEqualTo(autoRenewAccountId.accountNum());
+        assertThat(token.decimals()).isZero();
+        assertThat(token.name()).isEqualTo("TestToken");
+        assertThat(token.symbol()).isEqualTo("TT");
+        assertThat(token.memo()).isEqualTo("test token");
+        assertThat(token.customFees()).isEqualTo(List.of(withRoyaltyFee(royaltyFee)));
+
+        assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNotNull();
+        final var tokenRel = writableTokenRelStore.get(treasuryId, newTokenId);
+
+        assertThat(tokenRel.balance()).isZero();
+        assertThat(tokenRel.deleted()).isFalse();
+        assertThat(tokenRel.tokenNumber()).isEqualTo(newTokenId.tokenNum());
+        assertThat(tokenRel.accountNumber()).isEqualTo(treasuryId.accountNum());
+        assertThat(tokenRel.kycGranted()).isFalse();
+        assertThat(tokenRel.automaticAssociation()).isFalse();
+        assertThat(tokenRel.frozen()).isFalse();
+        assertThat(tokenRel.nextToken()).isZero();
+        assertThat(tokenRel.previousToken()).isZero();
+    }
+
+    @Test
+    void validatesInPureChecks() {
+        setUpTxnContext();
+        assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
+    }
+
+    @Test
+    void acceptsMissingAutoRenewAcountInPureChecks() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder()
+                .withAutoRenewAccount(AccountID.newBuilder().accountNum(200000L).build())
+                .build();
+        assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
+    }
+
+    @Test
+    void failsOnMissingAutoRenewAcountInHandle() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder()
+                .withAutoRenewAccount(AccountID.newBuilder().accountNum(200000L).build())
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_AUTORENEW_ACCOUNT));
+    }
+
+    @Test
+    void failsForZeroLengthSymbol() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withSymbol("").build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(MISSING_TOKEN_SYMBOL));
+    }
+
+    @Test
+    void failsForNullSymbol() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withSymbol(null).build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(MISSING_TOKEN_SYMBOL));
+    }
+
+    @Test
+    void failsForVeryLongSymbol() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder()
+                .withSymbol("1234567890123456789012345678901234567890123456789012345678901234567890")
+                .build();
+        configuration = new HederaTestConfigBuilder()
+                .withValue("tokens.maxSymbolUtf8Bytes", "10")
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(configuration);
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+        given(handleContext.body()).willReturn(txn);
+
+        assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_SYMBOL_TOO_LONG));
+    }
+
+    @Test
+    void failsForZeroLengthName() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withName("").build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(MISSING_TOKEN_NAME));
+    }
+
+    @Test
+    void failsForNullName() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withName(null).build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(MISSING_TOKEN_NAME));
+    }
+
+    @Test
+    void failsForVeryLongName() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder()
+                .withName("1234567890123456789012345678901234567890123456789012345678901234567890")
+                .build();
+        configuration = new HederaTestConfigBuilder()
+                .withValue("tokens.maxTokenNameUtf8Bytes", "10")
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(configuration);
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+        given(handleContext.body()).willReturn(txn);
+
+        assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(TOKEN_NAME_TOO_LONG));
+    }
+
+    @Test
+    void failsForNegativeInitialSupplyForFungibleTokenInPreCheck() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withInitialSupply(-1).build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_TOKEN_INITIAL_SUPPLY));
+    }
+
+    @Test
+    void failsForNonZeroInitialSupplyForNFTInPreCheck() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder()
+                .withTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                .withInitialSupply(1)
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_TOKEN_INITIAL_SUPPLY));
+    }
+
+    @Test
+    void failsForNegativeDecimalsForFungibleTokenInPreCheck() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withDecimals(-1).build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_TOKEN_DECIMALS));
+    }
+
+    @Test
+    void failsForNonZeroDecimalsForNFTInPreCheck() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder()
+                .withTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                .withDecimals(1)
+                .withInitialSupply(0)
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_TOKEN_DECIMALS));
+    }
+
+    @Test
+    void failsOnMissingTreasury() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder()
+                .withTreasury(AccountID.newBuilder().accountNum(200000L).build())
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
+    }
+
+    @Test
+    void failsForInvalidFeeScheduleKey() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withFeeScheduleKey(Key.DEFAULT).build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_CUSTOM_FEE_SCHEDULE_KEY));
+    }
+
+    @Test
+    void failsForInvalidAdminKey() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withAdminKey(Key.DEFAULT).build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_ADMIN_KEY));
+    }
+
+    @Test
+    void acceptsSentinelAdminKeyForImmutableObjects() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withAdminKey(IMMUTABILITY_SENTINEL_KEY).build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
+    }
+
+    @Test
+    void failsForInvalidSupplyKey() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withSupplyKey(Key.DEFAULT).build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_SUPPLY_KEY));
+    }
+
+    @Test
+    void failsForInvalidKycKey() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withKycKey(Key.DEFAULT).build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_KYC_KEY));
+    }
+
+    @Test
+    void failsForInvalidWipeKey() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withWipeKey(Key.DEFAULT).build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_WIPE_KEY));
+    }
+
+    @Test
+    void failsForInvalidFreezeKey() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withFreezeKey(Key.DEFAULT).build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_FREEZE_KEY));
+    }
+
+    @Test
+    void failsIfFreezeDefaultAndNoFreezeKey() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withFreezeDefault().withFreezeKey(null).build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(TOKEN_HAS_NO_FREEZE_KEY));
+    }
+
+    @Test
+    void succeedsIfFreezeDefaultWithFreezeKey() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withFreezeDefault().build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
+    }
+
+    @Test
+    void failsOnInvalidMemo() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withMemo("\0").build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_ZERO_BYTE_IN_STRING));
+    }
+
+    @Test
+    void failsOnInvalidAutoRenewPeriod() {
+        setUpTxnContext();
+        given(dynamicProperties.maxAutoRenewDuration()).willReturn(30000L);
+        given(dynamicProperties.minAutoRenewDuration()).willReturn(1000L);
+
+        txn = new TokenCreateBuilder().withAutoRenewPeriod(30001L).build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(AUTORENEW_DURATION_NOT_IN_RANGE));
+
+        txn = new TokenCreateBuilder().withAutoRenewPeriod(100).build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(AUTORENEW_DURATION_NOT_IN_RANGE));
+    }
+
+    @Test
+    void failsOnExpiryPastConsensusTime() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder()
+                .withAutoRenewPeriod(0)
+                .withExpiry(consensusInstant.getEpochSecond() - 1)
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_EXPIRATION_TIME));
+    }
+
+    @Test
+    void rejectsInvalidMaxSupplyForInfiniteSupplyInPureChecks() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder()
+                .withSupplyType(TokenSupplyType.INFINITE)
+                .withMaxSupply(1)
+                .build();
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_TOKEN_MAX_SUPPLY));
+    }
+
+    @Test
+    void rejectsInvalidMaxSupplyforFiniteSupplyInPureChecks() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder()
+                .withSupplyType(TokenSupplyType.FINITE)
+                .withMaxSupply(0)
+                .build();
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_TOKEN_MAX_SUPPLY));
+    }
+
+    @Test
+    void failsOnInvalidInitialAndMaxSupplyInPureChecks() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withInitialSupply(100).withMaxSupply(10).build();
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_TOKEN_INITIAL_SUPPLY));
+    }
+
+    @Test
+    void failsOnMissingSupplyKeyOnNftCreateInPureChecks() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withUniqueToken().withSupplyKey(null).build();
+        assertThatThrownBy(() -> subject.pureChecks(txn))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(TOKEN_HAS_NO_SUPPLY_KEY));
+    }
+
+    @Test
+    void succeedsWithSupplyKeyOnNftCreateInPureChecks() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withUniqueToken().build();
+        assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
+    }
+    /* --------------------------------- Helpers */
+    /**
+     * A builder for {@link com.hedera.hapi.node.transaction.TransactionBody} instances.
+     */
+    private class TokenCreateBuilder {
+        private AccountID payer = payerId;
+        private AccountID treasury = treasuryId;
+        private Key adminKey = key;
+        private boolean isUnique = false;
+        private String name = "TestToken";
+        private String symbol = "TT";
+        private Key kycKey = A_COMPLEX_KEY;
+        private Key freezeKey = A_COMPLEX_KEY;
+        private Key wipeKey = A_COMPLEX_KEY;
+        private Key supplyKey = A_COMPLEX_KEY;
+        private Key feeScheduleKey = A_COMPLEX_KEY;
+        private Key pauseKey = A_COMPLEX_KEY;
+        private Timestamp expiry = Timestamp.newBuilder().seconds(1234600L).build();
+        private AccountID autoRenewAccount = autoRenewAccountId;
+        private long autoRenewPeriod = autoRenewSecs;
+        private String memo = "test token";
+        private TokenType tokenType = TokenType.FUNGIBLE_COMMON;
+        private TokenSupplyType supplyType = TokenSupplyType.FINITE;
+        private long maxSupply = 10000L;
+        private int decimals = 0;
+        private long initialSupply = 1000L;
+        private boolean freezeDefault = false;
+        private List<CustomFee> customFees = List.of(withFixedFee(fixedFee), withFractionalFee(fractionalFee));
+
+        private TokenCreateBuilder() {}
+
+        public TransactionBody build() {
+            final var transactionID =
+                    TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+            final var createTxnBody = TokenCreateTransactionBody.newBuilder()
+                    .tokenType(tokenType)
+                    .symbol(symbol)
+                    .name(name)
+                    .treasury(treasury)
+                    .adminKey(adminKey)
+                    .supplyKey(supplyKey)
+                    .kycKey(kycKey)
+                    .freezeKey(freezeKey)
+                    .wipeKey(wipeKey)
+                    .feeScheduleKey(feeScheduleKey)
+                    .pauseKey(pauseKey)
+                    .autoRenewAccount(autoRenewAccount)
+                    .expiry(expiry)
+                    .freezeDefault(freezeDefault)
+                    .memo(memo)
+                    .maxSupply(maxSupply)
+                    .supplyType(supplyType)
+                    .customFees(customFees);
+            if (autoRenewPeriod > 0) {
+                createTxnBody.autoRenewPeriod(
+                        Duration.newBuilder().seconds(autoRenewPeriod).build());
+            }
+            if (isUnique) {
+                createTxnBody.tokenType(TokenType.NON_FUNGIBLE_UNIQUE);
+                createTxnBody.initialSupply(0L);
+                createTxnBody.decimals(0);
+            } else {
+                createTxnBody.decimals(decimals);
+                createTxnBody.initialSupply(initialSupply);
+            }
+            return TransactionBody.newBuilder()
+                    .transactionID(transactionID)
+                    .tokenCreation(createTxnBody.build())
+                    .build();
+        }
+
+        public TokenCreateBuilder withUniqueToken() {
+            this.isUnique = true;
+            return this;
+        }
+
+        public TokenCreateBuilder withCustomFees(List<CustomFee> fees) {
+            this.customFees = fees;
+            return this;
+        }
+
+        public TokenCreateBuilder withFreezeKey(Key freezeKey) {
+            this.freezeKey = freezeKey;
+            return this;
+        }
+
+        public TokenCreateBuilder withAutoRenewAccount(AccountID autoRenewAccount) {
+            this.autoRenewAccount = autoRenewAccount;
+            return this;
+        }
+
+        public TokenCreateBuilder withSymbol(final String symbol) {
+            this.symbol = symbol;
+            return this;
+        }
+
+        public TokenCreateBuilder withName(final String name) {
+            this.name = name;
+            return this;
+        }
+
+        public TokenCreateBuilder withInitialSupply(final long number) {
+            this.initialSupply = number;
+            return this;
+        }
+
+        public TokenCreateBuilder withTokenType(final TokenType type) {
+            this.tokenType = type;
+            return this;
+        }
+
+        public TokenCreateBuilder withDecimals(final int decimals) {
+            this.decimals = decimals;
+            return this;
+        }
+
+        public TokenCreateBuilder withTreasury(final AccountID treasury) {
+            this.treasury = treasury;
+            return this;
+        }
+
+        public TokenCreateBuilder withFeeScheduleKey(final Key key) {
+            this.feeScheduleKey = key;
+            return this;
+        }
+
+        public TokenCreateBuilder withAdminKey(final Key key) {
+            this.adminKey = key;
+            return this;
+        }
+
+        public TokenCreateBuilder withSupplyKey(final Key key) {
+            this.supplyKey = key;
+            return this;
+        }
+
+        public TokenCreateBuilder withKycKey(final Key key) {
+            this.kycKey = key;
+            return this;
+        }
+
+        public TokenCreateBuilder withWipeKey(final Key key) {
+            this.wipeKey = key;
+            return this;
+        }
+
+        public TokenCreateBuilder withMaxSupply(final long maxSupply) {
+            this.maxSupply = maxSupply;
+            return this;
+        }
+
+        public TokenCreateBuilder withSupplyType(final TokenSupplyType supplyType) {
+            this.supplyType = supplyType;
+            return this;
+        }
+
+        public TokenCreateBuilder withExpiry(final long expiry) {
+            this.expiry = Timestamp.newBuilder().seconds(expiry).build();
+            return this;
+        }
+
+        public TokenCreateBuilder withAutoRenewPeriod(final long autoRenewPeriod) {
+            this.autoRenewPeriod = autoRenewPeriod;
+            return this;
+        }
+
+        public TokenCreateBuilder withMemo(final String s) {
+            this.memo = s;
+            return this;
+        }
+
+        public TokenCreateBuilder withFreezeDefault() {
+            this.freezeDefault = true;
+            return this;
+        }
+    }
+
+    private void setUpTxnContext() {
+        txn = new TokenCreateBuilder().build();
+        given(handleContext.body()).willReturn(txn);
+        given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(configProvider.getConfiguration()).willReturn(versionedConfig);
+        given(handleContext.configuration()).willReturn(configuration);
+        given(handleContext.consensusNow()).willReturn(consensusInstant);
+        given(compositeProps.getLongProperty("entities.maxLifetime")).willReturn(7200000L);
+
+        attributeValidator =
+                new StandardizedAttributeValidator(consensusInstant::getEpochSecond, compositeProps, dynamicProperties);
+        expiryValidator = new StandardizedExpiryValidator(
+                id -> {
+                    final var account = writableAccountStore.get(
+                            AccountID.newBuilder().accountNum(id.num()).build());
+                    validateTrue(account != null, INVALID_AUTORENEW_ACCOUNT);
+                },
+                attributeValidator,
+                consensusInstant::getEpochSecond,
+                hederaNumbers,
+                configProvider);
+
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(handleContext.attributeValidator()).willReturn(attributeValidator);
+        given(dynamicProperties.maxAutoRenewDuration()).willReturn(3000000L);
+        given(dynamicProperties.minAutoRenewDuration()).willReturn(10L);
+        given(dynamicProperties.maxMemoUtf8Bytes()).willReturn(100);
+        given(handleContext.newEntityNum()).willReturn(newTokenId.tokenNum());
+    }
+}

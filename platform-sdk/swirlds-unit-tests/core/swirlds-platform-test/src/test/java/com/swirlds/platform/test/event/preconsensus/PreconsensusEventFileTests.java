@@ -29,8 +29,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -282,7 +286,16 @@ class PreconsensusEventFileTests {
         final Instant now = Instant.now();
 
         final Path streamDirectory = testDirectory.resolve("data");
+        final NodeId selfId = new NodeId(0);
         final Path recycleDirectory = testDirectory.resolve("recycle");
+        final Path actualRecycleDirectory = recycleDirectory.resolve(selfId.toString());
+
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("recycleBin.recycleBinPath", recycleDirectory.toString())
+                .getOrCreateConfig();
+
+        final RecycleBin recycleBin = RecycleBin.create(configuration, selfId);
+
         Files.createDirectories(streamDirectory);
         Files.createDirectories(recycleDirectory);
 
@@ -325,11 +338,11 @@ class PreconsensusEventFileTests {
                 }
             }
 
-            file.deleteFile(streamDirectory, recycleDirectory);
+            file.deleteFile(streamDirectory, recycleBin);
 
             if (random.nextBoolean()) {
                 // Deleting twice shouldn't have any ill effects
-                file.deleteFile(streamDirectory, recycleDirectory);
+                file.deleteFile(streamDirectory, recycleBin);
             }
 
             deletedFiles.add(file);
@@ -340,7 +353,8 @@ class PreconsensusEventFileTests {
 
         // All files should have been moved to the recycle directory
         for (final PreconsensusEventFile file : files) {
-            assertTrue(Files.exists(recycleDirectory.resolve(file.getPath().getFileName())));
+            assertTrue(
+                    Files.exists(actualRecycleDirectory.resolve(file.getPath().getFileName())));
         }
     }
 

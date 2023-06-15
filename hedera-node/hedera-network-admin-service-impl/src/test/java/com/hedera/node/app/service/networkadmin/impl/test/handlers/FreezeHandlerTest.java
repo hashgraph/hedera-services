@@ -40,7 +40,8 @@ import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.networkadmin.ReadableSpecialFileStore;
+import com.hedera.node.app.service.networkadmin.ReadableUpdateFileStore;
+import com.hedera.node.app.service.networkadmin.impl.WritableUpdateFileStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.WritableFreezeStore;
@@ -59,7 +60,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FreezeHandlerTest {
     @Mock(strictness = LENIENT)
-    ReadableSpecialFileStore specialFileStore;
+    WritableUpdateFileStore specialFileStore;
 
     @Mock(strictness = LENIENT)
     private WritableFreezeStore freezeStore;
@@ -92,10 +93,10 @@ class FreezeHandlerTest {
         given(account.key()).willReturn(key);
 
         given(preHandleContext.createStore(ReadableAccountStore.class)).willReturn(accountStore);
-        given(preHandleContext.createStore(ReadableSpecialFileStore.class)).willReturn(specialFileStore);
+        given(preHandleContext.createStore(ReadableUpdateFileStore.class)).willReturn(specialFileStore);
 
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.readableStore(ReadableSpecialFileStore.class)).willReturn(specialFileStore);
+        given(handleContext.writableStore(WritableUpdateFileStore.class)).willReturn(specialFileStore);
         given(handleContext.writableStore(WritableFreezeStore.class)).willReturn(freezeStore);
     }
 
@@ -179,7 +180,7 @@ class FreezeHandlerTest {
         FreezeType[] freezeTypes = {PREPARE_UPGRADE, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
 
         FileID fileId = FileID.newBuilder().fileNum(1234L).build();
-        given(specialFileStore.get(1234L)).willReturn(Optional.of(new byte[0]));
+        given(specialFileStore.get(fileId)).willReturn(Optional.of(new byte[0]));
 
         for (FreezeType freezeType : freezeTypes) {
             TransactionID txnId = TransactionID.newBuilder()
@@ -225,7 +226,7 @@ class FreezeHandlerTest {
         FreezeType[] freezeTypes = {FREEZE_UPGRADE, TELEMETRY_UPGRADE};
 
         FileID fileId = FileID.newBuilder().fileNum(1234L).build();
-        given(specialFileStore.get(1234L)).willReturn(Optional.of(new byte[0]));
+        given(specialFileStore.get(fileId)).willReturn(Optional.of(new byte[0]));
         for (FreezeType freezeType : freezeTypes) {
             TransactionID txnId = TransactionID.newBuilder()
                     .accountID(nonAdminAccount)
@@ -254,7 +255,7 @@ class FreezeHandlerTest {
         // start time not required
 
         FileID fileId = FileID.newBuilder().fileNum(1234L).build();
-        given(specialFileStore.get(1234L)).willReturn(Optional.of(new byte[0]));
+        given(specialFileStore.get(fileId)).willReturn(Optional.of(new byte[0]));
         TransactionID txnId = TransactionID.newBuilder()
                 .accountID(nonAdminAccount)
                 .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())

@@ -17,20 +17,20 @@
 package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
-import static com.swirlds.common.system.PlatformStatus.READY;
-import static com.swirlds.common.system.PlatformStatus.REPLAYING_EVENTS;
-import static com.swirlds.common.system.PlatformStatus.STARTING_UP;
+import static com.swirlds.common.system.platformstatus.PlatformStatus.OBSERVING;
+import static com.swirlds.common.system.platformstatus.PlatformStatus.REPLAYING_EVENTS;
+import static com.swirlds.common.system.platformstatus.PlatformStatus.STARTING_UP;
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.system.PlatformStatus;
+import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
@@ -167,7 +167,7 @@ public final class PreconsensusEventReplayWorkflow {
             throw new IllegalStateException(
                     "Platform status should be REPLAYING_EVENTS, current status is " + currentPlatformStatus);
         }
-        setPlatformStatus.accept(READY);
+        setPlatformStatus.accept(OBSERVING);
     }
 
     /**

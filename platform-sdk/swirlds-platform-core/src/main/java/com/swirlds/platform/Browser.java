@@ -37,6 +37,7 @@ import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.OSHealthCheckConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.WiringConfig;
@@ -98,7 +99,7 @@ import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
@@ -232,7 +233,8 @@ public class Browser {
                 .withConfigDataType(PreconsensusEventStreamConfig.class)
                 .withConfigDataType(SyncConfig.class)
                 .withConfigDataType(UptimeConfig.class)
-                .withConfigDataType(RecycleBinConfig.class);
+                .withConfigDataType(RecycleBinConfig.class)
+                .withConfigDataType(EventConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
@@ -286,9 +288,6 @@ public class Browser {
                     .setTransactionMaxBytes(value));
             configurationProperties.ipTos().ifPresent(ipTos -> Settings.getInstance()
                     .setSocketIpTos(ipTos));
-            configurationProperties
-                    .saveStatePeriod()
-                    .ifPresent(value -> Settings.getInstance().getState().saveStatePeriod = value);
 
             // Write the settingsUsed.txt file
             writeSettingsUsed(configuration);
@@ -561,6 +560,7 @@ public class Browser {
             if (!Files.exists(dir)) {
                 rethrowIO(() -> Files.createDirectories(dir));
             }
+            logger.info(STARTUP.getMarker(), "Starting thread dump generator and save to directory {}", dir);
             ThreadDumpGenerator.generateThreadDumpAtIntervals(
                     dir, Settings.getInstance().getThreadDumpPeriodMs());
         }
@@ -706,6 +706,9 @@ public class Browser {
                         .setThreadName("appMain")
                         .setRunnable(appMain)
                         .build();
+                // IMPORTATNT: this swirlds app thread must be non-daemon,
+                // so that the JVM will not exit when the main thread exits
+                appThread.setDaemon(false);
                 appRunThreads[ownHostIndex] = appThread;
 
                 ownHostIndex++;
@@ -758,7 +761,7 @@ public class Browser {
             return savedStateLoader.getSavedStateToLoad();
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Signed state not loaded from disk:", e);
-            if (Settings.getInstance().isRequireStateLoad()) {
+            if (configuration.getConfigData(StateConfig.class).requireStateLoad()) {
                 exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED);
             }
         }

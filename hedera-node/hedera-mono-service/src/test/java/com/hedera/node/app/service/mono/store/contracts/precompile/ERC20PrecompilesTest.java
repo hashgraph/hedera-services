@@ -165,6 +165,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -177,6 +178,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -325,6 +328,22 @@ class ERC20PrecompilesTest {
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
+
+    private enum WithHapiBlockLimit {
+        LOW,
+        HIGH
+    };
+
+    private static final Map<WithHapiBlockLimit, Consumer<GlobalDynamicProperties>> setHapiBlockLimitGivens = Map.of(
+            WithHapiBlockLimit.LOW,
+            props -> {
+                given(props.maxNumWithHapiSigsAccess()).willReturn(0L);
+            },
+            WithHapiBlockLimit.HIGH,
+            props -> {
+                given(props.maxNumWithHapiSigsAccess()).willReturn(Long.MAX_VALUE);
+                given(props.systemContractsWithTopLevelSigsAccess()).willReturn(Set.of(CryptoTransfer));
+            });
 
     private HTSPrecompiledContract subject;
     private MockedStatic<EntityIdUtils> entityIdUtils;
@@ -1280,15 +1299,14 @@ class ERC20PrecompilesTest {
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
     }
 
-    @Test
-    void transferFromHapiFungible() throws InvalidProtocolBufferException {
+    @ParameterizedTest
+    @EnumSource
+    void transferFromHapiFungible(final WithHapiBlockLimit limit) throws InvalidProtocolBufferException {
         final var pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM));
         givenMinimalFrameContext(Bytes.EMPTY);
         givenLedgers();
         givenPricingUtilsContext();
-        given(dynamicProperties.maxNumWithHapiSigsAccess()).willReturn(Long.MAX_VALUE);
-        given(dynamicProperties.systemContractsWithTopLevelSigsAccess()).willReturn(Set.of(CryptoTransfer));
-
+        setHapiBlockLimitGivens.get(limit).accept(dynamicProperties);
         given(frame.getContractAddress()).willReturn(contractAddr);
         given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(TOKEN_TRANSFER_FROM_WRAPPER)))
                 .willReturn(mockSynthBodyBuilder);
@@ -1354,11 +1372,11 @@ class ERC20PrecompilesTest {
                         .build());
     }
 
-    @Test
-    void transferFromNFTHapi() throws InvalidProtocolBufferException {
+    @ParameterizedTest
+    @EnumSource
+    void transferFromNFTHapi(final WithHapiBlockLimit limit) throws InvalidProtocolBufferException {
         final var pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM_NFT));
-        given(dynamicProperties.maxNumWithHapiSigsAccess()).willReturn(Long.MAX_VALUE);
-        given(dynamicProperties.systemContractsWithTopLevelSigsAccess()).willReturn(Set.of(CryptoTransfer));
+        setHapiBlockLimitGivens.get(limit).accept(dynamicProperties);
         givenMinimalFrameContext(Bytes.EMPTY);
         givenLedgers();
         givenPricingUtilsContext();
@@ -1485,12 +1503,13 @@ class ERC20PrecompilesTest {
         assertEquals(invalidFullPrefix, result);
     }
 
-    @Test
-    void onlyFallsBackToApprovalWithoutTopLevelSigs() throws InvalidProtocolBufferException {
+    @ParameterizedTest
+    @EnumSource
+    void onlyFallsBackToApprovalWithoutTopLevelSigs(final WithHapiBlockLimit limit)
+            throws InvalidProtocolBufferException {
         final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER));
         final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
-        given(dynamicProperties.maxNumWithHapiSigsAccess()).willReturn(Long.MAX_VALUE);
-        given(dynamicProperties.systemContractsWithTopLevelSigsAccess()).willReturn(Set.of(CryptoTransfer));
+        setHapiBlockLimitGivens.get(limit).accept(dynamicProperties);
         givenLedgers();
         givenPricingUtilsContext();
 
