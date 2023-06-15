@@ -18,8 +18,8 @@ package com.swirlds.common.test.metrics.extensions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.base.time.fixtures.FakeTime;
 import com.swirlds.common.metrics.extensions.BusyTime;
-import com.swirlds.common.test.fixtures.FakeTime;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;

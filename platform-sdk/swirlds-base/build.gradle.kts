@@ -18,6 +18,7 @@ plugins {
   id("com.swirlds.platform.conventions")
   id("com.swirlds.platform.library")
   id("com.swirlds.platform.maven-publish")
+  id("org.gradle.java-test-fixtures")
 }
 
 dependencies {
@@ -25,4 +26,8 @@ dependencies {
 
   // Test Dependencies
   testImplementation(testLibs.bundles.junit)
+
+  // Should be removed in future
+  testFixturesImplementation(project(":swirlds-common"))
+
 }

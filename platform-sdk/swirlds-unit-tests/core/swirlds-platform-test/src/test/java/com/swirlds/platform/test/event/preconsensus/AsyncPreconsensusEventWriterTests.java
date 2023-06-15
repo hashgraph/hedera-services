@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.base.time.fixtures.FakeTime;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.DefaultPlatformContext;
@@ -42,7 +43,6 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.TransactionGenerator;
-import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.io.FileManipulation;
 import com.swirlds.config.api.Configuration;

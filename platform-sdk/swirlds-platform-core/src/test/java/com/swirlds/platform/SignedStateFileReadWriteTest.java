@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.time.fixtures.FakeTime;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -52,7 +53,6 @@ import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.AssertionUtils;
-import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;

@@ -20,7 +20,7 @@ import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.test.fixtures.FakeTime;
+import com.swirlds.base.time.fixtures.FakeTime;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import java.time.Duration;
 import org.junit.jupiter.api.DisplayName;

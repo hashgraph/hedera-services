@@ -32,9 +32,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.base.time.fixtures.FakeTime;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;

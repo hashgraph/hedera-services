@@ -25,6 +25,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.sun.net.httpserver.HttpServer;
+import com.swirlds.base.time.fixtures.FakeTime;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.DoubleAccumulator;
 import com.swirlds.common.metrics.DoubleGauge;
@@ -56,7 +57,6 @@ import com.swirlds.common.metrics.platform.MetricsEvent;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.metrics.platform.SnapshotEvent;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.utility.Units;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
