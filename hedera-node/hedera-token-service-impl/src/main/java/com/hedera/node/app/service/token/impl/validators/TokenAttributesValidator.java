@@ -116,7 +116,7 @@ public class TokenAttributesValidator {
      * @param hasPauseKey whether the token has a pause key
      * @param pauseKey the token pause key to validate
      */
-    public void checkKeys(
+    public void validateTokenKeys(
             final boolean hasAdminKey,
             @Nullable final Key adminKey,
             final boolean hasKycKey,
@@ -159,7 +159,7 @@ public class TokenAttributesValidator {
      * @param source the key to check
      * @return true if the key is a key removal, false otherwise
      */
-    private static boolean isKeyRemoval(@NonNull final Key source) {
+    public static boolean isKeyRemoval(@NonNull final Key source) {
         requireNonNull(source);
         return IMMUTABILITY_SENTINEL_KEY.equals(source);
     }

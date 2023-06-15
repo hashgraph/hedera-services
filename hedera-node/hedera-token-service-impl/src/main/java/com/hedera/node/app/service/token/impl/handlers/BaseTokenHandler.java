@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.util.IdConvenienceUtils.isValidTokenNum;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -29,9 +30,13 @@ import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.data.EntitiesConfig;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -280,7 +285,67 @@ public class BaseTokenHandler {
         return newTokenRels;
     }
 
+    protected void autoAssociate(
+            final Account account,
+            final Token token,
+            final WritableAccountStore accountStore,
+            final WritableTokenRelationStore tokenRelStore,
+            final HandleContext context) {
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
+
+        final var accountId = asAccount(account.accountNumber());
+        final var tokenId = BaseTokenHandler.asToken(token.tokenNumber());
+
+        validateTrue(tokenRelStore.get(accountId, tokenId) == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+        validateTrue(
+                tokenRelStore.sizeOfState() + 1 < tokensConfig.maxAggregateRels(),
+                MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+
+        final var numAssociations = account.numberAssociations();
+        validateFalse(
+                entitiesConfig.limitTokenAssociations() && numAssociations == tokensConfig.maxPerAccount(),
+                TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+
+        final var maxAutoAssociations = account.maxAutoAssociations();
+        final var usedAutoAssociations = account.usedAutoAssociations();
+        validateFalse(usedAutoAssociations >= maxAutoAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+
+        final var newTokenRel = TokenRelation.newBuilder()
+                .tokenNumber(tokenId.tokenNum())
+                .accountNumber(account.accountNumber())
+                .automaticAssociation(true)
+                .kycGranted(!token.hasKycKey())
+                .frozen(token.hasFreezeKey() && token.accountsFrozenByDefault())
+                .previousToken(0)
+                .nextToken(account.headTokenNumber())
+                .build();
+
+        final var copyAccount = account.copyBuilder()
+                .numberAssociations(numAssociations + 1)
+                .usedAutoAssociations(usedAutoAssociations + 1)
+                .build();
+
+        accountStore.put(copyAccount);
+        tokenRelStore.put(newTokenRel);
+    }
+
     /* ------------------------- Helper functions ------------------------- */
+
+    /**
+     * Returns true if the given token update op is an expiry-only update op.
+     * This is needed for validating whether a token update op has admin key present on the token,
+     * to update any other fields other than expiry.
+     * @param op the token update op to check
+     * @return true if the given token update op is an expiry-only update op
+     */
+    public static boolean isExpiryOnlyUpdateOp(final TokenUpdateTransactionBody op) {
+        final var defaultOp = TokenUpdateTransactionBody.DEFAULT;
+        final var copyDefaultWithExpiry =
+                defaultOp.copyBuilder().expiry(op.expiry()).build();
+        return op.equals(copyDefaultWithExpiry);
+    }
+
     @NonNull
     public static TokenID asToken(final long num) {
         return TokenID.newBuilder().tokenNum(num).build();

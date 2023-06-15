@@ -33,6 +33,7 @@ package com.hedera.node.app.service.token.impl.util;
  */
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
@@ -89,9 +90,13 @@ public class TokenHandlerHelper {
 
         final var acct = accountStore.getAccountById(accountId);
         validateTrue(acct != null, errorIfNotUsable);
-        validateFalse(acct.deleted(), ACCOUNT_DELETED);
-        final var expiryStatus = expiryValidator.expirationStatus(
-                EntityType.ACCOUNT, acct.expiredAndPendingRemoval(), acct.tinybarBalance());
+        final var isContract = acct.smartContract();
+
+        validateFalse(acct.deleted(), isContract ? CONTRACT_DELETED : ACCOUNT_DELETED);
+        final var type = isContract ? EntityType.CONTRACT : EntityType.ACCOUNT;
+
+        final var expiryStatus =
+                expiryValidator.expirationStatus(type, acct.expiredAndPendingRemoval(), acct.tinybarBalance());
         validateTrue(expiryStatus == OK, expiryStatus);
 
         return acct;
