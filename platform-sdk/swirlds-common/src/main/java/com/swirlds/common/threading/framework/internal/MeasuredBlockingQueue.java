@@ -32,10 +32,10 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * Internally a new metric will be created and applied to the queue when it is enabled by configuration.
  */
-public class MeasuredBlockingQueue<T> extends AbstractBlockingQueue<T> {
+class MeasuredBlockingQueue<T> extends AbstractBlockingQueue<T> {
 
-    public static final String QUEUE_MAX_SIZE_SUFFIX = "-queueMaxSize";
-    public static final String QUEUE_MIN_SIZE_SUFFIX = "-queueMinSize";
+    static final String QUEUE_MAX_SIZE_SUFFIX = "-queueMaxSize";
+    static final String QUEUE_MIN_SIZE_SUFFIX = "-queueMinSize";
 
     private final IntegerAccumulator maxSizeMetric;
     private final IntegerAccumulator minSizeMetric;
@@ -262,7 +262,7 @@ public class MeasuredBlockingQueue<T> extends AbstractBlockingQueue<T> {
     /**
      * Configuration for {@link MeasuredBlockingQueue}
      */
-    public static final class Config {
+    static final class Config {
 
         private final Metrics metrics;
         private final String category;

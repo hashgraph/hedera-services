@@ -24,7 +24,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * Static utility methods for the threading framework
  */
-public final class ThreadBuildingUtils {
+final class ThreadBuildingUtils {
     private ThreadBuildingUtils() {}
 
     /**
@@ -34,7 +34,7 @@ public final class ThreadBuildingUtils {
      *
      * @return the queue that should be used
      */
-    public static <T> BlockingQueue<T> getOrBuildQueue(@NonNull final AbstractQueueThreadConfiguration<?, T> config) {
+    static <T> BlockingQueue<T> getOrBuildQueue(@NonNull final AbstractQueueThreadConfiguration<?, T> config) {
         BlockingQueue<T> queue = config.getQueue();
         if (queue == null) {
             // if no queue is set, build a default queue
