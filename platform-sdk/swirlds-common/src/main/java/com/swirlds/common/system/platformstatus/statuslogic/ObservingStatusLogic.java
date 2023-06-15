@@ -181,7 +181,7 @@ public class ObservingStatusLogic implements PlatformStatusLogic {
      * {@link PlatformStatus#OBSERVING} status always transitions to a new status once the observation period has
      * elapsed.
      * <p>
-     * The status transitions to {@link PlatformStatus#FREEZING} if a freeze period was entered during the observations
+     * The status transitions to {@link PlatformStatus#FREEZING} if a freeze period was entered during the observation
      * period, otherwise it transitions to {@link PlatformStatus#CHECKING}.
      */
     @NonNull

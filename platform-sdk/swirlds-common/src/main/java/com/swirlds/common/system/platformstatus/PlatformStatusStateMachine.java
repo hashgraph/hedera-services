@@ -84,11 +84,20 @@ public class PlatformStatusStateMachine {
 
         this.time = Objects.requireNonNull(time);
         this.notificationEngine = Objects.requireNonNull(notificationEngine);
-
         this.currentStatusLogic = new StartingUpStatusLogic(config);
         this.currentStatusStartTime = time.now();
     }
 
+    /**
+     * Passes the received action into the logic method that corresponds with the action type, and returns whatever that
+     * logic method returns.
+     * <p>
+     * If the logic method throws an {@link IllegalPlatformStatusException}, this method will log the exception and
+     * return null.
+     *
+     * @param action the action to process
+     * @return a new logic object, or null if the logic method threw an exception
+     */
     @Nullable
     private PlatformStatusLogic getNewLogic(@NonNull final PlatformStatusAction action) {
         Objects.requireNonNull(action);
