@@ -109,5 +109,5 @@ public class FileServiceStateTranslator {
 
     @SuppressWarnings("java:S6218")
     public record FileMetadataAndContent(
-            @NonNull byte[] data, @NonNull com.hedera.node.app.service.mono.files.HFileMeta metadata) {}
+            byte[] data, @NonNull com.hedera.node.app.service.mono.files.HFileMeta metadata) {}
 }
