@@ -176,8 +176,10 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processTimeElapsedAction(@NonNull final TimeElapsedAction action) {
-        if (Duration.between(lastTimeOwnEventReachedConsensus, action.instant()).compareTo(config.activeStatusDelay())
-                > 0) {
+        final Duration timeSinceOwnEventReachedConsensus =
+                Duration.between(lastTimeOwnEventReachedConsensus, action.instant());
+
+        if (timeSinceOwnEventReachedConsensus.compareTo(config.activeStatusDelay()) > 0) {
             return new CheckingStatusLogic(config);
         } else {
             return this;
