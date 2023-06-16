@@ -21,7 +21,7 @@ useLoopbackIp,                    false
                                           #      Event Creation       #
                                           #############################
 
-event.creation.tipsetEventCreationEnabled, true
+event.creation.tipsetEventCreationEnabled, false
 
                                           #############################
                                           # Preconsensus Event Stream #

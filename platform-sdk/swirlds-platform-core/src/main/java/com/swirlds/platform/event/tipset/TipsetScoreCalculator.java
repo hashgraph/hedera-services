@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.tipset;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.Utilities.isSuperMajority;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -27,11 +28,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.IntToLongFunction;
 import java.util.function.LongToIntFunction;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Calculates tipset scores for events created by a node.
  */
 public class TipsetScoreCalculator {
+
+    private static final Logger logger = LogManager.getLogger(TipsetScoreCalculator.class);
 
     /**
      * The node ID that is being tracked by this window.
@@ -172,6 +177,14 @@ public class TipsetScoreCalculator {
             previousScore = score;
         }
 
+        if (event.generation() > 0 && scoreImprovement <= 0) {
+            // If the tipset algorithm is working as intended, this should never happen.
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "non-genesis tipset score improvement must be greater than zero, event = {}",
+                    event);
+        }
+
         return scoreImprovement;
     }
 
@@ -194,7 +207,7 @@ public class TipsetScoreCalculator {
         // Don't bother advancing the self generation, since self advancement doesn't contribute to tipset score.
         final Tipset newTipset = Tipset.merge(parentTipsets);
 
-        return snapshot.getWeightedAdvancementCount(selfId, newTipset);
+        return snapshot.getWeightedAdvancementCount(selfId, newTipset) - previousScore;
     }
 
     // TODO rename and document

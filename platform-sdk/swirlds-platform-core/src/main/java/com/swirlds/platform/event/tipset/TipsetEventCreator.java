@@ -43,13 +43,23 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
+// TODO:
+//  - debug strange shape in graph
+//  - delete EventFingerprint
+//  - transition to NodeId
+//  - reduce lambda use
+//  - infinite generational span
+//  - start up frozen
+//  - freeze
+//  - reconnect
+//  - metrics
+//  - convert all constants to settings
+//  - max rate throttle
+
 /**
  * Responsible for creating new events using the tipset algorithm.
  */
 public class TipsetEventCreator { // TODO test
-
-    // TODO use a more elegant solution for this
-    public static final boolean USE_TIPSET_ALGORITHM = true;
 
     private final Cryptography cryptography;
     private final Time time;
@@ -158,8 +168,6 @@ public class TipsetEventCreator { // TODO test
         tipsetBuilder.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
         childlessEventTracker.pruneOldEvents(minimumGenerationNonAncient);
     }
-
-    private static final double BE_NICE_TO_NERD_CHANCE = 0.1; // TODO setting
 
     /**
      * Create a new event if it is legal to do so.
