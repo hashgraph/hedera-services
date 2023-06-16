@@ -41,6 +41,7 @@ import com.hedera.hapi.node.token.TokenGetNftInfoQuery;
 import com.hedera.hapi.node.token.TokenGetNftInfosQuery;
 import com.hedera.hapi.node.transaction.GetByKeyQuery;
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.TransactionGetFastRecordQuery;
 import com.hedera.hapi.node.transaction.TransactionGetReceiptQuery;
 import com.hedera.hapi.node.transaction.TransactionGetRecordQuery;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
@@ -55,6 +56,7 @@ import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetAccountD
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetByKeyHandler;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetExecutionTimeHandler;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetVersionInfoHandler;
+import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetFastRecordHandler;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetReceiptHandler;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetRecordHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleGetInfoHandler;
@@ -137,6 +139,9 @@ class QueryDispatcherTest {
     private NetworkTransactionGetReceiptHandler networkTransactionGetReceiptHandler;
 
     @Mock
+    private NetworkTransactionGetFastRecordHandler networkTransactionGetFastRecordHandler;
+
+    @Mock
     private NetworkTransactionGetRecordHandler networkTransactionGetRecordHandler;
 
     @Mock
@@ -180,6 +185,7 @@ class QueryDispatcherTest {
                 networkGetVersionInfoHandler,
                 networkTransactionGetReceiptHandler,
                 networkTransactionGetRecordHandler,
+                networkTransactionGetFastRecordHandler,
                 scheduleGetInfoHandler,
                 tokenGetInfoHandler,
                 tokenGetAccountNftInfosHandler,
@@ -361,6 +367,12 @@ class QueryDispatcherTest {
                                 .transactionGetRecord(
                                         TransactionGetRecordQuery.newBuilder().build())
                                 .build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkTransactionGetRecordHandler));
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkTransactionGetRecordHandler),
+                Arguments.of(
+                        Query.newBuilder()
+                                .transactionGetFastRecord(TransactionGetFastRecordQuery.newBuilder()
+                                        .build())
+                                .build(),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkTransactionGetFastRecordHandler));
     }
 }
