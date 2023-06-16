@@ -33,24 +33,19 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.ConfigProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenMintHandlerParityTest extends ParityTestBase {
-    @Mock
-    private ConfigProvider configProvider;
-
     private TokenSupplyChangeOpsValidator validator;
     private TokenMintHandler subject;
 
     @BeforeEach
     void setup() {
-        validator = new TokenSupplyChangeOpsValidator(configProvider);
+        validator = new TokenSupplyChangeOpsValidator();
         subject = new TokenMintHandler(validator);
     }
 

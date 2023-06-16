@@ -67,12 +67,12 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -203,6 +203,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     /* ---------- Misc ---------- */
     protected final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
+    protected final Instant consensusInstant = Instant.ofEpochSecond(1_234_567L);
     protected final String tokenName = "test token";
     protected final String tokenSymbol = "TT";
     protected final String memo = "test memo";
@@ -266,10 +267,12 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected WritableStates writableStates;
 
     protected Configuration configuration;
+    protected VersionedConfigImpl versionedConfig;
 
     @BeforeEach
     public void setUp() {
         configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        versionedConfig = new VersionedConfigImpl(configuration, 1);
         givenValidAccounts();
         givenValidTokens();
         givenValidTokenRelations();
@@ -673,9 +676,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .build();
     }
 
-    protected void givenStoresAndConfig(final ConfigProvider configProvider, final HandleContext handleContext) {
+    protected void givenStoresAndConfig(final HandleContext handleContext) {
         configuration = new HederaTestConfigBuilder().getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);

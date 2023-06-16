@@ -39,6 +39,7 @@ dependencies {
         testImplementation(gav("org.mockito.junit.jupiter"))
         testImplementation(gav("uk.org.webcompere.systemstubs.jupiter"))
         testImplementation(gav("uk.org.webcompere.systemstubs.core"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
 
         itestImplementation(project(":hedera-node:node-app"))
         itestImplementation(project(":hedera-node:node-app-spi"))

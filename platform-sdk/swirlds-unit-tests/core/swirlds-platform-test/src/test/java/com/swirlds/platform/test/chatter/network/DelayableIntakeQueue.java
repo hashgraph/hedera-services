@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.chatter.network;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import com.swirlds.platform.test.chatter.network.framework.AbstractSimulatedEventPipeline;

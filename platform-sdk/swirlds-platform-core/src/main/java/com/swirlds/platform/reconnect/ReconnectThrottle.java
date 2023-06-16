@@ -18,7 +18,6 @@ package com.swirlds.platform.reconnect;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -26,6 +25,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -59,7 +59,7 @@ public class ReconnectThrottle {
     private Supplier<Instant> currentTime;
 
     public ReconnectThrottle(@NonNull final ReconnectConfig config) {
-        this.config = ArgumentUtils.throwArgNull(config, "config");
+        this.config = Objects.requireNonNull(config, "config must not be null");
         lastReconnectTime = new HashMap<>();
         reconnectingNode = null;
         currentTime = Instant::now;

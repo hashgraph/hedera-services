@@ -9,11 +9,11 @@ module com.hedera.node.app.service.util.impl {
     requires com.hedera.node.app.service.network.admin;
     requires com.hedera.node.config;
     requires com.hedera.node.hapi;
-    requires com.github.spotbugs.annotations;
     requires com.google.common;
     requires com.swirlds.common;
     requires com.swirlds.config;
     requires org.apache.logging.log4j;
+    requires static com.github.spotbugs.annotations;
 
     provides com.hedera.node.app.service.util.UtilService with
             UtilServiceImpl;

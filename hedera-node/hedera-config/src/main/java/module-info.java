@@ -11,6 +11,6 @@ module com.hedera.node.config {
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.config;
-    requires com.github.spotbugs.annotations;
     requires com.swirlds.common;
+    requires static com.github.spotbugs.annotations;
 }
