@@ -68,6 +68,11 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
     private InterruptableRunnable idleCallback;
 
     /**
+     * The callback to run whenever a buffer worth of elements has been handled.
+     */
+    private InterruptableRunnable bufferHandledCallback; // TODO test
+
+    /**
      * When waiting for work, the amount of time to block.
      */
     private Duration waitForWorkDuration = Duration.ofMillis(10);
@@ -187,7 +192,7 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
      * @return this object
      */
     @SuppressWarnings("unchecked")
-    public C setIdleCallback(@NonNull final InterruptableRunnable idleCallback) {
+    public C setIdleCallback(@Nullable final InterruptableRunnable idleCallback) {
         this.idleCallback = idleCallback;
         return (C) this;
     }
@@ -198,6 +203,25 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
     @Nullable
     public InterruptableRunnable getIdleCallback() {
         return idleCallback;
+    }
+
+    /**
+     * Get a callback that should be invoked, if non-null, whenever a buffer's worth of elements has been handled.
+     */
+    @Nullable
+    public InterruptableRunnable getBufferHandledCallback() {
+        return bufferHandledCallback;
+    }
+
+    /**
+     * Set a callback that should be invoked whenever a buffer's worth of elements has been handled.
+     *
+     * @return this object
+     */
+    @SuppressWarnings("unchecked")
+    public C setBufferHandledCallback(@Nullable final InterruptableRunnable bufferHandledCallback) {
+        this.bufferHandledCallback = bufferHandledCallback;
+        return (C) this;
     }
 
     /**

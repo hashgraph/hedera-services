@@ -37,6 +37,7 @@ import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -85,9 +86,12 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
         workQueue = new MultiQueueThreadConfiguration(threadManager)
                 .setThreadName("event-creator")
                 .setCapacity(1024) // TODO setting for capacity
+                .setMaxBufferSize(1024) // TODO setting
                 .addHandler(EventImpl.class, this::handleEvent)
                 .addHandler(Long.class, this::handleMinimumGenerationNonAncient)
                 .setIdleCallback(this::maybeCreateEvent)
+                .setBufferHandledCallback(this::maybeCreateEvent)
+                .setWaitForWorkDuration(Duration.ZERO) // TODO setting
                 .build();
 
         eventInserter = workQueue.getInserter(EventImpl.class);
