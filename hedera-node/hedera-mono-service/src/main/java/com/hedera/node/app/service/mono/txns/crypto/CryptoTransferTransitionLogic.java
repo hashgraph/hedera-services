@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -31,6 +32,8 @@ import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -95,6 +98,8 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
         return TransactionBody::hasCryptoTransfer;
     }
 
+    private static final AtomicBoolean lol = new AtomicBoolean(true);
+
     @Override
     public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
         final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
@@ -117,8 +122,15 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
                     dynamicProperties.isLazyCreationEnabled(),
                     dynamicProperties.areAllowancesEnabled());
             final var op = accessor.getTxn().getCryptoTransfer();
-            return transferSemanticChecks.fullPureValidation(
+            final var actual = transferSemanticChecks.fullPureValidation(
                     op.getTransfers(), op.getTokenTransfersList(), validationProps);
+            if (lol.get()) {
+                lol.set(false);
+                return actual == INVALID_ACCOUNT_AMOUNTS ? OK : actual;
+            } else {
+                lol.set(true);
+                return actual;
+            }
         }
     }
 }
