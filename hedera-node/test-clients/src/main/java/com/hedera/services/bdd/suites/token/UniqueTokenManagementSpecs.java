@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
@@ -638,7 +639,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
     }
 
     private HapiSpec wipeHappyPath() {
-        return defaultHapiSpec("WipeHappyPath")
+        return onlyDefaultHapiSpec("WipeHappyPath")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(WIPE_KEY),
@@ -654,13 +655,15 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .wipeKey(WIPE_KEY),
                         tokenAssociate(ACCOUNT, NFT),
+                        getTokenInfo(NFT).logged(),
                         mintToken(NFT, List.of(ByteString.copyFromUtf8("memo"), ByteString.copyFromUtf8(MEMO_2))),
+                        getTokenInfo(NFT).logged(),
                         cryptoTransfer(movingUnique(NFT, 2L).between(TOKEN_TREASURY, ACCOUNT)))
                 .when(wipeTokenAccount(NFT, ACCOUNT, List.of(2L)).via(WIPE_TXN))
                 .then(
                         getAccountInfo(ACCOUNT).hasOwnedNfts(0),
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1),
-                        getTokenInfo(NFT).hasTotalSupply(1),
+                        getTokenInfo(NFT).hasTotalSupply(1).logged(),
                         getTokenNftInfo(NFT, 2).hasCostAnswerPrecheck(INVALID_NFT_ID),
                         getTokenNftInfo(NFT, 1).hasSerialNum(1),
                         wipeTokenAccount(NFT, ACCOUNT, List.of(1L)).hasKnownStatus(ACCOUNT_DOES_NOT_OWN_WIPED_NFT));

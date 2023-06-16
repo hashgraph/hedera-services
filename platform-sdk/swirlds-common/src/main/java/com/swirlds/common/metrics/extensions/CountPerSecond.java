@@ -25,7 +25,6 @@ import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.time.IntegerEpochTime;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.common.utility.Units;
 import java.util.Objects;
 
@@ -43,13 +42,12 @@ public class CountPerSecond {
     private final IntegerPairAccumulator<Double> accumulator;
 
     /**
-     * The default constructor, uses the {@link OSTime}
+     * The default constructor, uses the {@link Time#getCurrent()}
      *
-     * @param config
-     * 		the configuration for this metric
+     * @param config the configuration for this metric
      */
     public CountPerSecond(final Metrics metrics, final CountPerSecond.Config config) {
-        this(metrics, config, new IntegerEpochTime(OSTime.getInstance()));
+        this(metrics, config, new IntegerEpochTime(Time.getCurrent()));
     }
 
     /**

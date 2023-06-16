@@ -20,7 +20,6 @@ import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.statistics.internal.StatsBuffer;
-import com.swirlds.common.time.OSTime;
 
 /**
  * This class measures how many times per second the cycle() method is called. It is recalculated every
@@ -109,7 +108,7 @@ public class StatsSpeedometer implements StatsBuffered {
      */
     @SuppressWarnings("removal")
     public StatsSpeedometer(final double halfLife, final boolean saveHistory) {
-        this(halfLife, saveHistory, OSTime.getInstance());
+        this(halfLife, saveHistory, Time.getCurrent());
     }
 
     /**

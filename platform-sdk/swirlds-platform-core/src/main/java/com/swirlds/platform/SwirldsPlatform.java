@@ -64,7 +64,6 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
@@ -316,7 +315,7 @@ public class SwirldsPlatform implements Platform, Startable {
             final boolean softwareUpgrade) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
-        final Time time = OSTime.getInstance();
+        final Time time = Time.getCurrent();
 
         final DispatchBuilder dispatchBuilder =
                 new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
@@ -996,7 +995,7 @@ public class SwirldsPlatform implements Platform, Startable {
     @NonNull
     private PreconsensusEventFileManager buildPreconsensusEventFileManager() {
         try {
-            return new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), recycleBin, selfId);
+            return new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, selfId);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }
@@ -1070,7 +1069,7 @@ public class SwirldsPlatform implements Platform, Startable {
             PreconsensusEventReplayWorkflow.replayPreconsensusEvents(
                     platformContext,
                     threadManager,
-                    OSTime.getInstance(),
+                    Time.getCurrent(),
                     preconsensusEventFileManager,
                     preconsensusEventWriter,
                     eventTaskDispatcher,
