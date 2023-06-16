@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  */
 public class HandleContextVerifier {
 
-    private static final Logger log = LoggerFactory.getLogger(HandleContextVerifier.class);
+    private static final Logger logger = LoggerFactory.getLogger(HandleContextVerifier.class);
 
     private final long timeout;
     private final Map<Key, SignatureVerificationFuture> keyVerifications;
@@ -170,9 +170,9 @@ public class HandleContextVerifier {
             return future.get(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.error("Interrupted while waiting for signature verification", e);
+            logger.error("Interrupted while waiting for signature verification", e);
         } catch (ExecutionException | TimeoutException e) {
-            log.error("An unexpected exception was thrown while waiting for SignatureVerification", e);
+            logger.error("An unexpected exception was thrown while waiting for SignatureVerification", e);
         }
         return fallback.get();
     }

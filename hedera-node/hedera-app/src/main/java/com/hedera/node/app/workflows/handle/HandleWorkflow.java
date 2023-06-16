@@ -67,7 +67,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class HandleWorkflow {
 
-    private static final Logger log = LogManager.getLogger(HandleWorkflow.class);
+    private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
 
     private final NodeInfo nodeInfo;
     private final PreHandleWorkflow preHandleWorkflow;
@@ -190,11 +190,11 @@ public class HandleWorkflow {
         } catch (HandleException e) {
             recordFailedTransaction(e.getStatus(), recordBuilder, recordListBuilder);
         } catch (InterruptedException e) {
-            log.error("Interrupted while waiting for signature verification", e);
+            logger.error("Interrupted while waiting for signature verification", e);
             Thread.currentThread().interrupt();
             recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         } catch (Throwable e) {
-            log.error("An unexpected exception was thrown during handle", e);
+            logger.error("An unexpected exception was thrown during handle", e);
             recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         }
 
