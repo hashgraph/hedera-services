@@ -34,7 +34,6 @@ import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.token.impl.*;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
@@ -44,7 +43,6 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,9 +55,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock(strictness = Strictness.LENIENT)
-    private ConfigProvider configProvider;
-
-    @Mock(strictness = Strictness.LENIENT)
     private HandleContext handleContext;
 
     private CryptoApproveAllowanceHandler subject;
@@ -68,8 +63,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     public void setUp() {
         super.setUp();
         refreshWritableStores();
-        final var validator = new ApproveAllowanceValidator(configProvider);
-        givenStoresAndConfig(configProvider, handleContext);
+        final var validator = new ApproveAllowanceValidator();
+        givenStoresAndConfig(handleContext);
 
         subject = new CryptoApproveAllowanceHandler(validator);
     }
@@ -344,7 +339,6 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         configuration = new HederaTestConfigBuilder()
                 .withValue("hedera.allowances.maxAccountLimit", 2)
                 .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
         given(handleContext.configuration()).willReturn(configuration);
 
         final var txn = cryptoApproveAllowanceTransaction(
