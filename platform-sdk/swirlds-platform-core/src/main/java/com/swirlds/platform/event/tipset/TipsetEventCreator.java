@@ -168,7 +168,6 @@ public class TipsetEventCreator { // TODO test
      */
     @Nullable
     public GossipEvent createNewEvent() {
-
         final long bullyScore = tipsetScoreCalculator.getBullyScore();
         final double beNiceToNerdChance = (bullyScore - 1) / 10.0; // TODO settings
 

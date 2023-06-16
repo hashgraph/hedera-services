@@ -609,6 +609,29 @@ public class SwirldsPlatform implements Platform, Startable {
                             .enableBusyTimeMetric())
                     .build());
 
+            // TODO should we instantiate if we are not using this algorithm?
+            tipsetEventCreator = new TipsetEventCreationManager(
+                    platformContext,
+                    threadManager,
+                    platformContext.getCryptography(),
+                    time,
+                    new Random() /* does not need to be cryptographically secure */,
+                    this,
+                    initialAddressBook,
+                    selfId.id(), // TODO nodeId
+                    appVersion,
+                    swirldStateManager.getTransactionPool(),
+                    event -> abortAndThrowIfInterrupted(intakeQueue::put, event, "intakeQueue.put() interrupted"));
+
+            eventObserverDispatcher.addObserver((PreConsensusEventObserver) event -> {
+                if (USE_TIPSET_ALGORITHM) {
+                    abortAndThrowIfInterrupted(
+                            tipsetEventCreator::registerEvent,
+                            event,
+                            "Interrupted while attempting to register event with tipset event creator");
+                }
+            });
+
             transactionSubmitter = new SwirldTransactionSubmitter(
                     currentPlatformStatus::get,
                     PlatformConstructor.settingsProvider(),
@@ -653,20 +676,6 @@ public class SwirldsPlatform implements Platform, Startable {
                         getAddressBook()));
             }
         }
-
-        // TODO should we instantiate if we are not using this algorithm?
-        tipsetEventCreator = new TipsetEventCreationManager(
-                platformContext,
-                threadManager,
-                platformContext.getCryptography(),
-                time,
-                new Random() /* does not need to be cryptographically secure */,
-                this,
-                initialAddressBook,
-                selfId.id(), // TODO nodeId
-                appVersion,
-                swirldStateManager.getTransactionPool(),
-                event -> abortAndThrowIfInterrupted(intakeQueue::put, event, "intakeQueue.put() interrupted"));
 
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
