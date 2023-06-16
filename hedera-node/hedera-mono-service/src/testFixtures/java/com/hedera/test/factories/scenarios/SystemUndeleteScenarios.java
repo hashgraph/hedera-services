@@ -16,15 +16,21 @@
 
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.SystemUndeleteFactory.newSignedSystemUndelete;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.test.factories.txns.SystemUndeleteFactory;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public enum SystemUndeleteScenarios implements TxnHandlingScenario {
     SYSTEM_UNDELETE_FILE_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedSystemUndelete().file(MISC_FILE_ID).get());
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(SystemUndeleteFactory.newSignedSystemUndelete()
+                    .file(MISC_FILE_ID)
+                    .get());
         }
     }
 }

@@ -16,21 +16,30 @@
 
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.ConsensusSubmitMessageFactory.newSignedConsensusSubmitMessage;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.test.factories.txns.ConsensusSubmitMessageFactory;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public enum ConsensusSubmitMessageScenarios implements TxnHandlingScenario {
     CONSENSUS_SUBMIT_MESSAGE_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             return PlatformTxnAccessor.from(
-                    newSignedConsensusSubmitMessage(EXISTING_TOPIC_ID).get());
+                    ConsensusSubmitMessageFactory.newSignedConsensusSubmitMessage(EXISTING_TOPIC_ID)
+                            .get());
         }
     },
     CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             return PlatformTxnAccessor.from(
-                    newSignedConsensusSubmitMessage(MISSING_TOPIC_ID).get());
+                    ConsensusSubmitMessageFactory.newSignedConsensusSubmitMessage(MISSING_TOPIC_ID)
+                            .get());
         }
     }
 }
