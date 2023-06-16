@@ -23,7 +23,7 @@ import com.swirlds.common.crypto.KeyType;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.crypto.PreGeneratedPublicKeys;
+import com.swirlds.common.test.fixtures.crypto.PreGeneratedPublicKeys;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;

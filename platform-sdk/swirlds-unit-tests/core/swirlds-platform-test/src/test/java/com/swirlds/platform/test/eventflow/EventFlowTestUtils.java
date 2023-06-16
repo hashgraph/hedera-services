@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.eventflow;
 
-import com.swirlds.common.test.TransactionUtils;
+import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.EventSource;

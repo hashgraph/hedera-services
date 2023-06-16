@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.recovery;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.generateRandomEvents;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.getLastEventStreamFile;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.getMiddleEventStreamFile;

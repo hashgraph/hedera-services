@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.Utilities.isMajority;
 import static com.swirlds.platform.state.iss.internal.ConsensusHashStatus.CATASTROPHIC_ISS;
 import static com.swirlds.platform.state.iss.internal.ConsensusHashStatus.DECIDED;

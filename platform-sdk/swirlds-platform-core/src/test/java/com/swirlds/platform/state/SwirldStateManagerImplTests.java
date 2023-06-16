@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.SwirldsPlatform;
