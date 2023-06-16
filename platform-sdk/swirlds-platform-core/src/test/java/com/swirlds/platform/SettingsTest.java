@@ -20,17 +20,12 @@ import static com.swirlds.platform.SettingConstants.APPS_STRING;
 import static com.swirlds.platform.SettingConstants.BUFFER_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.CONFIG_TXT;
-import static com.swirlds.platform.SettingConstants.CSV_APPEND_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.CSV_FILE_NAME_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.CSV_OUTPUT_FOLDER_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.CSV_WRITE_FREQUENCY_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DATA_STRING;
 import static com.swirlds.platform.SettingConstants.DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DELAY_SHUFFLE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DO_UPNP_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.FREEZE_SECONDS_AFTER_STARTUP_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.GOSSIP_WITH_DIFFERENT_VERSIONS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.HALF_LIFE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.JVM_PAUSE_DETECTOR_SLEEP_MS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.JVM_PAUSE_REPORT_MS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.KEYS_STRING;
@@ -231,7 +226,6 @@ class SettingsTest {
         Assertions.assertEquals(MAX_INCOMING_SYNCS_INC_DEFAULT_VALUE, settings.getMaxIncomingSyncsInc());
         Assertions.assertEquals(BUFFER_SIZE_DEFAULT_VALUE, settings.getBufferSize());
         Assertions.assertEquals(SOCKET_IP_TOS_DEFAULT_VALUE, settings.getSocketIpTos());
-        Assertions.assertEquals(HALF_LIFE_DEFAULT_VALUE, settings.getHalfLife());
         Assertions.assertEquals(
                 Integer.parseInt(ConsensusConfig.COIN_FREQ_DEFAULT_VALUE),
                 configuration.getConfigData(ConsensusConfig.class).coinFreq());
@@ -259,10 +253,6 @@ class SettingsTest {
                 MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE, settings.getMaxTransactionBytesPerEvent());
         Assertions.assertEquals(
                 MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE, settings.getMaxTransactionCountPerEvent());
-        Assertions.assertEquals(CSV_OUTPUT_FOLDER_DEFAULT_VALUE, settings.getCsvOutputFolder());
-        Assertions.assertEquals(CSV_FILE_NAME_DEFAULT_VALUE, settings.getCsvFileName());
-        Assertions.assertEquals(CSV_WRITE_FREQUENCY_DEFAULT_VALUE, settings.getCsvWriteFrequency());
-        Assertions.assertEquals(CSV_APPEND_DEFAULT_VALUE, settings.isCsvAppend());
         Assertions.assertEquals(THREAD_DUMP_PERIOD_MS_DEFAULT_VALUE, settings.getThreadDumpPeriodMs());
         Assertions.assertEquals(THREAD_DUMP_LOG_DIR_DEFAULT_VALUE, settings.getThreadDumpLogDir());
         Assertions.assertEquals(JVM_PAUSE_DETECTOR_SLEEP_MS_DEFAULT_VALUE, settings.getJVMPauseDetectorSleepMs());
@@ -313,7 +303,6 @@ class SettingsTest {
         Assertions.assertEquals(2, settings.getMaxIncomingSyncsInc());
         Assertions.assertEquals(7000, settings.getBufferSize());
         Assertions.assertEquals(1, settings.getSocketIpTos());
-        Assertions.assertEquals(5, settings.getHalfLife());
         Assertions.assertFalse(settings.isLogStack());
         Assertions.assertFalse(settings.isUseTLS());
         Assertions.assertFalse(settings.isDoUpnp());
@@ -335,10 +324,6 @@ class SettingsTest {
         Assertions.assertFalse(settings.isLoadKeysFromPfxFiles());
         Assertions.assertEquals(300000, settings.getMaxTransactionBytesPerEvent());
         Assertions.assertEquals(300000, settings.getMaxTransactionCountPerEvent());
-        Assertions.assertEquals("csvFolder", settings.getCsvOutputFolder());
-        Assertions.assertEquals("csvFile", settings.getCsvFileName());
-        Assertions.assertEquals(4000, settings.getCsvWriteFrequency());
-        Assertions.assertTrue(settings.isCsvAppend());
         Assertions.assertEquals(1, settings.getThreadDumpPeriodMs());
         Assertions.assertEquals("badData/badThreadDump", settings.getThreadDumpLogDir());
         Assertions.assertEquals(2000, settings.getJVMPauseDetectorSleepMs());

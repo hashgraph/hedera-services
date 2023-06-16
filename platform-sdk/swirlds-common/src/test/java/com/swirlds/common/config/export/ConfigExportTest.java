@@ -63,7 +63,6 @@ class ConfigExportTest {
         assertContains(regexForLine("verifyEventSigs", "false", true), lines);
         assertContains(regexForLine("doUpnp", "false", true), lines);
         assertContains(regexForLine("showInternalStats", "true", true), lines);
-        assertContains(regexForLine("csvFileName", "PlatformTesting", true), lines);
         assertContains(regexForLine("useLoopbackIp", "false", true), lines);
         assertContains(regexForLine("maxOutgoingSyncs", "1", true), lines);
         assertContains(regexForLine("state.saveStatePeriod", "0", true), lines);

@@ -32,89 +32,65 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.TokensConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenAttributesValidatorTest {
-    @Mock
-    private ConfigProvider configProvider;
-
     private TokenAttributesValidator subject;
+    private TokensConfig tokensConfig;
 
     @BeforeEach
     void setUp() {
-        subject = new TokenAttributesValidator(configProvider);
+        subject = new TokenAttributesValidator();
+        final var configuration = new HederaTestConfigBuilder()
+                .withValue("tokens.maxTokenNameUtf8Bytes", "10")
+                .withValue("tokens.maxSymbolUtf8Bytes", "10")
+                .getOrCreateConfig();
+        tokensConfig = configuration.getConfigData(TokensConfig.class);
     }
 
     @Test
     void failsForZeroLengthSymbol() {
-        final var configuration = new HederaTestConfigBuilder()
-                .withValue("tokens.maxSymbolUtf8Bytes", "10")
-                .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
-        assertThatThrownBy(() -> subject.validateTokenSymbol(""))
+        assertThatThrownBy(() -> subject.validateTokenSymbol("", tokensConfig))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(MISSING_TOKEN_SYMBOL));
     }
 
     @Test
     void failsForNullSymbol() {
-        final var configuration = new HederaTestConfigBuilder()
-                .withValue("tokens.maxSymbolUtf8Bytes", "10")
-                .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
-        assertThatThrownBy(() -> subject.validateTokenSymbol(null))
+        assertThatThrownBy(() -> subject.validateTokenSymbol(null, tokensConfig))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(MISSING_TOKEN_SYMBOL));
     }
 
     @Test
     void failsForVeryLongSymbol() {
-        final var configuration = new HederaTestConfigBuilder()
-                .withValue("tokens.maxSymbolUtf8Bytes", "10")
-                .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
         assertThatThrownBy(() -> subject.validateTokenSymbol(
-                        "12345678901234567890123456789012345678901234567890123456789012345678901234567890"))
+                        "12345678901234567890123456789012345678901234567890123456789012345678901234567890",
+                        tokensConfig))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TOKEN_SYMBOL_TOO_LONG));
     }
 
     @Test
     void failsForZeroByteInSymbol() {
-        final var configuration = new HederaTestConfigBuilder()
-                .withValue("tokens.maxSymbolUtf8Bytes", "10")
-                .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
-        assertThatThrownBy(() -> subject.validateTokenSymbol("\0"))
+        assertThatThrownBy(() -> subject.validateTokenSymbol("\0", tokensConfig))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_ZERO_BYTE_IN_STRING));
     }
 
     @Test
     void failsForZeroByteInName() {
-        final var configuration = new HederaTestConfigBuilder()
-                .withValue("tokens.maxTokenNameUtf8Bytes", "10")
-                .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
-        assertThatThrownBy(() -> subject.validateTokenName("\0"))
+        assertThatThrownBy(() -> subject.validateTokenName("\0", tokensConfig))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_ZERO_BYTE_IN_STRING));
     }
@@ -124,34 +100,25 @@ class TokenAttributesValidatorTest {
         final var configuration = new HederaTestConfigBuilder()
                 .withValue("tokens.maxTokenNameUtf8Bytes", "10")
                 .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+        final var tokensConfig = configuration.getConfigData(TokensConfig.class);
 
-        assertThatThrownBy(() -> subject.validateTokenName(""))
+        assertThatThrownBy(() -> subject.validateTokenName("", tokensConfig))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(MISSING_TOKEN_NAME));
     }
 
     @Test
     void failsForNullName() {
-        final var configuration = new HederaTestConfigBuilder()
-                .withValue("tokens.maxTokenNameUtf8Bytes", "10")
-                .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
-        assertThatThrownBy(() -> subject.validateTokenName(null))
+        assertThatThrownBy(() -> subject.validateTokenName(null, tokensConfig))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(MISSING_TOKEN_NAME));
     }
 
     @Test
     void failsForVeryLongName() {
-        final var configuration = new HederaTestConfigBuilder()
-                .withValue("tokens.maxTokenNameUtf8Bytes", "10")
-                .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
         assertThatThrownBy(() -> subject.validateTokenName(
-                        "12345678901234567890123456789012345678901234567890123456789012345678901234567890"))
+                        "12345678901234567890123456789012345678901234567890123456789012345678901234567890",
+                        tokensConfig))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TOKEN_NAME_TOO_LONG));
     }

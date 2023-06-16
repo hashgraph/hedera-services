@@ -25,12 +25,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
-import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,12 +41,8 @@ import javax.inject.Inject;
  * Token Burn operations in handle
  */
 public class TokenSupplyChangeOpsValidator {
-    private final ConfigProvider configProvider;
-
     @Inject
-    public TokenSupplyChangeOpsValidator(@NonNull final ConfigProvider configProvider) {
-        this.configProvider = requireNonNull(configProvider);
-    }
+    public TokenSupplyChangeOpsValidator() {}
 
     /**
      * Validate the transaction data for a token mint operation
@@ -57,11 +51,11 @@ public class TokenSupplyChangeOpsValidator {
      * @param metaDataList the list of metadata for the NFTs to mint
      * @throws HandleException if the transaction data is invalid
      */
-    public void validateMint(final long fungibleCount, final List<Bytes> metaDataList) {
+    public void validateMint(
+            final long fungibleCount, final List<Bytes> metaDataList, final TokensConfig tokensConfig) {
         final var numNfts = metaDataList.size();
-        validateCommon(fungibleCount, numNfts, TokensConfig::nftsMaxBatchSizeMint);
+        validateCommon(fungibleCount, numNfts, TokensConfig::nftsMaxBatchSizeMint, tokensConfig);
 
-        final var tokensConfig = configProvider.getConfiguration().getConfigData(TokensConfig.class);
         final var maxNftMetadataBytes = tokensConfig.nftsMaxMetadataBytes();
         if (fungibleCount <= 0 && numNfts > 0) {
             validateMetaData(metaDataList, maxNftMetadataBytes);
@@ -75,8 +69,11 @@ public class TokenSupplyChangeOpsValidator {
      * @param nftSerialNums the list of NFT serial numbers to burn
      * @throws HandleException if the transaction data is invalid
      */
-    public void validateBurn(final long fungibleCount, final List<Long> nftSerialNums) {
-        validateCommon(fungibleCount, nftSerialNums.size(), TokensConfig::nftsMaxBatchSizeBurn);
+    public void validateBurn(
+            final long fungibleCount,
+            @NonNull final List<Long> nftSerialNums,
+            @NonNull final TokensConfig tokensConfig) {
+        validateCommon(fungibleCount, nftSerialNums.size(), TokensConfig::nftsMaxBatchSizeBurn, tokensConfig);
     }
 
     /**
@@ -124,8 +121,11 @@ public class TokenSupplyChangeOpsValidator {
      * @param nftSerialNums the list of NFT serial numbers to wipe
      * @throws HandleException if the transaction data is invalid
      */
-    public void validateWipe(final long fungibleCount, final List<Long> nftSerialNums) {
-        validateCommon(fungibleCount, nftSerialNums.size(), TokensConfig::nftsMaxBatchSizeWipe);
+    public void validateWipe(
+            final long fungibleCount,
+            @NonNull final List<Long> nftSerialNums,
+            @NonNull final TokensConfig tokensConfig) {
+        validateCommon(fungibleCount, nftSerialNums.size(), TokensConfig::nftsMaxBatchSizeWipe, tokensConfig);
     }
 
     /**
@@ -136,9 +136,10 @@ public class TokenSupplyChangeOpsValidator {
      * @param batchSizeGetter The function to get the corresponding batch size for the token operation.
      */
     private void validateCommon(
-            final long fungibleCount, final int nftCount, @NonNull final ToIntFunction<TokensConfig> batchSizeGetter) {
-        final var tokensConfig = configProvider.getConfiguration().getConfigData(TokensConfig.class);
-
+            final long fungibleCount,
+            final int nftCount,
+            @NonNull final ToIntFunction<TokensConfig> batchSizeGetter,
+            final TokensConfig tokensConfig) {
         // Get needed configurations
         final var nftsAreEnabled = tokensConfig.nftsAreEnabled();
         final var maxNftBatchOpSize = batchSizeGetter.applyAsInt(tokensConfig);

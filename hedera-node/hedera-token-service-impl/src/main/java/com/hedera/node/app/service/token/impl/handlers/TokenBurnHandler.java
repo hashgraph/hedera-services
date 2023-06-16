@@ -43,6 +43,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -91,13 +92,16 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
         final var tokenStore = context.writableStore(WritableTokenStore.class);
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var nftStore = context.writableStore(WritableNftStore.class);
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+
         final var txn = context.body();
         final var op = txn.tokenBurnOrThrow();
         final var tokenId = op.token();
         final var fungibleBurnCount = op.amount();
         // Wrapping the serial nums this way de-duplicates the serial nums:
         final var nftSerialNums = new ArrayList<>(new LinkedHashSet<>(op.serialNumbers()));
-        final var validated = validateSemantics(tokenId, fungibleBurnCount, nftSerialNums, tokenStore, tokenRelStore);
+        final var validated =
+                validateSemantics(tokenId, fungibleBurnCount, nftSerialNums, tokenStore, tokenRelStore, tokensConfig);
         final var token = validated.token();
 
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
@@ -149,10 +153,11 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
             final long fungibleBurnCount,
             @NonNull final List<Long> nftSerialNums,
             @NonNull final ReadableTokenStore tokenStore,
-            @NonNull final ReadableTokenRelationStore tokenRelStore) {
+            @NonNull final ReadableTokenRelationStore tokenRelStore,
+            @NonNull final TokensConfig tokensConfig) {
         validateTrue(fungibleBurnCount >= 0, INVALID_TOKEN_BURN_AMOUNT);
 
-        validator.validateBurn(fungibleBurnCount, nftSerialNums);
+        validator.validateBurn(fungibleBurnCount, nftSerialNums, tokensConfig);
 
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
         validateTrue(token.supplyKey() != null, TOKEN_HAS_NO_SUPPLY_KEY);

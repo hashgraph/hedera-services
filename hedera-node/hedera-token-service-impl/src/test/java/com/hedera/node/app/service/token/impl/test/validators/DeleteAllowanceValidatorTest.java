@@ -30,12 +30,10 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.CryptoDeleteAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftRemoveAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.DeleteAllowanceValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,16 +47,13 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     private DeleteAllowanceValidator subject;
 
     @Mock(strictness = LENIENT)
-    private ConfigProvider configProvider;
-
-    @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
-        givenStoresAndConfig(configProvider, handleContext);
-        subject = new DeleteAllowanceValidator(configProvider);
+        givenStoresAndConfig(handleContext);
+        subject = new DeleteAllowanceValidator();
     }
 
     @Test
@@ -67,8 +62,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
         final var configuration = new HederaTestConfigBuilder()
                 .withValue("hedera.allowances.isEnabled", false)
                 .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
+        given(handleContext.configuration()).willReturn(configuration);
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
         assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
@@ -79,8 +73,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     void rejectsMissingToken() {
         final var missingToken = TokenID.newBuilder().tokenNum(10000).build();
         final var txn = cryptoDeleteAllowanceTransaction(payerId, ownerId, missingToken, List.of(1L, 2L));
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
+        given(handleContext.configuration()).willReturn(configuration);
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
         assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
@@ -90,8 +83,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsForFungibleToken() {
         final var txn = cryptoDeleteAllowanceTransaction(payerId, ownerId, fungibleTokenId, List.of(1L, 2L));
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
+        given(handleContext.configuration()).willReturn(configuration);
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
         assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
@@ -102,8 +94,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     void validatesIfOwnerExists() {
         final var missingOwner = AccountID.newBuilder().accountNum(10000).build();
         final var txn = cryptoDeleteAllowanceTransaction(payerId, missingOwner, nonFungibleTokenId, List.of(1L, 2L));
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
+        given(handleContext.configuration()).willReturn(configuration);
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
         assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
@@ -113,8 +104,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void considersPayerIfOwnerMissing() {
         final var txn = cryptoDeleteAllowanceTransaction(payerId, null, nonFungibleTokenId, List.of(1L, 2L));
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
+        given(handleContext.configuration()).willReturn(configuration);
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
         assertThatNoException()
                 .isThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore));
@@ -124,8 +114,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsIfTokenNotAssociatedToAccount() {
         final var txn = cryptoDeleteAllowanceTransaction(payerId, spenderId, nonFungibleTokenId, List.of(1L, 2L));
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
+        given(handleContext.configuration()).willReturn(configuration);
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
         assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
@@ -139,8 +128,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
         final var configuration = new HederaTestConfigBuilder()
                 .withValue("hedera.allowances.maxTransactionLimit", 1)
                 .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
+        given(handleContext.configuration()).willReturn(configuration);
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
         assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
@@ -150,8 +138,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void happyPath() {
         final var txn = cryptoDeleteAllowanceTransaction(payerId, ownerId, nonFungibleTokenId, List.of(1L, 2L));
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
+        given(handleContext.configuration()).willReturn(configuration);
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
 
         assertThatNoException()
@@ -161,8 +148,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void validateSerialsExistence() {
         final var txn = cryptoDeleteAllowanceTransaction(payerId, ownerId, nonFungibleTokenId, List.of(1L, 2L, 100L));
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
+        given(handleContext.configuration()).willReturn(configuration);
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
 
         assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))
@@ -190,8 +176,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     void validatesNegativeSerialsAreNotValid() {
         final var txn = cryptoDeleteAllowanceTransaction(payerId, ownerId, nonFungibleTokenId, List.of(1L, -2L));
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
+        given(handleContext.configuration()).willReturn(configuration);
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowancesOrElse(emptyList());
 
         assertThatThrownBy(() -> subject.validate(handleContext, nftAllowances, account, readableAccountStore))

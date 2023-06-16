@@ -22,7 +22,8 @@ import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
-import com.swirlds.common.internal.SettingsCommon;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import java.util.EnumSet;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
@@ -123,7 +124,8 @@ public interface SpeedometerMetric extends Metric {
          */
         public Config(final String category, final String name) {
             super(category, name, FloatFormats.FORMAT_11_3);
-            this.halfLife = SettingsCommon.halfLife;
+            final MetricsConfig metricsConfig = ConfigurationHolder.getConfigData(MetricsConfig.class);
+            this.halfLife = metricsConfig.halfLife();
         }
 
         private Config(

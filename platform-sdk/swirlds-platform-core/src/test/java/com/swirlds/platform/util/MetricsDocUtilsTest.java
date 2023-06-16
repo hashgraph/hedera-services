@@ -51,7 +51,7 @@ class MetricsDocUtilsTest {
         // setup
         // Unable to mock BasicConfig.class because it is a final class, so using the test builder instead of mocking.
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("metricsDocFileName", METRIC_DOC_FILE_NAME)
+                .withValue("metrics.metricsDocFileName", METRIC_DOC_FILE_NAME)
                 .getOrCreateConfig();
         final String docFilePath =
                 com.swirlds.common.io.utility.FileUtils.getUserDir() + File.separator + METRIC_DOC_FILE_NAME;
