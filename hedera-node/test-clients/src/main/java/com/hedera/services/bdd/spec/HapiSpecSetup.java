@@ -646,7 +646,7 @@ public class HapiSpecSetup {
      */
     public Set<ResponseCodeEnum> streamlinedIngestChecks() {
         if (streamlinedIngestChecks == null) {
-            final var nominal = props.get("streamlined.ingest.checks");
+            final var nominal = props.get("spec.streamlinedIngestChecks");
             streamlinedIngestChecks = EnumSet.copyOf(nominal.isEmpty()
                     ? Collections.emptySet()
                     : Stream.of(nominal.split(","))
