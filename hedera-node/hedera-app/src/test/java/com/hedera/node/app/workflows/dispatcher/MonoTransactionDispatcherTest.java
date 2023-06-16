@@ -672,6 +672,18 @@ class MonoTransactionDispatcherTest {
     }
 
     @Test
+    void dispatchesTokenWipeAsExpected() {
+        final var txnBody = TransactionBody.newBuilder()
+                .tokenWipe(TokenWipeAccountTransactionBody.DEFAULT)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+
+        dispatcher.dispatchHandle(handleContext);
+
+        verify(handleContext).body();
+    }
+
+    @Test
     void dispatchesCryptoCreateAsExpected() {
         final var txnBody = TransactionBody.newBuilder()
                 .cryptoCreateAccount(CryptoCreateTransactionBody.DEFAULT)

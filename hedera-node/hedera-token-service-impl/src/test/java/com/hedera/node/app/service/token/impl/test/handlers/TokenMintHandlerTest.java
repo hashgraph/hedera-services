@@ -33,7 +33,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
@@ -44,7 +43,6 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
@@ -54,9 +52,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private ConfigProvider configProvider;
-
     @Mock(strictness = Mock.Strictness.LENIENT)
     private HandleContext handleContext;
 
@@ -70,8 +65,8 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
     public void setUp() {
         super.setUp();
         refreshWritableStores();
-        givenStoresAndConfig(configProvider, handleContext);
-        subject = new TokenMintHandler(new TokenSupplyChangeOpsValidator(configProvider));
+        givenStoresAndConfig(handleContext);
+        subject = new TokenMintHandler(new TokenSupplyChangeOpsValidator());
         recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
     }
 
@@ -81,7 +76,6 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.nfts.areEnabled", false)
                 .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
         given(handleContext.configuration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -190,7 +184,6 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.nfts.maxMetadataBytes", 1)
                 .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
         given(handleContext.configuration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -205,7 +198,6 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.nfts.maxBatchSizeMint", 1)
                 .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
         given(handleContext.configuration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -220,7 +212,6 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.nfts.maxAllowedMints", 1)
                 .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
         given(handleContext.configuration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.handle(handleContext))

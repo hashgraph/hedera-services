@@ -23,6 +23,7 @@ import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -33,13 +34,15 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.file.SystemUndeleteTransactionBody;
+import com.hedera.hapi.node.file.FileDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
+import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -48,17 +51,16 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.time.Instant;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class FileSystemUndeleteHandlerTest extends FileHandlerTestBase {
+class FileDeleteTest extends FileTestBase {
 
     @Mock
     private ReadableAccountStore accountStore;
@@ -66,29 +68,25 @@ class FileSystemUndeleteHandlerTest extends FileHandlerTestBase {
     @Mock
     private ReadableFileStoreImpl mockStore;
 
-    @Mock
-    private FileSystemUndeleteHandler subject;
-
-    @Mock(strictness = LENIENT)
+    @Mock(strictness = Strictness.LENIENT)
     private HandleContext handleContext;
+
+    @Mock
+    private FileDeleteHandler subject;
 
     @Mock(strictness = LENIENT)
     private PreHandleContext preHandleContext;
 
-    @Mock
-    private Instant instant;
-
     @BeforeEach
     void setUp() {
         mockStore = mock(ReadableFileStoreImpl.class);
-        subject = new FileSystemUndeleteHandler();
+        subject = new FileDeleteHandler();
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
         final var configuration = HederaTestConfigBuilder.createConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(configuration);
-        lenient().when(handleContext.configuration()).thenReturn(configuration);
     }
 
     @Test
@@ -97,7 +95,7 @@ class FileSystemUndeleteHandlerTest extends FileHandlerTestBase {
         // given:
         mockPayerLookup();
         given(mockStore.getFileMetadata(notNull())).willReturn(null);
-        final var context = new FakePreHandleContext(accountStore, newSystemDeleteTxn());
+        final var context = new FakePreHandleContext(accountStore, newDeleteTxn());
         context.registerStore(ReadableFileStoreImpl.class, mockStore);
 
         // when:
@@ -110,7 +108,7 @@ class FileSystemUndeleteHandlerTest extends FileHandlerTestBase {
         // given:
         mockPayerLookup();
         mockFileLookup(null, mockStore);
-        lenient().when(preHandleContext.body()).thenReturn(newSystemDeleteTxn());
+        lenient().when(preHandleContext.body()).thenReturn(newDeleteTxn());
         lenient()
                 .when(preHandleContext.createStore(ReadableFileStoreImpl.class))
                 .thenReturn(mockStore);
@@ -122,107 +120,71 @@ class FileSystemUndeleteHandlerTest extends FileHandlerTestBase {
     @Test
     @DisplayName("Fails handle if file doesn't exist")
     void fileDoesntExist() {
-        given(handleContext.body()).willReturn(newSystemDeleteTxn());
+        final var txn = newDeleteTxn().fileDeleteOrThrow();
 
         writableFileState = emptyWritableFileState();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(INVALID_FILE_ID, msg.getStatus());
-    }
-
-    @Test
-    @DisplayName("Fails handle if the file is not a system file")
-    void fileIsNotSystemFile() {
-        given(handleContext.body()).willReturn(newFileDeleteTxn());
-
-        final var existingFile = writableStore.get(fileId.fileNum());
-        assertTrue(existingFile.isPresent());
-        assertFalse(existingFile.get().deleted());
+        given(handleContext.body())
+                .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
-
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_FILE_ID, msg.getStatus());
     }
 
     @Test
-    @DisplayName("Fails handle if keys doesn't exist on file system to be deleted")
+    @DisplayName("Fails handle if keys doesn't exist on file to be deleted")
     void keysDoesntExist() {
-        given(handleContext.body()).willReturn(newSystemDeleteTxn());
-        fileSystem = new File(fileSystemfileId.fileNum(), expirationTime, null, Bytes.wrap(contents), memo, false);
+        final var txn = newDeleteTxn().fileDeleteOrThrow();
+
+        file = new File(fileId.fileNum(), expirationTime, null, Bytes.wrap(contents), memo, false);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
+        given(handleContext.body())
+                .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
 
-        assertEquals(UNAUTHORIZED, msg.getStatus());
+        assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
     }
 
     @Test
-    @DisplayName("Handle works as expected and file system deleted when time is expired(less than epoch second)")
-    void handleWorksAsExpectedWhenExpirationTimeIsExpired() {
-        given(handleContext.body()).willReturn(newSystemDeleteTxn());
+    @DisplayName("Handle works as expected")
+    void handleWorksAsExpected() {
+        final var txn = newDeleteTxn().fileDeleteOrThrow();
 
-        final var existingFile = writableStore.get(fileSystemfileId.fileNum());
+        final var existingFile = writableStore.get(fileId.fileNum());
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
 
-        lenient().when(handleContext.consensusNow()).thenReturn(instant);
-        lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() + 100);
+        given(handleContext.body())
+                .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
+        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         subject.handle(handleContext);
 
-        final var changedFile = writableStore.get(fileSystemfileId.fileNum());
-
-        assertEquals(changedFile, Optional.empty());
-    }
-
-    @Test
-    @DisplayName("Handle works as expected and the system file marked as undeleted")
-    void handleWorksAsExpectedWhenExpirationTimeIsNotExpired() {
-        given(handleContext.body()).willReturn(newSystemDeleteTxn());
-
-        final var existingFile = writableStore.get(fileSystemfileId.fileNum());
-        assertTrue(existingFile.isPresent());
-        assertFalse(existingFile.get().deleted());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
-
-        lenient().when(handleContext.consensusNow()).thenReturn(instant);
-        lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() - 100);
-        subject.handle(handleContext);
-
-        final var changedFile = writableStore.get(fileSystemfileId.fileNum());
+        final var changedFile = writableStore.get(fileId.fileNum());
 
         assertTrue(changedFile.isPresent());
-        assertFalse(changedFile.get().deleted());
+        assertTrue(changedFile.get().deleted());
+        assertNull(changedFile.get().contents());
     }
 
     private Key mockPayerLookup() throws PreCheckException {
         return FileTestUtils.mockPayerLookup(A_COMPLEX_KEY, payerId, accountStore);
     }
 
-    private TransactionBody newSystemDeleteTxn() {
+    private TransactionBody newDeleteTxn() {
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
-        final var deleteFileSystemBuilder =
-                SystemUndeleteTransactionBody.newBuilder().fileID(WELL_KNOWN_SYSTEM_FILE_ID);
+        final var deleteFileBuilder = FileDeleteTransactionBody.newBuilder().fileID(WELL_KNOWN_FILE_ID);
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
-                .systemUndelete(deleteFileSystemBuilder.build())
-                .build();
-    }
-
-    private TransactionBody newFileDeleteTxn() {
-        final var txnId = TransactionID.newBuilder().accountID(payerId).build();
-        final var deleteFileSystemBuilder =
-                SystemUndeleteTransactionBody.newBuilder().fileID(WELL_KNOWN_FILE_ID);
-        return TransactionBody.newBuilder()
-                .transactionID(txnId)
-                .systemUndelete(deleteFileSystemBuilder.build())
+                .fileDelete(deleteFileBuilder.build())
                 .build();
     }
 }

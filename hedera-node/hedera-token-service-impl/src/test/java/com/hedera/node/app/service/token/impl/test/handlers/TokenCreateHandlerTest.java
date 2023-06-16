@@ -127,11 +127,11 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         super.setUp();
         refreshWritableStores();
         recordBuilder = new SingleTransactionRecordBuilder(consensusInstant);
-        tokenFieldsValidator = new TokenAttributesValidator(configProvider);
+        tokenFieldsValidator = new TokenAttributesValidator();
         customFeesValidator = new CustomFeesValidator();
         tokenCreateValidator = new TokenCreateValidator(tokenFieldsValidator);
         subject = new TokenCreateHandler(customFeesValidator, tokenCreateValidator);
-        givenStoresAndConfig(configProvider, handleContext);
+        givenStoresAndConfig(handleContext);
     }
 
     @Test

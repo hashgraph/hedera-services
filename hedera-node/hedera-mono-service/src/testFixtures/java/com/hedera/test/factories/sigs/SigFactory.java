@@ -21,6 +21,7 @@ import static com.hedera.node.app.hapi.utils.SignatureGenerator.signBytes;
 import static com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils.keccak256DigestOf;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.SignatureGenerator;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
@@ -63,7 +64,8 @@ public class SigFactory {
     }
 
     public Transaction signWithSigMap(
-            final Transaction.Builder txn, final List<KeyTree> signers, final KeyFactory factory) throws Throwable {
+            final Transaction.Builder txn, final List<KeyTree> signers, final KeyFactory factory)
+            throws SignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidProtocolBufferException {
         final SimpleSigning signing = new SimpleSigning(extractTransactionBodyBytes(txn), signers, factory);
         final List<Map.Entry<byte[], byte[]>> sigs = signing.completed();
         txn.setSigMap(sigMapGen.generate(sigs, signing.sigTypes()));
@@ -95,14 +97,16 @@ public class SigFactory {
             };
         }
 
-        public List<Map.Entry<byte[], byte[]>> completed() throws Throwable {
+        public List<Map.Entry<byte[], byte[]>> completed()
+                throws SignatureException, NoSuchAlgorithmException, InvalidKeyException {
             for (final KeyTree signer : signers) {
                 signRecursively(signer.getRoot());
             }
             return keySigs;
         }
 
-        private void signRecursively(final KeyTreeNode node) throws Throwable {
+        private void signRecursively(final KeyTreeNode node)
+                throws SignatureException, NoSuchAlgorithmException, InvalidKeyException {
             if (node instanceof KeyTreeLeaf) {
                 if (((KeyTreeLeaf) node).isUsedToSign()) {
                     signIfNecessary(node.asKey(factory));
@@ -114,7 +118,8 @@ public class SigFactory {
             }
         }
 
-        private void signIfNecessary(final Key key) throws Throwable {
+        private void signIfNecessary(final Key key)
+                throws SignatureException, NoSuchAlgorithmException, InvalidKeyException {
             final String pubKeyHex = KeyFactory.asPubKeyHex(key);
             if (!used.contains(pubKeyHex)) {
                 signFor(pubKeyHex, key);
@@ -122,7 +127,8 @@ public class SigFactory {
             }
         }
 
-        private void signFor(final String pubKeyHex, final Key key) throws Throwable {
+        private void signFor(final String pubKeyHex, final Key key)
+                throws SignatureException, NoSuchAlgorithmException, InvalidKeyException {
             final SignatureType sigType = sigTypeOf(key);
             if (sigType == SignatureType.ED25519) {
                 final PrivateKey signer = factory.lookupPrivateKey(pubKeyHex);
