@@ -623,14 +623,18 @@ public class SwirldsPlatform implements Platform, Startable {
                     swirldStateManager.getTransactionPool(),
                     event -> abortAndThrowIfInterrupted(intakeQueue::put, event, "intakeQueue.put() interrupted"));
 
-            eventObserverDispatcher.addObserver((PreConsensusEventObserver) event -> {
-                if (USE_TIPSET_ALGORITHM) {
-                    abortAndThrowIfInterrupted(
-                            tipsetEventCreator::registerEvent,
-                            event,
-                            "Interrupted while attempting to register event with tipset event creator");
-                }
-            });
+            if (USE_TIPSET_ALGORITHM) {
+                eventObserverDispatcher.addObserver((PreConsensusEventObserver) event -> abortAndThrowIfInterrupted(
+                        tipsetEventCreator::registerEvent,
+                        event,
+                        "Interrupted while attempting to register event with tipset event creator"));
+
+                eventObserverDispatcher.addObserver((ConsensusRoundObserver) round -> abortAndThrowIfInterrupted(
+                        tipsetEventCreator::setMinimumGenerationNonAncient,
+                        round.getGenerations().getMinGenerationNonAncient(),
+                        "Interrupted while attempting to register minimum generation "
+                                + "non-ancient with tipset event creator"));
+            }
 
             transactionSubmitter = new SwirldTransactionSubmitter(
                     currentPlatformStatus::get,
@@ -1156,6 +1160,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
     /**
      * Change the current platform status.
+     *
      * @param newStatus the new platform status
      */
     private void setPlatformStatus(@NonNull final PlatformStatus newStatus) {

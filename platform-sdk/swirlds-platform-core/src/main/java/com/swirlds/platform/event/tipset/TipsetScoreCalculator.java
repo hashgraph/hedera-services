@@ -150,7 +150,7 @@ public class TipsetScoreCalculator {
 
         final Tipset eventTipset = tipsetBuilder.getTipset(event);
         if (eventTipset == null) {
-            throw new IllegalArgumentException("event is not in the tipset tracker");
+            throw new IllegalArgumentException("event " + event + " is not in the tipset tracker");
         }
 
         final long score = snapshot.getWeightedAdvancementCount(selfId, eventTipset);
