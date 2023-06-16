@@ -52,8 +52,6 @@ import java.time.Duration;
  * 		number of connections maintained by each member (syncs happen on random connections from that set
  * @param bufferSize
  * 		for BufferedInputStream and BufferedOutputStream for syncing
- * @param halfLife
- * 		half life of some of the various statistics (give half the weight to the last halfLife seconds)
  * @param logStack
  * 		when converting an exception to a string for logging, should it include the stack trace?
  * @param doUpnp
@@ -195,7 +193,6 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "104857600") int throttle7maxBytes,
         @ConfigProperty(defaultValue = "40") int numConnections,
         @ConfigProperty(defaultValue = "8192") int bufferSize,
-        @ConfigProperty(defaultValue = "10") double halfLife,
         @ConfigProperty(defaultValue = "true") boolean logStack,
         @ConfigProperty(defaultValue = "true") boolean doUpnp,
         @ConfigProperty(defaultValue = "true") boolean useLoopbackIp,

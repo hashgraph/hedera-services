@@ -32,7 +32,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.app,
             com.hedera.node.app.service.consensus.impl.test,
-            com.hedera.node.app.service.schedule.impl;
+            com.hedera.node.app.service.schedule.impl,
+            com.hedera.node.app.service.file.impl;
     exports com.hedera.node.app.service.mono.utils to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app.service.schedule.impl,
@@ -87,7 +88,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.files to
             com.hedera.node.app.service.mono.test.fixtures,
-            com.hedera.node.app;
+            com.hedera.node.app,
+            com.hedera.node.app.service.file.impl;
     exports com.hedera.node.app.service.mono.state.virtual.schedule to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app.service.schedule.impl,
@@ -288,7 +290,6 @@ module com.hedera.node.app.service.mono {
     requires transitive tuweni.bytes;
     requires transitive tuweni.units;
     requires com.fasterxml.jackson.core;
-    requires com.github.spotbugs.annotations;
     requires com.swirlds.base;
     requires com.swirlds.logging;
     requires com.swirlds.platform;
@@ -300,4 +301,5 @@ module com.hedera.node.app.service.mono {
     requires org.bouncycastle.provider;
     requires org.eclipse.collections.impl;
     requires org.slf4j;
+    requires static com.github.spotbugs.annotations;
 }

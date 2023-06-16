@@ -6,5 +6,5 @@ module com.hedera.node.app.service.network.admin {
 
     requires transitive com.hedera.node.app.spi;
     requires transitive com.swirlds.common;
-    requires com.github.spotbugs.annotations;
+    requires static com.github.spotbugs.annotations;
 }

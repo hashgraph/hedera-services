@@ -18,7 +18,6 @@ package com.swirlds.common.threading.framework.config;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.time.OSTime;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -31,8 +30,8 @@ public class QueueThreadMetricsConfiguration {
     /** The category to use for metrics */
     private String category = Metrics.INTERNAL_CATEGORY;
     /** The time object to use for metrics */
-    private Time time = OSTime.getInstance();
-    /** If enabled, the max size metric will be applied to the queue.*/
+    private Time time = Time.getCurrent();
+    /** If enabled, the max size metric will be applied to the queue. */
     private boolean maxSizeMetricEnabled;
     /** If enabled, the min size metric will be applied to the queue.*/
     private boolean minSizeMetricEnabled;
