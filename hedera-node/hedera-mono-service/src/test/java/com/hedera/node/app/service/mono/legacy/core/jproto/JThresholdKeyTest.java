@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
+import java.security.InvalidKeyException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -60,12 +61,12 @@ class JThresholdKeyTest {
                 .build();
     }
 
-    private JKey jThresholdKey(final KeyList keyList, final int threshold) throws Exception {
+    private JKey jThresholdKey(final KeyList keyList, final int threshold) throws InvalidKeyException {
         return JKey.convertKey(thresholdKey(keyList, threshold), 1);
     }
 
     @Test
-    void JThresholdKeyWithVariousThresholdTest() throws Exception {
+    void JThresholdKeyWithVariousThresholdTest() throws InvalidKeyException {
         final Key validContractIDKey = Key.newBuilder()
                 .setContractID(ContractID.newBuilder().setContractNum(1L).build())
                 .build();
@@ -83,7 +84,7 @@ class JThresholdKeyTest {
     }
 
     @Test
-    void invalidJThresholdKeyTest() throws Exception {
+    void invalidJThresholdKeyTest() throws InvalidKeyException {
         final Key validED25519Key = Key.newBuilder()
                 .setEd25519(TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH))
                 .build();
