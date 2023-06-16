@@ -129,7 +129,7 @@ public class PlatformStatusStateMachine {
                         "Unknown action type: " + action.getClass().getName());
             }
         } catch (final IllegalPlatformStatusException e) {
-            logger.error(EXCEPTION.getMarker(), e.getMessage());
+            logger.error(EXCEPTION.getMarker(), e.getMessage(), e);
             return null;
         }
     }
@@ -151,15 +151,17 @@ public class PlatformStatusStateMachine {
             return;
         }
 
-        final String previousStatusName = currentStatusLogic.getStatus().name();
-        final String newStatusName = newLogic.getStatus().name();
+        if (logger.isInfoEnabled()) {
+            final String previousStatusName = currentStatusLogic.getStatus().name();
+            final String newStatusName = newLogic.getStatus().name();
 
-        final String statusChangeMessage = "Platform spent %s time in %s. Now in %s"
-                .formatted(Duration.between(currentStatusStartTime, time.now()), previousStatusName, newStatusName);
+            final String statusChangeMessage = "Platform spent %s time in %s. Now in %s"
+                    .formatted(Duration.between(currentStatusStartTime, time.now()), previousStatusName, newStatusName);
 
-        logger.info(
-                PLATFORM_STATUS.getMarker(),
-                () -> new PlatformStatusPayload(statusChangeMessage, previousStatusName, newStatusName).toString());
+            logger.info(
+                    PLATFORM_STATUS.getMarker(),
+                    () -> new PlatformStatusPayload(statusChangeMessage, previousStatusName, newStatusName).toString());
+        }
 
         notificationEngine.dispatch(
                 PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newLogic.getStatus()));
