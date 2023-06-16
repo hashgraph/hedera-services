@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.merkle.map.MerkleMap;
+import java.security.InvalidKeyException;
 import java.text.MessageFormat;
 import java.util.MissingResourceException;
 import java.util.Optional;
@@ -102,7 +103,7 @@ public class FeeCalcUtilsTest {
     }
 
     @Test
-    void returnsFileExpiryIfAvail() throws Exception {
+    void returnsFileExpiryIfAvail() throws InvalidKeyException {
         final var view = mock(StateView.class);
         final var fid = IdUtils.asFile("1.2.3");
         final var wacl = JKey.mapKey(Key.newBuilder()

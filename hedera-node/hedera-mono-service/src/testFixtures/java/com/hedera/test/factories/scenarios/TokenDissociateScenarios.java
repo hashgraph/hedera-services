@@ -16,16 +16,21 @@
 
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
-import static com.hedera.test.factories.txns.TokenDissociateFactory.newSignedTokenDissociate;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.test.factories.txns.SignedTxnFactory;
+import com.hedera.test.factories.txns.TokenDissociateFactory;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public enum TokenDissociateScenarios implements TxnHandlingScenario {
     TOKEN_DISSOCIATE_WITH_KNOWN_TARGET {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenDissociate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenDissociateFactory.newSignedTokenDissociate()
                     .targeting(MISC_ACCOUNT)
                     .dissociating(KNOWN_TOKEN_WITH_KYC)
                     .dissociating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
@@ -35,9 +40,11 @@ public enum TokenDissociateScenarios implements TxnHandlingScenario {
     },
     TOKEN_DISSOCIATE_WITH_SELF_PAID_KNOWN_TARGET {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenDissociate()
-                    .targeting(DEFAULT_PAYER)
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenDissociateFactory.newSignedTokenDissociate()
+                    .targeting(SignedTxnFactory.DEFAULT_PAYER)
                     .dissociating(KNOWN_TOKEN_WITH_KYC)
                     .dissociating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
                     .get());
@@ -45,8 +52,10 @@ public enum TokenDissociateScenarios implements TxnHandlingScenario {
     },
     TOKEN_DISSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenDissociate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenDissociateFactory.newSignedTokenDissociate()
                     .targeting(CUSTOM_PAYER_ACCOUNT)
                     .dissociating(KNOWN_TOKEN_WITH_KYC)
                     .dissociating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
@@ -55,8 +64,10 @@ public enum TokenDissociateScenarios implements TxnHandlingScenario {
     },
     TOKEN_DISSOCIATE_WITH_MISSING_TARGET {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenDissociate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenDissociateFactory.newSignedTokenDissociate()
                     .targeting(MISSING_ACCOUNT)
                     .dissociating(KNOWN_TOKEN_WITH_KYC)
                     .dissociating(KNOWN_TOKEN_NO_SPECIAL_KEYS)

@@ -27,13 +27,13 @@ import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum CryptoCreateScenarios implements TxnHandlingScenario {
     CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn() throws Exception {
             return PlatformTxnAccessor.from(
                     newSignedCryptoCreate().receiverSigRequired(false).get());
         }
     },
     CRYPTO_CREATE_RECEIVER_SIG_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn() throws Exception {
             return PlatformTxnAccessor.from(newSignedCryptoCreate()
                     .receiverSigRequired(true)
                     .nonPayerKts(DEFAULT_ACCOUNT_KT)
@@ -41,7 +41,7 @@ public enum CryptoCreateScenarios implements TxnHandlingScenario {
         }
     },
     CRYPTO_CREATE_RECEIVER_SIG_ED_ADMIN_KEY_EVM_ADDRESS_ALIAS_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn() throws Exception {
             return PlatformTxnAccessor.from(newSignedCryptoCreate()
                     .receiverSigRequired(true)
                     .alias(ByteStringUtils.wrapUnsafely(recoverAddressFromPubKey(
@@ -51,7 +51,7 @@ public enum CryptoCreateScenarios implements TxnHandlingScenario {
         }
     },
     CRYPTO_CREATE_NO_RECEIVER_SIG_ED_ADMIN_KEY_EVM_ADDRESS_ALIAS_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn() throws Exception {
             return PlatformTxnAccessor.from(newSignedCryptoCreate()
                     .receiverSigRequired(false)
                     .alias(ByteStringUtils.wrapUnsafely(recoverAddressFromPubKey(
@@ -61,7 +61,7 @@ public enum CryptoCreateScenarios implements TxnHandlingScenario {
         }
     },
     CRYPTO_CREATE_RECEIVER_SIG_ECDSA_ADMIN_KEY_DIFFERENT_EVM_ADDRESS_ALIAS_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn() throws Exception {
             return PlatformTxnAccessor.from(newSignedCryptoCreate()
                     .receiverSigRequired(true)
                     .accountKt(ECDSA_KT)
@@ -72,7 +72,7 @@ public enum CryptoCreateScenarios implements TxnHandlingScenario {
         }
     },
     CRYPTO_CREATE_NO_RECEIVER_SIG_ECDSA_ADMIN_KEY_DIFFERENT_EVM_ADDRESS_ALIAS_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn() throws Exception {
             return PlatformTxnAccessor.from(newSignedCryptoCreate()
                     .receiverSigRequired(false)
                     .accountKt(ECDSA_KT)
@@ -83,7 +83,7 @@ public enum CryptoCreateScenarios implements TxnHandlingScenario {
         }
     },
     CRYPTO_CREATE_RECEIVER_SIG_ECDSA_ADMIN_KEY_EVM_ADDRESS_ALIAS_FROM_SAME_KEY_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn() throws Exception {
             return PlatformTxnAccessor.from(newSignedCryptoCreate()
                     .receiverSigRequired(true)
                     .accountKt(ECDSA_KT)
@@ -94,7 +94,7 @@ public enum CryptoCreateScenarios implements TxnHandlingScenario {
         }
     },
     CRYPTO_CREATE_NO_RECEIVER_SIG_ECDSA_ADMIN_KEY_EVM_ADDRESS_ALIAS_FROM_SAME_KEY_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn() throws Exception {
             return PlatformTxnAccessor.from(newSignedCryptoCreate()
                     .receiverSigRequired(false)
                     .accountKt(ECDSA_KT)
@@ -105,7 +105,7 @@ public enum CryptoCreateScenarios implements TxnHandlingScenario {
         }
     },
     CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn() throws Exception {
             return PlatformTxnAccessor.from(newSignedCryptoCreate()
                     .payer(COMPLEX_KEY_ACCOUNT_ID)
                     .payerKt(COMPLEX_KEY_ACCOUNT_KT)
