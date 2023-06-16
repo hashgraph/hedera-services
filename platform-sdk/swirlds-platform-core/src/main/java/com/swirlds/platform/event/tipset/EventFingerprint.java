@@ -20,21 +20,17 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Uniquely identifies an event and stores basic metadata bout it.
  *
- * @param creator
- * 		the ID of the node that created this event  TODO use node ID
- * @param generation
- * 		the generation of the event
- * @param hash
- * 		the hash of the event, expected to be unique for all events
+ * @param creator    the ID of the node that created this event  TODO use node ID
+ * @param generation the generation of the event
+ * @param hash       the hash of the event, expected to be unique for all events
  */
-public record EventFingerprint(long creator, long generation, @NonNull Hash hash, @NonNull Instant creationTime) {
+public record EventFingerprint(long creator, long generation, @NonNull Hash hash) {
 
     // TODO test
     // TODO sort out EventImpl vs GossipEvent
@@ -47,12 +43,12 @@ public record EventFingerprint(long creator, long generation, @NonNull Hash hash
      */
     @NonNull
     public static EventFingerprint of(@NonNull final EventImpl event) {
-        return new EventFingerprint(
-                event.getCreatorId().id(), event.getGeneration(), event.getBaseHash(), event.getTimeCreated());
+        return new EventFingerprint(event.getCreatorId().id(), event.getGeneration(), event.getBaseHash());
     }
 
     /**
      * Get the fingerprint of an event.
+     *
      * @param event the event
      * @return the fingerprint
      */
@@ -61,8 +57,7 @@ public record EventFingerprint(long creator, long generation, @NonNull Hash hash
         return new EventFingerprint(
                 event.getHashedData().getCreatorId().id(),
                 event.getGeneration(),
-                event.getHashedData().getHash(),
-                event.getHashedData().getTimeCreated());
+                event.getHashedData().getHash());
     }
 
     /**
@@ -91,16 +86,14 @@ public record EventFingerprint(long creator, long generation, @NonNull Hash hash
             final EventFingerprint selfParentFingerprint = new EventFingerprint(
                     event.getHashedData().getCreatorId().id(),
                     event.getHashedData().getSelfParentGen(),
-                    event.getHashedData().getSelfParentHash(),
-                    Instant.EPOCH); // TODO how to figure out the correct time?
+                    event.getHashedData().getSelfParentHash());
             parentFingerprints.add(selfParentFingerprint);
         }
         if (event.getHashedData().getOtherParentHash() != null) {
             final EventFingerprint otherParentFingerprint = new EventFingerprint(
                     event.getUnhashedData().getOtherId().id(), // TODO why is this unhashed?!
                     event.getHashedData().getOtherParentGen(),
-                    event.getHashedData().getOtherParentHash(),
-                    Instant.EPOCH); // TODO how to figure out the correct time?
+                    event.getHashedData().getOtherParentHash());
             parentFingerprints.add(otherParentFingerprint);
         }
 
