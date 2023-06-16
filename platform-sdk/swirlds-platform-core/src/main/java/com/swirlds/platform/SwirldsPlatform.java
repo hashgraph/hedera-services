@@ -22,6 +22,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.event.tipset.TipsetEventCreator.USE_TIPSET_ALGORITHM;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
@@ -102,6 +103,7 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
+import com.swirlds.platform.event.tipset.TipsetEventCreationManager;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
 import com.swirlds.platform.event.validation.EventValidator;
@@ -152,6 +154,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -283,6 +286,12 @@ public class SwirldsPlatform implements Platform, Startable {
      * Allows files to be deleted, and potentially recovered later for debugging.
      */
     private final RecycleBin recycleBin;
+
+    // TODO should this be a more generic API?
+    /**
+     * Creates new events using the tipset algorithm.
+     */
+    private final TipsetEventCreationManager tipsetEventCreator;
 
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
@@ -644,6 +653,20 @@ public class SwirldsPlatform implements Platform, Startable {
                         getAddressBook()));
             }
         }
+
+        // TODO should we instantiate if we are not using this algorithm?
+        tipsetEventCreator = new TipsetEventCreationManager(
+                platformContext,
+                threadManager,
+                platformContext.getCryptography(),
+                time,
+                new Random() /* does not need to be cryptographically secure */,
+                this,
+                initialAddressBook,
+                selfId.id(), // TODO nodeId
+                appVersion,
+                swirldStateManager.getTransactionPool(),
+                event -> abortAndThrowIfInterrupted(intakeQueue::put, event, "intakeQueue.put() interrupted"));
 
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
@@ -1034,6 +1057,9 @@ public class SwirldsPlatform implements Platform, Startable {
         replayPreconsensusEvents();
         configureStartupEventFreeze();
         gossip.start();
+        if (USE_TIPSET_ALGORITHM) {
+            tipsetEventCreator.start();
+        }
 
         // in case of a single node network, the platform status update will not be triggered by connections, so it
         // needs to be triggered now

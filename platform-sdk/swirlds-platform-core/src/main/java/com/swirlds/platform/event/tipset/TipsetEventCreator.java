@@ -312,11 +312,11 @@ public class TipsetEventCreator { // TODO test
         }
 
         // TODO use node ID
-        final long otherParentId;
+        final NodeId otherParentId;
         if (selfParent == null) {
-            otherParentId = CREATOR_ID_UNDEFINED.id();
+            otherParentId = CREATOR_ID_UNDEFINED;
         } else {
-            otherParentId = selfParent.creator();
+            otherParentId = new NodeId(selfParent.creator()); // TODO node ID
         }
 
         final long otherParentGeneration;
@@ -349,8 +349,7 @@ public class TipsetEventCreator { // TODO test
         cryptography.digestSync(hashedData);
 
         final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(
-                new NodeId(otherParentId),
-                signer.sign(hashedData.getHash().getValue()).getSignatureBytes()); // TODO
+                otherParentId, signer.sign(hashedData.getHash().getValue()).getSignatureBytes());
 
         final GossipEvent event = new GossipEvent(hashedData, unhashedData);
         event.buildDescriptor(); // TODO ugh
