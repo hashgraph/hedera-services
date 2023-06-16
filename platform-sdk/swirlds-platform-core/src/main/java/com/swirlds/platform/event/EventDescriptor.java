@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gossip.chatter.protocol.messages;
+package com.swirlds.platform.event;
 
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
@@ -29,9 +30,9 @@ import java.util.Objects;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
- * A stripped down description of a chatter event.
+ * A stripped down description an event. Stores hash, generation, and creator ID.
  */
-public class ChatterEventDescriptor implements EventDescriptor {
+public class EventDescriptor implements SelfSerializable {
 
     public static final long CLASS_ID = 0x825e17f25c6e2566L;
 
@@ -50,7 +51,10 @@ public class ChatterEventDescriptor implements EventDescriptor {
 
     private int hashCode;
 
-    public ChatterEventDescriptor() {}
+    /**
+     * Zero arg constructor, required for deserialization. Do not use manually.
+     */
+    public EventDescriptor() {}
 
     /**
      * Create a new gossip event descriptor.
@@ -59,7 +63,7 @@ public class ChatterEventDescriptor implements EventDescriptor {
      * @param creator    the creator of the event
      * @param generation the age of an event, smaller is older
      */
-    public ChatterEventDescriptor(@NonNull final Hash hash, @NonNull final NodeId creator, final long generation) {
+    public EventDescriptor(@NonNull final Hash hash, @NonNull final NodeId creator, final long generation) {
         this.hash = Objects.requireNonNull(hash, "hash must not be null");
         this.creator = Objects.requireNonNull(creator, "creator must not be null");
         this.generation = generation;
@@ -68,11 +72,54 @@ public class ChatterEventDescriptor implements EventDescriptor {
     }
 
     /**
+     * Get the hash of the event.
+     *
+     * @return the event's hash
+     */
+    @NonNull
+    public Hash getHash() {
+        if (hash == null) {
+            throw new IllegalStateException("EventDescriptor improperly initialized");
+        }
+        return hash;
+    }
+
+    /**
+     * Get the node ID of the event's creator.
+     *
+     * @return a node ID
+     */
+    @NonNull
+    public NodeId getCreator() {
+        if (hash == null) {
+            throw new IllegalStateException("EventDescriptor improperly initialized");
+        }
+        return creator;
+    }
+
+    /**
+     * Get the generation of the event.
+     *
+     * @return the generation of the event
+     */
+    public long getGeneration() {
+        return generation;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     public long getClassId() {
         return CLASS_ID;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getVersion() {
+        return ClassVersion.SELF_SERIALIZABLE_NODE_ID;
     }
 
     /**
@@ -105,45 +152,6 @@ public class ChatterEventDescriptor implements EventDescriptor {
      * {@inheritDoc}
      */
     @Override
-    public int getVersion() {
-        return ClassVersion.SELF_SERIALIZABLE_NODE_ID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getMinimumSupportedVersion() {
-        return ClassVersion.ORIGINAL;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public Hash getHash() {
-        return hash;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public NodeId getCreator() {
-        return creator;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public long getGeneration() {
-        return generation;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public boolean equals(final Object o) {
         if (this == o) {
             return true;
@@ -152,7 +160,7 @@ public class ChatterEventDescriptor implements EventDescriptor {
             return false;
         }
 
-        final ChatterEventDescriptor that = (ChatterEventDescriptor) o;
+        final EventDescriptor that = (EventDescriptor) o;
 
         if (this.hashCode != that.hashCode) {
             return false;

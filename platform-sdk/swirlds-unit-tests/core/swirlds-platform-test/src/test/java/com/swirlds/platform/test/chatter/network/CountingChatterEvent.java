@@ -19,7 +19,7 @@ package com.swirlds.platform.test.chatter.network;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
+import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent;
 import java.io.IOException;
 import java.time.Instant;

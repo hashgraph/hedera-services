@@ -23,8 +23,6 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
-import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
@@ -37,7 +35,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     private static final long ROUND_CREATED_UNDEFINED = -1;
     private BaseEventHashedData hashedData;
     private BaseEventUnhashedData unhashedData;
-    private ChatterEventDescriptor descriptor;
+    private EventDescriptor descriptor;
     private Instant timeReceived;
     private long roundCreated = ROUND_CREATED_UNDEFINED;
 
@@ -105,7 +103,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
      */
     public void buildDescriptor() {
         this.descriptor =
-                new ChatterEventDescriptor(hashedData.getHash(), hashedData.getCreatorId(), hashedData.getGeneration());
+                new EventDescriptor(hashedData.getHash(), hashedData.getCreatorId(), hashedData.getGeneration());
     }
 
     /**
