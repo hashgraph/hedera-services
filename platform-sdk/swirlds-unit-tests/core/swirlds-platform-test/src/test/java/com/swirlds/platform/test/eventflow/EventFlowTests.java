@@ -575,7 +575,6 @@ class EventFlowTests {
         when(settingsProvider.getTransactionMaxBytes()).thenReturn(TX_MAX_BYTES);
         when(settingsProvider.getDelayShuffle()).thenReturn(SHUFFLE_DELAY_MS);
         when(settingsProvider.getThrottleTransactionQueueSize()).thenReturn(THROTTLE_TRANSACTION_QUEUE_SIZE);
-        when(settingsProvider.getMaxEventQueueForCons()).thenReturn(500);
         when(settingsProvider.getMaxTransactionBytesPerEvent()).thenReturn(2048);
 
         final ConsensusHandlingMetrics consStats = mock(ConsensusHandlingMetrics.class);
@@ -637,7 +636,6 @@ class EventFlowTests {
                 platformContext,
                 getStaticThreadManager(),
                 selfId,
-                settingsProvider,
                 swirldStateManager,
                 consStats,
                 eventStreamManager,
@@ -655,6 +653,7 @@ class EventFlowTests {
     private Configuration prepareConfig(int signedStateFreq) {
         return new TestConfigBuilder()
                 .withValue("state.signedStateFreq", signedStateFreq)
+                .withValue("event.maxEventQueueForCons", 500)
                 .getOrCreateConfig();
     }
 

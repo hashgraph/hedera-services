@@ -22,6 +22,7 @@ import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAc
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -30,7 +31,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
@@ -171,7 +171,7 @@ public class SignedState implements SignedStateInfo {
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
         if (stateConfig.stateHistoryEnabled()) {
-            history = new SignedStateHistory(OSTime.getInstance(), getRound(), stateConfig.debugStackTracesEnabled());
+            history = new SignedStateHistory(Time.getCurrent(), getRound(), stateConfig.debugStackTracesEnabled());
             history.recordAction(CREATION, getReservationCount(), reason, null);
         } else {
             history = null;

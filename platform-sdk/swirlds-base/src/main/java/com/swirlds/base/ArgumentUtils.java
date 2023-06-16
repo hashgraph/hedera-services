@@ -40,8 +40,10 @@ public final class ArgumentUtils {
      *
      * @param argument     the argument to check
      * @param argumentName the name of the argument
+     * @deprecated use {@link Objects#requireNonNull(Object, String)} instead
      */
     @NonNull
+    @Deprecated(forRemoval = true)
     public static <T> T throwArgNull(@Nullable final T argument, @NonNull final String argumentName)
             throws NullPointerException {
         if (argument == null) {
@@ -52,7 +54,7 @@ public final class ArgumentUtils {
 
     /**
      * Throw an {@link IllegalArgumentException} if the supplied {@code String} is blank. Throw an
-     * {@link NullPointerException} if the supplied {@code String} is null (see {@link #throwArgNull(Object, String)}).
+     * {@link NullPointerException} if the supplied {@code String} is {@code null}.
      *
      * @param argument     the argument checked
      * @param argumentName the name of the argument

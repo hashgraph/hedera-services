@@ -36,6 +36,7 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
@@ -55,6 +56,7 @@ public class TokenUpdateValidator {
         final var tokenStore = context.readableStore(ReadableTokenStore.class);
         final var tokenId = op.tokenOrThrow();
         final var token = getIfUsable(tokenId, tokenStore);
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         // If the token has an empty admin key it can't be updated
         if (isEmpty(token.adminKey())) {
             validateTrue(!BaseTokenHandler.isExpiryOnlyUpdateOp(op), TOKEN_IS_IMMUTABLE);
@@ -65,11 +67,11 @@ public class TokenUpdateValidator {
         }
         // validate token symbol, if being changed
         if (!op.symbol().isEmpty()) {
-            validator.validateTokenSymbol(op.symbol());
+            validator.validateTokenSymbol(op.symbol(), tokensConfig);
         }
         // validate token name, if being changed
         if (!op.name().isEmpty()) {
-            validator.validateTokenName(op.name());
+            validator.validateTokenName(op.name(), tokensConfig);
         }
         // validate token keys, if any being changed
         validator.validateTokenKeys(

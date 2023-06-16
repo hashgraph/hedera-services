@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.util.IdConvenienceUtils.fromTokenNum;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -143,7 +142,8 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
     private void validateSemantics(final HandleContext context) {
         requireNonNull(context);
         final var op = context.body().tokenMintOrThrow();
-        validator.validateMint(op.amount(), op.metadata());
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        validator.validateMint(op.amount(), op.metadata(), tokensConfig);
     }
 
     /**
@@ -173,7 +173,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         validateFalse(metadata.isEmpty(), INVALID_TOKEN_MINT_METADATA);
 
         // validate token number from treasury relation
-        final var tokenId = fromTokenNum(treasuryRel.tokenNumber());
+        final var tokenId = asToken(treasuryRel.tokenNumber());
         validateTrue(treasuryRel.tokenNumber() == token.tokenNumber(), FAIL_INVALID);
 
         // get the treasury account

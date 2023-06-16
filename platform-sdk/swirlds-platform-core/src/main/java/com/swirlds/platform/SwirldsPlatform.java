@@ -27,8 +27,10 @@ import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddr
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
 import com.swirlds.base.state.Startable;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -62,8 +64,6 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
@@ -315,7 +315,7 @@ public class SwirldsPlatform implements Platform, Startable {
             final boolean softwareUpgrade) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
-        final Time time = OSTime.getInstance();
+        final Time time = Time.getCurrent();
 
         final DispatchBuilder dispatchBuilder =
                 new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
@@ -408,7 +408,7 @@ public class SwirldsPlatform implements Platform, Startable {
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
 
-        final Settings settings = Settings.getInstance();
+        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
         final Address address = getSelfAddress();
         final String eventStreamManagerName;
@@ -425,10 +425,10 @@ public class SwirldsPlatform implements Platform, Startable {
                 getSelfId(),
                 this,
                 eventStreamManagerName,
-                settings.isEnableEventStreaming(),
-                settings.getEventsLogDir(),
-                settings.getEventsLogPeriod(),
-                settings.getEventStreamQueueCapacity(),
+                eventConfig.enableEventStreaming(),
+                eventConfig.eventsLogDir(),
+                eventConfig.eventsLogPeriod(),
+                eventConfig.eventStreamQueueCapacity(),
                 this::isLastEventBeforeRestart);
 
         if (loadedSignedState.isNotNull()) {
@@ -499,7 +499,6 @@ public class SwirldsPlatform implements Platform, Startable {
                     platformContext,
                     threadManager,
                     selfId,
-                    PlatformConstructor.settingsProvider(),
                     swirldStateManager,
                     new ConsensusHandlingMetrics(metrics, time),
                     eventStreamManager,
@@ -558,6 +557,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     shadowGraph);
 
             final EventCreator eventCreator = buildEventCreator(eventIntake);
+            final Settings settings = Settings.getInstance();
 
             final List<GossipEventValidator> validators = new ArrayList<>();
             // it is very important to discard ancient events, otherwise the deduplication will not work, since it
@@ -590,7 +590,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     // which the handler lambda sidesteps (since the lambda is not invoked
                     // until after all things have been constructed).
                     .setHandler(e -> getGossip().getEventIntakeLambda().accept(e))
-                    .setCapacity(settings.getEventIntakeQueueSize())
+                    .setCapacity(eventConfig.eventIntakeQueueSize())
                     .setLogAfterPauseDuration(platformContext
                             .getConfiguration()
                             .getConfigData(ThreadConfig.class)
@@ -995,7 +995,7 @@ public class SwirldsPlatform implements Platform, Startable {
     @NonNull
     private PreconsensusEventFileManager buildPreconsensusEventFileManager() {
         try {
-            return new PreconsensusEventFileManager(platformContext, OSTime.getInstance(), recycleBin, selfId);
+            return new PreconsensusEventFileManager(platformContext, Time.getCurrent(), recycleBin, selfId);
         } catch (final IOException e) {
             throw new UncheckedIOException("unable load preconsensus files", e);
         }
@@ -1069,7 +1069,7 @@ public class SwirldsPlatform implements Platform, Startable {
             PreconsensusEventReplayWorkflow.replayPreconsensusEvents(
                     platformContext,
                     threadManager,
-                    OSTime.getInstance(),
+                    Time.getCurrent(),
                     preconsensusEventFileManager,
                     preconsensusEventWriter,
                     eventTaskDispatcher,

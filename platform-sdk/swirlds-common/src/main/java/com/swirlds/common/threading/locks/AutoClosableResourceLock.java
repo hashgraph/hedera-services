@@ -18,6 +18,7 @@ package com.swirlds.common.threading.locks;
 
 import com.swirlds.common.threading.locks.locked.LockedResource;
 import com.swirlds.common.threading.locks.locked.MaybeLockedResource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -32,23 +33,27 @@ public interface AutoClosableResourceLock<T> extends AutoClosableLock {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     LockedResource<T> lock();
 
     /**
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     LockedResource<T> lockInterruptibly() throws InterruptedException;
 
     /**
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     MaybeLockedResource<T> tryLock();
 
     /**
      * {@inheritDoc}
      */
     @Override
-    MaybeLockedResource<T> tryLock(final long time, final TimeUnit unit) throws InterruptedException;
+    @NonNull
+    MaybeLockedResource<T> tryLock(final long time, @NonNull final TimeUnit unit) throws InterruptedException;
 }
