@@ -31,13 +31,11 @@ import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.*;
-
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.commons.lang3.StringUtils;
 
 public class HapiSpecSetup {
@@ -186,8 +184,8 @@ public class HapiSpecSetup {
         return commaDelimited.isBlank()
                 ? Collections.emptySet()
                 : Arrays.stream(commaDelimited.split(","))
-                .map(HederaFunctionality::valueOf)
-                .collect(toSet());
+                        .map(HederaFunctionality::valueOf)
+                        .collect(toSet());
     }
 
     public Duration defaultAutoRenewPeriod() {
@@ -647,11 +645,12 @@ public class HapiSpecSetup {
     public Set<ResponseCodeEnum> streamlinedIngestChecks() {
         if (streamlinedIngestChecks == null) {
             final var nominal = props.get("spec.streamlinedIngestChecks");
-            streamlinedIngestChecks = EnumSet.copyOf(nominal.isEmpty()
-                    ? Collections.emptySet()
-                    : Stream.of(nominal.split(","))
-                    .map(ResponseCodeEnum::valueOf)
-                    .collect(Collectors.toSet()));
+            streamlinedIngestChecks = EnumSet.copyOf(
+                    nominal.isEmpty()
+                            ? Collections.emptySet()
+                            : Stream.of(nominal.split(","))
+                                    .map(ResponseCodeEnum::valueOf)
+                                    .collect(Collectors.toSet()));
         }
         return streamlinedIngestChecks;
     }
