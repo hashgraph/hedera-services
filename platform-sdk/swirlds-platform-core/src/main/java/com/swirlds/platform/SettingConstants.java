@@ -28,13 +28,8 @@ public final class SettingConstants {
     /** name of the settings used file */
     static final String SETTING_USED_FILENAME = "settingsUsed.txt";
 
-    static final String CONFIG_TXT = "config.txt";
-    static final String SETTINGS_TXT = "settings.txt";
     static final String DATA_STRING = "data";
     static final String SAVED_STRING = "saved";
-    static final String KEYS_STRING = "keys";
-    static final String APPS_STRING = "apps";
-    static final String LOG4J2_CONFIG_FILE = "log4j2.xml";
     static final int NUM_CRYPTO_THREADS_DEFAULT_VALUE = 32;
     static final int THROTTLE_TRANSACTION_QUEUE_SIZE_DEFAULT_VALUE = 100_000;
     static final int NUM_CONNECTIONS_DEFAULT_VALUE = 40;

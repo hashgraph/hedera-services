@@ -41,7 +41,6 @@ import static com.swirlds.platform.SettingConstants.NUM_CONNECTIONS_DEFAULT_VALU
 import static com.swirlds.platform.SettingConstants.NUM_CRYPTO_THREADS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.REMOVED_SETTINGS;
 import static com.swirlds.platform.SettingConstants.SAVED_STRING;
-import static com.swirlds.platform.SettingConstants.SETTINGS_TXT;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_CALLER_SKIPS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_HEARTBEAT_DEFAULT_VALUE;
@@ -64,6 +63,8 @@ import static com.swirlds.platform.SettingConstants.USE_TLS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.VERBOSE_STATISTICS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.VERIFY_EVENT_SIGS_DEFAULT_VALUE;
 
+import com.swirlds.common.config.PathsConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.settings.SettingsException;
 import com.swirlds.common.utility.CommonUtils;
@@ -122,8 +123,6 @@ public class Settings {
     private static final Logger logger = LogManager.getLogger(Settings.class);
 
     private static final Settings INSTANCE = new Settings();
-    /** path to settings.txt (which might not exist) */
-    private final Path settingsPath = getAbsolutePath(SETTINGS_TXT);
     /** the directory where the settings used file will be created on startup if and only if settings.txt exists */
     private final Path settingsUsedDir = getAbsolutePath();
 
@@ -348,6 +347,8 @@ public class Settings {
      * this source file. The settings.txt file is only used for testing and debugging.
      */
     public void loadSettings() {
+        final Path settingsPath =
+                ConfigurationHolder.getConfigData(PathsConfig.class).getSettingsPath();
         loadSettings(settingsPath.toFile());
     }
 
@@ -366,8 +367,9 @@ public class Settings {
         try {
             scanner = new Scanner(settingsFile, StandardCharsets.UTF_8.name());
         } catch (final FileNotFoundException e) { // this should never happen
-            CommonUtils.tellUserConsole(
-                    "The file " + Settings.getInstance().settingsPath + " exists, but can't be opened. " + e);
+            final Path settingsPath =
+                    ConfigurationHolder.getConfigData(PathsConfig.class).getSettingsPath();
+            CommonUtils.tellUserConsole("The file " + settingsPath + " exists, but can't be opened. " + e);
             return;
         }
 
