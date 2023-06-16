@@ -36,10 +36,8 @@ import com.swirlds.virtualmap.VirtualMap;
 import java.nio.file.Path;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled
 public class VirtualMerkleJPDBTransactionHandlerTest {
 
     private static VirtualMap<SmartContractMapKey, SmartContractMapValue> smartContract;
