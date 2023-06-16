@@ -17,7 +17,6 @@
 package com.swirlds.common.system.address;
 
 import static com.swirlds.common.system.address.Address.ipString;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.formatting.TextTable;
@@ -25,15 +24,20 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.internal.AddressBookIterator;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * The Address of every known member of the swirld. The getters are public and the setters aren't, so it is read-only
@@ -62,6 +66,10 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
          * In this version, the round number and next node ID fields were added to this class.
          */
         public static final int ADDRESS_BOOK_STORE_SUPPORT = 4;
+        /**
+         * In this version, NodeIds are SelfSerializable.
+         */
+        public static final int SELF_SERIALIZABLE_NODE_ID = 5;
     }
 
     // FUTURE WORK: remove this restriction and use other strategies to make serialization safe
@@ -69,11 +77,6 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      * The maximum number of addresses that are supported.
      */
     public static final int MAX_ADDRESSES = 1024;
-
-    /**
-     * The ID of the first node that may be added to the address book.
-     */
-    public static final int FIRST_NODE_ID = 0;
 
     /**
      * The round number that should be used when the round number is unknown.
@@ -86,30 +89,30 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     private long round = UNKNOWN_ROUND;
 
     /**
-     * The next node ID that must be added.
+     * The next node ID that can be added must be greater than or equal to this value.
      */
-    private long nextNodeId = FIRST_NODE_ID;
+    private NodeId nextNodeId = NodeId.FIRST_NODE_ID;
 
     /**
      * Maps node IDs to the address for that node ID.
      */
-    private final Map<Long /* node ID */, Address> addresses = new HashMap<>();
+    private final Map<NodeId, Address> addresses = new HashMap<>();
 
     /**
      * A map of public keys to node ID.
      */
-    private final Map<String /* public key */, Long /* node ID */> publicKeyToId = new HashMap<>();
+    private final Map<String /* public key */, NodeId> publicKeyToId = new HashMap<>();
 
     /**
      * A map of node IDs to indices within the address book. A node's index is equal to its position in a list of all
      * nodes sorted by node ID (from least to greatest).
      */
-    private final Map<Long /* node ID */, Integer /* index */> nodeIndices = new HashMap<>();
+    private final Map<NodeId, Integer /* index */> nodeIndices = new HashMap<>();
 
     /**
      * All node IDs in this map, ordered least to greatest.
      */
-    private final List<Long> orderedNodeIds = new ArrayList<>();
+    private final List<NodeId> orderedNodeIds = new ArrayList<>();
 
     /**
      * the total weight of all members
@@ -132,8 +135,9 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      * Copy constructor.
      */
     @SuppressWarnings("CopyConstructorMissesField")
-    private AddressBook(final AddressBook that) {
+    private AddressBook(@NonNull final AddressBook that) {
         super(that);
+        Objects.requireNonNull(that, "AddressBook must not be null");
 
         for (final Address address : that) {
             this.addNewAddress(address);
@@ -147,7 +151,8 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      *
      * @param addresses the addresses to start with
      */
-    public AddressBook(final List<Address> addresses) {
+    public AddressBook(@NonNull final List<Address> addresses) {
+        Objects.requireNonNull(addresses, "addresses must not be null");
         addresses.forEach(this::add);
     }
 
@@ -156,7 +161,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ADDRESS_BOOK_STORE_SUPPORT;
+        return ClassVersion.SELF_SERIALIZABLE_NODE_ID;
     }
 
     /**
@@ -218,8 +223,8 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
-     * Get the total weight of all members added together, where each member has nonnegative weight. This is zero if there
-     * are no members.
+     * Get the total weight of all members added together, where each member has nonnegative weight. This is zero if
+     * there are no members.
      *
      * @return the total weight
      */
@@ -228,23 +233,25 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
-     * Find the ID for the member whose address has the given public key. for now, this uses the nickname instead of the
-     * public key. Returns -1 if it does not exist.
+     * Find the NodeId for the member whose address has the given public key. Returns null if it does not exist.
      *
      * @param publicKey the public key to look up
-     * @return the ID of the member with that key, or -1 if it was not found
+     * @return the NodeId of the member with that key, or null if it was not found
      */
-    public long getId(final String publicKey) {
-        return publicKeyToId.getOrDefault(publicKey, -1L);
+    @Nullable
+    public NodeId getNodeId(@NonNull final String publicKey) {
+        Objects.requireNonNull(publicKey, "publicKey must not be null");
+        return publicKeyToId.get(publicKey);
     }
 
     /**
-     * Find the ID for the member at a given index within the address book.
+     * Find the NodeId for the member at a given index within the address book.
      *
      * @param index the index within the address book
-     * @return a node ID
+     * @return a NodeId
      */
-    public long getId(final int index) {
+    @NonNull
+    public NodeId getNodeId(final int index) {
         if (index < 0 || index >= addresses.size()) {
             throw new NoSuchElementException("no address with index " + index + " exists");
         }
@@ -253,13 +260,19 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
-     * Get the index within the address book of a given node ID.
+     * Get the index within the address book of a given node ID.  Check that the addressbook {@link #contains(NodeId)}
+     * the node ID to avoid throwing an exception.
      *
      * @param id the node's ID
      * @return the index of the node ID within the address book
+     * @throws NoSuchElementException if the node ID does not exist in the address book.
      */
-    public int getIndex(final long id) {
-        return nodeIndices.get(id);
+    public int getIndexOfNodeId(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "nodeId is null");
+        if (!addresses.containsKey(id)) {
+            throw new NoSuchElementException("no address with id " + id + " exists");
+        }
+        return nodeIndices.getOrDefault(id, -1);
     }
 
     /**
@@ -267,7 +280,8 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      *
      * @return the next available node ID
      */
-    public long getNextNodeId() {
+    @NonNull
+    public NodeId getNextNodeId() {
         return nextNodeId;
     }
 
@@ -286,27 +300,49 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      * @param nextNodeId the next node ID for the address book
      * @return this object
      */
+    @NonNull
     public AddressBook setNextNodeId(final long nextNodeId) {
+        NodeId candidate = new NodeId(nextNodeId);
         for (final Address address : this) {
-            if (address.getId() >= nextNodeId) {
+            if (address.getNodeId().compareTo(candidate) >= 0) {
                 throw new IllegalArgumentException("This address book contains an address " + address
                         + " with a node ID that is greater or equal to " + nextNodeId);
             }
         }
 
-        this.nextNodeId = nextNodeId;
+        this.nextNodeId = candidate;
         return this;
+    }
+
+    /**
+     * Get the address for the member with the given ID.  Use {@link #contains(NodeId)} to check for its existence and
+     * avoid an exception.
+     *
+     * @param id the member ID of the address to get
+     * @return the address
+     * @throws NoSuchElementException if no address with the given ID exists
+     */
+    @NonNull
+    public Address getAddress(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "NodeId is null");
+        final Address address = addresses.get(id);
+        if (address == null) {
+            throw new NoSuchElementException("no address with id " + id + " exists");
+        }
+        return address;
     }
 
     /**
      * Get the address for the member with the given ID
      *
      * @param id the member ID of the address to get
-     * @return the address
-     * @throws NoSuchElementException if the given ID is not in the address book
+     * @return the address if it exists, null otherwise.
+     * @deprecated use {@link #getAddress(NodeId)} instead
      */
+    @Deprecated(since = "0.39.0", forRemoval = true)
+    @NonNull
     public Address getAddress(final long id) {
-        return addresses.get(id);
+        return getAddress(new NodeId(id));
     }
 
     /**
@@ -315,7 +351,8 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      * @param id a node ID
      * @return true if this address book contains an address for the given node ID
      */
-    public boolean contains(final long id) {
+    public boolean contains(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "nodeId is null");
         return addresses.containsKey(id);
     }
 
@@ -325,7 +362,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      *
      * @param nodeId the ID of the node being added
      */
-    private void addToOrderedList(final long nodeId) {
+    private void addToOrderedList(@NonNull final NodeId nodeId) {
         final int index = orderedNodeIds.size();
         orderedNodeIds.add(nodeId);
         nodeIndices.put(nodeId, index);
@@ -337,7 +374,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      *
      * @param nodeId the ID of the node being removed
      */
-    private void removeNodeFromOrderedList(final long nodeId) {
+    private void removeNodeFromOrderedList(@NonNull final NodeId nodeId) {
         final int indexToRemove = nodeIndices.remove(nodeId);
         orderedNodeIds.remove(indexToRemove);
 
@@ -348,22 +385,20 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
 
     /**
      * Updates the weight on the address with the given ID. If the address does not exist, a NoSuchElementException is
-     * thrown. If the weight value is negative, an IllegalArgumentException is thrown.  If the address book is immutable,
-     * a MutabilityException is thrown. This method does not validate the address book after updating the address.  When
-     * the user is finished with making incremental changes, the final address book should be validated.
+     * thrown. If the weight value is negative, an IllegalArgumentException is thrown.  If the address book is
+     * immutable, a MutabilityException is thrown. This method does not validate the address book after updating the
+     * address.  When the user is finished with making incremental changes, the final address book should be validated.
      *
-     * @param id    the ID of the address to update.
+     * @param id     the ID of the address to update.
      * @param weight the new weight value.  The weight must be nonnegative.
      * @throws NoSuchElementException   if the address does not exist.
      * @throws IllegalArgumentException if the weight is negative.
      * @throws MutabilityException      if the address book is immutable.
      */
-    public void updateWeight(final long id, final long weight) {
+    public void updateWeight(@NonNull final NodeId id, final long weight) {
+        Objects.requireNonNull(id, "NodeId is null");
         throwIfImmutable();
         final Address address = getAddress(id);
-        if (address == null) {
-            throw new NoSuchElementException("no address with ID " + id + " exists");
-        }
         if (weight < 0) {
             throw new IllegalArgumentException("weight must be nonnegative");
         }
@@ -375,11 +410,11 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      *
      * @param address the new address
      */
-    private void updateAddress(final Address address) {
-        final Address oldAddress = Objects.requireNonNull(addresses.put(address.getId(), address));
+    private void updateAddress(@NonNull final Address address) {
+        final Address oldAddress = Objects.requireNonNull(addresses.put(address.getNodeId(), address));
 
         publicKeyToId.remove(oldAddress.getNickname());
-        publicKeyToId.put(address.getNickname(), address.getId());
+        publicKeyToId.put(address.getNickname(), address.getNodeId());
 
         final long oldWeight = oldAddress.getWeight();
         final long newWeight = address.getWeight();
@@ -393,7 +428,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
             numberWithWeight--;
         }
 
-        addresses.put(address.getId(), address);
+        addresses.put(address.getNodeId(), address);
     }
 
     /**
@@ -401,9 +436,9 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      *
      * @param address the address to add
      */
-    private void addNewAddress(final Address address) {
-        if (address.getId() < nextNodeId) {
-            throw new IllegalStateException("Can not add address for node with ID " + address.getId()
+    private void addNewAddress(@NonNull final Address address) {
+        if (address.getNodeId().compareTo(nextNodeId) < 0) {
+            throw new IllegalArgumentException("Can not add address for node with ID " + address.getNodeId()
                     + ", the next address to be added is required have a node ID greater or equal to "
                     + nextNodeId);
         }
@@ -411,11 +446,11 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
             throw new IllegalStateException("Address book is only permitted to hold " + MAX_ADDRESSES + " entries");
         }
 
-        nextNodeId = address.getId() + 1;
+        nextNodeId = new NodeId(address.getNodeId().id() + 1);
 
-        addresses.put(address.getId(), address);
-        publicKeyToId.put(address.getNickname(), address.getId());
-        addToOrderedList(address.getId());
+        addresses.put(address.getNodeId(), address);
+        publicKeyToId.put(address.getNickname(), address.getNodeId());
+        addToOrderedList(address.getNodeId());
 
         totalWeight += address.getWeight();
         if (!address.isZeroWeight()) {
@@ -431,11 +466,12 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      * @return this object
      * @throws IllegalStateException if a new address is added that has a node ID that is less than {@link #nextNodeId}
      */
-    public AddressBook add(final Address address) {
+    @NonNull
+    public AddressBook add(@NonNull final Address address) {
         throwIfImmutable();
-        throwArgNull(address, "address");
+        Objects.requireNonNull(address, "address must not be null");
 
-        if (addresses.containsKey(address.getId())) {
+        if (addresses.containsKey(address.getNodeId())) {
             // FUTURE WORK: adding an address here is a strange API pattern
             updateAddress(address);
         } else {
@@ -451,7 +487,9 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      * @param id the node ID that should have its address removed
      * @return this object
      */
-    public AddressBook remove(final long id) {
+    @NonNull
+    public AddressBook remove(@NonNull final NodeId id) {
+        Objects.requireNonNull(id, "NodeId is null");
         throwIfImmutable();
 
         final Address address = addresses.remove(id);
@@ -485,7 +523,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
 
         totalWeight = 0;
         numberWithWeight = 0;
-        nextNodeId = FIRST_NODE_ID;
+        nextNodeId = NodeId.FIRST_NODE_ID;
     }
 
     /**
@@ -493,6 +531,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      * mutability status.
      */
     @Override
+    @NonNull
     public AddressBook copy() {
         return new AddressBook(this);
     }
@@ -502,6 +541,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      *
      * @return this object
      */
+    @NonNull
     public AddressBook seal() {
         setImmutable(true);
         return this;
@@ -511,29 +551,35 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      * {@inheritDoc}
      */
     @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
+        Objects.requireNonNull(out, "out must not be null");
         out.writeSerializableIterableWithSize(iterator(), addresses.size(), false, true);
         out.writeLong(round);
-        out.writeLong(nextNodeId);
+        out.writeSerializable(nextNodeId, false);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
+        Objects.requireNonNull(in, "in must not be null");
         in.readSerializableIterableWithSize(MAX_ADDRESSES, false, Address::new, this::addNewAddress);
 
         if (version < ClassVersion.ADDRESS_BOOK_STORE_SUPPORT) {
             round = UNKNOWN_ROUND;
             if (!orderedNodeIds.isEmpty()) {
-                nextNodeId = orderedNodeIds.get(getSize() - 1) + 1;
+                nextNodeId = new NodeId(orderedNodeIds.get(getSize() - 1).id() + 1);
             }
             return;
         }
 
         round = in.readLong();
-        nextNodeId = in.readLong();
+        if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
+            nextNodeId = new NodeId(in.readLong());
+        } else {
+            nextNodeId = in.readSerializable(false, NodeId::new);
+        }
     }
 
     /**
@@ -548,8 +594,19 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public Iterator<Address> iterator() {
         return new AddressBookIterator(orderedNodeIds.iterator(), addresses);
+    }
+
+    /**
+     * Get a set of all node IDs in the address book. Set is safe to modify.
+     *
+     * @return a set of all node IDs in the address book
+     */
+    @NonNull
+    public Set<NodeId> getNodeIdSet() {
+        return new HashSet<>(addresses.keySet());
     }
 
     /**
@@ -557,18 +614,24 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      *
      * @return the string form of the AddressBook that would appear in config.txt
      */
+    @NonNull
     public String toConfigText() {
         final TextTable table = new TextTable().setBordersEnabled(false);
         for (final Address address : this) {
+            final String memo = address.getMemo();
+            final boolean hasMemo = !memo.trim().isEmpty();
+            final boolean hasInternalIpv4 = address.getAddressInternalIpv4() != null;
+            final boolean hasExternalIpv4 = address.getAddressExternalIpv4() != null;
             table.addRow(
                     "address,",
                     address.getNickname() + ",",
                     address.getSelfName() + ",",
                     address.getWeight() + ",",
-                    ipString(address.getAddressInternalIpv4()) + ",",
+                    (hasInternalIpv4 ? ipString(address.getAddressInternalIpv4()) : "") + ",",
                     address.getPortInternalIpv4() + ",",
-                    ipString(address.getAddressExternalIpv4()) + ",",
-                    address.getPortExternalIpv4());
+                    (hasExternalIpv4 ? ipString(address.getAddressExternalIpv4()) : "") + ",",
+                    address.getPortExternalIpv4() + (hasMemo ? "," : ""),
+                    memo);
         }
         return table.render();
     }
@@ -589,7 +652,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
         final AddressBook that = (AddressBook) o;
         return Objects.equals(addresses, that.addresses)
                 && getRound() == that.getRound()
-                && getNextNodeId() == that.getNextNodeId();
+                && Objects.equals(getNextNodeId(), that.getNextNodeId());
     }
 
     /**

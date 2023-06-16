@@ -16,12 +16,10 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.JVM_PAUSE_WARN;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserWindow;
@@ -33,17 +31,20 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowser
 import static com.swirlds.platform.state.address.AddressBookUtils.getOwnHostCount;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
-import static com.swirlds.platform.system.SystemExitReason.NODE_ADDRESS_MISMATCH;
+import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
+import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.OSHealthCheckConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.export.ConfigExport;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
+import com.swirlds.common.config.sources.ThreadCountPropertyConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.DefaultPlatformContext;
@@ -51,6 +52,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.internal.ApplicationDefinition;
+import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
@@ -73,9 +75,6 @@ import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
-import com.swirlds.p2p.portforwarding.PortForwarder;
-import com.swirlds.p2p.portforwarding.PortMapping;
-import com.swirlds.platform.chatter.config.ChatterConfig;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.ConfigMappings;
 import com.swirlds.platform.config.ThreadConfig;
@@ -84,7 +83,10 @@ import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
+import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.gui.internal.InfoApp;
 import com.swirlds.platform.gui.internal.InfoMember;
 import com.swirlds.platform.gui.internal.InfoSwirld;
@@ -93,16 +95,20 @@ import com.swirlds.platform.health.OSHealthChecker;
 import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
+import com.swirlds.platform.network.Network;
+import com.swirlds.platform.portforwarding.PortForwarder;
+import com.swirlds.platform.portforwarding.PortMapping;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
+import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
 import com.swirlds.platform.system.Shutdown;
-import com.swirlds.platform.system.SystemExitReason;
-import com.swirlds.platform.system.SystemUtils;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.MetricsDocUtils;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
@@ -127,6 +133,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
@@ -172,10 +179,13 @@ public class Browser {
             //////////////////////""";
     // @formatter:on
 
+    final Shutdown shutdown = new Shutdown();
+
     /**
      * Prevent this class from being instantiated.
      */
-    private Browser(final Set<Integer> localNodesToStart) throws IOException {
+    private Browser(@NonNull final Set<NodeId> localNodesToStart) throws IOException {
+        Objects.requireNonNull(localNodesToStart, "localNodesToStart must not be null");
         logger.info(STARTUP.getMarker(), "\n\n" + STARTUP_MESSAGE + "\n");
         logger.debug(STARTUP.getMarker(), () -> new NodeStartPayload().toString());
 
@@ -187,18 +197,22 @@ public class Browser {
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
         final ConfigSource configPropertiesConfigSource = new ConfigPropertiesSource(configurationProperties);
+        final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
         final ApplicationDefinition appDefinition =
                 ApplicationDefinitionLoader.load(configurationProperties, localNodesToStart);
 
+        ParameterProvider.getInstance().setParameters(appDefinition.getAppParameters());
+
         // Load all SwirldMain instances for locally run nodes.
-        final Map<Long, SwirldMain> appMains = loadSwirldMains(appDefinition, localNodesToStart);
+        final Map<NodeId, SwirldMain> appMains = loadSwirldMains(appDefinition, localNodesToStart);
 
         // Load Configuration Definitions
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withSource(mappedSettingsConfigSource)
                 .withSource(configPropertiesConfigSource)
+                .withSource(threadCountPropertyConfigSource)
                 .withConfigDataType(BasicConfig.class)
                 .withConfigDataType(StateConfig.class)
                 .withConfigDataType(CryptoConfig.class)
@@ -216,7 +230,11 @@ public class Browser {
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(OSHealthCheckConfig.class)
                 .withConfigDataType(WiringConfig.class)
-                .withConfigDataType(PreConsensusEventStreamConfig.class);
+                .withConfigDataType(PreconsensusEventStreamConfig.class)
+                .withConfigDataType(SyncConfig.class)
+                .withConfigDataType(UptimeConfig.class)
+                .withConfigDataType(RecycleBinConfig.class)
+                .withConfigDataType(EventConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
@@ -270,9 +288,6 @@ public class Browser {
                     .setTransactionMaxBytes(value));
             configurationProperties.ipTos().ifPresent(ipTos -> Settings.getInstance()
                     .setSocketIpTos(ipTos));
-            configurationProperties
-                    .saveStatePeriod()
-                    .ifPresent(value -> Settings.getInstance().getState().saveStatePeriod = value);
 
             // Write the settingsUsed.txt file
             writeSettingsUsed(configuration);
@@ -360,10 +375,10 @@ public class Browser {
      *                                        {@link com.swirlds.common.constructable.RuntimeConstructable} classes
      */
     @NonNull
-    private Map<Long, SwirldMain> loadSwirldMains(
-            @NonNull final ApplicationDefinition appDefinition, @NonNull final Set<Integer> localNodesToStart) {
-        throwArgNull(appDefinition, "appDefinition must not be null");
-        throwArgNull(localNodesToStart, "localNodesToStart must not be null");
+    private Map<NodeId, SwirldMain> loadSwirldMains(
+            @NonNull final ApplicationDefinition appDefinition, @NonNull final Set<NodeId> localNodesToStart) {
+        Objects.requireNonNull(appDefinition, "appDefinition must not be null");
+        Objects.requireNonNull(localNodesToStart, "localNodesToStart must not be null");
         try {
             // Create the SwirldAppLoader
             final SwirldAppLoader appLoader;
@@ -385,13 +400,11 @@ public class Browser {
                     System.currentTimeMillis() - start);
 
             // Create the SwirldMain instances
-            final Map<Long, SwirldMain> appMains = new HashMap<>();
+            final Map<NodeId, SwirldMain> appMains = new HashMap<>();
             final AddressBook addressBook = appDefinition.getAddressBook();
-            for (int i = 0; i < addressBook.getSize(); i++) {
-                final long id = addressBook.getId(i);
-                final Address address = addressBook.getAddress(id);
-                if (localNodesToStart.contains((int) id) || address.isOwnHost()) {
-                    appMains.put(id, buildAppMain(appDefinition, appLoader));
+            for (final Address address : addressBook) {
+                if (localNodesToStart.contains(address.getNodeId()) || address.isOwnHost()) {
+                    appMains.put(address.getNodeId(), buildAppMain(appDefinition, appLoader));
                 }
             }
             return appMains;
@@ -451,7 +464,7 @@ public class Browser {
 
         // This set contains the nodes set by the command line to start, if none are passed, then IP
         // addresses will be compared to determine which node to start
-        final Set<Integer> localNodesToStart = new HashSet<>();
+        final Set<NodeId> localNodesToStart = new HashSet<>();
 
         // Parse command line arguments (rudimentary parsing)
         String currentOption = null;
@@ -468,7 +481,7 @@ public class Browser {
                             switch (currentOption) {
                                 case "-local":
                                     try {
-                                        localNodesToStart.add(Integer.parseInt(arg));
+                                        localNodesToStart.add(new NodeId(Integer.parseInt(arg)));
                                     } catch (final NumberFormatException ex) {
                                         // Intentionally suppress the NumberFormatException
                                     }
@@ -491,7 +504,7 @@ public class Browser {
      * @param localNodesToStart a set of nodes that should be started in this JVM instance
      * @param log4jPath         the path to the log4j configuraiton file, if null then log4j is not started
      */
-    public static synchronized void launch(final Set<Integer> localNodesToStart, final Path log4jPath) {
+    public static synchronized void launch(final Set<NodeId> localNodesToStart, final Path log4jPath) {
         if (INSTANCE != null) {
             return;
         }
@@ -503,6 +516,11 @@ public class Browser {
                 Log4jSetup.startLoggingFramework(log4jPath);
             }
             logger = LogManager.getLogger(Browser.class);
+
+            if (Thread.getDefaultUncaughtExceptionHandler() == null) {
+                Thread.setDefaultUncaughtExceptionHandler((final Thread t, final Throwable e) ->
+                        logger.error(EXCEPTION.getMarker(), "exception on thread {}", t.getName(), e));
+            }
 
             final LoggerContextFactory factory = LogManager.getFactory();
             if (factory instanceof final Log4jContextFactory contextFactory) {
@@ -542,6 +560,7 @@ public class Browser {
             if (!Files.exists(dir)) {
                 rethrowIO(() -> Files.createDirectories(dir));
             }
+            logger.info(STARTUP.getMarker(), "Starting thread dump generator and save to directory {}", dir);
             ThreadDumpGenerator.generateThreadDumpAtIntervals(
                     dir, Settings.getInstance().getThreadDumpPeriodMs());
         }
@@ -557,7 +576,7 @@ public class Browser {
                     (pauseTimeMs, allocTimeMs) -> {
                         if (pauseTimeMs > Settings.getInstance().getJVMPauseReportMs()) {
                             logger.warn(
-                                    JVM_PAUSE_WARN.getMarker(),
+                                    EXCEPTION.getMarker(),
                                     "jvmPauseDetectorThread detected JVM paused for {} ms, allocation pause {} ms",
                                     pauseTimeMs,
                                     allocTimeMs);
@@ -591,17 +610,17 @@ public class Browser {
 
     private Collection<SwirldsPlatform> createLocalPlatforms(
             @NonNull final ApplicationDefinition appDefinition,
-            @NonNull final Crypto[] crypto,
+            @NonNull final Map<NodeId, Crypto> crypto,
             @NonNull final InfoSwirld infoSwirld,
-            @NonNull final Map<Long, SwirldMain> appMains,
+            @NonNull final Map<NodeId, SwirldMain> appMains,
             @NonNull final Configuration configuration,
             @NonNull final MetricsProvider metricsProvider) {
-        throwArgNull(appDefinition, "the app definition must not be null");
-        throwArgNull(crypto, "the crypto array must not be null");
-        throwArgNull(infoSwirld, "the infoSwirld must not be null");
-        throwArgNull(appMains, "the appMains map must not be null");
-        throwArgNull(configuration, "the configuration must not be null");
-        throwArgNull(metricsProvider, "the metricsProvider must not be null");
+        Objects.requireNonNull(appDefinition, "the app definition must not be null");
+        Objects.requireNonNull(crypto, "the crypto array must not be null");
+        Objects.requireNonNull(infoSwirld, "the infoSwirld must not be null");
+        Objects.requireNonNull(appMains, "the appMains map must not be null");
+        Objects.requireNonNull(configuration, "the configuration must not be null");
+        Objects.requireNonNull(metricsProvider, "the metricsProvider must not be null");
 
         final List<SwirldsPlatform> platforms = new ArrayList<>();
 
@@ -609,21 +628,21 @@ public class Browser {
 
         int ownHostIndex = 0;
 
-        for (int i = 0; i < addressBook.getSize(); i++) {
-            final Address address = addressBook.getAddress(i);
+        for (final Address address : addressBook) {
+            final NodeId nodeId = address.getNodeId();
+            final int instanceNumber = addressBook.getIndexOfNodeId(nodeId);
 
-            if (address.isOwnHost()) {
-
+            if (appMains.containsKey(nodeId)) {
+                // this is a node to start locally.
                 final String platformName = address.getNickname()
                         + " - " + address.getSelfName()
                         + " - " + infoSwirld.name
                         + " - " + infoSwirld.app.name;
-                final NodeId nodeId = NodeId.createMain(i);
 
                 final PlatformContext platformContext =
                         new DefaultPlatformContext(nodeId, metricsProvider, configuration);
 
-                SwirldMain appMain = appMains.get(address.getId());
+                SwirldMain appMain = appMains.get(nodeId);
 
                 // name of the app's SwirldMain class
                 final String mainClassName = appDefinition.getMainClassName();
@@ -633,7 +652,7 @@ public class Browser {
                 // We can't send a "real" dispatch, since the dispatcher will not have been started by the
                 // time this class is used.
                 final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
-                        Shutdown::immediateShutDown, Settings.getInstance().getEmergencyRecoveryFileLoadDir());
+                        shutdown::shutdown, Settings.getInstance().getEmergencyRecoveryFileLoadDir());
 
                 final ReservedSignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
                         platformContext,
@@ -659,39 +678,37 @@ public class Browser {
                 // set here, then given to the state in run(). A copy of it is given to hashgraph.
                 final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
 
+                GuiPlatformAccessor.getInstance().setPlatformName(nodeId, platformName);
+                GuiPlatformAccessor.getInstance().setSwirldId(nodeId, appDefinition.getSwirldId());
+                GuiPlatformAccessor.getInstance().setInstanceNumber(nodeId, instanceNumber);
+
                 final SwirldsPlatform platform = new SwirldsPlatform(
-                        // window index
-                        ownHostIndex,
-                        // parameters from the app line of the config.txt file
-                        appDefinition.getAppParameters(),
-                        // all key pairs and CSPRNG state for this member
-                        crypto[i],
-                        // the ID for this swirld (immutable since creation of this swirld)
-                        appDefinition.getSwirldId(),
-                        // address book index, which is the member ID
-                        nodeId,
-                        // copy of the address book,
-                        initialAddressBook,
                         platformContext,
-                        platformName,
+                        crypto.get(nodeId),
+                        initialAddressBook,
+                        nodeId,
                         mainClassName,
                         swirldName,
                         appVersion,
                         appMain::newState,
                         loadedSignedState,
-                        emergencyRecoveryManager);
+                        emergencyRecoveryManager,
+                        softwareUpgrade);
                 platforms.add(platform);
 
-                new InfoMember(infoSwirld, i, platform);
+                new InfoMember(infoSwirld, instanceNumber, platform);
 
                 appMain.init(platform, nodeId);
 
                 final Thread appThread = new ThreadConfiguration(getStaticThreadManager())
-                        .setNodeId(nodeId.getId())
+                        .setNodeId(nodeId)
                         .setComponent("app")
                         .setThreadName("appMain")
                         .setRunnable(appMain)
                         .build();
+                // IMPORTATNT: this swirlds app thread must be non-daemon,
+                // so that the JVM will not exit when the main thread exits
+                appThread.setDaemon(false);
                 appRunThreads[ownHostIndex] = appThread;
 
                 ownHostIndex++;
@@ -734,7 +751,7 @@ public class Browser {
         // time this class is used.
         final SavedStateLoader savedStateLoader = new SavedStateLoader(
                 platformContext,
-                Shutdown::immediateShutDown,
+                shutdown::shutdown,
                 configAddressBook,
                 savedStateFiles,
                 appVersion,
@@ -744,8 +761,8 @@ public class Browser {
             return savedStateLoader.getSavedStateToLoad();
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Signed state not loaded from disk:", e);
-            if (Settings.getInstance().isRequireStateLoad()) {
-                SystemUtils.exitSystem(SystemExitReason.SAVED_STATE_NOT_LOADED);
+            if (configuration.getConfigData(StateConfig.class).requireStateLoad()) {
+                exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED);
             }
         }
         return createNullReservation();
@@ -761,7 +778,7 @@ public class Browser {
     private void startPlatforms(
             @NonNull final Configuration configuration,
             @NonNull final ApplicationDefinition appDefinition,
-            @NonNull final Map<Long, SwirldMain> appMains) {
+            @NonNull final Map<NodeId, SwirldMain> appMains) {
 
         final AddressBook addressBook = appDefinition.getAddressBook();
 
@@ -773,7 +790,7 @@ public class Browser {
             SignedStateFileUtils.cleanStateDirectory(mainClassName);
         }
 
-        final int ownHostCount = getOwnHostCount(addressBook);
+        final int ownHostCount = Math.min(getOwnHostCount(addressBook), appMains.size());
         logger.info(STARTUP.getMarker(), "there are {} nodes with local IP addresses", ownHostCount);
 
         // if the local machine did not match any address in the address book then we should log an error and exit
@@ -784,7 +801,7 @@ public class Browser {
             logger.error(
                     EXCEPTION.getMarker(),
                     new NodeAddressMismatchPayload(Network.getInternalIPAddress(), externalIpAddress));
-            SystemUtils.exitSystem(NODE_ADDRESS_MISMATCH);
+            exitSystem(NODE_ADDRESS_MISMATCH);
         }
 
         // the thread for each Platform.run
@@ -799,7 +816,7 @@ public class Browser {
         // Save the trust stores in the address book.
 
         logger.debug(STARTUP.getMarker(), "About do crypto instantiation");
-        final Crypto[] crypto = initNodeSecurity(appDefinition.getAddressBook(), configuration);
+        final Map<NodeId, Crypto> crypto = initNodeSecurity(appDefinition.getAddressBook(), configuration);
         logger.debug(STARTUP.getMarker(), "Done with crypto instantiation");
 
         // the AddressBook is not changed after this point, so we calculate the hash now

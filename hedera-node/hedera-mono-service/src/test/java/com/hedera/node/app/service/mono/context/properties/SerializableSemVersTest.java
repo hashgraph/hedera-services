@@ -16,10 +16,11 @@
 
 package com.hedera.node.app.service.mono.context.properties;
 
-import static com.hedera.node.app.service.mono.context.properties.SerializableSemVers.SEM_VER_COMPARATOR;
+import static com.hedera.node.app.service.mono.context.properties.SerializableSemVers.FULL_COMPARATOR;
 import static com.hedera.node.app.service.mono.context.properties.SerializableSemVersSerdeTest.assertEqualVersions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -45,27 +46,112 @@ class SerializableSemVersTest {
         final var expected = new SerializableSemVers(proto, services);
         final var actual = SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.1-pre+build");
         assertEqualVersions(expected, actual);
+        assertEquals(Integer.MAX_VALUE, expected.getProtoPreAlphaNumber());
+        assertEquals(Integer.MAX_VALUE, expected.getServicesPreAlphaNumber());
+        assertEquals("", expected.getProtoBuild());
+        assertEquals("build", expected.getServicesBuild());
     }
 
     @Test
     void ordersWithRespectToAlphaNumber() {
-        final var alpha1 = semVerWith(1, 9, 9, "alpha.1", null);
-        final var alpha0 = semVerWith(1, 9, 9, "alpha.0", null);
-        assertTrue(SEM_VER_COMPARATOR.compare(alpha0, alpha1) < 0);
+        final var alpha1 =
+                new SerializableSemVers(semVerWith(1, 9, 9, "alpha.1", null), semVerWith(1, 9, 9, "alpha.1", null));
+        final var alpha0 =
+                new SerializableSemVers(semVerWith(1, 9, 9, "alpha.0", null), semVerWith(1, 9, 9, "alpha.0", null));
+        assertTrue(FULL_COMPARATOR.compare(alpha0, alpha1) < 0);
+    }
+
+    @Test
+    void equalsWorksWithCompareTo() {
+        final var actual = SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.1-pre+build");
+
+        final var alpha2SameAsAlpha1 = SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.1-pre+build");
+        final var protoMajorDiff = SerializableSemVers.forHapiAndHedera("2.2.3", "3.2.1-pre+build");
+        final var protoMinorDiff = SerializableSemVers.forHapiAndHedera("1.3.3", "3.2.1-pre+build");
+        final var protoPatchDiff = SerializableSemVers.forHapiAndHedera("1.2.4", "3.2.1-pre+build");
+        final var protoBuildDiff = SerializableSemVers.forHapiAndHedera("1.2.3+1", "3.2.1-pre+build");
+
+        final var servicesMajorDiff = SerializableSemVers.forHapiAndHedera("1.2.3", "4.2.1-pre+build");
+        final var servicesMinorDiff = SerializableSemVers.forHapiAndHedera("1.2.3", "3.3.1-pre+build");
+        final var servicesPatchDiff = SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.3-pre+build");
+        final var servicesBuildDiff = SerializableSemVers.forHapiAndHedera("1.2.3", "3.2.1-pre+1");
+
+        assertEquals(0, actual.compareTo(alpha2SameAsAlpha1));
+
+        assertNotEquals(0, actual.compareTo(protoMajorDiff));
+        assertNotEquals(0, actual.compareTo(protoMinorDiff));
+        assertNotEquals(0, actual.compareTo(protoPatchDiff));
+        assertNotEquals(0, actual.compareTo(protoBuildDiff));
+
+        assertNotEquals(0, actual.compareTo(servicesMajorDiff));
+        assertNotEquals(0, actual.compareTo(servicesMinorDiff));
+        assertNotEquals(0, actual.compareTo(servicesPatchDiff));
+        assertNotEquals(0, actual.compareTo(servicesBuildDiff));
+    }
+
+    @Test
+    void ordersWithRespectToBuild() {
+        final var alpha2 =
+                new SerializableSemVers(semVerWith(1, 9, 9, "alpha.1", "2"), semVerWith(1, 9, 9, "alpha.1", "2"));
+        final var alpha10 =
+                new SerializableSemVers(semVerWith(1, 9, 9, "alpha.0", "10"), semVerWith(1, 9, 9, "alpha.0", "10"));
+        final var alpha1 =
+                new SerializableSemVers(semVerWith(1, 9, 9, "alpha.0", "1"), semVerWith(1, 9, 9, "alpha.0", "1"));
+        assertTrue(FULL_COMPARATOR.compare(alpha1, alpha2) < 0);
+        assertTrue(FULL_COMPARATOR.compare(alpha10, alpha2) < 0);
     }
 
     @Test
     void comparatorPrioritizesOrderAsExpected() {
-        assertTrue(
-                SEM_VER_COMPARATOR.compare(semVerWith(1, 9, 9, "pre", "build"), semVerWith(2, 0, 0, null, null)) < 0);
-        assertTrue(
-                SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 9, "pre", "build"), semVerWith(1, 9, 0, null, null)) < 0);
-        assertTrue(
-                SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 0, "pre", "build"), semVerWith(1, 0, 1, null, null)) < 0);
-        assertTrue(
-                SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, "alpha.12345", null), semVerWith(1, 0, 1, null, "build"))
-                        < 0);
-        assertTrue(SEM_VER_COMPARATOR.compare(semVerWith(1, 0, 1, null, "build"), semVerWith(1, 0, 1, null, null)) < 0);
+        final var majorLow =
+                new SerializableSemVers(semVerWith(1, 9, 9, "pre", "build"), semVerWith(1, 9, 9, "pre", "build"));
+        final var majorHigh =
+                new SerializableSemVers(semVerWith(2, 0, 0, "pre", "build"), semVerWith(2, 0, 0, null, null));
+        assertTrue(FULL_COMPARATOR.compare(majorLow, majorHigh) < 0);
+
+        final var minorLow =
+                new SerializableSemVers(semVerWith(1, 0, 9, "pre", "build"), semVerWith(1, 0, 9, "pre", "build"));
+        final var minorHigh = new SerializableSemVers(semVerWith(1, 9, 0, null, null), semVerWith(1, 9, 0, null, null));
+        assertTrue(FULL_COMPARATOR.compare(minorLow, minorHigh) < 0);
+
+        final var patchLow =
+                new SerializableSemVers(semVerWith(1, 0, 0, "pre", "build"), semVerWith(1, 0, 0, "pre", "build"));
+        final var patchHigh = new SerializableSemVers(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, null));
+        assertTrue(FULL_COMPARATOR.compare(patchLow, patchHigh) < 0);
+
+        final var withPre = new SerializableSemVers(
+                semVerWith(1, 0, 1, "alpha.12345", null), semVerWith(1, 0, 1, "alpha.12345", null));
+        final var withoutPre =
+                new SerializableSemVers(semVerWith(1, 0, 1, null, "build"), semVerWith(1, 0, 1, null, "build"));
+        assertTrue(FULL_COMPARATOR.compare(withPre, withoutPre) < 0);
+
+        final var withBuild =
+                new SerializableSemVers(semVerWith(1, 0, 1, null, "build"), semVerWith(1, 0, 1, null, "build"));
+        final var withoutBuild =
+                new SerializableSemVers(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, null));
+        assertTrue(FULL_COMPARATOR.compare(withBuild, withoutBuild) > 0);
+
+        final var withNoBuild =
+                new SerializableSemVers(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, null));
+        final var withSomeBuild =
+                new SerializableSemVers(semVerWith(1, 0, 1, null, "build"), semVerWith(1, 0, 1, null, "build"));
+        assertTrue(FULL_COMPARATOR.compare(withNoBuild, withSomeBuild) < 0);
+
+        final var patch1 = new SerializableSemVers(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, null));
+        final var equalPatch =
+                new SerializableSemVers(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, null));
+        assertTrue(FULL_COMPARATOR.compare(patch1, equalPatch) == 0);
+
+        final var highNumberBuild =
+                new SerializableSemVers(semVerWith(1, 0, 1, null, "2"), semVerWith(1, 0, 1, null, "2"));
+        final var lowNumberBuild =
+                new SerializableSemVers(semVerWith(1, 0, 1, null, "1"), semVerWith(1, 0, 1, null, "1"));
+        assertTrue(FULL_COMPARATOR.compare(highNumberBuild, lowNumberBuild) > 0);
+
+        final var noNumberBuild =
+                new SerializableSemVers(semVerWith(1, 0, 1, null, null), semVerWith(1, 0, 1, null, null));
+        final var numberBuild = new SerializableSemVers(semVerWith(1, 0, 1, null, "1"), semVerWith(1, 0, 1, null, "1"));
+        assertTrue(FULL_COMPARATOR.compare(noNumberBuild, numberBuild) < 0);
     }
 
     @Test
@@ -148,6 +234,31 @@ class SerializableSemVersTest {
         assertTrue(minor.isNonPatchUpgradeFrom(base));
         assertTrue(major.isNonPatchUpgradeFrom(base));
         assertThrows(IllegalArgumentException.class, () -> base.isNonPatchUpgradeFrom(mockVersion));
+    }
+
+    @Test
+    void detectsNonConfigServicesUpgrades() {
+        final var services = semVerWith(1, 2, 3, null, null);
+        final var servicesConfig = semVerWith(1, 2, 3, null, "1");
+        final var servicesMinorUpgrade = semVerWith(1, 3, 3, null, null);
+        final var servicesMajorUpgrade = semVerWith(2, 2, 3, null, null);
+        final var servicesPatchUpgrade = semVerWith(1, 2, 4, null, null);
+        final var someProto = semVerWith(1, 1, 1, null, null);
+
+        final var base = new SerializableSemVers(someProto, services);
+        final var patch = new SerializableSemVers(someProto, servicesPatchUpgrade);
+        final var minor = new SerializableSemVers(someProto, servicesMinorUpgrade);
+        final var major = new SerializableSemVers(someProto, servicesMajorUpgrade);
+        final var config = new SerializableSemVers(someProto, servicesConfig);
+        final var mockVersion = mock(SoftwareVersion.class);
+
+        assertTrue(base.isNonConfigUpgrade(null));
+        assertFalse(base.isNonConfigUpgrade(base));
+        assertTrue(patch.isNonConfigUpgrade(base));
+        assertTrue(minor.isNonConfigUpgrade(base));
+        assertTrue(major.isNonConfigUpgrade(base));
+        assertFalse(config.isNonConfigUpgrade(base));
+        assertThrows(IllegalArgumentException.class, () -> base.isNonConfigUpgrade(mockVersion));
     }
 
     @Test

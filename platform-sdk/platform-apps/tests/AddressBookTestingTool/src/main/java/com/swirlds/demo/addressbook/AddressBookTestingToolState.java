@@ -29,12 +29,12 @@ package com.swirlds.demo.addressbook;
 import static com.swirlds.logging.LogMarker.DEMO_INFO;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.AddressBookInitializer.CONFIG_ADDRESS_BOOK_HEADER;
-import static com.swirlds.platform.AddressBookInitializer.CONFIG_ADDRESS_BOOK_USED;
-import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_HEADER;
-import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_NULL;
-import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_USED;
-import static com.swirlds.platform.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
+import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_HEADER;
+import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_USED;
+import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_HEADER;
+import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_NULL;
+import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_USED;
+import static com.swirlds.platform.state.address.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -42,20 +42,21 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookUtils;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.common.utility.StackTrace;
-import com.swirlds.platform.Network;
 import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.network.Network;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -79,14 +80,14 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolState.class);
 
     /** the suffix for the debug address book */
-    private static String DEBUG = "debug";
+    private static final String DEBUG = "debug";
 
     /** the suffix for the test address book */
     private static AddressBookTestingToolConfig testingToolConfig;
     /** the address book configuration */
     private static AddressBookConfig addressBookConfig;
     /** flag indicating if weighting behavior has been logged. */
-    private static AtomicBoolean logWeightingBehavior = new AtomicBoolean(true);
+    private static final AtomicBoolean logWeightingBehavior = new AtomicBoolean(true);
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;
@@ -155,11 +156,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         logger.info(STARTUP.getMarker(), "init called in State.");
         throwIfImmutable();
 
-        if (trigger == InitTrigger.GENESIS) {
-            parseArguments(((PlatformWithDeprecatedMethods) platform).getParameters());
-        }
-
-        this.selfId = platform.getSelfId().getId();
+        this.selfId = platform.getSelfId().id();
     }
 
     /**
@@ -219,15 +216,6 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     /**
      * {@inheritDoc}
      */
-    private void parseArguments(@NonNull final String[] args) {
-        if (args.length != 0) {
-            throw new IllegalArgumentException("Expected no arguments. See javadocs for details.");
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public long getClassId() {
         return CLASS_ID;
@@ -277,8 +265,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         if (logWeightingBehavior.get()) {
             logger.info(STARTUP.getMarker(), "Weighting Behavior 1: updating all nodes to have 10 weight.");
         }
-        for (int i = 0; i < addressBook.getSize(); i++) {
-            addressBook.updateWeight(i, 10);
+        for (final Address address : addressBook) {
+            addressBook.updateWeight(address.getNodeId(), 10);
         }
         return addressBook;
     }
@@ -296,8 +284,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                     STARTUP.getMarker(),
                     "Weighting Behavior 2: updating all nodes to have weight equal to their nodeId.");
         }
-        for (int i = 0; i < addressBook.getSize(); i++) {
-            addressBook.updateWeight(i, i);
+        for (final Address address : addressBook) {
+            addressBook.updateWeight(address.getNodeId(), address.getNodeId().id());
         }
         return addressBook;
     }
@@ -654,7 +642,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         Objects.requireNonNull(addressBookString, "addressBookString must not be null");
         return AddressBookUtils.parseAddressBookConfigText(
                 addressBookString,
-                id -> id,
+                NodeId::new,
                 ip -> {
                     try {
                         return Network.isOwn(ip);
@@ -663,7 +651,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                         return false;
                     }
                 },
-                Object::toString);
+                id -> "");
     }
 
     /**

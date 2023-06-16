@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.state.migration;
 
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.PAYER_RECORDS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.PAYER_RECORDS_OR_CONSOLIDATED_FCQ;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.withLoggedDuration;
@@ -49,13 +49,15 @@ public class MapMigrationToDisk {
 
     public static void migrateToDiskAsApropos(
             final int insertionsPerCopy,
+            final boolean useConsolidatedFcq,
             final ServicesState mutableState,
             final ToDiskMigrations toDiskMigrations,
             final VirtualMapFactory virtualMapFactory,
             final Function<MerkleAccountState, OnDiskAccount> accountMigrator,
             final Function<MerkleTokenRelStatus, OnDiskTokenRel> tokenRelMigrator) {
         if (toDiskMigrations.doAccounts()) {
-            migrateAccountsToDisk(insertionsPerCopy, mutableState, virtualMapFactory, accountMigrator);
+            migrateAccountsToDisk(
+                    insertionsPerCopy, useConsolidatedFcq, mutableState, virtualMapFactory, accountMigrator);
         }
         if (toDiskMigrations.doTokenRels()) {
             migrateRelsToDisk(insertionsPerCopy, mutableState, virtualMapFactory, tokenRelMigrator);
@@ -65,6 +67,7 @@ public class MapMigrationToDisk {
     @SuppressWarnings("unchecked")
     private static void migrateAccountsToDisk(
             final int insertionsPerCopy,
+            final boolean useConsolidatedFcq,
             final ServicesState mutableState,
             final VirtualMapFactory virtualMapFactory,
             final Function<MerkleAccountState, OnDiskAccount> accountMigrator) {
@@ -73,24 +76,30 @@ public class MapMigrationToDisk {
                 new NonAtomicReference<>(virtualMapFactory.newOnDiskAccountStorage());
 
         final var inMemoryAccounts = (MerkleMap<EntityNum, MerkleAccount>) mutableState.getChild(ACCOUNTS);
-        final MerkleMap<EntityNum, MerklePayerRecords> payerRecords = new MerkleMap<>();
+        final MerkleMap<EntityNum, MerklePayerRecords> payerRecords = useConsolidatedFcq ? null : new MerkleMap<>();
         withLoggedDuration(
                 () -> forEach(MerkleMapLike.from(inMemoryAccounts), (num, account) -> {
-                    final var accountRecords = new MerklePayerRecords();
-                    account.records().forEach(accountRecords::offer);
-                    payerRecords.put(num, accountRecords);
+                    // When using the consolidated FCQ, we don't need to migrate payer records; it's already done
+                    if (!useConsolidatedFcq) {
+                        final var accountRecords = new MerklePayerRecords();
+                        account.records().forEach(accountRecords::offer);
+                        payerRecords.put(num, accountRecords);
+                    }
 
                     final var onDiskAccount = accountMigrator.apply(account.state());
                     onDiskAccounts.get().put(new EntityNumVirtualKey(num.longValue()), onDiskAccount);
                     if (insertionsSoFar.incrementAndGet() % insertionsPerCopy == 0) {
                         final var onDiskAccountsCopy = onDiskAccounts.get().copy();
+                        onDiskAccounts.get().release();
                         onDiskAccounts.set(onDiskAccountsCopy);
                     }
                 }),
                 log,
                 "accounts-to-disk migration");
         mutableState.setChild(ACCOUNTS, onDiskAccounts.get());
-        mutableState.setChild(PAYER_RECORDS, payerRecords);
+        if (!useConsolidatedFcq) {
+            mutableState.setChild(PAYER_RECORDS_OR_CONSOLIDATED_FCQ, payerRecords);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -111,6 +120,7 @@ public class MapMigrationToDisk {
                     onDiskRels.get().put(EntityNumVirtualKey.fromPair(numPair), onDiskRel);
                     if (insertionsSoFar.incrementAndGet() % insertionsPerCopy == 0) {
                         final var onDiskRelCopy = onDiskRels.get().copy();
+                        onDiskRels.get().release();
                         onDiskRels.set(onDiskRelCopy);
                     }
                 }),

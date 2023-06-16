@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.OutboundConnectionManager;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import java.util.ArrayList;
@@ -40,7 +40,8 @@ import org.junit.jupiter.api.Test;
 class OutboundConnectionManagerTest {
     @Test
     void createConnectionTest() {
-        final NodeId nodeId = NodeId.createMain(0);
+        final NodeId nodeId = new NodeId(0L);
+        ;
         final Connection connection1 = new FakeConnection();
         final Connection connection2 = new FakeConnection();
         final OutboundConnectionCreator creator = mock(OutboundConnectionCreator.class);
@@ -73,7 +74,7 @@ class OutboundConnectionManagerTest {
     @Test
     void concurrencyTest() throws InterruptedException {
         final int numThreads = 10;
-        final NodeId nodeId = NodeId.createMain(0);
+        final NodeId nodeId = new NodeId(0L);
         final OutboundConnectionCreator creator = mock(OutboundConnectionCreator.class);
         final Connection connection = new FakeConnection();
         final CountDownLatch waitingForConnection = new CountDownLatch(1);

@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.service.mono.store;
 
-import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STORE_ON_DISK;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_STORE_RELS_ON_DISK;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STORE_ON_DISK;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILD_CARDS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_STORE_RELS_ON_DISK;
 
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -28,7 +28,9 @@ import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeChangeManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeInfoManager;
@@ -61,6 +63,7 @@ import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
+import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.schedule.HederaScheduleStore;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
@@ -92,6 +95,20 @@ public interface StoresModule {
     @Binds
     @Singleton
     ScheduleStore bindScheduleStore(HederaScheduleStore scheduleStore);
+
+    @Provides
+    @Singleton
+    static WorldLedgers provideWorldLedgers(
+            final HederaLedger ledger,
+            final AliasManager aliasManager,
+            final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger) {
+        return new WorldLedgers(
+                aliasManager,
+                ledger.getTokenRelsLedger(),
+                ledger.getAccountsLedger(),
+                ledger.getNftsLedger(),
+                tokensLedger);
+    }
 
     @Provides
     @Singleton

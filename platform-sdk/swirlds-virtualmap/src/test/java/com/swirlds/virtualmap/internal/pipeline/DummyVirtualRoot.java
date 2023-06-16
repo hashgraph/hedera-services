@@ -18,12 +18,16 @@ package com.swirlds.virtualmap.internal.pipeline;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -33,6 +37,8 @@ import java.util.function.Predicate;
 class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleLeaf {
 
     private static final long CLASS_ID = 0x37cc269627e18eb6L;
+
+    private static final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
 
     private boolean shouldBeFlushed;
     private boolean merged;
@@ -46,6 +52,8 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
     private DummyVirtualRoot next;
 
     private int copyIndex;
+
+    private long estimatedSize = 0;
 
     /**
      * If set, automatically cause a copy to be flushable based on copy index. Only applies to copies made
@@ -66,10 +74,11 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
      */
     private volatile boolean releaseInIsDetached;
 
-    private VirtualMapStatistics statistics;
+    private final VirtualMapStatistics statistics;
 
     public DummyVirtualRoot(final String label) {
-        this.pipeline = new VirtualPipeline(label);
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        pipeline = new VirtualPipeline(configuration.getConfigData(VirtualMapConfig.class), label);
         flushLatch = new CountDownLatch(1);
         mergeLatch = new CountDownLatch(1);
         statistics = new VirtualMapStatistics(label);
@@ -168,6 +177,11 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
         return copy;
     }
 
+    @Override
+    public long getFastCopyVersion() {
+        return copyIndex;
+    }
+
     /**
      * Set the flush behavior of this node.
      */
@@ -180,7 +194,11 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
      */
     @Override
     public boolean shouldBeFlushed() {
-        return shouldBeFlushed;
+        if (shouldBeFlushed) {
+            return true;
+        }
+        final long flushThreshold = config.copyFlushThreshold();
+        return (flushThreshold > 0) && (estimatedSize() >= flushThreshold);
     }
 
     /**
@@ -202,8 +220,8 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
         if (flushed) {
             throw new IllegalStateException("copy is already flushed");
         }
-        if (!shouldBeFlushed) {
-            throw new IllegalStateException("copy should never be flushed");
+        if (!shouldBeFlushed && (estimatedSize < config.copyFlushThreshold())) {
+            throw new IllegalStateException("copy should not be flushed");
         }
         if (!hashed) {
             throw new IllegalStateException("should be hashed before a flush");
@@ -217,7 +235,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
             if (!target.isHashed()) {
                 throw new IllegalStateException("all older copies should have been hashed");
             }
-            if (target.shouldBeFlushed()) {
+            if (shouldBeFlushed(target)) {
                 if (!target.flushed) {
                     throw new IllegalStateException("older copy should have been flushed");
                 }
@@ -247,6 +265,11 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
         flushLatch.countDown();
 
         statistics.recordFlush(copyIndex); // Use copyIndex as flush duration
+    }
+
+    private static boolean shouldBeFlushed(DummyVirtualRoot copy) {
+        final long copyFlushThreshold = config.copyFlushThreshold();
+        return (copy.shouldBeFlushed()) || ((copyFlushThreshold > 0) && (copy.estimatedSize() >= copyFlushThreshold));
     }
 
     /**
@@ -300,6 +323,8 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
                 throw new RuntimeException(ex);
             }
         }
+
+        next.estimatedSize += estimatedSize;
 
         blocked = false;
         merged = true;
@@ -411,7 +436,7 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
 
     @Override
     protected void destroyNode() {
-        pipeline.destroyCopy();
+        pipeline.destroyCopy(this);
     }
 
     /**
@@ -432,5 +457,14 @@ class DummyVirtualRoot extends PartialMerkleLeaf implements VirtualRoot, MerkleL
         pipeline.hashCopy(this);
 
         return super.getHash();
+    }
+
+    @Override
+    public long estimatedSize() {
+        return estimatedSize;
+    }
+
+    public void setEstimatedSize(long value) {
+        estimatedSize = value;
     }
 }

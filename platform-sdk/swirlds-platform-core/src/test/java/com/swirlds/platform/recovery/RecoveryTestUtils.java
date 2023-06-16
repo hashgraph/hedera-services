@@ -30,6 +30,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.stream.EventStreamManager;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
@@ -39,6 +40,7 @@ import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
@@ -85,7 +87,8 @@ public final class RecoveryTestUtils {
         }
 
         final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
-                random.nextInt(),
+                new BasicSoftwareVersion(1),
+                new NodeId(random.nextLong(Long.MAX_VALUE)),
                 random.nextLong(),
                 random.nextLong(),
                 randomHash(random),
@@ -94,7 +97,8 @@ public final class RecoveryTestUtils {
                 transactions);
 
         final BaseEventUnhashedData baseEventUnhashedData = new BaseEventUnhashedData(
-                random.nextLong(), randomSignature(random).getSignatureBytes());
+                new NodeId(random.nextLong(Long.MAX_VALUE)),
+                randomSignature(random).getSignatureBytes());
 
         final ConsensusData consensusData = new ConsensusData();
         consensusData.setRoundCreated(random.nextLong());
@@ -178,8 +182,9 @@ public final class RecoveryTestUtils {
             throws NoSuchAlgorithmException, IOException {
 
         final EventStreamManager<EventImpl> eventEventStreamManager = new EventStreamManager<>(
+                TestPlatformContextBuilder.create().build(),
                 getStaticThreadManager(),
-                new NodeId(false, 0),
+                new NodeId(0L),
                 x -> randomSignature(random),
                 "test",
                 true,
@@ -212,7 +217,9 @@ public final class RecoveryTestUtils {
 
         // Each event will be serialized twice. Once when it is hashed, and once when it is written to disk.
         assertEventuallyTrue(
-                () -> writeCount.get() == events.size() * 2, Duration.ofSeconds(1), "event not serialized fast enough");
+                () -> writeCount.get() == events.size() * 2,
+                Duration.ofSeconds(10),
+                "event not serialized fast enough");
 
         eventEventStreamManager.stop();
     }

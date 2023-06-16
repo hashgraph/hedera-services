@@ -34,7 +34,7 @@ import com.swirlds.common.utility.Units;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.virtualmap.VirtualLongKey;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -216,13 +216,12 @@ class MerkleDbDataSourceMetricsTest {
             final String name,
             final TestType testType,
             final int size,
-            final long internalHashesRamToDiskThreshold)
+            final long hashesRamToDiskThreshold)
             throws IOException {
-        return testType.dataType()
-                .createDataSource(testDirectory, name, size, internalHashesRamToDiskThreshold, false, false);
+        return testType.dataType().createDataSource(testDirectory, name, size, hashesRamToDiskThreshold, false, false);
     }
 
-    public static VirtualInternalRecord createVirtualInternalRecord(final int i) {
-        return new VirtualInternalRecord(i, hash(i));
+    public static VirtualHashRecord createVirtualInternalRecord(final int i) {
+        return new VirtualHashRecord(i, hash(i));
     }
 }

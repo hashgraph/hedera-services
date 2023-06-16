@@ -55,7 +55,7 @@ public abstract class AbstractEventHandlerTests {
     protected Random random;
 
     protected void setup() {
-        selfId = new NodeId(false, 0L);
+        selfId = new NodeId(0L);
         metrics = new NoOpMetrics();
         ssStats = mock(SwirldStateMetrics.class);
         consensusMetrics = mock(ConsensusMetrics.class);
@@ -94,7 +94,7 @@ public abstract class AbstractEventHandlerTests {
                 when(event.getTransactions()).thenReturn(new ConsensusTransactionImpl[0]);
                 when(event.isEmpty()).thenReturn(true);
             }
-            when(event.getCreatorId()).thenReturn((long) random.nextInt(NUM_NODES));
+            when(event.getCreatorId()).thenReturn(new NodeId(random.nextInt(NUM_NODES)));
             when(event.getEstimatedTime()).thenReturn(Instant.now());
             when(event.getConsensusTimestamp()).thenReturn(Instant.now());
             final boolean isConsensus = random.nextBoolean();

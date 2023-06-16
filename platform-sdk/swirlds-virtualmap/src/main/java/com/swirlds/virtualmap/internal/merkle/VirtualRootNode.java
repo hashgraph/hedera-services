@@ -19,6 +19,7 @@ package com.swirlds.virtualmap.internal.merkle;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.logging.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
 import static com.swirlds.logging.LogMarker.VIRTUAL_MERKLE_STATS;
 import static com.swirlds.virtualmap.internal.Path.FIRST_LEFT_PATH;
@@ -38,6 +39,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.ExternalSelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -57,14 +59,12 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualMapSettings;
-import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.datasource.VirtualRecord;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
@@ -77,6 +77,7 @@ import com.swirlds.virtualmap.internal.reconnect.ReconnectHashListener;
 import com.swirlds.virtualmap.internal.reconnect.ReconnectState;
 import com.swirlds.virtualmap.internal.reconnect.VirtualLearnerTreeView;
 import com.swirlds.virtualmap.internal.reconnect.VirtualTeacherTreeView;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.channels.ClosedByInterruptException;
@@ -85,7 +86,9 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -148,6 +151,10 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * of leaves vs. the speed of hashing.
      */
     private static final int MAX_RECONNECT_HASHING_BUFFER_SIZE = 10_000_000;
+    /**
+     * The number of elements to have in the buffer used during rehashing on start.
+     */
+    private static final int MAX_REHASHING_BUFFER_SIZE = 10_000_000;
 
     /**
      * The number of seconds to wait for the hashing buffer during learner-reconnect before we
@@ -157,10 +164,16 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     private static final int MAX_RECONNECT_HASHING_BUFFER_TIMEOUT = 60;
 
     /**
-     * Placeholder (since this is such a hotspot) to hold the results from {@link VirtualMapSettingsFactory#get()}
+     * The number of seconds to wait for the full leaf rehash process to finish
+     * (see {@link VirtualRootNode#fullLeafRehashIfNecessary()}) before we fail with an exception.
+     */
+    private static final int MAX_FULL_REHASHING_TIMEOUT = 3600; // 1 hour
+
+    /**
+     * Placeholder (since this is such a hotspot) to hold the results from {@link ConfigurationHolder#getConfigData(Class)}
      * rather than calling that method more than once during the lifecycle of a {@link VirtualRootNode} instance.
      */
-    private final VirtualMapSettings settings = VirtualMapSettingsFactory.get();
+    private final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
 
     /**
      * The maximum size() we have reached, where we have (already) recorded a warning message about how little
@@ -185,7 +198,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     private VirtualDataSource<K, V> dataSource;
 
     /**
-     * A cache for {@link VirtualRecord}s. This cache is very specific for this use case. The elements
+     * A cache for virtual tree nodes. This cache is very specific for this use case. The elements
      * in the cache are those nodes that were modified by this root node, or any copy of this node, that have
      * not yet been written to disk. This cache is used for two purposes. First, we avoid writing to
      * disk until the round is completed and hashed as both a performance enhancement and, more critically,
@@ -235,7 +248,17 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * If true, then this copy of {@link VirtualRootNode} should eventually be flushed to disk. A heuristic is
      * used to determine which copy is flushed.
      */
-    private boolean shouldBeFlushed;
+    private final AtomicBoolean shouldBeFlushed = new AtomicBoolean(false);
+
+    /**
+     * Flush threshold. If greater than zero, then this virtual root will be flushed to disk, if
+     * its estimated size exceeds the threshold. If this virtual root is explicitly requested to flush,
+     * the threshold is not taken into consideration.
+     *
+     * By default, the threshold is set to {@link VirtualMapConfig#copyFlushThreshold()}. The
+     * threshold is inherited by all copies.
+     */
+    private final AtomicLong flushThreshold = new AtomicLong();
 
     /**
      * This latch is used to implement {@link #waitUntilFlushed()}.
@@ -292,45 +315,40 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     private VirtualMapStatistics statistics;
 
     /**
-     * Required by the {@link com.swirlds.common.constructable.RuntimeConstructable} contract.
-     * This can <strong>only</strong> be called as part of serialization, not for normal use.
+     * Creates a new empty root node. This constructor is used for deserialization and
+     * reconnects, not for normal use.
      */
     public VirtualRootNode() {
-        this(null, false); // FUTURE WORK https://github.com/swirlds/swirlds-platform/issues/4188
-    }
-
-    /**
-     * Create a new {@link VirtualMap} using the provided data source.
-     *
-     * @param dataSourceBuilder
-     * 		The data source builder. Must not be null.
-     */
-    public VirtualRootNode(final VirtualDataSourceBuilder<K, V> dataSourceBuilder) {
-        this(dataSourceBuilder, true);
-    }
-
-    /**
-     * Create an instance.
-     *
-     * @param dataSourceBuilder
-     * 		The datasource builder.
-     * @param enforce
-     * 		Whether to enforce the data source and state being non-null.
-     */
-    private VirtualRootNode(final VirtualDataSourceBuilder<K, V> dataSourceBuilder, final boolean enforce) {
         this.fastCopyVersion = 0;
-        this.cache = new VirtualNodeCache<>();
+        // Hasher is required during reconnects
         this.hasher = new VirtualHasher<>();
-        this.shouldBeFlushed = false;
-        this.dataSourceBuilder = enforce ? Objects.requireNonNull(dataSourceBuilder) : dataSourceBuilder;
+        this.flushThreshold.set(config.copyFlushThreshold());
+        // All other fields are initialized in postInit()
     }
 
     /**
-     * Create a copy of the given source.
+     * Creates a new root node using the provided data source builder to create node's
+     * virtual data source.
      *
-     * @param source
-     * 		must not be null.
+     * @param dataSourceBuilder data source builder, must not be null
      */
+    public VirtualRootNode(final @NonNull VirtualDataSourceBuilder<K, V> dataSourceBuilder) {
+        this.fastCopyVersion = 0;
+        this.hasher = new VirtualHasher<>();
+        this.flushThreshold.set(config.copyFlushThreshold());
+        Objects.requireNonNull(dataSourceBuilder);
+        this.dataSourceBuilder = dataSourceBuilder;
+        // All other fields are initialized in postInit()
+    }
+
+    /**
+     * Creates a copy of the given virtual root node. The created root node shares most
+     * attributes with the source (hasher, data source, cache, pipeline, etc.) Created
+     * copy's fast copy version is set to source' version + 1.
+     *
+     * @param source virtual root to copy, must not be null
+     */
+    @SuppressWarnings("CopyConstructorMissesField")
     private VirtualRootNode(VirtualRootNode<K, V> source) {
         super(source);
         this.fastCopyVersion = source.fastCopyVersion + 1;
@@ -346,22 +364,20 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         this.learnerTreeView = null;
         this.maxSizeReachedTriggeringWarning = source.maxSizeReachedTriggeringWarning;
         this.pipeline = source.pipeline;
+        this.flushThreshold.set(source.flushThreshold.get());
+        this.statistics = source.statistics;
 
         if (this.pipeline.isTerminated()) {
             throw new IllegalStateException("A fast-copy was made of a VirtualRootNode with a terminated pipeline!");
         }
 
-        // These three will be set in postInit. This is very unfortunate, but stems from the
-        // way serialization / deserialization are implemented which requires partially constructed objects.
-        this.state = null;
-        this.shouldBeFlushed = false;
-        this.records = null;
-
-        this.statistics = source.statistics;
+        // All other fields are initialized in postInit()
     }
 
     /**
-     * Sets the {@link VirtualStateAccessor}. This is called during copy, and also during reconnect.
+     * Sets the {@link VirtualStateAccessor}. This method is called when this root node
+     * is added as a child to its virtual map. It happens when virtual maps are created
+     * from scratch, or during deserialization. It's also called after learner reconnects.
      *
      * @param state
      * 		The accessor. Cannot be null.
@@ -373,26 +389,175 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             fullyReconnectedState = state;
             return;
         }
-
+        if (this.cache == null) {
+            this.cache = new VirtualNodeCache<>();
+        }
         this.state = Objects.requireNonNull(state);
-        this.shouldBeFlushed = fastCopyVersion != 0 && fastCopyVersion % settings.getFlushInterval() == 0;
-        if (this.dataSourceBuilder != null && this.dataSource == null) {
+        updateShouldBeFlushed();
+        Objects.requireNonNull(dataSourceBuilder);
+        if (this.dataSource == null) {
             this.dataSource = this.dataSourceBuilder.build(state.getLabel(), true);
         }
         this.records = new RecordAccessorImpl<>(this.state, this.cache, this.dataSource);
-
         if (statistics == null) {
             // Only create statistics instance if we don't yet have statistics. During a reconnect operation.
             // it is necessary to use the statistics object from the previous instance of the state.
             this.statistics = new VirtualMapStatistics(state.getLabel());
         }
-
         // At this point in time the copy knows if it should be flushed or merged, and so it is safe
         // to register with the pipeline.
         if (pipeline == null) {
-            pipeline = new VirtualPipeline(state.getLabel());
+            pipeline = new VirtualPipeline(config, state.getLabel());
         }
         pipeline.registerCopy(this);
+    }
+
+    /**
+     * Do a full rehash of the persisted leaves of the map if the leaf hashes are absent. To determine if the leaf hashes
+     * are available it checks tries to load a hash by the last leaf path.
+     *
+     * If the hash is not available, it will iterate over all the leaf nodes from the disk and rehash them.
+     * The main difference between this and {@link VirtualRootNode#computeHash()} is that {@code computeHash}
+     * update hashes for dirty leaves that are in the cache, while this method will rehash all the leaves from the disk.
+     * {@code computeHash} doesn't have to take memory consumption into account because the cache is already in memory and
+     * for this method it is critical to not load all the leaves into memory because there are too many of them.
+     */
+    public void fullLeafRehashIfNecessary() {
+        Objects.requireNonNull(records, "Records must be initialized before rehashing");
+
+        final ConcurrentBlockingIterator<VirtualLeafRecord<K, V>> rehashIterator =
+                new ConcurrentBlockingIterator<>(MAX_REHASHING_BUFFER_SIZE, Integer.MAX_VALUE, MILLISECONDS);
+        final CompletableFuture<Hash> fullRehashFuture = new CompletableFuture<>();
+        final CompletableFuture<Void> leafFeedFuture = new CompletableFuture<>();
+        // getting a range that is relevant for the data source
+        final long firstLeafPath = dataSource.getFirstLeafPath();
+        final long lastLeafPath = dataSource.getLastLeafPath();
+        if (firstLeafPath < 0 || lastLeafPath < 0) {
+            logger.info(
+                    STARTUP.getMarker(),
+                    "Paths range is invalid, skipping full rehash in in the VirtualMap at {}. First path: {}, last path: {}",
+                    getRoute(),
+                    firstLeafPath,
+                    lastLeafPath);
+            return;
+        }
+        try {
+            Hash loadedHash = dataSource.loadHash(lastLeafPath);
+            if (loadedHash != null) {
+                logger.info(
+                        STARTUP.getMarker(),
+                        "Calculated hash found for the last leaf path: {} in the VirtualMap at {}, skipping full rehash",
+                        lastLeafPath,
+                        getRoute());
+                return;
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        logger.info(
+                STARTUP.getMarker(),
+                "Doing full rehash for the path range: {} - {}  in the VirtualMap at {}",
+                firstLeafPath,
+                lastLeafPath,
+                getRoute());
+        final FullLeafRehashHashListener<K, V> hashListener =
+                new FullLeafRehashHashListener<>(firstLeafPath, lastLeafPath, dataSource);
+
+        // This background thread will be responsible for hashing the tree and sending the
+        // data to the hash listener to flush.
+        new ThreadConfiguration(getStaticThreadManager())
+                .setComponent("virtualmap")
+                .setThreadName("leafRehasher")
+                .setRunnable(() -> fullRehashFuture.complete(
+                        hasher.hash(records::findHash, rehashIterator, firstLeafPath, lastLeafPath, hashListener)))
+                .setExceptionHandler((thread, exception) -> {
+                    // Shut down the iterator.
+                    rehashIterator.close();
+                    final var message = "VirtualMap@" + getRoute() + " failed to do full rehash";
+                    logger.error(EXCEPTION.getMarker(), message, exception);
+                    fullRehashFuture.completeExceptionally(new MerkleSynchronizationException(message, exception));
+                })
+                .build()
+                .start();
+
+        // This background thread will be responsible for feeding the iterator with data.
+        new ThreadConfiguration(getStaticThreadManager())
+                .setComponent("virtualmap")
+                .setThreadName("leafFeeder")
+                .setRunnable(() -> {
+                    final long onePercent = (lastLeafPath - firstLeafPath) / 100 + 1;
+                    try {
+                        for (long i = firstLeafPath; i <= lastLeafPath; i++) {
+                            try {
+                                VirtualLeafRecord<K, V> leafRecord = dataSource.loadLeafRecord(i);
+                                assert leafRecord != null : "Leaf record should not be null";
+                                try {
+                                    final boolean success =
+                                            rehashIterator.supply(leafRecord, Integer.MAX_VALUE, SECONDS);
+                                    if (!success) {
+                                        throw new MerkleSynchronizationException(
+                                                "Timed out waiting to supply a new leaf to the hashing iterator buffer");
+                                    }
+                                } catch (final MerkleSynchronizationException e) {
+                                    throw e;
+                                } catch (final InterruptedException e) {
+                                    Thread.currentThread().interrupt();
+                                    throw new MerkleSynchronizationException(
+                                            "Interrupted while waiting to supply a new leaf to the hashing iterator buffer",
+                                            e);
+                                } catch (final Exception e) {
+                                    throw new MerkleSynchronizationException(
+                                            "Failed to handle a leaf during full rehashing", e);
+                                }
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                            }
+                            // we don't care about tracking progress on small maps.
+                            if (onePercent > 10 && i % onePercent == 0) {
+                                logger.info(
+                                        STARTUP.getMarker(),
+                                        "Full rehash progress for the VirtualMap at {}: {}%",
+                                        getRoute(),
+                                        (i - firstLeafPath) / onePercent + 1);
+                            }
+                        }
+                    } finally {
+                        rehashIterator.close();
+                    }
+                    leafFeedFuture.complete(null);
+                })
+                .setExceptionHandler((thread, exception) -> {
+                    // Shut down the iterator.
+                    rehashIterator.close();
+                    final var message = "VirtualMap@" + getRoute() + " failed to feed all leaves the hasher";
+                    logger.error(EXCEPTION.getMarker(), message, exception);
+                    leafFeedFuture.completeExceptionally(new MerkleSynchronizationException(message, exception));
+                })
+                .build()
+                .start();
+
+        try {
+            final long start = System.currentTimeMillis();
+            leafFeedFuture.get(MAX_FULL_REHASHING_TIMEOUT, SECONDS);
+            final long secondsSpent = (System.currentTimeMillis() - start) / 1000;
+            logger.info(
+                    STARTUP.getMarker(),
+                    "It took {} seconds to feed all leaves to the hasher for the VirtualMap at {}",
+                    secondsSpent,
+                    getRoute());
+            super.setHash(fullRehashFuture.get(MAX_FULL_REHASHING_TIMEOUT - secondsSpent, SECONDS));
+        } catch (ExecutionException e) {
+            final var message = "VirtualMap@" + getRoute() + " failed to get hash during full rehashing";
+            throw new MerkleSynchronizationException(message, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            final var message = "VirtualMap@" + getRoute() + " interrupted while full rehashing";
+            throw new MerkleSynchronizationException(message, e);
+        } catch (TimeoutException e) {
+            final var message = "VirtualMap@" + getRoute() + "wasn't able to finish full rehashing in time";
+            throw new MerkleSynchronizationException(message, e);
+        }
     }
 
     /**
@@ -474,12 +639,11 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         final long path = index + 1L;
         final T node;
         if (path < state.getFirstLeafPath()) {
-            VirtualInternalRecord internalRecord = records.findInternalRecord(path);
-            if (internalRecord == null) {
-                internalRecord = new VirtualInternalRecord(path);
-            }
+            final Hash hash = records.findHash(path);
+            final VirtualHashRecord virtualHashRecord =
+                    new VirtualHashRecord(path, hash != VirtualNodeCache.DELETED_HASH ? hash : null);
             //noinspection unchecked
-            node = (T) (new VirtualInternalNode<>(this, internalRecord));
+            node = (T) (new VirtualInternalNode<>(this, virtualHashRecord));
         } else if (path <= state.getLastLeafPath()) {
             final VirtualLeafRecord<K, V> leafRecord = records.findLeafRecord(path, false);
             if (leafRecord == null) {
@@ -487,8 +651,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                         + path + "). First leaf path = " + state.getFirstLeafPath() + ", last leaf path = "
                         + state.getLastLeafPath() + ".");
             }
+            final Hash hash = records.findHash(path);
             //noinspection unchecked
-            node = (T) (new VirtualLeafNode<>(leafRecord));
+            node = (T) (new VirtualLeafNode<>(leafRecord, hash != VirtualNodeCache.DELETED_HASH ? hash : null));
         } else {
             // The index is out of bounds. Maybe we have a root node with one leaf and somebody has asked
             // for the second leaf, in which case it would be null.
@@ -531,7 +696,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     @Override
     protected void destroyNode() {
         if (pipeline != null) {
-            pipeline.destroyCopy();
+            pipeline.destroyCopy(this);
         }
     }
 
@@ -668,8 +833,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             return;
         }
 
-        final VirtualLeafRecord<K, V> rec = new VirtualLeafRecord<>(path, null, key, value);
-        markDirty(rec);
+        final VirtualLeafRecord<K, V> leaf = new VirtualLeafRecord<>(path, key, value);
+        cache.putLeaf(leaf);
         statistics.countUpdatedEntities();
         super.setHash(null);
     }
@@ -736,7 +901,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             assert lastLeaf != null;
             cache.clearLeafPath(lastLeafPath);
             lastLeaf.setPath(leafToDeletePath);
-            markDirty(lastLeaf);
+            cache.putLeaf(lastLeaf);
             // NOTE: at this point, if leafToDelete was in the cache at some "path" index, it isn't anymore!
             // The lastLeaf has taken its place in the path index.
         }
@@ -759,9 +924,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             final VirtualLeafRecord<K, V> sibling = records.findLeafRecord(lastLeafSibling, true);
             assert sibling != null;
             cache.clearLeafPath(lastLeafSibling);
-            cache.deleteInternal(lastLeafParent);
+            cache.deleteHash(lastLeafParent);
             sibling.setPath(lastLeafParent);
-            markDirty(sibling);
+            cache.putLeaf(sibling);
 
             // Update the first & last leaf paths
             state.setFirstLeafPath(lastLeafParent); // replaced by the sibling, it is now first
@@ -835,6 +1000,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
         final long end = System.currentTimeMillis();
         statistics.recordMerge(end - start);
+        logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Merged in {} ms", end - start);
     }
 
     /**
@@ -853,14 +1019,42 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * If called, this copy of the map will eventually be flushed.
      */
     public void enableFlush() {
-        this.shouldBeFlushed = true;
+        this.shouldBeFlushed.set(true);
+    }
+
+    /**
+     * Sets flush threshold for this virtual root. When a copy of this virtual root is created,
+     * it inherits the threshold value.
+     *
+     * If this virtual root is explicitly marked to flush using {@link #enableFlush()}, changing
+     * flush threshold doesn't have any effect.
+     *
+     * @param value The flush threshold, in bytes
+     */
+    public void setFlushThreshold(long value) {
+        flushThreshold.set(value);
+        updateShouldBeFlushed();
+    }
+
+    /**
+     * Gets flush threshold for this virtual root.
+     *
+     * @return The flush threshold, in bytes
+     */
+    long getFlushThreshold() {
+        return flushThreshold.get();
     }
 
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean shouldBeFlushed() {
-        return shouldBeFlushed;
+        if (shouldBeFlushed.get()) {
+            return true;
+        }
+        final long threshold = flushThreshold.get();
+        return (threshold > 0) && (estimatedSize() >= threshold);
     }
 
     /**
@@ -869,6 +1063,17 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     @Override
     public boolean isFlushed() {
         return flushed.get();
+    }
+
+    /**
+     * If flush threshold isn't set for this virtual root, marks the root to flush based on
+     * {@link VirtualMapConfig#flushInterval()} setting.
+     */
+    private void updateShouldBeFlushed() {
+        if (flushThreshold.get() <= 0) {
+            // If copy size flush threshold is not set, use flush interval
+            this.shouldBeFlushed.set(fastCopyVersion != 0 && fastCopyVersion % config.flushInterval() == 0);
+        }
     }
 
     /**
@@ -916,23 +1121,19 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             VirtualNodeCache<K, V> cacheToFlush, VirtualStateAccessor stateToUse, VirtualDataSource<K, V> ds) {
         try {
             // Get the leaves that were changed and sort them by path so that lower paths come first
-            final Stream<VirtualLeafRecord<K, V>> sortedDirtyLeaves =
-                    cacheToFlush.dirtyLeaves(stateToUse.getFirstLeafPath(), stateToUse.getLastLeafPath());
-
+            final Stream<VirtualLeafRecord<K, V>> dirtyLeaves =
+                    cacheToFlush.dirtyLeavesForFlush(stateToUse.getFirstLeafPath(), stateToUse.getLastLeafPath());
             // Get the deleted leaves
             final Stream<VirtualLeafRecord<K, V>> deletedLeaves = cacheToFlush.deletedLeaves();
-
-            // Save the dirty internals
-            final Stream<VirtualInternalRecord> sortedDirtyInternals =
-                    cacheToFlush.dirtyInternals(stateToUse.getFirstLeafPath());
-
+            // Save the dirty hashes
+            final Stream<VirtualHashRecord> dirtyHashes =
+                    cacheToFlush.dirtyHashesForFlush(stateToUse.getLastLeafPath());
             ds.saveRecords(
                     stateToUse.getFirstLeafPath(),
                     stateToUse.getLastLeafPath(),
-                    sortedDirtyInternals,
-                    sortedDirtyLeaves,
+                    dirtyHashes,
+                    dirtyLeaves,
                     deletedLeaves);
-
         } catch (final ClosedByInterruptException ex) {
             logger.info(
                     TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT.getMarker(),
@@ -944,6 +1145,14 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         }
     }
 
+    @Override
+    public long estimatedSize() {
+        final long estimatedDirtyLeavesCount =
+                cache.estimatedDirtyLeavesCount(state.getFirstLeafPath(), state.getLastLeafPath());
+        final long estimatedInternalsCount = cache.estimatedInternalsCount(state.getFirstLeafPath());
+        return dataSource.estimatedSize(estimatedInternalsCount, estimatedDirtyLeavesCount);
+    }
+
     /*
      * Serialization implementation
      **/
@@ -953,10 +1162,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public void serialize(final SerializableDataOutputStream out, final Path outputDirectory) throws IOException {
-
         final RecordAccessor<K, V> detachedRecords = pipeline.detachCopy(this, outputDirectory);
         assert detachedRecords.getDataSource() == null : "No data source should be created.";
-
         out.writeNormalisedString(state.getLabel());
         out.writeSerializable(dataSourceBuilder, true);
         out.writeSerializable(detachedRecords.getCache(), true);
@@ -1038,26 +1245,21 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         // Compute the root hash of the virtual tree
         final VirtualHashListener<K, V> hashListener = new VirtualHashListener<>() {
             @Override
-            public void onInternalHashed(VirtualInternalRecord internal) {
-                cache.putInternal(internal);
+            public void onNodeHashed(final long path, final Hash hash) {
+                cache.putHash(path, hash);
             }
         };
         Hash virtualHash = hasher.hash(
-                path -> records.findLeafRecord(path, false),
-                records::findInternalRecord,
-                cache.dirtyLeaves(state.getFirstLeafPath(), state.getLastLeafPath())
+                records::findHash,
+                cache.dirtyLeavesForHash(state.getFirstLeafPath(), state.getLastLeafPath())
                         .iterator(),
                 state.getFirstLeafPath(),
                 state.getLastLeafPath(),
                 hashListener);
 
         if (virtualHash == null) {
-            final VirtualInternalRecord rootRecord = state.size() == 0 ? null : records.findInternalRecord(0);
-            if (rootRecord != null) {
-                virtualHash = rootRecord.getHash();
-            } else {
-                virtualHash = hasher.emptyRootHash();
-            }
+            final Hash rootHash = (state.size() == 0) ? null : records.findHash(0);
+            virtualHash = (rootHash != null) ? rootHash : hasher.emptyRootHash();
         }
 
         super.setHash(virtualHash);
@@ -1173,7 +1375,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
         // Current statistics can only be registered when the node boots, requiring statistics
         // objects to be passed from version to version of the state.
-        dataSource.copyStatisticsFrom(((VirtualRootNode<K, V>) originalNode).dataSource);
+        dataSource.copyStatisticsFrom(originalMap.dataSource);
         statistics = originalMap.statistics;
     }
 
@@ -1244,12 +1446,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 .setComponent("virtualmap")
                 .setThreadName("hasher")
                 .setRunnable(() -> reconnectHashingFuture.complete(hasher.hash(
-                        path -> reconnectRecords.findLeafRecord(path, false),
-                        reconnectRecords::findInternalRecord,
-                        reconnectIterator,
-                        firstLeafPath,
-                        lastLeafPath,
-                        hashListener)))
+                        reconnectRecords::findHash, reconnectIterator, firstLeafPath, lastLeafPath, hashListener)))
                 .setExceptionHandler((thread, exception) -> {
                     // Shut down the iterator. This will cause reconnect to terminate.
                     reconnectIterator.close();
@@ -1288,46 +1485,13 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     }
 
     /**
-     * Loads the leaf, sibling and sibling of parents on the path to root into OS and not in java heap
-     * The OS cache helps in fast retrieval of values without costing us java heap
+     * Loads the leaf record.
+     * Lower level caches (VirtualDataSource, the OS file cache) should make subsequent value retrievals faster.
+     * Warming keys can be done in parallel.
      * @param key key to the leaf node
      */
     public void warm(final K key) {
-
-        // Warm the leaf node
-        final VirtualLeafRecord<K, V> leafRecord = records.findLeafRecord(key, false);
-
-        if (leafRecord != null) {
-            final long leafPath = leafRecord.getPath();
-            // Warm the sibling of the leaf
-            records.findLeafRecord(getSiblingPath(leafPath), false);
-            // Warm internal nodes (sibling on path to parent)
-            warmInternalNodesForLeaf(leafPath);
-        }
-    }
-
-    /**
-     * @param leafPath path to the leaf record
-     *   When the value in a leaf node is changed all the parent nodes up to the root need to be rehashed.
-     * 	 When navigating from leaf->root, for every parent the sibling needs to be read from disk
-     *   Hence we know all internal nodes that need to be read from disk to calculate the rootHash
-     *
-     * 	We can read those internal nodes from disk and the OS page cache will cache them for us
-     *  We do not need to do anything with the read data we can drop it
-     */
-    public void warmInternalNodesForLeaf(final long leafPath) {
-
-        long siblingPath;
-        long path = leafPath;
-
-        while (path > 0) {
-            path = getParentPath(path);
-            siblingPath = getSiblingPath(path);
-
-            if (siblingPath != INVALID_PATH) {
-                records.warmInternalRecord(siblingPath);
-            }
-        }
+        records.findLeafRecord(key, false);
     }
 
     ////////////////////////
@@ -1351,15 +1515,15 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
         // Confirm that adding one more entry is not too much for this VirtualMap to hold.
         final long currentSize = size();
-        final long maximumAllowedSize = settings.getMaximumVirtualMapSize();
+        final long maximumAllowedSize = config.maximumVirtualMapSize();
         if (currentSize >= maximumAllowedSize) {
             throw new IllegalStateException("Virtual Map has no more space");
         }
 
         final long remainingCapacity = maximumAllowedSize - currentSize;
         if ((currentSize > maxSizeReachedTriggeringWarning)
-                && (remainingCapacity <= settings.getVirtualMapWarningThreshold())
-                && (remainingCapacity % settings.getVirtualMapWarningInterval() == 0)) {
+                && (remainingCapacity <= config.virtualMapWarningThreshold())
+                && (remainingCapacity % config.virtualMapWarningInterval() == 0)) {
             maxSizeReachedTriggeringWarning = currentSize;
             logger.warn(
                     VIRTUAL_MERKLE_STATS.getMarker(),
@@ -1403,7 +1567,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             Objects.requireNonNull(oldLeaf);
             cache.clearLeafPath(firstLeafPath);
             oldLeaf.setPath(getLeftChildPath(firstLeafPath));
-            markDirty(oldLeaf);
+            cache.putLeaf(oldLeaf);
 
             // Create a new internal node that is in the position of the old leaf and attach it to the parent
             // on the left side. Put the new item on the right side of the new parent.
@@ -1415,8 +1579,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         }
         statistics.setSize(state.size());
 
-        final VirtualLeafRecord<K, V> newLeaf = new VirtualLeafRecord<>(leafPath, null, key, value);
-        markDirty(newLeaf);
+        final VirtualLeafRecord<K, V> newLeaf = new VirtualLeafRecord<>(leafPath, key, value);
+        cache.putLeaf(newLeaf);
         super.setHash(null); // Make sure VirtualMap has an invalid hash, so it will be recomputed later
     }
 
@@ -1441,14 +1605,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         return false;
     }
 
-    /*
-     * Private Implementation Details
-     **/
-
-    private void markDirty(VirtualLeafRecord<K, V> leaf) {
-        // Keep track of this as a dirty leaf (even though we don't *really* know if the value
-        // will change, the contract of the API is that the caller expects to change it, which
-        // is good enough for us).
-        cache.putLeaf(leaf);
+    @Override
+    public long getFastCopyVersion() {
+        return cache.getFastCopyVersion();
     }
 }

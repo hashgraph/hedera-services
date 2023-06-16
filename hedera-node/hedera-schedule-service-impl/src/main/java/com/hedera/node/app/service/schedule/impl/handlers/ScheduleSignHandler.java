@@ -24,6 +24,8 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
@@ -37,12 +39,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ScheduleSignHandler extends AbstractScheduleHandler implements TransactionHandler {
-    @Inject
-    public ScheduleSignHandler() {
-        // Exists for injection
-        super(null);
-    }
 
+    @Inject
     public ScheduleSignHandler(@NonNull final PreHandleDispatcher dispatcher) {
         super(dispatcher);
     }
@@ -68,15 +66,8 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
         preHandleScheduledTxn(context, scheduledTxn, payerForNested);
     }
 
-    /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle() {
+    @Override
+    public void handle(@NonNull final HandleContext context) throws HandleException {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

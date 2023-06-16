@@ -115,7 +115,7 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
      * Updates the max generation based on the latest event
      */
     private void updateMaxGeneration(final IndexedEvent event) {
-        maxGenerationPerCreator.merge(event.getCreatorId(), event.getGeneration(), Math::max);
+        maxGenerationPerCreator.merge(event.getCreatorId().id(), event.getGeneration(), Math::max);
     }
 
     /**

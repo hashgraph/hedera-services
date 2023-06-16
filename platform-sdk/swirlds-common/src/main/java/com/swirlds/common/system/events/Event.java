@@ -16,7 +16,11 @@
 
 package com.swirlds.common.system.events;
 
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.transaction.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.function.Consumer;
@@ -49,7 +53,8 @@ public interface Event {
      *
      * @return the creator id
      */
-    long getCreatorId();
+    @NonNull
+    NodeId getCreatorId();
 
     /**
      * Returns an estimate of what the consensus timestamp will be (could be a very bad guess).
@@ -69,4 +74,12 @@ public interface Event {
             consumer.accept(transIt.next());
         }
     }
+
+    /**
+     * Returns the software version of the node that created this event.
+     *
+     * @return the software version
+     */
+    @Nullable
+    SoftwareVersion getSoftwareVersion();
 }

@@ -40,7 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -73,8 +72,12 @@ public final class MerkleDb {
     /** MerkleDb logger. */
     private static final Logger logger = LogManager.getLogger(MerkleDb.class);
 
-    /** Max number of tables in a single database instance */
-    private static final int MAX_TABLES = 4096;
+    /**
+     * Max number of tables in a single database instance. A table is created, when a new
+     * data source is opened, or when an existing data source is copied. Copies are removed
+     * automatically on close
+     */
+    private static final int MAX_TABLES = 1024;
 
     /** Sub-folder name for shared database data. Relative to database storage dir */
     private static final String SHARED_DIRNAME = "shared";
@@ -206,11 +209,22 @@ public final class MerkleDb {
         this.storageDir = storageDir;
         this.tableConfigs = loadMetadata();
         try {
-            Files.createDirectories(getSharedDir());
-            Files.createDirectories(getTablesDir());
+            final Path sharedDir = getSharedDir();
+            if (!Files.exists(sharedDir)) {
+                Files.createDirectories(sharedDir);
+            }
+            final Path tablesDir = getTablesDir();
+            if (!Files.exists(tablesDir)) {
+                Files.createDirectories(tablesDir);
+            }
         } catch (IOException z) {
             throw new UncheckedIOException(z);
         }
+        // If this is a new database, create the metadata file
+        if (!Files.exists(storageDir.resolve(METADATA_FILENAME))) {
+            storeMetadata();
+        }
+        logger.info(MERKLE_DB.getMarker(), "New MerkleDb instance is created, storageDir={}", storageDir);
     }
 
     /**
@@ -219,7 +233,7 @@ public final class MerkleDb {
      *
      * @return The next available table ID
      */
-    private int getNextTableId() {
+    int getNextTableId() {
         for (int tablesCount = 0; tablesCount < MAX_TABLES; tablesCount++) {
             final int id = Math.abs(nextTableId.getAndIncrement() % MAX_TABLES);
             if (tableConfigs.get(id) == null) {
@@ -340,27 +354,37 @@ public final class MerkleDb {
             final MerkleDbDataSource<K, V> dataSource, final boolean makeCopyPrimary) throws IOException {
         final String label = dataSource.getTableName();
         final int tableId = getNextTableId();
+        importDataSource(dataSource, tableId, !makeCopyPrimary, makeCopyPrimary); // import to itself == copy
+        return getDataSource(tableId, label, makeCopyPrimary);
+    }
+
+    private <K extends VirtualKey, V extends VirtualValue> void importDataSource(
+            final MerkleDbDataSource<K, V> dataSource,
+            final int tableId,
+            final boolean leaveSourcePrimary,
+            final boolean makeCopyPrimary)
+            throws IOException {
+        final String label = dataSource.getTableName();
         final MerkleDbTableConfig<K, V> tableConfig =
                 dataSource.getTableConfig().copy();
+        if (tableConfigs.get(tableId) != null) {
+            throw new IllegalStateException("Table with ID " + tableId + " already exists");
+        }
         tableConfigs.set(tableId, new TableMetadata(tableId, label, tableConfig));
         try {
-            startSnapshot(Set.of(dataSource));
-            // No need to snapshot shared data, just a single table
-            snapshotTable(getTableDir(label, tableId), dataSource);
+            dataSource.pauseMerging();
+            dataSource.snapshot(getTableDir(label, tableId));
         } finally {
-            endSnapshot(Set.of(dataSource));
+            dataSource.resumeMerging();
         }
-        final MerkleDbDataSource<K, V> copy =
-                new MerkleDbDataSource<>(this, label, tableId, tableConfig, makeCopyPrimary);
-        dataSources.set(tableId, copy);
-        if (makeCopyPrimary) {
+        if (!leaveSourcePrimary) {
             dataSource.stopBackgroundCompaction();
             primaryTables.remove(dataSource.getTableId());
-            primaryTables.add(tableId);
-            // Only need to update metadata, if the primary table is changed
-            storeMetadata();
         }
-        return copy;
+        if (makeCopyPrimary) {
+            primaryTables.add(tableId);
+        }
+        storeMetadata();
     }
 
     /**
@@ -375,7 +399,6 @@ public final class MerkleDb {
      * @param <K> Virtual key type
      * @param <V> Virtual value type
      */
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public <K extends VirtualKey, V extends VirtualValue> MerkleDbDataSource<K, V> getDataSource(
             final String name, final boolean dbCompactionEnabled) throws IOException {
         final TableMetadata metadata = getTableMetadata(name);
@@ -383,14 +406,20 @@ public final class MerkleDb {
             throw new IllegalStateException("Unknown table: " + name);
         }
         final int tableId = metadata.tableId();
+        return getDataSource(tableId, name, dbCompactionEnabled);
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private <K extends VirtualKey, V extends VirtualValue> MerkleDbDataSource<K, V> getDataSource(
+            final int tableId, final String tableName, final boolean dbCompactionEnabled) throws IOException {
+        final MerkleDbTableConfig<K, V> tableConfig = getTableConfig(tableId);
         final AtomicReference<IOException> rethrowIO = new AtomicReference<>(null);
         final MerkleDbDataSource<K, V> dataSource = dataSources.updateAndGet(tableId, ds -> {
             if (ds != null) {
                 return ds;
             }
             try {
-                return new MerkleDbDataSource(
-                        this, metadata.tableName(), metadata.tableId(), metadata.tableConfig(), dbCompactionEnabled);
+                return new MerkleDbDataSource<>(this, tableName, tableId, tableConfig, dbCompactionEnabled);
             } catch (final IOException z) {
                 rethrowIO.set(z);
                 return null;
@@ -468,112 +497,33 @@ public final class MerkleDb {
     }
 
     /**
-     * Takes a snapshot of the database into the specified folder. Only primary open tables are
-     * included to snapshots.
+     * Takes a snapshot of the database source into the specified folder.
      *
      * @param destination Destination folder
      * @throws IOException If an I/O error occurred
      */
-    @SuppressWarnings("rawtypes")
-    public void snapshot(final Path destination) throws IOException {
-        final Collection<MerkleDbDataSource> tables = primaryTables.stream()
-                .map(dataSources::get)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        // Check if the destination path is a MerkleDb instance. If so, compare the list of
-        // tables in this database and the destination database
-        if (Files.exists(destination.resolve(METADATA_FILENAME))) {
-            final Set<String> tableNames =
-                    tables.stream().map(MerkleDbDataSource::getTableName).collect(Collectors.toSet());
-            final AtomicReferenceArray<TableMetadata> destinationTables = loadMetadata(destination);
-            final Set<String> destinationTableNames = new HashSet<>();
-            for (int i = 0; i < MAX_TABLES; i++) {
-                final TableMetadata tableMetadata = destinationTables.get(i);
-                if (tableMetadata != null) {
-                    destinationTableNames.add(tableMetadata.tableName());
-                }
-            }
-            if (tableNames.equals(destinationTableNames)) {
-                // Snapshot already done to the destination folder. No-op
-                return;
-            } else {
-                throw new IllegalStateException("Cannot snapshot to an existing MerkleDb instance");
-            }
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public void snapshot(final Path destination, final MerkleDbDataSource dataSource) throws IOException {
+        if (this != dataSource.getDatabase()) {
+            logger.error(
+                    MERKLE_DB.getMarker(),
+                    "Trying to snapshot a data source from a different"
+                            + " database. This storageDir={}, other storageDir={}",
+                    getStorageDir(),
+                    dataSource.getDatabase().getStorageDir());
+            throw new IllegalArgumentException("Cannot snapshot a data source from a different database");
         }
-        try {
-            Files.createDirectories(destination);
-            Files.createDirectories(destination.resolve(SHARED_DIRNAME));
-            Files.createDirectories(destination.resolve(TABLES_DIRNAME));
-            startSnapshot(tables);
-            snapshotMetadata(destination, tables);
-            snapshotShared(destination);
-            snapshotTables(destination, tables);
-        } finally {
-            endSnapshot(tables);
+        final String tableName = dataSource.getTableName();
+        final boolean isPrimary = primaryTables.contains(dataSource.getTableId());
+        if (!isPrimary) {
+            throw new IllegalArgumentException("Cannot snapshot a secondary table, " + tableName);
         }
-    }
-
-    @SuppressWarnings("rawtypes")
-    private void startSnapshot(final Collection<MerkleDbDataSource> tables) {
-        // Wait for all current flushes to complete
-        for (MerkleDbDataSource table : tables) {
-            table.flushLock();
+        final MerkleDb targetDb = getInstance(destination);
+        if (targetDb.tableExists(tableName)) {
+            throw new IllegalStateException("Table already exists in the target database, " + tableName);
         }
-        // Then pause shared stores merging and all table stores merging
-        for (MerkleDbDataSource table : tables) {
-            try {
-                table.pauseMerging();
-            } catch (final IOException e) {
-                logger.error(MERKLE_DB.getMarker(), "Failed to pause table compaction: {}", table.getTableName(), e);
-            }
-        }
-    }
-
-    @SuppressWarnings("rawtypes")
-    private void snapshotMetadata(final Path destination, final Collection<MerkleDbDataSource> tables) {
-        final Collection<TableMetadata> tablesMetadata = tables.stream()
-                .map(MerkleDbDataSource::getTableName)
-                .map(this::getTableMetadata)
-                .collect(Collectors.toSet());
-        // Write DB metadata
-        storeMetadata(destination, tablesMetadata);
-    }
-
-    private void snapshotShared(final Path destination) throws IOException {
-        // Snapshot all shared stores
-    }
-
-    @SuppressWarnings("rawtypes")
-    private static void snapshotTables(final Path destination, final Collection<MerkleDbDataSource> tables) {
-        // Call snapshot() on all data sources. Can be done in parallel
-        tables.parallelStream().forEach(dataSource -> {
-            final Path tableDir = getTableDir(destination, dataSource.getTableName(), dataSource.getTableId());
-            try {
-                snapshotTable(tableDir, dataSource);
-            } catch (IOException z) {
-                throw new UncheckedIOException(z);
-            }
-        });
-    }
-
-    @SuppressWarnings("rawtypes")
-    private static void snapshotTable(final Path targetDir, final MerkleDbDataSource table) throws IOException {
-        table.snapshot(targetDir);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private void endSnapshot(final Collection<MerkleDbDataSource> tables) {
-        // Unpause shared stores compaction
-        // Unpause all table stores compaction
-        for (MerkleDbDataSource table : tables) {
-            try {
-                table.resumeMerging();
-            } catch (final IOException e) {
-                logger.error(MERKLE_DB.getMarker(), "Failed to resume table compaction: {}", table.getTableName(), e);
-            } finally {
-                table.flushUnlock();
-            }
-        }
+        targetDb.importDataSource(dataSource, dataSource.getTableId(), true, true);
+        targetDb.storeMetadata();
     }
 
     /**
@@ -593,7 +543,13 @@ public final class MerkleDb {
         final Path defaultInstancePath = (target != null) ? target : getDefaultPath();
         if (!Files.exists(defaultInstancePath.resolve(METADATA_FILENAME))) {
             Files.createDirectories(defaultInstancePath);
-            hardLinkTree(source.resolve(METADATA_FILENAME), defaultInstancePath.resolve(METADATA_FILENAME));
+            // For all data files, it's enough to create hard-links from the source dir to the
+            // target dir. However, hard-linking the metadata file wouldn't work. The target
+            // MerkleDb instance is mutable, e.g. new tables can be created in it and stored
+            // in DB metadata. With hard links, changing target metadata would also change the
+            // source metadata, which is strictly prohibited as existing saved states must
+            // never be changed. So just copy the metadata file
+            Files.copy(source.resolve(METADATA_FILENAME), defaultInstancePath.resolve(METADATA_FILENAME));
             final Path sharedDirPath = source.resolve(SHARED_DIRNAME);
             // No shared data yet, so the folder may be empty or even may not exist
             if (Files.exists(sharedDirPath)) {

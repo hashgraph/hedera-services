@@ -26,14 +26,14 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.platform.Connection;
 import com.swirlds.platform.SettingsProvider;
-import com.swirlds.platform.SocketConnection;
+import com.swirlds.platform.gossip.sync.SyncInputStream;
+import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.ByteConstants;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkUtils;
-import com.swirlds.platform.sync.SyncInputStream;
-import com.swirlds.platform.sync.SyncOutputStream;
+import com.swirlds.platform.network.SocketConnection;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Objects;
@@ -79,7 +79,7 @@ public class InboundConnectionHandler {
     public void handle(final Socket clientSocket) {
         SerializableDataInputStream dis = null;
         SerializableDataOutputStream dos = null;
-        long otherId = -1;
+        NodeId otherId = null;
         long acceptTime = 0;
         try {
             acceptTime = System.currentTimeMillis();
@@ -104,7 +104,7 @@ public class InboundConnectionHandler {
 
             final String otherKey = dis.readUTF();
 
-            otherId = addressBook.getId(otherKey);
+            otherId = addressBook.getNodeId(otherKey);
 
             dos.writeInt(ByteConstants.COMM_CONNECT); // send an ACK for creating connection
             dos.flush();
@@ -114,8 +114,8 @@ public class InboundConnectionHandler {
             final SyncOutputStream sos = SyncOutputStream.createSyncOutputStream(
                     clientSocket.getOutputStream(), settings.connectionStreamBufferSize());
 
-            final SocketConnection sc = SocketConnection.create(
-                    selfId, NodeId.createMain(otherId), connectionTracker, false, clientSocket, sis, sos);
+            final SocketConnection sc =
+                    SocketConnection.create(selfId, otherId, connectionTracker, false, clientSocket, sis, sos);
             newConnectionConsumer.accept(sc);
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();

@@ -1,21 +1,22 @@
 /** Provides the core interfaces for the Hedera EVM implementation. */
 module com.hedera.node.app.service.evm {
+    requires transitive com.hedera.node.hapi;
+    requires transitive com.github.benmanes.caffeine;
+    requires transitive com.google.protobuf;
     requires transitive com.swirlds.common;
-    requires org.hyperledger.besu.evm;
-    requires org.hyperledger.besu.datatypes;
-    requires org.hyperledger.besu.secp256k1;
-    requires com.hedera.hashgraph.protobuf.java.api;
-    requires tuweni.bytes;
-    requires tuweni.units;
-    requires com.github.benmanes.caffeine;
-    requires org.bouncycastle.provider;
+    requires transitive dagger;
+    requires transitive headlong;
+    requires transitive javax.inject;
+    requires transitive org.apache.commons.lang3;
+    requires transitive org.hyperledger.besu.datatypes;
+    requires transitive org.hyperledger.besu.evm;
+    requires transitive org.hyperledger.besu.secp256k1;
+    requires transitive tuweni.bytes;
+    requires transitive tuweni.units;
     requires com.google.common;
-    requires com.google.protobuf;
-    requires org.apache.commons.lang3;
     requires com.sun.jna;
-    requires headlong;
-    requires javax.inject;
-    requires com.github.spotbugs.annotations;
+    requires org.bouncycastle.provider;
+    requires static com.github.spotbugs.annotations;
 
     exports com.hedera.node.app.service.evm.store.contracts.utils;
     exports com.hedera.node.app.service.evm.contracts.execution;

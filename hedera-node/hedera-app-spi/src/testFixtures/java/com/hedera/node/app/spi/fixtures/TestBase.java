@@ -80,11 +80,22 @@ public class TestBase {
      */
     @NonNull
     public final Bytes randomBytes(int length) {
+        return Bytes.wrap(randomBytes(rand, length));
+    }
+
+    /**
+     * Generates some random bytes
+     *
+     * @param length The number of bytes to generate.
+     * @return Some random bytes.
+     */
+    @NonNull
+    public final byte[] randomByteArray(int length) {
         final byte[] data = new byte[length];
         for (int i = 0; i < length; i++) {
             data[i] = (byte) rand.nextInt();
         }
-        return Bytes.wrap(data);
+        return data;
     }
 
     /**
@@ -157,5 +168,17 @@ public class TestBase {
         }
 
         return new String(buf);
+    }
+
+    @NonNull
+    public static byte[] randomBytes(@NonNull final Random generator, final int length) {
+        assert length >= 0;
+
+        final var data = new byte[length];
+        for (int i = 0; i < length; i++) {
+            data[i] = (byte) generator.nextInt();
+        }
+
+        return data;
     }
 }

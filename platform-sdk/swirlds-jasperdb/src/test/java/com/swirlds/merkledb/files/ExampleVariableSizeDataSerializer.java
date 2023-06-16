@@ -61,6 +61,11 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
         return VARIABLE_DATA_SIZE;
     }
 
+    @Override
+    public int getTypicalSerializedSize() {
+        return Long.BYTES * 12;
+    }
+
     /** Get the current data item serialization version */
     @Override
     public long getCurrentDataVersion() {

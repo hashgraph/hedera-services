@@ -22,6 +22,7 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.components.transaction.TransactionPool;
@@ -31,7 +32,9 @@ import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.SelfEventStorage;
 import com.swirlds.platform.event.creation.AncientParentsRule;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -42,6 +45,9 @@ import org.apache.logging.log4j.Logger;
  */
 public class EventCreator {
     private static final Logger logger = LogManager.getLogger(EventCreator.class);
+
+    /** The software version of the node. */
+    private final SoftwareVersion softwareVersion;
 
     /** This node's address book ID */
     private final NodeId selfId;
@@ -76,6 +82,8 @@ public class EventCreator {
     /**
      * Construct a new EventCreator.
      *
+     * @param softwareVersion
+     *      the software version of the node
      * @param selfId
      * 		the ID of this node
      * @param signer
@@ -98,26 +106,29 @@ public class EventCreator {
      * 		the object used for checking if we should create an event or not
      */
     public EventCreator(
-            final NodeId selfId,
-            final Signer signer,
-            final Supplier<GraphGenerations> graphGenerationsSupplier,
-            final TransactionSupplier transactionSupplier,
-            final EventHandler newEventHandler,
-            final EventMapper eventMapper,
-            final SelfEventStorage selfEventStorage,
-            final TransactionPool transactionPool,
-            final BooleanSupplier inFreeze,
-            final EventCreationRules eventCreationRules) {
-        this.selfId = selfId;
-        this.signer = signer;
-        this.ancientParentsCheck = new AncientParentsRule(graphGenerationsSupplier);
-        this.transactionSupplier = transactionSupplier;
-        this.newEventHandler = newEventHandler;
-        this.eventMapper = eventMapper;
-        this.selfEventStorage = selfEventStorage;
-        this.transactionPool = transactionPool;
-        this.inFreeze = inFreeze;
-        this.eventCreationRules = eventCreationRules;
+            @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final NodeId selfId,
+            @NonNull final Signer signer,
+            @NonNull final Supplier<GraphGenerations> graphGenerationsSupplier,
+            @NonNull final TransactionSupplier transactionSupplier,
+            @NonNull final EventHandler newEventHandler,
+            @NonNull final EventMapper eventMapper,
+            @NonNull final SelfEventStorage selfEventStorage,
+            @NonNull final TransactionPool transactionPool,
+            @NonNull final BooleanSupplier inFreeze,
+            @NonNull final EventCreationRules eventCreationRules) {
+        this.softwareVersion = Objects.requireNonNull(softwareVersion, "the software version is null");
+        this.selfId = Objects.requireNonNull(selfId, "the self ID is null");
+        this.signer = Objects.requireNonNull(signer, "the signer is null");
+        this.ancientParentsCheck = new AncientParentsRule(
+                Objects.requireNonNull(graphGenerationsSupplier, "the graph generations supplier is null"));
+        this.transactionSupplier = Objects.requireNonNull(transactionSupplier, "the transaction supplier is null");
+        this.newEventHandler = Objects.requireNonNull(newEventHandler, "the new event handler is null");
+        this.eventMapper = Objects.requireNonNull(eventMapper, "the event mapper is null");
+        this.selfEventStorage = Objects.requireNonNull(selfEventStorage, "the self event storage is null");
+        this.transactionPool = Objects.requireNonNull(transactionPool, "the transaction pool is null");
+        this.inFreeze = Objects.requireNonNull(inFreeze, "the in freeze is null");
+        this.eventCreationRules = Objects.requireNonNull(eventCreationRules, "the event creation rules is null");
     }
 
     /**
@@ -126,7 +137,7 @@ public class EventCreator {
      * @param otherId
      * 		the node ID that will supply the other parent for this event
      */
-    public boolean createEvent(final long otherId) {
+    public boolean createEvent(final NodeId otherId) {
         if (eventCreationRules.shouldCreateEvent() == EventCreationRuleResponse.DONT_CREATE) {
             return false;
         }
@@ -172,7 +183,8 @@ public class EventCreator {
     protected EventImpl buildEvent(final EventImpl selfParent, final EventImpl otherParent) {
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
-                selfId.getId(),
+                softwareVersion,
+                selfId,
                 EventUtils.getEventGeneration(selfParent),
                 EventUtils.getEventGeneration(otherParent),
                 EventUtils.getEventHash(selfParent),
@@ -195,8 +207,8 @@ public class EventCreator {
      * @param otherId
      * 		the ID of the node supplying the other parent
      */
-    protected boolean hasOtherParentAlreadyBeenUsed(final long otherId) {
-        return !selfId.equalsMain(otherId) && eventMapper.hasMostRecentEventBeenUsedAsOtherParent(otherId);
+    protected boolean hasOtherParentAlreadyBeenUsed(final NodeId otherId) {
+        return !Objects.equals(selfId, otherId) && eventMapper.hasMostRecentEventBeenUsedAsOtherParent(otherId);
     }
 
     /**

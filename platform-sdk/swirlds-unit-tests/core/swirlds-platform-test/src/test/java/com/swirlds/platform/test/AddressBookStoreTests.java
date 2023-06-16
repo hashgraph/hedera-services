@@ -535,7 +535,7 @@ class AddressBookStoreTests {
 
         // Force all nodes to have zero weight
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setCustomWeightGenerator(nodeId -> 0)
+                .setCustomWeightGenerator(nodeId -> 0L)
                 .build();
 
         assertThrows(
@@ -543,16 +543,16 @@ class AddressBookStoreTests {
 
         // Add an address book that has a high next ID
         final RandomAddressBookGenerator generator =
-                new RandomAddressBookGenerator().setSize(100).setSequentialIds(true);
+                new RandomAddressBookGenerator().setSize(100).setSequentialIds(false);
         final AddressBook firstAddressBook = generator.build().setRound(0);
         store.add(firstAddressBook);
         assertEquals(1, store.getSize(), "store is the wrong size");
 
         // Attempting to add an address book store with a low next ID should fail
         final RandomAddressBookGenerator invalidGenerator =
-                new RandomAddressBookGenerator().setSize(10).setSequentialIds(true);
+                new RandomAddressBookGenerator().setSize(10).setSequentialIds(false);
         final AddressBook invalidBook =
-                invalidGenerator.setSequentialIds(true).build().setRound(1);
+                invalidGenerator.setSequentialIds(false).build().setRound(1);
         store.add(invalidBook);
         assertEquals(2, store.getSize(), "store is the wrong size");
 

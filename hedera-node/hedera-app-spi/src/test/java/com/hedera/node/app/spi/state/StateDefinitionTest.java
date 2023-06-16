@@ -33,18 +33,20 @@ class StateDefinitionTest {
     void singletonsCannotBeOnDisk() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new StateDefinition<>("KEY", mockCodec, mockCodec, 123, true, true));
+                () -> new StateDefinition<>("KEY", mockCodec, mockCodec, 123, true, true, false));
     }
 
     @Test
     void onDiskMustHintPositiveNumKeys() {
         assertThrows(
-                IllegalArgumentException.class, () -> new StateDefinition("KEY", mockCodec, mockCodec, 0, true, false));
+                IllegalArgumentException.class,
+                () -> new StateDefinition("KEY", mockCodec, mockCodec, 0, true, false, false));
     }
 
     @Test
     void nonSingletonRequiresKeySerdes() {
-        assertThrows(NullPointerException.class, () -> new StateDefinition("KEY", null, mockCodec, 1, true, false));
+        assertThrows(
+                NullPointerException.class, () -> new StateDefinition("KEY", null, mockCodec, 1, true, false, false));
     }
 
     @Test
@@ -64,6 +66,6 @@ class StateDefinitionTest {
 
     @Test
     void constructorWorks() {
-        assertDoesNotThrow(() -> new StateDefinition("KEY", mockCodec, mockCodec, 123, true, false));
+        assertDoesNotThrow(() -> new StateDefinition("KEY", mockCodec, mockCodec, 123, true, false, false));
     }
 }

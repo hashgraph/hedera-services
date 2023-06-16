@@ -17,19 +17,19 @@
 package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
-import static com.hedera.services.bdd.spec.infrastructure.meta.InitialAccountIdentifiers.KEY_FOR_INCONGRUENT_ALIAS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
-import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.idFuzzingWith;
-import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.idTransferToRandomKeyWith;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.*;
+import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.*;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,6 +43,10 @@ public class AddressAliasIdFuzzing extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AddressAliasIdFuzzing.class);
 
     private static final String PROPERTIES = "id-fuzzing.properties";
+    public static final String ATOMIC_CRYPTO_TRANSFER = "contracts.precompile.atomicCryptoTransfer.enabled";
+    private final AtomicInteger maxOpsPerSec = new AtomicInteger(1);
+    private final AtomicInteger maxPendingOps = new AtomicInteger(Integer.MAX_VALUE);
+    private final AtomicInteger backoffSleepSecs = new AtomicInteger(Integer.MAX_VALUE);
 
     public static void main(String... args) {
         new AddressAliasIdFuzzing().runSuiteSync();
@@ -54,14 +58,16 @@ public class AddressAliasIdFuzzing extends HapiSuite {
     }
 
     private HapiSpec addressAliasIdFuzzing() {
-        return defaultHapiSpec("AddressAliasIdFuzzing")
-                .given(
-                        newKeyNamed(KEY_FOR_INCONGRUENT_ALIAS).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(UNIQUE_PAYER_ACCOUNT)
-                                .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
-                                .withRecharging())
+        return propertyPreservingHapiSpec("AddressAliasIdFuzzing")
+                .preserving(
+                        CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP, ATOMIC_CRYPTO_TRANSFER)
+                .given(initOperations())
                 .when()
-                .then(runWithProvider(idFuzzingWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
+                .then(runWithProvider(idFuzzingWith(PROPERTIES))
+                        .lasting(10L, TimeUnit.SECONDS)
+                        .maxOpsPerSec(maxOpsPerSec::get)
+                        .maxPendingOps(maxPendingOps::get)
+                        .backoffSleepSecs(backoffSleepSecs::get));
     }
 
     private HapiSpec transferToKeyFuzzing() {

@@ -59,6 +59,8 @@ public class VirtualMapStatistics {
     private IntegerGauge flushBacklogSize;
     /** Flush backpressure duration, ms */
     private IntegerAccumulator flushBackpressureMs;
+    /** Family size backpressure duration, ms */
+    private IntegerAccumulator familySizeBackpressureMs;
     /** The average time to merge virtual map copy to the next copy, ms */
     private LongAccumulator mergeDurationMs;
     /** The average time to flush virtual map copy to disk (to data source), ms */
@@ -141,6 +143,10 @@ public class VirtualMapStatistics {
                 metrics,
                 VMAP_PREFIX + LIFECYCLE_PREFIX + "flushBackpressureMs_" + label,
                 "Virtual pipeline flush backpressure, " + label + ", ms");
+        familySizeBackpressureMs = buildIntegerAccumulator(
+                metrics,
+                VMAP_PREFIX + LIFECYCLE_PREFIX + "familySizeBackpressureMs_" + label,
+                "Virtual pipeline family size backpressure, " + label + ", ms");
         mergeDurationMs = buildLongAccumulator(
                 metrics,
                 VMAP_PREFIX + LIFECYCLE_PREFIX + "mergeDurationMs_" + label,
@@ -235,6 +241,17 @@ public class VirtualMapStatistics {
     public void recordFlushBackpressureMs(final int backpressureMs) {
         if (flushBackpressureMs != null) {
             flushBackpressureMs.update(backpressureMs);
+        }
+    }
+
+    /**
+     * Updates {@link #familySizeBackpressureMs} stat.
+     *
+     * @param backpressureMs family size backpressure, ms
+     */
+    public void recordFamilySizeBackpressureMs(final int backpressureMs) {
+        if (familySizeBackpressureMs != null) {
+            familySizeBackpressureMs.update(backpressureMs);
         }
     }
 

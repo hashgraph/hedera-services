@@ -35,7 +35,7 @@ import org.apache.logging.log4j.Logger;
  * asynchronously closing it. Each thread should hold its instance of this class (and therefore its own
  * reservation) if it needs to access a state.
  */
-public final class ReservedSignedState implements AutoCloseableNonThrowing {
+public class ReservedSignedState implements AutoCloseableNonThrowing {
 
     private static final Logger logger = LogManager.getLogger(ReservedSignedState.class);
 
@@ -178,13 +178,16 @@ public final class ReservedSignedState implements AutoCloseableNonThrowing {
     private void throwIfClosed() {
         if (closed) {
             if (signedState != null) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "This ReservedSignedState has already been closed, dumping history. "
-                                + "Reservation ID = {}, reservation reason ={}\n{},",
-                        reservationId,
-                        reason,
-                        signedState.getHistory());
+                final SignedStateHistory history = signedState.getHistory();
+                if (history != null) {
+                    logger.error(
+                            EXCEPTION.getMarker(),
+                            "This ReservedSignedState has already been closed, dumping history. "
+                                    + "Reservation ID = {}, reservation reason ={}\n{},",
+                            reservationId,
+                            reason,
+                            history);
+                }
             }
             throw new ReferenceCountException("This ReservedSignedState has been closed.");
         }

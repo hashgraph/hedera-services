@@ -61,7 +61,7 @@ class VirtualMerkleMerkleDbLeafHasherTest {
                                 (short) 1, keySerializer,
                                 (short) 1, valueSerializer)
                         .maxNumberOfKeys(50_000_000)
-                        .internalHashesRamToDiskThreshold(0)
+                        .hashesRamToDiskThreshold(0)
                         .preferDiskIndices(false);
         dataSourceBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
     }

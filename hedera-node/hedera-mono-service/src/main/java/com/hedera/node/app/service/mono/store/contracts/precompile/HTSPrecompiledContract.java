@@ -35,6 +35,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHal
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectTarget;
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -130,6 +131,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private static final Logger log = LogManager.getLogger(HTSPrecompiledContract.class);
 
     public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
+    public static final int HTS_PRECOMPILED_CONTRACT_ADDRESS_INT = Integer.decode(HTS_PRECOMPILED_CONTRACT_ADDRESS);
     public static final ContractID HTS_PRECOMPILE_MIRROR_ID = contractIdFromEvmAddress(
             Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArrayUnsafe());
     public static final EntityId HTS_PRECOMPILE_MIRROR_ENTITY_ID =
@@ -556,7 +558,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             case AbiConstants.ABI_ID_GET_TOKEN_KEY -> new GetTokenKeyPrecompile(
                     null, syntheticTxnFactory, ledgers, encoder, evmEncoder, precompilePricingUtils);
             case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
-                final var target = DescriptorUtils.getRedirectTarget(input);
+                RedirectTarget target;
+                try {
+                    target = DescriptorUtils.getRedirectTarget(input);
+                } catch (final Exception e) {
+                    throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
+                }
                 final var isExplicitRedirectCall = target.massagedInput() != null;
                 if (isExplicitRedirectCall) {
                     input = target.massagedInput();

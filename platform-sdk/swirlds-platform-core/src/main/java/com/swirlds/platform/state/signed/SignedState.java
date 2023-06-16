@@ -22,14 +22,15 @@ import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAc
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
@@ -166,14 +167,16 @@ public class SignedState implements SignedStateInfo {
         state.reserve();
 
         this.state = state;
-        history = new SignedStateHistory(
-                OSTime.getInstance(),
-                getRound(),
-                platformContext
-                        .getConfiguration()
-                        .getConfigData(StateConfig.class)
-                        .debugStackTracesEnabled());
-        history.recordAction(CREATION, getReservationCount(), reason, null);
+
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+
+        if (stateConfig.stateHistoryEnabled()) {
+            history = new SignedStateHistory(Time.getCurrent(), getRound(), stateConfig.debugStackTracesEnabled());
+            history.recordAction(CREATION, getReservationCount(), reason, null);
+        } else {
+            history = null;
+        }
+
         registryRecord = RuntimeObjectRegistry.createRecord(getClass(), history);
         sigSet = new SigSet();
     }
@@ -210,13 +213,11 @@ public class SignedState implements SignedStateInfo {
     public void setSigSet(@NonNull final SigSet sigSet) {
         this.sigSet = Objects.requireNonNull(sigSet);
         signingWeight = 0;
-        for (final long signingNode : sigSet) {
-            final Address address = getAddressBook().getAddress(signingNode);
-            if (address == null) {
-                throw new IllegalStateException(
-                        "Signature for node " + signingNode + " found, but that node is not in the address book");
+        final AddressBook addressBook = getAddressBook();
+        for (final NodeId signingNode : sigSet) {
+            if (addressBook.contains(signingNode)) {
+                signingWeight += addressBook.getAddress(signingNode).getWeight();
             }
-            signingWeight += address.getWeight();
         }
     }
 
@@ -262,7 +263,9 @@ public class SignedState implements SignedStateInfo {
      * Increment reservation count.
      */
     void incrementReservationCount(@NonNull final String reason, final long reservationId) {
-        history.recordAction(RESERVE, getReservationCount(), reason, reservationId);
+        if (history != null) {
+            history.recordAction(RESERVE, getReservationCount(), reason, reservationId);
+        }
         reservations.reserve();
     }
 
@@ -270,7 +273,9 @@ public class SignedState implements SignedStateInfo {
      * Decrement reservation count.
      */
     void decrementReservationCount(@NonNull final String reason, final long reservationId) {
-        history.recordAction(RELEASE, getReservationCount(), reason, reservationId);
+        if (history != null) {
+            history.recordAction(RELEASE, getReservationCount(), reason, reservationId);
+        }
         reservations.release();
     }
 
@@ -294,8 +299,10 @@ public class SignedState implements SignedStateInfo {
      * This method is called when there is a reference count exception.
      */
     private void onReferenceCountException() {
-        logger.error(
-                EXCEPTION.getMarker(), "SignedState reference count error detected, dumping history.\n{}", history);
+        if (history != null) {
+            logger.error(
+                    EXCEPTION.getMarker(), "SignedState reference count error detected, dumping history.\n{}", history);
+        }
     }
 
     /**
@@ -317,7 +324,9 @@ public class SignedState implements SignedStateInfo {
                 try {
                     deleted = true;
 
-                    history.recordAction(SignedStateAction.DESTROY, getReservationCount(), null, null);
+                    if (history != null) {
+                        history.recordAction(SignedStateAction.DESTROY, getReservationCount(), null, null);
+                    }
                     registryRecord.release();
                     state.release();
 
@@ -525,7 +534,7 @@ public class SignedState implements SignedStateInfo {
      * @return true if the signed state is now complete as a result of the signature being added, false if the signed
      * state is either not complete or was previously complete prior to this signature
      */
-    public boolean addSignature(final long nodeId, @NonNull final Signature signature) {
+    public boolean addSignature(@NonNull final NodeId nodeId, @NonNull final Signature signature) {
         return addSignature(getAddressBook(), nodeId, signature);
     }
 
@@ -561,8 +570,9 @@ public class SignedState implements SignedStateInfo {
      * state is either not complete or was previously complete prior to this signature
      */
     private boolean addSignature(
-            @NonNull final AddressBook addressBook, final long nodeId, @NonNull final Signature signature) {
+            @NonNull final AddressBook addressBook, @NonNull final NodeId nodeId, @NonNull final Signature signature) {
         Objects.requireNonNull(addressBook, "addressBook");
+        Objects.requireNonNull(nodeId, "nodeId");
         Objects.requireNonNull(signature, "signature");
 
         if (isComplete()) {
@@ -575,7 +585,7 @@ public class SignedState implements SignedStateInfo {
             return false;
         }
 
-        if (sigSet.hasSignature(address.getId())) {
+        if (sigSet.hasSignature(address.getNodeId())) {
             // We already have this signature.
             return false;
         }
@@ -603,31 +613,33 @@ public class SignedState implements SignedStateInfo {
     public void pruneInvalidSignatures(@NonNull final AddressBook trustedAddressBook) {
         Objects.requireNonNull(trustedAddressBook);
 
-        final List<Long> signaturesToRemove = new ArrayList<>();
-        for (final long nodeId : sigSet) {
-            final Address address = trustedAddressBook.getAddress(nodeId);
+        final List<NodeId> signaturesToRemove = new ArrayList<>();
+        for (final NodeId nodeId : sigSet) {
+            final Address address = trustedAddressBook.contains(nodeId) ? trustedAddressBook.getAddress(nodeId) : null;
             if (!isSignatureValid(address, sigSet.getSignature(nodeId))) {
                 signaturesToRemove.add(nodeId);
             }
         }
 
-        for (final long nodeId : signaturesToRemove) {
+        for (final NodeId nodeId : signaturesToRemove) {
             sigSet.removeSignature(nodeId);
         }
 
         // Recalculate signing weight. We should do this even if we don't remove signatures.
         signingWeight = 0;
-        for (final long nodeId : sigSet) {
-            signingWeight += trustedAddressBook.getAddress(nodeId).getWeight();
+        for (final NodeId nodeId : sigSet) {
+            if (trustedAddressBook.contains(nodeId)) {
+                signingWeight += trustedAddressBook.getAddress(nodeId).getWeight();
+            }
         }
     }
 
     /**
-     * Get the reservation history for this object.
+     * Get the reservation history for this object (if configured to gather history)
      *
      * @return the reservation history
      */
-    @NonNull
+    @Nullable
     SignedStateHistory getHistory() {
         return history;
     }

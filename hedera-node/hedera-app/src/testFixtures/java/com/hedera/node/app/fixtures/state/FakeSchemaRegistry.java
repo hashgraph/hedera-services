@@ -1,0 +1,112 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.fixtures.state;
+
+import com.hedera.node.app.spi.fixtures.state.ListReadableQueueState;
+import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
+import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.state.EmptyReadableStates;
+import com.hedera.node.app.spi.state.MigrationContext;
+import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.state.WritableStates;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+
+public class FakeSchemaRegistry implements SchemaRegistry {
+
+    private final List<Schema> schemas = new LinkedList<>();
+
+    @SuppressWarnings("rawtypes")
+    public void migrate(@NonNull final String serviceName, @NonNull final FakeHederaState state) {
+        // For each schema, create the underlying raw data sources (maps, or lists) and the writable states that
+        // will wrap them. Then call the schema's migrate method to populate those states, and commit each of them
+        // to the underlying data sources. At that point, we have properly migrated the state.
+        for (final var schema : schemas) {
+            // Collect the data sources and the writable states
+            final var dataSources = new HashMap<String, Object>();
+            final var writables = new HashMap<String, Object>();
+            final var readables = new HashMap<String, Object>();
+            for (final var sd : schema.statesToCreate()) {
+                if (sd.queue()) {
+                    final var dataSource = new LinkedList<>();
+                    dataSources.put(sd.stateKey(), dataSource);
+                    writables.put(sd.stateKey(), new ListWritableQueueState<>(sd.stateKey(), dataSource));
+                    readables.put(sd.stateKey(), new ListReadableQueueState<>(sd.stateKey(), dataSource));
+                } else if (sd.singleton()) {
+                    throw new RuntimeException("Not yet supported here");
+                } else {
+                    final var dataSource = new HashMap<String, Object>();
+                    dataSources.put(sd.stateKey(), dataSource);
+                    writables.put(sd.stateKey(), new MapWritableKVState<>(sd.stateKey(), dataSource));
+                    readables.put(sd.stateKey(), new MapReadableKVState<>(sd.stateKey(), dataSource));
+                }
+            }
+
+            // Run the migration which will populate the writable states
+            final var previousStates = new EmptyReadableStates();
+            final var writableStates = new MapWritableStates(dataSources);
+            schema.migrate(new MigrationContext() {
+                @NonNull
+                @Override
+                public ReadableStates previousStates() {
+                    return previousStates;
+                }
+
+                @NonNull
+                @Override
+                public WritableStates newStates() {
+                    return writableStates;
+                }
+
+                @NonNull
+                @Override
+                public Configuration configuration() {
+                    return ConfigurationBuilder.create().build();
+                }
+            });
+
+            // Now commit them all
+            for (final var s : writables.values()) {
+                if (s instanceof ListWritableQueueState listState) {
+                    listState.commit();
+                } else if (s instanceof MapWritableKVState mapState) {
+                    mapState.commit();
+                } else {
+                    throw new RuntimeException("Not yet supported here");
+                }
+            }
+
+            if (!dataSources.isEmpty()) {
+                state.addService(serviceName, dataSources);
+            }
+        }
+    }
+
+    @Override
+    public SchemaRegistry register(@NonNull Schema schema) {
+        schemas.add(schema);
+        return this;
+    }
+}

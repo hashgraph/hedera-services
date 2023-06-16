@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
@@ -27,6 +26,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedSt
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
 
 import com.swirlds.base.state.Startable;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -35,7 +35,6 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -127,15 +126,15 @@ public class SignedStateFileManager implements Startable {
             @NonNull final StateToDiskAttemptConsumer stateToDiskAttemptConsumer,
             @NonNull final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer) {
 
-        this.metrics = throwArgNull(metrics, "metrics");
+        this.metrics = Objects.requireNonNull(metrics, "metrics must not be null");
         this.time = time;
         this.selfId = selfId;
         this.mainClassName = mainClassName;
         this.swirldName = swirldName;
         this.stateToDiskAttemptConsumer = stateToDiskAttemptConsumer;
         this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
-        this.minimumGenerationNonAncientConsumer =
-                throwArgNull(minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer");
+        this.minimumGenerationNonAncientConsumer = Objects.requireNonNull(
+                minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer must not be null");
 
         final BasicConfig basicConfig = context.getConfiguration().getConfigData(BasicConfig.class);
 
@@ -143,7 +142,7 @@ public class SignedStateFileManager implements Startable {
                 .setCapacity(stateConfig.stateSavingQueueSize())
                 .setMaxBufferSize(1)
                 .setPriority(basicConfig.threadPriorityNonSync())
-                .setNodeId(selfId.getId())
+                .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("signed-state-file-manager")
                 .setHandler(Runnable::run)
@@ -221,7 +220,7 @@ public class SignedStateFileManager implements Startable {
             final long round = reservedSignedState.get().getRound();
             try (reservedSignedState) {
                 try {
-                    writeSignedStateToDisk(selfId.getId(), directory, reservedSignedState.get(), taskDescription);
+                    writeSignedStateToDisk(selfId, directory, reservedSignedState.get(), taskDescription);
                     metrics.getWriteStateToDiskTimeMetric()
                             .update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 
@@ -289,7 +288,7 @@ public class SignedStateFileManager implements Startable {
                 signedState,
                 getSignedStatesBaseDirectory()
                         .resolve(reason)
-                        .resolve(String.format("node%d_round%d", selfId.getId(), signedState.getRound())),
+                        .resolve(String.format("node%d_round%d", selfId.id(), signedState.getRound())),
                 reason,
                 success -> latch.countDown());
 
@@ -318,9 +317,13 @@ public class SignedStateFileManager implements Startable {
      * @param signedState       the state in question
      * @param previousTimestamp the timestamp of the previous state that was saved to disk, or null if no previous state
      *                          was saved to disk
+     * @param source            the source of the signed state
      * @return true if the state should be written to disk
      */
-    private boolean shouldSaveToDisk(final SignedState signedState, final Instant previousTimestamp) {
+    private boolean shouldSaveToDisk(
+            @NonNull final SignedState signedState,
+            @Nullable final Instant previousTimestamp,
+            @NonNull final SourceOfSignedState source) {
         if (signedState.isFreezeState()) {
             // the state right before a freeze should be written to disk
             return true;
@@ -330,6 +333,11 @@ public class SignedStateFileManager implements Startable {
         if (saveStatePeriod <= 0) {
             // state saving is disabled
             return false;
+        }
+
+        if (source == SourceOfSignedState.RECONNECT && stateConfig.saveReconnectStateToDisk()) {
+            // states received via reconnect should be written to disk if configured
+            return true;
         }
 
         if (previousTimestamp == null) {
@@ -346,9 +354,11 @@ public class SignedStateFileManager implements Startable {
      * state's {@link SignedState#isStateToSave()} flag will be set to true.
      *
      * @param signedState the signed state in question
+     * @param source     the source of the signed state
      */
-    public synchronized void determineIfStateShouldBeSaved(final SignedState signedState) {
-        if (shouldSaveToDisk(signedState, previousSavedStateTimestamp)) {
+    public synchronized void determineIfStateShouldBeSaved(
+            @NonNull final SignedState signedState, @NonNull final SourceOfSignedState source) {
+        if (shouldSaveToDisk(signedState, previousSavedStateTimestamp, source)) {
 
             logger.info(
                     STATE_TO_DISK.getMarker(),

@@ -31,11 +31,11 @@ import com.swirlds.platform.Consensus;
 import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
-import com.swirlds.platform.sync.ShadowGraph;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import java.util.LinkedList;
@@ -61,7 +61,7 @@ class EventIntakeTest {
         final ShadowGraph shadowGraph = mock(ShadowGraph.class);
 
         final EventIntake intake = new EventIntake(
-                NodeId.createMain(0),
+                new NodeId(0L),
                 mock(EventLinker.class),
                 () -> consensus,
                 addressBook,

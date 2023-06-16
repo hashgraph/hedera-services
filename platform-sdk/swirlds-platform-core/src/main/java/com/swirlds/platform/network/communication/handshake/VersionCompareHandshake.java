@@ -20,7 +20,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.logging.LogMarker;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.ProtocolRunnable;
 import java.io.IOException;

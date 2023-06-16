@@ -16,12 +16,12 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -64,7 +64,7 @@ class ConfigDataService implements ConfigLifecycle {
      * @param <T>  generic type of the config data object
      */
     <T extends Record> void addConfigDataType(@NonNull final Class<T> type) {
-        ArgumentUtils.throwArgNull(type, "type");
+        Objects.requireNonNull(type, "type must not be null");
         throwIfInitialized();
         registeredTypes.add(type);
     }
@@ -105,7 +105,7 @@ class ConfigDataService implements ConfigLifecycle {
      */
     @NonNull
     <T extends Record> T getConfigData(@NonNull final Class<T> type) {
-        ArgumentUtils.throwArgNull(type, "type");
+        Objects.requireNonNull(type, "type must not be null");
         throwIfNotInitialized();
         if (!configDataCache.containsKey(type)) {
             throw new IllegalArgumentException("No config data record available of type '" + type + "'");

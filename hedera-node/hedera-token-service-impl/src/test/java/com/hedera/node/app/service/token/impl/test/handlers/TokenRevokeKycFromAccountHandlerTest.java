@@ -19,31 +19,35 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.txnFrom;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.txnFrom;
 import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicContextAssertions;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_FOR_TOKEN_WITHOUT_KYC;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_INVALID_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_MISSING_TXN_BODY;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.VALID_REVOKE_WITH_EXTANT_TOKEN;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenRevokeKycTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -53,17 +57,21 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TokenRevokeKycFromAccountHandlerTest {
+
+    private static final AccountID PBJ_PAYER_ID = protoToPbj(asAccount("0.0.3"), AccountID.class);
     private static final TokenID TOKEN_10 = TokenID.newBuilder().tokenNum(10).build();
     private static final AccountID ACCOUNT_100 =
             AccountID.newBuilder().accountNum(100).build();
@@ -99,8 +107,37 @@ class TokenRevokeKycFromAccountHandlerTest {
             final var txn = txnFrom(REVOKE_WITH_MISSING_TXN_BODY);
 
             final var context = new FakePreHandleContext(accountStore, txn);
-            context.registerStore(ReadableTokenStore.class, tokenStore);
             assertThrows(NullPointerException.class, () -> subject.preHandle(context));
+        }
+
+        @Test
+        @DisplayName("When op token ID is null, tokenOrThrow throws an exception")
+        void nullTokenIdThrowsException() throws PreCheckException {
+            final var txn = TransactionBody.newBuilder()
+                    .transactionID(TransactionID.newBuilder().accountID(PBJ_PAYER_ID))
+                    .tokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder()
+                            .token((TokenID) null)
+                            .account(AccountID.newBuilder().accountNum(MISC_ACCOUNT.getAccountNum()))
+                            .build())
+                    .build();
+
+            final var context = new FakePreHandleContext(accountStore, txn);
+            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
+        }
+
+        @Test
+        @DisplayName("When op account ID is null, accountOrThrow throws an exception")
+        void nullAccountIdThrowsException() throws PreCheckException {
+            final var txn = TransactionBody.newBuilder()
+                    .transactionID(TransactionID.newBuilder().accountID(PBJ_PAYER_ID))
+                    .tokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder()
+                            .token(TOKEN_10)
+                            .account((AccountID) null)
+                            .build())
+                    .build();
+
+            final var context = new FakePreHandleContext(accountStore, txn);
+            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
         }
 
         @Test
@@ -128,66 +165,45 @@ class TokenRevokeKycFromAccountHandlerTest {
 
     @Nested
     class HandleTests {
+
+        @Mock(strictness = LENIENT)
+        private HandleContext handleContext;
+
+        @Mock
         private WritableTokenRelationStore tokenRelStore;
 
         @BeforeEach
         void setUp() {
-            tokenRelStore = mock(WritableTokenRelationStore.class);
+            given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
         }
 
         @Test
         @DisplayName("Any null input argument should throw an exception")
         @SuppressWarnings("DataFlowIssue")
         void nullArgsThrowException() {
-            assertThatThrownBy(() -> subject.handle(null, tokenRelStore)).isInstanceOf(NullPointerException.class);
-
-            assertThatThrownBy(() -> subject.handle(mock(TransactionBody.class), null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.handle(null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
         @DisplayName("When op tokenRevokeKyc is null, tokenRevokeKycOrThrow throws an " + "exception")
         void nullTokenRevokeKycThrowsException() {
             final var txnBody = TransactionBody.newBuilder().build();
+            given(handleContext.body()).willReturn(txnBody);
 
-            assertThatThrownBy(() -> subject.handle(txnBody, tokenRelStore)).isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
-        @DisplayName("When op token ID is null, tokenOrThrow throws an exception")
-        void nullTokenIdThrowsException() {
-            final var txnBody = newTxnBody(false, true);
-
-            try {
-                subject.handle(txnBody, tokenRelStore);
-            } catch (HandleException result) {
-                Assertions.assertThat(result.getStatus()).isEqualTo(INVALID_TOKEN_ID);
-            } catch (Exception result) {
-                fail("Expected HandleException, got " + result.getClass().getSimpleName());
-            }
-        }
-
-        @Test
-        @DisplayName("When op account ID is null, accountOrThrow throws an exception")
-        void nullAccountIdThrowsException() {
-            final var txnBody = newTxnBody(true, false);
-
-            try {
-                subject.handle(txnBody, tokenRelStore);
-            } catch (HandleException result) {
-                Assertions.assertThat(result.getStatus()).isEqualTo(INVALID_ACCOUNT_ID);
-            } catch (Exception result) {
-                fail("Expected HandleException, got " + result.getClass().getSimpleName());
-            }
+            assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
         @DisplayName("When getForModify returns empty, should not put or commit")
         void emptyGetForModifyShouldNotPersist() {
-            given(tokenRelStore.getForModify(anyLong(), anyLong())).willReturn(Optional.empty());
+            given(tokenRelStore.getForModify(notNull(), notNull())).willReturn(null);
 
-            final var txnBody = newTxnBody(true, true);
-            assertThatThrownBy(() -> subject.handle(txnBody, tokenRelStore)).isInstanceOf(NoSuchElementException.class);
+            final var txnBody = newTxnBody();
+            given(handleContext.body()).willReturn(txnBody);
+
+            assertThatThrownBy(() -> subject.handle(handleContext))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INVALID_TOKEN_ID));
 
             verify(tokenRelStore, never()).put(any(TokenRelation.class));
         }
@@ -200,11 +216,12 @@ class TokenRevokeKycFromAccountHandlerTest {
                     .accountNumber(ACCOUNT_100.accountNumOrThrow())
                     .kycGranted(true)
                     .build();
-            given(tokenRelStore.getForModify(TOKEN_10.tokenNum(), ACCOUNT_100.accountNumOrThrow()))
-                    .willReturn(Optional.of(stateTokenRel));
+            given(tokenRelStore.getForModify(ACCOUNT_100, TOKEN_10)).willReturn(stateTokenRel);
 
-            final var txnBody = newTxnBody(true, true);
-            subject.handle(txnBody, tokenRelStore);
+            final var txnBody = newTxnBody();
+            given(handleContext.body()).willReturn(txnBody);
+
+            subject.handle(handleContext);
 
             verify(tokenRelStore)
                     .put(newTokenRelationBuilder().kycGranted(false).build());
@@ -216,14 +233,10 @@ class TokenRevokeKycFromAccountHandlerTest {
                     .accountNumber(ACCOUNT_100.accountNumOrThrow());
         }
 
-        private TransactionBody newTxnBody(final boolean tokenPresent, final boolean accountPresent) {
+        private TransactionBody newTxnBody() {
             TokenRevokeKycTransactionBody.Builder builder = TokenRevokeKycTransactionBody.newBuilder();
-            if (tokenPresent) {
-                builder.token(TOKEN_10);
-            }
-            if (accountPresent) {
-                builder.account(ACCOUNT_100);
-            }
+            builder.token(TOKEN_10);
+            builder.account(ACCOUNT_100);
             return TransactionBody.newBuilder()
                     .tokenRevokeKyc(builder.build())
                     .memo(this.getClass().getName() + System.currentTimeMillis())

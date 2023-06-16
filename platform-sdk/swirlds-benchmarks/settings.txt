@@ -1,6 +1,7 @@
 benchmark.benchmarkData,                       data
 benchmark.saveDataDirectory,                   false
 benchmark.verifyResult,                        true
+benchmark.enableSnapshots,                     false
 benchmark.printHistogram,                      false
 benchmark.csvOutputFolder,                     data
 benchmark.csvWriteFrequency,                   1000
@@ -8,5 +9,5 @@ benchmark.csvAppend,                           true
 virtualMap.flushInterval,                      20
 virtualMap.preferredFlushQueueSize,            1
 virtualMap.flushThrottleStepSize,              500ms
-jasperDb.internalHashesRamToDiskThreshold,     8388608
-merkleDb.internalHashesRamToDiskThreshold,     8388608
+jasperDb.hashesRamToDiskThreshold,             8388608
+merkleDb.hashesRamToDiskThreshold,             8388608

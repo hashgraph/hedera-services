@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.components.wiring;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.WiringConfig;
@@ -24,6 +23,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -39,14 +39,18 @@ import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponentFactory;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.metrics.WiringMetrics;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Shutdown;
+import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.util.PlatformComponents;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -117,7 +121,8 @@ public class ManualWiring {
      * @param prioritySystemTransactionSubmitter submits priority system transactions
      * @param haltRequestedConsumer              consumer to invoke when a halt is requested
      * @param appCommunicationComponent          the {@link AppCommunicationComponent}
-     * @param preConsensusEventWriter            writes preconsensus events to disk
+     * @param preconsensusEventWriter            writes preconsensus events to disk
+     * @param getPlatformStatus                  a supplier that returns the current platform status
      * @return a fully wired {@link StateManagementComponent}
      */
     public @NonNull StateManagementComponent wireStateManagementComponent(
@@ -128,20 +133,29 @@ public class ManualWiring {
             @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final AppCommunicationComponent appCommunicationComponent,
-            @NonNull final PreConsensusEventWriter preConsensusEventWriter) {
+            @NonNull final PreconsensusEventWriter preconsensusEventWriter,
+            @NonNull final Supplier<PlatformStatus> getPlatformStatus) {
 
-        throwArgNull(platformSigner, "platformSigner");
-        throwArgNull(mainClassName, "mainClassName");
-        throwArgNull(selfId, "selfId");
-        throwArgNull(swirldName, "swirldName");
-        throwArgNull(prioritySystemTransactionSubmitter, "prioritySystemTransactionSubmitter");
-        throwArgNull(haltRequestedConsumer, "haltRequestedConsumer");
-        throwArgNull(appCommunicationComponent, "appCommunicationComponent");
-        throwArgNull(preConsensusEventWriter, "preConsensusEventWriter");
+        Objects.requireNonNull(platformSigner, "platformSigner");
+        Objects.requireNonNull(mainClassName, "mainClassName");
+        Objects.requireNonNull(selfId, "selfId");
+        Objects.requireNonNull(swirldName, "swirldName");
+        Objects.requireNonNull(prioritySystemTransactionSubmitter, "prioritySystemTransactionSubmitter");
+        Objects.requireNonNull(haltRequestedConsumer, "haltRequestedConsumer");
+        Objects.requireNonNull(appCommunicationComponent, "appCommunicationComponent");
+        Objects.requireNonNull(preconsensusEventWriter, "preconsensusEventWriter");
+        Objects.requireNonNull(getPlatformStatus, "getPlatformStatus");
 
         final StateManagementComponentFactory stateManagementComponentFactory =
                 new DefaultStateManagementComponentFactory(
-                        platformContext, threadManager, addressBook, platformSigner, mainClassName, selfId, swirldName);
+                        platformContext,
+                        threadManager,
+                        addressBook,
+                        platformSigner,
+                        mainClassName,
+                        selfId,
+                        swirldName,
+                        getPlatformStatus);
 
         stateManagementComponentFactory.newLatestCompleteStateConsumer(ss -> {
             final ReservedSignedState reservedSignedState = ss.reserve("ManualWiring newLatestCompleteStateConsumer");
@@ -175,7 +189,7 @@ public class ManualWiring {
         // FUTURE WORK: make this asynchronous
         stateManagementComponentFactory.issConsumer(appCommunicationComponent);
         stateManagementComponentFactory.fatalErrorConsumer(this::handleFatalError);
-        stateManagementComponentFactory.setPreConsensusEventWriter(preConsensusEventWriter);
+        stateManagementComponentFactory.setPreconsensusEventWriter(preconsensusEventWriter);
 
         final StateManagementComponent stateManagementComponent = stateManagementComponentFactory.build();
         platformComponentList.add(stateManagementComponent);
@@ -185,7 +199,11 @@ public class ManualWiring {
     /**
      * Inform all components that a fatal error has occurred, log the error, and shutdown the JVM.
      */
-    private void handleFatalError(final String msg, final Throwable throwable, final Integer exitCode) {
+    private void handleFatalError(
+            @Nullable final String msg, @Nullable final Throwable throwable, @NonNull final SystemExitCode exitCode) {
+
+        Objects.requireNonNull(exitCode);
+
         logFatalError(msg, throwable);
         platformComponentList.forEach(PlatformComponent::onFatalError);
         new Shutdown().shutdown(msg, exitCode);

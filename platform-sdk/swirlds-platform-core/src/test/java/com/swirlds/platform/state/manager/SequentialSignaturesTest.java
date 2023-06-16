@@ -32,6 +32,7 @@ import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
+import java.time.Instant;
 import java.util.HashMap;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -49,7 +50,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
     private final AddressBook addressBook = new RandomAddressBookGenerator(random)
             .setSize(4)
             .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-            .setSequentialIds(true)
+            .setSequentialIds(false)
             .build();
 
     /**
@@ -83,6 +84,11 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
 
+        assertNull(manager.getFirstStateTimestamp());
+        assertEquals(-1, manager.getFirstStateRound());
+        Instant firstTimestamp = null;
+        final long firstRound = 0;
+
         // Create a series of signed states.
         final int count = 100;
         for (int round = 0; round < count; round++) {
@@ -97,14 +103,24 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
 
             manager.addState(signedState);
 
+            if (round == 0) {
+                firstTimestamp = signedState
+                        .getState()
+                        .getPlatformState()
+                        .getPlatformData()
+                        .getConsensusTimestamp();
+            }
+            assertEquals(firstTimestamp, manager.getFirstStateTimestamp());
+            assertEquals(firstRound, manager.getFirstStateRound());
+
             // Add some signatures to one of the previous states
             final long roundToSign = round - roundAgeToSign;
-            addSignature(manager, roundToSign, 0);
-            addSignature(manager, roundToSign, 1);
-            addSignature(manager, roundToSign, 2);
+            addSignature(manager, roundToSign, addressBook.getNodeId(0));
+            addSignature(manager, roundToSign, addressBook.getNodeId(1));
+            addSignature(manager, roundToSign, addressBook.getNodeId(2));
             if (random.nextBoolean()) {
-                addSignature(manager, roundToSign, 1);
-                addSignature(manager, roundToSign, 1);
+                addSignature(manager, roundToSign, addressBook.getNodeId(1));
+                addSignature(manager, roundToSign, addressBook.getNodeId(1));
             }
 
             try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {

@@ -20,8 +20,7 @@ import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_BURN_TOKEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddress;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile.decodeBurn;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile.decodeBurnV2;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile.getBurnWrapper;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -31,6 +30,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -73,6 +73,7 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.txns.token.BurnLogic;
@@ -114,7 +115,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class BurnPrecompilesTest {
 
-    private final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN));
+    private final Bytes pretendArguments = SystemContractAbis.BURN_TOKEN_V1.selector;
 
     @Mock
     private AccountStore accountStore;
@@ -228,14 +229,26 @@ class BurnPrecompilesTest {
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / HTSTestsUtil.DEFAULT_GAS_PRICE * 6 / 5;
-    private static final Bytes FUNGIBLE_BURN_INPUT = Bytes.fromHexString(
+    private static final Bytes FUNGIBLE_BURN_INPUT_V1 = Bytes.fromHexString(
             "0xacb9cff90000000000000000000000000000000000000000000000000000000000000498000000000000000000000000000000000000000000000000000000000000002100000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
     private static final Bytes FUNGIBLE_BURN_INPUT_V2 = Bytes.fromHexString(
             "0xd6910d060000000000000000000000000000000000000000000000000000000000000498000000000000000000000000000000000000000000000000000000000000002100000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
-    private static final Bytes NON_FUNGIBLE_BURN_INPUT = Bytes.fromHexString(
+    private static final Bytes FUNGIBLE_BURN_ZERO_AMOUNT_INPUT_V1 = Bytes.fromHexString(
+            "0xacb9cff90000000000000000000000000000000000000000000000000000000000000498000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes FUNGIBLE_BURN_ZERO_AMOUNT_INPUT_V2 = Bytes.fromHexString(
+            "0xd6910d060000000000000000000000000000000000000000000000000000000000000498000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes FUNGIBLE_BURN_NEGATIVE_AMOUNT_INPUT_V1 = Bytes.fromHexString(
+            "0xacb9cff90000000000000000000000000000000000000000000000000000000000000498fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes FUNGIBLE_BURN_NEGATIVE_AMOUNT_INPUT_V2 = Bytes.fromHexString(
+            "0xd6910d060000000000000000000000000000000000000000000000000000000000000498fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    private static final Bytes NON_FUNGIBLE_BURN_INPUT_V1 = Bytes.fromHexString(
             "0xacb9cff9000000000000000000000000000000000000000000000000000000000000049e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
     private static final Bytes NON_FUNGIBLE_BURN_INPUT_V2 = Bytes.fromHexString(
             "0xd6910d06000000000000000000000000000000000000000000000000000000000000049e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
+    private static final Bytes NON_FUNGIBLE_NEGATIVE_AMOUNT_BURN_INPUT_V1 = Bytes.fromHexString(
+            "0xacb9cff9000000000000000000000000000000000000000000000000000000000000049efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
+    private static final Bytes NON_FUNGIBLE_NEGATIVE_AMOUNT_BURN_INPUT_V2 = Bytes.fromHexString(
+            "0xd6910d06000000000000000000000000000000000000000000000000000000000000049efffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000007b00000000000000000000000000000000000000000000000000000000000000ea");
 
     private HTSPrecompiledContract subject;
     private MockedStatic<BurnPrecompile> burnPrecompile;
@@ -404,7 +417,7 @@ class BurnPrecompilesTest {
         given(creator.createUnsuccessfulSyntheticRecord(INVALID_TOKEN_ID)).willReturn(mockRecordBuilder);
 
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
         subject.computeInternal(frame);
 
@@ -463,7 +476,9 @@ class BurnPrecompilesTest {
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         givenIfDelegateCall();
         doCallRealMethod().when(frame).setExceptionalHaltReason(any());
-        burnPrecompile.when(() -> decodeBurn(pretendArguments)).thenReturn(HTSTestsUtil.fungibleBurnAmountOversize);
+        burnPrecompile
+                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1))
+                .thenReturn(HTSTestsUtil.fungibleBurnAmountOversize);
         // when:
         final var result = subject.computePrecompile(pretendArguments, frame);
         // then:
@@ -483,7 +498,9 @@ class BurnPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        burnPrecompile.when(() -> decodeBurn(pretendArguments)).thenReturn(HTSTestsUtil.fungibleBurnMaxAmount);
+        burnPrecompile
+                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1))
+                .thenReturn(HTSTestsUtil.fungibleBurnMaxAmount);
         given(syntheticTxnFactory.createBurn(HTSTestsUtil.fungibleBurnMaxAmount))
                 .willReturn(mockSynthBodyBuilder);
         given(sigsVerifier.hasActiveSupplyKey(
@@ -526,7 +543,9 @@ class BurnPrecompilesTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        burnPrecompile.when(() -> decodeBurn(pretendArguments)).thenReturn(HTSTestsUtil.fungibleBurn);
+        burnPrecompile
+                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1))
+                .thenReturn(HTSTestsUtil.fungibleBurn);
         given(syntheticTxnFactory.createBurn(any()))
                 .willReturn(TransactionBody.newBuilder().setTokenBurn(TokenBurnTransactionBody.newBuilder()));
         given(feeCalculator.computeFee(any(), any(), any(), any()))
@@ -544,9 +563,9 @@ class BurnPrecompilesTest {
     }
 
     @Test
-    void decodeFungibleBurnInput() {
+    void decodeFungibleBurnInputV1() {
         burnPrecompile.close();
-        final var decodedInput = decodeBurn(FUNGIBLE_BURN_INPUT);
+        final var decodedInput = getBurnWrapper(FUNGIBLE_BURN_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
         assertEquals(33, decodedInput.amount());
@@ -557,7 +576,7 @@ class BurnPrecompilesTest {
     @Test
     void decodeFungibleBurnInputV2() {
         burnPrecompile.close();
-        final var decodedInput = decodeBurnV2(FUNGIBLE_BURN_INPUT_V2);
+        final var decodedInput = getBurnWrapper(FUNGIBLE_BURN_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
         assertEquals(33, decodedInput.amount());
@@ -566,9 +585,45 @@ class BurnPrecompilesTest {
     }
 
     @Test
-    void decodeNonFungibleBurnInput() {
+    void decodeFungibleBurnZeroInputV1() {
         burnPrecompile.close();
-        final var decodedInput = decodeBurn(NON_FUNGIBLE_BURN_INPUT);
+        var exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> getBurnWrapper(FUNGIBLE_BURN_ZERO_AMOUNT_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1));
+        assertEquals("Illegal amount of tokens to burn", exception.getMessage());
+    }
+
+    @Test
+    void decodeFungibleBurnZeroInputV2() {
+        burnPrecompile.close();
+        var exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> getBurnWrapper(FUNGIBLE_BURN_ZERO_AMOUNT_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2));
+        assertEquals("Illegal amount of tokens to burn", exception.getMessage());
+    }
+
+    @Test
+    void decodeFungibleBurnNegativeInputV1() {
+        burnPrecompile.close();
+        var exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> getBurnWrapper(FUNGIBLE_BURN_NEGATIVE_AMOUNT_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1));
+        assertEquals("unsigned val exceeds bit limit: 256 > 64", exception.getMessage());
+    }
+
+    @Test
+    void decodeFungibleBurnNegativeInputV2() {
+        burnPrecompile.close();
+        var exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> getBurnWrapper(FUNGIBLE_BURN_NEGATIVE_AMOUNT_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2));
+        assertEquals("Illegal amount of tokens to burn", exception.getMessage());
+    }
+
+    @Test
+    void decodeNonFungibleBurnInputV1() {
+        burnPrecompile.close();
+        final var decodedInput = getBurnWrapper(NON_FUNGIBLE_BURN_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
         assertEquals(-1, decodedInput.amount());
@@ -581,7 +636,7 @@ class BurnPrecompilesTest {
     @Test
     void decodeNonFungibleBurnInputV2() {
         burnPrecompile.close();
-        final var decodedInput = decodeBurnV2(NON_FUNGIBLE_BURN_INPUT_V2);
+        final var decodedInput = getBurnWrapper(NON_FUNGIBLE_BURN_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
         assertEquals(-1, decodedInput.amount());
@@ -591,15 +646,37 @@ class BurnPrecompilesTest {
         assertEquals(NON_FUNGIBLE_UNIQUE, decodedInput.type());
     }
 
+    @Test
+    void decodeNonFungibleBurnNegativeInputV1() {
+        burnPrecompile.close();
+        var exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> getBurnWrapper(NON_FUNGIBLE_NEGATIVE_AMOUNT_BURN_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1));
+        assertEquals("unsigned val exceeds bit limit: 256 > 64", exception.getMessage());
+    }
+
+    @Test
+    void decodeNonFungibleBurnNegativeInputV2() {
+        burnPrecompile.close();
+        var exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> getBurnWrapper(NON_FUNGIBLE_NEGATIVE_AMOUNT_BURN_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2));
+        assertEquals("Illegal amount of tokens to burn", exception.getMessage());
+    }
+
     private void givenNonfungibleFrameContext() {
         givenFrameContext();
-        burnPrecompile.when(() -> decodeBurn(pretendArguments)).thenReturn(HTSTestsUtil.nonFungibleBurn);
+        burnPrecompile
+                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1))
+                .thenReturn(HTSTestsUtil.nonFungibleBurn);
         given(syntheticTxnFactory.createBurn(HTSTestsUtil.nonFungibleBurn)).willReturn(mockSynthBodyBuilder);
     }
 
     private void givenFungibleFrameContext() {
         givenFrameContext();
-        burnPrecompile.when(() -> decodeBurn(pretendArguments)).thenReturn(HTSTestsUtil.fungibleBurn);
+        burnPrecompile
+                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1))
+                .thenReturn(HTSTestsUtil.fungibleBurn);
         given(syntheticTxnFactory.createBurn(HTSTestsUtil.fungibleBurn)).willReturn(mockSynthBodyBuilder);
     }
 

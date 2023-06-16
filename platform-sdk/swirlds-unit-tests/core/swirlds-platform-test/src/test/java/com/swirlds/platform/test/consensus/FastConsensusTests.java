@@ -34,7 +34,6 @@ import static com.swirlds.platform.test.consensus.ConsensusTestDefinitions.recon
 import static com.swirlds.platform.test.consensus.ConsensusTestDefinitions.subQuorumOfNodesGoDownTests;
 import static com.swirlds.platform.test.consensus.ConsensusTestDefinitions.subQuorumPartitionTests;
 import static com.swirlds.platform.test.consensus.ConsensusTestDefinitions.variableRateTests;
-import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.test.framework.TestComponentTags;
@@ -52,7 +51,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @DisplayName("Fast Consensus Tests")
-@Tag(TIME_CONSUMING)
 class FastConsensusTests {
 
     /**
@@ -67,7 +65,6 @@ class FastConsensusTests {
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TIME_CONSUMING)
     @DisplayName("Reconnect Simulation")
     void fastReconnectSimulation(final ConsensusTestParams params) {
         reconnectSimulation(testDirectory, params.numNodes(), params.weightGenerator(), 1);
@@ -90,7 +87,6 @@ class FastConsensusTests {
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TIME_CONSUMING)
     @DisplayName("All Events Returned Tests")
     void fastAreAllEventsReturned(final ConsensusTestParams params) {
         areAllEventsReturned(params.numNodes(), params.weightGenerator());
@@ -102,7 +98,6 @@ class FastConsensusTests {
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TIME_CONSUMING)
     @DisplayName("Fast Order Invariance Tests")
     void FastOrderInvarianceTests(final ConsensusTestParams params) {
         orderInvarianceTests(params.numNodes(), params.weightGenerator(), 1);
@@ -137,7 +132,6 @@ class FastConsensusTests {
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TIME_CONSUMING)
     @DisplayName("Fast Sub Quorum Partition Tests")
     void fastSubQuorumPartitionTests(final ConsensusTestParams params) {
         subQuorumPartitionTests(params.numNodes(), params.weightGenerator(), 1);
@@ -149,7 +143,6 @@ class FastConsensusTests {
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TIME_CONSUMING)
     @DisplayName("Fast Clique Tests")
     void fastCliqueTests(final ConsensusTestParams params) {
         cliqueTests(params.numNodes(), params.weightGenerator(), 1);
@@ -194,7 +187,6 @@ class FastConsensusTests {
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TIME_CONSUMING)
     @DisplayName("Fast Quorum Of Nodes Go Down Tests")
     void fastQuorumOfNodesGoDownTests(final ConsensusTestParams params) {
         quorumOfNodesGoDownTests(params.numNodes(), params.weightGenerator(), 1);
@@ -210,7 +202,6 @@ class FastConsensusTests {
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TIME_CONSUMING)
     @DisplayName("Fast Many Node Tests")
     void fastManyNodeTests(final ConsensusTestParams params) {
         manyNodeTests(params.weightGenerator(), 1);
@@ -226,7 +217,6 @@ class FastConsensusTests {
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TIME_CONSUMING)
     @DisplayName("Fast Few Node Tests")
     void fastFewNodesTests(final ConsensusTestParams params) {
         fewNodesTests(params.weightGenerator(), 1);
@@ -238,7 +228,6 @@ class FastConsensusTests {
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
-    @Tag(TIME_CONSUMING)
     @DisplayName("Fast Sub-Quorum Of Nodes Go Down Tests")
     void fastSubQuorumOfNodesGoDownTests(final ConsensusTestParams params) {
         subQuorumOfNodesGoDownTests(params.numNodes(), params.weightGenerator(), 1);

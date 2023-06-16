@@ -36,8 +36,8 @@ import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventConstants;
+import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.sync.ShadowEvent;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.generator.GraphGenerator;
@@ -521,7 +521,8 @@ public class SyncTests {
         });
 
         // Do not add events created by the unknown creator to the caller graph to fulfill the premise of this test
-        executor.setCallerAddToGraphTest((indexedEvent -> indexedEvent.getCreatorId() != unknownCallerCreator));
+        executor.setCallerAddToGraphTest(
+                (indexedEvent -> indexedEvent.getCreatorId().id() != unknownCallerCreator));
 
         executor.execute();
 

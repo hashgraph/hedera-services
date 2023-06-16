@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.network.communication.multithreaded;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.test.network.communication.TestProtocol;
 import com.swirlds.platform.test.sync.ConnectionFactory;
 import java.io.IOException;
@@ -39,7 +39,7 @@ class NegotiatorPair {
     }
 
     public NegotiatorPair(final TestProtocol protocol) throws IOException {
-        this(protocol, ConnectionFactory.createLocalConnections(NodeId.createMain(0), NodeId.createMain(1)));
+        this(protocol, ConnectionFactory.createLocalConnections(new NodeId(0L), new NodeId(1)));
     }
 
     public void start() {

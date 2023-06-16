@@ -16,7 +16,6 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.converter.ConfigConverter;
 import com.swirlds.config.impl.converters.BigDecimalConverter;
 import com.swirlds.config.impl.converters.BigIntegerConverter;
@@ -101,7 +100,7 @@ class ConverterService implements ConfigLifecycle {
 
     @NonNull
     private <T, C extends ConfigConverter<T>> Class<T> getConverterType(@NonNull final Class<C> converterClass) {
-        ArgumentUtils.throwArgNull(converterClass, "converterClass");
+        Objects.requireNonNull(converterClass, "converterClass must not be null");
         return Arrays.stream(converterClass.getGenericInterfaces())
                 .filter(ParameterizedType.class::isInstance)
                 .map(ParameterizedType.class::cast)
@@ -121,7 +120,7 @@ class ConverterService implements ConfigLifecycle {
     @Nullable
     <T> T convert(@Nullable final String value, @NonNull final Class<T> targetClass) {
         throwIfNotInitialized();
-        ArgumentUtils.throwArgNull(targetClass, "targetClass");
+        Objects.requireNonNull(targetClass, "targetClass must not be null");
         if (value == null) {
             return null;
         }
@@ -141,15 +140,15 @@ class ConverterService implements ConfigLifecycle {
 
     <T> void addConverter(@NonNull final ConfigConverter<T> converter) {
         throwIfInitialized();
-        ArgumentUtils.throwArgNull(converter, "converter");
+        Objects.requireNonNull(converter, "converter must not be null");
         final Class<T> converterType = getConverterType(converter.getClass());
         add(converterType, converter);
     }
 
     private <T> void add(@NonNull final Class<T> converterType, @NonNull final ConfigConverter<T> converter) {
         throwIfInitialized();
-        ArgumentUtils.throwArgNull(converterType, "converterType");
-        ArgumentUtils.throwArgNull(converter, "converter");
+        Objects.requireNonNull(converterType, "converterType must not be null");
+        Objects.requireNonNull(converter, "converter must not be null");
 
         if (converters.containsKey(converterType)) {
             throw new IllegalStateException("Converter for type '" + converterType + "' already registered");
@@ -208,7 +207,7 @@ class ConverterService implements ConfigLifecycle {
     @Nullable
     <T> ConfigConverter<T> getConverterForType(@NonNull final Class<T> valueType) {
         throwIfNotInitialized();
-        ArgumentUtils.throwArgNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType must not be null");
         return (ConfigConverter<T>) converters.get(valueType);
     }
 }

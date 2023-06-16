@@ -19,6 +19,8 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,15 +44,8 @@ public class EtherumTransactionHandler implements TransactionHandler {
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle() {
+    @Override
+    public void handle(@NonNull final HandleContext context) throws HandleException {
         throw new UnsupportedOperationException("Not implemented");
     }
 }

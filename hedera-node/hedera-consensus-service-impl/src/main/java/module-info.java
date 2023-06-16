@@ -2,27 +2,22 @@ import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 
 module com.hedera.node.app.service.consensus.impl {
     requires transitive com.hedera.node.app.service.consensus;
-    requires com.hedera.node.hapi;
-    requires com.hedera.pbj.runtime;
-    requires com.hedera.node.app.service.mono;
-    requires com.swirlds.common;
-    requires dagger;
-    requires javax.inject;
-    requires com.github.spotbugs.annotations;
-    requires com.hedera.node.app.service.token;
+    requires transitive com.hedera.node.app.service.mono;
+    requires transitive com.hedera.node.app.spi;
+    requires transitive com.hedera.node.hapi;
+    requires transitive com.hedera.pbj.runtime;
+    requires transitive dagger;
+    requires transitive javax.inject;
+    requires com.hedera.node.config;
     requires com.swirlds.config;
+    requires static com.github.spotbugs.annotations;
 
     provides com.hedera.node.app.service.consensus.ConsensusService with
             ConsensusServiceImpl;
 
     exports com.hedera.node.app.service.consensus.impl to
-            com.hedera.node.app.service.consensus.impl.test,
             com.hedera.node.app;
     exports com.hedera.node.app.service.consensus.impl.handlers;
     exports com.hedera.node.app.service.consensus.impl.codecs;
-    exports com.hedera.node.app.service.consensus.impl.config;
     exports com.hedera.node.app.service.consensus.impl.records;
-
-    opens com.hedera.node.app.service.consensus.impl.handlers to
-            com.hedera.node.app.service.consensus.impl.test;
 }

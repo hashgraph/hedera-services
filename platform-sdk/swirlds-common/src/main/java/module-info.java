@@ -38,7 +38,6 @@ module com.swirlds.common {
     exports com.swirlds.common.merkle.synchronization;
     exports com.swirlds.common.merkle.synchronization.config;
     exports com.swirlds.common.merkle.synchronization.internal;
-    exports com.swirlds.common.merkle.synchronization.settings;
     exports com.swirlds.common.merkle.synchronization.streams;
     exports com.swirlds.common.merkle.synchronization.utility;
     exports com.swirlds.common.merkle.synchronization.views;
@@ -147,6 +146,7 @@ module com.swirlds.common {
             com.fasterxml.jackson.databind;
 
     exports com.swirlds.common.metrics.extensions;
+    exports com.swirlds.common.system.platformstatus;
 
     requires transitive com.swirlds.base;
     requires com.swirlds.config;
