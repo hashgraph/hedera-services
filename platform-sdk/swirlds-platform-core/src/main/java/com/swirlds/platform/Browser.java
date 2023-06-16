@@ -84,6 +84,7 @@ import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
+import com.swirlds.platform.event.tipset.EventCreationConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
@@ -234,7 +235,8 @@ public class Browser {
                 .withConfigDataType(SyncConfig.class)
                 .withConfigDataType(UptimeConfig.class)
                 .withConfigDataType(RecycleBinConfig.class)
-                .withConfigDataType(EventConfig.class);
+                .withConfigDataType(EventConfig.class)
+                .withConfigDataType(EventCreationConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {

@@ -44,6 +44,7 @@ import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
@@ -117,7 +118,9 @@ public class SimulatedEventCreationNode implements GossipMessageHandler {
                     invocation.getArgument(0, SerializableHashable.class).setHash(hash);
                     return hash;
                 });
+        // TODO this is probably broken since tipset creation is on by default
         chatterEventCreator = new ChatterEventCreator(
+                TestPlatformContextBuilder.create().build(),
                 softwareVersion,
                 nodeId,
                 new RandomSigner(random),

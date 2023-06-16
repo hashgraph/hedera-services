@@ -52,6 +52,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.EventMocks;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -295,6 +296,7 @@ class EventCreatorTests {
         final Queue<EventImpl> events = new LinkedList<>();
 
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
+                TestPlatformContextBuilder.create().build(),
                 selfId,
                 mockMapper(recentEvents, null),
                 noOpSigner,
@@ -349,6 +351,7 @@ class EventCreatorTests {
         recentEvents.put(1L, otherParent);
 
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
+                TestPlatformContextBuilder.create().build(),
                 selfId,
                 mockMapper(recentEvents, selfParentImpl),
                 noOpSigner,
@@ -411,6 +414,7 @@ class EventCreatorTests {
         Mockito.when(mapper.getMostRecentEvent(new NodeId(0L))).thenReturn(otherParent);
 
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
+                TestPlatformContextBuilder.create().build(),
                 selfId,
                 mapper,
                 noOpSigner,
@@ -453,6 +457,7 @@ class EventCreatorTests {
         final Queue<EventImpl> events = new LinkedList<>();
 
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
+                TestPlatformContextBuilder.create().build(),
                 selfId,
                 mockMapper(recentEvents, null),
                 noOpSigner,

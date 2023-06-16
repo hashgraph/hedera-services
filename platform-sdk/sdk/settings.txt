@@ -18,6 +18,12 @@ sync.syncAsProtocolEnabled,       false
 useLoopbackIp,                    false
 
                                           #############################
+                                          #      Event Creation       #
+                                          #############################
+
+event.creation.tipsetEventCreationEnabled, false
+
+                                          #############################
                                           # Preconsensus Event Stream #
                                           #############################
 

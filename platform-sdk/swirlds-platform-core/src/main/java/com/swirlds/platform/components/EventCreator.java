@@ -17,8 +17,8 @@
 package com.swirlds.platform.components;
 
 import static com.swirlds.logging.LogMarker.CREATE_EVENT;
-import static com.swirlds.platform.event.tipset.TipsetEventCreator.USE_TIPSET_ALGORITHM;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.EventCreationRuleResponse;
@@ -32,6 +32,7 @@ import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.SelfEventStorage;
 import com.swirlds.platform.event.creation.AncientParentsRule;
+import com.swirlds.platform.event.tipset.EventCreationConfig;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -80,6 +81,8 @@ public class EventCreator {
     /** This object is used for checking whether this node should create an event or not */
     private final EventCreationRules eventCreationRules;
 
+    private final boolean disabled;
+
     /**
      * Construct a new EventCreator.
      *
@@ -107,6 +110,7 @@ public class EventCreator {
      * 		the object used for checking if we should create an event or not
      */
     public EventCreator(
+            @NonNull final PlatformContext platformContext,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final NodeId selfId,
             @NonNull final Signer signer,
@@ -130,6 +134,10 @@ public class EventCreator {
         this.transactionPool = Objects.requireNonNull(transactionPool, "the transaction pool is null");
         this.inFreeze = Objects.requireNonNull(inFreeze, "the in freeze is null");
         this.eventCreationRules = Objects.requireNonNull(eventCreationRules, "the event creation rules is null");
+        this.disabled = platformContext
+                .getConfiguration()
+                .getConfigData(EventCreationConfig.class)
+                .tipsetEventCreationEnabled();
     }
 
     /**
@@ -140,7 +148,7 @@ public class EventCreator {
      */
     public boolean createEvent(final NodeId otherId) {
 
-        if (USE_TIPSET_ALGORITHM) {
+        if (disabled) {
             return false;
         }
 

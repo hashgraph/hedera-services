@@ -22,7 +22,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.event.tipset.TipsetEventCreator.USE_TIPSET_ALGORITHM;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
@@ -103,6 +102,7 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
+import com.swirlds.platform.event.tipset.EventCreationConfig;
 import com.swirlds.platform.event.tipset.TipsetEventCreationManager;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
@@ -609,21 +609,25 @@ public class SwirldsPlatform implements Platform, Startable {
                             .enableBusyTimeMetric())
                     .build());
 
-            // TODO should we instantiate if we are not using this algorithm?
-            tipsetEventCreator = new TipsetEventCreationManager(
-                    platformContext,
-                    threadManager,
-                    platformContext.getCryptography(),
-                    time,
-                    new Random() /* does not need to be cryptographically secure */,
-                    this,
-                    initialAddressBook,
-                    selfId.id(), // TODO nodeId
-                    appVersion,
-                    swirldStateManager.getTransactionPool(),
-                    event -> abortAndThrowIfInterrupted(intakeQueue::put, event, "intakeQueue.put() interrupted"));
+            final boolean useTipsetAlgorithm = platformContext
+                    .getConfiguration()
+                    .getConfigData(EventCreationConfig.class)
+                    .tipsetEventCreationEnabled();
 
-            if (USE_TIPSET_ALGORITHM) {
+            if (useTipsetAlgorithm) {
+                tipsetEventCreator = new TipsetEventCreationManager(
+                        platformContext,
+                        threadManager,
+                        platformContext.getCryptography(),
+                        time,
+                        new Random() /* does not need to be cryptographically secure */,
+                        this,
+                        initialAddressBook,
+                        selfId.id(), // TODO nodeId
+                        appVersion,
+                        swirldStateManager.getTransactionPool(),
+                        event -> abortAndThrowIfInterrupted(intakeQueue::put, event, "intakeQueue.put() interrupted"));
+
                 eventObserverDispatcher.addObserver((PreConsensusEventObserver) event -> abortAndThrowIfInterrupted(
                         tipsetEventCreator::registerEvent,
                         event,
@@ -634,6 +638,8 @@ public class SwirldsPlatform implements Platform, Startable {
                         round.getGenerations().getMinGenerationNonAncient(),
                         "Interrupted while attempting to register minimum generation "
                                 + "non-ancient with tipset event creator"));
+            } else {
+                tipsetEventCreator = null;
             }
 
             transactionSubmitter = new SwirldTransactionSubmitter(
@@ -978,6 +984,7 @@ public class SwirldsPlatform implements Platform, Startable {
             return null;
         } else {
             return new EventCreator(
+                    platformContext,
                     this.appVersion,
                     selfId,
                     PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
@@ -1070,7 +1077,7 @@ public class SwirldsPlatform implements Platform, Startable {
         replayPreconsensusEvents();
         configureStartupEventFreeze();
         gossip.start();
-        if (USE_TIPSET_ALGORITHM) {
+        if (tipsetEventCreator != null) {
             tipsetEventCreator.start();
         }
 
