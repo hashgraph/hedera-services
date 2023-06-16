@@ -18,6 +18,7 @@ package com.hedera.node.app.spi.info;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.swirlds.common.system.address.AddressBook;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Summarizes useful information about the nodes in the {@link AddressBook} from the Platform. In
@@ -41,5 +42,20 @@ public interface NodeInfo {
      * @throws IllegalArgumentException if the book did not contain the id, or was missing an
      *     account for the id
      */
+    @NonNull
     AccountID accountOf(long nodeId);
+
+    /**
+     * Returns if the given node id is valid and the address book contains the id.
+     * @param nodeId the id of interest
+     * @return true if the given node id is valid. False otherwise.
+     */
+    default boolean isValidId(long nodeId) {
+        try {
+            accountOf(nodeId);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
 }

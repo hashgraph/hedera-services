@@ -21,10 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
@@ -55,7 +55,7 @@ public class ChatterCoreTests {
 
         final Random random = RandomUtils.getRandomPrintSeed();
         final ChatterCore<GossipEvent> chatterCore = new ChatterCore<>(
-                OSTime.getInstance(), GossipEvent.class, (m) -> {}, chatterConfig, (id, l) -> {}, new NoOpMetrics());
+                Time.getCurrent(), GossipEvent.class, (m) -> {}, chatterConfig, (id, l) -> {}, new NoOpMetrics());
 
         chatterCore.newPeerInstance(new NodeId(0L), e -> {});
         chatterCore.newPeerInstance(new NodeId(1L), e -> {});
