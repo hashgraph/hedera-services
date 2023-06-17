@@ -1111,8 +1111,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     updateOffHeapStat(objectKeyToPath, statistics::setOffHeapObjectKeyBucketsIndexMb);
         }
         if (hashStoreRam != null) {
-            totalOffHeapMemoryConsumption +=
-                    updateOffHeapStat(hashStoreRam, statistics::setOffHeapHashesListMb);
+            totalOffHeapMemoryConsumption += updateOffHeapStat(hashStoreRam, statistics::setOffHeapHashesListMb);
         }
         statistics.setOffHeapDataSourceMb(totalOffHeapMemoryConsumption);
     }

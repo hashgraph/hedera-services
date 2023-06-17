@@ -24,16 +24,14 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 import com.swirlds.benchmark.config.BenchmarkConfig;
 import com.swirlds.common.metrics.FunctionGauge;
+import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metric.ValueType;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetric;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
-import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import java.io.IOException;
@@ -134,8 +132,7 @@ public final class BenchmarkMetrics {
             .withDescription("Open file descriptors")
             .withFormat(FORMAT_INTEGER);
 
-    private static final RunningAverageMetric.Config TPS_CONFIG = new RunningAverageMetric.Config(
-                    BENCHMARK_CATEGORY, "tps")
+    private static final LongGauge.Config TPS_CONFIG = new LongGauge.Config(BENCHMARK_CATEGORY, "tps")
             .withDescription("transactions per second")
             .withFormat(FORMAT_FLOAT0);
 
@@ -285,29 +282,32 @@ public final class BenchmarkMetrics {
         return printableName;
     }
 
-    private Collection<DefaultMetric> getAllMetrics() {
+    private Collection<Metric> getAllMetrics() {
         return metrics.getAll().stream()
-                .filter(m -> m instanceof DefaultMetric)
-                .map(m -> (DefaultMetric) m)
+                .filter(m -> m.getValueTypes().contains(ValueType.VALUE))
                 .toList();
     }
 
-    private static String getMetricNames(final Collection<DefaultMetric> collection) {
+    private static String getMetricNames(final Collection<Metric> collection) {
         return collection.stream()
                 .map(metric -> printableName(metric, ValueType.VALUE))
                 .collect(Collectors.joining(",", "", System.lineSeparator()));
     }
 
-    private static String getMetricValues(final Collection<DefaultMetric> collection) {
+    private static String getMetricValues(final Collection<Metric> collection) {
         return collection.stream()
-                .map(metric -> Snapshot.of(metric).getValue())
+                .map(metric -> {
+                    final Object value = metric.get(ValueType.VALUE);
+                    metric.reset();
+                    return value;
+                })
                 .map(Object::toString)
                 .collect(Collectors.joining(",", "", System.lineSeparator()));
     }
 
     private void reportMetrics() {
         try {
-            Collection<DefaultMetric> allMetrics = getAllMetrics();
+            Collection<Metric> allMetrics = getAllMetrics();
             String names = getMetricNames(allMetrics);
 
             if (csvMetricsFilePath == null) {
@@ -394,7 +394,7 @@ public final class BenchmarkMetrics {
         consumer.accept(INSTANCE.metrics);
     }
 
-    public static RunningAverageMetric registerTPS() {
+    public static LongGauge registerTPS() {
         return INSTANCE.metrics.getOrCreate(TPS_CONFIG);
     }
 
