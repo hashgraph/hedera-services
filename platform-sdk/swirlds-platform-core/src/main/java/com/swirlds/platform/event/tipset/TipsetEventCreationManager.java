@@ -33,6 +33,7 @@ import com.swirlds.common.threading.framework.BlockingQueueInserter;
 import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
@@ -55,6 +56,7 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
     private final BlockingQueueInserter<EventImpl> eventInserter;
     private final BlockingQueueInserter<Long> minimumGenerationNonAncientInserter;
     private final Consumer<GossipEvent> newEventHandler;
+    private final RateLimiter rateLimiter;
 
     public TipsetEventCreationManager(
             @NonNull final PlatformContext platformContext,
@@ -93,6 +95,17 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
                 .setBufferHandledCallback(this::maybeCreateEvent)
                 .setWaitForWorkDuration(Duration.ZERO) // TODO setting
                 .build();
+
+        final EventCreationConfig eventCreationConfig =
+                platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
+
+        final double maxCreationRate = eventCreationConfig.maxCreationRate();
+        if (maxCreationRate > 0) {
+            rateLimiter = new RateLimiter(time, eventCreationConfig.maxCreationRate());
+        } else {
+            // No brakes!
+            rateLimiter = null;
+        }
 
         eventInserter = workQueue.getInserter(EventImpl.class);
         minimumGenerationNonAncientInserter = workQueue.getInserter(Long.class);
@@ -144,9 +157,18 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
     private void maybeCreateEvent() {
         // TODO API for event creation rules, e.g. stop creating events if falling behind, etc.
 
+        if (rateLimiter != null && !rateLimiter.request()) {
+            // We have created a self event too recently
+            return;
+        }
+
         final GossipEvent event = eventCreator.createNewEvent();
         if (event != null) {
             newEventHandler.accept(event);
+
+            if (rateLimiter != null) {
+                rateLimiter.trigger();
+            }
         }
     }
 

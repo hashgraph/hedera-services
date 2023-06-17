@@ -612,7 +612,7 @@ public class SwirldsPlatform implements Platform, Startable {
             final boolean useTipsetAlgorithm = platformContext
                     .getConfiguration()
                     .getConfigData(EventCreationConfig.class)
-                    .tipsetEventCreationEnabled();
+                    .useTipsetAlgorithm();
 
             if (useTipsetAlgorithm) {
                 tipsetEventCreator = new TipsetEventCreationManager(

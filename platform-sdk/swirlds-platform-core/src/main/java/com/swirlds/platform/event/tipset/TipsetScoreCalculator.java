@@ -155,6 +155,7 @@ public class TipsetScoreCalculator {
 
         final Tipset eventTipset = tipsetBuilder.getTipset(event);
         if (eventTipset == null) {
+            // TODO this was thrown in a JRS run
             throw new IllegalArgumentException("event " + event + " is not in the tipset tracker");
         }
 

@@ -11,55 +11,56 @@
                                           #    Gossip / Networking    #
                                           #############################
 
-chatter.useChatter,               false
-doUpnp,                           false
-maxOutgoingSyncs,                 1
-sync.syncAsProtocolEnabled,       false
-useLoopbackIp,                    false
+chatter.useChatter,                       false
+doUpnp,                                   false
+maxOutgoingSyncs,                         1
+sync.syncAsProtocolEnabled,               false
+useLoopbackIp,                            false
 
                                           #############################
                                           #      Event Creation       #
                                           #############################
 
-event.creation.tipsetEventCreationEnabled, true
+event.creation.useTipsetAlgorithm,        true
+event.creation.maxCreationRate,           5
 
                                           #############################
                                           # Preconsensus Event Stream #
                                           #############################
 
-event.preconsensus.enableReplay,  false
-event.preconsensus.enableStorage, false
+event.preconsensus.enableReplay,          false
+event.preconsensus.enableStorage,         false
 
                                           #############################
                                           #  Consensus Event Stream   #
                                           #############################
 
-enableEventStreaming,             false
+enableEventStreaming,                     false
 
                                           #############################
                                           #         Reconnect         #
                                           #############################
 
-reconnect.active,                 true
-state.saveReconnectStateToDisk,   false
+reconnect.active,                         true
+state.saveReconnectStateToDisk,           false
 
                                           #############################
                                           #          Metrics          #
                                           #############################
 
-csvFileName,                      PlatformTesting
-showInternalStats,                true
+csvFileName,                              PlatformTesting
+showInternalStats,                        true
 
                                           #############################
                                           #           State           #
                                           #############################
 
-checkSignedStateFromDisk,         true
-state.saveStatePeriod,            0
+checkSignedStateFromDisk,                 true
+state.saveStatePeriod,                    0
 
                                           #############################
                                           #           Misc.           #
                                           #############################
 
-loadKeysFromPfxFiles,             false
+loadKeysFromPfxFiles,                     false
 

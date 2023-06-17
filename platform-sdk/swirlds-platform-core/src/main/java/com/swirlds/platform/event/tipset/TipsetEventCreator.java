@@ -44,7 +44,7 @@ import java.util.Objects;
 import java.util.Random;
 
 // TODO:
-//  - debug strange shape in graph
+//  - tipset score calculator bug
 //  - delete EventFingerprint
 //  - transition to NodeId
 //  - reduce lambda use

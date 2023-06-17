@@ -91,7 +91,7 @@ public class ChatterEventCreator {
         this.disabled = platformContext
                 .getConfiguration()
                 .getConfigData(EventCreationConfig.class)
-                .tipsetEventCreationEnabled();
+                .useTipsetAlgorithm();
     }
 
     /**

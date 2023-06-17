@@ -95,7 +95,8 @@ public class SignedStateSentinel implements Startable, Stoppable {
             return;
         }
 
-        if (CompareTo.isGreaterThan(objectRecord.getAge(time.now()), maxSignedStateAge) && rateLimiter.request()) {
+        if (CompareTo.isGreaterThan(objectRecord.getAge(time.now()), maxSignedStateAge)
+                && rateLimiter.requestAndTrigger()) {
             final SignedStateHistory history = objectRecord.getMetadata();
             logger.error(EXCEPTION.getMarker(), "old signed state detected, memory leak probable.\n{}", history);
         }

@@ -43,7 +43,7 @@ class RateLimiterTests {
         final Duration limit = Duration.ofSeconds(1);
         while (isLessThan(time.elapsed(), limit)) {
             assertEquals(denied, rateLimiter.getDeniedRequests(), "invalid number of denied requests");
-            if (rateLimiter.request()) {
+            if (rateLimiter.requestAndTrigger()) {
                 count++;
                 denied = 0;
             } else {
@@ -69,7 +69,7 @@ class RateLimiterTests {
         final Duration limit = Duration.ofSeconds(1);
         while (isLessThan(time.elapsed(), limit)) {
             assertEquals(denied, rateLimiter.getDeniedRequests(), "invalid number of denied requests");
-            if (rateLimiter.request()) {
+            if (rateLimiter.requestAndTrigger()) {
                 count++;
                 denied = 0;
             } else {

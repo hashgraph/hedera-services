@@ -22,7 +22,13 @@ import com.swirlds.config.api.ConfigProperty;
 /**
  * Configuration for event creation.
  *
- * @param tipsetEventCreationEnabled if true, use the tipset event creation algorithm
+ * @param useTipsetAlgorithm if true, use the tipset event creation algorithm
+ * @param maxCreationRate    the maximum rate (in hz) that a node can create new events. The maximum rate for the entire
+ *                           network is equal to this value times the number of nodes. A value of 0 means that there is
+ *                           no limit to the number of events that can be created (as long as those events are legal to
+ *                           create).
  */
 @ConfigData("event.creation")
-public record EventCreationConfig(@ConfigProperty(defaultValue = "true") boolean tipsetEventCreationEnabled) {}
+public record EventCreationConfig(
+        @ConfigProperty(defaultValue = "true") boolean useTipsetAlgorithm,
+        @ConfigProperty(defaultValue = "0") double maxCreationRate) {}
