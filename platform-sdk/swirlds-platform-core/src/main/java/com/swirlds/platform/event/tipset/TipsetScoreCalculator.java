@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.Utilities.isSuperMajority;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.event.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -28,8 +29,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.IntToLongFunction;
-import java.util.function.LongToIntFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -90,35 +89,27 @@ public class TipsetScoreCalculator {
      */
     private long previousScore = 0;
 
-    private final IntToLongFunction indexToWeight;
-
     /**
      * Create a new tipset window.
      *
+     * @param addressBook   the current address book
      * @param selfId        the ID of the node tracked by this window
      * @param tipsetBuilder builds tipsets for individual events
-     * @param nodeCount     the number of nodes in the address book
-     * @param nodeIdToIndex maps node ID to node index
-     * @param indexToWeight maps node index to consensus weight
-     * @param totalWeight   the sum of all weight
      */
     public TipsetScoreCalculator(
+            @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final TipsetBuilder tipsetBuilder,
-            final int nodeCount,
-            @NonNull final LongToIntFunction nodeIdToIndex,
-            @NonNull final IntToLongFunction indexToWeight,
-            final long totalWeight) {
+            @NonNull final TipsetBuilder tipsetBuilder) {
 
         this.selfId = Objects.requireNonNull(selfId);
         this.tipsetBuilder = Objects.requireNonNull(tipsetBuilder);
-        this.nodeCount = nodeCount;
-        this.totalWeight = totalWeight;
-        this.selfWeight = indexToWeight.applyAsLong(nodeIdToIndex.applyAsInt(selfId.id()));
-        this.indexToWeight = Objects.requireNonNull(indexToWeight);
+        this.nodeCount = addressBook.getSize();
+        this.totalWeight = addressBook.getTotalWeight();
+        this.selfWeight = addressBook.getAddress(selfId).getWeight();
         this.maximumPossibleScore = totalWeight - selfWeight;
 
-        this.snapshot = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
+        Objects.requireNonNull(addressBook);
+        this.snapshot = new Tipset(addressBook);
         snapshotHistory.add(snapshot);
     }
 

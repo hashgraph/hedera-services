@@ -24,6 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.tipset.Tipset;
 import com.swirlds.platform.event.tipset.TipsetBuilder;
@@ -34,16 +37,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("TipsetTracker Tests")
 class TipsetBuilderTests {
 
-    private static void assertTipsetEquality(final Tipset expected, final Tipset actual, final long nodeCount) {
+    private static void assertTipsetEquality(
+            @NonNull final AddressBook addressBook, @NonNull final Tipset expected, @NonNull final Tipset actual) {
         assertEquals(expected.size(), actual.size());
-        for (long nodeId = 0; nodeId < nodeCount; nodeId++) {
-            assertEquals(expected.getTipGenerationForNodeId(nodeId), actual.getTipGenerationForNodeId(nodeId));
+
+        for (final Address address : addressBook) {
+            assertEquals(
+                    expected.getTipGenerationForNodeId(address.getNodeId()),
+                    actual.getTipGenerationForNodeId(address.getNodeId()));
         }
     }
 
@@ -55,15 +63,17 @@ class TipsetBuilderTests {
         final Random random = getRandomPrintSeed(0);
 
         final int nodeCount = random.nextInt(10, 20);
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(nodeCount).build();
 
         final Map<NodeId, EventDescriptor> latestEvents = new HashMap<>();
         final Map<EventDescriptor, Tipset> expectedTipsets = new HashMap<>();
 
-        final TipsetBuilder tracker = new TipsetBuilder(nodeCount, x -> (int) x, x -> 1);
+        final TipsetBuilder tracker = new TipsetBuilder(addressBook);
 
         for (int eventIndex = 0; eventIndex < 1000; eventIndex++) {
 
-            final NodeId creator = new NodeId(random.nextLong(nodeCount));
+            final NodeId creator = addressBook.getNodeId(random.nextInt(nodeCount));
             final long generation;
             if (latestEvents.containsKey(creator)) {
                 generation = latestEvents.get(creator).getGeneration() + 1;
@@ -79,7 +89,7 @@ class TipsetBuilderTests {
             final Set<NodeId> desiredParents = new HashSet<>();
             final int maxParentCount = random.nextInt(nodeCount);
             for (int parentIndex = 0; parentIndex < maxParentCount; parentIndex++) {
-                final NodeId parent = new NodeId(random.nextInt(nodeCount));
+                final NodeId parent = addressBook.getNodeId(random.nextInt(nodeCount));
 
                 // We are only trying to generate a random number of parents, the exact count is unimportant.
                 // So it doesn't matter if the actual number of parents is less than the number we requested.
@@ -112,18 +122,18 @@ class TipsetBuilderTests {
 
             final Tipset expectedTipset;
             if (parentTipsets.isEmpty()) {
-                expectedTipset = new Tipset(nodeCount, x -> (int) x, x -> 1).advance(creator, generation);
+                expectedTipset = new Tipset(addressBook).advance(creator, generation);
             } else {
                 expectedTipset = merge(parentTipsets).advance(creator, generation);
             }
 
             expectedTipsets.put(fingerprint, expectedTipset);
-            assertTipsetEquality(expectedTipset, newTipset, nodeCount);
+            assertTipsetEquality(addressBook, expectedTipset, newTipset);
         }
 
         // At the very end, we shouldn't see any modified tipsets
         for (final EventDescriptor fingerprint : expectedTipsets.keySet()) {
-            assertTipsetEquality(expectedTipsets.get(fingerprint), tracker.getTipset(fingerprint), nodeCount);
+            assertTipsetEquality(addressBook, expectedTipsets.get(fingerprint), tracker.getTipset(fingerprint));
         }
 
         // Slowly advance the minimum generation, we should see tipsets disappear as we go.
@@ -135,7 +145,7 @@ class TipsetBuilderTests {
                 if (fingerprint.getGeneration() < minimumGenerationNonAncient) {
                     assertNull(tracker.getTipset(fingerprint));
                 } else {
-                    assertTipsetEquality(expectedTipsets.get(fingerprint), tracker.getTipset(fingerprint), nodeCount);
+                    assertTipsetEquality(addressBook, expectedTipsets.get(fingerprint), tracker.getTipset(fingerprint));
                 }
             }
         }

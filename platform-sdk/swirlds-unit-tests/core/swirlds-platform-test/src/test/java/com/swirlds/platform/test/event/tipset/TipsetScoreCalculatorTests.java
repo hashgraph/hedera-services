@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.tipset.Tipset;
 import com.swirlds.platform.event.tipset.TipsetBuilder;
@@ -50,7 +52,6 @@ class TipsetScoreCalculatorTests {
     void basicBehaviorTest() {
         final Random random = getRandomPrintSeed();
         final int nodeCount = 5;
-        final NodeId windowId = new NodeId(random.nextLong(nodeCount));
 
         final Map<NodeId, EventDescriptor> latestEvents = new HashMap<>();
 
@@ -62,16 +63,22 @@ class TipsetScoreCalculatorTests {
             weightMap.put(new NodeId(i), weight);
         }
 
-        final TipsetBuilder builder = new TipsetBuilder(nodeCount, x -> (int) x, x -> weightMap.get((long) x));
-        final TipsetScoreCalculator window = new TipsetScoreCalculator(
-                windowId, builder, nodeCount, x -> (int) x, x -> weightMap.get(new NodeId(x)), totalWeight);
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+                .setSize(nodeCount)
+                .setCustomWeightGenerator(weightMap::get)
+                .build();
+
+        final NodeId windowId = addressBook.getNodeId(random.nextInt(nodeCount));
+
+        final TipsetBuilder builder = new TipsetBuilder(addressBook);
+        final TipsetScoreCalculator window = new TipsetScoreCalculator(addressBook, windowId, builder);
 
         List<EventDescriptor> previousParents = List.of();
         long runningAdvancementScore = 0;
         Tipset previousSnapshot = window.getSnapshot();
 
         for (int eventIndex = 0; eventIndex < 1000; eventIndex++) {
-            final NodeId creator = new NodeId(random.nextLong(nodeCount));
+            final NodeId creator = addressBook.getNodeId(random.nextInt(nodeCount));
             final long generation;
             if (latestEvents.containsKey(creator)) {
                 generation = latestEvents.get(creator).getGeneration() + 1;
@@ -87,7 +94,7 @@ class TipsetScoreCalculatorTests {
             final Set<NodeId> desiredParents = new HashSet<>();
             final int maxParentCount = random.nextInt(nodeCount);
             for (int parentIndex = 0; parentIndex < maxParentCount; parentIndex++) {
-                final NodeId parent = new NodeId(random.nextInt(nodeCount));
+                final NodeId parent = addressBook.getNodeId(random.nextInt(nodeCount));
 
                 // We are only trying to generate a random number of parents, the exact count is unimportant.
                 // So it doesn't matter if the actual number of parents is less than the number we requested.
@@ -128,8 +135,7 @@ class TipsetScoreCalculatorTests {
 
             final Tipset newTipset;
             if (parentTipsets.isEmpty()) {
-                newTipset =
-                        new Tipset(nodeCount, x -> (int) x, x -> weightMap.get((long) x)).advance(creator, generation);
+                newTipset = new Tipset(addressBook).advance(creator, generation);
             } else {
                 newTipset = merge(parentTipsets).advance(creator, generation);
             }
@@ -177,16 +183,18 @@ class TipsetScoreCalculatorTests {
         final Random random = getRandomPrintSeed();
         final int nodeCount = 4;
 
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(nodeCount).build();
+
         // In this test, we simulate from the perspective of node A.
         // All nodes have 1 stake, and index == id (for simplicity).
-        final NodeId nodeA = new NodeId(0);
-        final NodeId nodeB = new NodeId(1);
-        final NodeId nodeC = new NodeId(2);
-        final NodeId nodeD = new NodeId(3);
+        final NodeId nodeA = addressBook.getNodeId(0);
+        final NodeId nodeB = addressBook.getNodeId(1);
+        final NodeId nodeC = addressBook.getNodeId(2);
+        final NodeId nodeD = addressBook.getNodeId(3);
 
-        final TipsetBuilder builder = new TipsetBuilder(nodeCount, x -> (int) x, x -> 1);
-        final TipsetScoreCalculator window =
-                new TipsetScoreCalculator(nodeA, builder, nodeCount, x -> (int) x, x -> 1, 4);
+        final TipsetBuilder builder = new TipsetBuilder(addressBook);
+        final TipsetScoreCalculator window = new TipsetScoreCalculator(addressBook, nodeA, builder);
 
         final Tipset snapshot1 = window.getSnapshot();
 

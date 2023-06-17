@@ -611,7 +611,6 @@ public class SwirldsPlatform implements Platform, Startable {
                 tipsetEventCreator = new TipsetEventCreationManager(
                         platformContext,
                         threadManager,
-                        platformContext.getCryptography(),
                         time,
                         new Random() /* does not need to be cryptographically secure */,
                         this,

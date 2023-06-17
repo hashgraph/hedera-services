@@ -20,14 +20,14 @@ import static com.swirlds.platform.event.tipset.Tipset.merge;
 
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.event.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.IntToLongFunction;
-import java.util.function.LongToIntFunction;
 
 /**
  * Computes and tracks tipsets for non-ancient events.
@@ -48,37 +48,18 @@ public class TipsetBuilder {
      */
     private Tipset latestGenerations;
 
-    /**
-     * The number of nodes.
-     */
-    private final int nodeCount;
-
-    /**
-     * Maps node ID to node index.
-     */
-    private final LongToIntFunction nodeIdToIndex;
-
-    /**
-     * Maps node index to consensus weight.
-     */
-    private final IntToLongFunction indexToWeight;
+    private final AddressBook addressBook;
 
     /**
      * Create a new tipset tracker.
      *
-     * @param nodeCount     the number of nodes in the address book
-     * @param nodeIdToIndex maps node ID to node index
-     * @param indexToWeight maps node index to consensus weight
+     * @param addressBook the current address book
      */
-    public TipsetBuilder(
-            final int nodeCount,
-            @NonNull final LongToIntFunction nodeIdToIndex,
-            @NonNull final IntToLongFunction indexToWeight) {
+    public TipsetBuilder(@NonNull final AddressBook addressBook) {
 
-        this.nodeCount = nodeCount;
-        this.nodeIdToIndex = Objects.requireNonNull(nodeIdToIndex);
-        this.indexToWeight = Objects.requireNonNull(indexToWeight);
-        this.latestGenerations = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
+        this.addressBook = Objects.requireNonNull(addressBook);
+
+        this.latestGenerations = new Tipset(addressBook);
 
         tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, EventDescriptor::getGeneration);
     }
@@ -112,8 +93,8 @@ public class TipsetBuilder {
 
         final Tipset eventTipset;
         if (parents.isEmpty()) {
-            eventTipset = new Tipset(nodeCount, nodeIdToIndex, indexToWeight)
-                    .advance(eventDescriptor.getCreator(), eventDescriptor.getGeneration());
+            eventTipset =
+                    new Tipset(addressBook).advance(eventDescriptor.getCreator(), eventDescriptor.getGeneration());
         } else {
             eventTipset = merge(parentTipsets).advance(eventDescriptor.getCreator(), eventDescriptor.getGeneration());
         }
@@ -141,7 +122,8 @@ public class TipsetBuilder {
      * @param nodeId the ID of the node
      * @return the highest generation of all events received by a node
      */
-    public long getLatestGenerationForNodeId(final long nodeId) { // TODO test
+    public long getLatestGenerationForNodeId(@NonNull final NodeId nodeId) { // TODO test
+        Objects.requireNonNull(nodeId);
         return latestGenerations.getTipGenerationForNodeId(nodeId);
     }
 

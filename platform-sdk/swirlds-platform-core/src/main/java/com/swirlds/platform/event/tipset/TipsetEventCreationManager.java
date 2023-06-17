@@ -24,7 +24,6 @@ import com.swirlds.base.state.Lifecycle;
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -61,7 +60,6 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
     public TipsetEventCreationManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            @NonNull final Cryptography cryptography,
             @NonNull final Time time,
             @NonNull final Random random,
             @NonNull final Signer signer,
@@ -75,15 +73,7 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
         this.newEventHandler = Objects.requireNonNull(newEventHandler);
 
         eventCreator = new TipsetEventCreator(
-                platformContext,
-                cryptography,
-                time,
-                random,
-                signer,
-                addressBook,
-                selfId,
-                softwareVersion,
-                transactionSupplier);
+                platformContext, time, random, signer, addressBook, selfId, softwareVersion, transactionSupplier);
 
         workQueue = new MultiQueueThreadConfiguration(threadManager)
                 .setThreadName("event-creator")

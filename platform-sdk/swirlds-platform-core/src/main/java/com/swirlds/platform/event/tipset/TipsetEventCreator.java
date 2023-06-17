@@ -87,7 +87,6 @@ public class TipsetEventCreator { // TODO test
      * Create a new tipset event creator.
      *
      * @param platformContext     the platform context
-     * @param cryptography        the cryptography instance
      * @param time                provides wall clock time
      * @param random              a source of randomness, does not need to be cryptographically secure
      * @param signer              used for signing things with this node's private key
@@ -98,7 +97,6 @@ public class TipsetEventCreator { // TODO test
      */
     public TipsetEventCreator(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Cryptography cryptography,
             @NonNull final Time time,
             @NonNull final Random random,
             @NonNull final Signer signer,
@@ -110,7 +108,7 @@ public class TipsetEventCreator { // TODO test
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
 
-        this.cryptography = Objects.requireNonNull(cryptography);
+        this.cryptography = platformContext.getCryptography();
         this.time = Objects.requireNonNull(time);
         this.random = Objects.requireNonNull(random);
         this.signer = Objects.requireNonNull(signer);
@@ -120,22 +118,8 @@ public class TipsetEventCreator { // TODO test
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         this.antiBullyingFactor = Math.max(1.0, eventCreationConfig.antiBullyingFactor());
         this.tipsetMetrics = new TipsetMetrics(platformContext);
-
-        // TODO reduce indirection in the lambdas
-        // TODO use NodeID better
-        tipsetBuilder = new TipsetBuilder(
-                addressBook.getSize(),
-                id -> addressBook.getIndexOfNodeId(new NodeId(id)),
-                index -> addressBook.getAddress(addressBook.getNodeId(index)).getWeight());
-
-        tipsetScoreCalculator = new TipsetScoreCalculator(
-                selfId,
-                tipsetBuilder,
-                addressBook.getSize(),
-                id -> addressBook.getIndexOfNodeId(new NodeId(id)),
-                index -> addressBook.getAddress(addressBook.getNodeId(index)).getWeight(),
-                addressBook.getTotalWeight());
-
+        tipsetBuilder = new TipsetBuilder(addressBook);
+        tipsetScoreCalculator = new TipsetScoreCalculator(addressBook, selfId, tipsetBuilder);
         childlessEventTracker = new ChildlessEventTracker();
     }
 
@@ -299,6 +283,9 @@ public class TipsetEventCreator { // TODO test
     @NonNull
     private GossipEvent buildEventFromParents(
             @Nullable final EventDescriptor selfParent, @Nullable final EventDescriptor otherParent) {
+
+        // TODO create helper functions to clean this up
+
         final long selfParentGeneration;
         if (lastSelfEvent == null) {
             selfParentGeneration = GENERATION_UNDEFINED;

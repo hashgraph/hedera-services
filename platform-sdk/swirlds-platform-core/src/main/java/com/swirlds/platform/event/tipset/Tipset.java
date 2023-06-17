@@ -17,51 +17,37 @@
 package com.swirlds.platform.event.tipset;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.IntToLongFunction;
-import java.util.function.LongToIntFunction;
 
 /**
  * Represents a slice of the hashgraph, containing one "tip" from each event creator.
  */
 public class Tipset {
 
-    /**
-     * Maps node ID to node index.
-     */
-    private final LongToIntFunction nodeIdToIndex;
+    private final AddressBook addressBook;
 
     /**
-     * Maps node index to consensus weight.
-     */
-    private final IntToLongFunction indexToWeight;
-
-    /**
-     * The tip generations.
+     * The tip generations, indexed by node index.
      */
     private final long[] tips;
 
     /**
      * Create an empty tipset.
      *
-     * @param nodeCount     the number of nodes in the address book
-     * @param nodeIdToIndex maps node ID to node index
-     * @param indexToWeight maps node index to consensus weight
+     * @param addressBook the current address book
      */
-    public Tipset(
-            final int nodeCount,
-            @NonNull final LongToIntFunction nodeIdToIndex,
-            @NonNull final IntToLongFunction indexToWeight) {
-        this.nodeIdToIndex = nodeIdToIndex;
-        this.indexToWeight = indexToWeight;
-        this.tips = new long[nodeCount];
+    public Tipset(@NonNull final AddressBook addressBook) {
+        this.addressBook = Objects.requireNonNull(addressBook);
+        tips = new long[addressBook.getSize()];
 
         // TODO we don't need this if we actually want to start with generation 1
-        for (int i = 0; i < nodeCount; i++) {
-            tips[i] = -1;
-        }
+        Arrays.fill(tips, -1);
     }
 
     /**
@@ -71,7 +57,7 @@ public class Tipset {
      * @return a new empty tipset
      */
     private static @NonNull Tipset buildEmptyTipset(@NonNull final Tipset tipset) {
-        return new Tipset(tipset.size(), tipset.nodeIdToIndex, tipset.indexToWeight);
+        return new Tipset(tipset.addressBook);
     }
 
     /**
@@ -115,8 +101,9 @@ public class Tipset {
      * @param nodeId the node ID in question
      * @return the tip generation for the node ID
      */
-    public long getTipGenerationForNodeId(final long nodeId) {
-        return tips[nodeIdToIndex.applyAsInt(nodeId)];
+    public long getTipGenerationForNodeId(@NonNull final NodeId nodeId) {
+        final int index = addressBook.getIndexOfNodeId(nodeId);
+        return tips[index];
     }
 
     /**
@@ -146,7 +133,7 @@ public class Tipset {
      * @return this object
      */
     public @NonNull Tipset advance(@NonNull final NodeId creator, final long generation) {
-        final int index = nodeIdToIndex.applyAsInt(creator.id());
+        final int index = addressBook.getIndexOfNodeId(creator);
         tips[index] = Math.max(tips[index], generation);
         return this;
     }
@@ -163,14 +150,14 @@ public class Tipset {
      * count is defined as the sum of all tip advancements after being appropriately weighted.
      * </p>
      *
-     * @param nodeId compute the advancement count relative to this node ID
+     * @param selfId compute the advancement count relative to this node ID
      * @param that   the tipset to compare to
      * @return the number of tip advancements to get from this tipset to that tipset
      */
-    public long getWeightedAdvancementCount(@NonNull final NodeId nodeId, @NonNull final Tipset that) {
+    public long getWeightedAdvancementCount(@NonNull final NodeId selfId, @NonNull final Tipset that) {
         long count = 0;
 
-        final int selfIndex = nodeIdToIndex.applyAsInt(nodeId.id());
+        final int selfIndex = addressBook.getIndexOfNodeId(selfId);
         for (int index = 0; index < tips.length; index++) {
             if (index == selfIndex) {
                 // We don't consider self advancement here, since self advancement does nothing to help consensus.
@@ -178,7 +165,9 @@ public class Tipset {
             }
 
             if (this.tips[index] < that.tips[index]) {
-                count += indexToWeight.applyAsLong(index);
+                final NodeId nodeId = addressBook.getNodeId(index);
+                final Address address = addressBook.getAddress(nodeId);
+                count += address.getWeight();
             }
         }
 
@@ -197,15 +186,15 @@ public class Tipset {
      * count is defined as the sum of all tip advancements after being appropriately weighted.
      * </p>
      *
-     * @param nodeId compute the advancement count relative to this node ID
+     * @param selfId compute the advancement count relative to this node ID
      * @param that   the tipset to compare to
      * @return the number of tip advancements to get from this tipset to that tipset
      */
     public long getWeightedAdvancementCount(
-            @NonNull final NodeId nodeId, @NonNull final Tipset that, @NonNull IntToLongFunction indexWeight) {
+            @NonNull final NodeId selfId, @NonNull final Tipset that, @NonNull IntToLongFunction indexWeight) {
         long count = 0;
 
-        final int selfIndex = nodeIdToIndex.applyAsInt(nodeId.id());
+        final int selfIndex = addressBook.getIndexOfNodeId(selfId);
         for (int index = 0; index < tips.length; index++) {
             if (index == selfIndex) {
                 // We don't consider self advancement here, since self advancement does nothing to help consensus.
@@ -221,10 +210,10 @@ public class Tipset {
     }
 
     // TODO javadoc
-    public int getAdvancementCount(@NonNull final NodeId nodeId, @NonNull final Tipset that) {
+    public int getAdvancementCount(@NonNull final NodeId selfId, @NonNull final Tipset that) {
         int count = 0;
 
-        final int selfIndex = nodeIdToIndex.applyAsInt(nodeId.id());
+        final int selfIndex = addressBook.getIndexOfNodeId(selfId);
         for (int index = 0; index < tips.length; index++) {
             if (index == selfIndex) {
                 // We don't consider self advancement here, since self advancement does nothing to help consensus.
