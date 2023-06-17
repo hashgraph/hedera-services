@@ -477,13 +477,11 @@ public class Browser {
                 final String arg = item.trim().toLowerCase();
                 if (arg.equals("-local")) {
                     currentOption = arg;
-                } else {
-                    if (currentOption != null) {
-                        try {
-                            localNodesToStart.add(new NodeId(Integer.parseInt(arg)));
-                        } catch (final NumberFormatException ex) {
-                            // Intentionally suppress the NumberFormatException
-                        }
+                } else if (currentOption != null) {
+                    try {
+                        localNodesToStart.add(new NodeId(Integer.parseInt(arg)));
+                    } catch (final NumberFormatException ex) {
+                        // Intentionally suppress the NumberFormatException
                     }
                 }
             }
