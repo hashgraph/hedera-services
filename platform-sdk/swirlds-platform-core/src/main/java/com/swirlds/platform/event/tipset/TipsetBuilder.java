@@ -34,6 +34,8 @@ import java.util.function.LongToIntFunction;
  */
 public class TipsetBuilder {
 
+    private static final int INITIAL_TIPSET_MAP_CAPACITY = 64;
+
     /**
      * Tipsets for all recent events we know about.
      */
@@ -78,7 +80,7 @@ public class TipsetBuilder {
         this.indexToWeight = Objects.requireNonNull(indexToWeight);
         this.latestGenerations = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
 
-        tipsets = new StandardSequenceMap<>(0, 1024, true, EventDescriptor::getGeneration);
+        tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, EventDescriptor::getGeneration);
     }
 
     /**
@@ -118,7 +120,7 @@ public class TipsetBuilder {
 
         tipsets.put(
                 eventDescriptor,
-                eventTipset); // TODO we need to make it so this can't reject events with high generations
+                eventTipset);
         latestGenerations = latestGenerations.advance(eventDescriptor.getCreator(), eventDescriptor.getGeneration());
 
         return eventTipset;

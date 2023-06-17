@@ -40,7 +40,8 @@ public class StandardSequenceSet<T> extends AbstractSequenceSet<T> {
      *                                    and any value with a sequence number outside that range will be rejected.
      * @param allowExpansion              if true, then instead of rejecting elements with a sequence number higher than
      *                                    the allowed by the current capacity, increase capacity and then insert the
-     *                                    element.
+     *                                    element. Does not expand if the sequence number is too low to fit in the
+     *                                    current capacity.
      * @param getSequenceNumberFromEntry  given an entry, extract the sequence number
      */
     public StandardSequenceSet(
