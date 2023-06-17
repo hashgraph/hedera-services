@@ -18,7 +18,6 @@ package com.swirlds.common.sequence.map.internal;
 
 import com.swirlds.common.sequence.map.SequenceMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.lang.reflect.Array;
 import java.util.AbstractMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,6 +36,12 @@ import java.util.function.ToLongFunction;
 public abstract class AbstractSequenceMap<K, V> implements SequenceMap<K, V> {
 
     /**
+     * The maximum supported size of an array is JVM dependant, but it's usually a little smaller than the maximum
+     * integer size. Various sources suggest this is a generally safe value to use.
+     */
+    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+
+    /**
      * The data in the map.
      */
     private final Map<K, V> data;
@@ -44,9 +49,13 @@ public abstract class AbstractSequenceMap<K, V> implements SequenceMap<K, V> {
     /**
      * Keys for each sequence number currently being stored.
      */
-    private final SequenceKeySet<K>[] keySets;
+    private SequenceKeySet<K>[] keySets;
 
-    private final int sequenceNumberCapacity;
+    /**
+     * The current capacity for sequence numbers. Equal to the maximum sequence number minus the minimum sequence
+     * number. If {@link #allowExpansion} is true, then this value can be increased. If not, it is fixed.
+     */
+    private int sequenceNumberCapacity;
 
     /**
      * A method that gets the sequence number associated with a given key.
@@ -87,9 +96,10 @@ public abstract class AbstractSequenceMap<K, V> implements SequenceMap<K, V> {
         this.sequenceNumberCapacity = sequenceNumberCapacity;
         this.getSequenceNumberFromKey = Objects.requireNonNull(getSequenceNumberFromKey);
         this.allowExpansion = allowExpansion;
+        this.initialFirstSequenceNumber = initialFirstSequenceNumber;
 
         data = buildDataMap();
-        keySets = (SequenceKeySet<K>[]) Array.newInstance(SequenceKeySet.class, sequenceNumberCapacity);
+        keySets = new SequenceKeySet[sequenceNumberCapacity];
 
         for (long sequenceNumber = initialFirstSequenceNumber;
                 sequenceNumber < initialFirstSequenceNumber + sequenceNumberCapacity;
@@ -97,8 +107,6 @@ public abstract class AbstractSequenceMap<K, V> implements SequenceMap<K, V> {
 
             keySets[getSequenceKeyIndex(sequenceNumber)] = new SequenceKeySet<>(sequenceNumber);
         }
-
-        this.initialFirstSequenceNumber = initialFirstSequenceNumber;
     }
 
     /**
@@ -207,7 +215,7 @@ public abstract class AbstractSequenceMap<K, V> implements SequenceMap<K, V> {
     }
 
     /**
-     * Get the key set index for a given sequence number.
+     * Get the key set index for a given sequence number and current capacity.
      *
      * @param sequenceNumber the sequence number in question
      * @return the index of the sequence number
@@ -252,13 +260,18 @@ public abstract class AbstractSequenceMap<K, V> implements SequenceMap<K, V> {
     @Override
     public boolean putIfAbsent(final K key, final V value) {
         final long sequenceNumber = getSequenceNumber(key);
-        final SequenceKeySet<K> keys = getSequenceKeySet(sequenceNumber);
+        SequenceKeySet<K> keys = getSequenceKeySet(sequenceNumber);
 
         lockSequenceNumber(sequenceNumber);
         try {
             if (keys.getSequenceNumber() != sequenceNumber) {
                 // the key is outside the allowed window
-                return false;
+                if (allowExpansion && sequenceNumber > getFirstSequenceNumberInWindow()) {
+                    expandCapacity(sequenceNumber);
+                    keys = getSequenceKeySet(sequenceNumber);
+                } else {
+                    return false;
+                }
             }
             if (data.containsKey(key)) {
                 // don't re-insert if the value is already present
@@ -280,13 +293,18 @@ public abstract class AbstractSequenceMap<K, V> implements SequenceMap<K, V> {
     @Override
     public V put(final K key, final V value) {
         final long sequenceNumber = getSequenceNumber(key);
-        final SequenceKeySet<K> keys = getSequenceKeySet(sequenceNumber);
+        SequenceKeySet<K> keys = getSequenceKeySet(sequenceNumber);
 
         lockSequenceNumber(sequenceNumber);
         try {
             if (keys.getSequenceNumber() != sequenceNumber) {
                 // the key is outside the allowed window
-                return null;
+                if (allowExpansion && sequenceNumber > getFirstSequenceNumberInWindow()) {
+                    expandCapacity(sequenceNumber);
+                    keys = getSequenceKeySet(sequenceNumber);
+                } else {
+                    return null;
+                }
             }
 
             final V previousValue = data.put(key, value);
@@ -340,7 +358,7 @@ public abstract class AbstractSequenceMap<K, V> implements SequenceMap<K, V> {
             final long previousFirstSequenceNumber = getFirstSequenceNumberInWindow();
             if (firstSequenceNumberInWindow < previousFirstSequenceNumber) {
                 throw new IllegalStateException(
-                        "Window can only be shifted towards larger value. " + "Current lowest sequence number = "
+                        "Window can only be shifted towards larger value. Current lowest sequence number = "
                                 + previousFirstSequenceNumber + ", requested lowest sequence number = "
                                 + firstSequenceNumberInWindow);
             }
@@ -406,6 +424,52 @@ public abstract class AbstractSequenceMap<K, V> implements SequenceMap<K, V> {
         // index increases by an amount equal to the capacity.
         final long increase = wrapFactor * getSequenceNumberCapacity();
         return sequenceNumberToReplace + increase;
+    }
+
+    /**
+     * Expand the capacity so that we fit the required sequence number.
+     *
+     * @param requiredSequenceNumber the sequence number that we need to fit into this structure
+     */
+    @SuppressWarnings("unchecked")
+    private void expandCapacity(final long requiredSequenceNumber) {
+        windowLock();
+        fullLock();
+        try {
+            final int oldCapacity = keySets.length;
+            final long firstSequenceNumber = getFirstSequenceNumberInWindow();
+            final long minimumCapacity = requiredSequenceNumber - firstSequenceNumber;
+            if (minimumCapacity < 0) {
+                // this can only happen if we get integer overflow
+                throw new IllegalStateException("Cannot expand capacity beyond " + MAX_ARRAY_SIZE);
+            } else if (minimumCapacity < MAX_ARRAY_SIZE / 2 - 1) {
+                sequenceNumberCapacity = (int) (minimumCapacity * 2);
+            } else if (minimumCapacity <= MAX_ARRAY_SIZE) {
+                sequenceNumberCapacity = MAX_ARRAY_SIZE;
+            } else {
+                throw new IllegalStateException("Cannot expand capacity beyond " + MAX_ARRAY_SIZE);
+            }
+
+            final SequenceKeySet<K>[] oldKeySets = keySets;
+            keySets = new SequenceKeySet[sequenceNumberCapacity];
+
+            // Copy the old key sets into the new array
+            for (int oldIndex = 0; oldIndex < oldCapacity; oldIndex++) {
+                final long sequenceNumber = oldKeySets[oldIndex].getSequenceNumber();
+                final int newIndex = getSequenceKeyIndex(sequenceNumber);
+                keySets[newIndex] = oldKeySets[oldIndex];
+            }
+
+            // Create new key sets for the added capacity
+            for (int offest = 0; offest < (sequenceNumberCapacity - oldCapacity); offest++) {
+                final long newSequenceNumber = firstSequenceNumber + oldCapacity + offest;
+                final int index = getSequenceKeyIndex(newSequenceNumber);
+                keySets[index] = new SequenceKeySet<>(newSequenceNumber);
+            }
+        } finally {
+            fullUnlock();
+            windowUnlock();
+        }
     }
 
     /**
