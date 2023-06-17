@@ -33,7 +33,8 @@ import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.HederaConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
 import java.util.List;
 import javax.inject.Inject;
@@ -42,9 +43,7 @@ import javax.inject.Singleton;
 @Singleton
 public class DeleteAllowanceValidator extends AllowanceValidator {
     @Inject
-    public DeleteAllowanceValidator(final ConfigProvider configProvider) {
-        super(configProvider);
-    }
+    public DeleteAllowanceValidator() {}
 
     /**
      * Validates all allowances provided in {@link CryptoDeleteAllowanceTransactionBody}
@@ -61,11 +60,12 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
         final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
         final var tokenRelStore = handleContext.readableStore(ReadableTokenRelationStore.class);
         final var nftStore = handleContext.readableStore(ReadableNftStore.class);
+        final var hederaConfig = handleContext.configuration().getConfigData(HederaConfig.class);
 
         // feature flag for allowances. Will probably be moved to some other place in app in the future.
-        validateTrue(isEnabled(), NOT_SUPPORTED);
+        validateTrue(hederaConfig.allowancesIsEnabled(), NOT_SUPPORTED);
 
-        validateAllowancesCount(nftAllowances);
+        validateAllowancesCount(nftAllowances, hederaConfig);
 
         validateNftDeleteAllowances(nftAllowances, payerAccount, accountStore, tokenStore, tokenRelStore, nftStore);
     }
@@ -116,11 +116,12 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
         validateSerialNums(serialNums, tokenId, nftStore);
     }
 
-    private void validateAllowancesCount(final List<NftRemoveAllowance> nftAllowances) {
+    private void validateAllowancesCount(
+            @NonNull final List<NftRemoveAllowance> nftAllowances, @NonNull final HederaConfig hederaConfig) {
         // each serial number of an NFT is considered as an allowance.
         // So for Nft allowances aggregated amount is considered for transaction limit calculation.
         // Number of serials will not be counted for allowance on account.
-        validateTotalAllowancesPerTxn(aggregateNftDeleteAllowances(nftAllowances));
+        validateTotalAllowancesPerTxn(aggregateNftDeleteAllowances(nftAllowances), hederaConfig);
     }
 
     /**

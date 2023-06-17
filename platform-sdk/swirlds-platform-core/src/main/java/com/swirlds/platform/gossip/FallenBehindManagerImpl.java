@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.gossip;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
@@ -76,9 +75,10 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
         for (final int neighbor : neighbors) {
             allNeighbors.add(addressBook.getNodeId(neighbor));
         }
-        this.notifyPlatform = ArgumentUtils.throwArgNull(notifyPlatform, "notifyPlatform");
-        this.fallenBehindCallback = ArgumentUtils.throwArgNull(fallenBehindCallback, "fallenBehindCallback");
-        this.config = ArgumentUtils.throwArgNull(config, "config");
+        this.notifyPlatform = Objects.requireNonNull(notifyPlatform, "notifyPlatform must not be null");
+        this.fallenBehindCallback =
+                Objects.requireNonNull(fallenBehindCallback, "fallenBehindCallback must not be null");
+        this.config = Objects.requireNonNull(config, "config must not be null");
     }
 
     @Override

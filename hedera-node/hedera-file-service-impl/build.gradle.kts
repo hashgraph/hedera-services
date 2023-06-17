@@ -32,6 +32,7 @@ dependencies {
         testImplementation(gav("org.mockito.junit.jupiter"))
         testImplementation(gav("com.google.protobuf"))
         testImplementation(gav("com.swirlds.common"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
         testRuntimeOnly(gav("org.mockito.inline"))
     }
 }

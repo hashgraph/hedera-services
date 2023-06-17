@@ -38,9 +38,9 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.Optional;
-import org.apache.commons.codec.DecoderException;
 
 public final class PureValidation {
     private PureValidation() {
@@ -124,7 +124,7 @@ public final class PureValidation {
                 return failure;
             }
             return OK;
-        } catch (DecoderException ignore) {
+        } catch (InvalidKeyException ignore) {
             return failure;
         }
     }

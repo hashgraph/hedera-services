@@ -22,7 +22,6 @@ on:
       - opened
       - reopened
       - synchronize
-      - labeled
 
 defaults:
   run:
@@ -55,20 +54,9 @@ jobs:
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
 
-  unit-label-check:
-    name: "Label Check [CI:UnitTests]"
-    runs-on: [self-hosted, Linux, medium, ephemeral]
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'CI:UnitTests') || contains(github.event.pull_request.labels.*.name, 'CI:FinalChecks') }}
-    steps:
-      - name: Check Labels
-        if: github.event_name == 'pull_request'
-        run: echo PR labels that trigger the tests are [CI:UnitTests] and [CI:FinalChecks]
-
   unit-tests:
     name: Unit Tests
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    needs:
-      - unit-label-check
     with:
       custom-job-label: Standard
       enable-javadoc: false
@@ -83,8 +71,6 @@ jobs:
   eet-tests:
     name: E2E Tests
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    needs:
-      - unit-label-check
     with:
       custom-job-label: Standard
       enable-javadoc: false
@@ -100,8 +86,6 @@ jobs:
   integration-tests:
     name: Integration Tests
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    needs:
-      - unit-label-check
     with:
       custom-job-label: Standard
       enable-javadoc: false
@@ -117,8 +101,6 @@ jobs:
   snyk-scan:
     name: Snyk Scan
     uses: ./.github/workflows/node-zxc-compile-application-code.yaml
-    needs:
-      - unit-label-check
     with:
       custom-job-label: Standard
       enable-javadoc: false

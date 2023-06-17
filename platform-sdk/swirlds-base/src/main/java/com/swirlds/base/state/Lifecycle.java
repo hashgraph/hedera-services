@@ -16,9 +16,9 @@
 
 package com.swirlds.base.state;
 
-import com.swirlds.base.ArgumentUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 
 /**
  * An object with a well-defined start/stop lifecycle.
@@ -51,7 +51,7 @@ public interface Lifecycle extends Startable, Stoppable {
      * @throws LifecycleException if the object is not in the expected phase
      */
     default void throwIfNotInPhase(@NonNull final LifecyclePhase phase, @Nullable final String errorMessage) {
-        ArgumentUtils.throwArgNull(phase, "phase");
+        Objects.requireNonNull(phase, "phase must not be null");
         final LifecyclePhase currentPhase = getLifecyclePhase();
         if (currentPhase != phase) {
             throw new LifecycleException(

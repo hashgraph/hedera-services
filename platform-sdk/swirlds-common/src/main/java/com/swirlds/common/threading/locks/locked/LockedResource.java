@@ -16,6 +16,8 @@
 
 package com.swirlds.common.threading.locks.locked;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 /**
  * Provides access to the resource that has been locked
  *
@@ -26,6 +28,7 @@ public interface LockedResource<T> extends Locked {
     /**
      * @return the locked resource, may be null
      */
+    @Nullable
     T getResource();
 
     /**
@@ -34,5 +37,5 @@ public interface LockedResource<T> extends Locked {
      * @param resource
      * 		the object to set
      */
-    void setResource(T resource);
+    void setResource(@Nullable T resource);
 }

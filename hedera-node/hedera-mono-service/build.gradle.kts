@@ -41,6 +41,7 @@ dependencies {
         testImplementation(gav("org.junitpioneer"))
         testImplementation(gav("org.mockito"))
         testImplementation(gav("org.mockito.junit.jupiter"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
 
         jmhImplementation(project(":app-hapi-utils"))
         jmhImplementation(project(":app-spi"))

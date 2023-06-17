@@ -55,9 +55,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.security.InvalidKeyException;
 import java.util.Objects;
 import java.util.Optional;
-import org.apache.commons.codec.DecoderException;
 
 public final class PbjConverter {
     public static @NonNull AccountID toPbj(@NonNull com.hederahashgraph.api.proto.java.AccountID accountID) {
@@ -1284,7 +1284,7 @@ public final class PbjConverter {
         requireNonNull(jKey);
         try {
             return toPbj(JKey.mapJKey(jKey));
-        } catch (DecoderException e) {
+        } catch (InvalidKeyException e) {
             throw new RuntimeException(e);
         }
     }

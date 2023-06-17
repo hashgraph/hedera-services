@@ -33,6 +33,7 @@ dependencies {
         testImplementation(gav("org.mockito"))
         testImplementation(gav("org.mockito.junit.jupiter"))
         testImplementation(gav("com.swirlds.merkle"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
         testRuntimeOnly(gav("org.mockito.inline"))
     }
 }

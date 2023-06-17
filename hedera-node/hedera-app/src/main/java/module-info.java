@@ -28,7 +28,6 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.schedule;
     requires com.hedera.node.app.service.token;
     requires com.hedera.node.app.service.util;
-    requires com.github.spotbugs.annotations;
     requires com.google.common;
     requires com.google.protobuf;
     requires com.swirlds.fchashmap;
@@ -38,12 +37,12 @@ module com.hedera.node.app {
     requires io.grpc;
     requires io.helidon.grpc.core;
     requires io.helidon.grpc.server;
-    requires org.apache.commons.codec; // Temporary until AdaptedMonoProcessLogic is removed
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires org.hyperledger.besu.datatypes;
     requires org.hyperledger.besu.evm;
     requires org.slf4j;
+    requires static com.github.spotbugs.annotations;
 
     exports com.hedera.node.app to
             com.swirlds.platform;

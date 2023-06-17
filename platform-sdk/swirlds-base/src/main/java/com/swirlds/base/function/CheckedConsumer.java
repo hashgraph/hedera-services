@@ -16,9 +16,9 @@
 
 package com.swirlds.base.function;
 
-import com.swirlds.base.ArgumentUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -48,7 +48,7 @@ public interface CheckedConsumer<T, E extends Exception> {
      */
     @NonNull
     static <T, E extends Exception> CheckedConsumer<T, E> of(@NonNull final Consumer<T> consumer) {
-        ArgumentUtils.throwArgNull(consumer, "consumer");
+        Objects.requireNonNull(consumer, "consumer must not be null");
         return consumer::accept;
     }
 }

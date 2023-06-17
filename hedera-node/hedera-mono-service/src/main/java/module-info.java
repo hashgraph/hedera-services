@@ -32,7 +32,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.app,
             com.hedera.node.app.service.consensus.impl.test,
-            com.hedera.node.app.service.schedule.impl;
+            com.hedera.node.app.service.schedule.impl,
+            com.hedera.node.app.service.file.impl;
     exports com.hedera.node.app.service.mono.utils to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app.service.schedule.impl,
@@ -86,7 +87,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.files to
             com.hedera.node.app.service.mono.test.fixtures,
-            com.hedera.node.app;
+            com.hedera.node.app,
+            com.hedera.node.app.service.file.impl;
     exports com.hedera.node.app.service.mono.state.virtual.schedule to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app.service.schedule.impl,
@@ -277,8 +279,8 @@ module com.hedera.node.app.service.mono {
     requires transitive grpc.stub;
     requires transitive headlong;
     requires transitive io.grpc;
+    requires transitive io.helidon.grpc.server;
     requires transitive javax.inject;
-    requires transitive org.apache.commons.codec;
     requires transitive org.apache.commons.lang3;
     requires transitive org.apache.logging.log4j;
     requires transitive org.eclipse.collections.api;
@@ -287,17 +289,17 @@ module com.hedera.node.app.service.mono {
     requires transitive tuweni.bytes;
     requires transitive tuweni.units;
     requires com.fasterxml.jackson.core;
-    requires com.github.spotbugs.annotations;
     requires com.swirlds.base;
     requires com.swirlds.logging;
     requires com.swirlds.platform;
     requires io.helidon.common.configurable;
     requires io.helidon.config;
     requires io.helidon.grpc.core;
-    requires io.helidon.grpc.server;
+    requires org.apache.commons.codec;
     requires org.apache.commons.collections4;
     requires org.apache.commons.io;
     requires org.bouncycastle.provider;
     requires org.eclipse.collections.impl;
     requires org.slf4j;
+    requires static com.github.spotbugs.annotations;
 }
