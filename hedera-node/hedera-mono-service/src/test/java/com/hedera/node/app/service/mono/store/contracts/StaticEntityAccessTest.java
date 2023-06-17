@@ -79,12 +79,12 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -360,7 +360,7 @@ class StaticEntityAccessTest {
     }
 
     @Test
-    void getKeys() throws DecoderException {
+    void getKeys() throws InvalidKeyException {
         token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
         token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
         token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
