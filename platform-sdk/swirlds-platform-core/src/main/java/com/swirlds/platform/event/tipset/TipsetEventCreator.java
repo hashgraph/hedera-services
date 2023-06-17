@@ -25,7 +25,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -47,7 +46,6 @@ import java.util.Random;
 
 // TODO:
 //  - reduce lambda use
-//  - infinite generational span
 //  - start up frozen
 //  - freeze
 //  - reconnect (all gossip flavors)
@@ -77,14 +75,8 @@ public class TipsetEventCreator { // TODO test
     private final ChildlessEventTracker childlessEventTracker;
     private final TransactionSupplier transactionSupplier;
     private final SoftwareVersion softwareVersion;
-
-    // TODO add bully score and encapsulate metrics in a helper class
-    private static final RunningAverageMetric.Config TIPSET_SCORE_CONFIG = new RunningAverageMetric.Config(
-                    "platform", "tipsetScore")
-            .withDescription("The score, based on tipset advancements, of each new event created by this "
-                    + "node. A score of 0.0 means the event did not advance consensus at all, while a score "
-                    + "of 1.0 means that the event advanced consensus as much as a single event can.");
-    private final RunningAverageMetric tipsetScoreMetric;
+    private final double antiBullyingFactor;
+    private final TipsetMetrics tipsetMetrics;
 
     /**
      * The last event created by this node. TODO we need to load this if we don't start from genesis
@@ -115,6 +107,9 @@ public class TipsetEventCreator { // TODO test
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final TransactionSupplier transactionSupplier) {
 
+        final EventCreationConfig eventCreationConfig =
+                platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
+
         this.cryptography = Objects.requireNonNull(cryptography);
         this.time = Objects.requireNonNull(time);
         this.random = Objects.requireNonNull(random);
@@ -123,6 +118,8 @@ public class TipsetEventCreator { // TODO test
         this.selfId = Objects.requireNonNull(selfId);
         this.transactionSupplier = Objects.requireNonNull(transactionSupplier);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
+        this.antiBullyingFactor = Math.max(1.0, eventCreationConfig.antiBullyingFactor());
+        this.tipsetMetrics = new TipsetMetrics(platformContext);
 
         // TODO reduce indirection in the lambdas
         // TODO use NodeID better
@@ -140,8 +137,6 @@ public class TipsetEventCreator { // TODO test
                 addressBook.getTotalWeight());
 
         childlessEventTracker = new ChildlessEventTracker();
-
-        tipsetScoreMetric = platformContext.getMetrics().getOrCreate(TIPSET_SCORE_CONFIG);
     }
 
     /**
@@ -182,7 +177,11 @@ public class TipsetEventCreator { // TODO test
     @Nullable
     public GossipEvent createNewEvent() {
         final long bullyScore = tipsetScoreCalculator.getBullyScore();
-        final double beNiceToNerdChance = (bullyScore - 1) / 10.0; // TODO settings
+        tipsetMetrics.getBullyScoreMetric().update(bullyScore);
+
+        // Never bother with anti-bullying techniques if we have a bully score of 1. We are pretty much guaranteed
+        // to bully ~1/3 of other nodes by a score of 1.
+        final double beNiceToNerdChance = (bullyScore - 1) / antiBullyingFactor;
 
         if (random.nextDouble() < beNiceToNerdChance) {
             return createEventToReduceBullyScore();
@@ -216,25 +215,7 @@ public class TipsetEventCreator { // TODO test
             return null;
         }
 
-        final List<EventDescriptor> parentDescriptors = new ArrayList<>(2);
-        if (lastSelfEvent != null) {
-            parentDescriptors.add(lastSelfEvent);
-        }
-        if (bestOtherParent != null) {
-            parentDescriptors.add(bestOtherParent);
-        }
-
-        final GossipEvent event = buildEventFromParents(lastSelfEvent, bestOtherParent);
-
-        final EventDescriptor descriptor = buildDescriptor(event);
-        tipsetBuilder.addEvent(descriptor, parentDescriptors);
-        final long score = tipsetScoreCalculator.addEventAndGetAdvancementScore(descriptor);
-        final double scoreRatio = score / (double) tipsetScoreCalculator.getMaximumPossibleScore();
-        tipsetScoreMetric.update(scoreRatio);
-
-        lastSelfEvent = descriptor;
-
-        return event;
+        return buildEvent(bestOtherParent);
     }
 
     /**
@@ -272,31 +253,40 @@ public class TipsetEventCreator { // TODO test
         for (int i = 0; i < nerds.size(); i++) {
             runningSum += bullyScores.get(i);
             if (choice < runningSum) {
-                final EventDescriptor otherParent = nerds.get(i);
-
-                final List<EventDescriptor> parentDescriptors = new ArrayList<>(2);
-                if (lastSelfEvent != null) {
-                    parentDescriptors.add(lastSelfEvent);
-                }
-                parentDescriptors.add(otherParent);
-
-                // TODO duplicate code
-                final GossipEvent event = buildEventFromParents(lastSelfEvent, otherParent);
-
-                final EventDescriptor descriptor = buildDescriptor(event);
-                tipsetBuilder.addEvent(descriptor, parentDescriptors);
-                final long score = tipsetScoreCalculator.addEventAndGetAdvancementScore(descriptor);
-                final double scoreRatio = score / (double) tipsetScoreCalculator.getMaximumPossibleScore();
-                tipsetScoreMetric.update(scoreRatio);
-
-                lastSelfEvent = descriptor;
-
-                return event;
+                return buildEvent(nerds.get(i));
             }
         }
 
-        // TODO this should not happen
-        return null;
+        // this should be impossible
+        throw new IllegalStateException("Failed to find an other parent");
+    }
+
+    /**
+     * Given an other parent, build the next self event.
+     *
+     * @param otherParent the other parent, or null if there is no other parent
+     * @return the new event
+     */
+    private GossipEvent buildEvent(@Nullable final EventDescriptor otherParent) {
+        final List<EventDescriptor> parentDescriptors = new ArrayList<>(2);
+        if (lastSelfEvent != null) {
+            parentDescriptors.add(lastSelfEvent);
+        }
+        if (otherParent != null) {
+            parentDescriptors.add(otherParent);
+        }
+
+        final GossipEvent event = buildEventFromParents(lastSelfEvent, otherParent);
+
+        final EventDescriptor descriptor = buildDescriptor(event);
+        tipsetBuilder.addEvent(descriptor, parentDescriptors);
+        final long score = tipsetScoreCalculator.addEventAndGetAdvancementScore(descriptor);
+        final double scoreRatio = score / (double) tipsetScoreCalculator.getMaximumPossibleScore();
+        tipsetMetrics.getTipsetScoreMetric().update(scoreRatio);
+
+        lastSelfEvent = descriptor;
+
+        return event;
     }
 
     /**
@@ -323,7 +313,6 @@ public class TipsetEventCreator { // TODO test
             selfParentHash = lastSelfEvent.getHash();
         }
 
-        // TODO use node ID
         final NodeId otherParentId;
         if (selfParent == null) {
             otherParentId = CREATOR_ID_UNDEFINED;

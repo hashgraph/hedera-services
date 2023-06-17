@@ -118,9 +118,7 @@ public class TipsetBuilder {
             eventTipset = merge(parentTipsets).advance(eventDescriptor.getCreator(), eventDescriptor.getGeneration());
         }
 
-        tipsets.put(
-                eventDescriptor,
-                eventTipset);
+        tipsets.put(eventDescriptor, eventTipset);
         latestGenerations = latestGenerations.advance(eventDescriptor.getCreator(), eventDescriptor.getGeneration());
 
         return eventTipset;
