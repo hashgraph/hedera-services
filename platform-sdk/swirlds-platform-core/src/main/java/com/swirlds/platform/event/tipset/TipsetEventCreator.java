@@ -274,6 +274,41 @@ public class TipsetEventCreator { // TODO test
     }
 
     /**
+     * Get the generation of a descriptor, handle null appropriately.
+     */
+    private static long getGeneration(@Nullable final EventDescriptor descriptor) {
+        if (descriptor == null) {
+            return GENERATION_UNDEFINED;
+        } else {
+            return descriptor.getGeneration();
+        }
+    }
+
+    /**
+     * Get the hash of a descriptor, handle null appropriately.
+     */
+    @Nullable
+    private static Hash getHash(@Nullable final EventDescriptor descriptor) {
+        if (descriptor == null) {
+            return null;
+        } else {
+            return descriptor.getHash();
+        }
+    }
+
+    /**
+     * Get the creator of a descriptor, handle null appropriately.
+     */
+    @Nullable
+    private static NodeId getCreator(@Nullable final EventDescriptor descriptor) {
+        if (descriptor == null) {
+            return CREATOR_ID_UNDEFINED;
+        } else {
+            return descriptor.getCreator();
+        }
+    }
+
+    /**
      * Given the parents, build the event object.
      *
      * @param selfParent  the self parent
@@ -284,43 +319,12 @@ public class TipsetEventCreator { // TODO test
     private GossipEvent buildEventFromParents(
             @Nullable final EventDescriptor selfParent, @Nullable final EventDescriptor otherParent) {
 
-        // TODO create helper functions to clean this up
+        final long selfParentGeneration = getGeneration(selfParent);
+        final Hash selfParentHash = getHash(selfParent);
 
-        final long selfParentGeneration;
-        if (lastSelfEvent == null) {
-            selfParentGeneration = GENERATION_UNDEFINED;
-        } else {
-            selfParentGeneration = lastSelfEvent.getGeneration();
-        }
-
-        final Hash selfParentHash;
-        if (lastSelfEvent == null) {
-            selfParentHash = null;
-        } else {
-            selfParentHash = lastSelfEvent.getHash();
-        }
-
-        final NodeId otherParentId;
-        if (selfParent == null) {
-            otherParentId = CREATOR_ID_UNDEFINED;
-        } else {
-            otherParentId = selfParent.getCreator();
-        }
-
-        final long otherParentGeneration;
-        if (otherParent == null) {
-            // This is only permitted when creating the first event at genesis.
-            otherParentGeneration = GENERATION_UNDEFINED;
-        } else {
-            otherParentGeneration = otherParent.getGeneration();
-        }
-
-        final Hash otherParentHash;
-        if (otherParent == null) {
-            otherParentHash = null;
-        } else {
-            otherParentHash = otherParent.getHash();
-        }
+        final long otherParentGeneration = getGeneration(otherParent);
+        final Hash otherParentHash = getHash(otherParent);
+        final NodeId otherParentId = getCreator(otherParent);
 
         // TODO we need to emulate the logic in EventUtils.getChildTimeCreated()
         final Instant timeCreated = time.now();
