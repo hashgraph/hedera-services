@@ -85,10 +85,12 @@ public class SequenceSetTests {
         return Stream.of(
                 Arguments.of(new SetBuilder(
                         "standard",
-                        (min, capacity) -> new StandardSequenceSet<>(min, capacity, SequenceSetElement::sequence))),
+                        (min, capacity) ->
+                                new StandardSequenceSet<>(min, capacity, false, SequenceSetElement::sequence))),
                 Arguments.of(new SetBuilder(
                         "concurrent",
-                        (min, capacity) -> new ConcurrentSequenceSet<>(min, capacity, SequenceSetElement::sequence))));
+                        (min, capacity) ->
+                                new ConcurrentSequenceSet<>(min, capacity, false, SequenceSetElement::sequence))));
     }
 
     private static boolean isKeyPresent(final SequenceSet<SequenceSetElement> set, final Long sequenceNumber) {
@@ -669,7 +671,7 @@ public class SequenceSetTests {
         final int capacity = 100;
 
         final SequenceSet<SequenceSetElement> set =
-                new ConcurrentSequenceSet<>(lowerBound.get(), capacity, SequenceSetElement::sequence);
+                new ConcurrentSequenceSet<>(lowerBound.get(), capacity, false, SequenceSetElement::sequence);
 
         final AtomicBoolean error = new AtomicBoolean();
 

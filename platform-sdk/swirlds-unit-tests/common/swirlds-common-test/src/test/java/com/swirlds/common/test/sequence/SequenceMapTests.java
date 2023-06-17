@@ -89,10 +89,11 @@ public class SequenceMapTests {
         return Stream.of(
                 Arguments.of(new MapBuilder(
                         "standard",
-                        (min, capacity) -> new StandardSequenceMap<>(min, capacity, SequenceMapKey::sequence))),
+                        (min, capacity) -> new StandardSequenceMap<>(min, capacity, false, SequenceMapKey::sequence))),
                 Arguments.of(new MapBuilder(
                         "concurrent",
-                        (min, capacity) -> new ConcurrentSequenceMap<>(min, capacity, SequenceMapKey::sequence))));
+                        (min, capacity) ->
+                                new ConcurrentSequenceMap<>(min, capacity, false, SequenceMapKey::sequence))));
     }
 
     private static boolean isKeyPresent(final SequenceMap<SequenceMapKey, Integer> map, final Long sequenceNumber) {
@@ -266,8 +267,6 @@ public class SequenceMapTests {
                 key -> -key);
     }
 
-    // FUTURE WORK negative sequence number tests
-
     @ParameterizedTest
     @MethodSource("testConfiguration")
     @DisplayName("Negative Start Access Test")
@@ -304,8 +303,6 @@ public class SequenceMapTests {
                 },
                 key -> -key);
     }
-
-    // FUTURE WORK start at high positive number
 
     @ParameterizedTest
     @MethodSource("testConfiguration")
@@ -1113,7 +1110,7 @@ public class SequenceMapTests {
         final int capacity = 5;
 
         final SequenceMap<SequenceMapKey, Integer> map =
-                new ConcurrentSequenceMap<>(lowerBound.get(), capacity, SequenceMapKey::sequence);
+                new ConcurrentSequenceMap<>(lowerBound.get(), capacity, false, SequenceMapKey::sequence);
 
         final AtomicBoolean error = new AtomicBoolean();
 

@@ -27,7 +27,7 @@ import java.util.List;
 public class EventDedup implements MessageHandler<ChatterEvent>, Shiftable {
     private final List<MessageHandler<ChatterEvent>> handlers;
     private final SequenceSet<EventDescriptor> knownEvents =
-            new ConcurrentSequenceSet<>(0, 100_000, EventDescriptor::getGeneration);
+            new ConcurrentSequenceSet<>(0, 100_000, false, EventDescriptor::getGeneration);
     private long oldestEvent = 0;
 
     public EventDedup(final List<MessageHandler<ChatterEvent>> handlers) {

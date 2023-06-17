@@ -78,10 +78,7 @@ public class TipsetBuilder {
         this.indexToWeight = Objects.requireNonNull(indexToWeight);
         this.latestGenerations = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
 
-        tipsets = new StandardSequenceMap<>(
-                0,
-                1024, // TODO meet or exceed maximum generations allowed in memory past ancient
-                EventDescriptor::getGeneration);
+        tipsets = new StandardSequenceMap<>(0, 1024, true, EventDescriptor::getGeneration);
     }
 
     /**

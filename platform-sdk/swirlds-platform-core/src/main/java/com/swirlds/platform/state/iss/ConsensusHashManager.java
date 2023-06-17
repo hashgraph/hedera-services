@@ -113,7 +113,7 @@ public class ConsensusHashManager {
         this.addressBook = addressBook;
 
         this.roundData = new ConcurrentSequenceMap<>(
-                -consensusConfig.roundsNonAncient(), consensusConfig.roundsNonAncient(), x -> x);
+                -consensusConfig.roundsNonAncient(), consensusConfig.roundsNonAncient(), false, x -> x);
     }
 
     /**

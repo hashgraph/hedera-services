@@ -51,7 +51,7 @@ public class EventTracker {
      * All events that are currently being tracked. Events are removed as they are purged.
      */
     private final SequenceMap<EventDescriptor, TrackedEvent> events =
-            new ConcurrentSequenceMap<>(0, 100_000, EventDescriptor::getGeneration);
+            new ConcurrentSequenceMap<>(0, 100_000, false, EventDescriptor::getGeneration);
 
     /**
      * The total number of nodes in the simulation.
