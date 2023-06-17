@@ -96,13 +96,13 @@ public class TipsetBuilder {
     /**
      * Add a new event to the tracker.
      *
-     * @param eventFingerprint the descriptor of the event to add
+     * @param eventDescriptor the descriptor of the event to add
      * @param parents          the parents of the event being added
      * @return the tipset for the event that was added
      */
     @NonNull
     public Tipset addEvent(
-            @NonNull final EventDescriptor eventFingerprint, @NonNull final List<EventDescriptor> parents) {
+            @NonNull final EventDescriptor eventDescriptor, @NonNull final List<EventDescriptor> parents) {
         final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
         for (final EventDescriptor parent : parents) {
             final Tipset parentTipset = tipsets.get(parent);
@@ -114,15 +114,15 @@ public class TipsetBuilder {
         final Tipset eventTipset;
         if (parents.isEmpty()) {
             eventTipset = new Tipset(nodeCount, nodeIdToIndex, indexToWeight)
-                    .advance(eventFingerprint.getCreator(), eventFingerprint.getGeneration());
+                    .advance(eventDescriptor.getCreator(), eventDescriptor.getGeneration());
         } else {
-            eventTipset = merge(parentTipsets).advance(eventFingerprint.getCreator(), eventFingerprint.getGeneration());
+            eventTipset = merge(parentTipsets).advance(eventDescriptor.getCreator(), eventDescriptor.getGeneration());
         }
 
         tipsets.put(
-                eventFingerprint,
+                eventDescriptor,
                 eventTipset); // TODO we need to make it so this can't reject events with high generations
-        latestGenerations = latestGenerations.advance(eventFingerprint.getCreator(), eventFingerprint.getGeneration());
+        latestGenerations = latestGenerations.advance(eventDescriptor.getCreator(), eventDescriptor.getGeneration());
 
         return eventTipset;
     }
@@ -130,12 +130,12 @@ public class TipsetBuilder {
     /**
      * Get the tipset of an event, or null if the event is not being tracked.
      *
-     * @param eventFingerprint the fingerprint of the event
+     * @param eventDescriptor the fingerprint of the event
      * @return the tipset of the event, or null if the event is not being tracked
      */
     @Nullable
-    public Tipset getTipset(@NonNull final EventDescriptor eventFingerprint) {
-        return tipsets.get(eventFingerprint);
+    public Tipset getTipset(@NonNull final EventDescriptor eventDescriptor) {
+        return tipsets.get(eventDescriptor);
     }
 
     /**

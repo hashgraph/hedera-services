@@ -46,8 +46,6 @@ import java.util.Objects;
 import java.util.Random;
 
 // TODO:
-//  - search for "fingerprint"
-//  - transition to NodeId
 //  - reduce lambda use
 //  - infinite generational span
 //  - start up frozen
@@ -159,11 +157,11 @@ public class TipsetEventCreator { // TODO test
             return;
         }
 
-        final EventDescriptor fingerprint = buildDescriptor(event);
-        final List<EventDescriptor> parentFingerprints = getParentDescriptors(event);
+        final EventDescriptor descriptor = buildDescriptor(event);
+        final List<EventDescriptor> parentDescriptors = getParentDescriptors(event);
 
-        tipsetBuilder.addEvent(fingerprint, parentFingerprints);
-        childlessEventTracker.addEvent(fingerprint, parentFingerprints);
+        tipsetBuilder.addEvent(descriptor, parentDescriptors);
+        childlessEventTracker.addEvent(descriptor, parentDescriptors);
     }
 
     /**
@@ -218,23 +216,23 @@ public class TipsetEventCreator { // TODO test
             return null;
         }
 
-        final List<EventDescriptor> parentFingerprints = new ArrayList<>(2);
+        final List<EventDescriptor> parentDescriptors = new ArrayList<>(2);
         if (lastSelfEvent != null) {
-            parentFingerprints.add(lastSelfEvent);
+            parentDescriptors.add(lastSelfEvent);
         }
         if (bestOtherParent != null) {
-            parentFingerprints.add(bestOtherParent);
+            parentDescriptors.add(bestOtherParent);
         }
 
         final GossipEvent event = buildEventFromParents(lastSelfEvent, bestOtherParent);
 
-        final EventDescriptor fingerprint = buildDescriptor(event);
-        tipsetBuilder.addEvent(fingerprint, parentFingerprints);
-        final long score = tipsetScoreCalculator.addEventAndGetAdvancementScore(fingerprint);
+        final EventDescriptor descriptor = buildDescriptor(event);
+        tipsetBuilder.addEvent(descriptor, parentDescriptors);
+        final long score = tipsetScoreCalculator.addEventAndGetAdvancementScore(descriptor);
         final double scoreRatio = score / (double) tipsetScoreCalculator.getMaximumPossibleScore();
         tipsetScoreMetric.update(scoreRatio);
 
-        lastSelfEvent = fingerprint;
+        lastSelfEvent = descriptor;
 
         return event;
     }
@@ -276,22 +274,22 @@ public class TipsetEventCreator { // TODO test
             if (choice < runningSum) {
                 final EventDescriptor otherParent = nerds.get(i);
 
-                final List<EventDescriptor> parentFingerprints = new ArrayList<>(2);
+                final List<EventDescriptor> parentDescriptors = new ArrayList<>(2);
                 if (lastSelfEvent != null) {
-                    parentFingerprints.add(lastSelfEvent);
+                    parentDescriptors.add(lastSelfEvent);
                 }
-                parentFingerprints.add(otherParent);
+                parentDescriptors.add(otherParent);
 
                 // TODO duplicate code
                 final GossipEvent event = buildEventFromParents(lastSelfEvent, otherParent);
 
-                final EventDescriptor fingerprint = buildDescriptor(event);
-                tipsetBuilder.addEvent(fingerprint, parentFingerprints);
-                final long score = tipsetScoreCalculator.addEventAndGetAdvancementScore(fingerprint);
+                final EventDescriptor descriptor = buildDescriptor(event);
+                tipsetBuilder.addEvent(descriptor, parentDescriptors);
+                final long score = tipsetScoreCalculator.addEventAndGetAdvancementScore(descriptor);
                 final double scoreRatio = score / (double) tipsetScoreCalculator.getMaximumPossibleScore();
                 tipsetScoreMetric.update(scoreRatio);
 
-                lastSelfEvent = fingerprint;
+                lastSelfEvent = descriptor;
 
                 return event;
             }

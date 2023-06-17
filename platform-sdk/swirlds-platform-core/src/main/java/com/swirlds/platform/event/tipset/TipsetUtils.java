@@ -58,7 +58,7 @@ final class TipsetUtils {
     }
 
     /**
-     * Get the fingerprints of an event's parents.
+     * Get the descriptors of an event's parents.
      */
     @NonNull
     public static List<EventDescriptor> getParentDescriptors(@NonNull final EventImpl event) {
@@ -73,7 +73,7 @@ final class TipsetUtils {
     }
 
     /**
-     * Get the fingerprints of an event's parents.
+     * Get the descriptors of an event's parents.
      */
     @NonNull
     public static List<EventDescriptor> getParentDescriptors(@NonNull final GossipEvent event) {
