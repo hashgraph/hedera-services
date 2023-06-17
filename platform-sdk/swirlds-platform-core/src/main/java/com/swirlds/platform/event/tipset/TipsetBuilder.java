@@ -118,7 +118,9 @@ public class TipsetBuilder {
             eventTipset = merge(parentTipsets).advance(eventFingerprint.creator(), eventFingerprint.generation());
         }
 
-        tipsets.put(eventFingerprint, eventTipset);
+        tipsets.put(
+                eventFingerprint,
+                eventTipset); // TODO we need to make it so this can't reject events with high generations
         latestGenerations = latestGenerations.advance(eventFingerprint.creator(), eventFingerprint.generation());
 
         return eventTipset;

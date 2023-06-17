@@ -208,31 +208,8 @@ public class TipsetScoreCalculator {
         // Don't bother advancing the self generation, since self advancement doesn't contribute to tipset score.
         final Tipset newTipset = Tipset.merge(parentTipsets);
 
+        // TODO write unit test that is sensitive to a missing "- previousScore"
         return snapshot.getWeightedAdvancementCount(selfId, newTipset) - previousScore;
-    }
-
-    // TODO rename and document
-    // TODO should return int type
-    public long getTheoreticalAdvancementScoreAntiBully(@NonNull final List<EventFingerprint> parents) {
-        if (parents.isEmpty()) {
-            return 0;
-        }
-
-        final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
-        for (final EventFingerprint parent : parents) {
-            parentTipsets.add(tipsetBuilder.getTipset(parent));
-        }
-
-        // Don't bother advancing the self generation, since self advancement doesn't contribute to tipset score.
-        final Tipset newTipset = Tipset.merge(parentTipsets);
-
-        //        final IntToLongFunction weights = nodeIndex -> {
-        ////            final long baseWeight = indexToWeight.applyAsLong(nodeIndex);
-        //            final long bullyFactor = 1 + getBullyScoreForNodeIndex(nodeIndex);
-        ////            return baseWeight * bullyFactor; // TODO should we consider weight in this step?
-        //            return bullyFactor;
-        //        };
-        return snapshot.getAdvancementCount(selfId, newTipset);
     }
 
     /**

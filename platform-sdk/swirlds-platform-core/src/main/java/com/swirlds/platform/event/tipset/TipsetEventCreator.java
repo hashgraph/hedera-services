@@ -44,7 +44,6 @@ import java.util.Objects;
 import java.util.Random;
 
 // TODO:
-//  - tipset score calculator bug
 //  - delete EventFingerprint
 //  - transition to NodeId
 //  - reduce lambda use
@@ -54,7 +53,9 @@ import java.util.Random;
 //  - reconnect
 //  - metrics
 //  - convert all constants to settings
-//  - max rate throttle
+//  - tipset score calculator bug unit test
+//  - unit tests
+//  - resolve remaining TODOs
 
 /**
  * Responsible for creating new events using the tipset algorithm.
