@@ -46,26 +46,57 @@ public record PathsConfig(
         @ConfigProperty(defaultValue = "data/keys") String keysDirPath,
         @ConfigProperty(defaultValue = "data/apps") String appsDirPath,
         @ConfigProperty(defaultValue = "log4j2.xml") String logPath) {
+
+    /**
+     * path to config.txt (which might not exist)
+     *
+     * @return absolute path to config.txt
+     */
     public Path getConfigPath() {
         return getAbsolutePath(configPath);
     }
 
+    /**
+     * path to settings.txt (which might not exist)
+     *
+     * @return absolute path to settings.txt
+     */
     public Path getSettingsPath() {
         return getAbsolutePath(settingsPath);
     }
 
+    /**
+     * the directory where the settings used file will be created on startup if and only if settings.txt exists
+     *
+     * @return absolute path to settings directory
+     */
     public Path getSettingsUsedDir() {
         return getAbsolutePath(settingsUsedDir);
     }
 
+    /**
+     * path to data/keys/
+     *
+     * @return absolute path to data/keys/
+     */
     public Path getKeysDirPath() {
         return getAbsolutePath(keysDirPath);
     }
 
+    /**
+     * path to data/apps/
+     *
+     * @return absolute path to data/apps/
+     */
     public Path getAppsDirPath() {
         return getAbsolutePath(appsDirPath);
     }
 
+    /**
+     * path to log4j2.xml (which might not exist)
+     *
+     * @return absolute path to log4j2.xml
+     */
     public Path getLogPath() {
         return rethrowIO(() -> getAbsolutePath(logPath));
     }
