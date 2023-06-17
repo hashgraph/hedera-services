@@ -46,13 +46,13 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.security.InvalidKeyException;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -159,7 +159,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
     }
 
     static void mapToStatus(final IllegalArgumentException iae, final TransactionContext txnCtx) {
-        if (iae.getCause() instanceof DecoderException) {
+        if (iae.getCause() instanceof InvalidKeyException) {
             txnCtx.setStatus(BAD_ENCODING);
             return;
         }

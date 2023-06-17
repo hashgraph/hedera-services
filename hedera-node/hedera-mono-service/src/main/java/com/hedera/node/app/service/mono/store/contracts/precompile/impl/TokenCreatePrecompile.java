@@ -90,6 +90,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -97,7 +98,6 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import javax.inject.Provider;
-import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -346,7 +346,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         verifySolidityInput();
         try {
             replaceInheritedProperties();
-        } catch (final DecoderException e) {
+        } catch (final InvalidKeyException e) {
             throw new InvalidTransactionException(FAIL_INVALID);
         }
         transactionBody = syntheticTxnFactory.createTokenCreate(tokenCreateOp);
@@ -493,11 +493,11 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         }
     }
 
-    private void replaceInheritedKeysWithSenderKey(final AccountID parentId) throws DecoderException {
+    private void replaceInheritedKeysWithSenderKey(final AccountID parentId) throws InvalidKeyException {
         tokenCreateOp.setAllInheritedKeysTo((JKey) ledgers.accounts().get(parentId, AccountProperty.KEY));
     }
 
-    private void replaceInheritedProperties() throws DecoderException {
+    private void replaceInheritedProperties() throws InvalidKeyException {
         final var parentId = EntityIdUtils.accountIdFromEvmAddress(senderAddress);
         var parentAutoRenewId = (EntityId) ledgers.accounts().get(parentId, AUTO_RENEW_ACCOUNT_ID);
         if (parentAutoRenewId == null) {

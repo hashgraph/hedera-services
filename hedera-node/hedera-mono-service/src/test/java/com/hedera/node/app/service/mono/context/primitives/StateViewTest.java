@@ -132,6 +132,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -139,7 +140,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.commons.codec.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -364,7 +364,7 @@ class StateViewTest {
         subject.contractBytecode = bytecode;
     }
 
-    private void setUpToken(final MerkleToken token) throws DecoderException {
+    private void setUpToken(final MerkleToken token) throws InvalidKeyException {
         token.setMemo(tokenMemo);
         token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
         token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());

@@ -36,9 +36,9 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
+import java.security.InvalidKeyException;
 import java.util.Collections;
 import java.util.List;
-import org.apache.commons.codec.DecoderException;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
@@ -50,7 +50,7 @@ class TokenCreateWrapperTest {
     private final ContractID contractID = EntityIdUtils.contractIdFromEvmAddress(contractAddress);
 
     @Test
-    void setInheritedKeysToSpecificKeyWorksAsExpected() throws DecoderException {
+    void setInheritedKeysToSpecificKeyWorksAsExpected() throws InvalidKeyException {
         // given
         final var key = new JContractIDKey(contractID);
         final var wrapper = createTokenCreateWrapperWithKeys(List.of(

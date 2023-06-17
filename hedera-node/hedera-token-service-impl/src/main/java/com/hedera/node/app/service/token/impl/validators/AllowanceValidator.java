@@ -29,7 +29,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -38,25 +37,11 @@ import java.util.List;
 import javax.inject.Inject;
 
 public class AllowanceValidator {
-    final ConfigProvider configProvider;
 
     @Inject
-    public AllowanceValidator(final ConfigProvider configProvider) {
-        this.configProvider = configProvider;
-    }
+    public AllowanceValidator() {}
 
-    /**
-     * Check if the allowance feature is enabled
-     *
-     * @return true if the feature is enabled in {@link HederaConfig}
-     */
-    public boolean isEnabled() {
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-        return hederaConfig.allowancesIsEnabled();
-    }
-
-    protected void validateTotalAllowancesPerTxn(final int totalAllowances) {
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+    protected void validateTotalAllowancesPerTxn(final int totalAllowances, @NonNull final HederaConfig hederaConfig) {
         validateFalse(
                 exceedsTxnLimit(totalAllowances, hederaConfig.allowancesMaxTransactionLimit()),
                 MAX_ALLOWANCES_EXCEEDED);
