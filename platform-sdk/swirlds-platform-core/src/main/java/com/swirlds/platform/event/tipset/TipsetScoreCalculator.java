@@ -19,6 +19,8 @@ package com.swirlds.platform.event.tipset;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.Utilities.isSuperMajority;
 
+import com.swirlds.common.system.NodeId;
+import com.swirlds.platform.event.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -41,7 +43,7 @@ public class TipsetScoreCalculator {
     /**
      * The node ID that is being tracked by this window.
      */
-    private final long selfId;
+    private final NodeId selfId;
 
     /**
      * Builds tipsets for each event. Is maintained outside this object.
@@ -101,19 +103,18 @@ public class TipsetScoreCalculator {
      * @param totalWeight   the sum of all weight
      */
     public TipsetScoreCalculator(
-            final long selfId,
+            @NonNull final NodeId selfId,
             @NonNull final TipsetBuilder tipsetBuilder,
             final int nodeCount,
             @NonNull final LongToIntFunction nodeIdToIndex,
             @NonNull final IntToLongFunction indexToWeight,
             final long totalWeight) {
 
-        // TODO requireNonNull
-        this.selfId = selfId;
-        this.tipsetBuilder = tipsetBuilder;
+        this.selfId = Objects.requireNonNull(selfId);
+        this.tipsetBuilder = Objects.requireNonNull(tipsetBuilder);
         this.nodeCount = nodeCount;
         this.totalWeight = totalWeight;
-        this.selfWeight = indexToWeight.applyAsLong(nodeIdToIndex.applyAsInt(selfId));
+        this.selfWeight = indexToWeight.applyAsLong(nodeIdToIndex.applyAsInt(selfId.id()));
         this.indexToWeight = Objects.requireNonNull(indexToWeight);
         this.maximumPossibleScore = totalWeight - selfWeight;
 
@@ -147,9 +148,9 @@ public class TipsetScoreCalculator {
      * @param event the event that is being added
      * @return the change in the tipset advancement score
      */
-    public long addEventAndGetAdvancementScore(@NonNull final EventFingerprint event) {
+    public long addEventAndGetAdvancementScore(@NonNull final EventDescriptor event) {
         Objects.requireNonNull(event);
-        if (event.creator() != selfId) {
+        if (!event.getCreator().equals(selfId)) {
             throw new IllegalArgumentException("event creator must be the same as the window ID");
         }
 
@@ -178,7 +179,7 @@ public class TipsetScoreCalculator {
             previousScore = score;
         }
 
-        if (event.generation() > 0 && scoreImprovement <= 0) {
+        if (event.getGeneration() > 0 && scoreImprovement <= 0) {
             // If the tipset algorithm is working as intended, this should never happen.
             logger.error(
                     EXCEPTION.getMarker(),
@@ -195,13 +196,13 @@ public class TipsetScoreCalculator {
      * @param parents the proposed parents of an event
      * @return the advancement score we would get by creating an event with the given parents
      */
-    public long getTheoreticalAdvancementScore(@NonNull final List<EventFingerprint> parents) {
+    public long getTheoreticalAdvancementScore(@NonNull final List<EventDescriptor> parents) {
         if (parents.isEmpty()) {
             return 0;
         }
 
         final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
-        for (final EventFingerprint parent : parents) {
+        for (final EventDescriptor parent : parents) {
             parentTipsets.add(tipsetBuilder.getTipset(parent));
         }
 

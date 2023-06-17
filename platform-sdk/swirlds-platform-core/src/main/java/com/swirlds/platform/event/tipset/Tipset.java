@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.tipset;
 
+import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
@@ -140,10 +141,12 @@ public class Tipset {
     /**
      * Advance a single tip within the tipset.
      *
+     * @param creator    the node ID of the creator of the event
+     * @param generation the generation of the event
      * @return this object
      */
-    public @NonNull Tipset advance(final long creatorId, final long generation) {
-        final int index = nodeIdToIndex.applyAsInt(creatorId);
+    public @NonNull Tipset advance(@NonNull final NodeId creator, final long generation) {
+        final int index = nodeIdToIndex.applyAsInt(creator.id());
         tips[index] = Math.max(tips[index], generation);
         return this;
     }
@@ -164,10 +167,10 @@ public class Tipset {
      * @param that   the tipset to compare to
      * @return the number of tip advancements to get from this tipset to that tipset
      */
-    public long getWeightedAdvancementCount(final long nodeId, @NonNull final Tipset that) {
+    public long getWeightedAdvancementCount(@NonNull final NodeId nodeId, @NonNull final Tipset that) {
         long count = 0;
 
-        final int selfIndex = nodeIdToIndex.applyAsInt(nodeId);
+        final int selfIndex = nodeIdToIndex.applyAsInt(nodeId.id());
         for (int index = 0; index < tips.length; index++) {
             if (index == selfIndex) {
                 // We don't consider self advancement here, since self advancement does nothing to help consensus.
@@ -199,10 +202,10 @@ public class Tipset {
      * @return the number of tip advancements to get from this tipset to that tipset
      */
     public long getWeightedAdvancementCount(
-            final long nodeId, @NonNull final Tipset that, @NonNull IntToLongFunction indexWeight) {
+            @NonNull final NodeId nodeId, @NonNull final Tipset that, @NonNull IntToLongFunction indexWeight) {
         long count = 0;
 
-        final int selfIndex = nodeIdToIndex.applyAsInt(nodeId);
+        final int selfIndex = nodeIdToIndex.applyAsInt(nodeId.id());
         for (int index = 0; index < tips.length; index++) {
             if (index == selfIndex) {
                 // We don't consider self advancement here, since self advancement does nothing to help consensus.
@@ -218,10 +221,10 @@ public class Tipset {
     }
 
     // TODO javadoc
-    public int getAdvancementCount(final long nodeId, @NonNull final Tipset that) {
+    public int getAdvancementCount(@NonNull final NodeId nodeId, @NonNull final Tipset that) {
         int count = 0;
 
-        final int selfIndex = nodeIdToIndex.applyAsInt(nodeId);
+        final int selfIndex = nodeIdToIndex.applyAsInt(nodeId.id());
         for (int index = 0; index < tips.length; index++) {
             if (index == selfIndex) {
                 // We don't consider self advancement here, since self advancement does nothing to help consensus.

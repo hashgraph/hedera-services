@@ -20,6 +20,7 @@ import static com.swirlds.platform.event.tipset.Tipset.merge;
 
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
+import com.swirlds.platform.event.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -36,7 +37,7 @@ public class TipsetBuilder {
     /**
      * Tipsets for all recent events we know about.
      */
-    private final SequenceMap<EventFingerprint, Tipset> tipsets;
+    private final SequenceMap<EventDescriptor, Tipset> tipsets;
 
     /**
      * This tipset is equivalent to a tipset that would be created by merging all tipsets of all events that
@@ -80,7 +81,7 @@ public class TipsetBuilder {
         tipsets = new StandardSequenceMap<>(
                 0,
                 1024, // TODO meet or exceed maximum generations allowed in memory past ancient
-                EventFingerprint::generation);
+                EventDescriptor::getGeneration);
     }
 
     /**
@@ -95,15 +96,15 @@ public class TipsetBuilder {
     /**
      * Add a new event to the tracker.
      *
-     * @param eventFingerprint the fingerprint of the event to add
+     * @param eventFingerprint the descriptor of the event to add
      * @param parents          the parents of the event being added
      * @return the tipset for the event that was added
      */
     @NonNull
     public Tipset addEvent(
-            @NonNull final EventFingerprint eventFingerprint, @NonNull final List<EventFingerprint> parents) {
+            @NonNull final EventDescriptor eventFingerprint, @NonNull final List<EventDescriptor> parents) {
         final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
-        for (final EventFingerprint parent : parents) {
+        for (final EventDescriptor parent : parents) {
             final Tipset parentTipset = tipsets.get(parent);
             if (parentTipset != null) {
                 parentTipsets.add(parentTipset);
@@ -113,15 +114,15 @@ public class TipsetBuilder {
         final Tipset eventTipset;
         if (parents.isEmpty()) {
             eventTipset = new Tipset(nodeCount, nodeIdToIndex, indexToWeight)
-                    .advance(eventFingerprint.creator(), eventFingerprint.generation());
+                    .advance(eventFingerprint.getCreator(), eventFingerprint.getGeneration());
         } else {
-            eventTipset = merge(parentTipsets).advance(eventFingerprint.creator(), eventFingerprint.generation());
+            eventTipset = merge(parentTipsets).advance(eventFingerprint.getCreator(), eventFingerprint.getGeneration());
         }
 
         tipsets.put(
                 eventFingerprint,
                 eventTipset); // TODO we need to make it so this can't reject events with high generations
-        latestGenerations = latestGenerations.advance(eventFingerprint.creator(), eventFingerprint.generation());
+        latestGenerations = latestGenerations.advance(eventFingerprint.getCreator(), eventFingerprint.getGeneration());
 
         return eventTipset;
     }
@@ -133,7 +134,7 @@ public class TipsetBuilder {
      * @return the tipset of the event, or null if the event is not being tracked
      */
     @Nullable
-    public Tipset getTipset(@NonNull final EventFingerprint eventFingerprint) {
+    public Tipset getTipset(@NonNull final EventDescriptor eventFingerprint) {
         return tipsets.get(eventFingerprint);
     }
 

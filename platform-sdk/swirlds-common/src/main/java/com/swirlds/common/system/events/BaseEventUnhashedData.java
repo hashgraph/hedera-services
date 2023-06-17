@@ -56,7 +56,7 @@ public class BaseEventUnhashedData implements SelfSerializable {
     /** sequence number for this by its creator (0 is first) */
     private long creatorSeq;
     /** ID of otherParent (translate before sending) */
-    private NodeId otherId;
+    private NodeId otherId; // TODO
     /** sequence number for otherParent event (by its creator) */
     private long otherSeq;
     /** creator's sig for this */

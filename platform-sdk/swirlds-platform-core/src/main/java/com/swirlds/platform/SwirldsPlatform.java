@@ -623,7 +623,7 @@ public class SwirldsPlatform implements Platform, Startable {
                         new Random() /* does not need to be cryptographically secure */,
                         this,
                         initialAddressBook,
-                        selfId.id(), // TODO nodeId
+                        selfId,
                         appVersion,
                         swirldStateManager.getTransactionPool(),
                         event -> abortAndThrowIfInterrupted(intakeQueue::put, event, "intakeQueue.put() interrupted"));

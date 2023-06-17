@@ -49,7 +49,7 @@ import java.util.function.Consumer;
 public class TipsetEventCreationManager implements Lifecycle { // TODO test
 
     private LifecyclePhase lifecyclePhase = NOT_STARTED;
-    private final long selfId; // TODO nodeId
+    private final NodeId selfId;
     private final TipsetEventCreator eventCreator;
 
     private final MultiQueueThread workQueue;
@@ -66,12 +66,12 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
             @NonNull final Random random,
             @NonNull final Signer signer,
             @NonNull final AddressBook addressBook,
-            final long selfId,
+            @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final TransactionSupplier transactionSupplier,
             @NonNull final Consumer<GossipEvent> newEventHandler) {
 
-        this.selfId = selfId;
+        this.selfId = Objects.requireNonNull(selfId);
         this.newEventHandler = Objects.requireNonNull(newEventHandler);
 
         eventCreator = new TipsetEventCreator(
@@ -117,7 +117,7 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
      * @param event the event to add
      */
     public void registerEvent(@NonNull final EventImpl event) throws InterruptedException {
-        if (event.getHashedData().getCreatorId().equals(new NodeId(selfId))) {
+        if (event.getHashedData().getCreatorId().equals(selfId)) {
             // TODO this behavior needs to be different at startup time if not at genesis
             return;
         }

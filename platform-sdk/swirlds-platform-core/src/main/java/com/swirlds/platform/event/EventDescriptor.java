@@ -49,6 +49,9 @@ public class EventDescriptor implements SelfSerializable {
     private NodeId creator;
     private long generation;
 
+    /**
+     * Save some computation by caching the hash code.
+     */
     private int hashCode;
 
     /**
@@ -138,15 +141,25 @@ public class EventDescriptor implements SelfSerializable {
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         hash = in.readSerializable(false, Hash::new);
+        if (hash == null) {
+            throw new IOException("hash cannot be null");
+        }
         if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
             creator = new NodeId(in.readLong());
         } else {
             creator = in.readSerializable(false, NodeId::new);
+            if (creator == null) {
+                throw new IOException("creator cannot be null");
+            }
         }
         generation = in.readLong();
 
-        hashCode = Objects.hash(hash, creator, generation);
+        // Hashes are assumed to be unique
+        hashCode = hash.hashCode();
     }
+
+    // TODO create PartialEventDescriptor that only contains the hash, but matches .equals() and .hashCode() of
+    //  equivalent EventDescriptor (perhaps just do this for Hash)
 
     /**
      * {@inheritDoc}
@@ -174,6 +187,9 @@ public class EventDescriptor implements SelfSerializable {
      */
     @Override
     public int hashCode() {
+        if (hash == null) {
+            throw new IllegalStateException("EventDescriptor improperly initialized");
+        }
         return hashCode;
     }
 

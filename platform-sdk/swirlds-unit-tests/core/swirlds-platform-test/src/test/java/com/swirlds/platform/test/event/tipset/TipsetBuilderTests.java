@@ -23,7 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import com.swirlds.platform.event.tipset.EventFingerprint;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.tipset.Tipset;
 import com.swirlds.platform.event.tipset.TipsetBuilder;
 import java.util.ArrayList;
@@ -55,46 +56,46 @@ class TipsetBuilderTests {
 
         final int nodeCount = random.nextInt(10, 20);
 
-        final Map<Long, EventFingerprint> latestEvents = new HashMap<>();
-        final Map<EventFingerprint, Tipset> expectedTipsets = new HashMap<>();
+        final Map<NodeId, EventDescriptor> latestEvents = new HashMap<>();
+        final Map<EventDescriptor, Tipset> expectedTipsets = new HashMap<>();
 
         final TipsetBuilder tracker = new TipsetBuilder(nodeCount, x -> (int) x, x -> 1);
 
         for (int eventIndex = 0; eventIndex < 1000; eventIndex++) {
 
-            final long creator = random.nextLong(nodeCount);
+            final NodeId creator = new NodeId(random.nextLong(nodeCount));
             final long generation;
             if (latestEvents.containsKey(creator)) {
-                generation = latestEvents.get(creator).generation() + 1;
+                generation = latestEvents.get(creator).getGeneration() + 1;
             } else {
                 generation = 1;
             }
 
-            final EventFingerprint selfParent = latestEvents.get(creator);
-            final EventFingerprint fingerprint = new EventFingerprint(creator, generation, randomHash(random));
+            final EventDescriptor selfParent = latestEvents.get(creator);
+            final EventDescriptor fingerprint = new EventDescriptor(randomHash(random), creator, generation);
             latestEvents.put(creator, fingerprint);
 
             // Select some nodes we'd like to be our parents.
-            final Set<Long> desiredParents = new HashSet<>();
+            final Set<NodeId> desiredParents = new HashSet<>();
             final int maxParentCount = random.nextInt(nodeCount);
             for (int parentIndex = 0; parentIndex < maxParentCount; parentIndex++) {
-                final long parent = random.nextInt(nodeCount);
+                final NodeId parent = new NodeId(random.nextInt(nodeCount));
 
                 // We are only trying to generate a random number of parents, the exact count is unimportant.
                 // So it doesn't matter if the actual number of parents is less than the number we requested.
-                if (parent == creator) {
+                if (parent.equals(creator)) {
                     continue;
                 }
                 desiredParents.add(parent);
             }
 
             // Select the actual parents.
-            final List<EventFingerprint> parentFingerprints = new ArrayList<>(desiredParents.size());
+            final List<EventDescriptor> parentFingerprints = new ArrayList<>(desiredParents.size());
             if (selfParent != null) {
                 parentFingerprints.add(selfParent);
             }
-            for (final long parent : desiredParents) {
-                final EventFingerprint parentFingerprint = latestEvents.get(parent);
+            for (final NodeId parent : desiredParents) {
+                final EventDescriptor parentFingerprint = latestEvents.get(parent);
                 if (parentFingerprint != null) {
                     parentFingerprints.add(parentFingerprint);
                 }
@@ -105,7 +106,7 @@ class TipsetBuilderTests {
 
             // Now, reconstruct the tipset manually, and make sure it matches what we were expecting.
             final List<Tipset> parentTipsets = new ArrayList<>(parentFingerprints.size());
-            for (final EventFingerprint parentFingerprint : parentFingerprints) {
+            for (final EventDescriptor parentFingerprint : parentFingerprints) {
                 parentTipsets.add(expectedTipsets.get(parentFingerprint));
             }
 
@@ -121,7 +122,7 @@ class TipsetBuilderTests {
         }
 
         // At the very end, we shouldn't see any modified tipsets
-        for (final EventFingerprint fingerprint : expectedTipsets.keySet()) {
+        for (final EventDescriptor fingerprint : expectedTipsets.keySet()) {
             assertTipsetEquality(expectedTipsets.get(fingerprint), tracker.getTipset(fingerprint), nodeCount);
         }
 
@@ -130,8 +131,8 @@ class TipsetBuilderTests {
         while (tracker.size() > 0) {
             minimumGenerationNonAncient += random.nextInt(1, 5);
             tracker.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
-            for (final EventFingerprint fingerprint : expectedTipsets.keySet()) {
-                if (fingerprint.generation() < minimumGenerationNonAncient) {
+            for (final EventDescriptor fingerprint : expectedTipsets.keySet()) {
+                if (fingerprint.getGeneration() < minimumGenerationNonAncient) {
                     assertNull(tracker.getTipset(fingerprint));
                 } else {
                     assertTipsetEquality(expectedTipsets.get(fingerprint), tracker.getTipset(fingerprint), nodeCount);

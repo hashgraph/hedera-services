@@ -18,7 +18,8 @@ package com.swirlds.platform.event.tipset;
 
 import static com.swirlds.platform.event.EventConstants.CREATOR_ID_UNDEFINED;
 import static com.swirlds.platform.event.EventConstants.GENERATION_UNDEFINED;
-import static com.swirlds.platform.event.tipset.EventFingerprint.getParentFingerprints;
+import static com.swirlds.platform.event.tipset.TipsetUtils.buildDescriptor;
+import static com.swirlds.platform.event.tipset.TipsetUtils.getParentDescriptors;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -32,6 +33,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
+import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,18 +46,22 @@ import java.util.Objects;
 import java.util.Random;
 
 // TODO:
-//  - delete EventFingerprint
+//  - search for "fingerprint"
 //  - transition to NodeId
 //  - reduce lambda use
 //  - infinite generational span
 //  - start up frozen
 //  - freeze
-//  - reconnect
+//  - reconnect (all gossip flavors)
 //  - metrics
 //  - convert all constants to settings
 //  - tipset score calculator bug unit test
 //  - unit tests
 //  - resolve remaining TODOs
+//  - figure out to handle event.getUnhashedData().getOtherId()...
+//                possibly needs hip to fix (or perhaps we look up the data)
+//  - extra credit: way to dynamically adjust max event creation rate
+//  - hand test all gossip flavors
 
 /**
  * Responsible for creating new events using the tipset algorithm.
@@ -67,7 +73,7 @@ public class TipsetEventCreator { // TODO test
     private final Random random;
     private final Signer signer;
     private final AddressBook addressBook;
-    private final long selfId; // TODO use NodeId
+    private final NodeId selfId;
     private final TipsetBuilder tipsetBuilder;
     private final TipsetScoreCalculator tipsetScoreCalculator;
     private final ChildlessEventTracker childlessEventTracker;
@@ -85,7 +91,7 @@ public class TipsetEventCreator { // TODO test
     /**
      * The last event created by this node. TODO we need to load this if we don't start from genesis
      */
-    private EventFingerprint lastSelfEvent;
+    private EventDescriptor lastSelfEvent;
 
     /**
      * Create a new tipset event creator.
@@ -107,7 +113,7 @@ public class TipsetEventCreator { // TODO test
             @NonNull final Random random,
             @NonNull final Signer signer,
             @NonNull final AddressBook addressBook,
-            final long selfId,
+            @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final TransactionSupplier transactionSupplier) {
 
@@ -116,7 +122,7 @@ public class TipsetEventCreator { // TODO test
         this.random = Objects.requireNonNull(random);
         this.signer = Objects.requireNonNull(signer);
         this.addressBook = Objects.requireNonNull(addressBook);
-        this.selfId = selfId;
+        this.selfId = Objects.requireNonNull(selfId);
         this.transactionSupplier = Objects.requireNonNull(transactionSupplier);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
 
@@ -146,15 +152,15 @@ public class TipsetEventCreator { // TODO test
      * @param event the event to add
      */
     public void registerEvent(@NonNull final EventImpl event) {
-        if (event.getHashedData().getCreatorId().equals(new NodeId(selfId))) {
+        if (event.getHashedData().getCreatorId().equals(selfId)) {
             // Self events are ingested immediately when they are created.
             // TODO what about when streaming from PCES?
             // TODO what about when we start with events in the state?
             return;
         }
 
-        final EventFingerprint fingerprint = EventFingerprint.of(event);
-        final List<EventFingerprint> parentFingerprints = getParentFingerprints(event);
+        final EventDescriptor fingerprint = buildDescriptor(event);
+        final List<EventDescriptor> parentFingerprints = getParentDescriptors(event);
 
         tipsetBuilder.addEvent(fingerprint, parentFingerprints);
         childlessEventTracker.addEvent(fingerprint, parentFingerprints);
@@ -194,12 +200,12 @@ public class TipsetEventCreator { // TODO test
      */
     @Nullable
     private GossipEvent createEventByOptimizingTipsetScore() {
-        final List<EventFingerprint> possibleOtherParents = childlessEventTracker.getChildlessEvents();
+        final List<EventDescriptor> possibleOtherParents = childlessEventTracker.getChildlessEvents();
         Collections.shuffle(possibleOtherParents, random);
 
-        EventFingerprint bestOtherParent = null;
+        EventDescriptor bestOtherParent = null;
         long bestScore = 0;
-        for (final EventFingerprint otherParent : possibleOtherParents) {
+        for (final EventDescriptor otherParent : possibleOtherParents) {
             final long parentScore = tipsetScoreCalculator.getTheoreticalAdvancementScore(List.of(otherParent));
             if (parentScore > bestScore) {
                 bestOtherParent = otherParent;
@@ -212,7 +218,7 @@ public class TipsetEventCreator { // TODO test
             return null;
         }
 
-        final List<EventFingerprint> parentFingerprints = new ArrayList<>(2);
+        final List<EventDescriptor> parentFingerprints = new ArrayList<>(2);
         if (lastSelfEvent != null) {
             parentFingerprints.add(lastSelfEvent);
         }
@@ -222,7 +228,7 @@ public class TipsetEventCreator { // TODO test
 
         final GossipEvent event = buildEventFromParents(lastSelfEvent, bestOtherParent);
 
-        final EventFingerprint fingerprint = EventFingerprint.of(event);
+        final EventDescriptor fingerprint = buildDescriptor(event);
         tipsetBuilder.addEvent(fingerprint, parentFingerprints);
         final long score = tipsetScoreCalculator.addEventAndGetAdvancementScore(fingerprint);
         final double scoreRatio = score / (double) tipsetScoreCalculator.getMaximumPossibleScore();
@@ -240,13 +246,13 @@ public class TipsetEventCreator { // TODO test
      */
     @Nullable
     private GossipEvent createEventToReduceBullyScore() {
-        final List<EventFingerprint> possibleOtherParents = childlessEventTracker.getChildlessEvents();
-        final List<EventFingerprint> nerds = new ArrayList<>(possibleOtherParents.size());
+        final List<EventDescriptor> possibleOtherParents = childlessEventTracker.getChildlessEvents();
+        final List<EventDescriptor> nerds = new ArrayList<>(possibleOtherParents.size());
 
         int bullyScoreSum = 0;
         final List<Integer> bullyScores = new ArrayList<>(possibleOtherParents.size());
-        for (final EventFingerprint nerd : possibleOtherParents) {
-            final int nodeIndex = addressBook.getIndexOfNodeId(new NodeId(nerd.creator()));
+        for (final EventDescriptor nerd : possibleOtherParents) {
+            final int nodeIndex = addressBook.getIndexOfNodeId(nerd.getCreator());
             final int bullyScore = tipsetScoreCalculator.getBullyScoreForNodeIndex(nodeIndex);
 
             final long tipsetScore = tipsetScoreCalculator.getTheoreticalAdvancementScore(List.of(nerd));
@@ -268,9 +274,9 @@ public class TipsetEventCreator { // TODO test
         for (int i = 0; i < nerds.size(); i++) {
             runningSum += bullyScores.get(i);
             if (choice < runningSum) {
-                final EventFingerprint otherParent = nerds.get(i);
+                final EventDescriptor otherParent = nerds.get(i);
 
-                final List<EventFingerprint> parentFingerprints = new ArrayList<>(2);
+                final List<EventDescriptor> parentFingerprints = new ArrayList<>(2);
                 if (lastSelfEvent != null) {
                     parentFingerprints.add(lastSelfEvent);
                 }
@@ -279,7 +285,7 @@ public class TipsetEventCreator { // TODO test
                 // TODO duplicate code
                 final GossipEvent event = buildEventFromParents(lastSelfEvent, otherParent);
 
-                final EventFingerprint fingerprint = EventFingerprint.of(event);
+                final EventDescriptor fingerprint = buildDescriptor(event);
                 tipsetBuilder.addEvent(fingerprint, parentFingerprints);
                 final long score = tipsetScoreCalculator.addEventAndGetAdvancementScore(fingerprint);
                 final double scoreRatio = score / (double) tipsetScoreCalculator.getMaximumPossibleScore();
@@ -304,19 +310,19 @@ public class TipsetEventCreator { // TODO test
      */
     @NonNull
     private GossipEvent buildEventFromParents(
-            @Nullable final EventFingerprint selfParent, @Nullable final EventFingerprint otherParent) {
+            @Nullable final EventDescriptor selfParent, @Nullable final EventDescriptor otherParent) {
         final long selfParentGeneration;
         if (lastSelfEvent == null) {
             selfParentGeneration = GENERATION_UNDEFINED;
         } else {
-            selfParentGeneration = lastSelfEvent.generation();
+            selfParentGeneration = lastSelfEvent.getGeneration();
         }
 
         final Hash selfParentHash;
         if (lastSelfEvent == null) {
             selfParentHash = null;
         } else {
-            selfParentHash = lastSelfEvent.hash();
+            selfParentHash = lastSelfEvent.getHash();
         }
 
         // TODO use node ID
@@ -324,7 +330,7 @@ public class TipsetEventCreator { // TODO test
         if (selfParent == null) {
             otherParentId = CREATOR_ID_UNDEFINED;
         } else {
-            otherParentId = new NodeId(selfParent.creator()); // TODO node ID
+            otherParentId = selfParent.getCreator();
         }
 
         final long otherParentGeneration;
@@ -332,14 +338,14 @@ public class TipsetEventCreator { // TODO test
             // This is only permitted when creating the first event at genesis.
             otherParentGeneration = GENERATION_UNDEFINED;
         } else {
-            otherParentGeneration = otherParent.generation();
+            otherParentGeneration = otherParent.getGeneration();
         }
 
         final Hash otherParentHash;
         if (otherParent == null) {
             otherParentHash = null;
         } else {
-            otherParentHash = otherParent.hash();
+            otherParentHash = otherParent.getHash();
         }
 
         // TODO we need to emulate the logic in EventUtils.getChildTimeCreated()
@@ -347,7 +353,7 @@ public class TipsetEventCreator { // TODO test
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 softwareVersion,
-                new NodeId(selfId), // TODO
+                selfId,
                 selfParentGeneration,
                 otherParentGeneration,
                 selfParentHash,

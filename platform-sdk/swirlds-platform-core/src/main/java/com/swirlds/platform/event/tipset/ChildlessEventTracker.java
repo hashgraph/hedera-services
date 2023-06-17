@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.tipset;
 
+import com.swirlds.platform.event.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -28,22 +29,21 @@ import java.util.Set;
  */
 public class ChildlessEventTracker { // TODO test
 
-    private final Set<EventFingerprint> childlessEvents = new HashSet<>();
+    private final Set<EventDescriptor> childlessEvents = new HashSet<>();
 
     public ChildlessEventTracker() {}
 
     /**
      * Add a new event.
      *
-     * @param eventFingerprint the event to add
-     * @param parents          the parents of the event being added
+     * @param eventDescriptor the event to add
+     * @param parents         the parents of the event being added
      */
-    public void addEvent(
-            @NonNull final EventFingerprint eventFingerprint, @NonNull final List<EventFingerprint> parents) {
+    public void addEvent(@NonNull final EventDescriptor eventDescriptor, @NonNull final List<EventDescriptor> parents) {
 
-        childlessEvents.add(eventFingerprint);
+        childlessEvents.add(eventDescriptor);
 
-        for (final EventFingerprint parent : parents) {
+        for (final EventDescriptor parent : parents) {
             childlessEvents.remove(parent);
         }
     }
@@ -54,7 +54,7 @@ public class ChildlessEventTracker { // TODO test
      * @param minimumGenerationNonAncient the minimum generation of non-ancient events
      */
     public void pruneOldEvents(final long minimumGenerationNonAncient) {
-        childlessEvents.removeIf(event -> event.generation() < minimumGenerationNonAncient);
+        childlessEvents.removeIf(event -> event.getGeneration() < minimumGenerationNonAncient);
     }
 
     /**
@@ -63,7 +63,7 @@ public class ChildlessEventTracker { // TODO test
      * @return the childless events, this list is safe to modify
      */
     @NonNull
-    public List<EventFingerprint> getChildlessEvents() {
+    public List<EventDescriptor> getChildlessEvents() {
         return new ArrayList<>(childlessEvents);
     }
 }

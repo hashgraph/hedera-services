@@ -19,6 +19,7 @@ package com.swirlds.platform.test.event.tipset;
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.event.tipset.Tipset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,7 +61,7 @@ class TipsetTests {
             for (long creator = 0; creator < 100; creator++) {
                 final long generation = random.nextLong(1, 100);
 
-                tipset.advance(creator, generation);
+                tipset.advance(new NodeId(creator), generation);
                 expected.put(creator, Math.max(generation, expected.getOrDefault(creator, 0L)));
                 validateTipset(tipset, expected);
             }
@@ -82,7 +83,7 @@ class TipsetTests {
                 final Tipset tipset = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
                 for (long creator = 0; creator < nodeCount; creator++) {
                     final long generation = random.nextLong(1, 100);
-                    tipset.advance(creator, generation);
+                    tipset.advance(new NodeId(creator), generation);
                     expected.put(creator, Math.max(generation, expected.getOrDefault(creator, 0L)));
                 }
                 tipsets.add(tipset);
@@ -104,7 +105,7 @@ class TipsetTests {
         final Tipset initialTipset = new Tipset(nodeCount, nodeIdToIndex, indexToWeight);
         for (long creator = 0; creator < nodeCount; creator++) {
             final long generation = random.nextLong(1, 100);
-            initialTipset.advance(creator, generation);
+            initialTipset.advance(new NodeId(creator), generation);
         }
 
         // Merging the tipset with itself will result in a copy
@@ -121,7 +122,7 @@ class TipsetTests {
             final long creator = random.nextLong(100);
             final long generation = random.nextLong(1, 100);
 
-            comparisonTipset.advance(creator, generation);
+            comparisonTipset.advance(new NodeId(creator), generation);
         }
 
         long expectedAdvancementCount = 0;
@@ -135,7 +136,9 @@ class TipsetTests {
             }
         }
 
-        assertEquals(expectedAdvancementCount, initialTipset.getWeightedAdvancementCount(nodeId, comparisonTipset));
+        assertEquals(
+                expectedAdvancementCount,
+                initialTipset.getWeightedAdvancementCount(new NodeId(nodeId), comparisonTipset));
     }
 
     @Test
@@ -153,7 +156,7 @@ class TipsetTests {
         final Tipset initialTipset = new Tipset(nodeCount, nodeIdToIndex, x -> weights.get((long) x));
         for (long creator = 0; creator < 100; creator++) {
             final long generation = random.nextLong(1, 100);
-            initialTipset.advance(creator, generation);
+            initialTipset.advance(new NodeId(creator), generation);
         }
 
         // Merging the tipset with itself will result in a copy
@@ -169,7 +172,7 @@ class TipsetTests {
         for (long creator = 0; creator < 100; creator++) {
             final long generation = random.nextLong(1, 100);
 
-            comparisonTipset.advance(creator, generation);
+            comparisonTipset.advance(new NodeId(creator), generation);
         }
 
         long expectedAdvancementCount = 0;
@@ -183,6 +186,8 @@ class TipsetTests {
             }
         }
 
-        assertEquals(expectedAdvancementCount, initialTipset.getWeightedAdvancementCount(nodeId, comparisonTipset));
+        assertEquals(
+                expectedAdvancementCount,
+                initialTipset.getWeightedAdvancementCount(new NodeId(nodeId), comparisonTipset));
     }
 }
