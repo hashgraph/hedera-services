@@ -92,7 +92,7 @@ public class TipsetBuilder {
         }
 
         final Tipset eventTipset;
-        if (parents.isEmpty()) {
+        if (parentTipsets.isEmpty()) {
             eventTipset =
                     new Tipset(addressBook).advance(eventDescriptor.getCreator(), eventDescriptor.getGeneration());
         } else {
