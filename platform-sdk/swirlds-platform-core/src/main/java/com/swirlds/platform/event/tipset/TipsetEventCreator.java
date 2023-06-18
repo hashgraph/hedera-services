@@ -46,9 +46,6 @@ import java.util.Objects;
 import java.util.Random;
 
 // TODO:
-//  - start up frozen
-//  - freeze
-//  - reconnect (all gossip flavors)
 //  - metrics
 //  - convert all constants to settings
 //  - tipset score calculator bug unit test
@@ -56,7 +53,6 @@ import java.util.Random;
 //  - resolve remaining TODOs
 //  - figure out to handle event.getUnhashedData().getOtherId()...
 //                possibly needs hip to fix (or perhaps we look up the data)
-//  - extra credit: way to dynamically adjust max event creation rate
 //  - hand test all gossip flavors
 //  - PCES compatability
 //  - migrating between networks
@@ -81,7 +77,7 @@ public class TipsetEventCreator { // TODO test
     private final TipsetMetrics tipsetMetrics;
 
     /**
-     * The last event created by this node. TODO we need to load this if we don't start from genesis
+     * The last event created by this node.
      */
     private EventDescriptor lastSelfEvent;
 
@@ -153,7 +149,7 @@ public class TipsetEventCreator { // TODO test
                 // Normally we will ingest self events before we get to this point, but it's possible
                 // to learn of self events for the first time here if we are loading from a restart or reconnect.
                 lastSelfEvent = buildDescriptor(event);
-                lastSelfEventCreationTime = event.getTimestamp();
+                lastSelfEventCreationTime = event.getHashedData().getTimeCreated();
                 lastSelfEventTransactionCount = event.getTransactions() == null ? 0 : event.getTransactions().length;
             } else {
                 // We already ingested this self event (when it was created),
@@ -384,7 +380,7 @@ public class TipsetEventCreator { // TODO test
 
         final GossipEvent event = new GossipEvent(hashedData, unhashedData);
         cryptography.digestSync(event);
-        event.buildDescriptor(); // TODO ugh
+        event.buildDescriptor();
         return event;
     }
 }
