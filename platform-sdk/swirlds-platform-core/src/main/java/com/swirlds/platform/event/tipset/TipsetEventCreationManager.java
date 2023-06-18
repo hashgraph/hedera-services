@@ -48,7 +48,6 @@ import java.util.function.Consumer;
 public class TipsetEventCreationManager implements Lifecycle { // TODO test
 
     private LifecyclePhase lifecyclePhase = NOT_STARTED;
-    private final NodeId selfId;
     private final TipsetEventCreator eventCreator;
 
     private final MultiQueueThread workQueue;
@@ -57,6 +56,20 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
     private final Consumer<GossipEvent> newEventHandler;
     private final RateLimiter rateLimiter;
 
+    /**
+     * Constructor.
+     *
+     * @param platformContext     the platform's context
+     * @param threadManager       manages the creation of new threads
+     * @param time                provides the wall clock time
+     * @param random              a source of randomness, does not need to be cryptographically secure
+     * @param signer              can sign with this node's key
+     * @param addressBook         the current address book
+     * @param selfId              the ID of this node
+     * @param softwareVersion     the current software version
+     * @param transactionSupplier provides transactions to be included in new events
+     * @param newEventHandler     called when a new event is created
+     */
     public TipsetEventCreationManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
@@ -69,8 +82,16 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
             @NonNull final TransactionSupplier transactionSupplier,
             @NonNull final Consumer<GossipEvent> newEventHandler) {
 
-        this.selfId = Objects.requireNonNull(selfId);
         this.newEventHandler = Objects.requireNonNull(newEventHandler);
+
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(time);
+        Objects.requireNonNull(random);
+        Objects.requireNonNull(signer);
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(softwareVersion);
+        Objects.requireNonNull(transactionSupplier);
 
         eventCreator = new TipsetEventCreator(
                 platformContext, time, random, signer, addressBook, selfId, softwareVersion, transactionSupplier);
@@ -107,10 +128,6 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
      * @param event the event to add
      */
     public void registerEvent(@NonNull final EventImpl event) throws InterruptedException {
-        if (event.getHashedData().getCreatorId().equals(selfId)) {
-            // TODO this behavior needs to be different at startup time if not at genesis
-            return;
-        }
         eventInserter.put(event);
     }
 

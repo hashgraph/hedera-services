@@ -72,7 +72,7 @@ public class TipsetEventCreator { // TODO test
     private final NodeId selfId;
     private final TipsetBuilder tipsetBuilder;
     private final TipsetScoreCalculator tipsetScoreCalculator;
-    private final ChildlessEventTracker childlessEventTracker;
+    private final ChildlessEventTracker childlessOtherEventTracker;
     private final TransactionSupplier transactionSupplier;
     private final SoftwareVersion softwareVersion;
     private final double antiBullyingFactor;
@@ -115,10 +115,6 @@ public class TipsetEventCreator { // TODO test
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final TransactionSupplier transactionSupplier) {
 
-        final EventCreationConfig eventCreationConfig =
-                platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
-
-        this.cryptography = platformContext.getCryptography();
         this.time = Objects.requireNonNull(time);
         this.random = Objects.requireNonNull(random);
         this.signer = Objects.requireNonNull(signer);
@@ -126,11 +122,16 @@ public class TipsetEventCreator { // TODO test
         this.selfId = Objects.requireNonNull(selfId);
         this.transactionSupplier = Objects.requireNonNull(transactionSupplier);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
-        this.antiBullyingFactor = Math.max(1.0, eventCreationConfig.antiBullyingFactor());
-        this.tipsetMetrics = new TipsetMetrics(platformContext);
+
+        final EventCreationConfig eventCreationConfig =
+                platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
+
+        cryptography = platformContext.getCryptography();
+        antiBullyingFactor = Math.max(1.0, eventCreationConfig.antiBullyingFactor());
+        tipsetMetrics = new TipsetMetrics(platformContext);
         tipsetBuilder = new TipsetBuilder(addressBook);
         tipsetScoreCalculator = new TipsetScoreCalculator(addressBook, selfId, tipsetBuilder);
-        childlessEventTracker = new ChildlessEventTracker();
+        childlessOtherEventTracker = new ChildlessEventTracker();
     }
 
     /**
@@ -139,18 +140,33 @@ public class TipsetEventCreator { // TODO test
      * @param event the event to add
      */
     public void registerEvent(@NonNull final EventImpl event) {
-        if (event.getHashedData().getCreatorId().equals(selfId)) {
-            // Self events are ingested immediately when they are created.
-            // TODO what about when streaming from PCES?
-            // TODO what about when we start with events in the state?
-            return;
+
+        final NodeId eventCreator = event.getHashedData().getCreatorId();
+        final boolean selfEvent = eventCreator.equals(selfId);
+
+        // TODO unit test restart workflow vs non-restart workflow
+
+        if (selfEvent) {
+            if (lastSelfEvent == null || lastSelfEvent.getGeneration() < event.getGeneration()) {
+                // Normally we will ingest self events before we get to this point, but it's possible
+                // to learn of self events for the first time here if we are loading from a restart or reconnect.
+                lastSelfEvent = buildDescriptor(event);
+                lastSelfEventCreationTime = event.getTimestamp();
+                lastSelfEventTransactionCount = event.getTransactions().length;
+            } else {
+                // We already ingested this self event (when it was created),
+                return;
+            }
         }
 
         final EventDescriptor descriptor = buildDescriptor(event);
         final List<EventDescriptor> parentDescriptors = getParentDescriptors(event);
 
         tipsetBuilder.addEvent(descriptor, parentDescriptors);
-        childlessEventTracker.addEvent(descriptor, parentDescriptors);
+
+        if (!selfEvent) {
+            childlessOtherEventTracker.addEvent(descriptor, parentDescriptors);
+        }
     }
 
     /**
@@ -160,7 +176,7 @@ public class TipsetEventCreator { // TODO test
      */
     public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
         tipsetBuilder.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
-        childlessEventTracker.pruneOldEvents(minimumGenerationNonAncient);
+        childlessOtherEventTracker.pruneOldEvents(minimumGenerationNonAncient);
     }
 
     /**
@@ -177,7 +193,7 @@ public class TipsetEventCreator { // TODO test
         // to bully ~1/3 of other nodes by a score of 1.
         final double beNiceToNerdChance = (bullyScore - 1) / antiBullyingFactor;
 
-        if (random.nextDouble() < beNiceToNerdChance) {
+        if (beNiceToNerdChance > 0 && random.nextDouble() < beNiceToNerdChance) {
             return createEventToReduceBullyScore();
         } else {
             return createEventByOptimizingTipsetScore();
@@ -191,7 +207,7 @@ public class TipsetEventCreator { // TODO test
      */
     @Nullable
     private GossipEvent createEventByOptimizingTipsetScore() {
-        final List<EventDescriptor> possibleOtherParents = childlessEventTracker.getChildlessEvents();
+        final List<EventDescriptor> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
         Collections.shuffle(possibleOtherParents, random);
 
         EventDescriptor bestOtherParent = null;
@@ -219,9 +235,12 @@ public class TipsetEventCreator { // TODO test
      */
     @Nullable
     private GossipEvent createEventToReduceBullyScore() {
-        final List<EventDescriptor> possibleOtherParents = childlessEventTracker.getChildlessEvents();
+        final List<EventDescriptor> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
         final List<EventDescriptor> nerds = new ArrayList<>(possibleOtherParents.size());
 
+        // Choose a random nerd, weighted by how much it is currently being bullied.
+
+        // First, sum up all bully scores.
         int bullyScoreSum = 0;
         final List<Integer> bullyScores = new ArrayList<>(possibleOtherParents.size());
         for (final EventDescriptor nerd : possibleOtherParents) {
@@ -238,10 +257,11 @@ public class TipsetEventCreator { // TODO test
         }
 
         if (nerds.isEmpty()) {
-            // No eligible nerds, choose the event with the best tipset score
+            // No eligible nerds, choose the event with the best tipset score.
             return createEventByOptimizingTipsetScore();
         }
 
+        // Choose a random nerd.
         final int choice = random.nextInt(bullyScoreSum);
         int runningSum = 0;
         for (int i = 0; i < nerds.size(); i++) {
@@ -251,7 +271,7 @@ public class TipsetEventCreator { // TODO test
             }
         }
 
-        // this should be impossible
+        // This should be impossible.
         throw new IllegalStateException("Failed to find an other parent");
     }
 

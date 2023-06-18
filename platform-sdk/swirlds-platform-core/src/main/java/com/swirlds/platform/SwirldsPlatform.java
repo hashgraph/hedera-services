@@ -462,9 +462,9 @@ public class SwirldsPlatform implements Platform, Startable {
             final State stateToLoad;
             if (signedStateFromDisk != null) {
                 logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                                signedStateFromDisk.getRound(),
-                                signedStateFromDisk.getConsensusTimestamp(),
-                                startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                        signedStateFromDisk.getRound(),
+                        signedStateFromDisk.getConsensusTimestamp(),
+                        startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                         .toString());
 
                 stateToLoad = loadedState.initialState;
@@ -668,7 +668,8 @@ public class SwirldsPlatform implements Platform, Startable {
                     this::clearAllPipelines);
 
             if (signedStateFromDisk != null) {
-                loadIntoConsensusAndEventMapper(signedStateFromDisk);
+                loadStateIntoConsensusAndEventMapper(signedStateFromDisk);
+                loadStateIntoEventCreator(signedStateFromDisk);
                 eventLinker.loadFromSignedState(signedStateFromDisk);
             } else {
                 consensusRef.set(new ConsensusImpl(
@@ -733,7 +734,8 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param signedStateFromDisk the initial signed state loaded from disk
      * @param initialState        the initial {@link State} object. This is a fast copy of the state loaded from disk
      */
-    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {}
+    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {
+    }
 
     /**
      * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
@@ -841,11 +843,37 @@ public class SwirldsPlatform implements Platform, Startable {
     }
 
     /**
+     * Load the signed state (either at reboot or reconnect) into the event creator.
+     *
+     * @param signedState the signed state to load from
+     */
+    private void loadStateIntoEventCreator(@NonNull final SignedState signedState) {
+        Objects.requireNonNull(signedState);
+
+        try {
+            tipsetEventCreator.setMinimumGenerationNonAncient(
+                    signedState.getState()
+                            .getPlatformState()
+                            .getPlatformData()
+                            .getMinimumGenerationNonAncient());
+
+            for (final var event : signedState.getState().getPlatformState().getPlatformData().getEvents()) {
+                tipsetEventCreator.registerEvent(event);
+            }
+
+        } catch (final InterruptedException e) {
+            throw new RuntimeException("interrupted while loading state into event creator", e);
+        }
+    }
+
+    /**
      * Loads the signed state data into consensus and event mapper
      *
      * @param signedState the state to get the data from
      */
-    void loadIntoConsensusAndEventMapper(final SignedState signedState) {
+    private void loadStateIntoConsensusAndEventMapper(@NonNull final SignedState signedState) {
+        Objects.requireNonNull(signedState);
+
         consensusRef.set(new ConsensusImpl(
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 consensusMetrics,
@@ -879,7 +907,7 @@ public class SwirldsPlatform implements Platform, Startable {
      *
      * @param signedState the signed state that was received from the sender
      */
-    void loadReconnectState(final SignedState signedState) {
+    private void loadReconnectState(final SignedState signedState) {
         // the state was received, so now we load its data into different objects
         logger.info(LogMarker.STATE_HASH.getMarker(), "RECONNECT: loadReconnectState: reloading state");
         logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : reloading state");
@@ -914,7 +942,8 @@ public class SwirldsPlatform implements Platform, Startable {
 
             stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
 
-            loadIntoConsensusAndEventMapper(signedState);
+            loadStateIntoConsensusAndEventMapper(signedState);
+            loadStateIntoEventCreator(signedState);
             // eventLinker is not thread safe, which is not a problem regularly because it is only used by a single
             // thread. after a reconnect, it needs to load the minimum generation from a state on a different thread,
             // so the intake thread is paused before the data is loaded and unpaused after. this ensures that the
@@ -1178,7 +1207,7 @@ public class SwirldsPlatform implements Platform, Startable {
         final PlatformStatus oldStatus = currentPlatformStatus.getAndSet(newStatus);
         if (oldStatus != newStatus) {
             logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                            "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
+                    "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
                     .toString());
 
             notificationEngine.dispatch(
