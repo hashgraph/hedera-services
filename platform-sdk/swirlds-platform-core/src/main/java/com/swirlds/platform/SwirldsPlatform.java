@@ -462,9 +462,9 @@ public class SwirldsPlatform implements Platform, Startable {
             final State stateToLoad;
             if (signedStateFromDisk != null) {
                 logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                        signedStateFromDisk.getRound(),
-                        signedStateFromDisk.getConsensusTimestamp(),
-                        startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                                signedStateFromDisk.getRound(),
+                                signedStateFromDisk.getConsensusTimestamp(),
+                                startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                         .toString());
 
                 stateToLoad = loadedState.initialState;
@@ -734,8 +734,7 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param signedStateFromDisk the initial signed state loaded from disk
      * @param initialState        the initial {@link State} object. This is a fast copy of the state loaded from disk
      */
-    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {
-    }
+    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {}
 
     /**
      * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
@@ -852,12 +851,10 @@ public class SwirldsPlatform implements Platform, Startable {
 
         try {
             tipsetEventCreator.setMinimumGenerationNonAncient(
-                    signedState.getState()
-                            .getPlatformState()
-                            .getPlatformData()
-                            .getMinimumGenerationNonAncient());
+                    signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
 
-            for (final var event : signedState.getState().getPlatformState().getPlatformData().getEvents()) {
+            for (final var event :
+                    signedState.getState().getPlatformState().getPlatformData().getEvents()) {
                 tipsetEventCreator.registerEvent(event);
             }
 
@@ -1207,7 +1204,7 @@ public class SwirldsPlatform implements Platform, Startable {
         final PlatformStatus oldStatus = currentPlatformStatus.getAndSet(newStatus);
         if (oldStatus != newStatus) {
             logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                    "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
+                            "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
                     .toString());
 
             notificationEngine.dispatch(

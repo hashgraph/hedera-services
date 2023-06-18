@@ -152,7 +152,7 @@ public class TipsetEventCreator { // TODO test
                 // to learn of self events for the first time here if we are loading from a restart or reconnect.
                 lastSelfEvent = buildDescriptor(event);
                 lastSelfEventCreationTime = event.getTimestamp();
-                lastSelfEventTransactionCount = event.getTransactions().length;
+                lastSelfEventTransactionCount = event.getTransactions() == null ? 0 : event.getTransactions().length;
             } else {
                 // We already ingested this self event (when it was created),
                 return;
