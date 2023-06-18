@@ -58,6 +58,8 @@ import java.util.Random;
 //                possibly needs hip to fix (or perhaps we look up the data)
 //  - extra credit: way to dynamically adjust max event creation rate
 //  - hand test all gossip flavors
+//  - PCES compatability
+//  - migrating between networks
 
 /**
  * Responsible for creating new events using the tipset algorithm.

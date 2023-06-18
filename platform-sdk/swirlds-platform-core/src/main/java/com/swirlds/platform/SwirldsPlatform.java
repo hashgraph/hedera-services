@@ -849,15 +849,21 @@ public class SwirldsPlatform implements Platform, Startable {
     private void loadStateIntoEventCreator(@NonNull final SignedState signedState) {
         Objects.requireNonNull(signedState);
 
+        if (tipsetEventCreator == null) {
+            // New event creation logic is disabled via settings
+            return;
+        }
+
+        // TODO what is the proper behavior if we have migrated to a new address book?
+
         try {
             tipsetEventCreator.setMinimumGenerationNonAncient(
                     signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
 
-            for (final var event :
+            for (final EventImpl event :
                     signedState.getState().getPlatformState().getPlatformData().getEvents()) {
                 tipsetEventCreator.registerEvent(event);
             }
-
         } catch (final InterruptedException e) {
             throw new RuntimeException("interrupted while loading state into event creator", e);
         }
@@ -1108,6 +1114,7 @@ public class SwirldsPlatform implements Platform, Startable {
         configureStartupEventFreeze();
         gossip.start();
         if (tipsetEventCreator != null) {
+            // TODO PCES is likely to fill up the queues!
             tipsetEventCreator.start();
         }
 
