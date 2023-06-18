@@ -152,7 +152,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -461,9 +463,9 @@ public class SwirldsPlatform implements Platform, Startable {
             final State stateToLoad;
             if (signedStateFromDisk != null) {
                 logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                                signedStateFromDisk.getRound(),
-                                signedStateFromDisk.getConsensusTimestamp(),
-                                startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                        signedStateFromDisk.getRound(),
+                        signedStateFromDisk.getConsensusTimestamp(),
+                        startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                         .toString());
 
                 stateToLoad = loadedState.initialState;
@@ -715,7 +717,8 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param signedStateFromDisk the initial signed state loaded from disk
      * @param initialState        the initial {@link State} object. This is a fast copy of the state loaded from disk
      */
-    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {}
+    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {
+    }
 
     /**
      * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
@@ -841,10 +844,20 @@ public class SwirldsPlatform implements Platform, Startable {
             tipsetEventCreator.setMinimumGenerationNonAncient(
                     signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
 
+            // The event creator may not be started yet. To avoid filling up queues, only register
+            // the latest event from each creator. These are the only ones the event creator cares about.
+
+            final Map<NodeId, EventImpl> latestEvents = new HashMap<>();
+
             for (final EventImpl event :
                     signedState.getState().getPlatformState().getPlatformData().getEvents()) {
+                latestEvents.put(event.getCreatorId(), event);
+            }
+
+            for (final EventImpl event : latestEvents.values()) {
                 tipsetEventCreator.registerEvent(event);
             }
+
         } catch (final InterruptedException e) {
             throw new RuntimeException("interrupted while loading state into event creator", e);
         }
@@ -1091,13 +1104,16 @@ public class SwirldsPlatform implements Platform, Startable {
 
         metrics.start();
 
+        if (tipsetEventCreator != null) {
+            // The event creator is intentionally started before replaying the preconsensus event stream.
+            // This prevents the event creator's intake queue from filling up and blocking. Note that
+            // this component won't actually create events util the platform has the appropriate status.
+            tipsetEventCreator.start();
+        }
+
         replayPreconsensusEvents();
         configureStartupEventFreeze();
         gossip.start();
-        if (tipsetEventCreator != null) {
-            // TODO PCES is likely to fill up the queues!
-            tipsetEventCreator.start();
-        }
 
         // in case of a single node network, the platform status update will not be triggered by connections, so it
         // needs to be triggered now
@@ -1192,7 +1208,7 @@ public class SwirldsPlatform implements Platform, Startable {
         final PlatformStatus oldStatus = currentPlatformStatus.getAndSet(newStatus);
         if (oldStatus != newStatus) {
             logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                            "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
+                    "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
                     .toString());
 
             notificationEngine.dispatch(
