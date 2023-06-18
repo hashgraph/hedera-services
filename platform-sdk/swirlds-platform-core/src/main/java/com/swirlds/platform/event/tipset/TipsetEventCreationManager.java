@@ -40,6 +40,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Random;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 /**
@@ -55,20 +56,23 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
     private final BlockingQueueInserter<Long> minimumGenerationNonAncientInserter;
     private final Consumer<GossipEvent> newEventHandler;
     private final RateLimiter rateLimiter;
+    private final BooleanSupplier isEventCreationPermitted;
 
     /**
      * Constructor.
      *
-     * @param platformContext     the platform's context
-     * @param threadManager       manages the creation of new threads
-     * @param time                provides the wall clock time
-     * @param random              a source of randomness, does not need to be cryptographically secure
-     * @param signer              can sign with this node's key
-     * @param addressBook         the current address book
-     * @param selfId              the ID of this node
-     * @param softwareVersion     the current software version
-     * @param transactionSupplier provides transactions to be included in new events
-     * @param newEventHandler     called when a new event is created
+     * @param platformContext          the platform's context
+     * @param threadManager            manages the creation of new threads
+     * @param time                     provides the wall clock time
+     * @param random                   a source of randomness, does not need to be cryptographically secure
+     * @param signer                   can sign with this node's key
+     * @param addressBook              the current address book
+     * @param selfId                   the ID of this node
+     * @param softwareVersion          the current software version
+     * @param transactionSupplier      provides transactions to be included in new events
+     * @param newEventHandler          called when a new event is created
+     * @param isEventCreationPermitted if true, new events are permitted to be created. If false, the creation of new
+     *                                 events is currently not permitted.
      */
     public TipsetEventCreationManager(
             @NonNull final PlatformContext platformContext,
@@ -80,9 +84,11 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final TransactionSupplier transactionSupplier,
-            @NonNull final Consumer<GossipEvent> newEventHandler) {
+            @NonNull final Consumer<GossipEvent> newEventHandler,
+            @NonNull final BooleanSupplier isEventCreationPermitted) {
 
         this.newEventHandler = Objects.requireNonNull(newEventHandler);
+        this.isEventCreationPermitted = Objects.requireNonNull(isEventCreationPermitted);
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(time);
@@ -162,7 +168,10 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
      * Create a new event if it is legal to do so.
      */
     private void maybeCreateEvent() {
-        // TODO API for event creation rules, e.g. stop creating events if falling behind, etc.
+        if (!isEventCreationPermitted.getAsBoolean()) {
+            // Event creation is currently not permitted.
+            return;
+        }
 
         if (rateLimiter != null && !rateLimiter.request()) {
             // We have created a self event too recently

@@ -23,6 +23,7 @@ useLoopbackIp,                            false
 
 event.creation.useTipsetAlgorithm,        true
 event.creation.maxCreationRate,           5
+freezeSecondsAfterStartup,                0
 
                                           #############################
                                           # Preconsensus Event Stream #
@@ -63,4 +64,3 @@ state.saveStatePeriod,                    0
                                           #############################
 
 loadKeysFromPfxFiles,                     false
-

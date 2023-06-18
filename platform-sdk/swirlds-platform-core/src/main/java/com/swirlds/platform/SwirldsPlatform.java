@@ -22,6 +22,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.event.tipset.TipsetEventCreationManagerFactory.buildTipsetEventCreationManager;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
@@ -103,7 +104,6 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
-import com.swirlds.platform.event.tipset.EventCreationConfig;
 import com.swirlds.platform.event.tipset.TipsetEventCreationManager;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
@@ -154,7 +154,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -602,37 +601,19 @@ public class SwirldsPlatform implements Platform, Startable {
                             .enableBusyTimeMetric())
                     .build());
 
-            final boolean useTipsetAlgorithm = platformContext
-                    .getConfiguration()
-                    .getConfigData(EventCreationConfig.class)
-                    .useTipsetAlgorithm();
-
-            if (useTipsetAlgorithm) {
-                tipsetEventCreator = new TipsetEventCreationManager(
-                        platformContext,
-                        threadManager,
-                        time,
-                        new Random() /* does not need to be cryptographically secure */,
-                        this,
-                        initialAddressBook,
-                        selfId,
-                        appVersion,
-                        swirldStateManager.getTransactionPool(),
-                        event -> abortAndThrowIfInterrupted(intakeQueue::put, event, "intakeQueue.put() interrupted"));
-
-                eventObserverDispatcher.addObserver((PreConsensusEventObserver) event -> abortAndThrowIfInterrupted(
-                        tipsetEventCreator::registerEvent,
-                        event,
-                        "Interrupted while attempting to register event with tipset event creator"));
-
-                eventObserverDispatcher.addObserver((ConsensusRoundObserver) round -> abortAndThrowIfInterrupted(
-                        tipsetEventCreator::setMinimumGenerationNonAncient,
-                        round.getGenerations().getMinGenerationNonAncient(),
-                        "Interrupted while attempting to register minimum generation "
-                                + "non-ancient with tipset event creator"));
-            } else {
-                tipsetEventCreator = null;
-            }
+            tipsetEventCreator = buildTipsetEventCreationManager(
+                    platformContext,
+                    threadManager,
+                    time,
+                    this,
+                    initialAddressBook,
+                    selfId,
+                    appVersion,
+                    swirldStateManager.getTransactionPool(),
+                    intakeQueue,
+                    eventObserverDispatcher,
+                    currentPlatformStatus::get,
+                    startUpEventFrozenManager);
 
             transactionSubmitter = new SwirldTransactionSubmitter(
                     currentPlatformStatus::get,
