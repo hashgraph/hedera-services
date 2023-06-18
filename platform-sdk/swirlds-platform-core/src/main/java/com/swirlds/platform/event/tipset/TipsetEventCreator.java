@@ -127,7 +127,7 @@ public class TipsetEventCreator { // TODO test
         antiBullyingFactor = Math.max(1.0, eventCreationConfig.antiBullyingFactor());
         tipsetMetrics = new TipsetMetrics(platformContext);
         tipsetBuilder = new TipsetBuilder(addressBook);
-        tipsetScoreCalculator = new TipsetScoreCalculator(addressBook, selfId, tipsetBuilder);
+        tipsetScoreCalculator = new TipsetScoreCalculator(platformContext, addressBook, selfId, tipsetBuilder);
         childlessOtherEventTracker = new ChildlessEventTracker();
     }
 

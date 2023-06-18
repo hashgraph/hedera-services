@@ -19,6 +19,7 @@ package com.swirlds.platform.event.tipset;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.Utilities.isSuperMajority;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.event.EventDescriptor;
@@ -62,7 +63,7 @@ public class TipsetScoreCalculator {
     /**
      * The number of snapshots to keep in {@link #snapshotHistory}.
      */
-    private final int snapshotHistorySize = 10; // TODO setting
+    private final int snapshotHistorySize;
 
     /**
      * The total number of nodes in the address book.
@@ -92,21 +93,28 @@ public class TipsetScoreCalculator {
     /**
      * Create a new tipset window.
      *
-     * @param addressBook   the current address book
-     * @param selfId        the ID of the node tracked by this window
-     * @param tipsetBuilder builds tipsets for individual events
+     * @param platformContext the platform context
+     * @param addressBook     the current address book
+     * @param selfId          the ID of the node tracked by this window
+     * @param tipsetBuilder   builds tipsets for individual events
      */
     public TipsetScoreCalculator(
+            @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final TipsetBuilder tipsetBuilder) {
 
         this.selfId = Objects.requireNonNull(selfId);
         this.tipsetBuilder = Objects.requireNonNull(tipsetBuilder);
-        this.nodeCount = addressBook.getSize();
-        this.totalWeight = addressBook.getTotalWeight();
-        this.selfWeight = addressBook.getAddress(selfId).getWeight();
-        this.maximumPossibleScore = totalWeight - selfWeight;
+
+        nodeCount = addressBook.getSize();
+        totalWeight = addressBook.getTotalWeight();
+        selfWeight = addressBook.getAddress(selfId).getWeight();
+        maximumPossibleScore = totalWeight - selfWeight;
+        snapshotHistorySize = platformContext
+                .getConfiguration()
+                .getConfigData(EventCreationConfig.class)
+                .tipsetSnapshotHistorySize();
 
         Objects.requireNonNull(addressBook);
         this.snapshot = new Tipset(addressBook);

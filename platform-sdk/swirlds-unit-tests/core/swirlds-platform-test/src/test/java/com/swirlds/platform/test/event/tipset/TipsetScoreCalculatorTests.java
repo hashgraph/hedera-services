@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -31,6 +32,7 @@ import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.tipset.Tipset;
 import com.swirlds.platform.event.tipset.TipsetBuilder;
 import com.swirlds.platform.event.tipset.TipsetScoreCalculator;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,8 +72,11 @@ class TipsetScoreCalculatorTests {
 
         final NodeId windowId = addressBook.getNodeId(random.nextInt(nodeCount));
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final TipsetBuilder builder = new TipsetBuilder(addressBook);
-        final TipsetScoreCalculator window = new TipsetScoreCalculator(addressBook, windowId, builder);
+        final TipsetScoreCalculator window = new TipsetScoreCalculator(platformContext, addressBook, windowId, builder);
 
         List<EventDescriptor> previousParents = List.of();
         long runningAdvancementScore = 0;
@@ -193,8 +198,11 @@ class TipsetScoreCalculatorTests {
         final NodeId nodeC = addressBook.getNodeId(2);
         final NodeId nodeD = addressBook.getNodeId(3);
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final TipsetBuilder builder = new TipsetBuilder(addressBook);
-        final TipsetScoreCalculator window = new TipsetScoreCalculator(addressBook, nodeA, builder);
+        final TipsetScoreCalculator window = new TipsetScoreCalculator(platformContext, addressBook, nodeA, builder);
 
         final Tipset snapshot1 = window.getSnapshot();
 

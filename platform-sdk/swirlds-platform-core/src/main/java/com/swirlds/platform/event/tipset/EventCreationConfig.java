@@ -33,6 +33,8 @@ import java.time.Duration;
  *                                       that reduces this node's bully score. Setting this too low may result in a
  *                                       suboptimal hashgraph topology. Setting this number too high may lead to some
  *                                       nodes being bullied and unable to cause their events to reach consensus.
+ * @param tipsetSnapshotHistorySize      the number of tipsets to keep in the snapshot history. These tipsets are used
+ *                                       to compute bully scores.
  * @param eventIntakeThrottle            when the size of the event intake queue equals or exceeds this value, do not
  *                                       permit the creation of new self events.
  * @param creationQueueSize              the size of the intake queue for the event creator
@@ -44,6 +46,7 @@ public record EventCreationConfig(
         @ConfigProperty(defaultValue = "true") boolean useTipsetAlgorithm,
         @ConfigProperty(defaultValue = "0") double maxCreationRate,
         @ConfigProperty(defaultValue = "10") double antiBullyingFactor,
+        @ConfigProperty(defaultValue = "10") int tipsetSnapshotHistorySize,
         @ConfigProperty(defaultValue = "1024") int eventIntakeThrottle,
         @ConfigProperty(defaultValue = "1024") int creationQueueSize,
         @ConfigProperty(defaultValue = "1024") int creationQueueBufferSize,

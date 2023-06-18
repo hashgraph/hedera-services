@@ -30,9 +30,6 @@ final class TipsetUtils {
 
     private TipsetUtils() {}
 
-    // TODO clean these up, either delete them or roll them into a general utility somewhere
-    //   also, descriptors are fixed we might be able to use getters on the event objects directly
-
     /**
      * Build a descriptor from an EventImpl.
      *
@@ -59,6 +56,8 @@ final class TipsetUtils {
 
     /**
      * Get the descriptors of an event's parents.
+     *
+     * @param event the event to get the descriptor of
      */
     @NonNull
     public static List<EventDescriptor> getParentDescriptors(@NonNull final EventImpl event) {
@@ -74,6 +73,9 @@ final class TipsetUtils {
 
     /**
      * Get the descriptors of an event's parents.
+     *
+     * @param event the event to the parent descriptors of
+     * @return a list of parent descriptors
      */
     @NonNull
     public static List<EventDescriptor> getParentDescriptors(@NonNull final GossipEvent event) {
@@ -89,7 +91,7 @@ final class TipsetUtils {
         if (event.getHashedData().getOtherParentHash() != null) {
             final EventDescriptor parent = new EventDescriptor(
                     event.getHashedData().getOtherParentHash(),
-                    event.getUnhashedData().getOtherId(), // TODO !!!!???!?!?!
+                    event.getUnhashedData().getOtherId(),
                     event.getHashedData().getOtherParentGen());
             parentDescriptors.add(parent);
         }
