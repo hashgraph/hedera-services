@@ -23,7 +23,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.IntToLongFunction;
 
 /**
  * Represents a slice of the hashgraph, containing one "tip" from each event creator.
@@ -46,7 +45,7 @@ public class Tipset {
         this.addressBook = Objects.requireNonNull(addressBook);
         tips = new long[addressBook.getSize()];
 
-        // TODO we don't need this if we actually want to start with generation 1
+        // Necessary because we currently start at generation 0, not generation 1.
         Arrays.fill(tips, -1);
     }
 
@@ -168,60 +167,6 @@ public class Tipset {
                 final NodeId nodeId = addressBook.getNodeId(index);
                 final Address address = addressBook.getAddress(nodeId);
                 count += address.getWeight();
-            }
-        }
-
-        return count;
-    }
-
-    /**
-     * <p>
-     * Get the number of tip advancements, weighted using the provided function, between this tipset and another
-     * tipset.
-     * </p>
-     *
-     * <p>
-     * A tip advancement is defined as an increase in the tip generation for a node ID. The exception to this rule is
-     * that an increase in generation for the target node ID is never counted as a tip advancement. The tip advancement
-     * count is defined as the sum of all tip advancements after being appropriately weighted.
-     * </p>
-     *
-     * @param selfId compute the advancement count relative to this node ID
-     * @param that   the tipset to compare to
-     * @return the number of tip advancements to get from this tipset to that tipset
-     */
-    public long getWeightedAdvancementCount(
-            @NonNull final NodeId selfId, @NonNull final Tipset that, @NonNull IntToLongFunction indexWeight) {
-        long count = 0;
-
-        final int selfIndex = addressBook.getIndexOfNodeId(selfId);
-        for (int index = 0; index < tips.length; index++) {
-            if (index == selfIndex) {
-                // We don't consider self advancement here, since self advancement does nothing to help consensus.
-                continue;
-            }
-
-            if (this.tips[index] < that.tips[index]) {
-                count += indexWeight.applyAsLong(index);
-            }
-        }
-
-        return count;
-    }
-
-    // TODO javadoc
-    public int getAdvancementCount(@NonNull final NodeId selfId, @NonNull final Tipset that) {
-        int count = 0;
-
-        final int selfIndex = addressBook.getIndexOfNodeId(selfId);
-        for (int index = 0; index < tips.length; index++) {
-            if (index == selfIndex) {
-                // We don't consider self advancement here, since self advancement does nothing to help consensus.
-                continue;
-            }
-
-            if (this.tips[index] < that.tips[index]) {
-                count += 1;
             }
         }
 

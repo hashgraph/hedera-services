@@ -47,7 +47,6 @@ import java.util.Random;
 
 // TODO:
 //  - metrics
-//  - convert all constants to settings
 //  - tipset score calculator bug unit test
 //  - unit tests
 //  - resolve remaining TODOs

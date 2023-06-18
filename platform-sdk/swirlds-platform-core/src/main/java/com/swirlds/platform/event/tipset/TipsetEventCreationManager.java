@@ -37,7 +37,6 @@ import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.BooleanSupplier;
@@ -99,22 +98,22 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
         Objects.requireNonNull(softwareVersion);
         Objects.requireNonNull(transactionSupplier);
 
+        final EventCreationConfig eventCreationConfig =
+                platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
+
         eventCreator = new TipsetEventCreator(
                 platformContext, time, random, signer, addressBook, selfId, softwareVersion, transactionSupplier);
 
         workQueue = new MultiQueueThreadConfiguration(threadManager)
                 .setThreadName("event-creator")
-                .setCapacity(1024) // TODO setting for capacity
-                .setMaxBufferSize(1024) // TODO setting
+                .setCapacity(eventCreationConfig.creationQueueSize())
+                .setMaxBufferSize(eventCreationConfig.creationQueueBufferSize())
                 .addHandler(EventImpl.class, this::handleEvent)
                 .addHandler(Long.class, this::handleMinimumGenerationNonAncient)
                 .setIdleCallback(this::maybeCreateEvent)
                 .setBufferHandledCallback(this::maybeCreateEvent)
-                .setWaitForWorkDuration(Duration.ZERO) // TODO setting
+                .setWaitForWorkDuration(eventCreationConfig.creationQueueWaitForWorkPeriod())
                 .build();
-
-        final EventCreationConfig eventCreationConfig =
-                platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
 
         final double maxCreationRate = eventCreationConfig.maxCreationRate();
         if (maxCreationRate > 0) {

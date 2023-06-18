@@ -20,7 +20,6 @@ import static com.swirlds.platform.event.tipset.Tipset.merge;
 
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.event.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -114,17 +113,6 @@ public class TipsetBuilder {
     @Nullable
     public Tipset getTipset(@NonNull final EventDescriptor eventDescriptor) {
         return tipsets.get(eventDescriptor);
-    }
-
-    /**
-     * Get the highest generation of all events we have received from a particular node.
-     *
-     * @param nodeId the ID of the node
-     * @return the highest generation of all events received by a node
-     */
-    public long getLatestGenerationForNodeId(@NonNull final NodeId nodeId) { // TODO test
-        Objects.requireNonNull(nodeId);
-        return latestGenerations.getTipGenerationForNodeId(nodeId);
     }
 
     /**
