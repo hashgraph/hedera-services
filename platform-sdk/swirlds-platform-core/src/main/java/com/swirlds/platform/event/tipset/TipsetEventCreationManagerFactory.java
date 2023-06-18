@@ -103,8 +103,8 @@ public final class TipsetEventCreationManagerFactory {
         final Consumer<GossipEvent> newEventHandler =
                 event -> abortAndThrowIfInterrupted(eventIntakeQueue::put, event, "intakeQueue.put() interrupted");
 
-        final BooleanSupplier eventCreationPermittedCheck =
-                buildEventCreationPermittedCheck(platformStatusSupplier, startUpEventFrozenManager, transactionPool);
+        final BooleanSupplier eventCreationPermittedCheck = buildEventCreationPermittedCheck(
+                platformContext, platformStatusSupplier, startUpEventFrozenManager, transactionPool, eventIntakeQueue);
 
         final TipsetEventCreationManager manager = new TipsetEventCreationManager(
                 platformContext,
@@ -139,13 +139,22 @@ public final class TipsetEventCreationManagerFactory {
      * @return a function at returns true if it is legal to create an event
      */
     private static BooleanSupplier buildEventCreationPermittedCheck(
+            @NonNull final PlatformContext platformContext,
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
-            @NonNull final EventTransactionPool transactionPool) {
+            @NonNull final EventTransactionPool transactionPool,
+            @NonNull final QueueThread<EventIntakeTask> eventIntakeQueue) {
 
+        Objects.requireNonNull(platformContext);
         Objects.requireNonNull(platformStatusSupplier);
         Objects.requireNonNull(startUpEventFrozenManager);
         Objects.requireNonNull(transactionPool);
+        Objects.requireNonNull(eventIntakeQueue);
+
+        final int eventIntakeThrottle = platformContext
+                .getConfiguration()
+                .getConfigData(EventCreationConfig.class)
+                .eventIntakeThrottle();
 
         return () -> {
             final PlatformStatus currentStatus = platformStatusSupplier.get();
@@ -159,9 +168,11 @@ public final class TipsetEventCreationManagerFactory {
                 return transactionPool.numSignatureTransEvent() > 0;
             }
 
-            // TODO stop creating transactions if queues fill up
+            if (currentStatus != PlatformStatus.ACTIVE && currentStatus != PlatformStatus.CHECKING) {
+                return false;
+            }
 
-            return currentStatus == PlatformStatus.ACTIVE || currentStatus == PlatformStatus.CHECKING;
+            return eventIntakeQueue.size() < eventIntakeThrottle;
         };
     }
 }

@@ -21,9 +21,9 @@ useLoopbackIp,                            false
                                           #      Event Creation       #
                                           #############################
 
-event.creation.useTipsetAlgorithm,        true
-event.creation.maxCreationRate,           5
 freezeSecondsAfterStartup,                0
+event.creation.maxCreationRate,           5
+event.creation.useTipsetAlgorithm,        true
 
                                           #############################
                                           # Preconsensus Event Stream #
