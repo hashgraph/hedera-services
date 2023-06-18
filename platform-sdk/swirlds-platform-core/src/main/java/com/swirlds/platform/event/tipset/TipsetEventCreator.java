@@ -33,6 +33,7 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.EventDescriptor;
+import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,7 +46,6 @@ import java.util.Objects;
 import java.util.Random;
 
 // TODO:
-//  - reduce lambda use
 //  - start up frozen
 //  - freeze
 //  - reconnect (all gossip flavors)
@@ -82,6 +82,16 @@ public class TipsetEventCreator { // TODO test
      * The last event created by this node. TODO we need to load this if we don't start from genesis
      */
     private EventDescriptor lastSelfEvent;
+
+    /**
+     * The timestamp of the last event created by this node.
+     */
+    private Instant lastSelfEventCreationTime;
+
+    /**
+     * The number of transactions in the last event created by this node.
+     */
+    private int lastSelfEventTransactionCount;
 
     /**
      * Create a new tipset event creator.
@@ -260,7 +270,7 @@ public class TipsetEventCreator { // TODO test
             parentDescriptors.add(otherParent);
         }
 
-        final GossipEvent event = buildEventFromParents(lastSelfEvent, otherParent);
+        final GossipEvent event = buildEventFromParents(otherParent);
 
         final EventDescriptor descriptor = buildDescriptor(event);
         tipsetBuilder.addEvent(descriptor, parentDescriptors);
@@ -269,6 +279,8 @@ public class TipsetEventCreator { // TODO test
         tipsetMetrics.getTipsetScoreMetric().update(scoreRatio);
 
         lastSelfEvent = descriptor;
+        lastSelfEventCreationTime = event.getHashedData().getTimeCreated();
+        lastSelfEventTransactionCount = event.getHashedData().getTransactions().length;
 
         return event;
     }
@@ -311,23 +323,28 @@ public class TipsetEventCreator { // TODO test
     /**
      * Given the parents, build the event object.
      *
-     * @param selfParent  the self parent
      * @param otherParent the other parent
      * @return the event
      */
     @NonNull
-    private GossipEvent buildEventFromParents(
-            @Nullable final EventDescriptor selfParent, @Nullable final EventDescriptor otherParent) {
+    private GossipEvent buildEventFromParents(@Nullable final EventDescriptor otherParent) {
 
-        final long selfParentGeneration = getGeneration(selfParent);
-        final Hash selfParentHash = getHash(selfParent);
+        final long selfParentGeneration = getGeneration(lastSelfEvent);
+        final Hash selfParentHash = getHash(lastSelfEvent);
 
         final long otherParentGeneration = getGeneration(otherParent);
         final Hash otherParentHash = getHash(otherParent);
         final NodeId otherParentId = getCreator(otherParent);
 
-        // TODO we need to emulate the logic in EventUtils.getChildTimeCreated()
-        final Instant timeCreated = time.now();
+        // TODO specifically unit test creation time
+        final Instant now = time.now();
+        final Instant timeCreated;
+        if (lastSelfEvent == null) {
+            timeCreated = now;
+        } else {
+            timeCreated = EventUtils.calculateNewEventCreationTime(
+                    now, lastSelfEventCreationTime, lastSelfEventTransactionCount);
+        }
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 softwareVersion,
@@ -344,8 +361,8 @@ public class TipsetEventCreator { // TODO test
                 otherParentId, signer.sign(hashedData.getHash().getValue()).getSignatureBytes());
 
         final GossipEvent event = new GossipEvent(hashedData, unhashedData);
+        cryptography.digestSync(event);
         event.buildDescriptor(); // TODO ugh
-        cryptography.digestSync(event); // TODO necessary?
         return event;
     }
 }
