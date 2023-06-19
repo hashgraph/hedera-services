@@ -42,7 +42,6 @@ import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePr
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
@@ -67,18 +66,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#TOKEN_UPDATE}.
- *
- * <p><b>NOTE:</b> this class intentionally changes the following error response codes relative to
- * SigRequirements:
- *
- * <ol>
- *   <li>When a missing account is used as a token treasuryNum, fails with {@code INVALID_ACCOUNT_ID}
- *       rather than {@code ACCOUNT_ID_DOES_NOT_EXIST}.
- * </ol>
- *
- * * EET expectations may need to be updated accordingly
+ * Provides the state transition for token update.
  */
 @Singleton
 public class TokenUpdateHandler extends BaseTokenHandler implements TransactionHandler {
@@ -126,21 +114,26 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.tokenUpdateOrThrow();
+        final var tokenId = op.tokenOrThrow();
 
+        // validate fields that involve config or state
         final var validationResult = tokenUpdateValidator.validateSemantics(context, op);
+        // get the resolved expiry meta and token
         final var token = validationResult.token();
         final var resolvedExpiry = validationResult.resolvedExpiryMeta();
-
-        final var tokenId = op.token();
 
         final var accountStore = context.writableStore(WritableAccountStore.class);
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var tokenStore = context.writableStore(WritableTokenStore.class);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
 
-        final var existingTreasury = asAccount(token.treasuryAccountNumber());
-
+        // If the operation has treasury change, then we need to check if the new treasury is valid
+        // and if the treasury is not already associated with the token, see if it has auto associations
+        // enabled and has open slots. If so, auto-associate.
+        // We allow existing treasuries to have any nft balances left over, but the new treasury should
+        // not have any balances left over.Transfer all balances for the current token to new treasury
         if (op.hasTreasury()) {
+            final var existingTreasury = asAccount(token.treasuryAccountNumber());
             final var newTreasury = op.treasuryOrThrow();
             final var newTreasuryAccount = getIfUsable(
                     newTreasury, accountStore, context.expiryValidator(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
@@ -154,12 +147,13 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             // is enabled.
             if (!tokensConfig.nftsUseTreasuryWildcards() && token.tokenType().equals(NON_FUNGIBLE_UNIQUE)) {
                 final var existingTreasuryRel = tokenRelStore.get(existingTreasury, tokenId);
+                validateTrue(existingTreasuryRel != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
                 final var tokenRelBalance = existingTreasuryRel.balance();
                 validateTrue(tokenRelBalance == 0, CURRENT_TREASURY_STILL_OWNS_NFTS);
             }
 
             if (!newTreasury.equals(existingTreasury)) {
-                // FUTURE : Not sure why we are checking existing treasury account here
+                // TODO : Not sure why we are checking existing treasury account here
                 final var existingTreasuryAccount = accountStore.getAccountById(existingTreasury);
                 final var isDetached = context.expiryValidator()
                         .isDetached(
@@ -169,22 +163,34 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                 validateFalse(isDetached, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
                 updateTreasuryTitles(existingTreasuryAccount, newTreasuryAccount, token, accountStore, tokenRelStore);
             }
+            // validate token's treasury doesn't have any NFT balances
             tokenUpdateValidator.validateNftBalances(token, tokenRelStore);
-            transferTokensToNewTreasury(existingTreasury, newTreasury, token, tokenRelStore, accountStore, context);
+            // If the token is fungible, transfer fungible balance to new treasury
+            // If it is non-fungible token transfer the ownership of the NFTs from old treasury to new treasury
+            transferTokensToNewTreasury(existingTreasury, newTreasury, token, tokenRelStore, accountStore);
         }
 
-        final var tokenBuilder = customizeToken(token, resolvedExpiry, op, context);
+        final var tokenBuilder = customizeToken(token, resolvedExpiry, op);
         tokenStore.put(tokenBuilder.build());
     }
 
+    /**
+     * Transfer tokens from old treasury to new treasury if the token is fungible. If the token is non-fungible,
+     * transfer the ownership of the NFTs from old treasury to new treasury
+     * @param oldTreasury old treasury account
+     * @param newTreasury new treasury account
+     * @param token token
+     * @param tokenRelStore token relationship store
+     * @param accountStore account store
+     */
     private void transferTokensToNewTreasury(
             final AccountID oldTreasury,
             final AccountID newTreasury,
             final Token token,
             final WritableTokenRelationStore tokenRelStore,
-            final WritableAccountStore accountStore,
-            final HandleContext context) {
+            final WritableAccountStore accountStore) {
         final var tokenId = asToken(token.tokenNumber());
+        // Validate both accounts are not frozen and have the right keys
         final var oldTreasuryRel = getIfUsable(oldTreasury, tokenId, tokenRelStore);
         final var newTreasuryRel = getIfUsable(newTreasury, tokenId, tokenRelStore);
         if (oldTreasuryRel.balance() > 0) {
@@ -192,13 +198,85 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             validateFrozenAndKey(newTreasuryRel);
 
             if (token.tokenType().equals(FUNGIBLE_COMMON)) {
+                // Transfers fungible balances and updates account's numOfPositiveBalances
+                // and puts to modifications on state.
                 transferFungibleTokens(oldTreasuryRel, newTreasuryRel, tokenRelStore, accountStore);
             } else {
+                // Transfers NFT ownerships and updates account's numOwnedNfts and
+                // tokenRelation's balance and puts to modifications on state.
                 changeOwner(oldTreasuryRel, newTreasuryRel, tokenRelStore, accountStore);
             }
         }
     }
+    /**
+     * Transfer fungible tokens from old treasury to new treasury.
+     * NOTE: This updates account's numOfPositiveBalances and puts to modifications on state.
+     * @param fromTreasuryRel old treasury relationship
+     * @param toTreasuryRel new treasury relationship
+     * @param tokenRelStore token relationship store
+     * @param accountStore account store
+     */
+    private void transferFungibleTokens(
+            final TokenRelation fromTreasuryRel,
+            final TokenRelation toTreasuryRel,
+            final WritableTokenRelationStore tokenRelStore,
+            final WritableAccountStore accountStore) {
+        final var adjustment = fromTreasuryRel.balance();
 
+        final var fromTreasury = accountStore.getAccountById(asAccount(fromTreasuryRel.accountNumber()));
+        final var toTreasury = accountStore.getAccountById(asAccount(toTreasuryRel.accountNumber()));
+
+        adjustBalance(fromTreasuryRel, fromTreasury, -adjustment, tokenRelStore, accountStore);
+        adjustBalance(toTreasuryRel, toTreasury, adjustment, tokenRelStore, accountStore);
+        // TODO: If any of the above fail, need to rollback only token transfer balances for record.
+        // Not sure how it will be done yet
+    }
+
+    /**
+     * Adjust fungible balances for the given token relationship and account by the given adjustment.
+     * NOTE: This updates account's numOfPositiveBalances and puts to modifications on state.
+     * @param tokenRel token relationship
+     * @param account account to be adjusted
+     * @param adjustment adjustment to be made
+     * @param tokenRelStore token relationship store
+     * @param accountStore account store
+     */
+    private void adjustBalance(
+            final TokenRelation tokenRel,
+            final Account account,
+            final long adjustment,
+            final WritableTokenRelationStore tokenRelStore,
+            final WritableAccountStore accountStore) {
+        final var originalBalance = tokenRel.balance();
+        final var newBalance = originalBalance + adjustment;
+        validateTrue(newBalance >= 0, INSUFFICIENT_TOKEN_BALANCE);
+
+        final var copyRel = tokenRel.copyBuilder();
+        tokenRelStore.put(copyRel.balance(newBalance).build());
+
+        var numPositiveBalances = account.numberPositiveBalances();
+        // If the original balance is zero, then the receiving account's numPositiveBalances has to
+        // be increased
+        // and if the newBalance is zero, then the sending account's numPositiveBalances has to be
+        // decreased
+        if (newBalance == 0 && adjustment < 0) {
+            numPositiveBalances--;
+        } else if (originalBalance == 0 && adjustment > 0) {
+            numPositiveBalances++;
+        }
+        final var copyAccount = account.copyBuilder();
+        accountStore.put(copyAccount.numberPositiveBalances(numPositiveBalances).build());
+        // TODO: Need to track units change in record in finalize method for this
+    }
+
+    /**
+     * Change the ownership of the NFTs from old treasury to new treasury.
+     * NOTE: This updates account's numOwnedNfts and tokenRelation's balance and puts to modifications on state.
+     * @param fromTreasuryRel old treasury relationship
+     * @param toTreasuryRel new treasury relationship
+     * @param tokenRelStore token relationship store
+     * @param accountStore account store
+     */
     private void changeOwner(
             final TokenRelation fromTreasuryRel,
             final TokenRelation toTreasuryRel,
@@ -228,60 +306,26 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         // Need to do in finalize
     }
 
-    private void validateFrozenAndKey(final TokenRelation fromTreasuryRel) {
-        validateTrue(!fromTreasuryRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
-        validateTrue(fromTreasuryRel.kycGranted(), TOKEN_HAS_NO_KYC_KEY);
+    /**
+     * Validate both KYC is granted and token is not frozen on the token.
+     * @param tokenRel token relationship
+     */
+    private void validateFrozenAndKey(final TokenRelation tokenRel) {
+        validateTrue(!tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
+        validateTrue(tokenRel.kycGranted(), TOKEN_HAS_NO_KYC_KEY);
     }
 
-    private void transferFungibleTokens(
-            final TokenRelation fromTreasuryRel,
-            final TokenRelation toTreasuryRel,
-            final WritableTokenRelationStore tokenRelStore,
-            final WritableAccountStore accountStore) {
-        final var adjustment = fromTreasuryRel.balance();
-
-        final var fromTreasury = accountStore.getAccountById(asAccount(fromTreasuryRel.accountNumber()));
-        final var toTreasury = accountStore.getAccountById(asAccount(toTreasuryRel.accountNumber()));
-
-        adjustBalance(fromTreasuryRel, fromTreasury, -adjustment, tokenRelStore, accountStore);
-        adjustBalance(toTreasuryRel, toTreasury, adjustment, tokenRelStore, accountStore);
-        // TODO: If any of the above fail, need to rollback only token transfer balances for record.
-        // Not sure how it will be done yet
-    }
-
-    private void adjustBalance(
-            final TokenRelation tokenRel,
-            final Account account,
-            final long adjustment,
-            final WritableTokenRelationStore tokenRelStore,
-            final WritableAccountStore accountStore) {
-        final var originalBalance = tokenRel.balance();
-        final var newBalance = originalBalance + adjustment;
-        validateTrue(newBalance >= 0, INSUFFICIENT_TOKEN_BALANCE);
-
-        final var copyRel = tokenRel.copyBuilder();
-        tokenRelStore.put(copyRel.balance(newBalance).build());
-
-        var numPositiveBalances = account.numberPositiveBalances();
-        // If the original balance is zero, then the receiving account's numPositiveBalances has to
-        // be increased
-        // and if the newBalance is zero, then the sending account's numPositiveBalances has to be
-        // decreased
-        if (newBalance == 0 && adjustment < 0) {
-            numPositiveBalances--;
-        } else if (originalBalance == 0 && adjustment > 0) {
-            numPositiveBalances++;
-        }
-        final var copyAccount = account.copyBuilder();
-        accountStore.put(copyAccount.numberPositiveBalances(numPositiveBalances).build());
-        // TODO: Need to track units change in record in finalize method for this
-    }
-
+    /**
+     * Build a Token based on the given token update transaction body.
+     * @param token token to be updated
+     * @param resolvedExpiry resolved expiry
+     * @param op token update transaction body
+     * @return updated token builder
+     */
     private Token.Builder customizeToken(
             @NonNull final Token token,
             @NonNull final ExpiryMeta resolvedExpiry,
-            @NonNull final TokenUpdateTransactionBody op,
-            @NonNull final HandleContext context) {
+            @NonNull final TokenUpdateTransactionBody op) {
         final var copyToken = token.copyBuilder();
         // All these keys are validated in validateSemantics
         // If these keys did not exist on the token already, they can't be changed on update
@@ -291,87 +335,120 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         return copyToken;
     }
 
+    /**
+     * Updates token name, token symbol, token memo and token treasury if they are present in the
+     * token update transaction body.
+     * @param op token update transaction body
+     * @param builder token builder
+     * @param originalToken original token
+     */
     private void updateNameSymbolMemoAndTreasury(
-            final TokenUpdateTransactionBody op, final Token.Builder copyToken, final Token originalToken) {
-        if (op.symbol().length() > 0) {
-            copyToken.symbol(op.symbol());
+            final TokenUpdateTransactionBody op, final Token.Builder builder, final Token originalToken) {
+        if (op.symbol() != null && op.symbol().length() > 0) {
+            builder.symbol(op.symbol());
         }
-        if (op.name().length() > 0) {
-            copyToken.name(op.name());
+        if (op.name() != null && op.name().length() > 0) {
+            builder.name(op.name());
         }
         if (op.hasMemo() && op.memo().length() > 0) {
-            copyToken.memo(op.memo());
+            builder.memo(op.memo());
         }
         if (op.hasTreasury() && op.treasuryOrThrow().accountNum() != originalToken.treasuryAccountNumber()) {
-            copyToken.treasuryAccountNumber(op.treasuryOrThrow().accountNum());
+            builder.treasuryAccountNumber(op.treasuryOrThrow().accountNum());
         }
     }
 
+    /**
+     * Updates expiry fields of the token if they are present in the token update transaction body.
+     * @param op token update transaction body
+     * @param resolvedExpiry resolved expiry
+     * @param builder token builder
+     */
     private void updateExpiryFields(
-            final TokenUpdateTransactionBody op, final ExpiryMeta resolvedExpiry, final Token.Builder copyToken) {
+            final TokenUpdateTransactionBody op, final ExpiryMeta resolvedExpiry, final Token.Builder builder) {
         if (op.hasExpiry()) {
-            copyToken.expiry(resolvedExpiry.expiry());
+            builder.expiry(resolvedExpiry.expiry());
         }
         if (op.hasAutoRenewPeriod()) {
-            copyToken.autoRenewSecs(resolvedExpiry.autoRenewPeriod());
+            builder.autoRenewSecs(resolvedExpiry.autoRenewPeriod());
         }
         if (op.hasAutoRenewAccount()) {
-            copyToken.autoRenewAccountNumber(resolvedExpiry.autoRenewNum());
+            builder.autoRenewAccountNumber(resolvedExpiry.autoRenewNum());
         }
     }
 
-    private void updateKeys(final TokenUpdateTransactionBody op, final Token token, final Token.Builder copyToken) {
+    /**
+     * Updates keys of the token if they are present in the token update transaction body.
+     * All keys can be updates only if they had already existed on the token.
+     * These keys can't be updated if they were not added during creation.
+     * @param op token update transaction body
+     * @param originalToken original token
+     * @param builder token builder
+     */
+    private void updateKeys(
+            final TokenUpdateTransactionBody op, final Token originalToken, final Token.Builder builder) {
         if (op.hasKycKey()) {
-            validateTrue(token.hasKycKey(), TOKEN_HAS_NO_KYC_KEY);
-            copyToken.kycKey(op.kycKey());
+            validateTrue(originalToken.hasKycKey(), TOKEN_HAS_NO_KYC_KEY);
+            builder.kycKey(op.kycKey());
         }
         if (op.hasFreezeKey()) {
-            validateTrue(token.hasFreezeKey(), TOKEN_HAS_NO_FREEZE_KEY);
-            copyToken.freezeKey(op.freezeKey());
+            validateTrue(originalToken.hasFreezeKey(), TOKEN_HAS_NO_FREEZE_KEY);
+            builder.freezeKey(op.freezeKey());
         }
         if (op.hasWipeKey()) {
-            validateTrue(token.hasWipeKey(), TOKEN_HAS_NO_WIPE_KEY);
-            copyToken.wipeKey(op.wipeKey());
+            validateTrue(originalToken.hasWipeKey(), TOKEN_HAS_NO_WIPE_KEY);
+            builder.wipeKey(op.wipeKey());
         }
         if (op.hasSupplyKey()) {
-            validateTrue(token.hasSupplyKey(), TOKEN_HAS_NO_SUPPLY_KEY);
-            copyToken.supplyKey(op.supplyKey());
+            validateTrue(originalToken.hasSupplyKey(), TOKEN_HAS_NO_SUPPLY_KEY);
+            builder.supplyKey(op.supplyKey());
         }
         if (op.hasFeeScheduleKey()) {
-            validateTrue(token.hasFeeScheduleKey(), TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
-            copyToken.feeScheduleKey(op.feeScheduleKey());
+            validateTrue(originalToken.hasFeeScheduleKey(), TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
+            builder.feeScheduleKey(op.feeScheduleKey());
         }
         if (op.hasPauseKey()) {
-            validateTrue(token.hasPauseKey(), TOKEN_HAS_NO_PAUSE_KEY);
-            copyToken.pauseKey(op.pauseKey());
+            validateTrue(originalToken.hasPauseKey(), TOKEN_HAS_NO_PAUSE_KEY);
+            builder.pauseKey(op.pauseKey());
         }
         if (!isExpiryOnlyUpdateOp(op)) {
-            validateTrue(token.hasAdminKey(), TOKEN_IS_IMMUTABLE);
+            validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
         }
         if (op.hasAdminKey()) {
             final var newAdminKey = op.adminKey();
             if (isKeyRemoval(newAdminKey)) {
-                copyToken.adminKey((Key) null);
+                builder.adminKey((Key) null);
             } else {
-                copyToken.adminKey(newAdminKey);
+                builder.adminKey(newAdminKey);
             }
         }
     }
 
+    /**
+     * If there is a change in treasury account, update the treasury titles of the old and
+     * new treasury accounts.
+     * NOTE : This updated the numberTreasuryTitles on old and new treasury accounts.
+     * And also updates new treasury relationship to not be frozen
+     * @param existingTreasuryAccount existing treasury account
+     * @param newTreasuryAccount new treasury account
+     * @param originalToken original token
+     * @param accountStore account store
+     * @param tokenRelStore token relation store
+     */
     private void updateTreasuryTitles(
             @NonNull final Account existingTreasuryAccount,
             @NonNull final Account newTreasuryAccount,
-            @NonNull final Token token,
+            @NonNull final Token originalToken,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore) {
         final var newTokenRelation =
-                tokenRelStore.get(asAccount(newTreasuryAccount.accountNumber()), asToken(token.tokenNumber()));
+                tokenRelStore.get(asAccount(newTreasuryAccount.accountNumber()), asToken(originalToken.tokenNumber()));
         final var newRelCopy = newTokenRelation.copyBuilder();
 
-        if (token.hasFreezeKey()) {
+        if (originalToken.hasFreezeKey()) {
             newRelCopy.frozen(false);
         }
-        if (token.hasKycKey()) {
+        if (originalToken.hasKycKey()) {
             newRelCopy.kycGranted(true);
         }
 

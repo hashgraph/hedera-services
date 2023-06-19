@@ -26,6 +26,7 @@ import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.get
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
 
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
@@ -59,18 +60,18 @@ public class TokenUpdateValidator {
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         // If the token has an empty admin key it can't be updated
         if (isEmpty(token.adminKey())) {
-            validateTrue(!BaseTokenHandler.isExpiryOnlyUpdateOp(op), TOKEN_IS_IMMUTABLE);
+            validateTrue(BaseTokenHandler.isExpiryOnlyUpdateOp(op), TOKEN_IS_IMMUTABLE);
         }
         // validate memo
         if (op.hasMemo()) {
             context.attributeValidator().validateMemo(op.memo());
         }
         // validate token symbol, if being changed
-        if (!op.symbol().isEmpty()) {
+        if (op.symbol() != null && !op.symbol().isEmpty()) {
             validator.validateTokenSymbol(op.symbol(), tokensConfig);
         }
         // validate token name, if being changed
-        if (!op.name().isEmpty()) {
+        if (op.name() != null && !op.name().isEmpty()) {
             validator.validateTokenName(op.name(), tokensConfig);
         }
         // validate token keys, if any being changed
@@ -124,7 +125,7 @@ public class TokenUpdateValidator {
         if (token.tokenType().equals(NON_FUNGIBLE_UNIQUE)) {
             final var tokenRel =
                     tokenRelStore.get(asAccount(token.treasuryAccountNumber()), asToken(token.tokenNumber()));
-            validateTrue(tokenRel.balance() == 0, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+            validateTrue(tokenRel.balance() == 0, CURRENT_TREASURY_STILL_OWNS_NFTS);
         }
     }
 }

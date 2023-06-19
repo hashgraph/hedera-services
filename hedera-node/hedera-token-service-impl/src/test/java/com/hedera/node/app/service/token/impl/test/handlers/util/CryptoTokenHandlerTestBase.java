@@ -528,7 +528,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     protected Token givenValidFungibleToken() {
-        return givenValidFungibleToken(autoRenewId.accountNum());
+        return givenValidFungibleToken(spenderId.accountNum());
     }
 
     protected Token givenValidFungibleToken(long autoRenewAccountNumber) {
@@ -606,7 +606,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 2,
                 0,
                 1000L,
-                2,
+                0,
                 72000,
                 0,
                 Collections.emptyList(),
@@ -623,7 +623,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .accountNumber(accountNum)
                 .balance(1000L)
                 .frozen(false)
-                .kycGranted(false)
+                .kycGranted(true)
                 .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(2L)
@@ -637,7 +637,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .accountNumber(accountNum)
                 .balance(1000L)
                 .frozen(false)
-                .kycGranted(false)
+                .kycGranted(true)
                 .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(2L)
