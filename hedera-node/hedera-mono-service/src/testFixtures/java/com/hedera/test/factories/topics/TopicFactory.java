@@ -23,6 +23,7 @@ import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import java.security.InvalidKeyException;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -55,7 +56,7 @@ public class TopicFactory {
     private JKey uncheckedMap(Key k) {
         try {
             return JKey.mapKey(k);
-        } catch (Exception ignore) {
+        } catch (InvalidKeyException ignore) {
         }
         throw new AssertionError("Valid key failed to map!");
     }

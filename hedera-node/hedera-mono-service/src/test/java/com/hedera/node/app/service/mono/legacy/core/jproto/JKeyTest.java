@@ -34,9 +34,9 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
+import java.security.InvalidKeyException;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 
 class JKeyTest {
@@ -64,7 +64,7 @@ class JKeyTest {
 
         // expect:
         assertThrows(
-                DecoderException.class,
+                InvalidKeyException.class,
                 () -> JKey.convertKey(keyTooDeep, 1),
                 "Exceeding max expansion depth of " + JKey.MAX_KEY_DEPTH);
     }
@@ -76,7 +76,7 @@ class JKeyTest {
 
         // expect:
         assertThrows(
-                DecoderException.class,
+                InvalidKeyException.class,
                 () -> JKey.convertJKey(jKeyTooDeep, 1),
                 "Exceeding max expansion depth of " + JKey.MAX_KEY_DEPTH);
     }
@@ -108,7 +108,7 @@ class JKeyTest {
     }
 
     @Test
-    void canMapDelegateToGrpc() throws DecoderException {
+    void canMapDelegateToGrpc() throws InvalidKeyException {
         final var id = IdUtils.asContract("1.2.3");
         final var expected = Key.newBuilder().setDelegatableContractId(id).build();
 
@@ -119,7 +119,7 @@ class JKeyTest {
     }
 
     @Test
-    void canMapDelegateFromGrpc() throws DecoderException {
+    void canMapDelegateFromGrpc() throws InvalidKeyException {
         final var id = IdUtils.asContract("1.2.3");
         final var input = Key.newBuilder().setDelegatableContractId(id).build();
 
@@ -133,7 +133,7 @@ class JKeyTest {
     void rejectsEmptyKey() {
         // expect:
         assertThrows(
-                DecoderException.class,
+                InvalidKeyException.class,
                 () -> JKey.convertJKeyBasic(new JKey() {
                     @Override
                     public boolean isEmpty() {

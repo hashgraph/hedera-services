@@ -70,6 +70,7 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
+import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.virtualmap.VirtualValue;
@@ -110,6 +111,7 @@ public class SerializedForms {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public static <T extends SelfSerializable> void assertSameSerialization(
             final Class<T> type,
             final Function<SeededPropertySource, T> factory,
@@ -120,8 +122,13 @@ public class SerializedForms {
         final var actual = SerdeUtils.serialize(example);
         final var expected = loadForm(type, version, testCaseNo);
         assertArrayEquals(expected, actual, "Regression in serializing test case #" + testCaseNo);
+        if (type.isAssignableFrom(FastCopyable.class)) {
+            assertSameCopySerialization(
+                    testCaseNo, (FastCopyable) example, copy -> SerdeUtils.serialize((T) copy), expected);
+        }
     }
 
+    @SuppressWarnings("unchecked")
     public static <T extends VirtualValue> void assertSameBufferSerialization(
             final Class<T> type,
             final Function<SeededPropertySource, T> factory,
@@ -132,6 +139,16 @@ public class SerializedForms {
         final var actual = SerdeUtils.serializeToBuffer(example, MAX_SERIALIAZED_LEN);
         final var expected = loadForm(type, version, testCaseNo);
         assertArrayEquals(expected, actual, "Regression in serializing test case #" + testCaseNo);
+        assertSameCopySerialization(
+                testCaseNo, (FastCopyable) example, copy -> SerdeUtils.serialize((T) copy), expected);
+    }
+
+    private static <T extends FastCopyable> void assertSameCopySerialization(
+            final int testCaseNo, final T example, final Function<T, byte[]> serializer, final byte[] expected) {
+        final var copy = example.copy();
+        @SuppressWarnings("unchecked")
+        final var copyActual = serializer.apply((T) copy);
+        assertArrayEquals(expected, copyActual, "Regression in serializing test case #" + testCaseNo + " (copy)");
     }
 
     private static void generateSerializedData() {
