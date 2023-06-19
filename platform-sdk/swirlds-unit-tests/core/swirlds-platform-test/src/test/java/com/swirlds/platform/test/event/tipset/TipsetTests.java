@@ -20,8 +20,10 @@ import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.event.tipset.Tipset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -104,8 +106,11 @@ class TipsetTests {
 
         final int nodeCount = 100;
 
-        final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(nodeCount).build();
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+                .setSize(nodeCount)
+                .setAverageWeight(1)
+                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+                .build();
 
         final NodeId selfId = addressBook.getNodeId(random.nextInt(nodeCount));
 
@@ -155,15 +160,13 @@ class TipsetTests {
         final Random random = getRandomPrintSeed();
         final int nodeCount = 100;
 
-        final Map<Long, Long> weights = new HashMap<>();
-        for (int i = 0; i < 100; i++) {
-            weights.put((long) i, random.nextLong(1_000_000));
-        }
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(nodeCount).build();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(nodeCount)
-                .setCustomWeightGenerator(weights::get) // TODO the weights map is from long to long
-                .build();
+        final Map<NodeId, Long> weights = new HashMap<>();
+        for (final Address address : addressBook) {
+            weights.put(address.getNodeId(), address.getWeight());
+        }
 
         final NodeId selfId = addressBook.getNodeId(random.nextInt(nodeCount));
 
@@ -185,21 +188,21 @@ class TipsetTests {
         }
 
         // Cause the comparison tipset to advance in a random way
-        for (long creator = 0; creator < 100; creator++) {
+        for (final Address address : addressBook) {
             final long generation = random.nextLong(1, 100);
 
-            comparisonTipset.advance(new NodeId(creator), generation);
+            comparisonTipset.advance(address.getNodeId(), generation);
         }
 
         long expectedAdvancementCount = 0;
-        for (int i = 0; i < 100; i++) {
-            final NodeId nodeId = addressBook.getNodeId(i);
+        for (final Address address : addressBook) {
+            final NodeId nodeId = address.getNodeId();
             if (nodeId.equals(selfId)) {
                 // Self advancements are not counted
                 continue;
             }
             if (initialTipset.getTipGenerationForNodeId(nodeId) < comparisonTipset.getTipGenerationForNodeId(nodeId)) {
-                expectedAdvancementCount += weights.get((long) i);
+                expectedAdvancementCount += weights.get(nodeId);
             }
         }
 
