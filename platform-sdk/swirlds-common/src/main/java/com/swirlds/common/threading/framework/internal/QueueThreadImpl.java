@@ -63,9 +63,9 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
     private final InterruptableRunnable idleCallback;
 
     /**
-     * If not null, called when a buffer's worth of work has been handled.
+     * If not null, called when a batch of work has been handled.
      */
-    private final InterruptableRunnable bufferHandledCallback;
+    private final InterruptableRunnable batchHandledCallback;
 
     /**
      * The amount of time to wait for work.
@@ -100,7 +100,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
         buffer = new ArrayList<>(bufferSize);
         handler = configuration.getHandler();
         idleCallback = configuration.getIdleCallback();
-        bufferHandledCallback = configuration.getBufferHandledCallback();
+        batchHandledCallback = configuration.getBatchHandledCallback();
         this.waitForWorkDuration = configuration.getWaitForWorkDuration();
         metrics = new QueueThreadMetrics(configuration);
 
@@ -252,6 +252,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
             metrics.startingWork();
             if (item != null) {
                 handler.accept(item);
+                batchHandled();
             }
             return;
         }
@@ -260,8 +261,15 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
             handler.accept(item);
         }
         buffer.clear();
-        if (bufferHandledCallback != null) {
-            bufferHandledCallback.run();
+        batchHandled();
+    }
+
+    /**
+     * This method is called whenever a batch of work is completed.
+     */
+    private void batchHandled() throws InterruptedException {
+        if (batchHandledCallback != null) {
+            batchHandledCallback.run();
         }
     }
 

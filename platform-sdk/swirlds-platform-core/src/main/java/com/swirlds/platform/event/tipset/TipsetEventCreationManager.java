@@ -111,7 +111,7 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
                 .addHandler(EventImpl.class, this::handleEvent)
                 .addHandler(Long.class, this::handleMinimumGenerationNonAncient)
                 .setIdleCallback(this::maybeCreateEvent)
-                .setBufferHandledCallback(this::maybeCreateEvent)
+                .setBatchHandledCallback(this::maybeCreateEvent)
                 .setWaitForWorkDuration(eventCreationConfig.creationQueueWaitForWorkPeriod())
                 .build();
 

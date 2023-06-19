@@ -68,9 +68,9 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
     private InterruptableRunnable idleCallback;
 
     /**
-     * The callback to run whenever a buffer worth of elements has been handled.
+     * The callback to run whenever a batch of elements has been handled, if not null.
      */
-    private InterruptableRunnable bufferHandledCallback; // TODO test
+    private InterruptableRunnable batchHandledCallback;
 
     /**
      * When waiting for work, the amount of time to block.
@@ -206,21 +206,21 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
     }
 
     /**
-     * Get a callback that should be invoked, if non-null, whenever a buffer's worth of elements has been handled.
+     * Get a callback that should be invoked, if non-null, whenever a batch of elements has been handled.
      */
     @Nullable
-    public InterruptableRunnable getBufferHandledCallback() {
-        return bufferHandledCallback;
+    public InterruptableRunnable getBatchHandledCallback() {
+        return batchHandledCallback;
     }
 
     /**
-     * Set a callback that should be invoked whenever a buffer's worth of elements has been handled.
+     * Set a callback that should be invoked whenever a batch of elements has been handled.
      *
      * @return this object
      */
     @SuppressWarnings("unchecked")
-    public C setBufferHandledCallback(@Nullable final InterruptableRunnable bufferHandledCallback) {
-        this.bufferHandledCallback = bufferHandledCallback;
+    public C setBatchHandledCallback(@Nullable final InterruptableRunnable batchHandledCallback) {
+        this.batchHandledCallback = batchHandledCallback;
         return (C) this;
     }
 
