@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -24,9 +26,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAUSE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
@@ -34,6 +38,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -51,15 +56,18 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
@@ -343,144 +351,259 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .has(responseCode(TOKEN_NAME_TOO_LONG));
     }
 
-    //
-    //    @Test
-    //    void worksWithUnassociatedNewTreasury() {
-    //        final long oldTreasuryBalance = 10;
-    //        givenValidTxnCtx(true);
-    //        givenToken(true, true);
-    //        given(store.associationExists(newTreasury, target)).willReturn(false);
-    //        given(store.autoAssociate(newTreasury, target)).willReturn(OK);
-    //        given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
-    //        given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
-    //        given(store.update(any(), anyLong())).willReturn(OK);
-    //        given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
-    //        given(ledger.doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance))
-    //                .willReturn(OK);
-    //
-    //        subject.doStateTransition();
-    //
-    //        verify(txnCtx).setStatus(SUCCESS);
-    //        verify(ledger).decrementNumTreasuryTitles(oldTreasury);
-    //        verify(ledger).incrementNumTreasuryTitles(newTreasury);
-    //        verify(sigImpactHistorian).markEntityChanged(target.getTokenNum());
-    //    }
-    //
-    //    @Test
-    //    void abortsOnFailedAutoAssociationForUnassociatedNewTreasury() {
-    //        givenValidTxnCtx(true);
-    //        givenToken(true, true);
-    //        given(store.associationExists(newTreasury, target)).willReturn(false);
-    //        given(store.autoAssociate(newTreasury, target)).willReturn(NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
-    //
-    //        subject.doStateTransition();
-    //
-    //        verify(store, never()).update(any(), anyLong());
-    //        verify(txnCtx).setStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
-    //        verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
-    //    }
-    //
-    //    @Test
-    //    void abortsOnInvalidNewTreasury() {
-    //        givenValidTxnCtx(true);
-    //        givenToken(true, true);
-    //        given(ledger.unfreeze(newTreasury, target)).willReturn(ResponseCodeEnum.INVALID_ACCOUNT_ID);
-    //
-    //        subject.doStateTransition();
-    //
-    //        verify(store, never()).update(any(), anyLong());
-    //        verify(ledger).unfreeze(newTreasury, target);
-    //        verify(txnCtx).setStatus(ResponseCodeEnum.INVALID_ACCOUNT_ID);
-    //        verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
-    //    }
-    //
-    //    @Test
-    //    void abortsOnDetachedNewTreasury() {
-    //        givenValidTxnCtx(true);
-    //        givenToken(true, true);
-    //        given(ledger.usabilityOf(newTreasury)).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-    //
-    //        subject.doStateTransition();
-    //
-    //        verify(store, never()).update(any(), anyLong());
-    //        verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-    //        verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
-    //    }
-    //
-    //    @Test
-    //    void abortsOnDetachedOldTreasury() {
-    //        givenValidTxnCtx(true);
-    //        givenToken(true, true);
-    //        given(ledger.isDetached(oldTreasury)).willReturn(true);
-    //
-    //        subject.doStateTransition();
-    //
-    //        verify(store, never()).update(any(), anyLong());
-    //        verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-    //        verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
-    //    }
-    //
-    //    @Test
-    //    void abortsOnDetachedOldAutoRenew() {
-    //        givenValidTxnCtx(true);
-    //        givenToken(true, true);
-    //        given(ledger.usabilityOf(newAutoRenew)).willReturn(OK);
-    //        given(ledger.isDetached(oldAutoRenew)).willReturn(true);
-    //
-    //        subject.doStateTransition();
-    //
-    //        verify(store, never()).update(any(), anyLong());
-    //        verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-    //        verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
-    //    }
-    //
-    //    @Test
-    //    void abortsOnDetachedNewAutoRenew() {
-    //        givenValidTxnCtx(true);
-    //        givenToken(true, true);
-    //        given(ledger.usabilityOf(newAutoRenew)).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-    //
-    //        subject.doStateTransition();
-    //
-    //        verify(store, never()).update(any(), anyLong());
-    //        verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-    //        verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
-    //    }
-    //
-    //    @Test
-    //    void abortsOnDeletedAutoRenew() {
-    //        givenValidTxnCtx(true);
-    //        givenToken(true, true);
-    //        given(ledger.usabilityOf(newAutoRenew)).willReturn(ACCOUNT_DELETED);
-    //
-    //        subject.doStateTransition();
-    //
-    //        verify(store, never()).update(any(), anyLong());
-    //        verify(txnCtx).setStatus(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
-    //        verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
-    //    }
-    //
-    //    @Test
-    //    void permitsExtendingExpiry() {
-    //        givenValidTxnCtx(false);
-    //        given(token.adminKey()).willReturn(Optional.empty());
-    //        given(expiryOnlyCheck.test(any())).willReturn(true);
-    //        given(store.update(any(), anyLong())).willReturn(OK);
-    //
-    //        subject.doStateTransition();
-    //
-    //        verify(txnCtx).setStatus(SUCCESS);
-    //    }
-    //
-    //    @Test
-    //    void abortsOnNotSetAdminKey() {
-    //        givenValidTxnCtx(true);
-    //        given(token.adminKey()).willReturn(Optional.empty());
-    //
-    //        subject.doStateTransition();
-    //
-    //        verify(txnCtx).setStatus(TOKEN_IS_IMMUTABLE);
-    //    }
+
+        @Test
+        void worksWithUnassociatedNewTreasuryIfAutoAssociationsAvailable() {
+            txn = new TokenUpdateBuilder()
+                    .withTreasury(payerId)
+                    .withToken(fungibleTokenId)
+                    .build();
+            given(handleContext.body()).willReturn(txn);
+            writableTokenRelStore.remove(TokenRelation.newBuilder()
+                    .tokenNumber(fungibleTokenId.tokenNum())
+                    .accountNumber(payerId.accountNum())
+                    .build());
+            given(handleContext.writableStore(WritableTokenRelationStore.class))
+                    .willReturn(writableTokenRelStore);
+            given(handleContext.readableStore(ReadableTokenRelationStore.class))
+                    .willReturn(writableTokenRelStore);
+            assertThat(writableTokenRelStore.get(payerId, fungibleTokenId)).isNull();
+
+            final var token = readableTokenStore.get(fungibleTokenId);
+            assertThat(token.symbol()).isEqualTo(fungibleToken.symbol());
+            assertThat(token.name()).isEqualTo(fungibleToken.name());
+            assertThat(token.treasuryAccountNumber()).isEqualTo(fungibleToken.treasuryAccountNumber());
+            assertThat(token.adminKey()).isEqualTo(fungibleToken.adminKey());
+            assertThat(token.supplyKey()).isEqualTo(fungibleToken.supplyKey());
+            assertThat(token.kycKey()).isEqualTo(fungibleToken.kycKey());
+            assertThat(token.freezeKey()).isEqualTo(fungibleToken.freezeKey());
+            assertThat(token.wipeKey()).isEqualTo(fungibleToken.wipeKey());
+            assertThat(token.feeScheduleKey()).isEqualTo(fungibleToken.feeScheduleKey());
+            assertThat(token.pauseKey()).isEqualTo(fungibleToken.pauseKey());
+            assertThat(token.autoRenewAccountNumber()).isEqualTo(fungibleToken.autoRenewAccountNumber());
+            assertThat(token.expiry()).isEqualTo(fungibleToken.expiry());
+            assertThat(token.memo()).isEqualTo(fungibleToken.memo());
+            assertThat(token.autoRenewSecs()).isEqualTo(fungibleToken.autoRenewSecs());
+            assertThat(token.tokenType()).isEqualTo(FUNGIBLE_COMMON);
+
+            assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
+
+            assertThat(writableTokenRelStore.get(payerId, fungibleTokenId)).isNotNull();
+            final var modifiedToken = writableTokenStore.get(fungibleTokenId);
+            assertThat(modifiedToken.symbol()).isEqualTo("TTT");
+            assertThat(modifiedToken.name()).isEqualTo("TestToken1");
+            assertThat(modifiedToken.treasuryAccountNumber()).isEqualTo(payerId.accountNum());
+            assertThat(modifiedToken.adminKey()).isEqualTo(B_COMPLEX_KEY);
+            assertThat(modifiedToken.supplyKey()).isEqualTo(B_COMPLEX_KEY);
+            assertThat(modifiedToken.kycKey()).isEqualTo(B_COMPLEX_KEY);
+            assertThat(modifiedToken.freezeKey()).isEqualTo(B_COMPLEX_KEY);
+            assertThat(modifiedToken.wipeKey()).isEqualTo(B_COMPLEX_KEY);
+            assertThat(modifiedToken.feeScheduleKey()).isEqualTo(B_COMPLEX_KEY);
+            assertThat(modifiedToken.pauseKey()).isEqualTo(B_COMPLEX_KEY);
+            assertThat(modifiedToken.autoRenewAccountNumber()).isEqualTo(ownerId.accountNum());
+            assertThat(modifiedToken.expiry()).isEqualTo(1234600L);
+            assertThat(modifiedToken.memo()).isEqualTo("test token1");
+            assertThat(modifiedToken.autoRenewSecs()).isEqualTo(fungibleToken.autoRenewSecs());
+            assertThat(token.tokenType()).isEqualTo(FUNGIBLE_COMMON);
+        }
+
+        @Test
+        void failsIfNoAutoAssociationsAvailableForNewUnassociatedTreasury() {
+            txn = new TokenUpdateBuilder()
+                    .withTreasury(payerId)
+                    .withToken(fungibleTokenId)
+                    .build();
+            given(handleContext.body()).willReturn(txn);
+            writableTokenRelStore.remove(TokenRelation.newBuilder()
+                    .tokenNumber(fungibleTokenId.tokenNum())
+                    .accountNumber(payerId.accountNum())
+                    .build());
+            writableAccountStore.put(account.copyBuilder()
+                    .maxAutoAssociations(0)
+                    .usedAutoAssociations(0)
+                    .build());
+            given(handleContext.writableStore(WritableTokenRelationStore.class))
+                    .willReturn(writableTokenRelStore);
+            given(handleContext.readableStore(ReadableTokenRelationStore.class))
+                    .willReturn(writableTokenRelStore);
+            given(handleContext.writableStore(WritableAccountStore.class))
+                    .willReturn(writableAccountStore);
+            given(handleContext.readableStore(ReadableAccountStore.class))
+                    .willReturn(writableAccountStore);
+            assertThat(writableTokenRelStore.get(payerId, fungibleTokenId)).isNull();
+
+            assertThatThrownBy(() -> subject.handle(handleContext))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(NO_REMAINING_AUTOMATIC_ASSOCIATIONS));
+        }
+
+        @Test
+        void failsOnInvalidNewTreasury() {
+            txn = new TokenUpdateBuilder()
+                    .withTreasury(asAccount(2000000))
+                    .build();
+            given(handleContext.body()).willReturn(txn);
+
+            assertThatThrownBy(() -> subject.handle(handleContext))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
+        }
+
+        @Test
+        void failsOnDetachedNewTreasury() {
+            txn = new TokenUpdateBuilder()
+                    .withTreasury(payerId)
+                    .build();
+            writableAccountStore
+                    .put(account.copyBuilder()
+                            .expiredAndPendingRemoval(true)
+                            .tinybarBalance(0)
+                            .expiry(consensusInstant.getEpochSecond() - 10000).build());
+            given(handleContext.body()).willReturn(txn);
+            writableTokenRelStore.remove(TokenRelation.newBuilder()
+                    .tokenNumber(fungibleTokenId.tokenNum())
+                    .accountNumber(payerId.accountNum())
+                    .build());
+            given(handleContext.writableStore(WritableTokenRelationStore.class))
+                    .willReturn(writableTokenRelStore);
+            given(handleContext.readableStore(ReadableTokenRelationStore.class))
+                    .willReturn(writableTokenRelStore);
+            given(handleContext.writableStore(WritableAccountStore.class))
+                    .willReturn(writableAccountStore);
+            given(handleContext.readableStore(ReadableAccountStore.class))
+                    .willReturn(writableAccountStore);
+
+            assertThatThrownBy(() -> subject.handle(handleContext))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
+        }
+
+        @Test
+        void failsOnDetachedOldTreasury() {
+            txn = new TokenUpdateBuilder()
+                    .build();
+            writableAccountStore
+                    .put(treasuryAccount.copyBuilder()
+                            .expiredAndPendingRemoval(true)
+                            .tinybarBalance(0)
+                            .expiry(consensusInstant.getEpochSecond() - 10000).build());
+            given(handleContext.body()).willReturn(txn);
+            given(handleContext.writableStore(WritableAccountStore.class))
+                    .willReturn(writableAccountStore);
+            given(handleContext.readableStore(ReadableAccountStore.class))
+                    .willReturn(writableAccountStore);
+
+            assertThatThrownBy(() -> subject.handle(handleContext))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
+        }
+
+    @Test
+    void failsOnDetachedNewAutoRenewAccount() {
+        txn = new TokenUpdateBuilder()
+                .withAutoRenewAccount(payerId)
+                .build();
+        writableAccountStore
+                .put(account.copyBuilder()
+                        .expiredAndPendingRemoval(true)
+                        .tinybarBalance(0)
+                        .expiry(consensusInstant.getEpochSecond() - 10000).build());
+        given(handleContext.body()).willReturn(txn);
+        writableTokenRelStore.remove(TokenRelation.newBuilder()
+                .tokenNumber(fungibleTokenId.tokenNum())
+                .accountNumber(payerId.accountNum())
+                .build());
+        given(handleContext.writableStore(WritableTokenRelationStore.class))
+                .willReturn(writableTokenRelStore);
+        given(handleContext.readableStore(ReadableTokenRelationStore.class))
+                .willReturn(writableTokenRelStore);
+        given(handleContext.writableStore(WritableAccountStore.class))
+                .willReturn(writableAccountStore);
+        given(handleContext.readableStore(ReadableAccountStore.class))
+                .willReturn(writableAccountStore);
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
+    }
+
+    @Test
+    void failsOnDetachedOldAutoRenewAccount() {
+        txn = new TokenUpdateBuilder()
+                .build();
+        writableAccountStore
+                .put(spenderAccount.copyBuilder()
+                        .expiredAndPendingRemoval(true)
+                        .tinybarBalance(0)
+                        .expiry(consensusInstant.getEpochSecond() - 10000).build());
+        given(handleContext.body()).willReturn(txn);
+        given(handleContext.writableStore(WritableAccountStore.class))
+                .willReturn(writableAccountStore);
+        given(handleContext.readableStore(ReadableAccountStore.class))
+                .willReturn(writableAccountStore);
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
+    }
+
+    @Test
+    void failsOnDeletedOldAutoRenewAccount() {
+        txn = new TokenUpdateBuilder()
+                .build();
+        writableAccountStore
+                .put(spenderAccount.copyBuilder()
+                        .deleted(true).build());
+        given(handleContext.body()).willReturn(txn);
+        given(handleContext.writableStore(WritableAccountStore.class))
+                .willReturn(writableAccountStore);
+        given(handleContext.readableStore(ReadableAccountStore.class))
+                .willReturn(writableAccountStore);
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(ACCOUNT_DELETED));
+    }
+
+    @Test
+    void failsOnDeletedNewAutoRenewAccount() {
+        txn = new TokenUpdateBuilder()
+                .withAutoRenewAccount(payerId)
+                .build();
+        writableAccountStore
+                .put(account.copyBuilder()
+                        .deleted(true).build());
+        given(handleContext.body()).willReturn(txn);
+        given(handleContext.writableStore(WritableAccountStore.class))
+                .willReturn(writableAccountStore);
+        given(handleContext.readableStore(ReadableAccountStore.class))
+                .willReturn(writableAccountStore);
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(ACCOUNT_DELETED));
+    }
+
+
+        @Test
+        void permitsExtendingOnlyExpiryWithoutAdminKey() {
+            final var transactionID =
+                    TransactionID.newBuilder().accountID(payerId)
+                            .transactionValidStart(consensusTimestamp);
+            final var body  = TokenUpdateTransactionBody.newBuilder()
+                    .token(fungibleTokenId)
+                    .expiry(Timestamp.newBuilder().seconds(1234600L).build())
+                    .build();
+            txn = TransactionBody.newBuilder()
+                    .transactionID(transactionID)
+                    .tokenUpdate(body)
+                    .build();
+
+            given(handleContext.body()).willReturn(txn);
+
+            assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
+        }
+
     //
     //    @Test
     //    void abortsOnInvalidNewExpiry() {
@@ -533,26 +656,6 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     //        verify(txnCtx).setStatus(SUCCESS);
     //    }
     //
-    //    @Test
-    //    void followsHappyPathWithNewTreasury() {
-    //        // setup:
-    //        final long oldTreasuryBalance = 1000;
-    //        givenValidTxnCtx(true);
-    //        givenToken(true, true);
-    //        given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
-    //        given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
-    //        given(store.update(any(), anyLong())).willReturn(OK);
-    //        given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
-    //        given(ledger.doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance))
-    //                .willReturn(OK);
-    //
-    //        subject.doStateTransition();
-    //
-    //        verify(txnCtx).setStatus(SUCCESS);
-    //        verify(ledger).decrementNumTreasuryTitles(oldTreasury);
-    //        verify(ledger).incrementNumTreasuryTitles(newTreasury);
-    //        verify(sigImpactHistorian).markEntityChanged(target.getTokenNum());
-    //    }
     //
     //    @Test
     //    void followsHappyPathWithNewTreasuryAndZeroBalanceOldTreasury() {
@@ -572,27 +675,6 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     //        verify(ledger, never()).doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance);
     //        verify(txnCtx).setStatus(SUCCESS);
     //        verify(sigImpactHistorian).markEntityChanged(target.getTokenNum());
-    //    }
-    //
-    //    @Test
-    //    void followsHappyPathNftWithNewTreasury() {
-    //        final long oldTreasuryBalance = 1;
-    //        givenValidTxnCtx(true);
-    //        givenToken(true, true);
-    //        given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-    //        given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
-    //        given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
-    //        given(store.update(any(), anyLong())).willReturn(OK);
-    //        given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
-    //        given(store.changeOwnerWildCard(nftId, oldTreasury, newTreasury)).willReturn(OK);
-    //
-    //        subject.doStateTransition();
-    //
-    //        verify(ledger).unfreeze(newTreasury, target);
-    //        verify(ledger).grantKyc(newTreasury, target);
-    //        verify(ledger).getTokenBalance(oldTreasury, target);
-    //        verify(store).changeOwnerWildCard(nftId, oldTreasury, newTreasury);
-    //        verify(txnCtx).setStatus(SUCCESS);
     //    }
     //
     //    @Test
