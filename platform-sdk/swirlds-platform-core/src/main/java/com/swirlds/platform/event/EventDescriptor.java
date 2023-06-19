@@ -71,7 +71,7 @@ public class EventDescriptor implements SelfSerializable {
         this.creator = Objects.requireNonNull(creator, "creator must not be null");
         this.generation = generation;
 
-        hashCode = Objects.hash(hash, creator, generation);
+        hashCode = hash.hashCode();
     }
 
     /**

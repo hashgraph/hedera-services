@@ -19,6 +19,7 @@ package com.swirlds.platform.test.simulated;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SerializableHashable;
@@ -30,6 +31,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.event.EventCreatorThread;
@@ -118,9 +120,17 @@ public class SimulatedEventCreationNode implements GossipMessageHandler {
                     invocation.getArgument(0, SerializableHashable.class).setHash(hash);
                     return hash;
                 });
-        // TODO this is probably broken since tipset creation is on by default
+
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("event.creation.useTipsetAlgorithm", "false")
+                .getOrCreateConfig();
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
         chatterEventCreator = new ChatterEventCreator(
-                TestPlatformContextBuilder.create().build(),
+                platformContext,
                 softwareVersion,
                 nodeId,
                 new RandomSigner(random),

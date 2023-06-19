@@ -31,7 +31,6 @@ import com.swirlds.platform.event.EventDescriptor;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 
-// TODO this belongs in a different package
 class EventDescriptorTest {
     @Test
     void testSerialization() throws IOException, ConstructableRegistryException {

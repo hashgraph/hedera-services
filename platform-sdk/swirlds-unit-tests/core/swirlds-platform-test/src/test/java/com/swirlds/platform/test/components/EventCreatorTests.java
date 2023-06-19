@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.stream.Signer;
@@ -38,6 +39,7 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventHandler;
 import com.swirlds.platform.components.EventMapper;
@@ -52,6 +54,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.EventMocks;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Instant;
 import java.util.HashMap;
@@ -295,8 +298,16 @@ class EventCreatorTests {
         recentEvents.put(0L, parent);
         final Queue<EventImpl> events = new LinkedList<>();
 
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("event.creation.useTipsetAlgorithm", "false")
+                .getOrCreateConfig();
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
-                TestPlatformContextBuilder.create().build(),
+                platformContext,
                 selfId,
                 mockMapper(recentEvents, null),
                 noOpSigner,
@@ -350,8 +361,16 @@ class EventCreatorTests {
         recentEvents.put(selfId.id(), selfParentImpl);
         recentEvents.put(1L, otherParent);
 
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("event.creation.useTipsetAlgorithm", "false")
+                .getOrCreateConfig();
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
-                TestPlatformContextBuilder.create().build(),
+                platformContext,
                 selfId,
                 mockMapper(recentEvents, selfParentImpl),
                 noOpSigner,
@@ -413,8 +432,16 @@ class EventCreatorTests {
         Mockito.when(mapper.getMostRecentSelfEvent()).thenReturn(selfParent);
         Mockito.when(mapper.getMostRecentEvent(new NodeId(0L))).thenReturn(otherParent);
 
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("event.creation.useTipsetAlgorithm", "false")
+                .getOrCreateConfig();
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
-                TestPlatformContextBuilder.create().build(),
+                platformContext,
                 selfId,
                 mapper,
                 noOpSigner,
@@ -456,8 +483,16 @@ class EventCreatorTests {
         recentEvents.put(0L, parent);
         final Queue<EventImpl> events = new LinkedList<>();
 
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("event.creation.useTipsetAlgorithm", "false")
+                .getOrCreateConfig();
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
-                TestPlatformContextBuilder.create().build(),
+                platformContext,
                 selfId,
                 mockMapper(recentEvents, null),
                 noOpSigner,
