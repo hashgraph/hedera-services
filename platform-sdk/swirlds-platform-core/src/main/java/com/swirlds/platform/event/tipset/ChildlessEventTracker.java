@@ -27,7 +27,7 @@ import java.util.Set;
  * Keeps track of events created that have no children. These events are candidates to be used as parents when creating
  * a new event.
  */
-public class ChildlessEventTracker { // TODO test
+public class ChildlessEventTracker {
 
     private final Set<EventDescriptor> childlessEvents = new HashSet<>();
 
