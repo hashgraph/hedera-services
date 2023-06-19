@@ -36,12 +36,12 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gui.SwirldsGui;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import java.util.Set;
 
 @ExtendWith(MockitoExtension.class)
 class QueryComponentTest {
