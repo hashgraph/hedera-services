@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import java.util.Set;
 
 @ExtendWith(MockitoExtension.class)
 class QueryComponentTest {
@@ -74,6 +75,7 @@ class QueryComponentTest {
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
                 .genesisUsage(false)
+                .servicesRegistry(Set::of)
                 .build();
     }
 
