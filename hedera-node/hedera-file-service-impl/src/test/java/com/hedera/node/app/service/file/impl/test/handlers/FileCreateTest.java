@@ -47,6 +47,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
+import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -66,7 +67,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class FileCreateHandlerTest extends FileHandlerTestBase {
+class FileCreateTest extends FileTestBase {
     static final AccountID ACCOUNT_ID_3 = AccountID.newBuilder().accountNum(3L).build();
     private static final AccountID AUTO_RENEW_ACCOUNT =
             AccountID.newBuilder().accountNum(4L).build();

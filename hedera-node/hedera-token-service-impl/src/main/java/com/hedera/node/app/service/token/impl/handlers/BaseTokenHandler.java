@@ -16,9 +16,13 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.util.IdConvenienceUtils.isValidTokenNum;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -284,5 +288,15 @@ public class BaseTokenHandler {
     @NonNull
     public static TokenID asToken(final long num) {
         return TokenID.newBuilder().tokenNum(num).build();
+    }
+
+    /**
+     * Determines if a given token number is valid
+     *
+     * @param tokenNum the token number to check
+     * @return true if the token number is valid
+     */
+    public static boolean isValidTokenNum(final long tokenNum) {
+        return tokenNum > 0;
     }
 }

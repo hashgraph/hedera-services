@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
@@ -127,15 +126,15 @@ public class SignedStateFileManager implements Startable {
             @NonNull final StateToDiskAttemptConsumer stateToDiskAttemptConsumer,
             @NonNull final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer) {
 
-        this.metrics = throwArgNull(metrics, "metrics");
+        this.metrics = Objects.requireNonNull(metrics, "metrics must not be null");
         this.time = time;
         this.selfId = selfId;
         this.mainClassName = mainClassName;
         this.swirldName = swirldName;
         this.stateToDiskAttemptConsumer = stateToDiskAttemptConsumer;
         this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
-        this.minimumGenerationNonAncientConsumer =
-                throwArgNull(minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer");
+        this.minimumGenerationNonAncientConsumer = Objects.requireNonNull(
+                minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer must not be null");
 
         final BasicConfig basicConfig = context.getConfiguration().getConfigData(BasicConfig.class);
 

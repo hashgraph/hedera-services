@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.p2p.portforwarding.portmapper;
+package com.swirlds.platform.portforwarding.portmapper;
 
 import static com.swirlds.logging.LogMarker.PORT_FORWARDING;
 
@@ -30,9 +30,9 @@ import com.offbynull.portmapper.mapper.PortMapper;
 import com.offbynull.portmapper.mapper.PortType;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.p2p.portforwarding.PortForwarder;
-import com.swirlds.p2p.portforwarding.PortMapping;
-import com.swirlds.p2p.portforwarding.PortMappingListener;
+import com.swirlds.platform.portforwarding.PortForwarder;
+import com.swirlds.platform.portforwarding.PortMapping;
+import com.swirlds.platform.portforwarding.PortMappingListener;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;

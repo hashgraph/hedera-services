@@ -20,7 +20,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
@@ -32,6 +31,7 @@ import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.system.PlatformExitCode;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,8 +48,8 @@ public class ReconnectLearnerThrottle {
     private int failedReconnectsInARow;
 
     public ReconnectLearnerThrottle(@NonNull final NodeId selfId, @NonNull final ReconnectConfig config) {
-        this.selfId = ArgumentUtils.throwArgNull(selfId, "selfId");
-        this.config = ArgumentUtils.throwArgNull(config, "config");
+        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
+        this.config = Objects.requireNonNull(config, "config must not be null");
         this.failedReconnectsInARow = 0;
     }
 

@@ -21,7 +21,7 @@ module com.hedera.node.app.hapi.fees {
     requires transitive dagger;
     requires transitive javax.inject;
     requires com.fasterxml.jackson.databind;
-    requires com.github.spotbugs.annotations;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
+    requires static com.github.spotbugs.annotations;
 }

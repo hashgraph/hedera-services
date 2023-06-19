@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -73,7 +74,7 @@ class JKeyListTest {
     }
 
     @Test
-    void invalidJKeyListTest() throws Exception {
+    void invalidJKeyListTest() throws InvalidKeyException {
         Key validED25519Key = Key.newBuilder()
                 .setEd25519(TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH))
                 .build();
@@ -111,7 +112,7 @@ class JKeyListTest {
     }
 
     @Test
-    void validJKeyListTest() throws Exception {
+    void validJKeyListTest() throws InvalidKeyException {
         Key validED25519Key = Key.newBuilder()
                 .setEd25519(TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH))
                 .build();

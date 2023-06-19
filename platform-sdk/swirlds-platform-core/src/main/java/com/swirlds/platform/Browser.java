@@ -49,6 +49,7 @@ import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsProvider;
@@ -77,8 +78,6 @@ import com.swirlds.gui.WindowManager;
 import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
-import com.swirlds.p2p.portforwarding.PortForwarder;
-import com.swirlds.p2p.portforwarding.PortMapping;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.ConfigMappings;
 import com.swirlds.platform.config.ThreadConfig;
@@ -96,6 +95,8 @@ import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.network.Network;
+import com.swirlds.platform.portforwarding.PortForwarder;
+import com.swirlds.platform.portforwarding.PortMapping;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.address.AddressBookInitializer;
@@ -114,6 +115,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -635,6 +637,14 @@ public class Browser {
                 // the name of this swirld
                 final String swirldName = appDefinition.getSwirldName();
                 final SoftwareVersion appVersion = appMain.getSoftwareVersion();
+
+                final RecycleBin recycleBin;
+                try {
+                    recycleBin = RecycleBin.create(configuration, nodeId);
+                } catch (IOException e) {
+                    throw new UncheckedIOException("unable to create recycle bin", e);
+                }
+
                 // We can't send a "real" dispatch, since the dispatcher will not have been started by the
                 // time this class is used.
                 final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
@@ -652,6 +662,15 @@ public class Browser {
                 // check software version compatibility
                 final boolean softwareUpgrade =
                         BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState.getNullable());
+
+                if (softwareUpgrade) {
+                    try {
+                        logger.info(STARTUP.getMarker(), "Clearing recycle bin as part of software upgrade workflow.");
+                        recycleBin.clear();
+                    } catch (final IOException e) {
+                        throw new UncheckedIOException("Failed to clear recycle bin", e);
+                    }
+                }
 
                 // Initialize the address book from the configuration and platform saved state.
                 final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
@@ -671,6 +690,7 @@ public class Browser {
                 final SwirldsPlatform platform = new SwirldsPlatform(
                         platformContext,
                         crypto.get(nodeId),
+                        recycleBin,
                         initialAddressBook,
                         nodeId,
                         mainClassName,
@@ -678,8 +698,7 @@ public class Browser {
                         appVersion,
                         appMain::newState,
                         loadedSignedState,
-                        emergencyRecoveryManager,
-                        softwareUpgrade);
+                        emergencyRecoveryManager);
                 platforms.add(platform);
 
                 new InfoMember(infoSwirld, instanceNumber, platform);

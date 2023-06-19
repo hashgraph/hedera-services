@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.internal;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.system.Round;
@@ -28,6 +27,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -69,9 +69,9 @@ public class ConsensusRound implements Round {
             @NonNull final EventImpl keystoneEvent,
             @NonNull final GraphGenerations generations) {
 
-        throwArgNull(consensusEvents, "consensusEvents");
-        throwArgNull(keystoneEvent, "keystoneEvent");
-        throwArgNull(generations, "generations");
+        Objects.requireNonNull(consensusEvents, "consensusEvents must not be null");
+        Objects.requireNonNull(keystoneEvent, "keystoneEvent must not be null");
+        Objects.requireNonNull(generations, "generations must not be null");
 
         this.consensusEvents = Collections.unmodifiableList(consensusEvents);
         this.keystoneEvent = keystoneEvent;

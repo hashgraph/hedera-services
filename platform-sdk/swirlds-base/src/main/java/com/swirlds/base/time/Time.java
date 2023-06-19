@@ -16,6 +16,8 @@
 
 package com.swirlds.base.time;
 
+import com.swirlds.base.time.internal.OSTime;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
 /**
@@ -45,5 +47,16 @@ public interface Time {
      *
      * @return the curren time relative to the epoch
      */
+    @NonNull
     Instant now();
+
+    /**
+     * Returns a {@link Time} instance
+     *
+     * @return a {@link Time} instance
+     */
+    @NonNull
+    static Time getCurrent() {
+        return OSTime.getInstance();
+    }
 }

@@ -49,7 +49,16 @@ public final class ConfigMappings {
             new ConfigMapping("event.eventStreamQueueCapacity", "eventStreamQueueCapacity"),
             new ConfigMapping("event.eventsLogPeriod", "eventsLogPeriod"),
             new ConfigMapping("event.eventsLogDir", "eventsLogDir"),
-            new ConfigMapping("event.enableEventStreaming", "enableEventStreaming"));
+            new ConfigMapping("event.enableEventStreaming", "enableEventStreaming"),
+            new ConfigMapping("metrics.halfLife", "halfLife"),
+            new ConfigMapping("metrics.csvWriteFrequency", "csvWriteFrequency"),
+            new ConfigMapping("metrics.csvOutputFolder", "csvOutputFolder"),
+            new ConfigMapping("metrics.csvFileName", "csvFileName"),
+            new ConfigMapping("metrics.csvAppend", "csvAppend"),
+            new ConfigMapping("metrics.disableMetricsOutput", "disableMetricsOutput"),
+            new ConfigMapping("prometheus.endpointEnabled", "prometheusEndpointEnabled"),
+            new ConfigMapping("prometheus.endpointPortNumber", "prometheusEndpointPortNumber"),
+            new ConfigMapping("prometheus.endpointMaxBacklogAllowed", "prometheusEndpointMaxBacklogAllowed"));
 
     /**
      * Add all known aliases to the provided config source

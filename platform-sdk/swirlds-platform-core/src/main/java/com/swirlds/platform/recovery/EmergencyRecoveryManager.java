@@ -49,6 +49,15 @@ public class EmergencyRecoveryManager {
     }
 
     /**
+     * Returns whether an emergency recovery file was present at node boot time.
+     *
+     * @return {@code true} if an emergency recovery file was present, {@code false} otherwise
+     */
+    public boolean isEmergencyRecoveryFilePresent() {
+        return emergencyRecoveryFile != null;
+    }
+
+    /**
      * Returns whether an emergency state is required to start the node. The state can be loaded from disk or acquired
      * via an emergency reconnect.
      *
