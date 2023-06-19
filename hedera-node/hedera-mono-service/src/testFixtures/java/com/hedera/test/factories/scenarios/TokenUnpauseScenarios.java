@@ -16,15 +16,20 @@
 
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.TokenUnpauseFactory.newSignedTokenUnpause;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.test.factories.txns.TokenUnpauseFactory;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public enum TokenUnpauseScenarios implements TxnHandlingScenario {
     VALID_UNPAUSE_WITH_EXTANT_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUnpause()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUnpauseFactory.newSignedTokenUnpause()
                     .unPausing(KNOWN_TOKEN_WITH_PAUSE)
                     .nonPayerKts(TOKEN_PAUSE_KT)
                     .get());

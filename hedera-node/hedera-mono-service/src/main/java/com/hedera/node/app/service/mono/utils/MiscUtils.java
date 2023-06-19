@@ -198,6 +198,7 @@ import com.swirlds.fcqueue.FCQueue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -215,7 +216,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -453,7 +453,7 @@ public final class MiscUtils {
     public static JKey asFcKeyUnchecked(final Key key) {
         try {
             return JKey.mapKey(key);
-        } catch (final DecoderException impermissible) {
+        } catch (final InvalidKeyException impermissible) {
             throw new IllegalArgumentException("Key " + key + " should have been decode-able!", impermissible);
         }
     }
@@ -465,7 +465,7 @@ public final class MiscUtils {
                 return Optional.empty();
             }
             return Optional.of(fcKey);
-        } catch (final DecoderException ignore) {
+        } catch (final InvalidKeyException ignore) {
             return Optional.empty();
         }
     }
@@ -600,7 +600,7 @@ public final class MiscUtils {
         }
         try {
             return mapJKey(k).toString();
-        } catch (final DecoderException ignore) {
+        } catch (final InvalidKeyException ignore) {
             return "<N/A>";
         }
     }

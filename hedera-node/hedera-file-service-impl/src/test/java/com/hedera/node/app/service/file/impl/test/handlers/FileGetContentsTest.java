@@ -26,8 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
@@ -35,20 +33,20 @@ import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
-import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.file.FileGetInfoQuery;
-import com.hedera.hapi.node.file.FileGetInfoResponse;
-import com.hedera.hapi.node.file.FileInfo;
+import com.hedera.hapi.node.file.FileContents;
+import com.hedera.hapi.node.file.FileGetContentsQuery;
+import com.hedera.hapi.node.file.FileGetContentsResponse;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
+import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,25 +54,23 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class FileGetInfoHandlerTest extends FileHandlerTestBase {
+class FileGetContentsTest extends FileTestBase {
 
-    @Mock(strictness = LENIENT)
+    @Mock
     private QueryContext context;
 
-    private FileGetInfoHandler subject;
+    private FileGetContentsHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new FileGetInfoHandler();
-        final var configuration = new HederaTestConfigBuilder().getOrCreateConfig();
-        lenient().when(context.configuration()).thenReturn(configuration);
+        subject = new FileGetContentsHandler();
     }
 
     @Test
     void extractsHeader() {
-        final var query = createGetFileInfoQuery(fileId.fileNum());
+        final var query = createGetFileContentQuery(fileId.fileNum());
         final var header = subject.extractHeader(query);
-        final var op = query.fileGetInfoOrThrow();
+        final var op = query.fileGetContentsOrThrow();
         assertEquals(op.header(), header);
     }
 
@@ -85,7 +81,7 @@ class FileGetInfoHandlerTest extends FileHandlerTestBase {
                 .build();
         final var response = subject.createEmptyResponse(responseHeader);
         final var expectedResponse = Response.newBuilder()
-                .fileGetInfo(FileGetInfoResponse.newBuilder().header(responseHeader))
+                .fileGetContents(FileGetContentsResponse.newBuilder().header(responseHeader))
                 .build();
         assertEquals(expectedResponse, response);
     }
@@ -110,7 +106,7 @@ class FileGetInfoHandlerTest extends FileHandlerTestBase {
     void validatesQueryWhenValidFile() throws Throwable {
         givenValidFile();
 
-        final var query = createGetFileInfoQuery(fileId.fileNum());
+        final var query = createGetFileContentQuery(fileId.fileNum());
         given(context.query()).willReturn(query);
         given(context.createStore(ReadableFileStore.class)).willReturn(readableStore);
 
@@ -124,7 +120,7 @@ class FileGetInfoHandlerTest extends FileHandlerTestBase {
         given(readableStates.<Long, File>get(FILES)).willReturn(state);
         final var store = new ReadableFileStoreImpl(readableStates);
 
-        final var query = createGetFileInfoQuery(fileId.fileNum());
+        final var query = createGetFileContentQuery(fileId.fileNum());
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableFileStore.class)).thenReturn(store);
 
@@ -140,7 +136,7 @@ class FileGetInfoHandlerTest extends FileHandlerTestBase {
         given(readableStates.<FileID, File>get(FILES)).willReturn(readableFileState);
         readableStore = new ReadableFileStoreImpl(readableStates);
 
-        final var query = createGetFileInfoQuery(fileId.fileNum());
+        final var query = createGetFileContentQuery(fileId.fileNum());
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
 
@@ -155,14 +151,14 @@ class FileGetInfoHandlerTest extends FileHandlerTestBase {
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
                 .build();
 
-        final var query = createGetFileInfoQuery(fileId.fileNum());
+        final var query = createGetFileContentQuery(fileId.fileNum());
         when(context.query()).thenReturn(query);
-        when(context.createStore(ReadableFileStoreImpl.class)).thenReturn(readableStore);
+        when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
 
         final var response = subject.findResponse(context, responseHeader);
-        final var op = response.fileGetInfoOrThrow();
+        final var op = response.fileGetContentsOrThrow();
         assertEquals(ResponseCodeEnum.FAIL_FEE, op.header().nodeTransactionPrecheckCode());
-        assertNull(op.fileInfo());
+        assertNull(op.fileContents());
     }
 
     @Test
@@ -171,38 +167,33 @@ class FileGetInfoHandlerTest extends FileHandlerTestBase {
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
-        final var expectedInfo = getExpectedInfo();
+        final var expectedContent = getExpectedContent();
 
-        final var query = createGetFileInfoQuery(fileId.fileNum());
+        final var query = createGetFileContentQuery(fileId.fileNum());
         when(context.query()).thenReturn(query);
-        when(context.createStore(ReadableFileStoreImpl.class)).thenReturn(readableStore);
+        when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
 
         final var response = subject.findResponse(context, responseHeader);
-        final var fileInfoResponse = response.fileGetInfoOrThrow();
-        assertEquals(ResponseCodeEnum.OK, fileInfoResponse.header().nodeTransactionPrecheckCode());
-        assertEquals(expectedInfo, fileInfoResponse.fileInfo());
+        final var fileContentResponse = response.fileGetContentsOrThrow();
+        assertEquals(ResponseCodeEnum.OK, fileContentResponse.header().nodeTransactionPrecheckCode());
+        assertEquals(expectedContent, fileContentResponse.fileContents());
     }
 
-    private FileInfo getExpectedInfo() {
-        return FileInfo.newBuilder()
-                .memo(file.memo())
+    private FileContents getExpectedContent() {
+        return FileContents.newBuilder()
+                .contents(Bytes.wrap(contents))
                 .fileID(fileId)
-                .keys(keys)
-                .expirationTime(Timestamp.newBuilder().seconds(file.expirationTime()))
-                .ledgerId(ledgerId)
-                .deleted(false)
-                .size(8)
                 .build();
     }
 
-    private Query createGetFileInfoQuery(final long fileId) {
+    private Query createGetFileContentQuery(final long fileId) {
         final var payment =
                 payerSponsoredPbjTransfer(payerIdLiteral, COMPLEX_KEY_ACCOUNT_KT, beneficiaryIdStr, paymentAmount);
-        final var data = FileGetInfoQuery.newBuilder()
+        final var data = FileGetContentsQuery.newBuilder()
                 .fileID(FileID.newBuilder().fileNum(fileId).build())
                 .header(QueryHeader.newBuilder().payment(payment).build())
                 .build();
 
-        return Query.newBuilder().fileGetInfo(data).build();
+        return Query.newBuilder().fileGetContents(data).build();
     }
 }
