@@ -185,15 +185,18 @@ public class HandleWorkflow {
 
             // commit state
             stack.commit();
-        } catch (PreCheckException e) {
+        } catch (final PreCheckException e) {
             recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
-        } catch (HandleException e) {
+        } catch (final HandleException e) {
             recordFailedTransaction(e.getStatus(), recordBuilder, recordListBuilder);
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
             logger.error("Interrupted while waiting for signature verification", e);
             Thread.currentThread().interrupt();
             recordBuilder.status(ResponseCodeEnum.UNKNOWN);
-        } catch (Throwable e) {
+        } catch (final TimeoutException e) {
+            logger.warn("Timed out while waiting for signature verification, probably going to ISS soon", e);
+            recordBuilder.status(ResponseCodeEnum.UNKNOWN);
+        } catch (final Throwable e) {
             logger.error("An unexpected exception was thrown during handle", e);
             recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         }

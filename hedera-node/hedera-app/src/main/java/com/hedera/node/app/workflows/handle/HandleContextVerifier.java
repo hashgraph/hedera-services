@@ -168,10 +168,12 @@ public class HandleContextVerifier {
             @NonNull final Supplier<SignatureVerification> fallback) {
         try {
             return future.get(timeout, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.error("Interrupted while waiting for signature verification", e);
-        } catch (ExecutionException | TimeoutException e) {
+        } catch (final TimeoutException e) {
+            logger.warn("Timed out while waiting for signature verification, probably going to ISS soon", e);
+        } catch (final ExecutionException e) {
             logger.error("An unexpected exception was thrown while waiting for SignatureVerification", e);
         }
         return fallback.get();
