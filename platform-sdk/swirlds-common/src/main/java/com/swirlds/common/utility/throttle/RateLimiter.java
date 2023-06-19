@@ -96,8 +96,6 @@ public class RateLimiter {
         return false;
     }
 
-    // TODO test these new methods
-
     /**
      * Check if it is legal to trigger the rate limited action. Unlike {@link #requestAndTrigger()}, this method can
      * return true over and over in a time span smaller than the desired rate limit. In order to cause this method to
