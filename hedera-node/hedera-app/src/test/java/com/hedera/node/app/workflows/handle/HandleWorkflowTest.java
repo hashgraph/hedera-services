@@ -57,11 +57,10 @@ import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
@@ -145,7 +144,7 @@ class HandleWorkflowTest extends AppTestBase {
     private HandleWorkflow workflow;
 
     @BeforeEach
-    void setup(@Mock Time time) {
+    void setup(@Mock InstantSource instantSource) {
         setupStandardStates();
 
         when(platformTxn.getConsensusTimestamp()).thenReturn(CONSENSUS_NOW);
@@ -183,13 +182,13 @@ class HandleWorkflowTest extends AppTestBase {
                 checker,
                 serviceLookup,
                 configProvider,
-                time);
+                instantSource);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testContructorWithInvalidArguments() {
-        final var time = OSTime.getInstance();
+        final var instantSource = InstantSource.system();
         assertThatThrownBy(() -> new HandleWorkflow(
                         null,
                         preHandleWorkflow,
@@ -200,7 +199,7 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        time))
+                        instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,
@@ -212,7 +211,7 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        time))
+                        instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,
@@ -224,7 +223,7 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        time))
+                        instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,
@@ -236,7 +235,7 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        time))
+                        instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,
@@ -248,7 +247,7 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        time))
+                        instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,
@@ -260,7 +259,7 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        time))
+                        instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,
@@ -272,7 +271,7 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         serviceLookup,
                         configProvider,
-                        time))
+                        instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,
@@ -284,7 +283,7 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         null,
                         configProvider,
-                        time))
+                        instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,
@@ -296,7 +295,7 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         null,
-                        time))
+                        instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,

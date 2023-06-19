@@ -49,11 +49,11 @@ import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
-import com.swirlds.common.time.Time;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
@@ -78,7 +78,7 @@ public class HandleWorkflow {
     private final TransactionChecker checker;
     private final ServiceScopeLookup serviceScopeLookup;
     private final ConfigProvider configProvider;
-    private final Time time;
+    private final InstantSource instantSource;
 
     @Inject
     public HandleWorkflow(
@@ -91,7 +91,7 @@ public class HandleWorkflow {
             @NonNull final TransactionChecker checker,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final Time time) {
+            @NonNull final InstantSource instantSource) {
         this.nodeInfo = requireNonNull(nodeInfo, "nodeInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -101,7 +101,7 @@ public class HandleWorkflow {
         this.checker = requireNonNull(checker, "checker must not be null");
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
-        this.time = requireNonNull(time, "time must not be null");
+        this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
     }
 
     /**
@@ -144,14 +144,14 @@ public class HandleWorkflow {
 
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
-            final var maxMillis = time.currentTimeMillis() + timeout;
+            final var maxMillis = instantSource.millis() + timeout;
             final var payerKeyVerification =
                     preHandleResult.verificationResults().get(preHandleResult.payerKey());
             if (payerKeyVerification.get(timeout, TimeUnit.MILLISECONDS).failed()) {
                 throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
             }
             for (final var key : preHandleResult.requiredKeys()) {
-                final var remainingMillis = maxMillis - time.currentTimeMillis();
+                final var remainingMillis = maxMillis - instantSource.millis();
                 if (remainingMillis <= 0) {
                     throw new TimeoutException("Verification of signatures timed out");
                 }
