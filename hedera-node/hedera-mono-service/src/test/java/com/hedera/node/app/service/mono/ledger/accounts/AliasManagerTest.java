@@ -44,10 +44,10 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
+import java.security.InvalidKeyException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
@@ -113,7 +113,7 @@ class AliasManagerTest {
     }
 
     @Test
-    void canLinkAndUnlinkEthereumAddresses() throws InvalidProtocolBufferException, DecoderException {
+    void canLinkAndUnlinkEthereumAddresses() throws InvalidProtocolBufferException, InvalidKeyException {
         final Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
         final JKey jKey = JKey.mapKey(key);
         final boolean added = subject.maybeLinkEvmAddress(jKey, num);
@@ -125,7 +125,7 @@ class AliasManagerTest {
     }
 
     @Test
-    void publicKeyCouldNotBeParsed() throws InvalidProtocolBufferException, DecoderException {
+    void publicKeyCouldNotBeParsed() throws InvalidProtocolBufferException, InvalidKeyException {
         Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
         JKey jKey = JKey.mapKey(key);
         subject.maybeLinkEvmAddress(jKey, num);
@@ -145,7 +145,7 @@ class AliasManagerTest {
     }
 
     @Test
-    void skipsUnrecoverableEthereumAddresses() throws InvalidProtocolBufferException, DecoderException {
+    void skipsUnrecoverableEthereumAddresses() throws InvalidProtocolBufferException, InvalidKeyException {
         final Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
         final JKey jKey = JKey.mapKey(key);
         final boolean added = subject.maybeLinkEvmAddress(jKey, num, any -> null);
@@ -158,7 +158,7 @@ class AliasManagerTest {
     }
 
     @Test
-    void wontLinkOrUnlinked25519Key() throws DecoderException {
+    void wontLinkOrUnlinked25519Key() throws InvalidKeyException {
         final var keyData = ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
         final Key key = Key.newBuilder().setEd25519(keyData).build();
         final JKey jKey = JKey.mapKey(key);
@@ -205,7 +205,7 @@ class AliasManagerTest {
 
     @Test
     void lookupIdByECDSAKeyAliasShouldReturnNumFromEVMAddressAliasMap()
-            throws InvalidProtocolBufferException, DecoderException {
+            throws InvalidProtocolBufferException, InvalidKeyException {
         subject.link(ByteString.copyFrom(ECDSA_PUBLIC_KEY_ADDRESS), num);
         assertEquals(num, subject.lookupIdBy(ByteString.copyFrom(ECDSA_PUBLIC_KEY)));
     }

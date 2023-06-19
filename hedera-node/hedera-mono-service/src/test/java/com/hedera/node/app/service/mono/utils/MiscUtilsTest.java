@@ -212,6 +212,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -220,7 +221,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
@@ -736,7 +736,7 @@ class MiscUtilsTest {
     }
 
     @Test
-    void describesCorrectly() throws DecoderException {
+    void describesCorrectly() throws InvalidKeyException {
         assertEquals("<N/A>", describe(null));
 
         final var key = Key.newBuilder()
