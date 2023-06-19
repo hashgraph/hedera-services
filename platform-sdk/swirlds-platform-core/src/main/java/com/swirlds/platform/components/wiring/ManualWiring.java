@@ -22,8 +22,8 @@ import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -39,7 +39,7 @@ import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.state.StateManagementComponentFactory;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.metrics.WiringMetrics;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Shutdown;
@@ -121,7 +121,7 @@ public class ManualWiring {
      * @param prioritySystemTransactionSubmitter submits priority system transactions
      * @param haltRequestedConsumer              consumer to invoke when a halt is requested
      * @param appCommunicationComponent          the {@link AppCommunicationComponent}
-     * @param preConsensusEventWriter            writes preconsensus events to disk
+     * @param preconsensusEventWriter            writes preconsensus events to disk
      * @param getPlatformStatus                  a supplier that returns the current platform status
      * @return a fully wired {@link StateManagementComponent}
      */
@@ -133,7 +133,7 @@ public class ManualWiring {
             @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final AppCommunicationComponent appCommunicationComponent,
-            @NonNull final PreConsensusEventWriter preConsensusEventWriter,
+            @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final Supplier<PlatformStatus> getPlatformStatus) {
 
         Objects.requireNonNull(platformSigner, "platformSigner");
@@ -143,7 +143,7 @@ public class ManualWiring {
         Objects.requireNonNull(prioritySystemTransactionSubmitter, "prioritySystemTransactionSubmitter");
         Objects.requireNonNull(haltRequestedConsumer, "haltRequestedConsumer");
         Objects.requireNonNull(appCommunicationComponent, "appCommunicationComponent");
-        Objects.requireNonNull(preConsensusEventWriter, "preConsensusEventWriter");
+        Objects.requireNonNull(preconsensusEventWriter, "preconsensusEventWriter");
         Objects.requireNonNull(getPlatformStatus, "getPlatformStatus");
 
         final StateManagementComponentFactory stateManagementComponentFactory =
@@ -189,7 +189,7 @@ public class ManualWiring {
         // FUTURE WORK: make this asynchronous
         stateManagementComponentFactory.issConsumer(appCommunicationComponent);
         stateManagementComponentFactory.fatalErrorConsumer(this::handleFatalError);
-        stateManagementComponentFactory.setPreConsensusEventWriter(preConsensusEventWriter);
+        stateManagementComponentFactory.setPreconsensusEventWriter(preconsensusEventWriter);
 
         final StateManagementComponent stateManagementComponent = stateManagementComponentFactory.build();
         platformComponentList.add(stateManagementComponent);

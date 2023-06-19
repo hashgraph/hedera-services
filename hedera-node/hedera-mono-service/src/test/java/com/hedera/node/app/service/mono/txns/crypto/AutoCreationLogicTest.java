@@ -73,11 +73,11 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.BeforeEach;
@@ -216,7 +216,7 @@ class AutoCreationLogicTest {
     }
 
     @Test
-    void happyPathECKeyAliasWithHbarChangeWorks() throws InvalidProtocolBufferException, DecoderException {
+    void happyPathECKeyAliasWithHbarChangeWorks() throws InvalidProtocolBufferException, InvalidKeyException {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         final var key = Key.parseFrom(ecdsaKeyBytes);
         final var pretendAddress = keyAliasToEVMAddress(ecKeyAlias);
@@ -253,7 +253,7 @@ class AutoCreationLogicTest {
     }
 
     @Test
-    void hollowAccountWithHbarChangeWorks() throws InvalidProtocolBufferException, DecoderException {
+    void hollowAccountWithHbarChangeWorks() throws InvalidProtocolBufferException, InvalidKeyException {
         final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
         final var evmAddressAlias =
                 ByteString.copyFrom(EthSigsUtils.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
@@ -291,7 +291,7 @@ class AutoCreationLogicTest {
     }
 
     @Test
-    void hollowAccountWithFtChangeWorks() throws InvalidProtocolBufferException, DecoderException {
+    void hollowAccountWithFtChangeWorks() throws InvalidProtocolBufferException, InvalidKeyException {
         final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
         final var evmAddressAlias =
                 ByteString.copyFrom(EthSigsUtils.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
@@ -327,7 +327,7 @@ class AutoCreationLogicTest {
     }
 
     @Test
-    void hollowAccountWithNFTChangeWorks() throws InvalidProtocolBufferException, DecoderException {
+    void hollowAccountWithNFTChangeWorks() throws InvalidProtocolBufferException, InvalidKeyException {
         final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
         final var evmAddressAlias =
                 ByteString.copyFrom(EthSigsUtils.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));

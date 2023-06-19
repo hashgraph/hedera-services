@@ -49,10 +49,19 @@ class AllIntegrationTests extends IntegrationTestBase {
     private static final String TEST_CONTAINER_NODE0_STREAMS = "build/network/itest/records/node_0";
 
     @Tag("integration")
+    @Order(0)
+    @TestFactory
+    Collection<DynamicContainer> globalPrerequisiteSpecsBySuite() {
+        return Arrays.stream(SequentialSuites.globalPrerequisiteSuites())
+                .map(this::extractSpecsFromSuite)
+                .toList();
+    }
+
+    @Tag("integration")
     @Order(1)
     @TestFactory
     Collection<DynamicContainer> sequentialSpecsBySuite() {
-        return Arrays.stream(SequentialSuites.all())
+        return Arrays.stream(SequentialSuites.sequentialSuites())
                 .map(this::extractSpecsFromSuite)
                 .toList();
     }

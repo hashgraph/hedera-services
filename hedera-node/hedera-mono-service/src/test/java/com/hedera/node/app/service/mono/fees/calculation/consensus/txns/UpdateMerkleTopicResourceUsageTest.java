@@ -55,8 +55,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.InvalidKeyException;
 import java.util.Optional;
-import org.apache.commons.codec.DecoderException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -115,7 +115,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    void getFeeThrowsExceptionForBadKeys() throws DecoderException, IllegalArgumentException {
+    void getFeeThrowsExceptionForBadKeys() throws InvalidKeyException, IllegalArgumentException {
         final var txnBody = makeTransactionBody(
                 topicId,
                 defaultMemo,
@@ -128,7 +128,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
                 new MerkleTopic(defaultMemo, adminKey, submitKey, 0, new EntityId(0, 1, 2), new RichInstant(36_000, 0));
         given(topics.get(EntityNum.fromTopicId(topicId))).willReturn(merkleTopic);
         final var mockedJkey = mockStatic(JKey.class);
-        mockedJkey.when(() -> JKey.mapJKey(any())).thenThrow(new DecoderException());
+        mockedJkey.when(() -> JKey.mapJKey(any())).thenThrow(new InvalidKeyException());
 
         assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(txnBody, sigValueObj, view));
         assertThat(
@@ -138,7 +138,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    void updateToMissingTopic() throws DecoderException, InvalidTxBodyException {
+    void updateToMissingTopic() throws InvalidKeyException, InvalidTxBodyException {
         final var txBody = makeTransactionBody(
                 topicId,
                 defaultMemo,

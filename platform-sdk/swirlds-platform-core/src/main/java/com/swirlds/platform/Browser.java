@@ -37,6 +37,7 @@ import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.OSHealthCheckConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.WiringConfig;
@@ -51,7 +52,9 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.internal.ApplicationDefinition;
+import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsProvider;
@@ -73,8 +76,6 @@ import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
-import com.swirlds.p2p.portforwarding.PortForwarder;
-import com.swirlds.p2p.portforwarding.PortMapping;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.ConfigMappings;
 import com.swirlds.platform.config.ThreadConfig;
@@ -83,7 +84,7 @@ import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventStreamConfig;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
@@ -96,8 +97,10 @@ import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.network.Network;
+import com.swirlds.platform.portforwarding.PortForwarder;
+import com.swirlds.platform.portforwarding.PortMapping;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
@@ -117,6 +120,7 @@ import java.awt.GraphicsEnvironment;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -228,9 +232,11 @@ public class Browser {
                 .withConfigDataType(PrometheusConfig.class)
                 .withConfigDataType(OSHealthCheckConfig.class)
                 .withConfigDataType(WiringConfig.class)
-                .withConfigDataType(PreConsensusEventStreamConfig.class)
+                .withConfigDataType(PreconsensusEventStreamConfig.class)
                 .withConfigDataType(SyncConfig.class)
-                .withConfigDataType(UptimeConfig.class);
+                .withConfigDataType(UptimeConfig.class)
+                .withConfigDataType(RecycleBinConfig.class)
+                .withConfigDataType(EventConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
@@ -284,9 +290,6 @@ public class Browser {
                     .setTransactionMaxBytes(value));
             configurationProperties.ipTos().ifPresent(ipTos -> Settings.getInstance()
                     .setSocketIpTos(ipTos));
-            configurationProperties
-                    .saveStatePeriod()
-                    .ifPresent(value -> Settings.getInstance().getState().saveStatePeriod = value);
 
             // Write the settingsUsed.txt file
             writeSettingsUsed(configuration);
@@ -559,6 +562,7 @@ public class Browser {
             if (!Files.exists(dir)) {
                 rethrowIO(() -> Files.createDirectories(dir));
             }
+            logger.info(STARTUP.getMarker(), "Starting thread dump generator and save to directory {}", dir);
             ThreadDumpGenerator.generateThreadDumpAtIntervals(
                     dir, Settings.getInstance().getThreadDumpPeriodMs());
         }
@@ -647,6 +651,14 @@ public class Browser {
                 // the name of this swirld
                 final String swirldName = appDefinition.getSwirldName();
                 final SoftwareVersion appVersion = appMain.getSoftwareVersion();
+
+                final RecycleBin recycleBin;
+                try {
+                    recycleBin = RecycleBin.create(configuration, nodeId);
+                } catch (IOException e) {
+                    throw new UncheckedIOException("unable to create recycle bin", e);
+                }
+
                 // We can't send a "real" dispatch, since the dispatcher will not have been started by the
                 // time this class is used.
                 final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
@@ -664,6 +676,15 @@ public class Browser {
                 // check software version compatibility
                 final boolean softwareUpgrade =
                         BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState.getNullable());
+
+                if (softwareUpgrade) {
+                    try {
+                        logger.info(STARTUP.getMarker(), "Clearing recycle bin as part of software upgrade workflow.");
+                        recycleBin.clear();
+                    } catch (final IOException e) {
+                        throw new UncheckedIOException("Failed to clear recycle bin", e);
+                    }
+                }
 
                 // Initialize the address book from the configuration and platform saved state.
                 final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
@@ -683,6 +704,7 @@ public class Browser {
                 final SwirldsPlatform platform = new SwirldsPlatform(
                         platformContext,
                         crypto.get(nodeId),
+                        recycleBin,
                         initialAddressBook,
                         nodeId,
                         mainClassName,
@@ -703,6 +725,9 @@ public class Browser {
                         .setThreadName("appMain")
                         .setRunnable(appMain)
                         .build();
+                // IMPORTATNT: this swirlds app thread must be non-daemon,
+                // so that the JVM will not exit when the main thread exits
+                appThread.setDaemon(false);
                 appRunThreads[ownHostIndex] = appThread;
 
                 ownHostIndex++;
@@ -755,7 +780,7 @@ public class Browser {
             return savedStateLoader.getSavedStateToLoad();
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Signed state not loaded from disk:", e);
-            if (Settings.getInstance().isRequireStateLoad()) {
+            if (configuration.getConfigData(StateConfig.class).requireStateLoad()) {
                 exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED);
             }
         }

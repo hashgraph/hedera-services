@@ -8,13 +8,14 @@ module com.hedera.node.app.service.token.impl {
     requires transitive dagger;
     requires transitive javax.inject;
     requires com.hedera.node.app.service.evm;
-    requires com.github.spotbugs.annotations;
     requires com.google.common;
     requires com.google.protobuf;
     requires com.swirlds.config;
     requires com.swirlds.jasperdb;
     requires org.apache.commons.lang3;
     requires org.slf4j;
+    requires tuweni.bytes;
+    requires static com.github.spotbugs.annotations;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;

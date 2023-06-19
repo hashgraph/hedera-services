@@ -154,11 +154,12 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, @
 
         builder.append(TRANSACTIONS_STRING);
         builder.append("[");
-        transactionsContents.forEach(transaction -> {
-            builder.append(transaction);
-            builder.append(LIST_ELEMENT_SEPARATOR);
-        });
-        builder.delete(builder.length() - LIST_ELEMENT_SEPARATOR.length(), builder.length());
+        for (int index = 0; index < transactionsContents.size(); index++) {
+            builder.append(transactionsContents.get(index));
+            if (index != transactionsContents.size() - 1) {
+                builder.append(LIST_ELEMENT_SEPARATOR);
+            }
+        }
         builder.append("]\n");
 
         return builder.toString();

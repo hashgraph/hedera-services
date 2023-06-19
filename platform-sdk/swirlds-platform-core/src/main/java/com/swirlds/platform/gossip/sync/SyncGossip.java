@@ -20,7 +20,9 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.BasicConfig;
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
@@ -34,7 +36,6 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
@@ -65,7 +66,7 @@ import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectProtocol;
 import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -171,6 +172,7 @@ public class SyncGossip extends AbstractGossip {
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
 
+        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
 
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
@@ -213,7 +215,7 @@ public class SyncGossip extends AbstractGossip {
         }
 
         final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(
-                () -> !gossipHalted.get(), () -> intakeQueue.size() < settings.getEventIntakeQueueThrottleSize()));
+                () -> !gossipHalted.get(), () -> intakeQueue.size() < eventConfig.eventIntakeQueueThrottleSize()));
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);

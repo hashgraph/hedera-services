@@ -39,6 +39,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.ExternalSelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -58,9 +59,8 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.VirtualMapSettings;
-import com.swirlds.virtualmap.VirtualMapSettingsFactory;
 import com.swirlds.virtualmap.VirtualValue;
+import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
@@ -170,10 +170,10 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     private static final int MAX_FULL_REHASHING_TIMEOUT = 3600; // 1 hour
 
     /**
-     * Placeholder (since this is such a hotspot) to hold the results from {@link VirtualMapSettingsFactory#get()}
+     * Placeholder (since this is such a hotspot) to hold the results from {@link ConfigurationHolder#getConfigData(Class)}
      * rather than calling that method more than once during the lifecycle of a {@link VirtualRootNode} instance.
      */
-    private final VirtualMapSettings settings = VirtualMapSettingsFactory.get();
+    private final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
 
     /**
      * The maximum size() we have reached, where we have (already) recorded a warning message about how little
@@ -255,7 +255,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * its estimated size exceeds the threshold. If this virtual root is explicitly requested to flush,
      * the threshold is not taken into consideration.
      *
-     * By default, the threshold is set to {@link VirtualMapSettings#getCopyFlushThreshold()}. The
+     * By default, the threshold is set to {@link VirtualMapConfig#copyFlushThreshold()}. The
      * threshold is inherited by all copies.
      */
     private final AtomicLong flushThreshold = new AtomicLong();
@@ -322,7 +322,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         this.fastCopyVersion = 0;
         // Hasher is required during reconnects
         this.hasher = new VirtualHasher<>();
-        this.flushThreshold.set(settings.getCopyFlushThreshold());
+        this.flushThreshold.set(config.copyFlushThreshold());
         // All other fields are initialized in postInit()
     }
 
@@ -335,7 +335,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     public VirtualRootNode(final @NonNull VirtualDataSourceBuilder<K, V> dataSourceBuilder) {
         this.fastCopyVersion = 0;
         this.hasher = new VirtualHasher<>();
-        this.flushThreshold.set(settings.getCopyFlushThreshold());
+        this.flushThreshold.set(config.copyFlushThreshold());
         Objects.requireNonNull(dataSourceBuilder);
         this.dataSourceBuilder = dataSourceBuilder;
         // All other fields are initialized in postInit()
@@ -407,7 +407,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         // At this point in time the copy knows if it should be flushed or merged, and so it is safe
         // to register with the pipeline.
         if (pipeline == null) {
-            pipeline = new VirtualPipeline();
+            pipeline = new VirtualPipeline(config);
         }
         pipeline.registerCopy(this);
     }
@@ -1062,12 +1062,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
     /**
      * If flush threshold isn't set for this virtual root, marks the root to flush based on
-     * {@link VirtualMapSettings#getFlushInterval()} setting.
+     * {@link VirtualMapConfig#flushInterval()} setting.
      */
     private void updateShouldBeFlushed() {
         if (flushThreshold.get() <= 0) {
             // If copy size flush threshold is not set, use flush interval
-            this.shouldBeFlushed.set(fastCopyVersion != 0 && fastCopyVersion % settings.getFlushInterval() == 0);
+            this.shouldBeFlushed.set(fastCopyVersion != 0 && fastCopyVersion % config.flushInterval() == 0);
         }
     }
 
@@ -1506,15 +1506,15 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
         // Confirm that adding one more entry is not too much for this VirtualMap to hold.
         final long currentSize = size();
-        final long maximumAllowedSize = settings.getMaximumVirtualMapSize();
+        final long maximumAllowedSize = config.maximumVirtualMapSize();
         if (currentSize >= maximumAllowedSize) {
             throw new IllegalStateException("Virtual Map has no more space");
         }
 
         final long remainingCapacity = maximumAllowedSize - currentSize;
         if ((currentSize > maxSizeReachedTriggeringWarning)
-                && (remainingCapacity <= settings.getVirtualMapWarningThreshold())
-                && (remainingCapacity % settings.getVirtualMapWarningInterval() == 0)) {
+                && (remainingCapacity <= config.virtualMapWarningThreshold())
+                && (remainingCapacity % config.virtualMapWarningInterval() == 0)) {
             maxSizeReachedTriggeringWarning = currentSize;
             logger.warn(
                     VIRTUAL_MERKLE_STATS.getMarker(),

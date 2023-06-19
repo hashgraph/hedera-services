@@ -1,0 +1,23 @@
+recovery:
+  package:
+    locations:
+    - type: "VjblTCCOjG"
+      url: "https://CaMlzKSvbK.com/"
+      hash: "a5085d2e13477f2847b174d51e898ea683430cd42b19288458593b27af4059ee330d1a21bad27a30fceac272afbf0c21"
+    - type: "brqEpvspux"
+      url: "https://TGaqyzXhZI.com/"
+      hash: "154265ebf9a836b186f73890d4a8d5a9a72f513861f55c4402b9a01aa2cba32d4b9e528a1576b4969abb8d3afd1b0471"
+    - type: "eBQcDiYUEd"
+      url: "https://nBwKubCcCP.com/"
+      hash: "4c339d279fa15b753a3995faff0eead7226fb6d7df0180f4770b07f00b71f11bf5cb43563fca3b1aac5729a022099fec"
+  state:
+    round: 3388878439625117609
+    hash: "1e408e32390aa2b90f32a0abcd8793c2b252c9478bdd9c16a52b8cfbbc5cd798d83b8cab3e6a300f0f6f08f0c0bc789d"
+    timestamp: "2023-06-06T10:14:53.992985Z"
+  bootstrap:
+    timestamp: "2023-06-06T10:14:53.993187Z"
+  stream:
+    intervals:
+      record: 10
+      event: 20
+      balances: 30

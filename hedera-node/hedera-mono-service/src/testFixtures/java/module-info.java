@@ -5,7 +5,6 @@ module com.hedera.node.app.service.mono.test.fixtures {
     exports com.hedera.test.mocks;
     exports com.hedera.test.factories.scenarios;
 
-    requires transitive com.hedera.hashgraph.protobuf.java.api;
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;
@@ -19,9 +18,9 @@ module com.hedera.node.app.service.mono.test.fixtures {
     requires com.hedera.node.app.service.evm;
     requires com.hedera.node.app.service.mono;
     requires com.hedera.pbj.runtime;
-    requires com.github.spotbugs.annotations;
     requires com.google.common;
     requires net.i2p.crypto.eddsa;
     requires org.junit.jupiter.api;
     requires org.mockito;
+    requires static com.github.spotbugs.annotations;
 }

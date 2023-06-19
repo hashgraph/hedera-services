@@ -32,7 +32,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.app,
             com.hedera.node.app.service.consensus.impl.test,
-            com.hedera.node.app.service.schedule.impl;
+            com.hedera.node.app.service.schedule.impl,
+            com.hedera.node.app.service.file.impl;
     exports com.hedera.node.app.service.mono.utils to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app.service.schedule.impl,
@@ -86,7 +87,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.files to
             com.hedera.node.app.service.mono.test.fixtures,
-            com.hedera.node.app;
+            com.hedera.node.app,
+            com.hedera.node.app.service.file.impl;
     exports com.hedera.node.app.service.mono.state.virtual.schedule to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app.service.schedule.impl,
@@ -115,7 +117,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.config;
     exports com.hedera.node.app.service.mono.ledger.accounts.staking to
             com.hedera.node.config,
-            com.hedera.node.app;
+            com.hedera.node.app,
+            com.hedera.node.app.service.token.impl;
     exports com.hedera.node.app.service.mono.context.init to
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.state.initialization to
@@ -257,7 +260,6 @@ module com.hedera.node.app.service.mono {
     opens com.hedera.node.app.service.mono.cache to
             com.swirlds.common;
 
-    requires transitive com.hedera.hashgraph.protobuf.java.api;
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.evm;
@@ -274,9 +276,9 @@ module com.hedera.node.app.service.mono {
     requires transitive com.swirlds.merkle;
     requires transitive com.swirlds.virtualmap;
     requires transitive dagger;
+    requires transitive grpc.stub;
     requires transitive headlong;
-    requires transitive io.helidon.grpc.core;
-    requires transitive io.helidon.grpc.server;
+    requires transitive io.grpc;
     requires transitive javax.inject;
     requires transitive org.apache.commons.codec;
     requires transitive org.apache.commons.lang3;
@@ -287,13 +289,16 @@ module com.hedera.node.app.service.mono {
     requires transitive tuweni.bytes;
     requires transitive tuweni.units;
     requires com.fasterxml.jackson.core;
-    requires com.github.spotbugs.annotations;
     requires com.swirlds.base;
     requires com.swirlds.logging;
     requires com.swirlds.platform;
+    requires io.helidon.common.configurable;
+    requires io.helidon.grpc.core;
+    requires io.helidon.grpc.server;
     requires org.apache.commons.collections4;
     requires org.apache.commons.io;
     requires org.bouncycastle.provider;
     requires org.eclipse.collections.impl;
     requires org.slf4j;
+    requires static com.github.spotbugs.annotations;
 }

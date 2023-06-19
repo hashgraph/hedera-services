@@ -64,7 +64,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,14 +77,11 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
@@ -227,73 +223,6 @@ class VirtualMapTests extends VirtualTestBase {
         assertNull(root.getChild(0), "Unexpected child of empty root");
         assertNull(root.getChild(1), "Unexpected child of empty root");
         fcm.release();
-    }
-
-    @Test
-    @Disabled // This test is no longer valid after pipeline changes.
-    @Tags({@Tag("VirtualMerkle"), @Tag("Fresh")})
-    @DisplayName("A VirtualMap designed to flush waits until previous, non-flushed maps, flush")
-    void ifToBeFlushedWaitForPreviousUnflushedMapsToFlush() throws InterruptedException {
-        // Save the previous settings
-        final VirtualMapSettings originalSettings = VirtualMapSettingsFactory.get();
-
-        // Reconfigure the settings
-        final VirtualMapSettings settings = new TestVirtualMapSettings(originalSettings) {
-            @Override
-            public int getFlushInterval() {
-                return 3;
-            }
-        };
-        VirtualMapSettingsFactory.configure(settings);
-
-        try {
-            // These first three copies will have "shouldBeFlushed" set to false.
-            final VirtualMap<TestKey, TestValue> copy0 = createMap();
-            final VirtualMap<TestKey, TestValue> copy1 = copy0.copy();
-            final VirtualMap<TestKey, TestValue> copy2 = copy1.copy();
-            // This next one has "shouldBeFlushed" set to true. It is using a PauseWhileFlushingDataSource,
-            // so when it is asked to flush, it will block trying to do so. But it won't be asked yet.
-            final VirtualMap<TestKey, TestValue> copy3 = copy2.copy();
-            // These next two will have "shouldBeFlushed" set to false.
-            final VirtualMap<TestKey, TestValue> copy4 = copy3.copy();
-            final VirtualMap<TestKey, TestValue> copy5 = copy4.copy();
-            // Creating the next copy WILL CAUSE THE THREAD TO BLOCK. We need to assert that actually happens.
-            final AtomicReference<VirtualMap<TestKey, TestValue>> copy6Ref = new AtomicReference<>();
-            final CountDownLatch copy6Created = new CountDownLatch(1);
-            new Thread(() -> {
-                        // Blocks right here...
-                        copy6Ref.set(copy5.copy());
-                        copy6Created.countDown();
-                    })
-                    .start();
-
-            // Now that it is blocked, we will start releasing the older copies. As soon as we release
-            // copy3, copy6 should proceed.
-            copy0.release();
-            copy1.release();
-            copy2.release();
-            // Try to provoke a bug by giving time between the release of copy2 and the release of copy3.
-            // The pipeline should block on copy5.copy() until we release copy3.
-            for (int i = 0; i < 100; i++) {
-                assertNull(copy6Ref.get(), "Could intermittently fail, but if it does we have a REAL BUG.");
-                MILLISECONDS.sleep(1);
-            }
-            // Now, the moment of truth
-            copy3.release();
-            try {
-                copy6Created.await(10, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                fail("Failed due to interrupt while waiting for copy6 to be created");
-            }
-            assertNotNull(copy6Ref.get(), "If copy6 was created, this MUST be non-null or we have a test bug");
-            // Release the others
-            copy5.release();
-            copy6Ref.get().release();
-        } finally {
-            // Revert to original settings
-            VirtualMapSettingsFactory.configure(originalSettings);
-        }
     }
 
     /*
@@ -892,93 +821,6 @@ class VirtualMapTests extends VirtualTestBase {
         fcm.release();
         fcm2.release();
         completed.release();
-    }
-
-    @Test
-    @DisplayName("Check expected warnings about VirtualMap size near/at capacity")
-    void testVirtualMapSizeSettings() throws ExecutionException, InterruptedException, IOException {
-        // Save the previous settings
-        final VirtualMapSettings originalSettings = VirtualMapSettingsFactory.get();
-
-        // Reconfigure the settings
-        final VirtualMapSettings settings = new TestVirtualMapSettings(originalSettings) {
-            @Override
-            public double getPercentCleanerThreads() {
-                return 10.0;
-            }
-
-            @Override
-            public int getNumCleanerThreads() {
-                return 2;
-            }
-
-            @Override
-            public long getMaximumVirtualMapSize() {
-                return 6L;
-            }
-
-            @Override
-            public long getVirtualMapWarningThreshold() {
-                return 4L;
-            }
-
-            @Override
-            public long getVirtualMapWarningInterval() {
-                return 2L;
-            }
-        };
-
-        try {
-            VirtualMapSettingsFactory.configure(settings);
-            VirtualMap<TestKey, TestValue> fcm = createMap();
-            fcm.put(A_KEY, APPLE);
-            fcm.put(B_KEY, BANANA); // should trigger first warning
-            fcm.put(C_KEY, CHERRY);
-            fcm.put(D_KEY, DATE); // should trigger second warning
-            fcm.remove(D_KEY);
-            fcm.remove(C_KEY);
-            fcm = fcm.copy(); // should retain previous maxSizeReachedTriggeringWarning
-            fcm.put(C_KEY, CHERRY);
-            fcm.put(D_KEY, DATE); // should not re-trigger second warning here.
-            fcm.put(E_KEY, EGGPLANT);
-            fcm.put(F_KEY, FIG); // should trigger final warning (no space left)
-            final VirtualMap<TestKey, TestValue> finalFcm = fcm;
-            final Exception exception = assertThrows(
-                    IllegalStateException.class,
-                    () -> {
-                        finalFcm.put(G_KEY, GRAPE);
-                    },
-                    "Expected to catch IllegateStateException because the VirtualMap is full!");
-            assertEquals("Virtual Map has no more space", exception.getMessage(), "Unexpected exception message.");
-
-            final String logContents = Files.readString(Path.of("swirlds.log"));
-            assertTrue(
-                    containsRegex(
-                            "^.*WARN  VIRTUAL_MERKLE_STATS <[a-zA-Z0-9\\-\\s]+> VirtualRootNode: Virtual Map only has"
-                                    + " room for 4 additional entries$",
-                            logContents),
-                    "Based on the virtualMapWarningThreshold setting");
-            assertTrue(
-                    containsRegex(
-                            "^.*WARN  VIRTUAL_MERKLE_STATS <[a-zA-Z0-9\\-\\s]+> VirtualRootNode: Virtual Map only has"
-                                    + " room for 2 additional entries$",
-                            logContents),
-                    "Based on the virtualMapWarningThreshold setting");
-            assertTrue(
-                    containsRegex(
-                            "^.*WARN  VIRTUAL_MERKLE_STATS <[a-zA-Z0-9\\-\\s]+> VirtualRootNode: Virtual Map is now "
-                                    + "full!$",
-                            logContents),
-                    "When remaining capacity is only 1");
-            // make sure each line only appears once - so (due to leading/trailing characters) - should be 3 log lines
-            assertEquals(
-                    3,
-                    countRegex("WARN  VIRTUAL_MERKLE_STATS <(main|Test worker)>", logContents),
-                    "Unexpected number of VIRTUAL_MERKLE_STATS warnings");
-        } finally {
-            // Revert to original settings
-            VirtualMapSettingsFactory.configure(originalSettings);
-        }
     }
 
     /**

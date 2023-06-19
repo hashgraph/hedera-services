@@ -61,9 +61,11 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpaus
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
+import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
@@ -198,5 +200,17 @@ public final class CommonUtils {
             case UTIL_PRNG -> UtilPrng;
             default -> throw new UnknownHederaFunctionality("Unknown HederaFunctionality for " + txn);
         };
+    }
+
+    /**
+     *get the EVM address from the long number
+     *
+     * @param num the input long number
+     * @return evm address
+     */
+    public static byte[] asEvmAddress(final long num) {
+        final byte[] evmAddress = new byte[20];
+        arraycopy(Longs.toByteArray(num), 0, evmAddress, 12, 8);
+        return evmAddress;
     }
 }

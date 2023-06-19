@@ -344,7 +344,7 @@ class BootstrapPropertiesTest {
             entry(AUTO_RENEW_GRANT_FREE_RENEWALS, false),
             entry(CONTRACTS_ALLOW_CREATE2, true),
             entry(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, false),
-            entry(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, 10_000_000L),
+            entry(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, 0L),
             entry(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS, Set.<Address>of()),
             entry(
                     CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,

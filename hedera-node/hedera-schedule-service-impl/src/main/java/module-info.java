@@ -8,10 +8,9 @@ module com.hedera.node.app.service.schedule.impl {
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive javax.inject;
-    requires com.hedera.hashgraph.protobuf.java.api;
-    requires com.github.spotbugs.annotations;
     requires com.swirlds.jasperdb;
     requires org.apache.logging.log4j;
+    requires static com.github.spotbugs.annotations;
 
     exports com.hedera.node.app.service.schedule.impl to
             com.hedera.node.app.service.schedule.impl.test,
