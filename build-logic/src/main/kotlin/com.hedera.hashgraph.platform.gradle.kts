@@ -16,7 +16,6 @@
 
 plugins {
     `java-platform`
-    `maven-publish`
     id("com.hedera.hashgraph.jpms-modules")
 }
 

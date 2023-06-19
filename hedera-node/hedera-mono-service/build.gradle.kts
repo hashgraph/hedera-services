@@ -66,12 +66,9 @@ dependencies {
     }
 }
 
-val apt = configurations.create("apt")
+val apt = configurations.create("apt") { extendsFrom(configurations.internal.get()) }
 
-dependencies {
-    @Suppress("UnstableApiUsage") apt(javaModuleDependencies.gav("dagger.compiler"))
-    apt(platform("com.hedera.hashgraph:hedera-platform"))
-}
+dependencies { @Suppress("UnstableApiUsage") apt(javaModuleDependencies.gav("dagger.compiler")) }
 
 tasks.withType<JavaCompile> { options.annotationProcessorPath = apt }
 
