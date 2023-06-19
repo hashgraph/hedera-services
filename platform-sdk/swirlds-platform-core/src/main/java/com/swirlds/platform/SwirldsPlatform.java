@@ -288,7 +288,6 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     private final RecycleBin recycleBin;
 
-    // TODO should this be a more generic API?
     /**
      * Creates new events using the tipset algorithm.
      */
@@ -836,8 +835,6 @@ public class SwirldsPlatform implements Platform, Startable {
             // New event creation logic is disabled via settings
             return;
         }
-
-        // TODO what is the proper behavior if we have migrated to a new address book?
 
         try {
             tipsetEventCreator.setMinimumGenerationNonAncient(

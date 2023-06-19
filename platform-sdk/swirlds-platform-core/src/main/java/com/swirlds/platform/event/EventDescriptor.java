@@ -158,9 +158,6 @@ public class EventDescriptor implements SelfSerializable {
         hashCode = hash.hashCode();
     }
 
-    // TODO create PartialEventDescriptor that only contains the hash, but matches .equals() and .hashCode() of
-    //  equivalent EventDescriptor (perhaps just do this for Hash)
-
     /**
      * {@inheritDoc}
      */

@@ -45,17 +45,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
-// TODO:
-//  - metrics
-//  - tipset score calculator bug unit test
-//  - unit tests
-//  - resolve remaining TODOs
-//  - figure out to handle event.getUnhashedData().getOtherId()...
-//                possibly needs hip to fix (or perhaps we look up the data)
-//  - hand test all gossip flavors
-//  - PCES compatability
-//  - migrating between networks
-
 /**
  * Responsible for creating new events using the tipset algorithm.
  */

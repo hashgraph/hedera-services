@@ -105,7 +105,6 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
      * hashed before the descriptor can be built.
      */
     public void buildDescriptor() {
-        // TODO this shouldn't be manual!
         this.descriptor =
                 new EventDescriptor(hashedData.getHash(), hashedData.getCreatorId(), hashedData.getGeneration());
     }
