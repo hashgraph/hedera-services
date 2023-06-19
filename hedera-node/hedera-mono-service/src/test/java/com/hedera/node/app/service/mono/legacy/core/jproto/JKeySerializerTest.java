@@ -39,6 +39,7 @@ import com.swirlds.common.utility.CommonUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,7 +48,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.Test;
 
@@ -438,7 +438,7 @@ class JKeySerializerTest {
     }
 
     @Test
-    void jKeyProtoSerDes() throws IOException, DecoderException {
+    void jKeyProtoSerDes() throws IOException, InvalidKeyException {
         final Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
         Key protoKey;
         JKey jkey = null;
@@ -470,7 +470,7 @@ class JKeySerializerTest {
     }
 
     @Test
-    void jKeyECDSASecp256k1KeySerDes() throws Exception {
+    void jKeyECDSASecp256k1KeySerDes() throws InvalidKeyException {
         final Map<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
         Key protoKey;
         protoKey = genSingleECDSASecp256k1Key(pubKey2privKeyMap);

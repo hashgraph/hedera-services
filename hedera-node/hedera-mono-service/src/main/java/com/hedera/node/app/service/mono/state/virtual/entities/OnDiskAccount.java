@@ -110,6 +110,11 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         this.hbarAllowances = that.hbarAllowances;
         this.fungibleAllowances = that.fungibleAllowances;
         this.nftOperatorApprovals = that.nftOperatorApprovals;
+        this.firstStorageKeyNonZeroBytes = that.firstStorageKeyNonZeroBytes;
+        if (that.firstStorageKey != null) {
+            this.firstStorageKey = new int[that.firstStorageKey.length];
+            System.arraycopy(that.firstStorageKey, 0, this.firstStorageKey, 0, that.firstStorageKey.length);
+        }
         System.arraycopy(that.ints, 0, this.ints, 0, IntValues.COUNT);
         System.arraycopy(that.longs, 0, this.longs, 0, LongValues.COUNT);
     }
