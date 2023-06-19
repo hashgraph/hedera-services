@@ -855,6 +855,7 @@ public class SwirldsPlatform implements Platform, Startable {
             }
 
         } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException("interrupted while loading state into event creator", e);
         }
     }
