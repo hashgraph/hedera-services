@@ -106,12 +106,12 @@ public class Tipset {
     }
 
     /**
-     * Get the tip generation for a given node index. Returns 0 if this node has not been added to the tipset.
+     * Get the tip generation for a given node index.
      *
      * @param index the index of the node in question
      * @return the tip generation for the node index
      */
-    public long getTipGenerationForNodeIndex(final int index) { // TODO test
+    public long getTipGenerationForNodeIndex(final int index) {
         return tips[index];
     }
 

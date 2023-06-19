@@ -198,7 +198,6 @@ public class TipsetScoreCalculator {
         // Don't bother advancing the self generation, since self advancement doesn't contribute to tipset score.
         final Tipset newTipset = Tipset.merge(parentTipsets);
 
-        // TODO write unit test that is sensitive to a missing "- previousScore"
         return snapshot.getWeightedAdvancementCount(selfId, newTipset) - previousScore;
     }
 

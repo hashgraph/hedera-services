@@ -21,7 +21,6 @@ import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThr
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.Signer;
-import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
@@ -38,7 +37,6 @@ import com.swirlds.platform.observers.PreConsensusEventObserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Random;
-import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -103,8 +101,8 @@ public final class TipsetEventCreationManagerFactory {
         final Consumer<GossipEvent> newEventHandler =
                 event -> abortAndThrowIfInterrupted(eventIntakeQueue::put, event, "intakeQueue.put() interrupted");
 
-        final BooleanSupplier eventCreationPermittedCheck = buildEventCreationPermittedCheck(
-                platformContext, platformStatusSupplier, startUpEventFrozenManager, transactionPool, eventIntakeQueue);
+        final TipsetEventCreationBlocker eventCreationBlocker = new TipsetEventCreationBlocker(
+                platformContext, transactionPool, eventIntakeQueue, platformStatusSupplier, startUpEventFrozenManager);
 
         final TipsetEventCreationManager manager = new TipsetEventCreationManager(
                 platformContext,
@@ -117,7 +115,7 @@ public final class TipsetEventCreationManagerFactory {
                 appVersion,
                 transactionPool,
                 newEventHandler,
-                eventCreationPermittedCheck);
+                eventCreationBlocker);
 
         eventObserverDispatcher.addObserver((PreConsensusEventObserver) event -> abortAndThrowIfInterrupted(
                 manager::registerEvent,
@@ -131,48 +129,5 @@ public final class TipsetEventCreationManagerFactory {
                         + "non-ancient with tipset event creator"));
 
         return manager;
-    }
-
-    /**
-     * Check to see if it is currently legal to create an event.
-     *
-     * @return a function at returns true if it is legal to create an event
-     */
-    private static BooleanSupplier buildEventCreationPermittedCheck(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
-            @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
-            @NonNull final EventTransactionPool transactionPool,
-            @NonNull final QueueThread<EventIntakeTask> eventIntakeQueue) {
-
-        Objects.requireNonNull(platformContext);
-        Objects.requireNonNull(platformStatusSupplier);
-        Objects.requireNonNull(startUpEventFrozenManager);
-        Objects.requireNonNull(transactionPool);
-        Objects.requireNonNull(eventIntakeQueue);
-
-        final int eventIntakeThrottle = platformContext
-                .getConfiguration()
-                .getConfigData(EventCreationConfig.class)
-                .eventIntakeThrottle();
-
-        return () -> {
-            final PlatformStatus currentStatus = platformStatusSupplier.get();
-
-            if (startUpEventFrozenManager.shouldCreateEvent() == EventCreationRuleResponse.DONT_CREATE) {
-                // Eventually this behavior will be enforced using platform statuses
-                return false;
-            }
-
-            if (currentStatus == PlatformStatus.FREEZING) {
-                return transactionPool.numSignatureTransEvent() > 0;
-            }
-
-            if (currentStatus != PlatformStatus.ACTIVE && currentStatus != PlatformStatus.CHECKING) {
-                return false;
-            }
-
-            return eventIntakeQueue.size() < eventIntakeThrottle;
-        };
     }
 }

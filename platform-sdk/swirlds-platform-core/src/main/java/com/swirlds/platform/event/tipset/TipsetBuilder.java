@@ -121,7 +121,7 @@ public class TipsetBuilder {
      * @param nodeIndex the index of the node
      * @return the highest generation of all events received by a node index
      */
-    public long getLatestGenerationForNodeIndex(final int nodeIndex) { // TODO test
+    public long getLatestGenerationForNodeIndex(final int nodeIndex) {
         return latestGenerations.getTipGenerationForNodeIndex(nodeIndex);
     }
 

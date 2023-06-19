@@ -39,13 +39,12 @@ import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Random;
-import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 /**
  * Manages the creation of events.
  */
-public class TipsetEventCreationManager implements Lifecycle { // TODO test
+public class TipsetEventCreationManager implements Lifecycle {
 
     private LifecyclePhase lifecyclePhase = NOT_STARTED;
     private final TipsetEventCreator eventCreator;
@@ -55,23 +54,22 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
     private final BlockingQueueInserter<Long> minimumGenerationNonAncientInserter;
     private final Consumer<GossipEvent> newEventHandler;
     private final RateLimiter rateLimiter;
-    private final BooleanSupplier isEventCreationPermitted;
+    private final TipsetEventCreationBlocker eventCreationBlocker;
 
     /**
      * Constructor.
      *
-     * @param platformContext          the platform's context
-     * @param threadManager            manages the creation of new threads
-     * @param time                     provides the wall clock time
-     * @param random                   a source of randomness, does not need to be cryptographically secure
-     * @param signer                   can sign with this node's key
-     * @param addressBook              the current address book
-     * @param selfId                   the ID of this node
-     * @param softwareVersion          the current software version
-     * @param transactionSupplier      provides transactions to be included in new events
-     * @param newEventHandler          called when a new event is created
-     * @param isEventCreationPermitted if true, new events are permitted to be created. If false, the creation of new
-     *                                 events is currently not permitted.
+     * @param platformContext      the platform's context
+     * @param threadManager        manages the creation of new threads
+     * @param time                 provides the wall clock time
+     * @param random               a source of randomness, does not need to be cryptographically secure
+     * @param signer               can sign with this node's key
+     * @param addressBook          the current address book
+     * @param selfId               the ID of this node
+     * @param softwareVersion      the current software version
+     * @param transactionSupplier  provides transactions to be included in new events
+     * @param newEventHandler      called when a new event is created
+     * @param eventCreationBlocker prevents events from being created at various times
      */
     public TipsetEventCreationManager(
             @NonNull final PlatformContext platformContext,
@@ -84,10 +82,10 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final TransactionSupplier transactionSupplier,
             @NonNull final Consumer<GossipEvent> newEventHandler,
-            @NonNull final BooleanSupplier isEventCreationPermitted) {
+            @NonNull final TipsetEventCreationBlocker eventCreationBlocker) {
 
         this.newEventHandler = Objects.requireNonNull(newEventHandler);
-        this.isEventCreationPermitted = Objects.requireNonNull(isEventCreationPermitted);
+        this.eventCreationBlocker = Objects.requireNonNull(eventCreationBlocker);
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(time);
@@ -167,7 +165,7 @@ public class TipsetEventCreationManager implements Lifecycle { // TODO test
      * Create a new event if it is legal to do so.
      */
     private void maybeCreateEvent() {
-        if (!isEventCreationPermitted.getAsBoolean()) {
+        if (!eventCreationBlocker.isEventCreationPermitted()) {
             // Event creation is currently not permitted.
             return;
         }

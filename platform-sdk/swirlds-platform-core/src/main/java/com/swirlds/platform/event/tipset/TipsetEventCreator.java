@@ -130,8 +130,6 @@ public class TipsetEventCreator { // TODO test
         final NodeId eventCreator = event.getHashedData().getCreatorId();
         final boolean selfEvent = eventCreator.equals(selfId);
 
-        // TODO unit test restart workflow vs non-restart workflow
-
         if (selfEvent) {
             if (lastSelfEvent == null || lastSelfEvent.getGeneration() < event.getGeneration()) {
                 // Normally we will ingest self events before we get to this point, but it's possible
@@ -342,7 +340,6 @@ public class TipsetEventCreator { // TODO test
         final Hash otherParentHash = getHash(otherParent);
         final NodeId otherParentId = getCreator(otherParent);
 
-        // TODO specifically unit test creation time
         final Instant now = time.now();
         final Instant timeCreated;
         if (lastSelfEvent == null) {
