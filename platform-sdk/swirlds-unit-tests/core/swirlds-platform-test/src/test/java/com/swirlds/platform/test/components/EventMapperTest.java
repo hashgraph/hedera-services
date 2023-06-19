@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.internal.EventImpl;
@@ -44,10 +45,10 @@ class EventMapperTest {
     @DisplayName("DataInDataOutTest")
     void dataInDataOutTest() {
 
-        final EventMapper mapper = new EventMapper(NodeId.createMain(0));
+        final EventMapper mapper = new EventMapper(new NoOpMetrics(), new NodeId(0));
 
-        final long nodeId1 = 1;
-        final long nodeId2 = 2;
+        final NodeId nodeId1 = new NodeId(1);
+        final NodeId nodeId2 = new NodeId(2);
 
         // Check default values when no data has been added
         assertNull(mapper.getMostRecentEvent(nodeId1), "no data in mapper yet");
@@ -85,36 +86,39 @@ class EventMapperTest {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Orphaned Event Test")
     void orphanedEventTest() {
-        final EventMapper mapper = new EventMapper(NodeId.createMain(0));
+        final EventMapper mapper = new EventMapper(new NoOpMetrics(), new NodeId(0));
 
         // With no events in the mapper there will be no descendants
         for (int i = 0; i < 4; i++) {
-            assertFalse(mapper.doesMostRecentEventHaveDescendants(i), "no events yet, should not have descendants");
+            assertFalse(
+                    mapper.doesMostRecentEventHaveDescendants(new NodeId(i)),
+                    "no events yet, should not have descendants");
         }
 
         // The first event added for each node will not have descendants until they are used as other parents
         for (int i = 0; i < 4; i++) {
-            final EventImpl event = EventMocks.createMockEvent(i, 0, null);
+            final EventImpl event = EventMocks.createMockEvent(new NodeId(i), 0, null);
             mapper.eventAdded(event);
-            assertFalse(mapper.doesMostRecentEventHaveDescendants(i), "should not have descendants");
+            assertFalse(mapper.doesMostRecentEventHaveDescendants(new NodeId(i)), "should not have descendants");
         }
-        final EventImpl firstNode3Event = mapper.getMostRecentEvent(3);
+        final EventImpl firstNode3Event = mapper.getMostRecentEvent(new NodeId(3));
 
         // Using an event as an other parent should mark it as having descendants
         for (int i = 0; i < 4; i++) {
-            final long otherParentId = (i + 1) % 4;
-            final EventImpl event = EventMocks.createMockEvent(i, 1, mapper.getMostRecentEvent(otherParentId));
+            final NodeId otherParentId = new NodeId((i + 1) % 4);
+            final EventImpl event =
+                    EventMocks.createMockEvent(new NodeId(i), 1, mapper.getMostRecentEvent(otherParentId));
             mapper.eventAdded(event);
             assertTrue(mapper.doesMostRecentEventHaveDescendants(otherParentId), "descendant was just created");
             // The node we just added will not have any descendants
-            assertFalse(mapper.doesMostRecentEventHaveDescendants(i), "should not have descendants");
+            assertFalse(mapper.doesMostRecentEventHaveDescendants(new NodeId(i)), "should not have descendants");
         }
 
         // In the previous operation node 3 got the last event, and so that event has no descendants. Using an old event
         // from node 3 won't cause the most recent event from 3 to have any descendants.
-        assertFalse(mapper.doesMostRecentEventHaveDescendants(3), "event is most recent one created");
-        final EventImpl e = EventMocks.createMockEvent(1, 2, firstNode3Event);
+        assertFalse(mapper.doesMostRecentEventHaveDescendants(new NodeId(3)), "event is most recent one created");
+        final EventImpl e = EventMocks.createMockEvent(new NodeId(1), 2, firstNode3Event);
         mapper.eventAdded(e);
-        assertFalse(mapper.doesMostRecentEventHaveDescendants(3), "event should not have descendants");
+        assertFalse(mapper.doesMostRecentEventHaveDescendants(new NodeId(3)), "event should not have descendants");
     }
 }

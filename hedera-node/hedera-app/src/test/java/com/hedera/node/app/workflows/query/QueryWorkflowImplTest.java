@@ -54,12 +54,13 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
-import com.hedera.node.app.service.network.impl.handlers.NetworkGetExecutionTimeHandler;
+import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetExecutionTimeHandler;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
@@ -68,6 +69,8 @@ import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -89,6 +92,7 @@ import org.mockito.stubbing.Answer;
 class QueryWorkflowImplTest extends AppTestBase {
 
     private static final int BUFFER_SIZE = 1024 * 6;
+    private static final long DEFAULT_CONFIG_VERSION = 1L;
 
     @Mock
     private HederaState state;
@@ -123,6 +127,9 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private Codec<Query> queryParser;
 
+    @Mock(strictness = LENIENT)
+    private ConfigProvider configProvider;
+
     private Query query;
     private Transaction payment;
     private TransactionBody txBody;
@@ -148,7 +155,8 @@ class QueryWorkflowImplTest extends AppTestBase {
         txBody = TransactionBody.newBuilder().transactionID(transactionID).build();
 
         final var signatureMap = SignatureMap.newBuilder().build();
-        transactionInfo = new TransactionInfo(payment, txBody, signatureMap, CRYPTO_TRANSFER);
+        transactionInfo =
+                new TransactionInfo(payment, txBody, signatureMap, payment.signedTransactionBytes(), CRYPTO_TRANSFER);
         when(ingestChecker.runAllChecks(state, payment)).thenReturn(transactionInfo);
 
         when(handler.extractHeader(query)).thenReturn(queryHeader);
@@ -170,6 +178,10 @@ class QueryWorkflowImplTest extends AppTestBase {
         when(dispatcher.getHandler(query)).thenReturn(handler);
         when(handler.findResponse(any(), eq(responseHeader))).thenReturn(response);
 
+        final var config =
+                new VersionedConfigImpl(new HederaTestConfigBuilder(false).getOrCreateConfig(), DEFAULT_CONFIG_VERSION);
+        when(configProvider.getConfiguration()).thenReturn(config);
+
         workflow = new QueryWorkflowImpl(
                 stateAccessor,
                 throttleAccumulator,
@@ -178,7 +190,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                 ingestChecker,
                 dispatcher,
                 feeAccumulator,
-                queryParser);
+                queryParser,
+                configProvider);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -192,7 +205,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         ingestChecker,
                         dispatcher,
                         feeAccumulator,
-                        queryParser))
+                        queryParser,
+                        configProvider))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -202,7 +216,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         ingestChecker,
                         dispatcher,
                         feeAccumulator,
-                        queryParser))
+                        queryParser,
+                        configProvider))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -212,7 +227,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         ingestChecker,
                         dispatcher,
                         feeAccumulator,
-                        queryParser))
+                        queryParser,
+                        configProvider))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -222,7 +238,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         ingestChecker,
                         dispatcher,
                         feeAccumulator,
-                        queryParser))
+                        queryParser,
+                        configProvider))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -232,7 +249,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         null,
                         dispatcher,
                         feeAccumulator,
-                        queryParser))
+                        queryParser,
+                        configProvider))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -242,7 +260,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         ingestChecker,
                         null,
                         feeAccumulator,
-                        queryParser))
+                        queryParser,
+                        configProvider))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -252,7 +271,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                         ingestChecker,
                         dispatcher,
                         null,
-                        queryParser))
+                        queryParser,
+                        configProvider))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryWorkflowImpl(
                         stateAccessor,
@@ -262,6 +282,18 @@ class QueryWorkflowImplTest extends AppTestBase {
                         ingestChecker,
                         dispatcher,
                         feeAccumulator,
+                        null,
+                        configProvider))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryWorkflowImpl(
+                        stateAccessor,
+                        throttleAccumulator,
+                        submissionManager,
+                        queryChecker,
+                        ingestChecker,
+                        dispatcher,
+                        feeAccumulator,
+                        queryParser,
                         null))
                 .isInstanceOf(NullPointerException.class);
     }
@@ -359,7 +391,8 @@ class QueryWorkflowImplTest extends AppTestBase {
                 ingestChecker,
                 localDispatcher,
                 feeAccumulator,
-                queryParser);
+                queryParser,
+                configProvider);
 
         // then
         assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))
@@ -512,7 +545,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, 12345L))
                 .when(queryChecker)
-                .validateAccountBalances(payer, txBody, 200L);
+                .validateAccountBalances(payer, transactionInfo, 200L);
         final var responseBuffer = newEmptyBuffer();
 
         // when

@@ -16,6 +16,7 @@
 
 package com.swirlds.common.system.address;
 
+import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -31,6 +32,9 @@ public class AddressBookUtils {
 
     /**
      * Parses an address from a single line of text.  The address must be in the form used in config.txt
+     * <p>
+     * If the memo field can be parsed, the provided memo field is ignored.  If there is no memo field parsed, the
+     * provided memo field is used.
      *
      * @param addressLine         the string to parse an Address form.
      * @param id                  the id to give to the parsed Address.
@@ -39,18 +43,20 @@ public class AddressBookUtils {
      * @return the Address parsed from the addressLine.
      * @throws ParseException if there is any problem with creating an Address from the addressLine.
      */
+    @NonNull
     public static Address parseAddressConfigText(
             @NonNull final String addressLine,
-            final long id,
+            @NonNull final NodeId id,
             @NonNull final Function<InetAddress, Boolean> isOwnHostDeterminer,
             @NonNull final String memo)
             throws ParseException {
         Objects.requireNonNull(addressLine, "The addressLine must not be null.");
+        Objects.requireNonNull(id, "The id must not be null.");
         Objects.requireNonNull(isOwnHostDeterminer, "The isOwnHostDeterminer must not be null.");
         Objects.requireNonNull(memo, "The memo must not be null.");
         final String[] parts = addressLine.trim().split(",");
-        if (parts.length != 8) {
-            throw new ParseException("Not enough parts in the address line to parse correctly.", parts.length);
+        if (parts.length < 8 || parts.length > 9) {
+            throw new ParseException("Incorrect number of parts in the address line to parse correctly.", parts.length);
         }
         for (int i = 0; i < parts.length; i++) {
             parts[i] = parts[i].trim();
@@ -90,6 +96,13 @@ public class AddressBookUtils {
         } catch (NumberFormatException e) {
             throw new ParseException("Cannot parse ip port from '" + parts[7] + "'", 7);
         }
+        final String memoToUse;
+        if (parts.length == 9) {
+            memoToUse = parts[8];
+        } else {
+            memoToUse = memo;
+        }
+
         final boolean isOwnHost = isOwnHostDeterminer.apply(internalIp);
 
         return new Address(
@@ -102,7 +115,7 @@ public class AddressBookUtils {
                 internalPort,
                 externalIp.getAddress(),
                 externalPort,
-                memo);
+                memoToUse);
     }
 
     /**
@@ -116,11 +129,12 @@ public class AddressBookUtils {
      * @return a parsed AddressBook.
      * @throws ParseException if any Address throws a ParseException when being parsed.
      */
+    @NonNull
     public static AddressBook parseAddressBookConfigText(
             @NonNull final String addressBookText,
-            @NonNull final Function<Long, Long> posToId,
+            @NonNull final Function<Long, NodeId> posToId,
             @NonNull final Function<InetAddress, Boolean> isOwnDeterminer,
-            @NonNull final Function<Long, String> memoSource)
+            @NonNull final Function<NodeId, String> memoSource)
             throws ParseException {
         Objects.requireNonNull(addressBookText, "The addressBookText must not be null.");
         Objects.requireNonNull(posToId, "The posToId must not be null.");
@@ -129,7 +143,7 @@ public class AddressBookUtils {
         final AddressBook addressBook = new AddressBook();
         long pos = 0;
         for (final String addressLine : addressBookText.split("\\r?\\n")) {
-            final long id = posToId.apply(pos);
+            final NodeId id = posToId.apply(pos);
             addressBook.add(parseAddressConfigText(addressLine, id, isOwnDeterminer, memoSource.apply(id)));
             pos++;
         }

@@ -16,18 +16,30 @@
 
 package com.hedera.node.app.service.file.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifySystemFile;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.base.TimestampSeconds;
+import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SYSTEM_DELETE}.
+ * This class contains all workflow-related functionality regarding {@link
+ * HederaFunctionality#SYSTEM_DELETE}.
  */
 @Singleton
 public class FileSystemDeleteHandler implements TransactionHandler {
@@ -39,30 +51,57 @@ public class FileSystemDeleteHandler implements TransactionHandler {
     /**
      * This method is called during the pre-handle workflow.
      *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, and warms the cache.
+     * <p>Determines signatures needed for deleting a system file
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param context the {@link PreHandleContext} which collects all information
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@code handle()}
+     * @throws NullPointerException if any of the arguments are {@code null}
      */
-    public void preHandle(@NonNull final PreHandleContext context) {
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+
+        final var transactionBody = context.body().systemDeleteOrThrow();
+        final var fileStore = context.createStore(ReadableFileStoreImpl.class);
+        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, context, true);
+
+        validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
 
-    /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle() {
-        throw new UnsupportedOperationException("Not implemented");
+    @Override
+    public void handle(@NonNull final HandleContext handleContext) throws HandleException {
+        requireNonNull(handleContext);
+
+        final var systemDeleteTransactionBody = handleContext.body().systemDeleteOrThrow();
+        if (!systemDeleteTransactionBody.hasFileID()) {
+            throw new HandleException(INVALID_FILE_ID);
+        }
+        var fileId = systemDeleteTransactionBody.fileIDOrThrow();
+
+        final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
+
+        final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
+        final File file = verifySystemFile(ledgerConfig, fileStore, fileId);
+
+        final var newExpiry = systemDeleteTransactionBody
+                .expirationTimeOrElse(new TimestampSeconds(file.expirationTime()))
+                .seconds();
+        // If the file is already expired, remove it from state completely otherwise change the deleted flag to be true.
+        if (newExpiry <= handleContext.consensusNow().getEpochSecond()) {
+            fileStore.removeFile(fileId.fileNum());
+        } else {
+            /* Get all the fields from existing file and change deleted flag */
+            final var fileBuilder = new File.Builder()
+                    .fileNumber(file.fileNumber())
+                    .expirationTime(newExpiry)
+                    .keys(file.keys())
+                    .contents(file.contents())
+                    .memo(file.memo())
+                    .deleted(true);
+
+            /* --- Put the modified file. It will be in underlying state's modifications map.
+            It will not be committed to state until commit is called on the state.--- */
+            fileStore.put(fileBuilder.build());
+        }
     }
 }

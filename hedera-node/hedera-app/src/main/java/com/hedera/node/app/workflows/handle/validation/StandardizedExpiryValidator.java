@@ -16,21 +16,29 @@
 
 package com.hedera.node.app.workflows.handle.validation;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.AutoRenewConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import javax.inject.Inject;
 
 /**
  * An implementation of {@link ExpiryValidator} that encapsulates the current policies
@@ -42,16 +50,20 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
     private final LongSupplier consensusSecondNow;
     private final AttributeValidator attributeValidator;
     private final HederaNumbers numbers;
+    private final ConfigProvider configProvider;
 
+    @Inject
     public StandardizedExpiryValidator(
             @NonNull final Consumer<Id> idValidator,
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final LongSupplier consensusSecondNow,
-            @NonNull final HederaNumbers numbers) {
+            @NonNull final HederaNumbers numbers,
+            @NonNull final ConfigProvider configProvider) {
         this.attributeValidator = Objects.requireNonNull(attributeValidator);
         this.consensusSecondNow = Objects.requireNonNull(consensusSecondNow);
         this.numbers = Objects.requireNonNull(numbers);
         this.idValidator = Objects.requireNonNull(idValidator);
+        this.configProvider = Objects.requireNonNull(configProvider);
     }
 
     /**
@@ -116,6 +128,27 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ResponseCodeEnum expirationStatus(
+            @NonNull final EntityType entityType,
+            final boolean isMarkedExpired,
+            final long balanceAvailableForSelfRenewal) {
+        final var isSmartContract = entityType.equals(EntityType.CONTRACT);
+        final var autoRenewConfig = configProvider.getConfiguration().getConfigData(AutoRenewConfig.class);
+        if (!autoRenewConfig.isAutoRenewEnabled()
+                || balanceAvailableForSelfRenewal > 0
+                || !isMarkedExpired
+                || isExpiryDisabled(
+                        isSmartContract, autoRenewConfig.expireAccounts(), autoRenewConfig.expireContracts())) {
+            return OK;
+        }
+
+        return isSmartContract ? CONTRACT_EXPIRED_AND_PENDING_REMOVAL : ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+    }
+
+    /**
      * Helper to check if an entity with the given metadata has a completely specified
      * auto-renew configuration. This is true if either the {@link ExpiryMeta} includes
      * both an auto-renew period and an auto-renew account; or if the {@link ExpiryMeta}
@@ -147,5 +180,9 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
         }
         final var autoRenewId = new Id(numbers.shard(), numbers.realm(), num);
         idValidator.accept(autoRenewId);
+    }
+
+    private boolean isExpiryDisabled(boolean smartContract, boolean expireAccounts, boolean expireContracts) {
+        return (smartContract && !expireContracts) || (!smartContract && !expireAccounts);
     }
 }

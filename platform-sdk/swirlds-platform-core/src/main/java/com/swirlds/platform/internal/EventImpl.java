@@ -27,6 +27,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
@@ -41,12 +42,13 @@ import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.RoundInfo;
-import com.swirlds.platform.StreamEventParser;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.InternalEventData;
 import com.swirlds.platform.util.iterator.SkippingIterator;
 import com.swirlds.platform.util.iterator.TypedIterator;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -150,15 +152,6 @@ public class EventImpl extends AbstractSerializableHashable
         updateConsensusDataGeneration();
     }
 
-    /**
-     * This constructor is used in {@link StreamEventParser} when parsing events from stream
-     *
-     * @param consensusEvent
-     */
-    public EventImpl(final DetailedConsensusEvent consensusEvent) {
-        buildFromConsensusEvent(consensusEvent);
-    }
-
     public EventImpl(
             final BaseEventHashedData baseEventHashedData,
             final BaseEventUnhashedData baseEventUnhashedData,
@@ -259,7 +252,7 @@ public class EventImpl extends AbstractSerializableHashable
         /* number of seconds to add to the base time */
         double sec;
 
-        if (selfId.equalsMain(getCreatorId())) {
+        if (Objects.equals(selfId, getCreatorId())) {
             // event by self
             t = getTimeCreated();
             // seconds from self creating an event to the consensus timestamp that event receives
@@ -589,11 +582,7 @@ public class EventImpl extends AbstractSerializableHashable
     }
 
     public boolean isCreatedBy(final NodeId id) {
-        return getCreatorId() == id.getId();
-    }
-
-    public boolean isCreatedBy(final long id) {
-        return getCreatorId() == id;
+        return Objects.equals(getCreatorId(), id);
     }
 
     public boolean hasUserTransactions() {
@@ -953,7 +942,8 @@ public class EventImpl extends AbstractSerializableHashable
      * {@inheritDoc}
      */
     @Override
-    public long getOtherId() {
+    @Nullable
+    public NodeId getOtherId() {
         return baseEvent.getUnhashedData().getOtherId();
     }
 
@@ -1001,7 +991,17 @@ public class EventImpl extends AbstractSerializableHashable
      * {@inheritDoc}
      */
     @Override
-    public long getCreatorId() {
+    @Nullable
+    public SoftwareVersion getSoftwareVersion() {
+        return baseEvent.getHashedData().getSoftwareVersion();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public NodeId getCreatorId() {
         return baseEvent.getHashedData().getCreatorId();
     }
 

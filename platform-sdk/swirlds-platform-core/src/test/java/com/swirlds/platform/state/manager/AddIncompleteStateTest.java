@@ -25,13 +25,14 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import java.util.HashMap;
@@ -52,7 +53,7 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
     private final AddressBook addressBook = new RandomAddressBookGenerator(random)
             .setSize(4)
             .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-            .setSequentialIds(true)
+            .setSequentialIds(false)
             .build();
 
     private final long firstRound = 50;
@@ -64,10 +65,7 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
      */
     private StateLacksSignaturesConsumer stateLacksSignaturesConsumer() {
         // No state is unsigned in this test. If this method is called then the test is expected to fail.
-        return ssw -> {
-            stateLacksSignaturesCount.getAndIncrement();
-            ssw.release();
-        };
+        return ss -> stateLacksSignaturesCount.getAndIncrement();
     }
 
     /**
@@ -76,10 +74,9 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
      * This consumer is provided by the wiring layer, so it should release the resource when finished.
      */
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
-        return ssw -> {
-            assertEquals(highestRound.get() - roundAgeToSign, ssw.get().getRound(), "unexpected round completed");
+        return ss -> {
+            assertEquals(highestRound.get() - roundAgeToSign, ss.getRound(), "unexpected round completed");
             stateHasEnoughSignaturesCount.getAndIncrement();
-            ssw.release();
         };
     }
 
@@ -94,9 +91,9 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
 
         // Simulate a restart (i.e. loading a state from disk)
         final Hash signedHash = randomHash(random);
-        final Map<Long, Signature> signatures = new HashMap<>();
+        final Map<NodeId, Signature> signatures = new HashMap<>();
         for (final Address address : addressBook) {
-            signatures.put(address.getId(), buildFakeSignature(address.getSigPublicKey(), signedHash));
+            signatures.put(address.getNodeId(), buildFakeSignature(address.getSigPublicKey(), signedHash));
         }
 
         final SignedState stateFromDisk = new RandomSignedStateGenerator(random)
@@ -109,14 +106,23 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
         final Hash stateHash = randomHash();
         stateFromDisk.getState().setHash(stateHash);
 
+        assertNull(manager.getFirstStateTimestamp());
+        assertEquals(-1, manager.getFirstStateRound());
+
         // The manager should store this state but not assigned it to the last complete signed state
         manager.addState(stateFromDisk);
 
-        assertNull(manager.getLatestSignedState().get());
+        assertEquals(
+                stateFromDisk.getState().getPlatformState().getPlatformData().getConsensusTimestamp(),
+                manager.getFirstStateTimestamp());
+        assertEquals(
+                stateFromDisk.getState().getPlatformState().getPlatformData().getRound(), manager.getFirstStateRound());
+
+        assertNull(manager.getLatestSignedState("test").getNullable());
         assertEquals(-1, manager.getLastCompleteRound());
 
-        try (final AutoCloseableWrapper<SignedState> wrapper =
-                manager.find(emergencyStateCriteria(stateFromDisk.getRound(), stateHash))) {
+        try (final ReservedSignedState wrapper =
+                manager.find(emergencyStateCriteria(stateFromDisk.getRound(), stateHash), "test")) {
             assertNotNull(wrapper.get(), "Should have returned a state");
             assertEquals(stateFromDisk, wrapper.get(), "Should have returned the state from disk");
         }

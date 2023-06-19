@@ -121,7 +121,7 @@ public class HashgraphGui extends PrePaintableJPanel {
 
     private void sourceReadyCheck() {
         if (!sourceReadyCheckDone && hashgraphSource.isReady()) {
-            controls.setExpanded(hashgraphSource.getNumMembers() <= 6); // expand if not many members
+            controls.setExpanded(hashgraphSource.getAddressBook().getSize() <= 6); // expand if not many members
             sourceReadyCheckDone = true;
         }
     }

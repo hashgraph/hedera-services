@@ -21,6 +21,7 @@ import static com.swirlds.platform.recovery.EventRecoveryWorkflow.recoverState;
 import com.swirlds.cli.commands.EventStreamCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.common.system.NodeId;
 import java.nio.file.Path;
 import java.util.List;
 import picocli.CommandLine;
@@ -35,11 +36,12 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
     private Path outputPath = Path.of("./out");
     private String appMainName;
     private Path bootstrapSignedState;
-    private long selfId;
+    private NodeId selfId;
     private boolean ignorePartialRounds;
     private long finalRound = -1;
     private Path eventStreamDirectory;
     private List<Path> configurationPaths = List.of();
+    private boolean loadSigningKeys;
 
     private EventStreamRecoverCommand() {}
 
@@ -86,7 +88,7 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
             description = "The ID of the node that is being used to recover the state. "
                     + "This node's keys should be available locally.")
     private void setSelfId(final long selfId) {
-        this.selfId = selfId;
+        this.selfId = new NodeId(selfId);
     }
 
     @CommandLine.Option(
@@ -105,6 +107,14 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
         this.finalRound = finalRound;
     }
 
+    @CommandLine.Option(
+            names = {"-s", "--load-signing-keys"},
+            defaultValue = "false",
+            description = "If present then load the signing keys. If not present, calling platform.sign() will throw.")
+    private void setLoadSigningKeys(final boolean loadSigningKeys) {
+        this.loadSigningKeys = loadSigningKeys;
+    }
+
     @Override
     public Integer call() throws Exception {
         recoverState(
@@ -115,7 +125,8 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
                 !ignorePartialRounds,
                 finalRound,
                 outputPath,
-                selfId);
+                selfId,
+                loadSigningKeys);
         return 0;
     }
 }

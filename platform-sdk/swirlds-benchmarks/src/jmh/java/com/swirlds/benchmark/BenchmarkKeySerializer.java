@@ -44,7 +44,7 @@ public class BenchmarkKeySerializer implements KeySerializer<BenchmarkKey> {
     }
 
     @Override
-    public int getSerializedSize() {
+    public int getSerializedSize(final long dataVersion) {
         return BenchmarkKey.getSerializedSize();
     }
 

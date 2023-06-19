@@ -20,6 +20,7 @@ import static com.swirlds.platform.test.event.EventUtils.staticDynamicValue;
 import static com.swirlds.platform.test.event.EventUtils.weightedChoice;
 import static com.swirlds.platform.test.event.RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.platform.test.event.DynamicValue;
@@ -29,7 +30,9 @@ import com.swirlds.platform.test.event.source.EventSource;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A utility class for generating a graph of events.
@@ -105,7 +108,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
 
         for (int index = 0; index < eventSources.size(); index++) {
             final EventSource<?> source = eventSources.get(index);
-            source.setNodeId(index);
+            source.setNodeId(new NodeId(index));
         }
 
         buildDefaultOtherParentAffinityMatrix();
@@ -138,11 +141,16 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     }
 
     private void buildAddressBook(final List<EventSource<?>> eventSources) {
+        final Map<NodeId, Long> weightMap = new HashMap<>();
+        for (final EventSource<?> eventSource : eventSources) {
+            weightMap.put(eventSource.getNodeId(), eventSource.getWeight());
+        }
+
         addressBook = new RandomAddressBookGenerator(getRandom())
-                .setSize(sources.size())
-                .setCustomWeightGenerator(id -> eventSources.get((int) id).getWeight())
+                .setNodeIds(weightMap.keySet())
+                .setCustomWeightGenerator(weightMap::get)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
-                .setSequentialIds(true)
+                .setSequentialIds(false)
                 .build();
     }
 
@@ -339,7 +347,8 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * 		The node that is creating the event.
      */
     private EventSource<?> getNextOtherParentSource(final long eventIndex, final EventSource<?> source) {
-        final List<Double> affinityVector = getOtherParentAffinityVector(eventIndex, source.getNodeId());
+        final List<Double> affinityVector =
+                getOtherParentAffinityVector(eventIndex, addressBook.getIndexOfNodeId(source.getNodeId()));
         final int nodeID = weightedChoice(getRandom(), affinityVector);
         return sources.get(nodeID);
     }

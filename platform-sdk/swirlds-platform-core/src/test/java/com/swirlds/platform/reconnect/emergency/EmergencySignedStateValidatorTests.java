@@ -21,10 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.platform.state.EmergencyRecoveryFile;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
@@ -49,7 +50,7 @@ public class EmergencySignedStateValidatorTests {
                 .setSize(NUM_NODES)
                 .setAverageWeight(WEIGHT_PER_NODE)
                 .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(true)
+                .setSequentialIds(false)
                 .build();
     }
 
@@ -135,9 +136,8 @@ public class EmergencySignedStateValidatorTests {
     @Test
     void validLaterState() {
         final Random random = RandomUtils.getRandomPrintSeed();
-        final List<Long> majorityWeightNodes = IntStream.range(0, NUM_NODES - 1)
-                .mapToLong(i -> (long) i)
-                .boxed()
+        final List<NodeId> majorityWeightNodes = IntStream.range(0, NUM_NODES - 1)
+                .mapToObj(index -> addressBook.getNodeId(index))
                 .toList();
 
         final SignedState laterState = new RandomSignedStateGenerator()
@@ -165,10 +165,8 @@ public class EmergencySignedStateValidatorTests {
     @Test
     void invalidLaterStateWrongEpochHash() {
         final Random random = RandomUtils.getRandomPrintSeed();
-        final List<Long> majorityWeightNodes = IntStream.range(0, NUM_NODES - 1)
-                .mapToLong(i -> (long) i)
-                .boxed()
-                .toList();
+        final List<NodeId> majorityWeightNodes =
+                IntStream.range(0, NUM_NODES - 1).mapToObj(NodeId::new).toList();
 
         final SignedState laterState = new RandomSignedStateGenerator()
                 .setAddressBook(addressBook)
@@ -197,10 +195,9 @@ public class EmergencySignedStateValidatorTests {
     @Test
     void invalidLaterStateNotSignedByMajority() {
         final Random random = RandomUtils.getRandomPrintSeed();
-        final List<Long> lessThanMajorityWeightNodes = IntStream.range(0, NUM_NODES / 2)
-                .mapToLong(i -> (long) i)
-                .boxed()
-                .toList();
+
+        final List<NodeId> lessThanMajorityWeightNodes =
+                IntStream.range(0, NUM_NODES / 2).mapToObj(NodeId::new).toList();
 
         final SignedState laterState = new RandomSignedStateGenerator()
                 .setAddressBook(addressBook)

@@ -26,18 +26,16 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusUpdateTopicRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.UpdateTopicRecordBuilder;
-import com.hedera.node.app.spi.meta.HandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -55,26 +53,14 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, and warms the cache.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@code #handle()}
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
-            throws PreCheckException {
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().consensusUpdateTopicOrThrow();
+        final var topicStore = context.createStore(ReadableTopicStore.class);
 
         // The topic ID must be present on the transaction and the topic must exist.
-        final var topic = topicStore.getTopicMetadata(op.topicID());
+        final var topic = topicStore.getTopic(op.topicID());
         mustExist(topic, INVALID_TOPIC_ID);
 
         // Extending the expiry is the *only* update operation permitted without an admin key. So if that is the
@@ -112,14 +98,14 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
      * Given the appropriate context, updates a topic.
      *
      * @param handleContext the {@link HandleContext} for the active transaction
-     * @param topicUpdate   the {@link ConsensusUpdateTopicTransactionBody} of the active transaction
-     * @param topicStore    the {@link WritableTopicStore} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(
-            @NonNull final HandleContext handleContext,
-            @NonNull final ConsensusUpdateTopicTransactionBody topicUpdate,
-            @NonNull final WritableTopicStore topicStore) {
+    @Override
+    public void handle(@NonNull final HandleContext handleContext) {
+        requireNonNull(handleContext);
+
+        final var topicUpdate = handleContext.body().consensusUpdateTopic();
+        final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         final var maybeTopic = requireNonNull(topicStore)
                 .get(topicUpdate.topicIDOrElse(TopicID.DEFAULT).topicNum());
         validateTrue(maybeTopic.isPresent(), INVALID_TOPIC_ID);
@@ -138,17 +124,23 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         builder.runningHash(topic.runningHash());
         builder.deleted(topic.deleted());
         // And then resolve mutable attributes, and put the new topic back
-        resolveMutableBuilderAttributes(handleContext.expiryValidator(), topicUpdate, builder, topic);
+        resolveMutableBuilderAttributes(handleContext, topicUpdate, builder, topic);
         topicStore.put(builder.build());
     }
 
     private void resolveMutableBuilderAttributes(
-            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final HandleContext handleContext,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
             @NonNull final Topic.Builder builder,
             @NonNull final Topic topic) {
         if (op.hasAdminKey()) {
-            builder.adminKey(op.adminKey());
+            var key = op.adminKey();
+            // Empty key list is allowed and is used for immutable entities (e.g. system accounts)
+            if (handleContext.attributeValidator().isImmutableKey(key)) {
+                builder.adminKey((Key) null);
+            } else {
+                builder.adminKey(key);
+            }
         } else {
             builder.adminKey(topic.adminKey());
         }
@@ -162,7 +154,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         } else {
             builder.memo(topic.memo());
         }
-        final var resolvedExpiryMeta = resolvedUpdateMetaFrom(expiryValidator, op, topic);
+        final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, topic);
         builder.expiry(resolvedExpiryMeta.expiry());
         builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
         builder.autoRenewAccountNumber(resolvedExpiryMeta.autoRenewNum());
@@ -238,7 +230,8 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     private void validateMaybeNewAdminKey(
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op) {
-        if (op.hasAdminKey()) {
+        // Empty key list is allowed and is used for immutable entities (e.g. system accounts)
+        if (op.hasAdminKey() && !attributeValidator.isImmutableKey(op.adminKey())) {
             attributeValidator.validateKey(op.adminKey());
         }
     }
@@ -249,11 +242,6 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         if (op.hasSubmitKey()) {
             attributeValidator.validateKey(op.submitKey());
         }
-    }
-
-    @Override
-    public ConsensusUpdateTopicRecordBuilder newRecordBuilder() {
-        return new UpdateTopicRecordBuilder();
     }
 
     public static boolean wantsToMutateNonExpiryField(@NonNull final ConsensusUpdateTopicTransactionBody op) {

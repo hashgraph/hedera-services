@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state.merkle.adapters;
 
+import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
@@ -34,13 +35,13 @@ import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * Adapts a {@link VirtualMap} constructed by {@code MerkleHederaState#MerkleStates} by "unwrapping"
- * its {@link OnDiskKey} and {@link OnDiskValue} containers, so that a
- * {@code VirtualMap<OnDiskKey<K>, OnDiskValue<V>>} appears as a {@code VirtualMapLike<K, V>}.
+ * Adapts a {@link VirtualMap} constructed by {@code MerkleHederaState#MerkleStates} by "unwrapping" its
+ * {@link OnDiskKey} and {@link OnDiskValue} containers, so that a {@code VirtualMap<OnDiskKey<K>, OnDiskValue<V>>}
+ * appears as a {@code VirtualMapLike<K, V>}.
  *
  * <p>This allows us to use a {@link MerkleHederaState} as a {@link StateChildrenProvider} binding
- * within a {@link com.hedera.node.app.HederaApp} instance, which is important while we are relying
- * heavily on adapters around {@code mono-service} components.
+ * within a {@link HederaInjectionComponent} instance, which is important while we are relying heavily on adapters
+ * around {@code mono-service} components.
  */
 public final class VirtualMapLikeAdapter {
     private VirtualMapLikeAdapter() {
@@ -125,6 +126,11 @@ public final class VirtualMapLikeAdapter {
             public V remove(final K key) {
                 final var removed = real.remove(new OnDiskKey<>(md, key));
                 return removed != null ? removed.getValue() : null;
+            }
+
+            @Override
+            public void warm(final K key) {
+                real.warm(new OnDiskKey<>(md, key));
             }
         };
     }

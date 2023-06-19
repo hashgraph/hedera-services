@@ -18,14 +18,15 @@ package com.swirlds.common.threading.locks.internal;
 
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Returned when a lock has been acquired on a try
  */
-public class AcquiredOnTry implements MaybeLocked {
+public final class AcquiredOnTry implements MaybeLocked {
     private final AutoCloseableNonThrowing close;
 
-    public AcquiredOnTry(final AutoCloseableNonThrowing close) {
+    public AcquiredOnTry(@NonNull final AutoCloseableNonThrowing close) {
         this.close = close;
     }
 

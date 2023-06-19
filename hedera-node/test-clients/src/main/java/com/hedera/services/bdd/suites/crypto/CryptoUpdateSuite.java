@@ -123,7 +123,7 @@ public class CryptoUpdateSuite extends HapiSuite {
                 updateFailsIfMissingSigs(),
                 updateFailsWithContractKey(),
                 updateFailsWithOverlyLongLifetime(),
-                usdFeeAsExpected(),
+                usdFeeAsExpectedCryptoUpdate(),
                 sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
                 updateMaxAutoAssociationsWorks(),
                 updateStakingFieldsWorks());
@@ -178,7 +178,7 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .logged());
     }
 
-    private HapiSpec usdFeeAsExpected() {
+    private HapiSpec usdFeeAsExpectedCryptoUpdate() {
         double autoAssocSlotPrice = 0.0018;
         double baseFee = 0.00022;
         double plusOneSlotFee = baseFee + autoAssocSlotPrice;
@@ -187,9 +187,10 @@ public class CryptoUpdateSuite extends HapiSuite {
         final var baseTxn = "baseTxn";
         final var plusOneTxn = "plusOneTxn";
         final var plusTenTxn = "plusTenTxn";
+        final var allowedPercentDiff = 1.0;
 
         AtomicLong expiration = new AtomicLong();
-        return defaultHapiSpec("UsdFeeAsExpectedCryptoUpdate")
+        return defaultHapiSpec("usdFeeAsExpectedCryptoUpdate")
                 .given(
                         newKeyNamed("key").shape(SIMPLE),
                         cryptoCreate("payer").key("key").balance(1_000 * ONE_HBAR),
@@ -223,9 +224,12 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .maxAutomaticAssociations(11)
                                 .via(plusTenTxn))
                 .then(
-                        validateChargedUsd(baseTxn, baseFee).skippedIfAutoScheduling(Set.of(CryptoUpdate)),
-                        validateChargedUsd(plusOneTxn, plusOneSlotFee).skippedIfAutoScheduling(Set.of(CryptoUpdate)),
-                        validateChargedUsd(plusTenTxn, plusTenSlotsFee).skippedIfAutoScheduling(Set.of(CryptoUpdate)));
+                        validateChargedUsd(baseTxn, baseFee, allowedPercentDiff)
+                                .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
+                        validateChargedUsd(plusOneTxn, plusOneSlotFee, allowedPercentDiff)
+                                .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
+                        validateChargedUsd(plusTenTxn, plusTenSlotsFee, allowedPercentDiff)
+                                .skippedIfAutoScheduling(Set.of(CryptoUpdate)));
     }
 
     private HapiSpec updateFailsWithOverlyLongLifetime() {
@@ -366,7 +370,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     private HapiSpec updateWithEmptyKeyFails() {
         SigControl updKeySigs = threshOf(0, 0);
 
-        return defaultHapiSpec("UpdateWithEmptyKey")
+        return defaultHapiSpec("updateWithEmptyKeyFails")
                 .given(
                         newKeyNamed(ORIG_KEY).shape(KeyShape.SIMPLE),
                         newKeyNamed(UPD_KEY).shape(updKeySigs))

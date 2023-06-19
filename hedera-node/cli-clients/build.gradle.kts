@@ -15,27 +15,25 @@
  */
 
 plugins {
-  id("com.hedera.hashgraph.conventions")
-  id("com.hedera.hashgraph.shadow-jar")
-  id("org.gradle.java-test-fixtures")
+    id("com.hedera.hashgraph.conventions")
+    id("com.hedera.hashgraph.shadow-jar")
 }
 
 description = "Hedera Services Command-Line Clients"
 
-tasks.jar { manifest { attributes("Automatic-Module-Name" to "com.hedera.services.cli") } }
-
 configurations.all {
-  exclude("javax.annotation", "javax.annotation.api")
-  exclude("com.google.code.findbugs", "jsr305")
-  exclude("org.jetbrains", "annotations")
-  exclude("org.checkerframework", "checker-qual")
-  exclude("org.hamcrest", "hamcrest-core")
+    exclude("javax.annotation", "javax.annotation.api")
+    exclude("com.google.code.findbugs", "jsr305")
+    exclude("org.jetbrains", "annotations")
+    exclude("org.checkerframework", "checker-qual")
+    exclude("org.hamcrest", "hamcrest-core")
 }
 
 dependencies {
-  compileOnly(libs.spotbugs.annotations)
-  implementation(libs.bundles.swirlds)
-  implementation(project(":hedera-node:hedera-mono-service"))
-  implementation(testLibs.picocli)
-  testImplementation(testLibs.bundles.testing)
+    javaModuleDependencies {
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.mockito"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+        testRuntimeOnly(gav("org.mockito.inline"))
+    }
 }

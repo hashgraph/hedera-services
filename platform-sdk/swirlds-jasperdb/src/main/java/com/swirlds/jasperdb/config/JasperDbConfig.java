@@ -33,7 +33,7 @@ import java.time.temporal.ChronoUnit;
  * 		Get the maximum number of unique keys we expect to be stored in this database. This is used for
  * 		calculating in memory index sizes. IMPORTANT: This can only be set before a new database is created, changing
  * 		on an existing database will break it.
- * @param internalHashesRamToDiskThreshold
+ * @param hashesRamToDiskThreshold
  * 		Get threshold where we switch from storing internal hashes in ram to
  * 		storing them on disk. If it is 0 then everything is on disk, if it is Long.MAX_VALUE then everything is in ram.
  * 		Any value in the middle is the path value at
@@ -109,11 +109,14 @@ import java.time.temporal.ChronoUnit;
  * @param indexRebuildingEnforced
  * 		Configuration used to avoid reading stored indexes from a saved state and enforce rebuilding those indexes from
  * 		data files.
+ * @param leafRecordCacheSize
+ *      Cache size in bytes for reading virtual leaf records. Initialized in data source creation time from JasperDB
+ *      config. If the value is zero, leaf records cache isn't used.
  */
 @ConfigData("jasperDb")
 public record JasperDbConfig(
         @Positive @ConfigProperty(defaultValue = "500000000") long maxNumOfKeys,
-        @Min(0) @ConfigProperty(defaultValue = "0") long internalHashesRamToDiskThreshold,
+        @Min(0) @ConfigProperty(defaultValue = "0") long hashesRamToDiskThreshold,
         @ConfigProperty(defaultValue = "10240") int mediumMergeCutoffMb,
         @ConfigProperty(defaultValue = "3072") int smallMergeCutoffMb,
         @ConfigProperty(defaultValue = "MINUTES") ChronoUnit mergePeriodUnit,
@@ -134,7 +137,8 @@ public record JasperDbConfig(
         @ConfigProperty(defaultValue = "2147483648") long keySetBloomFilterSizeInBytes,
         @ConfigProperty(defaultValue = "1000000000") long keySetHalfDiskHashMapSize,
         @ConfigProperty(defaultValue = "1000000") int keySetHalfDiskHashMapBuffer,
-        @ConfigProperty(defaultValue = "false") boolean indexRebuildingEnforced) {
+        @ConfigProperty(defaultValue = "false") boolean indexRebuildingEnforced,
+        @ConfigProperty(defaultValue = "1048576") int leafRecordCacheSize) {
 
     public ConfigViolation maxNumberOfFilesInMergeValidation(final Configuration configuration) {
         final long maxNumberOfFilesInMerge =

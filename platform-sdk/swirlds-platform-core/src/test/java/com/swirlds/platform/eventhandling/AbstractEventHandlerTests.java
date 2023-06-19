@@ -20,10 +20,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.common.test.metrics.NoOpMetrics;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
@@ -55,7 +55,7 @@ public abstract class AbstractEventHandlerTests {
     protected Random random;
 
     protected void setup() {
-        selfId = new NodeId(false, 0L);
+        selfId = new NodeId(0L);
         metrics = new NoOpMetrics();
         ssStats = mock(SwirldStateMetrics.class);
         consensusMetrics = mock(ConsensusMetrics.class);
@@ -94,7 +94,7 @@ public abstract class AbstractEventHandlerTests {
                 when(event.getTransactions()).thenReturn(new ConsensusTransactionImpl[0]);
                 when(event.isEmpty()).thenReturn(true);
             }
-            when(event.getCreatorId()).thenReturn((long) random.nextInt(NUM_NODES));
+            when(event.getCreatorId()).thenReturn(new NodeId(random.nextInt(NUM_NODES)));
             when(event.getEstimatedTime()).thenReturn(Instant.now());
             when(event.getConsensusTimestamp()).thenReturn(Instant.now());
             final boolean isConsensus = random.nextBoolean();

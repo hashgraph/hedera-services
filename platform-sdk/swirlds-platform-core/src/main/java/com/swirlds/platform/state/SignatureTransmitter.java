@@ -20,11 +20,13 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,31 +36,43 @@ import org.apache.logging.log4j.Logger;
 public final class SignatureTransmitter {
 
     private static final Logger logger = LogManager.getLogger(SignatureTransmitter.class);
-    private final AddressBook addressBook;
-    private final NodeId selfId;
-    private final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter;
 
+    private final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter;
+    private final Supplier<PlatformStatus> getPlatformStatus;
+
+    /**
+     * Create a new SignatureTransmitter.
+     *
+     * @param prioritySystemTransactionSubmitter used to submit system transactions at high priority
+     * @param getPlatformStatus                  provides the current platform status
+     */
     public SignatureTransmitter(
-            final AddressBook addressBook,
-            final NodeId selfId,
-            final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter) {
-        this.addressBook = addressBook;
-        this.selfId = selfId;
-        this.prioritySystemTransactionSubmitter = prioritySystemTransactionSubmitter;
+            @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
+            @NonNull final Supplier<PlatformStatus> getPlatformStatus) {
+
+        this.prioritySystemTransactionSubmitter = Objects.requireNonNull(prioritySystemTransactionSubmitter);
+        this.getPlatformStatus = Objects.requireNonNull(getPlatformStatus);
     }
 
     /**
-     * Transmit this node's signature to other nodes for a signed state.  Signatures from zero weight nodes are
+     * Transmit this node's signature to other nodes for a signed state. Signatures from zero weight nodes are
      * transmitted and valuable for the purpose of detecting ISSes.
      *
-     * @param round
-     * 		the round of the state that was signed
-     * @param signature
-     * 		the self signature on the state
-     * @param stateHash
-     * 		the hash of the state that was signed
+     * @param round     the round of the state that was signed
+     * @param signature the self signature on the state
+     * @param stateHash the hash of the state that was signed
      */
-    public void transmitSignature(final long round, final Signature signature, final Hash stateHash) {
+    public void transmitSignature(final long round, @NonNull final Signature signature, @NonNull final Hash stateHash) {
+
+        Objects.requireNonNull(signature);
+        Objects.requireNonNull(stateHash);
+
+        final PlatformStatus platformStatus = getPlatformStatus.get();
+        if (platformStatus != PlatformStatus.ACTIVE && platformStatus != PlatformStatus.FREEZING) {
+            // Only send transactions if the platform is in ACTIVE or FREEZING state.
+            return;
+        }
+
         final SystemTransaction signatureTransaction = new StateSignatureTransaction(round, signature, stateHash);
         final boolean success = prioritySystemTransactionSubmitter.submit(signatureTransaction);
 

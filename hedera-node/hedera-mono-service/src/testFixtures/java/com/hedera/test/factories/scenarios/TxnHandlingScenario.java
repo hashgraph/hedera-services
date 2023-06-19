@@ -40,10 +40,14 @@ import static com.hedera.test.utils.IdUtils.asSchedule;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.withSettings;
+import static org.mockito.quality.Strictness.LENIENT;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -80,14 +84,16 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.merkle.map.MerkleMap;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.time.Instant;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import org.apache.commons.codec.DecoderException;
 
 public interface TxnHandlingScenario {
-    PlatformTxnAccessor platformTxn() throws Throwable;
+    PlatformTxnAccessor platformTxn() throws Exception;
 
     default com.hedera.hapi.node.transaction.TransactionBody pbjTxnBody() {
         try {
@@ -247,7 +253,7 @@ public interface TxnHandlingScenario {
         }
     }
 
-    default HederaFs hfs() throws Exception {
+    default HederaFs hfs() throws InvalidKeyException {
         HederaFs hfs = mock(HederaFs.class);
         given(hfs.exists(MISC_FILE)).willReturn(true);
         given(hfs.exists(SYS_FILE)).willReturn(true);
@@ -264,7 +270,7 @@ public interface TxnHandlingScenario {
         return topics;
     }
 
-    private static HFileMeta convert(final FileGetInfoResponse.FileInfo fi) throws DecoderException {
+    private static HFileMeta convert(final FileGetInfoResponse.FileInfo fi) throws InvalidKeyException {
         return new HFileMeta(
                 fi.getDeleted(),
                 JKey.mapKey(Key.newBuilder().setKeyList(fi.getKeys()).build()),
@@ -272,7 +278,7 @@ public interface TxnHandlingScenario {
     }
 
     default TokenStore tokenStore() {
-        var tokenStore = mock(TokenStore.class);
+        var tokenStore = mock(TokenStore.class, withSettings().strictness(LENIENT));
 
         var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
         var optionalKycKey = TOKEN_KYC_KT.asJKeyUnchecked();
@@ -283,42 +289,58 @@ public interface TxnHandlingScenario {
         var optionalPauseKey = TOKEN_PAUSE_KT.asJKeyUnchecked();
 
         var immutableToken = new MerkleToken(
-                Long.MAX_VALUE, 100, 1, "ImmutableToken", "ImmutableTokenName", false, false, new EntityId(1, 2, 3));
-        given(tokenStore.resolve(KNOWN_TOKEN_IMMUTABLE)).willReturn(KNOWN_TOKEN_IMMUTABLE);
-        given(tokenStore.get(KNOWN_TOKEN_IMMUTABLE)).willReturn(immutableToken);
+                Long.MAX_VALUE,
+                100,
+                1,
+                "ImmutableToken",
+                "ImmutableTokenName",
+                false,
+                false,
+                new EntityId(1, 2, 3),
+                (int) KNOWN_TOKEN_IMMUTABLE.getTokenNum());
+        lenient().when(tokenStore.resolve(KNOWN_TOKEN_IMMUTABLE)).thenReturn(KNOWN_TOKEN_IMMUTABLE);
+        lenient().when(tokenStore.get(KNOWN_TOKEN_IMMUTABLE)).thenReturn(immutableToken);
 
         var vanillaToken = new MerkleToken(
-                Long.MAX_VALUE, 100, 1, "VanillaToken", "TOKENNAME", false, false, new EntityId(1, 2, 3));
+                Long.MAX_VALUE, 100, 1, "VanillaToken", "TOKENNAME", false, false, new EntityId(1, 2, 3), (int)
+                        KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum());
         vanillaToken.setAdminKey(adminKey);
-        given(tokenStore.resolve(KNOWN_TOKEN_NO_SPECIAL_KEYS)).willReturn(KNOWN_TOKEN_NO_SPECIAL_KEYS);
-        given(tokenStore.get(KNOWN_TOKEN_NO_SPECIAL_KEYS)).willReturn(vanillaToken);
+        lenient().when(tokenStore.resolve(KNOWN_TOKEN_NO_SPECIAL_KEYS)).thenReturn(KNOWN_TOKEN_NO_SPECIAL_KEYS);
+        lenient().when(tokenStore.get(KNOWN_TOKEN_NO_SPECIAL_KEYS)).thenReturn(vanillaToken);
 
         var pausedToken = new MerkleToken(
-                Long.MAX_VALUE, 100, 1, "PausedToken", "PAUSEDTOKEN", false, false, new EntityId(1, 2, 4));
+                Long.MAX_VALUE, 100, 1, "PausedToken", "PAUSEDTOKEN", false, false, new EntityId(1, 2, 4), (int)
+                        KNOWN_TOKEN_WITH_PAUSE.getTokenNum());
         pausedToken.setAdminKey(adminKey);
         pausedToken.setPauseKey(optionalPauseKey);
-        given(tokenStore.resolve(KNOWN_TOKEN_WITH_PAUSE)).willReturn(KNOWN_TOKEN_WITH_PAUSE);
-        given(tokenStore.get(KNOWN_TOKEN_WITH_PAUSE)).willReturn(pausedToken);
+        pausedToken.setPaused(true);
+        lenient().when(tokenStore.resolve(KNOWN_TOKEN_WITH_PAUSE)).thenReturn(KNOWN_TOKEN_WITH_PAUSE);
+        lenient().when(tokenStore.get(KNOWN_TOKEN_WITH_PAUSE)).thenReturn(pausedToken);
 
-        var frozenToken =
-                new MerkleToken(Long.MAX_VALUE, 100, 1, "FrozenToken", "FRZNTKN", true, false, new EntityId(1, 2, 4));
+        var frozenToken = new MerkleToken(
+                Long.MAX_VALUE, 100, 1, "FrozenToken", "FRZNTKN", true, false, new EntityId(1, 2, 4), (int)
+                        KNOWN_TOKEN_WITH_FREEZE.getTokenNum());
         frozenToken.setAdminKey(adminKey);
         frozenToken.setFreezeKey(optionalFreezeKey);
-        given(tokenStore.resolve(KNOWN_TOKEN_WITH_FREEZE)).willReturn(KNOWN_TOKEN_WITH_FREEZE);
-        given(tokenStore.get(KNOWN_TOKEN_WITH_FREEZE)).willReturn(frozenToken);
+        lenient().when(tokenStore.resolve(KNOWN_TOKEN_WITH_FREEZE)).thenReturn(KNOWN_TOKEN_WITH_FREEZE);
+        lenient().when(tokenStore.get(KNOWN_TOKEN_WITH_FREEZE)).thenReturn(frozenToken);
 
-        var kycToken =
-                new MerkleToken(Long.MAX_VALUE, 100, 1, "KycToken", "KYCTOKENNAME", false, true, new EntityId(1, 2, 4));
+        var kycToken = new MerkleToken(
+                Long.MAX_VALUE, 100, 1, "KycToken", "KYCTOKENNAME", false, true, new EntityId(1, 2, 4), (int)
+                        KNOWN_TOKEN_WITH_KYC.getTokenNum());
         kycToken.setAdminKey(adminKey);
         kycToken.setKycKey(optionalKycKey);
-        given(tokenStore.resolve(KNOWN_TOKEN_WITH_KYC)).willReturn(KNOWN_TOKEN_WITH_KYC);
-        given(tokenStore.get(KNOWN_TOKEN_WITH_KYC)).willReturn(kycToken);
+        lenient().when(tokenStore.resolve(KNOWN_TOKEN_WITH_KYC)).thenReturn(KNOWN_TOKEN_WITH_KYC);
+        lenient().when(tokenStore.get(KNOWN_TOKEN_WITH_KYC)).thenReturn(kycToken);
 
         var feeScheduleToken = new MerkleToken(
-                Long.MAX_VALUE, 100, 1, "FsToken", "FEE_SCHEDULETOKENNAME", false, true, new EntityId(1, 2, 4));
+                Long.MAX_VALUE, 100, 1, "FsToken", "FEE_SCHEDULETOKENNAME", false, true, new EntityId(1, 2, 4), (int)
+                        KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY.getTokenNum());
         feeScheduleToken.setFeeScheduleKey(optionalFeeScheduleKey);
-        given(tokenStore.resolve(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)).willReturn(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY);
-        given(tokenStore.get(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)).willReturn(feeScheduleToken);
+        lenient()
+                .when(tokenStore.resolve(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY))
+                .thenReturn(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY);
+        lenient().when(tokenStore.get(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)).thenReturn(feeScheduleToken);
 
         var royaltyFeeWithFallbackToken = new MerkleToken(
                 Long.MAX_VALUE,
@@ -328,35 +350,49 @@ public interface TxnHandlingScenario {
                 "West Wind Art",
                 false,
                 true,
-                EntityId.fromGrpcAccountId(MISC_ACCOUNT));
+                EntityId.fromGrpcAccountId(MISC_ACCOUNT),
+                (int) KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK.getTokenNum());
         royaltyFeeWithFallbackToken.setFeeScheduleKey(optionalFeeScheduleKey);
         royaltyFeeWithFallbackToken.setTokenType(NON_FUNGIBLE_UNIQUE);
         royaltyFeeWithFallbackToken.setFeeSchedule(
                 List.of(FcCustomFee.royaltyFee(1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
-        given(tokenStore.resolve(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK))
-                .willReturn(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK);
-        given(tokenStore.get(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK)).willReturn(royaltyFeeWithFallbackToken);
+        lenient()
+                .when(tokenStore.resolve(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK))
+                .thenReturn(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK);
+        lenient()
+                .when(tokenStore.get(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK))
+                .thenReturn(royaltyFeeWithFallbackToken);
 
         var supplyToken = new MerkleToken(
-                Long.MAX_VALUE, 100, 1, "SupplyToken", "SUPPLYTOKENNAME", false, false, new EntityId(1, 2, 4));
+                Long.MAX_VALUE, 100, 1, "SupplyToken", "SUPPLYTOKENNAME", false, false, new EntityId(1, 2, 4), (int)
+                        KNOWN_TOKEN_WITH_SUPPLY.getTokenNum());
         supplyToken.setAdminKey(adminKey);
         supplyToken.setSupplyKey(optionalSupplyKey);
-        given(tokenStore.resolve(KNOWN_TOKEN_WITH_SUPPLY)).willReturn(KNOWN_TOKEN_WITH_SUPPLY);
-        given(tokenStore.get(KNOWN_TOKEN_WITH_SUPPLY)).willReturn(supplyToken);
+        lenient().when(tokenStore.resolve(KNOWN_TOKEN_WITH_SUPPLY)).thenReturn(KNOWN_TOKEN_WITH_SUPPLY);
+        lenient().when(tokenStore.get(KNOWN_TOKEN_WITH_SUPPLY)).thenReturn(supplyToken);
 
         var wipeToken = new MerkleToken(
-                Long.MAX_VALUE, 100, 1, "WipeToken", "WIPETOKENNAME", false, false, new EntityId(1, 2, 4));
+                Long.MAX_VALUE, 100, 1, "WipeToken", "WIPETOKENNAME", false, false, new EntityId(1, 2, 4), (int)
+                        KNOWN_TOKEN_WITH_WIPE.getTokenNum());
         wipeToken.setAdminKey(adminKey);
         wipeToken.setWipeKey(optionalWipeKey);
-        given(tokenStore.resolve(KNOWN_TOKEN_WITH_WIPE)).willReturn(KNOWN_TOKEN_WITH_WIPE);
-        given(tokenStore.get(KNOWN_TOKEN_WITH_WIPE)).willReturn(wipeToken);
+        lenient().when(tokenStore.resolve(KNOWN_TOKEN_WITH_WIPE)).thenReturn(KNOWN_TOKEN_WITH_WIPE);
+        lenient().when(tokenStore.get(KNOWN_TOKEN_WITH_WIPE)).thenReturn(wipeToken);
 
-        given(tokenStore.resolve(MISSING_TOKEN)).willReturn(TokenStore.MISSING_TOKEN);
+        var deletedToken = new MerkleToken(
+                Long.MAX_VALUE, 100, 1, "DeletedToken", "DELETEDTOKENNAME", false, false, new EntityId(1, 2, 4), (int)
+                        DELETED_TOKEN.getTokenNum());
+        deletedToken.setDeleted(true);
+        lenient().when(tokenStore.resolve(DELETED_TOKEN)).thenReturn(DELETED_TOKEN);
+        lenient().when(tokenStore.get(DELETED_TOKEN)).thenReturn(deletedToken);
+
+        lenient().when(tokenStore.resolve(MISSING_TOKEN)).thenReturn(TokenStore.MISSING_TOKEN);
 
         return tokenStore;
     }
 
-    default byte[] extantSchedulingBodyBytes() throws Throwable {
+    default byte[] extantSchedulingBodyBytes()
+            throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException, InvalidKeyException {
         return scheduleCreateTxnWith(
                         Key.getDefaultInstance(),
                         "",
@@ -544,6 +580,8 @@ public interface TxnHandlingScenario {
     TokenID KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK = asToken(KNOWN_TOKEN_WITH_ROYALTY_FEE_ID);
     String KNOWN_TOKEN_WITH_PAUSE_ID = "0.0.780";
     TokenID KNOWN_TOKEN_WITH_PAUSE = asToken(KNOWN_TOKEN_WITH_PAUSE_ID);
+    String DELETED_TOKEN_ID = "0.0.781";
+    TokenID DELETED_TOKEN = asToken(DELETED_TOKEN_ID);
 
     String FIRST_TOKEN_SENDER_ID = "0.0.888";
     AccountID FIRST_TOKEN_SENDER = asAccount(FIRST_TOKEN_SENDER_ID);

@@ -17,9 +17,9 @@
 package com.swirlds.platform.reconnect.emergency;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -29,7 +29,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -40,10 +39,10 @@ import com.swirlds.common.test.merkle.util.PairedStreams;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.reconnect.DummyConnection;
 import com.swirlds.platform.reconnect.ReconnectController;
@@ -51,12 +50,14 @@ import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
 import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
-import com.swirlds.platform.state.EmergencyRecoveryFile;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
@@ -79,8 +80,8 @@ import org.junit.jupiter.api.Test;
 public class EmergencyReconnectTests {
     private static final Future<Boolean> trueFuture = mock(Future.class);
     private final RandomSignedStateGenerator signedStateGenerator = new RandomSignedStateGenerator();
-    private final NodeId learnerId = new NodeId(false, 0L);
-    private final NodeId teacherId = new NodeId(false, 1L);
+    private final NodeId learnerId = new NodeId(0L);
+    private final NodeId teacherId = new NodeId(1L);
     private final ReconnectThrottle reconnectThrottle = mock(ReconnectThrottle.class);
     private final SignedStateManager signedStateManager = mock(SignedStateManager.class);
     private final ParallelExecutor executor = new CachedPoolParallelExecutor(getStaticThreadManager(), "test-executor");
@@ -92,7 +93,7 @@ public class EmergencyReconnectTests {
         ConstructableRegistry.getInstance().registerConstructables("");
 
         when(trueFuture.get()).thenReturn(true);
-        when(reconnectThrottle.initiateReconnect(anyLong())).thenReturn(true);
+        when(reconnectThrottle.initiateReconnect(any())).thenReturn(true);
 
         if (executor.isMutable()) {
             executor.start();
@@ -129,8 +130,8 @@ public class EmergencyReconnectTests {
         final Random random = RandomUtils.initRandom(null);
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
         final int numNodes = 4;
-        final List<Long> nodeIds =
-                IntStream.range(0, numNodes).mapToLong(i -> (long) i).boxed().toList();
+        final List<NodeId> nodeIds =
+                IntStream.range(0, numNodes).mapToObj(NodeId::new).toList();
         final long emergencyRound = 1L;
 
         final AddressBook addressBook = newAddressBook(random, numNodes);
@@ -152,9 +153,9 @@ public class EmergencyReconnectTests {
                 .build();
         learnerState.getState().setHash(RandomUtils.randomHash(random));
 
-        final AtomicReference<SignedState> receivedSignedState = new AtomicReference<>();
-        final ReconnectController reconnectController =
-                createReconnectController(addressBook, learnerState::getState, receivedSignedState::set);
+        final AtomicReference<ReservedSignedState> receivedSignedState = new AtomicReference<>();
+        final ReconnectController reconnectController = createReconnectController(
+                addressBook, learnerState::getState, s -> receivedSignedState.set(s.reserve("test")));
         reconnectController.start();
 
         // Give the reconnect controller some time to start waiting for the connection before the learner
@@ -172,16 +173,18 @@ public class EmergencyReconnectTests {
         AssertionUtils.completeBeforeTimeout(
                 this::executeReconnect, Duration.ofSeconds(5), "Reconnect should have completed or failed");
 
-        checkSignedStateReservations(receivedSignedState.get(), teacherState);
+        checkSignedStateReservations(receivedSignedState.get().get(), teacherState);
         assertTeacherSearchedForState(emergencyRecoveryFile);
         assertLearnerReceivedTeacherState(teacherState, receivedSignedState);
         notificationEngine.shutdown();
+
+        receivedSignedState.get().close();
     }
 
     private void checkSignedStateReservations(final SignedState receivedSignedState, final SignedState teacherState) {
-        // The learner's state has an implicit reservation of 0
+        // The learner's state has an explicit reservation of 1
         assertEquals(
-                0,
+                1,
                 receivedSignedState.getReservationCount(),
                 "incorrect number of reservations on the learner's received state");
 
@@ -201,16 +204,16 @@ public class EmergencyReconnectTests {
     }
 
     private void assertLearnerReceivedTeacherState(
-            final SignedState teacherState, final AtomicReference<SignedState> receivedSignedState) {
+            final SignedState teacherState, final AtomicReference<ReservedSignedState> receivedSignedState) {
         assertEquals(
                 teacherState.getState().getHash(),
-                receivedSignedState.get().getState().getHash(),
+                receivedSignedState.get().get().getState().getHash(),
                 "Learner did not receive the teacher's state");
     }
 
     private void assertTeacherSearchedForState(final EmergencyRecoveryFile emergencyRecoveryFile) {
         verify(signedStateManager, times(1).description("Teacher did not search for the correct state"))
-                .find(any());
+                .find(any(), any());
     }
 
     private ReconnectController createReconnectController(
@@ -226,9 +229,10 @@ public class EmergencyReconnectTests {
                 mock(ReconnectLearnerThrottle.class),
                 receivedStateConsumer,
                 new ReconnectLearnerFactory(
+                        TestPlatformContextBuilder.create().build(),
                         getStaticThreadManager(),
                         addressBook,
-                        mock(ReconnectSettings.class),
+                        100_000,
                         mock(ReconnectMetrics.class)));
 
         return new ReconnectController(getStaticThreadManager(), helper, () -> {});
@@ -268,7 +272,8 @@ public class EmergencyReconnectTests {
                 signedStateManager,
                 100,
                 mock(ReconnectMetrics.class),
-                reconnectController);
+                reconnectController,
+                mock(FallenBehindManager.class));
     }
 
     private EmergencyReconnectProtocol createLearnerProtocol(
@@ -287,15 +292,13 @@ public class EmergencyReconnectTests {
                 mock(SignedStateManager.class),
                 100,
                 mock(ReconnectMetrics.class),
-                reconnectController);
+                reconnectController,
+                mock(FallenBehindManager.class));
     }
 
     private void mockTeacherHasCompatibleState(
             final EmergencyRecoveryFile emergencyRecoveryFile, final SignedState teacherState) {
-        when(signedStateManager.find(any())).thenAnswer(i -> {
-            teacherState.reserve();
-            return new AutoCloseableWrapper<>(teacherState, teacherState::release);
-        });
+        when(signedStateManager.find(any(), any())).thenAnswer(i -> teacherState.reserve("test"));
     }
 
     private AddressBook newAddressBook(final Random random, final int numNodes) {
@@ -304,12 +307,12 @@ public class EmergencyReconnectTests {
                 .setAverageWeight(100L)
                 .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
-                .setSequentialIds(true)
+                .setSequentialIds(false)
                 .build();
     }
 
     private void mockTeacherDoesNotHaveCompatibleState() {
-        when(signedStateManager.find(any())).thenReturn(new AutoCloseableWrapper<>(null, () -> {}));
+        when(signedStateManager.find(any(), any())).thenReturn(createNullReservation());
     }
 
     private Callable<Void> doLearner(final EmergencyReconnectProtocol learnerProtocol, final Connection connection) {

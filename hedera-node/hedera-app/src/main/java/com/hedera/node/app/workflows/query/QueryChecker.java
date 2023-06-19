@@ -19,19 +19,17 @@ package com.hedera.node.app.workflows.query;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.Query;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.authorization.Authorizer;
-import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
+import com.hedera.node.app.fees.QueryFeeCheck;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
+import com.hedera.node.app.solvency.SolvencyPreCheck;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,6 +45,7 @@ public class QueryChecker {
     private final QueryFeeCheck queryFeeCheck;
     private final Authorizer authorizer;
     private final CryptoTransferHandler cryptoTransferHandler;
+    private final SolvencyPreCheck solvencyPreCheck;
 
     /**
      * Constructor of {@code QueryChecker}
@@ -55,7 +54,8 @@ public class QueryChecker {
      * @param queryFeeCheck the {@link QueryFeeCheck} that checks if fees can be paid
      * @param authorizer the {@link Authorizer} that checks, if the caller is authorized
      * @param cryptoTransferHandler the {@link CryptoTransferHandler} that validates a contained
-     *     {@link HederaFunctionality#CRYPTO_TRANSFER}.
+     * {@link HederaFunctionality#CRYPTO_TRANSFER}.
+     * @param solvencyPreCheck the {@link SolvencyPreCheck} that checks if the payer has enough
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -63,11 +63,13 @@ public class QueryChecker {
             @NonNull final HederaAccountNumbers accountNumbers,
             @NonNull final QueryFeeCheck queryFeeCheck,
             @NonNull final Authorizer authorizer,
-            @NonNull final CryptoTransferHandler cryptoTransferHandler) {
+            @NonNull final CryptoTransferHandler cryptoTransferHandler,
+            @NonNull final SolvencyPreCheck solvencyPreCheck) {
         this.accountNumbers = requireNonNull(accountNumbers);
         this.queryFeeCheck = requireNonNull(queryFeeCheck);
         this.authorizer = requireNonNull(authorizer);
         this.cryptoTransferHandler = requireNonNull(cryptoTransferHandler);
+        this.solvencyPreCheck = requireNonNull(solvencyPreCheck);
     }
 
     /**
@@ -83,31 +85,30 @@ public class QueryChecker {
             throw new PreCheckException(INSUFFICIENT_TX_FEE);
         }
         final var txBody = transactionInfo.txBody();
-        cryptoTransferHandler.validate(txBody);
+        cryptoTransferHandler.pureChecks(txBody);
     }
 
     /**
      * Validates the account balances needed in a query
      *
      * @param payer the {@link AccountID} of the query's payer
-     * @param txBody the {@link TransactionBody} of the {@link HederaFunctionality#CRYPTO_TRANSFER}
+     * @param transactionInfo the {@link TransactionInfo} of the {@link HederaFunctionality#CRYPTO_TRANSFER}
      * @param fee the fee that needs to be paid
-     * @throws InsufficientBalanceException if validation fails
+     * @throws PreCheckException if validation fails
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void validateAccountBalances(
-            @NonNull final AccountID payer, @NonNull final TransactionBody txBody, final long fee)
-            throws InsufficientBalanceException {
+            @NonNull final AccountID payer, @NonNull final TransactionInfo transactionInfo, final long fee)
+            throws PreCheckException {
         requireNonNull(payer);
-        requireNonNull(txBody);
+        requireNonNull(transactionInfo);
 
-        // TODO: Migrate functionality from the following call (#4207):
-        //  solvencyPrecheck.validate(txBody);
+        final var transaction = transactionInfo.transaction();
+        final var txBody = transactionInfo.txBody();
 
-        final var xfersStatus = queryFeeCheck.validateQueryPaymentTransfers2(txBody);
-        if (xfersStatus != OK) {
-            throw new InsufficientBalanceException(xfersStatus, fee);
-        }
+        solvencyPreCheck.assessWithSvcFees(transaction);
+
+        queryFeeCheck.validateQueryPaymentTransfers(txBody, fee);
 
         // A super-user cannot use an alias. Sorry, Clark Kent.
         if (payer.hasAccountNum() && accountNumbers.isSuperuser(payer.accountNumOrThrow())) {
@@ -117,10 +118,7 @@ public class QueryChecker {
         final var xfers = txBody.cryptoTransferOrThrow()
                 .transfersOrElse(TransferList.DEFAULT)
                 .accountAmountsOrElse(Collections.emptyList());
-        final var feeStatus = queryFeeCheck.nodePaymentValidity2(xfers, fee, txBody.nodeAccountID());
-        if (feeStatus != OK) {
-            throw new InsufficientBalanceException(feeStatus, fee);
-        }
+        queryFeeCheck.nodePaymentValidity(xfers, fee, txBody.nodeAccountID());
     }
 
     /**

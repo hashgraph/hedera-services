@@ -105,8 +105,19 @@ class UniqueTokensMigratorTest {
     @Test
     void givenDataAlreadyMigrated_noMigration() {
         UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(state);
-        final var virtualMap = new VirtualMapFactory().newVirtualizedUniqueTokenStorage();
-        state.setChild(UNIQUE_TOKENS, virtualMap);
+        final var virtualMap = state.getChild(UNIQUE_TOKENS);
+
+        UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(state);
+        final VirtualMap<UniqueTokenKey, UniqueTokenValue> result = state.getChild(UNIQUE_TOKENS);
+        assertThat(result.isEmpty()).isTrue();
+        assertThat(result).isSameAs(virtualMap);
+        virtualMap.release();
+    }
+
+    @Test
+    void givenDataAlreadyVirtualMap_noMigration() {
+        state.setChild(UNIQUE_TOKENS, new VirtualMapFactory().newVirtualizedUniqueTokenStorage());
+        final var virtualMap = state.getChild(UNIQUE_TOKENS);
 
         UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(state);
         final VirtualMap<UniqueTokenKey, UniqueTokenValue> result = state.getChild(UNIQUE_TOKENS);

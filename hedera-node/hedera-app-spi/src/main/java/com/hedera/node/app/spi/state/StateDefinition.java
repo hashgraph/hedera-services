@@ -31,6 +31,10 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  *     CANNOT CHANGE from one schema version to another. If it is changed, you will need to do a
  *     long-form migration to a new state.
  * @param onDisk Whether to store this state on disk
+ * @param singleton Whether this state is a singleton, meaning it only has one key/value pair
+ *                  associated with it. It cannot be a singleton and a queue at the same time.
+ * @param queue Whether this state is a queue, meaning it is a FIFO queue of values. It cannot be a singleton and  queue
+ *              at the same time.
  * @param <K> The type of key
  * @param <V> The type of value
  */
@@ -40,11 +44,16 @@ public record StateDefinition<K, V>(
         @NonNull Codec<V> valueCodec,
         int maxKeysHint,
         boolean onDisk,
-        boolean singleton) {
+        boolean singleton,
+        boolean queue) {
 
     private static final int NO_MAX = -1;
 
     public StateDefinition {
+        if (singleton && queue) {
+            throw new IllegalArgumentException("A state cannot both be 'singleton' and 'queue'");
+        }
+
         if (singleton && onDisk) {
             throw new IllegalArgumentException("A state cannot both be 'singleton' and 'onDisk'");
         }
@@ -53,8 +62,12 @@ public record StateDefinition<K, V>(
             throw new IllegalArgumentException("You must specify the maxKeysHint when onDisk. Please see docs.");
         }
 
-        if (!singleton && keyCodec == null) {
-            throw new NullPointerException("keyCodec must be specified when not using singleton types");
+        if (queue && onDisk) {
+            throw new IllegalArgumentException("A state cannot both be 'queue' and 'onDisk'");
+        }
+
+        if (keyCodec == null && !singleton && !queue) {
+            throw new NullPointerException("keyCodec must be specified when using singleton or queue types");
         }
     }
 
@@ -70,7 +83,7 @@ public record StateDefinition<K, V>(
      */
     public static <K, V> StateDefinition<K, V> inMemory(
             @NonNull final String stateKey, @NonNull final Codec<K> keyCodec, @NonNull final Codec<V> valueCodec) {
-        return new StateDefinition<>(stateKey, keyCodec, valueCodec, NO_MAX, false, false);
+        return new StateDefinition<>(stateKey, keyCodec, valueCodec, NO_MAX, false, false, false);
     }
 
     /**
@@ -91,7 +104,7 @@ public record StateDefinition<K, V>(
             @NonNull final Codec<K> keyCodec,
             @NonNull final Codec<V> valueCodec,
             final int maxKeysHint) {
-        return new StateDefinition<>(stateKey, keyCodec, valueCodec, maxKeysHint, true, false);
+        return new StateDefinition<>(stateKey, keyCodec, valueCodec, maxKeysHint, true, false, false);
     }
 
     /**
@@ -105,6 +118,20 @@ public record StateDefinition<K, V>(
      */
     public static <K, V> StateDefinition<K, V> singleton(
             @NonNull final String stateKey, @NonNull final Codec<V> valueCodec) {
-        return new StateDefinition<>(stateKey, null, valueCodec, NO_MAX, false, true);
+        return new StateDefinition<>(stateKey, null, valueCodec, NO_MAX, false, true, false);
+    }
+
+    /**
+     * Convenience method for creating a {@link StateDefinition} for queue states.
+     *
+     * @param stateKey The state key
+     * @param elementCodec The codec for the elements of the queue
+     * @return An instance of {@link StateDefinition}
+     * @param <K> The key type
+     * @param <V> The value type
+     */
+    public static <K, V> StateDefinition<K, V> queue(
+            @NonNull final String stateKey, @NonNull final Codec<V> elementCodec) {
+        return new StateDefinition<>(stateKey, null, elementCodec, NO_MAX, false, false, true);
     }
 }

@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.service.mono.txns.validation;
 
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.mapKey;
-import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
@@ -52,11 +52,11 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.StringUtils;
 import org.bouncycastle.util.Arrays;
 
@@ -127,7 +127,7 @@ public class ContextOptionValidator implements OptionValidator {
         try {
             mapKey(key);
             return true;
-        } catch (final DecoderException ignore) {
+        } catch (final InvalidKeyException ignore) {
             return false;
         }
     }
@@ -162,7 +162,7 @@ public class ContextOptionValidator implements OptionValidator {
     public JKey attemptDecodeOrThrow(final Key k) {
         try {
             return JKey.mapKey(k);
-        } catch (final DecoderException e) {
+        } catch (final InvalidKeyException e) {
             throw new InvalidTransactionException(ResponseCodeEnum.BAD_ENCODING);
         }
     }
@@ -222,7 +222,7 @@ public class ContextOptionValidator implements OptionValidator {
     public JKey attemptToDecodeOrThrow(final Key key, final ResponseCodeEnum code) {
         try {
             return JKey.mapKey(key);
-        } catch (final DecoderException e) {
+        } catch (final InvalidKeyException e) {
             throw new InvalidTransactionException(code);
         }
     }

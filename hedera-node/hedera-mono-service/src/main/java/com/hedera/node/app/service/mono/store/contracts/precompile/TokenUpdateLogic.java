@@ -24,10 +24,12 @@ import static com.hedera.node.app.service.mono.ledger.TransferLogic.dropTokenCha
 import static com.hedera.node.app.service.mono.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static com.hedera.node.app.service.mono.store.tokens.HederaTokenStore.affectsExpiryAtMost;
 import static com.hedera.node.app.service.mono.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
+import com.google.protobuf.StringValue;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -73,11 +75,37 @@ public class TokenUpdateLogic {
     }
 
     public void updateToken(TokenUpdateTransactionBody op, long now) {
+        updateToken(op, now, false);
+    }
+
+    /**
+     * Given a token update transaction and the current consensus time, updates the token in the store.
+     *
+     * <p>The third {@code mergeUnsetMemoFromExisting} argument says whether to preserve the token's
+     * existing memo if the transaction memo is empty. We need this because the current application
+     * binary interface (ABI) for the {@code tokenUpdate()} system contract does not let us distinguish
+     * between a contract omitting the memo in an token update vs. a contract explicitly setting the
+     * memo to the empty string.
+     *
+     * <p>Once the ABI is improved to let a contract advertise it truly does want to erase a memo,
+     * we can remove the {@code mergeUnsetMemoFromExisting} argument and just use the protobuf
+     * message's {@code hasMemo()} method.
+     *
+     * @param op the token update transaction
+     * @param now the current consensus time
+     * @param mergeUnsetMemoFromExisting whether to preserve the token's memo if the transaction memo is unset
+     */
+    public void updateToken(TokenUpdateTransactionBody op, long now, boolean mergeUnsetMemoFromExisting) {
         final var tokenID = tokenValidityCheck(op);
         if (op.hasExpiry()) {
             validateTrueOrRevert(validator.isValidExpiry(op.getExpiry()), INVALID_EXPIRATION_TIME);
         }
         MerkleToken token = tokenStore.get(tokenID);
+        final var isOpMemoUnset = !op.hasMemo() || op.getMemo().getValue().length() == 0;
+        if (isOpMemoUnset && mergeUnsetMemoFromExisting) {
+            final var existingMemo = Optional.ofNullable(token.memo()).orElse(DEFAULT_MEMO);
+            op = op.toBuilder().setMemo(StringValue.of(existingMemo)).build();
+        }
         checkTokenPreconditions(token, op);
 
         assertAutoRenewValidity(op, token);

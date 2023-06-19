@@ -125,7 +125,8 @@ public class TokenUpdateSpecs extends HapiSuite {
                 customFeesOnlyUpdatableWithKey(),
                 updateUniqueTreasuryWithNfts(),
                 updateHappyPath(),
-                safeToUpdateCustomFeesWithNewFallbackWhileTransferring());
+                safeToUpdateCustomFeesWithNewFallbackWhileTransferring(),
+                tokenUpdateCanClearMemo());
     }
 
     private HapiSpec validatesNewExpiry() {
@@ -323,7 +324,7 @@ public class TokenUpdateSpecs extends HapiSuite {
     public HapiSpec validAutoRenewWorks() {
         final var firstPeriod = THREE_MONTHS_IN_SECONDS;
         final var secondPeriod = THREE_MONTHS_IN_SECONDS + 1234;
-        return defaultHapiSpec("AutoRenewInfoChanges")
+        return defaultHapiSpec("validAutoRenewWorks")
                 .given(
                         cryptoCreate("autoRenew").balance(0L),
                         cryptoCreate("newAutoRenew").balance(0L),
@@ -542,6 +543,19 @@ public class TokenUpdateSpecs extends HapiSuite {
                 .then(tokenUpdate("non-fungible")
                         .treasury("newTreasury")
                         .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES));
+    }
+
+    public HapiSpec tokenUpdateCanClearMemo() {
+        final var token = "token";
+        final var multiKey = "multiKey";
+        final var memoToBeErased = "memoToBeErased";
+        return defaultHapiSpec("TokenUpdateCanClearMemo")
+                .given(
+                        newKeyNamed(multiKey),
+                        tokenCreate(token).entityMemo(memoToBeErased).adminKey(multiKey),
+                        getTokenInfo(token).hasEntityMemo(memoToBeErased))
+                .when(tokenUpdate(token).entityMemo(""))
+                .then(getTokenInfo(token).logged().hasEntityMemo(""));
     }
 
     public HapiSpec updateNftTreasuryHappyPath() {

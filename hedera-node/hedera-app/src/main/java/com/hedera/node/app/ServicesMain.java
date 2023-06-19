@@ -16,7 +16,7 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.WORKFLOWS_ENABLED;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -25,6 +25,7 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,16 +33,21 @@ import org.apache.logging.log4j.Logger;
  * Main entry point.
  *
  * <p>This class simply delegates to either {@link MonoServicesMain} or {@link Hedera} depending on
- * the value of the {@code hedera.services.functions.workflows.enabled} property. If *any* workflows
- * are enabled, then {@link Hedera} is used; otherwise, {@link MonoServicesMain} is used.
+ * the value of the {@code hedera.services.functions.workflows.enabled} property. If *any* workflows are enabled, then
+ * {@link Hedera} is used; otherwise, {@link MonoServicesMain} is used.
  */
 public class ServicesMain implements SwirldMain {
+    static {
+        // Helidon uses java.util.logging, so we need to set up the bridge before it has a chance to log anything
+        System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
+    }
+
     private static final Logger logger = LogManager.getLogger(ServicesMain.class);
 
     /**
      * The {@link SwirldMain} to actually use, depending on whether workflows are enabled.
      */
-    private SwirldMain delegate;
+    private final SwirldMain delegate;
 
     /** Create a new instance */
     public ServicesMain() {
@@ -64,7 +70,7 @@ public class ServicesMain implements SwirldMain {
 
     /** {@inheritDoc} */
     @Override
-    public void init(final Platform ignored, final NodeId nodeId) {
+    public void init(@NonNull final Platform ignored, @NonNull final NodeId nodeId) {
         delegate.init(ignored, nodeId);
     }
 

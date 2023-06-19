@@ -43,6 +43,9 @@ public interface ReadableStates {
     @NonNull
     <T> ReadableSingletonState<T> getSingleton(@NonNull String stateKey);
 
+    @NonNull
+    <E> ReadableQueueState<E> getQueue(@NonNull String stateKey);
+
     /**
      * Gets whether the given state key is a member of this set.
      *

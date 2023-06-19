@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.txns.crypto.validators;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
@@ -52,7 +52,6 @@ import javax.inject.Singleton;
 
 @Singleton
 public class CryptoCreateChecks {
-    public static final int MAX_CHARGEABLE_AUTO_ASSOCIATIONS = 5000;
     private final GlobalDynamicProperties dynamicProperties;
     private final OptionValidator validator;
     private final Supplier<AccountStorageAdapter> accounts;
@@ -132,7 +131,7 @@ public class CryptoCreateChecks {
     }
 
     private boolean tooManyAutoAssociations(final int n) {
-        return n > MAX_CHARGEABLE_AUTO_ASSOCIATIONS
+        return n > dynamicProperties.maxAllowedAutoAssociations()
                 || (dynamicProperties.areTokenAssociationsLimited() && n > dynamicProperties.maxTokensPerAccount());
     }
 
@@ -169,7 +168,7 @@ public class CryptoCreateChecks {
         if (keyValidity != OK) {
             return keyValidity;
         }
-        if (op.getAlias().size() != EVM_ADDRESS_SIZE) {
+        if (!isOfEvmAddressSize(op.getAlias())) {
             return INVALID_ALIAS_KEY;
         }
         if (HederaEvmContractAliases.isMirror(op.getAlias().toByteArray())) {

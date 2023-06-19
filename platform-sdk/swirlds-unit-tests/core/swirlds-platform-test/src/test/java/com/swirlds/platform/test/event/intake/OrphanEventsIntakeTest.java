@@ -28,16 +28,15 @@ import com.swirlds.platform.components.EventIntake;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventAddedObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
-import com.swirlds.platform.sync.ShadowGraph;
 import com.swirlds.platform.test.consensus.ConsensusUtils;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.event.source.StandardEventSource;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,12 +46,10 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 class OrphanEventsIntakeTest {
     @Test
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void eventConsensus() {
         final int numNodes = 10;
         final int numEvents = 10_000;
@@ -96,7 +93,7 @@ class OrphanEventsIntakeTest {
                     new ParentFinder(linkedEventMap::get),
                     100_000);
             intake = new EventIntake(
-                    NodeId.createMain(0),
+                    new NodeId(0L),
                     orphanBuffer,
                     () -> consensus,
                     generator.getAddressBook(),

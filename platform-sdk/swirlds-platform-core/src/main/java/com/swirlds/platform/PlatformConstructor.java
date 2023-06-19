@@ -25,8 +25,10 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
@@ -37,10 +39,8 @@ import com.swirlds.platform.components.transaction.system.PreConsensusSystemTran
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
-import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.network.connectivity.SocketFactory;
 import com.swirlds.platform.network.connectivity.TcpFactory;
@@ -48,7 +48,7 @@ import com.swirlds.platform.network.connectivity.TlsFactory;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.SwirldStateManagerImpl;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.PlatformConstructionException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -59,18 +59,14 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.BooleanSupplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Used to construct platform components that use DI
  */
-final class PlatformConstructor {
-
-    /** use this for all logging, as controlled by the optional data/log4j2.xml file */
-    private static final Logger logger = LogManager.getLogger(PlatformConstructor.class);
+public final class PlatformConstructor {
 
     /** The maximum size of the queue holding signed states ready to be hashed and signed by others. */
     private static final int STATE_HASH_QUEUE_MAX = 1;
@@ -85,15 +81,15 @@ final class PlatformConstructor {
      *
      * @param threadManager responsible for managing thread lifecycles
      */
-    static ParallelExecutor parallelExecutor(final ThreadManager threadManager) {
+    public static ParallelExecutor parallelExecutor(final ThreadManager threadManager) {
         return new CachedPoolParallelExecutor(threadManager, "node-sync");
     }
 
-    static SettingsProvider settingsProvider() {
+    public static SettingsProvider settingsProvider() {
         return StaticSettingsProvider.getSingleton();
     }
 
-    static SocketFactory socketFactory(final KeysAndCerts keysAndCerts, final CryptoConfig cryptoConfig) {
+    public static SocketFactory socketFactory(final KeysAndCerts keysAndCerts, final CryptoConfig cryptoConfig) {
         if (!Settings.getInstance().isUseTLS()) {
             return new TcpFactory(PlatformConstructor.settingsProvider());
         }
@@ -109,7 +105,8 @@ final class PlatformConstructor {
         }
     }
 
-    static PlatformSigner platformSigner(final KeysAndCerts keysAndCerts) {
+    public static PlatformSigner platformSigner(@NonNull final KeysAndCerts keysAndCerts) {
+        Objects.requireNonNull(keysAndCerts);
         try {
             return new PlatformSigner(keysAndCerts);
         } catch (final NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException e) {
@@ -124,24 +121,33 @@ final class PlatformConstructor {
      * @param threadManager       responsible for managing thread lifecycles
      * @param selfId              this node's id
      * @param signedStateConsumer consumer of signed states that hashes the state and collects signatures
+     * @param metrics             the metrics object
      */
-    static QueueThread<SignedState> stateHashSignQueue(
-            final ThreadManager threadManager,
-            final long selfId,
-            final InterruptableConsumer<SignedState> signedStateConsumer) {
+    static QueueThread<ReservedSignedState> stateHashSignQueue(
+            @NonNull final ThreadManager threadManager,
+            @NonNull final NodeId selfId,
+            @NonNull final InterruptableConsumer<ReservedSignedState> signedStateConsumer,
+            @NonNull final Metrics metrics) {
+        Objects.requireNonNull(threadManager, "threadManager must not be null");
+        Objects.requireNonNull(selfId, "selfId must not be null");
+        Objects.requireNonNull(signedStateConsumer, "signedStateConsumer must not be null");
+        Objects.requireNonNull(metrics, "metrics must not be null");
 
-        return new QueueThreadConfiguration<SignedState>(threadManager)
+        return new QueueThreadConfiguration<ReservedSignedState>(threadManager)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("state-hash-sign")
                 .setHandler(signedStateConsumer)
                 .setCapacity(STATE_HASH_QUEUE_MAX)
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
                 .build();
     }
 
     /**
      * Creates a new instance of {@link SwirldStateManager}.
      *
+     * @param platformContext                       the platform context
+     * @param addressBook                           the address book
      * @param selfId                                this node's id
      * @param preConsensusSystemTransactionManager  the manager which handles system transactions pre-consensus
      * @param postConsensusSystemTransactionManager the manager which handles system transactions post-consensus
@@ -151,15 +157,29 @@ final class PlatformConstructor {
      * @return the newly constructed instance of {@link SwirldStateManager}
      */
     static SwirldStateManager swirldStateManager(
-            final NodeId selfId,
-            final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
-            final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
-            final Metrics metrics,
-            final SettingsProvider settings,
-            final BooleanSupplier inFreezeChecker,
-            final State initialState) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final AddressBook addressBook,
+            @NonNull final NodeId selfId,
+            @NonNull final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
+            @NonNull final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
+            @NonNull final Metrics metrics,
+            @NonNull final SettingsProvider settings,
+            @NonNull final BooleanSupplier inFreezeChecker,
+            @NonNull final State initialState) {
+
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(preConsensusSystemTransactionManager);
+        Objects.requireNonNull(postConsensusSystemTransactionManager);
+        Objects.requireNonNull(metrics);
+        Objects.requireNonNull(settings);
+        Objects.requireNonNull(inFreezeChecker);
+        Objects.requireNonNull(initialState);
 
         return new SwirldStateManagerImpl(
+                platformContext,
+                addressBook,
                 selfId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
@@ -170,29 +190,10 @@ final class PlatformConstructor {
     }
 
     /**
-     * Constructs a new {@link PreConsensusEventHandler}.
-     *
-     * @param threadManager      responsible for creating and managing threads
-     * @param selfId             this node's id
-     * @param swirldStateManager the instance of {@link SwirldStateManager}
-     * @param consensusMetrics   the class that records stats relating to {@link SwirldStateManager}
-     * @return the newly constructed instance of {@link PreConsensusEventHandler}
-     */
-    static PreConsensusEventHandler preConsensusEventHandler(
-            final ThreadManager threadManager,
-            final NodeId selfId,
-            final SwirldStateManager swirldStateManager,
-            final ConsensusMetrics consensusMetrics) {
-
-        return new PreConsensusEventHandler(threadManager, selfId, swirldStateManager, consensusMetrics);
-    }
-
-    /**
      * Constructs a new {@link ConsensusRoundHandler}.
      *
      * @param threadManager               responsible for creating and managing threads
      * @param selfId                      this node's id
-     * @param settingsProvider            a static settings provider
      * @param swirldStateManager          the instance of {@link SwirldStateManager}
      * @param consensusHandlingMetrics    the class that records stats relating to {@link SwirldStateManager}
      * @param eventStreamManager          the instance that streams consensus events to disk
@@ -206,12 +207,11 @@ final class PlatformConstructor {
     static ConsensusRoundHandler consensusHandler(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            final long selfId,
-            @NonNull final SettingsProvider settingsProvider,
+            @NonNull final NodeId selfId,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
-            @NonNull final BlockingQueue<SignedState> stateHashSignQueue,
+            @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
             @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
             @NonNull final Runnable enterFreezePeriod,
             @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
@@ -221,7 +221,6 @@ final class PlatformConstructor {
                 platformContext,
                 threadManager,
                 selfId,
-                settingsProvider,
                 swirldStateManager,
                 consensusHandlingMetrics,
                 eventStreamManager,

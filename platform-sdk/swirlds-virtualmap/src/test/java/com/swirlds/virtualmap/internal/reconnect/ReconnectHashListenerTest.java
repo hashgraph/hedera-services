@@ -31,10 +31,9 @@ import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.datasource.InMemoryBuilder;
 import com.swirlds.virtualmap.datasource.InMemoryKeySet;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.datasource.VirtualRecord;
 import com.swirlds.virtualmap.internal.hash.VirtualHasher;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -43,7 +42,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -107,35 +105,30 @@ class ReconnectHashListenerTest {
 
         final ReconnectNodeRemover<TestKey, TestValue> remover = mock(ReconnectNodeRemover.class);
 
-        // 100 leaves would have firstLeafPath = 99, lastLeafPath = 199
+        // 100 leaves would have firstLeafPath = 99, lastLeafPath = 198
         final long last = size + size;
         final ReconnectHashListener<TestKey, TestValue> listener = new ReconnectHashListener<>(size, last, ds, remover);
         final VirtualHasher<TestKey, TestValue> hasher = new VirtualHasher<>();
         hasher.hash(
-                this::leaf,
-                this::internal,
-                LongStream.range(size, last).mapToObj(this::leaf).iterator(),
-                size,
-                last,
-                listener);
+                this::hash, LongStream.range(size, last).mapToObj(this::leaf).iterator(), size, last, listener);
 
         // Now validate that everything showed up the data source in ordered chunks
-        final TreeSet<VirtualInternalRecord> allInternalRecords =
-                new TreeSet<>(Comparator.comparingLong(VirtualRecord::getPath));
-        for (List<VirtualInternalRecord> internalRecords : ds.internalRecords) {
+        final TreeSet<VirtualHashRecord> allInternalRecords =
+                new TreeSet<>(Comparator.comparingLong(VirtualHashRecord::path));
+        for (List<VirtualHashRecord> internalRecords : ds.internalRecords) {
             allInternalRecords.addAll(internalRecords);
         }
 
-        assertEquals(size, allInternalRecords.size(), "Some internal records were not written!");
+        assertEquals(size + size, allInternalRecords.size(), "Some internal records were not written!");
         long expected = 0;
-        for (VirtualInternalRecord rec : allInternalRecords) {
-            final long path = rec.getPath();
+        for (VirtualHashRecord rec : allInternalRecords) {
+            final long path = rec.path();
             assertEquals(expected, path, "Path did not match expectation. path=" + path + ", expected=" + expected);
             expected++;
         }
 
         final TreeSet<VirtualLeafRecord<TestKey, TestValue>> allLeafRecords =
-                new TreeSet<>(Comparator.comparingLong(VirtualRecord::getPath));
+                new TreeSet<>(Comparator.comparingLong(VirtualLeafRecord::getPath));
 
         for (List<VirtualLeafRecord<TestKey, TestValue>> leafRecords : ds.leafRecords) {
             allLeafRecords.addAll(leafRecords);
@@ -151,21 +144,17 @@ class ReconnectHashListenerTest {
     }
 
     private VirtualLeafRecord<TestKey, TestValue> leaf(long path) {
-        return new VirtualLeafRecord<>(
-                path,
-                CRYPTO.digestSync(("" + path).getBytes(StandardCharsets.UTF_8)),
-                new TestKey(path),
-                new TestValue(path));
+        return new VirtualLeafRecord<>(path, new TestKey(path), new TestValue(path));
     }
 
-    private VirtualInternalRecord internal(long path) {
-        return new VirtualInternalRecord(path, CRYPTO.digestSync(("" + path).getBytes(StandardCharsets.UTF_8)));
+    private Hash hash(long path) {
+        return CRYPTO.digestSync(("" + path).getBytes(StandardCharsets.UTF_8));
     }
 
     private static final class VirtualDataSourceSpy implements VirtualDataSource<TestKey, TestValue> {
         private final VirtualDataSource<TestKey, TestValue> delegate;
 
-        private final List<List<VirtualInternalRecord>> internalRecords = new ArrayList<>();
+        private final List<List<VirtualHashRecord>> internalRecords = new ArrayList<>();
         private final List<List<VirtualLeafRecord<TestKey, TestValue>>> leafRecords = new ArrayList<>();
 
         VirtualDataSourceSpy(VirtualDataSource<TestKey, TestValue> delegate) {
@@ -181,14 +170,14 @@ class ReconnectHashListenerTest {
         public void saveRecords(
                 final long firstLeafPath,
                 final long lastLeafPath,
-                final Stream<VirtualInternalRecord> internalRecords,
+                final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
                 final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
                 final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
                 throws IOException {
 
-            final var ir = internalRecords.collect(Collectors.toList());
+            final var ir = pathHashRecordsToUpdate.toList();
             this.internalRecords.add(ir);
-            final var lr = leafRecordsToAddOrUpdate.collect(Collectors.toList());
+            final var lr = leafRecordsToAddOrUpdate.toList();
             this.leafRecords.add(lr);
             delegate.saveRecords(firstLeafPath, lastLeafPath, ir.stream(), lr.stream(), leafRecordsToDelete);
         }
@@ -209,13 +198,8 @@ class ReconnectHashListenerTest {
         }
 
         @Override
-        public VirtualInternalRecord loadInternalRecord(final long path, final boolean deserialize) throws IOException {
-            return delegate.loadInternalRecord(path, deserialize);
-        }
-
-        @Override
-        public Hash loadLeafHash(final long path) throws IOException {
-            return delegate.loadLeafHash(path);
+        public Hash loadHash(final long path) throws IOException {
+            return delegate.loadHash(path);
         }
 
         @Override
@@ -245,6 +229,24 @@ class ReconnectHashListenerTest {
         @Override
         public VirtualKeySet<TestKey> buildKeySet() {
             return new InMemoryKeySet<>();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
+            return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
+        }
+
+        @Override
+        public long getFirstLeafPath() {
+            return delegate.getFirstLeafPath();
+        }
+
+        @Override
+        public long getLastLeafPath() {
+            return delegate.getLastLeafPath();
         }
     }
 }

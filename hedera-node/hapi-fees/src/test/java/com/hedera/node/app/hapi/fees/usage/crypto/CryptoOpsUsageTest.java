@@ -264,7 +264,7 @@ class CryptoOpsUsageTest {
     }
 
     @Test
-    void estimatesUpdateWithAutoAssociationsAsExpected() {
+    void estimatesUpdateWithAutoAssociationsAsExpectedWhenNoExplicitAutoAssocSlotLifetime() {
         givenUpdateOpWithMaxAutoAssociations();
         final var expected = new UsageAccumulator();
         final var baseMeta = new BaseTransactionMeta(memo.length(), 0);
@@ -326,7 +326,76 @@ class CryptoOpsUsageTest {
 
         final var actual = new UsageAccumulator();
 
-        subject.cryptoUpdateUsage(sigUsage, baseMeta, opMeta, ctx, actual);
+        subject.cryptoUpdateUsage(sigUsage, baseMeta, opMeta, ctx, actual, 0);
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void estimatesUpdateWithAutoAssociationsAsExpectedWhenGivenExplicitAutoAssocSlotLifetime() {
+        givenUpdateOpWithMaxAutoAssociations();
+        final var expected = new UsageAccumulator();
+        final var baseMeta = new BaseTransactionMeta(memo.length(), 0);
+        final var opMeta = new CryptoUpdateMeta(
+                txn.getCryptoUpdateAccount(),
+                txn.getTransactionID().getTransactionValidStart().getSeconds());
+
+        expected.resetForTransaction(baseMeta, sigUsage);
+
+        final Key oldKey = FileOpsUsage.asKey(KeyUtils.A_KEY_LIST.getKeyList());
+        final long oldExpiry = expiry - 1_234L;
+        final String oldMemo = "Lettuce";
+        final int oldMaxAutoAssociations = maxAutoAssociations - 5;
+
+        final var ctx = ExtantCryptoContext.newBuilder()
+                .setCurrentExpiry(oldExpiry)
+                .setCurrentMemo(oldMemo)
+                .setCurrentKey(oldKey)
+                .setCurrentlyHasProxy(false)
+                .setCurrentNumTokenRels(numTokenRels)
+                .setCurrentMaxAutomaticAssociations(oldMaxAutoAssociations)
+                .setCurrentCryptoAllowances(Collections.emptyMap())
+                .setCurrentApproveForAllNftAllowances(Collections.emptySet())
+                .setCurrentTokenAllowances(Collections.emptyMap())
+                .build();
+
+        final long keyBytesUsed = getAccountKeyStorageSize(key);
+        final long msgBytesUsed = BASIC_ENTITY_ID_SIZE
+                + memo.getBytes().length
+                + keyBytesUsed
+                + LONG_SIZE
+                + BASIC_ENTITY_ID_SIZE
+                + INT_SIZE;
+
+        expected.addBpt(msgBytesUsed);
+
+        final long newVariableBytes = memo.getBytes().length + keyBytesUsed + BASIC_ENTITY_ID_SIZE;
+        final long tokenRelBytes = numTokenRels * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
+        final long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + tokenRelBytes;
+        final long newLifetime = ESTIMATOR_UTILS.relativeLifetime(txn, expiry);
+        final long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(txn, oldExpiry);
+        final long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
+                CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
+                        + ctx.currentNonBaseRb()
+                        + ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr(),
+                oldLifetime,
+                sharedFixedBytes + newVariableBytes,
+                newLifetime);
+        if (rbsDelta > 0) {
+            expected.addRbs(rbsDelta);
+        }
+
+        final var explicitAutoAssocSlotLifetime = 123_456_789L;
+        final var slotDelta = ESTIMATOR_UTILS.changeInBsUsage(
+                oldMaxAutoAssociations * CryptoOpsUsage.UPDATE_SLOT_MULTIPLIER,
+                explicitAutoAssocSlotLifetime,
+                maxAutoAssociations * CryptoOpsUsage.UPDATE_SLOT_MULTIPLIER,
+                explicitAutoAssocSlotLifetime);
+        expected.addRbs(slotDelta);
+
+        final var actual = new UsageAccumulator();
+
+        subject.cryptoUpdateUsage(sigUsage, baseMeta, opMeta, ctx, actual, explicitAutoAssocSlotLifetime);
 
         assertEquals(expected, actual);
     }
@@ -388,7 +457,7 @@ class CryptoOpsUsageTest {
 
         final var actual = new UsageAccumulator();
 
-        subject.cryptoUpdateUsage(sigUsage, baseMeta, opMeta, ctx, actual);
+        subject.cryptoUpdateUsage(sigUsage, baseMeta, opMeta, ctx, actual, 0);
 
         assertEquals(expected, actual);
     }

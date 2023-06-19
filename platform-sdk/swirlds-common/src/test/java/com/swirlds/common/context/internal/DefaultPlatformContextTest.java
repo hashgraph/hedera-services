@@ -18,6 +18,7 @@ package com.swirlds.common.context.internal;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.MetricsProvider;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
@@ -32,7 +33,7 @@ class DefaultPlatformContextTest {
     void testNoNullServices() {
         // given
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final NodeId nodeId = new NodeId(false, 3256733545L);
+        final NodeId nodeId = new NodeId(3256733545L);
         final MetricsProvider metricsProvider = new DefaultMetricsProvider(configuration);
         metricsProvider.createGlobalMetrics();
 

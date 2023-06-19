@@ -36,13 +36,17 @@ import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.LongConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -61,6 +65,10 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     private Optional<TokenSupplyType> expectedSupplyType = Optional.empty();
     private OptionalInt expectedDecimals = OptionalInt.empty();
     private OptionalLong expectedTotalSupply = OptionalLong.empty();
+
+    @Nullable
+    private LongConsumer totalSupplyAssertion = null;
+
     private OptionalLong expectedMaxSupply = OptionalLong.empty();
     private Optional<String> expectedMemo = Optional.empty();
     private Optional<String> expectedId = Optional.empty();
@@ -133,6 +141,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
     public HapiGetTokenInfo hasTotalSupply(long amount) {
         expectedTotalSupply = OptionalLong.of(amount);
+        return this;
+    }
+
+    public HapiGetTokenInfo hasTotalSupplySatisfying(@NonNull final LongConsumer assertion) {
+        totalSupplyAssertion = Objects.requireNonNull(assertion);
         return this;
     }
 
@@ -274,6 +287,9 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         if (expectedTotalSupply.isPresent()) {
             Assertions.assertEquals(
                     expectedTotalSupply.getAsLong(), actualInfo.getTotalSupply(), "Wrong total supply!");
+        }
+        if (totalSupplyAssertion != null) {
+            totalSupplyAssertion.accept(actualInfo.getTotalSupply());
         }
 
         if (expectedDecimals.isPresent()) {

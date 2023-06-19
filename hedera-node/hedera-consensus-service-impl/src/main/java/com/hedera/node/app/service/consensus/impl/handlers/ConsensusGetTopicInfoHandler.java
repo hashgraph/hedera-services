@@ -31,18 +31,18 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoQuery;
 import com.hedera.hapi.node.consensus.ConsensusGetTopicInfoResponse;
 import com.hedera.hapi.node.consensus.ConsensusTopicInfo;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -54,17 +54,8 @@ import javax.inject.Singleton;
 @Singleton
 public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
 
-    private final NetworkInfo networkInfo;
-
     @Inject
-    public ConsensusGetTopicInfoHandler() {
-        // TODO: Not sure how to get the network info here.
-        this.networkInfo = null;
-    }
-
-    public ConsensusGetTopicInfoHandler(@NonNull final NetworkInfo networkInfo) {
-        this.networkInfo = requireNonNull(networkInfo);
-    }
+    public ConsensusGetTopicInfoHandler() {}
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
@@ -97,11 +88,13 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         final ConsensusGetTopicInfoQuery op = query.consensusGetTopicInfoOrThrow();
         if (op.hasTopicID()) {
             // The topic must exist
-            final var topic = topicStore.getTopicMetadata(op.topicID());
+            final var topic = topicStore.getTopic(op.topicID());
             mustExist(topic, INVALID_TOPIC_ID);
-            if (topic.isDeleted()) {
+            if (topic.deleted()) {
                 throw new PreCheckException(INVALID_TOPIC_ID);
             }
+        } else {
+            throw new PreCheckException(INVALID_TOPIC_ID);
         }
     }
 
@@ -110,6 +103,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         requireNonNull(context);
         requireNonNull(header);
         final var query = context.query();
+        final var config = context.configuration().getConfigData(LedgerConfig.class);
         final var topicStore = context.createStore(ReadableTopicStore.class);
         final var op = query.consensusGetTopicInfoOrThrow();
         final var response = ConsensusGetTopicInfoResponse.newBuilder();
@@ -119,7 +113,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         response.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var optionalInfo = infoForTopic(topic, topicStore);
+            final var optionalInfo = infoForTopic(topic, topicStore, config);
             optionalInfo.ifPresent(response::topicInfo);
         }
 
@@ -130,27 +124,29 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * Provides information about a topic.
      * @param topicID the topic to get information about
      * @param topicStore the topic store
+     * @param config the LedgerConfig
      * @return the information about the topic
      */
     private Optional<ConsensusTopicInfo> infoForTopic(
-            @NonNull final TopicID topicID, @NonNull final ReadableTopicStore topicStore) {
-        final var meta = topicStore.getTopicMetadata(topicID);
+            @NonNull final TopicID topicID,
+            @NonNull final ReadableTopicStore topicStore,
+            @NonNull final LedgerConfig config) {
+        final var meta = topicStore.getTopic(topicID);
         if (meta == null) {
             return Optional.empty();
         } else {
             final var info = ConsensusTopicInfo.newBuilder();
-            meta.memo().ifPresent(info::memo);
-            info.runningHash(Bytes.wrap(meta.runningHash()));
+            info.memo(meta.memo());
+            info.runningHash(meta.runningHash());
             info.sequenceNumber(meta.sequenceNumber());
-            info.expirationTime(meta.expirationTimestamp());
+            info.expirationTime(Timestamp.newBuilder().seconds(meta.expiry()).build());
             if (!isEmpty(meta.adminKey())) info.adminKey(meta.adminKey());
             if (!isEmpty(meta.submitKey())) info.submitKey(meta.submitKey());
-            info.autoRenewPeriod(Duration.newBuilder().seconds(meta.autoRenewDurationSeconds()));
-            meta.autoRenewAccountId()
-                    .ifPresent(account ->
-                            info.autoRenewAccount(AccountID.newBuilder().accountNum(account)));
+            info.autoRenewPeriod(Duration.newBuilder().seconds(meta.autoRenewPeriod()));
+            if (meta.autoRenewAccountNumber() != 0)
+                info.autoRenewAccount(AccountID.newBuilder().accountNum(meta.autoRenewAccountNumber()));
 
-            info.ledgerId(networkInfo.ledgerId());
+            info.ledgerId(config.id());
             return Optional.of(info.build());
         }
     }

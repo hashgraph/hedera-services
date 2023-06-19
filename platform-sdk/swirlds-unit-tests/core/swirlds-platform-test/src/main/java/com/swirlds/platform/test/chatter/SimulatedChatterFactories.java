@@ -17,21 +17,25 @@
 package com.swirlds.platform.test.chatter;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.platform.chatter.ChatterSubSetting;
-import com.swirlds.platform.chatter.protocol.ChatterCore;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEvent;
+import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
+import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
@@ -45,32 +49,38 @@ public class SimulatedChatterFactories implements SimulatedChatterFactory {
 
     @Override
     public SimulatedChatter build(
-            final long selfId,
-            final Iterable<Long> nodeIds,
-            final GossipEventObserver eventTracker,
-            final Supplier<Instant> now) {
+            @NonNull final NodeId selfId,
+            @NonNull final Iterable<NodeId> nodeIds,
+            @NonNull final GossipEventObserver eventTracker,
+            @Nullable final Supplier<Instant> now) {
+        Objects.requireNonNull(selfId, "selfId must not be null");
+        Objects.requireNonNull(nodeIds, "nodeIds must not be null");
+        Objects.requireNonNull(eventTracker, "eventTracker must not be null");
+
         final Configuration configuration = ConfigurationBuilder.create()
                 .withConfigDataType(MetricsConfig.class)
+                .withConfigDataType(ChatterConfig.class)
                 .build();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        final ChatterConfig chatterConfig = configuration.getConfigData(ChatterConfig.class);
 
-        final MetricKeyRegistry registry = new MetricKeyRegistry();
+        final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
 
         final ChatterCore<ChatterEvent> core = new ChatterCore<>(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 ChatterEvent.class,
                 e -> {},
-                new ChatterSubSetting(),
+                chatterConfig,
                 (nodeId, ping) -> {},
                 new DefaultMetrics(
-                        NodeId.createMain(selfId),
+                        selfId,
                         registry,
                         Executors.newSingleThreadScheduledExecutor(),
                         new DefaultMetricsFactory(),
                         metricsConfig));
         final EventDedup dedup = new EventDedup(List.of(core::eventReceived, eventTracker::newEvent));
-        for (final Long nodeId : nodeIds) {
+        for (final NodeId nodeId : nodeIds) {
             core.newPeerInstance(nodeId, dedup);
         }
 

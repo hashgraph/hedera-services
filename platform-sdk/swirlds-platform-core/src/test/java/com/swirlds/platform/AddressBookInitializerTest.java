@@ -16,12 +16,12 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.platform.AddressBookInitializer.CONFIG_ADDRESS_BOOK_HEADER;
-import static com.swirlds.platform.AddressBookInitializer.CONFIG_ADDRESS_BOOK_USED;
-import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_HEADER;
-import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_NULL;
-import static com.swirlds.platform.AddressBookInitializer.STATE_ADDRESS_BOOK_USED;
-import static com.swirlds.platform.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
+import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_HEADER;
+import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_USED;
+import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_HEADER;
+import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_NULL;
+import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_USED;
+import static com.swirlds.platform.state.address.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,6 +39,7 @@ import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -371,8 +372,8 @@ class AddressBookInitializerTest {
                         .get()
                         .add(configAddressBook
                                 .get()
-                                .getAddress(0)
-                                .copySetId(configAddressBook.get().getNextNodeId())));
+                                .getAddress(configAddressBook.get().getNodeId(0))
+                                .copySetNodeId(configAddressBook.get().getNextNodeId())));
                 break;
             case 7:
                 stub.thenAnswer(foo -> copyWithWeightChanges(configAddressBook.get(), 7));
@@ -392,9 +393,9 @@ class AddressBookInitializerTest {
     @NonNull
     private AddressBook getRandomAddressBook() {
         return new RandomAddressBookGenerator()
-                .setSequentialIds(true)
+                .setSequentialIds(false)
                 .setSize(5)
-                .setCustomWeightGenerator(i -> i)
+                .setCustomWeightGenerator(i -> i.id())
                 .build();
     }
 
@@ -493,10 +494,11 @@ class AddressBookInitializerTest {
      */
     private PlatformContext getPlatformContext(boolean forceUseOfConfigAddressBook) {
         return TestPlatformContextBuilder.create()
-                .withConfigBuilder(new TestConfigBuilder()
+                .withConfiguration(new TestConfigBuilder()
                         .withValue("addressBook.forceUseOfConfigAddressBook", forceUseOfConfigAddressBook)
                         .withValue("addressBook.addressBookDirectory", testDirectory.toString())
-                        .withValue("addressBook.maxRecordedAddressBookFiles", 50))
+                        .withValue("addressBook.maxRecordedAddressBookFiles", 50)
+                        .getOrCreateConfig())
                 .build();
     }
 }

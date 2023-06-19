@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
@@ -47,7 +48,7 @@ class TransactionHandlerTest {
             () -> new NullPointerException("intentionally thrown"),
             () -> new RuntimeException("intentionally thrown"));
 
-    private final NodeId selfId = new NodeId(false, 0L);
+    private final NodeId selfId = new NodeId(0L);
 
     private final State state = mock(State.class);
     private final SwirldState swirldState = mock(SwirldState.class);
@@ -77,13 +78,14 @@ class TransactionHandlerTest {
     private static EventImpl newEvent(final ConsensusTransactionImpl[] transactions) {
         return new EventImpl(
                 new BaseEventHashedData(
-                        0L,
+                        new BasicSoftwareVersion(1),
+                        new NodeId(0L),
                         0L,
                         0L,
                         CryptographyHolder.get().getNullHash(),
                         CryptographyHolder.get().getNullHash(),
                         Instant.now(),
                         transactions),
-                new BaseEventUnhashedData(0L, new byte[0]));
+                new BaseEventUnhashedData(new NodeId(0L), new byte[0]));
     }
 }

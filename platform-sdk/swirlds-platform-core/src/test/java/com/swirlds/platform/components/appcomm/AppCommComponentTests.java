@@ -23,13 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateWrapper;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Random;
@@ -70,10 +70,7 @@ public class AppCommComponentTests {
         });
 
         final AppCommunicationComponent component = new DefaultAppCommunicationComponent(notificationEngine);
-        final SignedStateWrapper wrapper = new SignedStateWrapper(signedState);
-        component.stateToDiskAttempt(wrapper, tmpDir, success);
-
-        assertFalse(wrapper.isDestroyed(), "Component must not release the signed state wrapper");
+        component.stateToDiskAttempt(signedState, tmpDir, success);
 
         if (success) {
             assertEquals(1, numInvocations.get(), "Unexpected number of notifications");
@@ -106,12 +103,8 @@ public class AppCommComponentTests {
             }
         });
 
-        final SignedStateWrapper wrapper = new SignedStateWrapper(signedState);
         final AppCommunicationComponent component = new DefaultAppCommunicationComponent(notificationEngine);
-        component.newLatestCompleteStateEvent(wrapper);
-
-        // Intentionally release the wrapper before the notification callback executes
-        wrapper.release();
+        component.newLatestCompleteStateEvent(signedState);
 
         // Allow the notification callback to execute
         senderLatch.countDown();
@@ -132,7 +125,7 @@ public class AppCommComponentTests {
         final long round = random.nextLong();
         final int numTypes = IssNotification.IssType.values().length;
         final IssNotification.IssType issType = IssNotification.IssType.values()[random.nextInt(numTypes)];
-        final Long otherNodeId = random.nextDouble() > 0.8 ? null : random.nextLong();
+        final NodeId otherNodeId = random.nextDouble() > 0.8 ? null : new NodeId(Math.abs(random.nextLong()));
 
         final AtomicInteger numInvocations = new AtomicInteger();
         final NotificationEngine notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());

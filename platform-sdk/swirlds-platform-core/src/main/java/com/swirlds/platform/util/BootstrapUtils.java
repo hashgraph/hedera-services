@@ -39,6 +39,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,7 +49,7 @@ import org.apache.logging.log4j.Logger;
 public final class BootstrapUtils {
 
     /** The logger for this class */
-    private static Logger logger = LogManager.getLogger(BootstrapUtils.class);
+    private static final Logger logger = LogManager.getLogger(BootstrapUtils.class);
 
     private BootstrapUtils() {}
 
@@ -82,7 +83,7 @@ public final class BootstrapUtils {
             final Class<?> mainClass = Class.forName(appMainName);
             final Constructor<?>[] constructors = mainClass.getDeclaredConstructors();
             Constructor<?> constructor = null;
-            for (Constructor<?> c : constructors) {
+            for (final Constructor<?> c : constructors) {
                 if (c.getGenericParameterTypes().length == 0) {
                     constructor = c;
                     break;
@@ -108,7 +109,7 @@ public final class BootstrapUtils {
     public static Configuration loadConfiguration(final List<Path> configurationPaths) throws IOException {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
 
-        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, "com.swirlds");
+        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
 
         for (final Path configPath : configurationPaths) {
             configurationBuilder.withSource(new LegacyFileConfigSource(configPath));

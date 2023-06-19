@@ -18,9 +18,11 @@ package com.hedera.services.bdd.suites.ethereum;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -35,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoTransferToExplicit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCodeWithConstructorArguments;
@@ -42,6 +45,7 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -50,8 +54,11 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRU
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
@@ -59,6 +66,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.List;
@@ -96,6 +104,10 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                 relayerFeeAsExpectedIfSenderCoversGas(),
                 depositSuccess(),
                 badRelayClient(),
+                topLevelBurnToZeroAddressReverts(),
+                topLevelLazyCreateOfMirrorAddressReverts(),
+                topLevelSendToReceiverSigRequiredAccountReverts(),
+                internalBurnToZeroAddressReverts(),
                 ethereumCallWithCalldataBiggerThanMaxSucceeds(),
                 createWithSelfDestructInConstructorHasSaneRecord());
     }
@@ -175,7 +187,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
         final var canonicalTxn = "canonical";
 
-        return defaultHapiSpec("RelayerFeeAsExpected")
+        return defaultHapiSpec("relayerFeeAsExpectedIfSenderCoversGas")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
@@ -204,7 +216,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     }
 
     HapiSpec depositSuccess() {
-        return defaultHapiSpec("DepositSuccess")
+        return defaultHapiSpec("depositSuccess")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -312,7 +324,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     HapiSpec createWithSelfDestructInConstructorHasSaneRecord() {
         final var txn = "txn";
         final var selfDestructingContract = "FactorySelfDestructConstructor";
-        return defaultHapiSpec("CreateWithSelfDestructInConstructorHasSaneRecord")
+        return defaultHapiSpec("createWithSelfDestructInConstructorHasSaneRecord")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -331,7 +343,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     }
 
     HapiSpec smallContractCreate() {
-        return defaultHapiSpec("SmallContractCreate")
+        return defaultHapiSpec("smallContractCreate")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -375,7 +387,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     private HapiSpec bigContractCreate() {
         final var contractAdminKey = "contractAdminKey";
-        return defaultHapiSpec("BigContractCreate")
+        return defaultHapiSpec("bigContractCreate")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -420,7 +432,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     private HapiSpec contractCreateWithConstructorArgs() {
         final var contractAdminKey = "contractAdminKey";
-        return defaultHapiSpec("ContractCreateWithConstructorArgs")
+        return defaultHapiSpec("contractCreateWithConstructorArgs")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -467,6 +479,93 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                                         spec.registry().getBytes(ETH_HASH_KEY)))))),
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                 .has(accountWith().nonce(1L)));
+    }
+
+    private static final String JUST_SEND_CONTRACT = "JustSend";
+
+    private static final String SEND_TO = "sendTo";
+
+    HapiSpec topLevelBurnToZeroAddressReverts() {
+        final var ethBurnAddress = new byte[20];
+        return defaultHapiSpec("topLevelBurnToZeroAddressReverts")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS))
+                .when(cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)))
+                .then(ethereumCryptoTransferToExplicit(ethBurnAddress, 123)
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .maxFeePerGas(50L)
+                        .maxPriorityGas(2L)
+                        .gasLimit(1_000_000L)
+                        .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION));
+    }
+
+    HapiSpec topLevelLazyCreateOfMirrorAddressReverts() {
+        final var nonExistentMirrorAddress = Utils.asSolidityAddress(0, 0, 666_666);
+        return defaultHapiSpec("topLevelLazyCreateOfMirrorAddressReverts")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS))
+                .when(cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)))
+                .then(ethereumCryptoTransferToExplicit(nonExistentMirrorAddress, 123)
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .maxFeePerGas(50L)
+                        .maxPriorityGas(2L)
+                        .gasLimit(1_000_000L)
+                        .hasKnownStatus(INVALID_CONTRACT_ID));
+    }
+
+    HapiSpec topLevelSendToReceiverSigRequiredAccountReverts() {
+        final var receiverSigAccount = "receiverSigAccount";
+        final AtomicReference<byte[]> receiverMirrorAddr = new AtomicReference<>();
+        final var preCallBalance = "preCallBalance";
+        return defaultHapiSpec("topLevelSendToReceiverSigRequiredAccountReverts")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                        cryptoCreate(receiverSigAccount)
+                                .receiverSigRequired(true)
+                                .exposingCreatedIdTo(id -> receiverMirrorAddr.set(asSolidityAddress(id))),
+                        uploadInitCode(JUST_SEND_CONTRACT),
+                        contractCreate(JUST_SEND_CONTRACT))
+                .when(
+                        balanceSnapshot(preCallBalance, receiverSigAccount),
+                        sourcing(() -> ethereumCryptoTransferToExplicit(receiverMirrorAddr.get(), 123)
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(0)
+                                .maxFeePerGas(50L)
+                                .maxPriorityGas(2L)
+                                .gasLimit(1_000_000L)
+                                .hasKnownStatus(INVALID_SIGNATURE)))
+                .then(getAccountBalance(receiverSigAccount).hasTinyBars(changeFromSnapshot(preCallBalance, 0L)));
+    }
+
+    HapiSpec internalBurnToZeroAddressReverts() {
+        return defaultHapiSpec("internalBurnToZeroAddressReverts")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(123 * ONE_HUNDRED_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)))
+                .when(uploadInitCode(JUST_SEND_CONTRACT), contractCreate(JUST_SEND_CONTRACT))
+                .then(ethereumCall(JUST_SEND_CONTRACT, SEND_TO, BigInteger.ZERO, BigInteger.valueOf(123))
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .maxFeePerGas(50L)
+                        .maxPriorityGas(2L)
+                        .gasLimit(1_000_000L)
+                        .sending(depositAmount)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
     }
 
     @Override

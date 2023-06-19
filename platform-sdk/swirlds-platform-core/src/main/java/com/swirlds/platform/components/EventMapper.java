@@ -16,15 +16,22 @@
 
 package com.swirlds.platform.components;
 
+import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
+
+import com.swirlds.common.metrics.FunctionGauge;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.event.SelfEventStorage;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventAddedObserver;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -37,7 +44,7 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
     /**
      * Contains the most recent event added from each node, with information about its descendants
      */
-    private final Map<Long, EventMapping> mappings;
+    private final Map<NodeId, EventMapping> mappings;
 
     /**
      * The ID of this node
@@ -47,23 +54,28 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
     /**
      * Constructor
      *
-     * @param selfId
-     * 		this node's {@link NodeId}
+     * @param metrics the {@link Metrics} object to use
+     * @param selfId  this node's {@link NodeId}
      */
-    public EventMapper(final NodeId selfId) {
-        this.selfId = selfId;
+    public EventMapper(@NonNull final Metrics metrics, @NonNull final NodeId selfId) {
+        this.selfId = Objects.requireNonNull(selfId);
         mappings = new HashMap<>();
+
+        metrics.getOrCreate(new FunctionGauge.Config<>(
+                        INFO_CATEGORY, "lastGen", Long.class, () -> getHighestGenerationNumber(selfId))
+                .withDescription("last event generation number by me")
+                .withFormat("%d"));
     }
 
     /**
      * Notifies the mapper that an event has been added
      *
-     * @param event
-     * 		the event that was added
+     * @param event the event that was added
      */
     @Override
-    public synchronized void eventAdded(final EventImpl event) {
-        final long nodeId = event.getCreatorId();
+    public synchronized void eventAdded(@NonNull final EventImpl event) {
+        Objects.requireNonNull(event, "event must not be null");
+        final NodeId nodeId = event.getCreatorId();
         mappings.put(nodeId, new EventMapping(event));
 
         final EventImpl otherParent = event.getOtherParent();
@@ -95,10 +107,10 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
     /**
      * Get the most recent event from a given node, or null if no such event exists.
      *
-     * @param nodeId
-     * 		the ID of the node in question
+     * @param nodeId the ID of the node in question
      */
-    public synchronized EventImpl getMostRecentEvent(final long nodeId) {
+    @Nullable
+    public synchronized EventImpl getMostRecentEvent(@Nullable final NodeId nodeId) {
         return mappings.getOrDefault(nodeId, DEFAULT_RETURN).getEvent();
     }
 
@@ -106,8 +118,9 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
      * {@inheritDoc}
      */
     @Override
+    @Nullable
     public synchronized EventImpl getMostRecentSelfEvent() {
-        return getMostRecentEvent(selfId.getId());
+        return getMostRecentEvent(selfId);
     }
 
     /**
@@ -119,13 +132,12 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
     }
 
     /**
-     * Get the generation number of the most recent event from a given node,
-     * or {@link EventConstants#GENERATION_UNDEFINED} if there is no event from that node.
+     * Get the generation number of the most recent event from a given node, or
+     * {@link EventConstants#GENERATION_UNDEFINED} if there is no event from that node.
      *
-     * @param nodeId
-     * 		the ID of the node in question
+     * @param nodeId the ID of the node in question
      */
-    public synchronized long getHighestGenerationNumber(final long nodeId) {
+    public synchronized long getHighestGenerationNumber(@Nullable final NodeId nodeId) {
         final EventMapping mapping = mappings.get(nodeId);
         if (mapping == null) {
             return EventConstants.GENERATION_UNDEFINED;
@@ -134,25 +146,23 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
     }
 
     /**
-     * Check if the most recent event created by a given node has been used as an other parent by an event
-     * created by this node.
+     * Check if the most recent event created by a given node has been used as an other parent by an event created by
+     * this node.
      *
-     * @param nodeId
-     * 		the ID of the node in question
+     * @param nodeId the ID of the node in question
      */
-    public synchronized boolean hasMostRecentEventBeenUsedAsOtherParent(final long nodeId) {
+    public synchronized boolean hasMostRecentEventBeenUsedAsOtherParent(@Nullable final NodeId nodeId) {
         return mappings.getOrDefault(nodeId, DEFAULT_RETURN).isHasDirectSelfDescendant();
     }
 
     /**
      * Check if the most recent event from a given node has any descendants.
      *
-     * @param nodeId
-     * 		the node ID in question
-     * @return true if the most recent event has descendants, otherwise false.
-     * 		False if there are no events for the given node ID.
+     * @param nodeId the node ID in question
+     * @return true if the most recent event has descendants, otherwise false. False if there are no events for the
+     * given node ID.
      */
-    public synchronized boolean doesMostRecentEventHaveDescendants(final long nodeId) {
+    public synchronized boolean doesMostRecentEventHaveDescendants(@Nullable final NodeId nodeId) {
         return mappings.getOrDefault(nodeId, DEFAULT_RETURN).isHasDescendant();
     }
 

@@ -17,7 +17,13 @@
 package com.swirlds.platform;
 
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -26,19 +32,23 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.system.BasicSoftwareVersion;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
-import com.swirlds.platform.state.EmergencyRecoveryFile;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileWriter;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
+import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -46,7 +56,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 public class SavedStateLoaderTests {
@@ -84,15 +97,9 @@ public class SavedStateLoaderTests {
 
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
-        requireStateLoad = Settings.getInstance().isRequireStateLoad();
-        checkSignedStateFromDisk = Settings.getInstance().isRequireStateLoad();
+        requireStateLoad = false;
+        checkSignedStateFromDisk = false;
         ConstructableRegistry.getInstance().registerConstructables("");
-    }
-
-    @AfterAll
-    static void afterAll() {
-        Settings.getInstance().setRequireStateLoad(requireStateLoad);
-        Settings.getInstance().setCheckSignedStateFromDisk(checkSignedStateFromDisk);
     }
 
     @Test
@@ -112,6 +119,7 @@ public class SavedStateLoaderTests {
         assertThrows(
                 NullPointerException.class,
                 () -> new SavedStateLoader(
+                        TestPlatformContextBuilder.create().build(),
                         null,
                         addressBook,
                         new SavedStateInfo[0],
@@ -125,6 +133,7 @@ public class SavedStateLoaderTests {
         assertThrows(
                 NullPointerException.class,
                 () -> new SavedStateLoader(
+                        TestPlatformContextBuilder.create().build(),
                         null,
                         addressBook,
                         new SavedStateInfo[0],
@@ -137,6 +146,7 @@ public class SavedStateLoaderTests {
     private void testNullSavedStateInfos() {
         assertDoesNotThrow(
                 () -> new SavedStateLoader(
+                        TestPlatformContextBuilder.create().build(),
                         shutdownTrigger,
                         addressBook,
                         new SavedStateInfo[0],
@@ -150,6 +160,7 @@ public class SavedStateLoaderTests {
         assertThrows(
                 NullPointerException.class,
                 () -> new SavedStateLoader(
+                        TestPlatformContextBuilder.create().build(),
                         shutdownTrigger,
                         addressBook,
                         new SavedStateInfo[0],
@@ -163,7 +174,13 @@ public class SavedStateLoaderTests {
         assertThrows(
                 NullPointerException.class,
                 () -> new SavedStateLoader(
-                        shutdownTrigger, addressBook, new SavedStateInfo[0], version, null, emergencyRecoveryManager),
+                        TestPlatformContextBuilder.create().build(),
+                        shutdownTrigger,
+                        addressBook,
+                        new SavedStateInfo[0],
+                        version,
+                        null,
+                        emergencyRecoveryManager),
                 "exception should be thrown for null emergency state validator supplier");
     }
 
@@ -171,6 +188,7 @@ public class SavedStateLoaderTests {
         assertThrows(
                 NullPointerException.class,
                 () -> new SavedStateLoader(
+                        TestPlatformContextBuilder.create().build(),
                         shutdownTrigger,
                         addressBook,
                         new SavedStateInfo[0],
@@ -184,7 +202,13 @@ public class SavedStateLoaderTests {
         assertThrows(
                 NullPointerException.class,
                 () -> new SavedStateLoader(
-                        shutdownTrigger, addressBook, new SavedStateInfo[0], version, () -> emergencyValidator, null),
+                        TestPlatformContextBuilder.create().build(),
+                        shutdownTrigger,
+                        addressBook,
+                        new SavedStateInfo[0],
+                        version,
+                        () -> emergencyValidator,
+                        null),
                 "exception should be thrown for null emergency recovery manager");
     }
 
@@ -197,8 +221,9 @@ public class SavedStateLoaderTests {
 
     private void testEmergencySavedStateLoadWithBadValue(final SavedStateInfo[] savedStateInfos) {
         writeEmergencyFile(5L);
-        init(savedStateInfos);
-        final SignedState stateToLoad = assertDoesNotThrow(savedStateLoader::getSavedStateToLoad);
+        init(savedStateInfos, prepareConfiguration());
+        final SignedState stateToLoad =
+                assertDoesNotThrow(() -> savedStateLoader.getSavedStateToLoad().getNullable());
         assertNull(stateToLoad, "stateToLoad should be null if the list of saved state files is empty/null");
         assertEquals(0, shutdownCount.get(), "no shutdown request should have been dispatched");
         assertTrue(emergencyRecoveryManager.isEmergencyStateRequired(), "an emergency state should still be required");
@@ -211,6 +236,7 @@ public class SavedStateLoaderTests {
     @DisplayName("Emergency Saved State Load")
     void testEmergencyLoad() {
         final int numStateToWrite = 4;
+        final var config = prepareConfiguration();
 
         final Random r = RandomUtils.getRandomPrintSeed();
 
@@ -220,47 +246,47 @@ public class SavedStateLoaderTests {
 
         writeEmergencyFile(10L);
 
-        init(stateInfos);
+        init(stateInfos, config);
 
         // latest state is valid
         mockSignedStateValid();
         SignedState stateToLoad = assertDoesNotThrow(
-                savedStateLoader::getSavedStateToLoad,
+                () -> savedStateLoader.getSavedStateToLoad().get(),
                 "The first saved state should have been returned for emergency recovery");
         verifyEmergencySignedStateReturned(statesOnDisk.get(0), stateToLoad);
 
-        init(stateInfos);
+        init(stateInfos, config);
 
         // latest state is invalid
         mockSignedStateInvalid(statesOnDisk.get(0));
         stateToLoad = assertDoesNotThrow(
-                savedStateLoader::getSavedStateToLoad,
+                () -> savedStateLoader.getSavedStateToLoad().get(),
                 "The second saved state should have been returned for emergency recovery");
         verifyEmergencySignedStateReturned(statesOnDisk.get(1), stateToLoad);
 
-        init(stateInfos);
+        init(stateInfos, config);
 
         // latest 2 states are invalid
         mockSignedStateInvalid(statesOnDisk.get(0), statesOnDisk.get(1));
         stateToLoad = assertDoesNotThrow(
-                savedStateLoader::getSavedStateToLoad,
+                () -> savedStateLoader.getSavedStateToLoad().get(),
                 "The third saved state should have been returned for emergency recovery");
         verifyEmergencySignedStateReturned(statesOnDisk.get(2), stateToLoad);
 
-        init(stateInfos);
+        init(stateInfos, config);
 
         // all states are invalid
         mockSignedStateInvalid(statesOnDisk.toArray(new SignedState[numStateToWrite]));
         stateToLoad = assertDoesNotThrow(
-                savedStateLoader::getSavedStateToLoad,
+                () -> savedStateLoader.getSavedStateToLoad().get(),
                 "The first saved state with a round smaller than the emergency round should have been returned");
         verifyNonEmergencySignedStateReturned(statesOnDisk.get(3), stateToLoad);
     }
 
-    private void init(final SavedStateInfo[] stateInfos) {
+    private void init(final SavedStateInfo[] stateInfos, final Configuration config) {
         resetCounters();
         initEmergencyRecoveryManager();
-        initSavedStateLoader(stateInfos);
+        initSavedStateLoader(stateInfos, config);
     }
 
     private void writeEmergencyFile(final long round) {
@@ -271,9 +297,15 @@ public class SavedStateLoaderTests {
         }
     }
 
-    private void initSavedStateLoader(final SavedStateInfo[] stateInfos) {
+    private void initSavedStateLoader(final SavedStateInfo[] stateInfos, final Configuration config) {
         savedStateLoader = new SavedStateLoader(
-                shutdownTrigger, addressBook, stateInfos, version, () -> emergencyValidator, emergencyRecoveryManager);
+                TestPlatformContextBuilder.create().withConfiguration(config).build(),
+                shutdownTrigger,
+                addressBook,
+                stateInfos,
+                version,
+                () -> emergencyValidator,
+                emergencyRecoveryManager);
     }
 
     private void initEmergencyRecoveryManager() {
@@ -288,15 +320,17 @@ public class SavedStateLoaderTests {
     }
 
     private void testSavedStateLoadWithBadValue(final SavedStateInfo[] savedStateInfos) {
-        requireStateLoad(false);
-        init(savedStateInfos);
-        final SignedState stateToLoad = assertDoesNotThrow(savedStateLoader::getSavedStateToLoad);
+        requireStateLoad = false;
+        init(savedStateInfos, prepareConfiguration());
+        final SignedState stateToLoad =
+                assertDoesNotThrow(() -> savedStateLoader.getSavedStateToLoad().getNullable());
         assertNull(stateToLoad, "stateToLoad should be null if the list of saved state files is null");
 
-        requireStateLoad(true);
+        requireStateLoad = true;
+        init(savedStateInfos, prepareConfiguration());
         assertThrows(
                 SignedStateLoadingException.class,
-                savedStateLoader::getSavedStateToLoad,
+                () -> savedStateLoader.getSavedStateToLoad().get(),
                 "If a signed state is required and none is present, an exception should be thrown");
     }
 
@@ -309,21 +343,21 @@ public class SavedStateLoaderTests {
         final List<SignedState> statesOnDisk = writeStatesToDisk(r, numStateToWrite);
 
         final SavedStateInfo[] stateInfos = toStateInfos(statesOnDisk);
-        init(stateInfos);
+        checkSignedStateFromDisk = true;
+        init(stateInfos, prepareConfiguration());
 
-        checkSignedStateFromDisk(true);
-        final SignedState stateToLoad =
-                assertDoesNotThrow(savedStateLoader::getSavedStateToLoad, "loading state should not throw");
+        final SignedState stateToLoad = assertDoesNotThrow(
+                () -> savedStateLoader.getSavedStateToLoad().get(), "loading state should not throw");
         assertHashesMatch(statesOnDisk.get(0), stateToLoad, "the latest state should be returned");
-        assertDoesNotThrow(savedStateLoader::getSavedStateToLoad, "null version should not cause an exception");
+        assertDoesNotThrow(
+                () -> savedStateLoader.getSavedStateToLoad().get(), "null version should not cause an exception");
     }
 
-    private void checkSignedStateFromDisk(final boolean value) {
-        Settings.getInstance().setCheckSignedStateFromDisk(value);
-    }
-
-    private void requireStateLoad(final boolean value) {
-        Settings.getInstance().setRequireStateLoad(value);
+    private Configuration prepareConfiguration() {
+        return new TestConfigBuilder()
+                .withValue("state.checkSignedStateFromDisk", checkSignedStateFromDisk)
+                .withValue("state.requireStateLoad", requireStateLoad)
+                .getOrCreateConfig();
     }
 
     private void verifyNoSignedStateFound(final SignedState actual) {
@@ -399,7 +433,7 @@ public class SavedStateLoaderTests {
         }
         states.forEach(ss -> {
             try {
-                SignedStateFileWriter.writeSignedStateToDisk(0, getStateDir(ss.getRound()), ss, "test");
+                SignedStateFileWriter.writeSignedStateToDisk(new NodeId(0), getStateDir(ss.getRound()), ss, "test");
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }

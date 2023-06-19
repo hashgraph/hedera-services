@@ -22,6 +22,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -124,7 +125,9 @@ public abstract class VirtualMapBench extends BaseBench {
         return virtualMap;
     }
 
-    private void enableSnapshots() {
+    private int snapshotIndex = 0;
+
+    protected void enableSnapshots() {
         snapshotTime.set(System.currentTimeMillis() + SNAPSHOT_DELAY);
         doSnapshots = true;
     }
@@ -139,7 +142,7 @@ public abstract class VirtualMapBench extends BaseBench {
             snapshotTime.set(Long.MAX_VALUE);
             new Thread(() -> {
                         try {
-                            Path savedDir = getTestDir().resolve(SNAPSHOT);
+                            Path savedDir = getBenchDir().resolve(SNAPSHOT + snapshotIndex++);
                             if (!Files.exists(savedDir)) {
                                 Files.createDirectory(savedDir);
                             }
@@ -149,7 +152,9 @@ public abstract class VirtualMapBench extends BaseBench {
                                 virtualMap.serialize(out, savedDir);
                             }
                             virtualMap.release();
-                            Utils.deleteRecursively(savedDir);
+                            if (!getConfig().saveDataDirectory()) {
+                                Utils.deleteRecursively(savedDir);
+                            }
 
                             snapshotTime.set(System.currentTimeMillis() + SNAPSHOT_DELAY);
                         } catch (Exception ex) {
@@ -171,20 +176,16 @@ public abstract class VirtualMapBench extends BaseBench {
             final VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap) {
         final long start = System.currentTimeMillis();
         VirtualMap<BenchmarkKey, BenchmarkValue> curMap = virtualMap;
-        for (; ; ) {
-            final VirtualMap<BenchmarkKey, BenchmarkValue> oldCopy = curMap;
-            curMap = curMap.copy();
-            oldCopy.release();
-            final VirtualRoot root = oldCopy.getRight();
-            if (root.shouldBeFlushed()) {
-                try {
-                    root.waitUntilFlushed();
-                } catch (InterruptedException ex) {
-                    logger.warn("Interrupted", ex);
-                    Thread.currentThread().interrupt();
-                }
-                break;
-            }
+        final VirtualMap<BenchmarkKey, BenchmarkValue> oldCopy = curMap;
+        curMap = curMap.copy();
+        oldCopy.release();
+        final VirtualRootNode<BenchmarkKey, BenchmarkValue> root = oldCopy.getRight();
+        root.enableFlush();
+        try {
+            root.waitUntilFlushed();
+        } catch (InterruptedException ex) {
+            logger.warn("Interrupted", ex);
+            Thread.currentThread().interrupt();
         }
         logger.info("Flushed map in {} ms", System.currentTimeMillis() - start);
 
@@ -238,9 +239,12 @@ public abstract class VirtualMapBench extends BaseBench {
         final VirtualMap<BenchmarkKey, BenchmarkValue> curMap = virtualMap.copy();
         try {
             final long start = System.currentTimeMillis();
-            final Path savedDir = getBenchDir().resolve(SAVED).resolve(LABEL);
-            if (Files.exists(savedDir)) {
-                Utils.deleteRecursively(savedDir);
+            Path savedDir;
+            for (int i = 0; ; i++) {
+                savedDir = getBenchDir().resolve(SAVED + i).resolve(LABEL);
+                if (!Files.exists(savedDir)) {
+                    break;
+                }
             }
             Files.createDirectories(savedDir);
             virtualMap.getRight().getHash();
@@ -258,8 +262,15 @@ public abstract class VirtualMapBench extends BaseBench {
     }
 
     protected VirtualMap<BenchmarkKey, BenchmarkValue> restoreMap() {
-        final Path savedDir = getBenchDir().resolve(SAVED).resolve(LABEL);
-        if (Files.exists(savedDir)) {
+        Path savedDir = null;
+        for (int i = 0; ; i++) {
+            final Path nextSavedDir = getBenchDir().resolve(SAVED + i).resolve(LABEL);
+            if (!Files.exists(nextSavedDir)) {
+                break;
+            }
+            savedDir = nextSavedDir;
+        }
+        if (savedDir != null) {
             try {
                 final VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = new VirtualMap<>();
                 try (final SerializableDataInputStream in =
@@ -286,9 +297,12 @@ public abstract class VirtualMapBench extends BaseBench {
         final long[] map = new long[verify ? maxKey : 0];
         VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);
 
+        if (getConfig().enableSnapshots()) {
+            enableSnapshots();
+        }
+
         // Update values
         long start = System.currentTimeMillis();
-        enableSnapshots();
         for (int i = 0; i < numFiles; i++) {
 
             for (int j = 0; j < numRecords; ++j) {
@@ -385,8 +399,11 @@ public abstract class VirtualMapBench extends BaseBench {
         record Expirable(long time, long id) {}
         final ArrayDeque<Expirable> expirables = new ArrayDeque<>();
 
+        if (getConfig().enableSnapshots()) {
+            enableSnapshots();
+        }
+
         long start = System.currentTimeMillis();
-        enableSnapshots();
         for (int i = 0; i < numFiles; i++) {
             // Add/update new values
             for (int j = 0; j < numRecords; ++j) {

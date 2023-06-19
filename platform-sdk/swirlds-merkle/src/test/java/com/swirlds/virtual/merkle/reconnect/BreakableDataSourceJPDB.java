@@ -16,10 +16,10 @@
 
 package com.swirlds.virtual.merkle.reconnect;
 
-import static com.swirlds.common.utility.Units.BYTES_TO_BITS;
-import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
-
+import com.swirlds.config.api.Configuration;
+import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.jasperdb.files.hashmap.HalfDiskVirtualKeySet;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestKeySerializer;
 import com.swirlds.virtual.merkle.TestValue;
@@ -34,7 +34,12 @@ public class BreakableDataSourceJPDB extends BreakableDataSource {
 
     @Override
     public VirtualKeySet<TestKey> buildKeySet() {
-        return new HalfDiskVirtualKeySet<>(
-                new TestKeySerializer(), 10, 2L * MEBIBYTES_TO_BYTES * BYTES_TO_BITS, 1_000_000, 10_000);
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("jasperDb.keySetHalfDiskHashMapSize", "10000")
+                .withValue("jasperDb.keySetHalfDiskHashMapBuffer", "1000")
+                .withValue("jasperDb.keySetBloomFilterSizeInBytes", "16777216")
+                .getOrCreateConfig();
+
+        return new HalfDiskVirtualKeySet<>(new TestKeySerializer(), configuration.getConfigData(JasperDbConfig.class));
     }
 }

@@ -16,17 +16,35 @@
 
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.TokenFreezeFactory.newSignedTokenFreeze;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.test.factories.txns.TokenFreezeFactory;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public enum TokenFreezeScenarios implements TxnHandlingScenario {
     VALID_FREEZE_WITH_EXTANT_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenFreeze()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenFreezeFactory.newSignedTokenFreeze()
                     .freezing(KNOWN_TOKEN_WITH_FREEZE)
+                    .withAccount(OWNER_ACCOUNT)
                     .nonPayerKts(TOKEN_FREEZE_KT)
+                    .get());
+        }
+    },
+    FREEZE_WITH_NO_KEYS {
+        @Override
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenFreezeFactory.newSignedTokenFreeze()
+                    .freezing(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+                    .withAccount(OWNER_ACCOUNT)
+                    .nonPayerKts(TOKEN_ADMIN_KT)
                     .get());
         }
     },

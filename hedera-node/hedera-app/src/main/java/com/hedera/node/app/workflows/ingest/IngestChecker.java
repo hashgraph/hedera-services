@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.workflows.ingest;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
@@ -26,11 +25,9 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.solvency.SolvencyPreCheck;
 import com.hedera.node.app.spi.info.CurrentPlatformStatus;
-import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
@@ -43,9 +40,6 @@ import javax.inject.Inject;
  * The {@code IngestChecker} contains checks that are specific to the ingest workflow
  */
 public class IngestChecker {
-
-    private final AccountID nodeAccountID;
-    private final NodeInfo nodeInfo;
     private final CurrentPlatformStatus currentPlatformStatus;
     private final TransactionChecker transactionChecker;
     private final ThrottleAccumulator throttleAccumulator;
@@ -55,8 +49,6 @@ public class IngestChecker {
     /**
      * Constructor of the {@code IngestChecker}
      *
-     * @param nodeAccountID the {@link AccountID} of the <em>node</em>
-     * @param nodeInfo the {@link NodeInfo} that contains information about the node
      * @param currentPlatformStatus the {@link CurrentPlatformStatus} that contains the current status of the platform
      * @param transactionChecker the {@link TransactionChecker} that pre-processes the bytes of a transaction
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
@@ -66,15 +58,11 @@ public class IngestChecker {
      */
     @Inject
     public IngestChecker(
-            @NonNull @NodeSelfId final AccountID nodeAccountID,
-            @NonNull final NodeInfo nodeInfo,
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
             @NonNull final TransactionChecker transactionChecker,
             @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final SignaturePreparer signaturePreparer) {
-        this.nodeAccountID = requireNonNull(nodeAccountID);
-        this.nodeInfo = requireNonNull(nodeInfo);
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
@@ -88,10 +76,6 @@ public class IngestChecker {
      * @throws PreCheckException if the node is unable to process queries
      */
     public void checkNodeState() throws PreCheckException {
-        if (nodeInfo.isSelfZeroStake()) {
-            // Zero stake nodes are currently not supported
-            throw new PreCheckException(INVALID_NODE_ACCOUNT);
-        }
         if (currentPlatformStatus.get() != ACTIVE) {
             throw new PreCheckException(PLATFORM_NOT_ACTIVE);
         }
@@ -116,19 +100,24 @@ public class IngestChecker {
         // will convert that to INVALID_TRANSACTION_BODY.
         assert functionality != HederaFunctionality.NONE;
 
-        // 2. Check throttles
+        // 2. Deduplicate
+        // TODO: Integrate solution from preHandle workflow once it is merged
+
+        // 3. Check throttles
         if (throttleAccumulator.shouldThrottle(transactionInfo.txBody())) {
             throw new PreCheckException(ResponseCodeEnum.BUSY);
         }
 
-        // 3. Check payer's signature
-        signaturePreparer.syncGetPayerSigStatus(tx);
-
-        // 4. Check account balance
+        // 4. Get payer account
         final AccountID payerID =
                 txBody.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
         solvencyPreCheck.checkPayerAccountStatus(state, payerID);
+
+        // 5. Check account balance
         solvencyPreCheck.checkSolvencyOfVerifiedPayer(state, tx);
+
+        // 6. Verify payer's signatures
+        signaturePreparer.syncGetPayerSigStatus(tx);
 
         return transactionInfo;
     }

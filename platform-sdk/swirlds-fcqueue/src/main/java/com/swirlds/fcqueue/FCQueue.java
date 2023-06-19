@@ -88,6 +88,9 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
 
     private static final long HASH_RADIX = 3;
 
+    /** A hash value representing a null element or a destroyed queue */
+    private static final ImmutableHash NULL_HASH = new ImmutableHash(new byte[DIGEST_TYPE.digestLength()]);
+
     /** the number of elements in this queue */
     private int size;
 
@@ -101,7 +104,7 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
     private final AtomicReference<Node<E>> unhashed;
 
     /** the hash of this queue once it becomes immutable */
-    private ImmutableHash hash;
+    private volatile ImmutableHash hash;
 
     static class Node<E extends FastCopyable> {
         /** the element in the list */
@@ -140,15 +143,21 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
      * {@inheritDoc}
      */
     @Override
-    public synchronized Hash getHash() {
+    public Hash getHash() {
         if (hash != null) {
             return hash;
         }
-        final ImmutableHash result = new ImmutableHash(computeHash());
-        if (isImmutable()) {
-            hash = result;
+
+        synchronized (this) {
+            ImmutableHash result = hash;
+            if (result == null) {
+                result = computeHash();
+                if (isImmutable()) {
+                    hash = result;
+                }
+            }
+            return result;
         }
-        return result;
     }
 
     /**
@@ -183,7 +192,7 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
      * shared data structure are invariant. Volatile <code>runningHash</code> helps to reduce overlap between
      * threads.</p>
      */
-    private byte[] computeHash() {
+    private ImmutableHash computeHash() {
         // Ensure we have tail's running hash
         if (tail.runningHash == null) {
             Node<E> node = unhashed.get();
@@ -210,7 +219,7 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
         for (int i = 0; i < headHash.length; ++i) {
             longToByteArray(tailHash[i] - headHash[i] * exponent, result, i * Long.BYTES);
         }
-        return result;
+        return new ImmutableHash(result);
     }
 
     /**
@@ -418,13 +427,10 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
 
     @Override
     protected synchronized void destroyNode() {
-        clearInternal();
-    }
-
-    private void clearInternal() {
-        head = tail;
+        setImmutable(true);
+        head = tail = null;
         size = 0;
-        hash = null;
+        hash = NULL_HASH;
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -716,7 +722,9 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
     public synchronized void clear() {
         throwIfImmutable();
 
-        clearInternal();
+        head = tail;
+        size = 0;
+        hash = null;
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -793,7 +801,7 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
     byte[] getHash(final E element) {
         // Handle cases where list methods return null if the list is empty
         if (element == null) {
-            return new byte[DIGEST_TYPE.digestLength()];
+            return NULL_HASH.getValue();
         }
         final Cryptography crypto = CryptographyHolder.get();
         // return a hash of a hash, in order to make state proofs smaller in the future

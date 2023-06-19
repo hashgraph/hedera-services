@@ -33,6 +33,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -47,6 +48,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -83,7 +86,7 @@ class StateSigningTests {
         }
         Collections.shuffle(nodes, random);
 
-        final Set<Long> signaturesAdded = new HashSet<>();
+        final Set<NodeId> signaturesAdded = new HashSet<>();
 
         final SigSet sigSet = signedState.getSigSet();
 
@@ -100,7 +103,7 @@ class StateSigningTests {
             final Signature signature = signatures.get(index);
 
             final boolean previouslyComplete = signedState.isComplete();
-            final boolean completed = signedState.addSignature(address.getId(), signature);
+            final boolean completed = signedState.addSignature(address.getNodeId(), signature);
             final boolean nowComplete = signedState.isComplete();
 
             if (nowComplete) {
@@ -112,7 +115,7 @@ class StateSigningTests {
             if (!previouslyComplete || !nowComplete) {
                 count++;
                 expectedWeight += address.getWeight();
-                signaturesAdded.add(address.getId());
+                signaturesAdded.add(address.getNodeId());
             }
 
             if (completed) {
@@ -122,7 +125,7 @@ class StateSigningTests {
             if (random.nextBoolean()) {
                 // Sometimes offer the signature more than once. This should have no effect
                 // since duplicates are ignored.
-                assertFalse(signedState.addSignature(address.getId(), signature));
+                assertFalse(signedState.addSignature(address.getNodeId(), signature));
             }
 
             assertEquals(isMajority(expectedWeight, addressBook.getTotalWeight()), signedState.isComplete());
@@ -130,7 +133,7 @@ class StateSigningTests {
             assertEquals(count, sigSet.size());
 
             for (int metaIndex = 0; metaIndex < nodeCount; metaIndex++) {
-                final long nodeId = nodes.get(metaIndex).getId();
+                final NodeId nodeId = nodes.get(metaIndex).getNodeId();
 
                 if (signaturesAdded.contains(nodeId)) {
                     // We have added this signature, make sure the sigset is tracking it
@@ -151,8 +154,8 @@ class StateSigningTests {
     /**
      * For the test below, treat all nodes divisible by 5 as having invalid signatures.
      */
-    private boolean isInvalid(final long nodeId) {
-        return nodeId % 5 == 0;
+    private boolean isInvalid(@NonNull final NodeId nodeId) {
+        return nodeId.id() % 5 == 0;
     }
 
     @ParameterizedTest
@@ -177,7 +180,7 @@ class StateSigningTests {
                 .setSignatures(new HashMap<>())
                 .build();
 
-        final Set<Long> signaturesAdded = new HashSet<>();
+        final Set<NodeId> signaturesAdded = new HashSet<>();
 
         final SigSet sigSet = signedState.getSigSet();
 
@@ -190,7 +193,7 @@ class StateSigningTests {
 
         final List<Signature> signatures = new ArrayList<>(nodeCount);
         for (final Address address : nodes) {
-            if (isInvalid(address.getId())) {
+            if (isInvalid(address.getNodeId())) {
                 // A random signature won't be valid with high probability
                 signatures.add(randomSignature(random));
             } else {
@@ -206,13 +209,13 @@ class StateSigningTests {
             final Signature signature = signatures.get(index);
 
             final boolean previouslyComplete = signedState.isComplete();
-            final boolean completed = signedState.addSignature(address.getId(), signature);
+            final boolean completed = signedState.addSignature(address.getNodeId(), signature);
             final boolean nowComplete = signedState.isComplete();
 
-            if (!isInvalid(address.getId()) && !previouslyComplete) {
+            if (!isInvalid(address.getNodeId()) && !previouslyComplete) {
                 count++;
                 expectedWeight += address.getWeight();
-                signaturesAdded.add(address.getId());
+                signaturesAdded.add(address.getNodeId());
             }
 
             if (completed) {
@@ -222,7 +225,7 @@ class StateSigningTests {
             if (random.nextBoolean()) {
                 // Sometimes offer the signature more than once. This should have no effect
                 // since duplicates are ignored.
-                assertFalse(signedState.addSignature(address.getId(), signature));
+                assertFalse(signedState.addSignature(address.getNodeId(), signature));
             }
 
             assertEquals(isMajority(expectedWeight, addressBook.getTotalWeight()), signedState.isComplete());
@@ -230,7 +233,7 @@ class StateSigningTests {
             assertEquals(count, sigSet.size());
 
             for (int metaIndex = 0; metaIndex < nodeCount; metaIndex++) {
-                final long nodeId = nodes.get(metaIndex).getId();
+                final NodeId nodeId = nodes.get(metaIndex).getNodeId();
 
                 if (signaturesAdded.contains(nodeId)) {
                     // We have added this signature, make sure the sigset is tracking it
@@ -271,7 +274,7 @@ class StateSigningTests {
                 .setSignatures(new HashMap<>())
                 .build();
 
-        final Set<Long> signaturesAdded = new HashSet<>();
+        final Set<NodeId> signaturesAdded = new HashSet<>();
         long expectedWeight = 0;
 
         final SigSet sigSet = signedState.getSigSet();
@@ -291,9 +294,9 @@ class StateSigningTests {
 
         for (int index = 0; index < nodeCount; index++) {
             final boolean alreadyComplete = signedState.isComplete();
-            signedState.addSignature(nodes.get(index).getId(), signatures.get(index));
+            signedState.addSignature(nodes.get(index).getNodeId(), signatures.get(index));
             if (!alreadyComplete) {
-                signaturesAdded.add(nodes.get(index).getId());
+                signaturesAdded.add(nodes.get(index).getNodeId());
                 expectedWeight += nodes.get(index).getWeight();
             }
         }
@@ -303,7 +306,7 @@ class StateSigningTests {
         assertEquals(expectedWeight, signedState.getSigningWeight());
 
         // Remove a node from the address book
-        final long nodeRemovedFromAddressBook = nodes.get(0).getId();
+        final NodeId nodeRemovedFromAddressBook = nodes.get(0).getNodeId();
         final long weightRemovedFromAddressBook = nodes.get(0).getWeight();
         signedState.getAddressBook().remove(nodeRemovedFromAddressBook);
 
@@ -321,12 +324,12 @@ class StateSigningTests {
         for (int index = 0; index < nodes.size(); index++) {
             if (index == 0
                     || index == 1
-                    || !signaturesAdded.contains(nodes.get(index).getId())) {
-                assertNull(sigSet.getSignature(nodes.get(index).getId()));
+                    || !signaturesAdded.contains(nodes.get(index).getNodeId())) {
+                assertNull(sigSet.getSignature(nodes.get(index).getNodeId()));
             } else {
                 assertSame(
                         signatures.get(index),
-                        sigSet.getSignature(nodes.get(index).getId()));
+                        sigSet.getSignature(nodes.get(index).getNodeId()));
             }
         }
     }
@@ -369,7 +372,7 @@ class StateSigningTests {
         }
 
         for (int index = 0; index < nodeCount; index++) {
-            signedState.addSignature(nodes.get(index).getId(), signatures.get(index));
+            signedState.addSignature(nodes.get(index).getNodeId(), signatures.get(index));
         }
 
         assertTrue(signedState.isComplete());
@@ -421,7 +424,7 @@ class StateSigningTests {
         }
 
         for (int index = 0; index < nodeCount; index++) {
-            signedState.addSignature(nodes.get(index).getId(), signatures.get(index));
+            signedState.addSignature(nodes.get(index).getNodeId(), signatures.get(index));
         }
 
         assertTrue(signedState.isComplete());
@@ -460,7 +463,7 @@ class StateSigningTests {
                 .build();
 
         // set node to zero weight
-        final long nodeWithZeroWeight = addressBook.getId(0);
+        final NodeId nodeWithZeroWeight = addressBook.getNodeId(0);
         addressBook.updateWeight(nodeWithZeroWeight, 0);
 
         final SignedState signedState = new RandomSignedStateGenerator(random)
@@ -484,7 +487,7 @@ class StateSigningTests {
         }
 
         for (int index = 0; index < nodeCount; index++) {
-            signedState.addSignature(nodes.get(index).getId(), signatures.get(index));
+            signedState.addSignature(nodes.get(index).getNodeId(), signatures.get(index));
         }
 
         assertFalse(sigSet.hasSignature(nodeWithZeroWeight), "Signature for node with zero weight should not be added");
@@ -494,7 +497,9 @@ class StateSigningTests {
         int i = 0;
         for (final Address address : addressBook) {
             newAddressBook.add(address.copySetWeight(0));
-            assertTrue(address.equalsWithoutWeightAndOwnHost(newAddressBook.getAddress(newAddressBook.getId(i))));
+            final Address newAddress = newAddressBook.getAddress(newAddressBook.getNodeId(i));
+            Assertions.assertNotNull(newAddress);
+            assertTrue(address.equalsWithoutWeightAndOwnHost(newAddress));
             i++;
         }
 

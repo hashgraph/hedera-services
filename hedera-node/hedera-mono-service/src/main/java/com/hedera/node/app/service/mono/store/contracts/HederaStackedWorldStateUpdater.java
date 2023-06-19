@@ -111,12 +111,17 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
     }
 
     /**
-     * Returns the mirror form of the given EVM address if it exists; or 20 bytes of binary zeros if
-     * the given address is the mirror address of an account with an EIP-1014 address.
+     * Given a 20-byte EVM address, returns one of three things:
+     * <ol>
+     *     <li>If the address is neither an alias nor long-zero address for any account, returns it unchanged.</li>
+     *     <li>If the address is the alias of an account, returns the long-zero address of that account.</li>
+     *     <li>If the address is the long-zero address of an account that <i>also has an EIP-1014 alias</i>,
+     *     returns 20 bytes of binary zeros ({@code NON_CANONICAL_REFERENCE}).</li>
+     * </ol>
      *
      * @param evmAddress an EVM address
-     * @return its mirror form, or binary zeros if an EIP-1014 address should have been used for
-     *     this account
+     * @return the input address if it does not reference an account; the long-zero address of its account if it does
+     * reference an account; or 20 bytes of binary zeros if it references an account with a different EIP-1014 alias
      */
     public byte[] unaliased(final byte[] evmAddress) {
         final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
@@ -135,6 +140,7 @@ public class HederaStackedWorldStateUpdater extends AbstractStackedLedgerUpdater
     public byte[] permissivelyUnaliased(final byte[] evmAddress) {
         return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
     }
+
     /**
      * Returns the underlying entity id of the last allocated EVM address.
      *

@@ -19,7 +19,7 @@ package com.swirlds.platform.test.network.communication.multithreaded;
 import static org.awaitility.Awaitility.await;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.test.network.communication.TestProtocol;
 import com.swirlds.platform.test.sync.ConnectionFactory;
 import java.util.concurrent.TimeUnit;
@@ -47,7 +47,7 @@ class NegotiatorMultithreadedTest {
     @Test
     void keepalive() throws Exception {
         final Pair<Connection, Connection> connections =
-                ConnectionFactory.createLocalConnections(NodeId.createMain(0), NodeId.createMain(1));
+                ConnectionFactory.createLocalConnections(new NodeId(0L), new NodeId(1));
         final NegotiatorPair pair = new NegotiatorPair(
                 new TestProtocol().setShouldInitiate(false),
                 Pair.of(

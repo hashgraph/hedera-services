@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 class ConfigurationImpl implements Configuration, ConfigLifecycle {
@@ -43,9 +44,9 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
             @NonNull final ConfigPropertiesService propertiesService,
             @NonNull final ConverterService converterService,
             @NonNull final ConfigValidationService validationService) {
-        this.propertiesService = ArgumentUtils.throwArgNull(propertiesService, "propertiesService");
-        this.converterService = ArgumentUtils.throwArgNull(converterService, "converterService");
-        this.validationService = ArgumentUtils.throwArgNull(validationService, "validationService");
+        this.propertiesService = Objects.requireNonNull(propertiesService, "propertiesService must not be null");
+        this.converterService = Objects.requireNonNull(converterService, "converterService must not be null");
+        this.validationService = Objects.requireNonNull(validationService, "validationService must not be null");
         this.configDataService = new ConfigDataService(this, converterService);
     }
 
@@ -66,7 +67,7 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     @Override
     public <T> T getValue(@NonNull final String propertyName, @NonNull final Class<T> propertyType) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
-        ArgumentUtils.throwArgNull(propertyType, "propertyType");
+        Objects.requireNonNull(propertyType, "propertyType must not be null");
         final String rawValue = getValue(propertyName);
         if (Objects.equals(propertyType, String.class)) {
             return (T) rawValue;
@@ -79,7 +80,7 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     public <T> T getValue(
             @NonNull final String propertyName, @NonNull final Class<T> propertyType, @Nullable final T defaultValue) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
-        ArgumentUtils.throwArgNull(propertyType, "propertyType");
+        Objects.requireNonNull(propertyType, "propertyType must not be null");
         if (!exists(propertyName)) {
             return defaultValue;
         }
@@ -111,7 +112,7 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     @Override
     public <T> List<T> getValues(@NonNull final String propertyName, @NonNull final Class<T> propertyType) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
-        ArgumentUtils.throwArgNull(propertyType, "propertyType");
+        Objects.requireNonNull(propertyType, "propertyType must not be null");
         final List<String> values = getValues(propertyName);
         if (values == null) {
             return null;
@@ -128,11 +129,54 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
             @NonNull final Class<T> propertyType,
             @Nullable final List<T> defaultValue) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
-        ArgumentUtils.throwArgNull(propertyType, "propertyType");
+        Objects.requireNonNull(propertyType, "propertyType must not be null");
         if (!exists(propertyName)) {
             return defaultValue;
         }
         return getValues(propertyName, propertyType);
+    }
+
+    @Override
+    @Nullable
+    public Set<String> getValueSet(@NonNull final String propertyName) {
+        final List<String> values = getValues(propertyName);
+        if (values == null) {
+            return null;
+        }
+        return Set.copyOf(values);
+    }
+
+    @Override
+    @Nullable
+    public Set<String> getValueSet(@NonNull final String propertyName, @Nullable final Set<String> defaultValue) {
+        if (!exists(propertyName)) {
+            return defaultValue;
+        }
+        return getValueSet(propertyName);
+    }
+
+    @Override
+    @Nullable
+    public <T> Set<T> getValueSet(@NonNull final String propertyName, @NonNull final Class<T> propertyType)
+            throws NoSuchElementException, IllegalArgumentException {
+        final List<T> values = getValues(propertyName, propertyType);
+        if (values == null) {
+            return null;
+        }
+        return Set.copyOf(values);
+    }
+
+    @Override
+    @Nullable
+    public <T> Set<T> getValueSet(
+            @NonNull final String propertyName,
+            @NonNull final Class<T> propertyType,
+            @Nullable final Set<T> defaultValue)
+            throws IllegalArgumentException {
+        if (!exists(propertyName)) {
+            return defaultValue;
+        }
+        return getValueSet(propertyName, propertyType);
     }
 
     @Nullable

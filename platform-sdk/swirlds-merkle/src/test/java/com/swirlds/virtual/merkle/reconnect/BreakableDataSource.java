@@ -21,14 +21,13 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class BreakableDataSource implements VirtualDataSource<TestKey, TestValue> {
@@ -45,13 +44,12 @@ public abstract class BreakableDataSource implements VirtualDataSource<TestKey, 
     public void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<VirtualInternalRecord> internalRecords,
+            final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
             final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
             final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
             throws IOException {
 
-        final List<VirtualLeafRecord<TestKey, TestValue>> leaves =
-                leafRecordsToAddOrUpdate.collect(Collectors.toList());
+        final List<VirtualLeafRecord<TestKey, TestValue>> leaves = leafRecordsToAddOrUpdate.toList();
 
         if (builder.numTimesBroken < builder.numTimesToBreak) {
             builder.numCalls += leaves.size();
@@ -63,7 +61,8 @@ public abstract class BreakableDataSource implements VirtualDataSource<TestKey, 
             }
         }
 
-        delegate.saveRecords(firstLeafPath, lastLeafPath, internalRecords, leaves.stream(), leafRecordsToDelete);
+        delegate.saveRecords(
+                firstLeafPath, lastLeafPath, pathHashRecordsToUpdate, leaves.stream(), leafRecordsToDelete);
     }
 
     @Override
@@ -87,13 +86,8 @@ public abstract class BreakableDataSource implements VirtualDataSource<TestKey, 
     }
 
     @Override
-    public VirtualInternalRecord loadInternalRecord(final long path, final boolean deserialize) throws IOException {
-        return delegate.loadInternalRecord(path, deserialize);
-    }
-
-    @Override
-    public Hash loadLeafHash(final long path) throws IOException {
-        return delegate.loadLeafHash(path);
+    public Hash loadHash(final long path) throws IOException {
+        return delegate.loadHash(path);
     }
 
     @Override
@@ -109,4 +103,19 @@ public abstract class BreakableDataSource implements VirtualDataSource<TestKey, 
 
     @Override
     public abstract VirtualKeySet<TestKey> buildKeySet();
+
+    @Override
+    public long getFirstLeafPath() {
+        return delegate.getFirstLeafPath();
+    }
+
+    @Override
+    public long getLastLeafPath() {
+        return delegate.getLastLeafPath();
+    }
+
+    @Override
+    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
+        return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
+    }
 }

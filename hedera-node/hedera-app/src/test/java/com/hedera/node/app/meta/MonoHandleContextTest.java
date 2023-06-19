@@ -16,14 +16,18 @@
 
 package com.hedera.node.app.meta;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,32 +51,57 @@ class MonoHandleContextTest {
     @Mock
     private TransactionContext txnCtx;
 
+    @Mock
+    private ReadableStoreFactory readableStoreFactory;
+
+    @Mock
+    private SingleTransactionRecordBuilder recordBuilder;
+
     private MonoHandleContext subject;
 
     @BeforeEach
     void setup() {
-        subject = new MonoHandleContext(ids, expiryValidator, attributeValidator, txnCtx);
+        subject = new MonoHandleContext(
+                TransactionBody.DEFAULT,
+                ids,
+                expiryValidator,
+                attributeValidator,
+                txnCtx,
+                readableStoreFactory,
+                recordBuilder);
     }
 
     @Test
     void getsNowFromCtx() {
         given(txnCtx.consensusTime()).willReturn(NOW);
 
-        assertEquals(NOW, subject.consensusNow());
+        assertThat(subject.consensusNow()).isEqualTo(NOW);
     }
 
     @Test
     void delegatesIdCreationToEntitySource() {
-        final var nextNum = 666L;
-        given(ids.newAccountNumber()).willReturn(nextNum);
+        final var expectedNum = 666L;
+        given(ids.newAccountNumber()).willReturn(expectedNum);
 
-        final var numSupplier = subject.newEntityNumSupplier();
+        final var actualNum = subject.newEntityNum();
 
-        assertEquals(nextNum, numSupplier.getAsLong());
+        assertThat(actualNum).isEqualTo(expectedNum);
     }
 
     @Test
     void returnsExpiryValidatorAsExpected() {
-        assertSame(expiryValidator, subject.expiryValidator());
+        assertThat(subject.expiryValidator()).isSameAs(expiryValidator);
+    }
+
+    @Test
+    void returnsAttributeValidatorAsExpected() {
+        assertThat(subject.attributeValidator()).isSameAs(attributeValidator);
+    }
+
+    @Test
+    void createsStore() {
+        subject.readableStore(ReadableRunningHashLeafStore.class);
+
+        verify(readableStoreFactory).getStore(ReadableRunningHashLeafStore.class);
     }
 }

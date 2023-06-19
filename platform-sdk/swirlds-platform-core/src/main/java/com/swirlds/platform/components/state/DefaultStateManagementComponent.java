@@ -16,21 +16,22 @@
 
 package com.swirlds.platform.components.state;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.time.OSTime;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
 import com.swirlds.platform.components.state.output.IssConsumer;
@@ -47,12 +48,13 @@ import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
-import com.swirlds.platform.event.preconsensus.PreConsensusEventWriter;
+import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.SignatureTransmitter;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.IssHandler;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
@@ -65,8 +67,11 @@ import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -134,8 +139,13 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
     private final StateConfig stateConfig;
 
+    private static final RunningAverageMetric.Config AVG_ROUND_SUPERMAJORITY_CONFIG = new RunningAverageMetric.Config(
+                    PLATFORM_CATEGORY, "roundSup")
+            .withDescription("latest round with state signed by a supermajority")
+            .withUnit("round");
+
     /**
-     * @param context                            the platform context
+     * @param platformContext                    the platform context
      * @param threadManager                      manages platform thread resources
      * @param addressBook                        the initial address book
      * @param signer                             an object capable of signing with the platform's private key
@@ -151,9 +161,10 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      *                                           complete
      * @param issConsumer                        consumer to invoke when an ISS is detected
      * @param fatalErrorConsumer                 consumer to invoke when a fatal error has occurred
+     * @param getPlatformStatus                  a supplier that returns the current platform status
      */
     public DefaultStateManagementComponent(
-            @NonNull final PlatformContext context,
+            @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final AddressBook addressBook,
             @NonNull final PlatformSigner signer,
@@ -168,93 +179,98 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final IssConsumer issConsumer,
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
-            @NonNull final PreConsensusEventWriter preConsensusEventWriter) {
+            @NonNull final PreconsensusEventWriter preconsensusEventWriter,
+            @NonNull final Supplier<PlatformStatus> getPlatformStatus) {
 
-        throwArgNull(context, "context");
-        throwArgNull(threadManager, "threadManager");
-        throwArgNull(addressBook, "addressBook");
-        throwArgNull(signer, "signer");
-        throwArgNull(mainClassName, "mainClassName");
-        throwArgNull(selfId, "selfId");
-        throwArgNull(swirldName, "swirldName");
-        throwArgNull(prioritySystemTransactionSubmitter, "prioritySystemTransactionSubmitter");
-        throwArgNull(stateToDiskEventConsumer, "stateToDiskEventConsumer");
-        throwArgNull(newLatestCompleteStateConsumer, "newLatestCompleteStateConsumer");
-        throwArgNull(stateLacksSignaturesConsumer, "stateLacksSignaturesConsumer");
-        throwArgNull(stateHasEnoughSignaturesConsumer, "stateHasEnoughSignaturesConsumer");
-        throwArgNull(issConsumer, "issConsumer");
-        throwArgNull(haltRequestedConsumer, "haltRequestedConsumer");
-        throwArgNull(fatalErrorConsumer, "fatalErrorConsumer");
-        throwArgNull(preConsensusEventWriter, "preConsensusEventWriter");
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(threadManager);
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(signer);
+        Objects.requireNonNull(mainClassName);
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(swirldName);
+        Objects.requireNonNull(prioritySystemTransactionSubmitter);
+        Objects.requireNonNull(stateToDiskEventConsumer);
+        Objects.requireNonNull(newLatestCompleteStateConsumer);
+        Objects.requireNonNull(stateLacksSignaturesConsumer);
+        Objects.requireNonNull(stateHasEnoughSignaturesConsumer);
+        Objects.requireNonNull(issConsumer);
+        Objects.requireNonNull(haltRequestedConsumer);
+        Objects.requireNonNull(fatalErrorConsumer);
+        Objects.requireNonNull(preconsensusEventWriter);
+        Objects.requireNonNull(getPlatformStatus);
 
         this.signer = signer;
-        this.signatureTransmitter = new SignatureTransmitter(addressBook, selfId, prioritySystemTransactionSubmitter);
-        this.signedStateMetrics = new SignedStateMetrics(context.getMetrics());
+        this.signatureTransmitter = new SignatureTransmitter(prioritySystemTransactionSubmitter, getPlatformStatus);
+        this.signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
-        this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
-        this.signedStateSentinel = new SignedStateSentinel(threadManager, OSTime.getInstance());
+        this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, Time.getCurrent());
 
-        dispatchBuilder = new DispatchBuilder(context.getConfiguration().getConfigData(DispatchConfiguration.class));
+        dispatchBuilder =
+                new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
 
-        hashLogger = new HashLogger(threadManager, selfId);
+        hashLogger = new HashLogger(threadManager, selfId, stateConfig);
 
         final StateHashedTrigger stateHashedTrigger =
                 dispatchBuilder.getDispatcher(this, StateHashedTrigger.class)::dispatch;
         signedStateHasher = new SignedStateHasher(signedStateMetrics, stateHashedTrigger, fatalErrorConsumer);
 
         signedStateFileManager = new SignedStateFileManager(
-                context,
+                platformContext,
                 threadManager,
                 signedStateMetrics,
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 mainClassName,
                 selfId,
                 swirldName,
                 stateToDiskEventConsumer,
-                preConsensusEventWriter::setMinimumGenerationToStore);
+                preconsensusEventWriter::setMinimumGenerationToStore);
 
-        final StateHasEnoughSignaturesConsumer combinedStateHasEnoughSignaturesConsumer = ssw -> {
-            stateHasEnoughSignatures(ssw.get());
-            // This consumer releases the wrapper, so it must be last
-            stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(ssw);
+        final StateHasEnoughSignaturesConsumer combinedStateHasEnoughSignaturesConsumer = ss -> {
+            stateHasEnoughSignatures(ss);
+            stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(ss);
         };
 
-        final StateLacksSignaturesConsumer combinedStateLacksSignaturesConsumer = ssw -> {
-            stateLacksSignatures(ssw.get());
-            // This consumer releases the wrapper, so it must be last.
-            stateLacksSignaturesConsumer.stateLacksSignatures(ssw);
+        final StateLacksSignaturesConsumer combinedStateLacksSignaturesConsumer = ss -> {
+            stateLacksSignatures(ss);
+            stateLacksSignaturesConsumer.stateLacksSignatures(ss);
         };
 
         signedStateManager = new SignedStateManager(
-                context.getConfiguration().getConfigData(StateConfig.class),
+                platformContext.getConfiguration().getConfigData(StateConfig.class),
                 signedStateMetrics,
                 newLatestCompleteStateConsumer,
                 combinedStateHasEnoughSignaturesConsumer,
                 combinedStateLacksSignaturesConsumer);
 
         consensusHashManager = new ConsensusHashManager(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 addressBook,
-                context.getConfiguration().getConfigData(ConsensusConfig.class),
+                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 stateConfig);
 
         final IssHandler issHandler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
-                selfId.getId(),
+                selfId,
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 issConsumer);
 
-        final IssMetrics issMetrics = new IssMetrics(context.getMetrics(), addressBook);
+        final IssMetrics issMetrics = new IssMetrics(platformContext.getMetrics(), addressBook);
 
         dispatchBuilder
                 .registerObservers(issHandler)
                 .registerObservers(consensusHashManager)
                 .registerObservers(issMetrics)
                 .registerObservers(this);
+
+        final RunningAverageMetric avgRoundSupermajority =
+                platformContext.getMetrics().getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);
+        platformContext.getMetrics().addUpdater(() -> avgRoundSupermajority.update(getLastCompleteRound()));
     }
 
     /**
@@ -288,13 +304,11 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             logger.error(
                     EXCEPTION.getMarker(),
                     "state written to disk for round {} did not have enough signatures. "
-                            + "Collected signatures representing {}/{} weight. Total unsigned disk states so far: {}. "
-                            + "AB={}",
+                            + "Collected signatures representing {}/{} weight. Total unsigned disk states so far: {}.",
                     signedState.getRound(),
                     signedState.getSigningWeight(),
                     signedState.getAddressBook().getTotalWeight(),
-                    newCount,
-                    signedState.getAddressBook());
+                    newCount);
             signedStateFileManager.saveSignedStateToDisk(signedState);
         }
     }
@@ -304,7 +318,13 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         if (source == SourceOfSignedState.DISK) {
             signedStateFileManager.registerSignedStateFromDisk(signedState);
         } else {
-            signedStateFileManager.determineIfStateShouldBeSaved(signedState);
+            signedStateFileManager.determineIfStateShouldBeSaved(signedState, source);
+        }
+        if (source == SourceOfSignedState.RECONNECT && stateConfig.saveReconnectStateToDisk()) {
+            // a state received from reconnect should be saved to disk, but the method stateHasEnoughSignatures will not
+            // be called for it by the signed state manager, so we need to call it here
+            // we only call this method if the behaviour is enabled to retain the same behaviour as before
+            stateHasEnoughSignatures(signedState);
         }
 
         if (signedState.getState().getHash() != null) {
@@ -335,21 +355,25 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     }
 
     @Override
-    public void newSignedStateFromTransactions(final SignedState signedState) {
-        signedState.setGarbageCollector(signedStateGarbageCollector);
+    public void newSignedStateFromTransactions(@NonNull final ReservedSignedState signedState) {
+        try (signedState) {
+            signedState.get().setGarbageCollector(signedStateGarbageCollector);
 
-        if (stateRoundIsTooOld(signedState)) {
-            return; // do not process older states.
+            if (stateRoundIsTooOld(signedState.get())) {
+                return; // do not process older states.
+            }
+            signedStateHasher.hashState(signedState.get());
+
+            newSignedStateBeingTracked(signedState.get(), SourceOfSignedState.TRANSACTIONS);
+
+            final Signature signature = signer.sign(signedState.get().getState().getHash());
+            signatureTransmitter.transmitSignature(
+                    signedState.get().getRound(),
+                    signature,
+                    signedState.get().getState().getHash());
+
+            signedStateManager.addState(signedState.get());
         }
-        signedStateHasher.hashState(signedState);
-
-        newSignedStateBeingTracked(signedState, SourceOfSignedState.TRANSACTIONS);
-
-        final Signature signature = signer.sign(signedState.getState().getHash());
-        signatureTransmitter.transmitSignature(
-                signedState.getRound(), signature, signedState.getState().getHash());
-
-        signedStateManager.addState(signedState);
     }
 
     /**
@@ -359,7 +383,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param stateSignatureTransaction the pre-consensus state signature transaction
      */
     public void handleStateSignatureTransactionPreConsensus(
-            final long creatorId, final StateSignatureTransaction stateSignatureTransaction) {
+            @NonNull final NodeId creatorId, @NonNull final StateSignatureTransaction stateSignatureTransaction) {
+        Objects.requireNonNull(creatorId, "creatorId must not be null");
+        Objects.requireNonNull(stateSignatureTransaction, "stateSignatureTransaction must not be null");
 
         signedStateManager.preConsensusSignatureObserver(
                 stateSignatureTransaction.getRound(), creatorId, stateSignatureTransaction.getStateSignature());
@@ -371,7 +397,11 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * The {@code state} parameter isn't used in this function, since a signature transaction doesn't modify the state
      */
     public void handleStateSignatureTransactionPostConsensus(
-            final State state, final long creatorId, final StateSignatureTransaction stateSignatureTransaction) {
+            @Nullable final State state,
+            @NonNull final NodeId creatorId,
+            @NonNull final StateSignatureTransaction stateSignatureTransaction) {
+        Objects.requireNonNull(creatorId, "creatorId must not be null");
+        Objects.requireNonNull(stateSignatureTransaction, "stateSignatureTransaction must not be null");
 
         consensusHashManager.postConsensusSignatureObserver(
                 stateSignatureTransaction.getRound(), creatorId, stateSignatureTransaction.getStateHash());
@@ -381,16 +411,16 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * {@inheritDoc}
      */
     @Override
-    public AutoCloseableWrapper<SignedState> getLatestSignedState() {
-        return signedStateManager.getLatestSignedState();
+    public ReservedSignedState getLatestSignedState(@NonNull final String reason) {
+        return signedStateManager.getLatestSignedState(reason);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public AutoCloseableWrapper<SignedState> getLatestImmutableState() {
-        return signedStateManager.getLatestImmutableState();
+    public ReservedSignedState getLatestImmutableState(@NonNull final String reason) {
+        return signedStateManager.getLatestImmutableState(reason);
     }
 
     /**
@@ -435,10 +465,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         signedStateGarbageCollector.start();
         signedStateFileManager.start();
         dispatchBuilder.start();
-
-        if (stateConfig.signedStateSentinelEnabled()) {
-            signedStateSentinel.start();
-        }
+        signedStateSentinel.start();
     }
 
     /**
@@ -447,9 +474,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     @Override
     public void stop() {
         signedStateFileManager.stop();
-        if (stateConfig.signedStateSentinelEnabled()) {
-            signedStateSentinel.stop();
-        }
+        signedStateSentinel.stop();
         signedStateGarbageCollector.stop();
     }
 
@@ -459,10 +484,10 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     @Override
     public void onFatalError() {
         if (stateConfig.dumpStateOnFatal()) {
-            try (final AutoCloseableWrapper<SignedState> wrapper = signedStateManager.getLatestSignedState()) {
-                final SignedState state = wrapper.get();
-                if (state != null) {
-                    signedStateFileManager.dumpState(state, "fatal", true);
+            try (final ReservedSignedState reservedState =
+                    signedStateManager.getLatestSignedState("DefaultStateManagementComponent.onFatalError()")) {
+                if (reservedState.isNotNull()) {
+                    signedStateFileManager.dumpState(reservedState.get(), "fatal", true);
                 }
             }
         }
@@ -473,8 +498,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      */
     @NonNull
     @Override
-    public AutoCloseableWrapper<SignedState> find(final @NonNull Predicate<SignedState> criteria) {
-        return signedStateManager.find(criteria);
+    public ReservedSignedState find(final @NonNull Predicate<SignedState> criteria, @NonNull final String reason) {
+        return signedStateManager.find(criteria, reason);
     }
 
     /**
@@ -497,11 +522,12 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             return;
         }
 
-        try (final AutoCloseableWrapper<SignedState> wrapper =
-                signedStateManager.find(state -> state.getRound() == round)) {
-            if (wrapper.get() != null) {
+        try (final ReservedSignedState reservedState =
+                signedStateManager.find(state -> state.getRound() == round, "state dump requested for " + reason)) {
+
+            if (reservedState.isNotNull()) {
                 // We were able to find the requested round. Dump it.
-                signedStateFileManager.dumpState(wrapper.get(), reason, blocking);
+                signedStateFileManager.dumpState(reservedState.get(), reason, blocking);
                 return;
             }
         }
@@ -522,11 +548,13 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param blocking if true then block until the state dump is complete
      */
     private void dumpLatestImmutableState(@NonNull final String reason, final boolean blocking) {
-        try (final AutoCloseableWrapper<SignedState> wrapper = signedStateManager.getLatestImmutableState()) {
-            if (wrapper.get() == null) {
+        try (final ReservedSignedState reservedState = signedStateManager.getLatestImmutableState(
+                "DefaultStateManagementComponent.dumpLatestImmutableState()")) {
+
+            if (reservedState.isNull()) {
                 logger.warn(STATE_TO_DISK.getMarker(), "State dump requested, but no state is available.");
             } else {
-                signedStateFileManager.dumpState(wrapper.get(), reason, blocking);
+                signedStateFileManager.dumpState(reservedState.get(), reason, blocking);
             }
         }
     }
@@ -547,5 +575,22 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     public List<PostConsensusSystemTransactionTypedHandler<?>> getPostConsensusHandleMethods() {
         return List.of(new PostConsensusSystemTransactionTypedHandler<>(
                 StateSignatureTransaction.class, this::handleStateSignatureTransactionPostConsensus));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Nullable
+    public Instant getFirstStateTimestamp() {
+        return signedStateManager.getFirstStateTimestamp();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getFirstStateRound() {
+        return signedStateManager.getFirstStateRound();
     }
 }

@@ -82,7 +82,7 @@ class VirtualMapSerializationTests {
                                 (short) ExampleFixedSizeVirtualValue.SERIALIZATION_VERSION,
                                         new ExampleFixedSizeVirtualValueSerializer())
                         .preferDiskIndices(false)
-                        .internalHashesRamToDiskThreshold(Long.MAX_VALUE)
+                        .hashesRamToDiskThreshold(Long.MAX_VALUE)
                         .maxNumberOfKeys(1234);
         return new MerkleDbDataSourceBuilder<>(tableConfig);
     }
@@ -297,7 +297,7 @@ class VirtualMapSerializationTests {
 
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 2, 3, 4, 5, 10, 100, 1000, 1023, 1024, 1025})
-    @DisplayName("Serialize Unflushed Data")
+    @DisplayName("Serialize Only Flushed Data")
     void serializeOnlyFlushedData(final int count) throws InterruptedException, IOException {
         final long seed = new Random().nextLong();
         System.out.println("seed = " + seed);

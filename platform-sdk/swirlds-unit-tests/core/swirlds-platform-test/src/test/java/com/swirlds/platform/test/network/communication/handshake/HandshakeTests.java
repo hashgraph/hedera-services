@@ -24,7 +24,7 @@ import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.communication.handshake.HandshakeException;
 import com.swirlds.platform.network.communication.handshake.VersionCompareHandshake;
 import com.swirlds.platform.network.protocol.ProtocolRunnable;
@@ -44,7 +44,7 @@ class HandshakeTests {
         final ProtocolRunnable handshakeThrows = new VersionCompareHandshake(ourVersion);
         final ProtocolRunnable handshakeLogs = new VersionCompareHandshake(ourVersion, false);
         final Pair<Connection, Connection> connections =
-                ConnectionFactory.createLocalConnections(NodeId.createMain(0), NodeId.createMain(1));
+                ConnectionFactory.createLocalConnections(new NodeId(0L), new NodeId(1));
         final Connection myConnection = connections.getLeft();
         final Connection theirConnection = connections.getRight();
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();

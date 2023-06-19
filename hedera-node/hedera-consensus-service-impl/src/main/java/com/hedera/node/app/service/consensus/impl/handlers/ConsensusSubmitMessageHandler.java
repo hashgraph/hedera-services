@@ -18,6 +18,7 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SUBMIT_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_MESSAGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
@@ -34,16 +35,15 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.config.ConsensusServiceConfig;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.SubmitMessageRecordBuilder;
-import com.hedera.node.app.spi.meta.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -67,56 +67,38 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Determines signatures needed for submitting a new message to a consensus topic
-     *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@code handle()}
-     * @param topicStore the {@link ReadableTopicStore} to use to resolve topic metadata
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
-            throws PreCheckException {
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        requireNonNull(topicStore);
 
         final var op = context.body().consensusSubmitMessageOrThrow();
+        final var topicStore = context.createStore(ReadableTopicStore.class);
         // The topic ID must be present on the transaction and the topic must exist.
-        final var topic = topicStore.getTopicMetadata(op.topicID());
+        final var topic = topicStore.getTopic(op.topicID());
         mustExist(topic, INVALID_TOPIC_ID);
         // If a submit key is specified on the topic, then only those transactions signed by that key can be
         // submitted to the topic. If there is no submit key, then it is not required on the transaction.
         final var submitKey = topic.submitKey();
-        if (submitKey != null) context.requireKey(submitKey);
+        if (submitKey != null) context.requireKeyOrThrow(submitKey, INVALID_SUBMIT_KEY);
     }
 
     /**
      * Given the appropriate context, submits a message to a topic.
      *
      * @param handleContext the {@link HandleContext} for the active transaction
-     * @param txn the {@link TransactionBody} of the active transaction
-     * @param config the {@link ConsensusServiceConfig} for the active transaction
-     * @param recordBuilder the {@link ConsensusSubmitMessageRecordBuilder} for the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(
-            @NonNull final HandleContext handleContext,
-            @NonNull final TransactionBody txn,
-            @NonNull final ConsensusServiceConfig config,
-            @NonNull final ConsensusSubmitMessageRecordBuilder recordBuilder,
-            @NonNull final WritableTopicStore topicStore) {
+    @Override
+    public void handle(@NonNull final HandleContext handleContext) {
         requireNonNull(handleContext);
-        requireNonNull(txn);
-        requireNonNull(config);
-        requireNonNull(recordBuilder);
-        requireNonNull(topicStore);
 
+        final var txn = handleContext.body();
         final var op = txn.consensusSubmitMessageOrThrow();
+        final var topicStore = handleContext.writableStore(WritableTopicStore.class);
         final var topic =
                 topicStore.getForModify(op.topicIDOrElse(TopicID.DEFAULT).topicNum());
         /* Validate all needed fields in the transaction */
+        final var config = handleContext.configuration().getConfigData(ConsensusConfig.class);
         validateTransaction(txn, config, topic);
 
         /* since we have validated topic exists, topic.get() is safe to be called */
@@ -127,8 +109,11 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             It will not be committed to state until commit is called on the state.--- */
             topicStore.put(updatedTopic);
 
-            recordBuilder.setNewTopicMetadata(
-                    asBytes(updatedTopic.runningHash()), updatedTopic.sequenceNumber(), RUNNING_HASH_VERSION);
+            final var recordBuilder = handleContext.recordBuilder(ConsensusSubmitMessageRecordBuilder.class);
+            recordBuilder
+                    .topicRunningHash(updatedTopic.runningHash())
+                    .topicSequenceNumber(updatedTopic.sequenceNumber())
+                    .topicRunningHashVersion(RUNNING_HASH_VERSION);
         } catch (IOException e) {
             throw new HandleException(INVALID_TRANSACTION);
         }
@@ -137,11 +122,11 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
     /**
      * Validates te transaction body. Throws {@link HandleException} if any of the validations fail.
      * @param txn the {@link TransactionBody} of the active transaction
-     * @param config the {@link ConsensusServiceConfig}
+     * @param config the {@link ConsensusConfig}
      * @param topic the topic to which the message is being submitted
      */
     private void validateTransaction(
-            final TransactionBody txn, final ConsensusServiceConfig config, final Optional<Topic> topic) {
+            final TransactionBody txn, final ConsensusConfig config, final Optional<Topic> topic) {
         final var txnId = txn.transactionID();
         final var payer = txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
         final var op = txn.consensusSubmitMessageOrThrow();
@@ -154,7 +139,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         }
 
         /* Check if the message submitted is greater than acceptable size */
-        if (msgLen > config.maxMessageSize()) {
+        if (msgLen > config.messageMaxBytesAllowed()) {
             throw new HandleException(MESSAGE_SIZE_TOO_LARGE);
         }
 
@@ -213,6 +198,9 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
     public Topic updateRunningHashAndSequenceNumber(
             @NonNull final TransactionBody txn, @NonNull final Topic topic, @Nullable Instant consensusNow)
             throws IOException {
+        requireNonNull(txn);
+        requireNonNull(topic);
+
         final var submitMessage = txn.consensusSubmitMessageOrThrow();
         final var payer = txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
         final var topicId = submitMessage.topicIDOrElse(TopicID.DEFAULT);
@@ -253,12 +241,6 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             topicBuilder.runningHash(runningHash);
         }
         return topicBuilder.build();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public ConsensusSubmitMessageRecordBuilder newRecordBuilder() {
-        return new SubmitMessageRecordBuilder();
     }
 
     public static byte[] noThrowSha384HashOf(final byte[] byteArray) {

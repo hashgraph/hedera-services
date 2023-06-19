@@ -1,16 +1,13 @@
 module com.hedera.node.app.service.schedule.impl.test {
-    requires org.junit.jupiter.api;
-    requires com.hedera.pbj.runtime;
-    requires com.hedera.node.app.service.mono;
     requires transitive com.hedera.node.app.service.schedule.impl;
-    requires org.mockito;
-    requires org.mockito.junit.jupiter;
-    requires com.hedera.node.app.service.mono.testFixtures;
-    requires org.apache.commons.lang3;
-    requires org.apache.commons.codec;
-    requires com.hedera.node.app.spi.fixtures;
+    requires com.hedera.node.app.service.mono.test.fixtures;
+    requires com.hedera.node.app.service.token;
+    requires com.hedera.node.app.spi.test.fixtures;
     requires com.swirlds.common;
-    requires org.assertj.core;
+    requires org.apache.commons.codec;
+    requires org.junit.jupiter.api;
+    requires org.mockito.junit.jupiter;
+    requires org.mockito;
 
     opens com.hedera.node.app.service.schedule.impl.test to
             org.junit.platform.commons,

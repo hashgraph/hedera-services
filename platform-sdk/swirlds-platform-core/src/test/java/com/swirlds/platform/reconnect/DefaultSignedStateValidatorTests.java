@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
@@ -33,7 +34,6 @@ import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -140,7 +139,7 @@ class DefaultSignedStateValidatorTests {
             // Allow zero-weight
             final int weight = r.nextInt(MAX_WEIGHT_PER_NODE);
             final boolean hasValidSig = r.nextBoolean();
-            nodes.add(new Node(i, weight, hasValidSig));
+            nodes.add(new Node(new NodeId(i), weight, hasValidSig));
         }
         return nodes;
     }
@@ -210,13 +209,13 @@ class DefaultSignedStateValidatorTests {
         }
 
         final List<Node> nodes = new ArrayList<>(NUM_NODES_IN_STATIC_TESTS);
-        nodes.add(new Node(0L, 5L, isValidSigList.get(0)));
-        nodes.add(new Node(1L, 5L, isValidSigList.get(1)));
-        nodes.add(new Node(2L, 8L, isValidSigList.get(2)));
-        nodes.add(new Node(3L, 15L, isValidSigList.get(3)));
-        nodes.add(new Node(4L, 17L, isValidSigList.get(4)));
-        nodes.add(new Node(5L, 10L, isValidSigList.get(5)));
-        nodes.add(new Node(6L, 30L, isValidSigList.get(6)));
+        nodes.add(new Node(new NodeId(0L), 5L, isValidSigList.get(0)));
+        nodes.add(new Node(new NodeId(1L), 5L, isValidSigList.get(1)));
+        nodes.add(new Node(new NodeId(2L), 8L, isValidSigList.get(2)));
+        nodes.add(new Node(new NodeId(3L), 15L, isValidSigList.get(3)));
+        nodes.add(new Node(new NodeId(4L), 17L, isValidSigList.get(4)));
+        nodes.add(new Node(new NodeId(5L), 10L, isValidSigList.get(5)));
+        nodes.add(new Node(new NodeId(6L), 30L, isValidSigList.get(6)));
         return nodes;
     }
 
@@ -232,12 +231,12 @@ class DefaultSignedStateValidatorTests {
     @ParameterizedTest
     @MethodSource({"staticNodeParams", "randomizedNodeParams"})
     @DisplayName("Signed State Validation")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void testSignedStateValidationRandom(final String desc, final List<Node> nodes, final List<Node> signingNodes) {
+        final Map<NodeId, Long> nodeWeights = nodes.stream().collect(Collectors.toMap(Node::id, Node::weight));
         addressBook = new RandomAddressBookGenerator()
-                .setSize(nodes.size())
-                .setCustomWeightGenerator(id -> nodes.get((int) id).weight)
-                .setSequentialIds(true)
+                .setNodeIds(nodeWeights.keySet())
+                .setCustomWeightGenerator(nodeWeights::get)
+                .setSequentialIds(false)
                 .build();
 
         validator = new DefaultSignedStateValidator();
@@ -316,8 +315,8 @@ class DefaultSignedStateValidatorTests {
     /**
      * @return a list of the nodes ids in the supplied nodes
      */
-    private Map<Long, Signature> nodeSigs(final List<Node> nodes, final Hash stateHash) {
-        final Map<Long, Signature> signatures = new HashMap<>();
+    private Map<NodeId, Signature> nodeSigs(final List<Node> nodes, final Hash stateHash) {
+        final Map<NodeId, Signature> signatures = new HashMap<>();
         for (final Node node : nodes) {
 
             final Signature signature = mock(Signature.class);
@@ -342,10 +341,10 @@ class DefaultSignedStateValidatorTests {
     }
 
     /**
-     * A record representing a simple node that holds its id, amount of weight, and if is signs states with a valid
+     * A record representing a simple node that holds its id, amount of weight, and if it signs states with a valid
      * signature.
      */
-    private record Node(long id, long weight, boolean validSignature) {
+    private record Node(NodeId id, long weight, boolean validSignature) {
 
         @Override
         public String toString() {

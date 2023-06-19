@@ -20,6 +20,7 @@ import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.eventhandling.SignedStateEventsAndGenerations;
 import com.swirlds.platform.internal.EventImpl;
@@ -36,6 +37,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.random.RandomGenerator;
 
@@ -124,10 +126,12 @@ public class NodeContext {
         eventsAndGenerations.loadDataFromSignedState(signedState);
 
         // load events from signed state into the sources
-        for (final Address address : collectingEmitter.getGraphGenerator().getAddressBook()) {
-            final EventSource<?> source = collectingEmitter.getGraphGenerator().getSource((int) address.getId());
+        final AddressBook addressBook = collectingEmitter.getGraphGenerator().getAddressBook();
+        for (final Address address : addressBook) {
+            final EventSource<?> source =
+                    collectingEmitter.getGraphGenerator().getSource(addressBook.getIndexOfNodeId(address.getNodeId()));
             final List<IndexedEvent> eventsByCreator = Arrays.stream(indexedEvents)
-                    .filter(e -> e.getCreatorId() == address.getId())
+                    .filter(e -> Objects.equals(e.getCreatorId(), address.getNodeId()))
                     .toList();
             eventsByCreator.forEach(e -> source.setLatestEvent(random, e));
         }

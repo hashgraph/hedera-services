@@ -38,8 +38,9 @@ public class PostOrderedDepthFirstRandomAlgorithm extends PostOrderedDepthFirstA
      */
     @Override
     public void pushChildren(final MerkleInternal parent, final ObjIntConsumer<MerkleInternal> pushNode) {
-        final List<Integer> iterationOrder = new ArrayList<>(parent.getNumberOfChildren());
-        for (int childIndex = 0; childIndex < parent.getNumberOfChildren(); childIndex++) {
+        final int childCount = parent.getNumberOfChildren();
+        final List<Integer> iterationOrder = new ArrayList<>(childCount);
+        for (int childIndex = 0; childIndex < childCount; childIndex++) {
             iterationOrder.add(childIndex);
         }
 

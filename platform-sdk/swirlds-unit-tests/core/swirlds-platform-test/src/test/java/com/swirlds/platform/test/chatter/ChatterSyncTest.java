@@ -20,14 +20,14 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
-import com.swirlds.platform.Connection;
-import com.swirlds.platform.chatter.ChatterSyncProtocol;
-import com.swirlds.platform.chatter.protocol.MessageProvider;
-import com.swirlds.platform.chatter.protocol.peer.CommunicationState;
+import com.swirlds.platform.gossip.FallenBehindManager;
+import com.swirlds.platform.gossip.SyncException;
+import com.swirlds.platform.gossip.chatter.ChatterSyncProtocol;
+import com.swirlds.platform.gossip.chatter.protocol.MessageProvider;
+import com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationState;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
-import com.swirlds.platform.sync.FallenBehindManager;
-import com.swirlds.platform.sync.ShadowGraphSynchronizer;
-import com.swirlds.platform.sync.SyncException;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
@@ -39,7 +39,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 class ChatterSyncTest {
-    private static final NodeId PEER_ID = new NodeId(false, 1L);
+    private static final NodeId PEER_ID = new NodeId(1L);
     final CommunicationState state = new CommunicationState();
     final ShadowGraphSynchronizer synchronizer = Mockito.mock(ShadowGraphSynchronizer.class);
     final Connection connection = Mockito.mock(Connection.class);
@@ -89,13 +89,13 @@ class ChatterSyncTest {
         Assertions.assertTrue(
                 chatterSync.shouldAccept(), "if the peer has not reported us as fallen behind, we should sync");
 
-        when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(0L, PEER_ID.getId()));
+        when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(new NodeId(0L), PEER_ID));
         Assertions.assertTrue(
                 chatterSync.shouldInitiate(), "if the peer has not reported us as fallen behind, we should sync");
         Assertions.assertTrue(
                 chatterSync.shouldAccept(), "if the peer has not reported us as fallen behind, we should sync");
 
-        when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(0L));
+        when(fallenBehindManager.getNeededForFallenBehind()).thenReturn(List.of(new NodeId(0L)));
         Assertions.assertFalse(
                 chatterSync.shouldInitiate(), "if the peer has reported us as fallen behind, we should not sync");
         Assertions.assertFalse(

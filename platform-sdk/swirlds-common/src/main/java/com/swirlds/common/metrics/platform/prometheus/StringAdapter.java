@@ -75,7 +75,7 @@ public class StringAdapter extends AbstractMetricAdapter {
             info.info("value", newValue);
         } else {
             throwArgNull(nodeId, "nodeId");
-            final Info.Child child = info.labels(Long.toString(nodeId.getId()));
+            final Info.Child child = info.labels(nodeId.toString());
             child.info("value", newValue);
         }
     }

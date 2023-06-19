@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -102,13 +103,62 @@ class SemanticVersionsTest {
 
     @Test
     void warnsOfUnavailableSemversAndUsesEmpty() {
-        final var shouldBeEmpty = SemanticVersions.fromResource("nonExistent.properties", "w/e", "n/a");
-        final var desiredPrefix = "Failed to parse resource 'nonExistent.properties' (keys 'w/e' and 'n/a'). "
-                + "Version info will be unavailable!";
+        final var shouldBeEmpty =
+                SemanticVersions.fromResource("nonExistent.properties", "w/e", "n/a", "hedera.config.version");
+        final var desiredPrefix =
+                "Failed to parse resource 'nonExistent.properties' (keys 'w/e' and 'n/a') and resource 'bootstrap.properties' (key 'hedera.config.version'). Version info will be unavailable! java.lang.NullPointerException: inStream parameter is null";
 
         assertEquals(SemanticVersion.getDefaultInstance(), shouldBeEmpty.hederaSemVer());
         assertEquals(SemanticVersion.getDefaultInstance(), shouldBeEmpty.protoSemVer());
         assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith(desiredPrefix)));
+    }
+
+    @Test
+    void warnsOfUnavailableSemversAndUsesEmptyConfig() {
+        final var shouldBeEmpty = SemanticVersions.fromResource(
+                "nonExistent.properties", "hapi.proto.version", "hedera.services.version", "test");
+        final var desiredPrefix =
+                "Failed to parse resource 'nonExistent.properties' (keys 'hapi.proto.version' and 'hedera.services.version') and resource 'bootstrap.properties' (key 'test'). Version info will be unavailable! java.lang.NullPointerException: inStream parameter is null";
+
+        assertEquals(SemanticVersion.getDefaultInstance(), shouldBeEmpty.hederaSemVer());
+        assertEquals(SemanticVersion.getDefaultInstance(), shouldBeEmpty.protoSemVer());
+        assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith(desiredPrefix)));
+    }
+
+    @Test
+    void doesntAppendBuildWhenConfigVersionIsZero() {
+        final var version = SemanticVersions.fromResource(
+                "semantic-version.properties",
+                "hapi.proto.version",
+                "hedera.services.version",
+                "hedera.config.version");
+        assertTrue(version.hederaSemVer().getBuild().isEmpty());
+    }
+
+    @Test
+    void doesntAppendBuildWhenConfigVersionIsEmpty() {
+        final var hederaSemVer =
+                SemanticVersion.newBuilder().setMajor(1).setMinor(2).setPatch(4).build();
+        final var version = SemanticVersions.addConfigVersionToBuild("", hederaSemVer);
+        assertTrue(version.getBuild().isEmpty());
+    }
+
+    @Test
+    void appendsBuildWhenConfigVersionIsNonZero() {
+        final var hederaSemVer =
+                SemanticVersion.newBuilder().setMajor(1).setMinor(2).setPatch(4).build();
+        final var version = SemanticVersions.addConfigVersionToBuild("10", hederaSemVer);
+        assertEquals("10", version.getBuild());
+    }
+
+    @Test
+    void appendsBuildCorrectly() {
+        final var literal = "1.2.4+1";
+        final var expected = baseSemVer().setBuild("1").build();
+
+        final var actual = SemanticVersions.asSemVer(literal);
+
+        assertEquals(expected, actual);
     }
 
     private static SemanticVersion.Builder baseSemVer() {

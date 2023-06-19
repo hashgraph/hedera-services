@@ -25,6 +25,7 @@ import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.RecordCreationSuite;
 import com.hedera.services.bdd.suites.regression.AddressAliasIdFuzzing;
+import com.hedera.services.bdd.suites.regression.HollowAccountCompletionFuzzing;
 import com.hedera.services.bdd.suites.regression.TargetNetworkPrep;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
@@ -134,7 +135,6 @@ class EndToEndTests extends E2ETestBase {
                 new DynamicContainer[] {
                     //				extractSpecsFromSuite(CryptoTransferHTSSuite::new),
                     //				extractSpecsFromSuite(DelegatePrecompileSuite::new),
-                    //				extractSpecsFromSuite(DissociatePrecompileSuite::new),
                     //				extractSpecsFromSuite(DynamicGasCostSuite::new),
                     //				extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)
                 });
@@ -433,7 +433,9 @@ class EndToEndTests extends E2ETestBase {
         return List.of(
                 //				extractSpecsFromSuite(SplittingThrottlesWorks::new),
                 //				extractSpecsFromSuite(SteadyStateThrottlingCheck::new),
-                extractSpecsFromSuite(UmbrellaRedux::new), extractSpecsFromSuite(AddressAliasIdFuzzing::new));
+                extractSpecsFromSuite(UmbrellaRedux::new),
+                extractSpecsFromSuite(AddressAliasIdFuzzing::new),
+                extractSpecsFromSuite(HollowAccountCompletionFuzzing::new));
     }
 
     @Tag("throttling")

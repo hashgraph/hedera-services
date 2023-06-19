@@ -16,31 +16,46 @@
 
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.TokenUnfreezeFactory.newSignedTokenUnfreeze;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.test.factories.txns.TokenUnfreezeFactory;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public enum TokenUnfreezeScenarios implements TxnHandlingScenario {
     VALID_UNFREEZE_WITH_EXTANT_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUnfreeze()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUnfreezeFactory.newSignedTokenUnfreeze()
                     .unfreezing(KNOWN_TOKEN_WITH_FREEZE)
+                    .withAccount(OWNER_ACCOUNT)
                     .nonPayerKts(TOKEN_FREEZE_KT)
                     .get());
         }
     },
     UNFREEZE_WITH_MISSING_FREEZE_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUnfreeze().get());
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUnfreezeFactory.newSignedTokenUnfreeze()
+                    .withAccount(OWNER_ACCOUNT)
+                    .unfreezing(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+                    .get());
         }
     },
     UNFREEZE_WITH_INVALID_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenUnfreeze().unfreezing(MISSING_TOKEN).get());
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUnfreezeFactory.newSignedTokenUnfreeze()
+                    .unfreezing(MISSING_TOKEN)
+                    .withAccount(OWNER_ACCOUNT)
+                    .get());
         }
     },
 }

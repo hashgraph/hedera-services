@@ -26,14 +26,17 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
+import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
@@ -63,6 +66,7 @@ public class CloseFlushTest {
     @Tags({@Tag(TestTypeTags.HAMMER)})
     public void closeFlushTest() throws Exception {
         final int count = 100000;
+        final ExecutorService exec = Executors.newSingleThreadExecutor();
         final AtomicReference<Exception> exception = new AtomicReference<>();
         for (int j = 0; j < 100; j++) {
             final Path storeDir = tmpFileDir.resolve("closeFlushTest-" + j);
@@ -79,35 +83,33 @@ public class CloseFlushTest {
                 map.put(key, value);
             }
             VirtualMap<VirtualLongKey, ExampleByteArrayVirtualValue> copy;
-            VirtualRoot root;
             final CountDownLatch shutdownLatch = new CountDownLatch(1);
-            while (true) {
+            for (int i = 0; i < 100; i++) {
                 copy = map.copy();
-                root = map.getRight();
-                if (root.shouldBeFlushed()) {
-                    final VirtualMap<VirtualLongKey, ExampleByteArrayVirtualValue> finalCopy = copy;
-                    new Thread(() -> {
-                                try {
-                                    Thread.sleep(new Random().nextInt(500));
-                                    finalCopy.release();
-                                } catch (final Exception z) {
-                                    throw new RuntimeException(z);
-                                } finally {
-                                    shutdownLatch.countDown();
-                                }
-                            })
-                            .start();
-                    break;
-                }
                 map.release();
                 map = copy;
             }
-            map.release();
+            copy = map.copy();
+            final VirtualRootNode<VirtualLongKey, ExampleByteArrayVirtualValue> root = map.getRight();
+            root.enableFlush();
+            final VirtualMap<VirtualLongKey, ExampleByteArrayVirtualValue> lastMap = map;
+            final Future<?> job = exec.submit(() -> {
+                try {
+                    Thread.sleep(new Random().nextInt(500));
+                    lastMap.release();
+                } catch (final Exception z) {
+                    throw new RuntimeException(z);
+                } finally {
+                    shutdownLatch.countDown();
+                }
+            });
+            copy.release();
             shutdownLatch.await();
             if (exception.get() != null) {
                 exception.get().printStackTrace();
                 break;
             }
+            job.get();
         }
         Assertions.assertNull(exception.get(), "No exceptions expected, but caught " + exception.get());
     }
@@ -143,15 +145,14 @@ public class CloseFlushTest {
                 public void saveRecords(
                         final long firstLeafPath,
                         final long lastLeafPath,
-                        final Stream<VirtualInternalRecord> internalRecords,
+                        final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
                         final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-                        final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
-                        throws IOException {
+                        final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete) {
                     try {
                         delegate.saveRecords(
                                 firstLeafPath,
                                 lastLeafPath,
-                                internalRecords,
+                                pathHashRecordsToUpdate,
                                 leafRecordsToAddOrUpdate,
                                 leafRecordsToDelete);
                     } catch (final Exception e) {
@@ -175,14 +176,8 @@ public class CloseFlushTest {
                 }
 
                 @Override
-                public VirtualInternalRecord loadInternalRecord(final long path, final boolean deserialize)
-                        throws IOException {
-                    return delegate.loadInternalRecord(path);
-                }
-
-                @Override
-                public Hash loadLeafHash(final long path) throws IOException {
-                    return delegate.loadLeafHash(path);
+                public Hash loadHash(final long path) throws IOException {
+                    return delegate.loadHash(path);
                 }
 
                 @Override
@@ -203,6 +198,19 @@ public class CloseFlushTest {
                 @Override
                 public VirtualKeySet<K> buildKeySet() {
                     return delegate.buildKeySet();
+                }
+
+                @Override
+                public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
+                    return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
+                }
+
+                public long getFirstLeafPath() {
+                    return delegate.getFirstLeafPath();
+                }
+
+                public long getLastLeafPath() {
+                    return delegate.getLastLeafPath();
                 }
             };
         }

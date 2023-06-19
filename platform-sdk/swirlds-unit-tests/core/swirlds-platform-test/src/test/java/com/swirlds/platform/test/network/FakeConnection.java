@@ -17,9 +17,9 @@
 package com.swirlds.platform.test.network;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Connection;
-import com.swirlds.platform.sync.SyncInputStream;
-import com.swirlds.platform.sync.SyncOutputStream;
+import com.swirlds.platform.gossip.sync.SyncInputStream;
+import com.swirlds.platform.gossip.sync.SyncOutputStream;
+import com.swirlds.platform.network.Connection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -29,7 +29,7 @@ public class FakeConnection implements Connection {
     private final NodeId peerId;
 
     public FakeConnection() {
-        this(NodeId.createMain(0), NodeId.createMain(1));
+        this(new NodeId(0L), new NodeId(1));
     }
 
     public FakeConnection(final NodeId selfId, final NodeId peerId) {

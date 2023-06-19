@@ -19,6 +19,10 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,6 +32,8 @@ import javax.inject.Singleton;
 /**
  * This class contains all workflow-related functionality regarding {@link
  * HederaFunctionality#CRYPTO_DELETE_LIVE_HASH}.
+ *
+ * This transaction type is not currently supported. It is reserved for future use.
  */
 @Singleton
 public class CryptoDeleteLiveHashHandler implements TransactionHandler {
@@ -37,20 +43,16 @@ public class CryptoDeleteLiveHashHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+        throw new PreCheckException(ResponseCodeEnum.NOT_SUPPORTED);
     }
 
-    /**
-     * This method is called during the handle workflow. It executes the actual transaction.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @throws NullPointerException if one of the arguments is {@code null}
-     */
-    public void handle() {
-        throw new UnsupportedOperationException("Not implemented");
+    @Override
+    public void handle(@NonNull final HandleContext context) throws HandleException {
+        // this will never actually get called
+        // because preHandle will throw a PreCheckException
+        // before we get here
+        throw new HandleException(ResponseCodeEnum.NOT_SUPPORTED);
     }
 }

@@ -17,6 +17,7 @@
 package com.swirlds.platform;
 
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
@@ -24,6 +25,9 @@ import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.internal.EventImpl;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Objects;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class TestUtils {
 
@@ -46,17 +50,25 @@ public class TestUtils {
         return true;
     }
 
-    static EventImpl createTestEvent(final int creatorId, final int otherId) {
+    static EventImpl createTestEvent(@NonNull final NodeId creatorId, @Nullable final NodeId otherId) {
+        Objects.requireNonNull(creatorId, "creatorId must not be null");
         final Instant startTime = Instant.ofEpochSecond(1554466913);
         final EventImpl e = new EventImpl(
                 new BaseEventHashedData(
-                        creatorId, -1, -1, (byte[]) null, (byte[]) null, startTime, new SwirldTransaction[0]),
+                        new BasicSoftwareVersion(1),
+                        creatorId,
+                        -1,
+                        -1,
+                        (byte[]) null,
+                        (byte[]) null,
+                        startTime,
+                        new SwirldTransaction[0]),
                 new BaseEventUnhashedData(otherId, new byte[] {0, 0, 0, 0}),
                 null,
                 null);
         CryptographyHolder.get().digestSync(e.getBaseEventHashedData());
 
-        e.estimateTime(NodeId.createMain(creatorId), startTime.getEpochSecond(), 0);
+        e.estimateTime(creatorId, startTime.getEpochSecond(), 0);
         return e;
     }
 }
