@@ -17,40 +17,55 @@
 name: "Platform: PR Extended Checks"
 on:
   workflow_dispatch:
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
-      - labeled
+    slack-results-channel:
+      description: "Slack Test Result Channel:"
+      required: false
+      type: string
+      default: "regression-test"
+    slack-summary-channel:
+      description: "Slack Summary Channel:"
+      required: false
+      type: string
+      default: "regression-test"
+    java-version:
+      description: "Java JDK Version:"
+      type: string
+      required: false
+      default: "17"
+    java-distribution:
+      description: "Java JDK Distribution:"
+      type: string
+      required: false
+      default: "temurin"
+    gradle-version:
+      description: "Gradle Version:"
+      type: string
+      required: false
+      default: "wrapper"
 
 defaults:
   run:
     shell: bash
 
 concurrency:
-  group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: pr-ext-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
-  label-check:
-    name: "Label Check [CI:PlatformExtendedChecks]"
-    runs-on: [self-hosted, Linux, medium, ephemeral]
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'CI:PlatformExtendedChecks') }}
-    steps:
-      - name: Check Labels
-        if: github.event_name == 'pull_request'
-        run: echo PR labels that trigger the tests is [CI:PlatformExtendedChecks]
-
   reconnect:
     name: Reconnect
     uses: ./.github/workflows/zxc-jrs-regression.yaml
-    needs:
-      - label-check
     with:
-      ref: ${{ github.event.inputs.ref }}
-      branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-Reconnect-4N.json"
+      ref: ${{ github.event.inputs.ref || github.ref }}
+      branch-name: ${{ github.ref_name }}
+      slack-results-channel: ${{ github.event.inputs.slack-results-channel }}
+      slack-summary-channel: ${{ github.event.inputs.slack-summary-channel }}
+      java-version: ${{ github.event.inputs.java-version || '17' }}
+      java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
+      gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
+      use-branch-for-slack-channel: false
+      custom-job-name: "Custom"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
       jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
@@ -62,12 +77,17 @@ jobs:
   restart:
     name: Restart
     uses: ./.github/workflows/zxc-jrs-regression.yaml
-    needs:
-      - label-check
     with:
-      ref: ${{ github.event.inputs.ref }}
-      branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-Restart-4N.json"
+      ref: ${{ github.event.inputs.ref || github.ref }}
+      branch-name: ${{ github.ref_name }}
+      slack-results-channel: ${{ github.event.inputs.slack-results-channel }}
+      slack-summary-channel: ${{ github.event.inputs.slack-summary-channel }}
+      java-version: ${{ github.event.inputs.java-version || '17' }}
+      java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
+      gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
+      use-branch-for-slack-channel: false
+      custom-job-name: "Custom"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
       jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
@@ -79,12 +99,17 @@ jobs:
   dynamic-freeze:
     name: DynamicFreeze
     uses: ./.github/workflows/zxc-jrs-regression.yaml
-    needs:
-      - label-check
     with:
-      ref: ${{ github.event.inputs.ref }}
-      branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/4N/GCP-Daily-DynamicFreeze-4N.json"
+      ref: ${{ github.event.inputs.ref || github.ref }}
+      branch-name: ${{ github.ref_name }}
+      slack-results-channel: ${{ github.event.inputs.slack-results-channel }}
+      slack-summary-channel: ${{ github.event.inputs.slack-summary-channel }}
+      java-version: ${{ github.event.inputs.java-version || '17' }}
+      java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
+      gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
+      use-branch-for-slack-channel: false
+      custom-job-name: "Custom"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
       jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
@@ -96,12 +121,17 @@ jobs:
   NewNodesSimilarStake:
     name: NewNodesSimilarStake
     uses: ./.github/workflows/zxc-jrs-regression.yaml
-    needs:
-      - label-check
     with:
-      ref: ${{ github.event.inputs.ref }}
-      branch-name: ${{ github.event.inputs.branch-name }}
       panel-config: "configs/suites/daily/5N/GCP-Daily-RestartWithNewNodes-SimilarStake-5N.json"
+      ref: ${{ github.event.inputs.ref || github.ref }}
+      branch-name: ${{ github.ref_name }}
+      slack-results-channel: ${{ github.event.inputs.slack-results-channel }}
+      slack-summary-channel: ${{ github.event.inputs.slack-summary-channel }}
+      java-version: ${{ github.event.inputs.java-version || '17' }}
+      java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
+      gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
+      use-branch-for-slack-channel: false
+      custom-job-name: "Custom"
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
       jrs-ssh-user-name: ${{ secrets.PLATFORM_JRS_SSH_USER_NAME }}
