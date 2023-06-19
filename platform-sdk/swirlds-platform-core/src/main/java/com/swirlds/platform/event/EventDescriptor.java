@@ -16,18 +16,16 @@
 
 package com.swirlds.platform.event;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A stripped down description an event. Stores hash, generation, and creator ID.
@@ -192,10 +190,8 @@ public class EventDescriptor implements SelfSerializable {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append("creator", creator)
-                .append("generation", generation)
-                .append("hash", CommonUtils.hex(hash.getValue()))
-                .toString();
+        return "(creator: " + creator + ", generation: "
+                + generation + ", hash: "
+                + hex(hash.getValue()).substring(0, 12) + ")";
     }
 }

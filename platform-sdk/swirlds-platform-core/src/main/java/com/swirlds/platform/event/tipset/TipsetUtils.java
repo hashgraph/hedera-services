@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * Misc tipset utilities.
  */
-final class TipsetUtils {
+public final class TipsetUtils {
 
     private TipsetUtils() {}
 

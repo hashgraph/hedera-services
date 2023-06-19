@@ -48,7 +48,7 @@ import java.util.Random;
 /**
  * Responsible for creating new events using the tipset algorithm.
  */
-public class TipsetEventCreator { // TODO test
+public class TipsetEventCreator {
 
     private final Cryptography cryptography;
     private final Time time;
@@ -224,7 +224,7 @@ public class TipsetEventCreator { // TODO test
 
         // Choose a random nerd, weighted by how much it is currently being bullied.
 
-        // First, sum up all bully scores.
+        // First, figure out who is a nerd and sum up all bully scores.
         int bullyScoreSum = 0;
         final List<Integer> bullyScores = new ArrayList<>(possibleOtherParents.size());
         for (final EventDescriptor nerd : possibleOtherParents) {
