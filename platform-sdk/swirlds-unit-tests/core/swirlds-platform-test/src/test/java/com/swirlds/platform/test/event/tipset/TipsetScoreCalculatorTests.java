@@ -26,8 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.tipset.Tipset;
 import com.swirlds.platform.event.tipset.TipsetBuilder;
@@ -46,9 +48,6 @@ import org.junit.jupiter.api.Test;
 @DisplayName("TipsetScoreCalculator Tests")
 class TipsetScoreCalculatorTests {
 
-    // TODO test some examples by hand instead of randomly
-    // TODO non-contiguous node ID tests
-
     @Test
     @DisplayName("Basic Behavior Test")
     void basicBehaviorTest() {
@@ -57,18 +56,15 @@ class TipsetScoreCalculatorTests {
 
         final Map<NodeId, EventDescriptor> latestEvents = new HashMap<>();
 
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(nodeCount).build();
+
         final Map<NodeId, Long> weightMap = new HashMap<>();
         long totalWeight = 0;
-        for (int i = 0; i < nodeCount; i++) {
-            final long weight = random.nextLong(1_000_000);
-            totalWeight += weight;
-            weightMap.put(new NodeId(i), weight);
+        for (final Address address : addressBook) {
+            weightMap.put(address.getNodeId(), address.getWeight());
+            totalWeight += address.getWeight();
         }
-
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(nodeCount)
-                .setCustomWeightGenerator(weightMap::get)
-                .build();
 
         final NodeId windowId = addressBook.getNodeId(random.nextInt(nodeCount));
 
@@ -188,8 +184,11 @@ class TipsetScoreCalculatorTests {
         final Random random = getRandomPrintSeed();
         final int nodeCount = 4;
 
-        final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(nodeCount).build();
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+                .setSize(nodeCount)
+                .setAverageWeight(1)
+                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+                .build();
 
         // In this test, we simulate from the perspective of node A.
         // All nodes have 1 stake, and index == id (for simplicity).
@@ -197,6 +196,11 @@ class TipsetScoreCalculatorTests {
         final NodeId nodeB = addressBook.getNodeId(1);
         final NodeId nodeC = addressBook.getNodeId(2);
         final NodeId nodeD = addressBook.getNodeId(3);
+
+        final int indexA = addressBook.getIndexOfNodeId(nodeA);
+        final int indexB = addressBook.getIndexOfNodeId(nodeB);
+        final int indexC = addressBook.getIndexOfNodeId(nodeC);
+        final int indexD = addressBook.getIndexOfNodeId(nodeD);
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
@@ -238,10 +242,10 @@ class TipsetScoreCalculatorTests {
         assertNotSame(snapshot1, snapshot2);
 
         // D should have a bully score of 1, all others a score of 0.
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeA.id()));
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeB.id()));
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeC.id()));
-        assertEquals(1, window.getBullyScoreForNodeIndex((int) nodeD.id()));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexA));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexB));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexC));
+        assertEquals(1, window.getBullyScoreForNodeIndex(indexD));
         assertEquals(1, window.getBullyScore());
 
         // Create another batch of events where D is bullied.
@@ -261,10 +265,10 @@ class TipsetScoreCalculatorTests {
         assertNotSame(snapshot2, snapshot3);
 
         // D should have a bully score of 2, all others a score of 0.
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeA.id()));
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeB.id()));
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeC.id()));
-        assertEquals(2, window.getBullyScoreForNodeIndex((int) nodeD.id()));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexA));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexB));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexC));
+        assertEquals(2, window.getBullyScoreForNodeIndex(indexD));
         assertEquals(2, window.getBullyScore());
 
         // Create a bach of events that don't bully D. Let's all bully C, because C is a jerk.
@@ -284,10 +288,10 @@ class TipsetScoreCalculatorTests {
         assertNotSame(snapshot3, snapshot4);
 
         // Now, all nodes should have a bully score of 0 except for C, which should have a score of 1.
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeA.id()));
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeB.id()));
-        assertEquals(1, window.getBullyScoreForNodeIndex((int) nodeC.id()));
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeD.id()));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexA));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexB));
+        assertEquals(1, window.getBullyScoreForNodeIndex(indexC));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexD));
         assertEquals(1, window.getBullyScore());
 
         // Stop bullying C. D stops creating events.
@@ -304,10 +308,10 @@ class TipsetScoreCalculatorTests {
         final Tipset snapshot5 = window.getSnapshot();
         assertNotSame(snapshot4, snapshot5);
 
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeA.id()));
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeB.id()));
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeC.id()));
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeD.id()));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexA));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexB));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexC));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexD));
         assertEquals(0, window.getBullyScore());
 
         // D still is not creating events. Since there is no legal event from D to use as a parent, this doesn't
@@ -325,10 +329,10 @@ class TipsetScoreCalculatorTests {
         final Tipset snapshot6 = window.getSnapshot();
         assertNotSame(snapshot5, snapshot6);
 
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeA.id()));
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeB.id()));
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeC.id()));
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeD.id()));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexA));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexB));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexC));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexD));
         assertEquals(0, window.getBullyScore());
 
         // Rinse and repeat.
@@ -345,10 +349,10 @@ class TipsetScoreCalculatorTests {
         final Tipset snapshot7 = window.getSnapshot();
         assertNotSame(snapshot6, snapshot7);
 
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeA.id()));
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeB.id()));
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeC.id()));
-        assertEquals(0, window.getBullyScoreForNodeIndex((int) nodeD.id()));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexA));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexB));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexC));
+        assertEquals(0, window.getBullyScoreForNodeIndex(indexD));
         assertEquals(0, window.getBullyScore());
     }
 }

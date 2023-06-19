@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.event.tipset;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.Utilities.isSuperMajority;
 
 import com.swirlds.common.context.PlatformContext;
@@ -175,14 +174,6 @@ public class TipsetScoreCalculator {
             previousScore = 0;
         } else {
             previousScore = score;
-        }
-
-        if (event.getGeneration() > 0 && scoreImprovement <= 0) {
-            // If the tipset algorithm is working as intended, this should never happen.
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "non-genesis tipset score improvement must be greater than zero, event = {}",
-                    event);
         }
 
         return scoreImprovement;

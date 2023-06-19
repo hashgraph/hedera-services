@@ -84,7 +84,7 @@ public class Tipset {
         final Tipset newTipset = buildEmptyTipset(tipsets.get(0));
 
         for (int index = 0; index < length; index++) {
-            long max = 0;
+            long max = -1;
             for (final Tipset tipSet : tipsets) {
                 max = Math.max(max, tipSet.tips[index]);
             }
