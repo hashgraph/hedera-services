@@ -27,7 +27,6 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.concurrent.TimeoutException;
 
 /**
  * Represents the context of a single {@code handle()}-call.
@@ -139,10 +138,9 @@ public interface HandleContext {
      * @param key the key to get the verification for
      * @return the verification for the given key
      * @throws NullPointerException if {@code key} is {@code null}
-     * @throws TimeoutException if the verification for the given key timed out
      */
     @NonNull
-    SignatureVerification verificationFor(@NonNull Key key) throws TimeoutException;
+    SignatureVerification verificationFor(@NonNull Key key);
 
     /**
      * Gets the {@link SignatureVerification} for the given hollow account.
@@ -154,10 +152,9 @@ public interface HandleContext {
      * @param evmAlias The evm alias to lookup verification for.
      * @return the verification for the given hollow account.
      * @throws NullPointerException if {@code evmAlias} is {@code null}
-     * @throws TimeoutException if the verification for the given alias timed out
      */
     @NonNull
-    SignatureVerification verificationFor(@NonNull final Bytes evmAlias) throws TimeoutException;
+    SignatureVerification verificationFor(@NonNull final Bytes evmAlias);
 
     /**
      * Get a readable store given the store's interface. This gives read-only access to the store.
