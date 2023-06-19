@@ -95,7 +95,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.nfts.areEnabled", true)
                 .withValue("tokens.nfts.maxBatchSizeBurn", 100)
                 .getOrCreateConfig();
@@ -321,7 +321,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void fungibleAmountExceedsBatchSize() {
-            configuration = new HederaTestConfigBuilder()
+            configuration = HederaTestConfigBuilder.create()
                     .withValue("tokens.nfts.areEnabled", true)
                     .withValue("tokens.nfts.maxBatchSizeBurn", 1)
                     .getOrCreateConfig();
@@ -484,7 +484,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftsGivenButNotEnabled() {
-            configuration = new HederaTestConfigBuilder()
+            configuration = HederaTestConfigBuilder.create()
                     .withValue("tokens.nfts.areEnabled", false)
                     .withValue("tokens.nfts.maxBatchSizeBurn", 100)
                     .getOrCreateConfig();
@@ -500,7 +500,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftSerialCountExceedsBatchSize() {
-            configuration = new HederaTestConfigBuilder()
+            configuration = HederaTestConfigBuilder.create()
                     .withValue("tokens.nfts.areEnabled", true)
                     .withValue("tokens.nfts.maxBatchSizeBurn", 1)
                     .getOrCreateConfig();
