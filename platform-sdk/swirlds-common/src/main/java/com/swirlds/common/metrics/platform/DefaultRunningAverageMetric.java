@@ -20,7 +20,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.statistics.StatsBuffered;
 import com.swirlds.common.statistics.StatsRunningAverage;
-import com.swirlds.common.time.OSTime;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -33,7 +32,7 @@ public class DefaultRunningAverageMetric extends AbstractDistributionMetric impl
     private final StatsRunningAverage runningAverage;
 
     public DefaultRunningAverageMetric(final RunningAverageMetric.Config config) {
-        this(config, OSTime.getInstance());
+        this(config, Time.getCurrent());
     }
 
     /**

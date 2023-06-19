@@ -22,7 +22,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.statistics.StatsBuffered;
 import com.swirlds.common.statistics.StatsSpeedometer;
-import com.swirlds.common.time.OSTime;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -34,7 +33,7 @@ public class DefaultSpeedometerMetric extends AbstractDistributionMetric impleme
     private final StatsSpeedometer speedometer;
 
     public DefaultSpeedometerMetric(final SpeedometerMetric.Config config) {
-        this(config, OSTime.getInstance());
+        this(config, Time.getCurrent());
     }
 
     /**

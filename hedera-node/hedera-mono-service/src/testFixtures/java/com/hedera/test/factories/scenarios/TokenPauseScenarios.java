@@ -16,15 +16,20 @@
 
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.TokenPauseFactory.newSignedTokenPause;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.test.factories.txns.TokenPauseFactory;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public enum TokenPauseScenarios implements TxnHandlingScenario {
     VALID_PAUSE_WITH_EXTANT_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenPause()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenPauseFactory.newSignedTokenPause()
                     .pausing(KNOWN_TOKEN_WITH_PAUSE)
                     .nonPayerKts(TOKEN_PAUSE_KT)
                     .get());

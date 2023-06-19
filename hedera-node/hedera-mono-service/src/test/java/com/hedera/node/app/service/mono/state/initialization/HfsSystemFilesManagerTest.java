@@ -83,13 +83,13 @@ import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.InvalidKeyException;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.apache.commons.codec.DecoderException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -160,7 +160,7 @@ class HfsSystemFilesManagerTest {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    void setup() throws DecoderException {
+    void setup() throws InvalidKeyException {
         final var keyBytes = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes();
         masterKey = new JEd25519Key(keyBytes);
         expectedInfo = new HFileMeta(
