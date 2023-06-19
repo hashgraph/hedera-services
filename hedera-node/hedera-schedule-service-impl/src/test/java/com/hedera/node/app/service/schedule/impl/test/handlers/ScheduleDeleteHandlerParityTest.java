@@ -96,11 +96,11 @@ import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TestFixturesKeyLookup;
+import java.security.InvalidKeyException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -192,7 +192,7 @@ class AdapterUtils {
     }
 
     public static ReadableScheduleStore mockSchedule(Long schedId, KeyTree key, TransactionBody txnBody)
-            throws DecoderException {
+            throws InvalidKeyException {
         final ScheduleID scheduleID =
                 ScheduleID.newBuilder().scheduleNum(schedId).build();
         given(schedule.hasAdminKey()).willReturn(key == null ? false : true);

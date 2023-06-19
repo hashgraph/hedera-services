@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.handlers;
+package com.hedera.node.app.service.networkadmin.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.token.TokenGetNftInfosResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.hapi.node.transaction.TransactionGetFastRecordResponse;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -33,30 +32,29 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#TOKEN_GET_NFT_INFOS}.
+ * This class contains all workflow-related functionality regarding TRANSACTION_GET_FAST_RECORD.
  * <p>
- * This token service call has been deprecated. Because protobufs promise backwards compatibility,
+ * This network service call is not supported. Because protobufs promise backwards compatibility,
  * we cannot remove it. However, it should not be used.
  */
 @Singleton
-public class TokenGetNftInfosHandler extends FreeQueryHandler {
+public class NetworkTransactionGetFastRecordHandler extends FreeQueryHandler {
     @Inject
-    public TokenGetNftInfosHandler() {
+    public NetworkTransactionGetFastRecordHandler() {
         // Exists for injection
     }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
         requireNonNull(query);
-        return query.tokenGetNftInfosOrThrow().header();
+        return query.transactionGetFastRecordOrThrow().header();
     }
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
         requireNonNull(header);
-        final var response = TokenGetNftInfosResponse.newBuilder().header(requireNonNull(header));
-        return Response.newBuilder().tokenGetNftInfos(response).build();
+        final var response = TransactionGetFastRecordResponse.newBuilder().header(header);
+        return Response.newBuilder().transactionGetFastRecord(response).build();
     }
 
     @Override
@@ -67,7 +65,7 @@ public class TokenGetNftInfosHandler extends FreeQueryHandler {
 
     @Override
     public Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
-        // this code never runs, since validate fails every time
+        // this code should never be executed, as validate() should fail before we get here
         requireNonNull(context);
         requireNonNull(header);
         throw new UnsupportedOperationException(NOT_SUPPORTED.toString());

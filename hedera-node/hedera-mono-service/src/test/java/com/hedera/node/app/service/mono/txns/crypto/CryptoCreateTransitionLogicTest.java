@@ -95,8 +95,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
+import java.security.InvalidKeyException;
 import java.time.Instant;
-import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -565,7 +565,7 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
-    void acceptsECKeyWhenECKeyAndExtractedEVMAddressAreNotUnique() throws DecoderException {
+    void acceptsECKeyWhenECKeyAndExtractedEVMAddressAreNotUnique() throws InvalidKeyException {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
         final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(ECDSA_KEY);
@@ -726,7 +726,7 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
-    void followsHappyPathECKeyAndEVMAddressAlias() throws DecoderException {
+    void followsHappyPathECKeyAndEVMAddressAlias() throws InvalidKeyException {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
         final var opBuilder = CryptoCreateTransactionBody.newBuilder()
                 .setMemo(MEMO)
@@ -769,7 +769,7 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
-    void followsHappyPathECKey() throws DecoderException {
+    void followsHappyPathECKey() throws InvalidKeyException {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
         final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(ECDSA_KEY);
@@ -809,7 +809,7 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
-    void followsHappyPathECKeyWithBothFlagsAreEnabled() throws DecoderException {
+    void followsHappyPathECKeyWithBothFlagsAreEnabled() throws InvalidKeyException {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
         final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(ECDSA_KEY);
@@ -849,7 +849,7 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
-    void followsHappyPathECKeyAndCreateWithAliasAndLazyCreateDisabled() throws DecoderException {
+    void followsHappyPathECKeyAndCreateWithAliasAndLazyCreateDisabled() throws InvalidKeyException {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
         final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(ECDSA_KEY);
@@ -888,7 +888,7 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
-    void followsHappyPathEDKey() throws DecoderException {
+    void followsHappyPathEDKey() throws InvalidKeyException {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
         final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(aPrimitiveEDKey);
