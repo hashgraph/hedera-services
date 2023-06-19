@@ -200,7 +200,6 @@ public abstract class EventUtils {
         return now;
     }
 
-    // TODO unit test
     /**
      * Calculate the creation time for a new event.
      * <p>
