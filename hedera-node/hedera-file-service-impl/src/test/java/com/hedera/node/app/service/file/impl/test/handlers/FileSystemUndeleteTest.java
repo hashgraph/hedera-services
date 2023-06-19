@@ -34,12 +34,13 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.file.SystemDeleteTransactionBody;
+import com.hedera.hapi.node.file.SystemUndeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
+import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -58,16 +59,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class FileSystemDeleteHandlerTest extends FileHandlerTestBase {
+class FileSystemUndeleteTest extends FileTestBase {
 
     @Mock
     private ReadableAccountStore accountStore;
 
-    @Mock(strictness = LENIENT)
+    @Mock
     private ReadableFileStoreImpl mockStore;
 
     @Mock
-    private FileSystemDeleteHandler subject;
+    private FileSystemUndeleteHandler subject;
 
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
@@ -81,7 +82,7 @@ class FileSystemDeleteHandlerTest extends FileHandlerTestBase {
     @BeforeEach
     void setUp() {
         mockStore = mock(ReadableFileStoreImpl.class);
-        subject = new FileSystemDeleteHandler();
+        subject = new FileSystemUndeleteHandler();
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
@@ -145,7 +146,6 @@ class FileSystemDeleteHandlerTest extends FileHandlerTestBase {
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_FILE_ID, msg.getStatus());
-        assertFalse(existingFile.get().deleted());
     }
 
     @Test
@@ -169,7 +169,7 @@ class FileSystemDeleteHandlerTest extends FileHandlerTestBase {
     void handleWorksAsExpectedWhenExpirationTimeIsExpired() {
         given(handleContext.body()).willReturn(newSystemDeleteTxn());
 
-        final var existingFile = writableStore.get(fileId.fileNum());
+        final var existingFile = writableStore.get(fileSystemfileId.fileNum());
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
@@ -184,7 +184,7 @@ class FileSystemDeleteHandlerTest extends FileHandlerTestBase {
     }
 
     @Test
-    @DisplayName("Handle works as expected and the system file marked as deleted")
+    @DisplayName("Handle works as expected and the system file marked as undeleted")
     void handleWorksAsExpectedWhenExpirationTimeIsNotExpired() {
         given(handleContext.body()).willReturn(newSystemDeleteTxn());
 
@@ -200,7 +200,7 @@ class FileSystemDeleteHandlerTest extends FileHandlerTestBase {
         final var changedFile = writableStore.get(fileSystemfileId.fileNum());
 
         assertTrue(changedFile.isPresent());
-        assertTrue(changedFile.get().deleted());
+        assertFalse(changedFile.get().deleted());
     }
 
     private Key mockPayerLookup() throws PreCheckException {
@@ -210,20 +210,20 @@ class FileSystemDeleteHandlerTest extends FileHandlerTestBase {
     private TransactionBody newSystemDeleteTxn() {
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
         final var deleteFileSystemBuilder =
-                SystemDeleteTransactionBody.newBuilder().fileID(WELL_KNOWN_SYSTEM_FILE_ID);
+                SystemUndeleteTransactionBody.newBuilder().fileID(WELL_KNOWN_SYSTEM_FILE_ID);
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
-                .systemDelete(deleteFileSystemBuilder.build())
+                .systemUndelete(deleteFileSystemBuilder.build())
                 .build();
     }
 
     private TransactionBody newFileDeleteTxn() {
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
         final var deleteFileSystemBuilder =
-                SystemDeleteTransactionBody.newBuilder().fileID(WELL_KNOWN_FILE_ID);
+                SystemUndeleteTransactionBody.newBuilder().fileID(WELL_KNOWN_FILE_ID);
         return TransactionBody.newBuilder()
                 .transactionID(txnId)
-                .systemDelete(deleteFileSystemBuilder.build())
+                .systemUndelete(deleteFileSystemBuilder.build())
                 .build();
     }
 }

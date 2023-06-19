@@ -31,9 +31,9 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.InvalidKeyException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -86,7 +86,7 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
                         merkleTopic.hasAutoRenewAccountId(),
                         expiry,
                         txnBody.getConsensusUpdateTopic());
-            } catch (final DecoderException illegal) {
+            } catch (final InvalidKeyException illegal) {
                 log.warn("Usage estimation unexpectedly failed for {}!", txnBody, illegal);
                 throw new InvalidTxBodyException(illegal);
             }
