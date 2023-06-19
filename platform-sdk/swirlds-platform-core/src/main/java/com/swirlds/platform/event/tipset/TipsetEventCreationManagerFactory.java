@@ -45,6 +45,8 @@ import java.util.function.Supplier;
  */
 public final class TipsetEventCreationManagerFactory {
 
+    private TipsetEventCreationManagerFactory() {}
+
     /**
      * Create a new tipset event creation manager.
      *

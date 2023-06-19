@@ -29,15 +29,11 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Calculates tipset scores for events created by a node.
  */
 public class TipsetScoreCalculator {
-
-    private static final Logger logger = LogManager.getLogger(TipsetScoreCalculator.class);
 
     /**
      * The node ID that is being tracked by this window.

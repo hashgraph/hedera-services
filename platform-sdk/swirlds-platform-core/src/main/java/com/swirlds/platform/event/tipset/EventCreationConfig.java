@@ -43,7 +43,7 @@ import java.time.Duration;
  */
 @ConfigData("event.creation")
 public record EventCreationConfig(
-        @ConfigProperty(defaultValue = "true") boolean useTipsetAlgorithm,
+        @ConfigProperty(defaultValue = "false") boolean useTipsetAlgorithm,
         @ConfigProperty(defaultValue = "0") double maxCreationRate,
         @ConfigProperty(defaultValue = "10") double antiBullyingFactor,
         @ConfigProperty(defaultValue = "10") int tipsetSnapshotHistorySize,
