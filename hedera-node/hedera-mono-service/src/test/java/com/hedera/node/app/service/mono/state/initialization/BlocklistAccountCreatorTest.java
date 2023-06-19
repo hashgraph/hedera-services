@@ -49,8 +49,8 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import java.security.InvalidKeyException;
 import java.util.function.Supplier;
-import org.apache.commons.codec.DecoderException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -91,7 +91,7 @@ class BlocklistAccountCreatorTest {
     private BlocklistAccountCreator subject;
 
     @BeforeEach
-    void setUp() throws DecoderException {
+    void setUp() throws InvalidKeyException {
         ids = new EntityIdSource() {
             long nextId = FIRST_UNUSED_ID;
 

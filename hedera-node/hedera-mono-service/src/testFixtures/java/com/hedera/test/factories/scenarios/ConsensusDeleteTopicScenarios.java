@@ -16,21 +16,28 @@
 
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.ConsensusDeleteTopicFactory.newSignedConsensusDeleteTopic;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.test.factories.txns.ConsensusDeleteTopicFactory;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public enum ConsensusDeleteTopicScenarios implements TxnHandlingScenario {
     CONSENSUS_DELETE_TOPIC_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedConsensusDeleteTopic(EXISTING_TOPIC_ID).get());
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(ConsensusDeleteTopicFactory.newSignedConsensusDeleteTopic(EXISTING_TOPIC_ID)
+                    .get());
         }
     },
     CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedConsensusDeleteTopic(MISSING_TOPIC_ID).get());
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(ConsensusDeleteTopicFactory.newSignedConsensusDeleteTopic(MISSING_TOPIC_ID)
+                    .get());
         }
     }
 }

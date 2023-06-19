@@ -16,23 +16,31 @@
 
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
-import static com.hedera.test.factories.txns.TokenUpdateFactory.newSignedTokenUpdate;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.test.factories.txns.SignedTxnFactory;
+import com.hedera.test.factories.txns.TokenUpdateFactory;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public enum TokenUpdateScenarios implements TxnHandlingScenario {
     UPDATE_WITH_NO_KEYS_AFFECTED {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenUpdate().updating(KNOWN_TOKEN_NO_SPECIAL_KEYS).get());
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
+                    .updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+                    .get());
         }
     },
     UPDATE_REPLACING_TREASURY {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUpdate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
                     .newTreasury(TOKEN_TREASURY)
                     .get());
@@ -40,17 +48,21 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
     },
     UPDATE_REPLACING_TREASURY_AS_PAYER {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUpdate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
-                    .newTreasury(DEFAULT_PAYER)
+                    .newTreasury(SignedTxnFactory.DEFAULT_PAYER)
                     .get());
         }
     },
     UPDATE_REPLACING_TREASURY_AS_CUSTOM_PAYER {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUpdate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
                     .newTreasury(CUSTOM_PAYER_ACCOUNT)
                     .get());
@@ -58,8 +70,10 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
     },
     UPDATE_REPLACING_WITH_MISSING_TREASURY {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUpdate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
                     .newTreasury(MISSING_ACCOUNT)
                     .get());
@@ -67,8 +81,10 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
     },
     UPDATE_REPLACING_ADMIN_KEY {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUpdate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
                     .newAdmin(TOKEN_REPLACE_KT)
                     .get());
@@ -76,8 +92,10 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
     },
     UPDATE_WITH_SUPPLY_KEYED_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUpdate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(KNOWN_TOKEN_WITH_SUPPLY)
                     .replacingSupply()
                     .get());
@@ -85,8 +103,10 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
     },
     UPDATE_WITH_KYC_KEYED_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUpdate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(KNOWN_TOKEN_WITH_KYC)
                     .replacingKyc()
                     .get());
@@ -94,8 +114,10 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
     },
     UPDATE_WITH_FREEZE_KEYED_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUpdate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(KNOWN_TOKEN_WITH_FREEZE)
                     .replacingFreeze()
                     .get());
@@ -103,8 +125,10 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
     },
     UPDATE_WITH_WIPE_KEYED_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUpdate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(KNOWN_TOKEN_WITH_WIPE)
                     .replacingWipe()
                     .get());
@@ -112,8 +136,10 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
     },
     UPDATE_WITH_MISSING_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUpdate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(MISSING_TOKEN)
                     .newAutoRenew(MISC_ACCOUNT)
                     .get());
@@ -121,15 +147,20 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
     },
     UPDATE_WITH_MISSING_TOKEN_ADMIN_KEY {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenUpdate().updating(KNOWN_TOKEN_IMMUTABLE).get());
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
+                    .updating(KNOWN_TOKEN_IMMUTABLE)
+                    .get());
         }
     },
     TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUpdate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
                     .newAutoRenew(MISC_ACCOUNT)
                     .get());
@@ -137,17 +168,21 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
     },
     TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_PAYER {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUpdate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
-                    .newAutoRenew(DEFAULT_PAYER)
+                    .newAutoRenew(SignedTxnFactory.DEFAULT_PAYER)
                     .get());
         }
     },
     TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_CUSTOM_PAYER {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUpdate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
                     .newAutoRenew(CUSTOM_PAYER_ACCOUNT)
                     .get());
@@ -155,8 +190,10 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
     },
     TOKEN_UPDATE_WITH_MISSING_AUTO_RENEW_ACCOUNT {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenUpdate()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenUpdateFactory.newSignedTokenUpdate()
                     .updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
                     .newAutoRenew(MISSING_ACCOUNT)
                     .get());
