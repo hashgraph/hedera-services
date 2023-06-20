@@ -60,7 +60,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ConsensusGetTopicInfoHandlerTest extends ConsensusHandlerTestBase {
+class ConsensusGetTopicInfoTest extends ConsensusTestBase {
 
     @Mock
     private QueryContext context;

@@ -66,7 +66,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ConsensusUpdateTopicHandlerTest extends ConsensusHandlerTestBase {
+class ConsensusUpdateTopicTest extends ConsensusTestBase {
     private static final long maxLifetime = 3_000_000L;
 
     private final ConsensusUpdateTopicTransactionBody.Builder OP_BUILDER =
