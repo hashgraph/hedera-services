@@ -1,0 +1,85 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.swirlds.common.system;
+
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.STARTUP;
+
+import com.swirlds.common.utility.StackTrace;
+import com.swirlds.logging.payloads.SystemExitPayload;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+/**
+ *  Utility methods for shutting down the JVM.
+ */
+public final class SystemExitUtils {
+    private static final Logger logger = LogManager.getLogger(SystemExitUtils.class);
+
+    private SystemExitUtils() {}
+
+    /**
+     * Exits the system
+     *
+     * @param exitCode    the reason for the exit
+     * @param message     a message to log, if not null
+     * @param haltRuntime whether to halt the java runtime or not
+     */
+    public static void exitSystem(
+            @NonNull final SystemExitCode exitCode, @Nullable final String message, final boolean haltRuntime) {
+
+        final StackTrace stackTrace = StackTrace.getStackTrace();
+        final String exitMessage =
+                "System exit requested (" + exitCode + ")" + (message == null ? "" : "\nmessage: " + message)
+                        + "\nthread requesting exit: "
+                        + Thread.currentThread().getName() + "\n"
+                        + stackTrace;
+        logger.info(STARTUP.getMarker(), exitMessage);
+
+        if (exitCode.isError()) {
+            logger.error(EXCEPTION.getMarker(), new SystemExitPayload(exitCode.name(), exitCode.getExitCode()));
+        } else {
+            logger.info(STARTUP.getMarker(), new SystemExitPayload(exitCode.name(), exitCode.getExitCode()));
+        }
+        System.out.println("Exiting System (" + exitCode.name() + ")");
+        System.exit(exitCode.getExitCode());
+        if (haltRuntime) {
+            Runtime.getRuntime().halt(exitCode.getExitCode());
+        }
+    }
+
+    /**
+     * Same as {@link #exitSystem(SystemExitCode, String, boolean)}, but with haltRuntime set to false.
+     *
+     * @param exitCode the reason for the exit
+     * @param message  a message to log, if not null
+     */
+    public static void exitSystem(@NonNull final SystemExitCode exitCode, @Nullable final String message) {
+        exitSystem(exitCode, message, false);
+    }
+
+    /**
+     * Same as {@link #exitSystem(SystemExitCode, String, boolean)}, but with haltRuntime set to false and no message.
+     *
+     * @param exitCode the reason for the exit
+     */
+    public static void exitSystem(@NonNull final SystemExitCode exitCode) {
+        exitSystem(exitCode, null, false);
+    }
+}

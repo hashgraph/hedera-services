@@ -17,12 +17,16 @@
 package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.gui.GuiUtils.wrap;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.statistics.internal.StatsBuffer;
+import com.swirlds.gui.GuiConstants;
+import com.swirlds.gui.PrePaintableJPanel;
+import com.swirlds.gui.WindowManager;
 import com.swirlds.platform.Settings;
+import com.swirlds.platform.gui.WinBrowser;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -85,7 +89,7 @@ class WinTab2Stats extends PrePaintableJPanel {
      * Instantiate and initialize content of this tab.
      */
     public WinTab2Stats() {
-        metrics = WinBrowser.memberDisplayed.platform.getContext().getMetrics().getAll().stream()
+        metrics = WindowManager.memberDisplayed.getPlatform().getContext().getMetrics().getAll().stream()
                 .sorted(Comparator.comparing(m -> m.getName().toUpperCase()))
                 .toList();
         int numStats = metrics.size();
@@ -426,7 +430,7 @@ class WinTab2Stats extends PrePaintableJPanel {
         int j = cm2rm[index];
         chartsPanel.add(charts[index]);
         charts[index].setVisible(true); // flag this as having been added
-        statBoxes[j].setBackground(WinBrowser.MEMBER_HIGHLIGHT_COLOR);
+        statBoxes[j].setBackground(GuiConstants.MEMBER_HIGHLIGHT_COLOR);
         revalidate();
     }
 
@@ -446,7 +450,7 @@ class WinTab2Stats extends PrePaintableJPanel {
     }
 
     public void prePaint() {
-        if (WinBrowser.memberDisplayed == null) {
+        if (WindowManager.memberDisplayed == null) {
             return; // the screen is blank until we choose who to display
         }
 
@@ -568,7 +572,7 @@ class WinTab2Stats extends PrePaintableJPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        if (WinBrowser.memberDisplayed == null) {
+        if (WindowManager.memberDisplayed == null) {
             return; // the screen is blank until we choose who to display
         }
         for (int i = 0; i < statBoxes.length; i++) {

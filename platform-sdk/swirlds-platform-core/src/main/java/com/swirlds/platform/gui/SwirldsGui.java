@@ -17,14 +17,14 @@
 package com.swirlds.platform.gui;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.platform.gui.internal.GuiUtils.winRect;
+import static com.swirlds.platform.gui.internal.AddressBookGuiUtils.winRect;
 
-import com.swirlds.common.Console;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.gui.internal.SwirldMenu;
+import com.swirlds.gui.Console;
+import com.swirlds.gui.GuiAccessor;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GraphicsEnvironment;
@@ -58,7 +58,7 @@ public final class SwirldsGui {
 
         final AddressBook addressBook = platform.getAddressBook();
         final NodeId selfId = platform.getSelfId();
-        final int winNum = GuiPlatformAccessor.getInstance().getInstanceNumber(selfId);
+        final int winNum = GuiAccessor.getInstance().getInstanceNumber(selfId);
 
         final Rectangle winRect = winRect(addressBook, winNum);
         // if SwirldMain calls createConsole, this remembers the window created
@@ -84,7 +84,7 @@ public final class SwirldsGui {
 
         final AddressBook addressBook = platform.getAddressBook();
         final NodeId selfId = platform.getSelfId();
-        final int winNum = GuiPlatformAccessor.getInstance().getInstanceNumber(selfId);
+        final int winNum = GuiAccessor.getInstance().getInstanceNumber(selfId);
 
         final Rectangle winRect = winRect(addressBook, winNum);
 

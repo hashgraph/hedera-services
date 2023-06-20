@@ -23,13 +23,13 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.logging.payloads.ReconnectFailurePayload;
 import com.swirlds.logging.payloads.UnableToReconnectPayload;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkUtils;
-import com.swirlds.platform.system.SystemExitCode;
-import com.swirlds.platform.system.SystemExitUtils;
+import com.swirlds.platform.system.PlatformExitCode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -89,7 +89,7 @@ public class ReconnectLearnerThrottle {
     private void killNodeIfThresholdMet() {
         if (failedReconnectsInARow >= config.maximumReconnectFailuresBeforeShutdown()) {
             logger.error(EXCEPTION.getMarker(), "Too many reconnect failures in a row, killing node");
-            SystemExitUtils.exitSystem(SystemExitCode.RECONNECT_FAILURE);
+            SystemExitUtils.exitSystem(PlatformExitCode.RECONNECT_FAILURE);
         }
     }
 
@@ -101,7 +101,7 @@ public class ReconnectLearnerThrottle {
             logger.warn(STARTUP.getMarker(), () -> new UnableToReconnectPayload(
                             "Node has fallen behind, reconnect is disabled, will die", selfId.id())
                     .toString());
-            SystemExitUtils.exitSystem(SystemExitCode.BEHIND_RECONNECT_DISABLED);
+            SystemExitUtils.exitSystem(PlatformExitCode.BEHIND_RECONNECT_DISABLED);
         }
 
         if (config.reconnectWindowSeconds() >= 0
@@ -111,7 +111,7 @@ public class ReconnectLearnerThrottle {
                             "Node has fallen behind, reconnect is disabled outside of time window, will die",
                             selfId.id())
                     .toString());
-            SystemExitUtils.exitSystem(SystemExitCode.BEHIND_RECONNECT_DISABLED);
+            SystemExitUtils.exitSystem(PlatformExitCode.BEHIND_RECONNECT_DISABLED);
         }
     }
 }

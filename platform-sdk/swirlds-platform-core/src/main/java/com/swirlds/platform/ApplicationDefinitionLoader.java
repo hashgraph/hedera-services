@@ -22,7 +22,7 @@ import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.internal.ConfigurationException;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.gui.GuiUtils;
 import com.swirlds.platform.config.legacy.AddressConfig;
 import com.swirlds.platform.config.legacy.JarAppConfig;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
@@ -107,7 +107,7 @@ public final class ApplicationDefinitionLoader {
             final Attributes attributes = manifest.getMainAttributes();
             mainClassname = attributes.getValue("Main-Class");
         } catch (final Exception e) {
-            CommonUtils.tellUserConsolePopup("ERROR", "ERROR: Couldn't load app " + appJarPath);
+            GuiUtils.tellUserConsolePopup("ERROR", "ERROR: Couldn't load app " + appJarPath);
             logger.error(EXCEPTION.getMarker(), "Couldn't find Main-Class name in jar file {}", appJarPath, e);
         }
         return new AppStartParams(appParameters, appJarFilename, mainClassname, appJarPath);

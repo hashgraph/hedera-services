@@ -44,9 +44,9 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.demo.stats.signing.algorithms.ECSecP256K1Algorithm;
 import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
+import com.swirlds.gui.GuiAccessor;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -176,7 +176,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             // they shouldn't both be -1, so set one of them
             transPerEventMax = 1024;
         }
-        GuiPlatformAccessor.getInstance()
+        GuiAccessor.getInstance()
                 .setAbout(
                         platform.getSelfId(),
                         "Stats Signing Demo v. 1.3\nThis writes statistics to a log file,"

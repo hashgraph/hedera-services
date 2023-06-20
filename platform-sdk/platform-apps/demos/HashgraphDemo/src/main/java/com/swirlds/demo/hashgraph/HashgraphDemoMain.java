@@ -37,9 +37,10 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
+import com.swirlds.gui.GuiAccessor;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
+import com.swirlds.platform.gui.PlatformGuiAccessor;
 import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.network.ExternalIpAddress;
 import com.swirlds.platform.network.IpAddressStatus;
@@ -396,7 +397,7 @@ public class HashgraphDemoMain implements SwirldMain {
         this.selfId = id;
         final String[] parameters = ParameterProvider.getInstance().getParameters();
 
-        GuiPlatformAccessor.getInstance()
+        GuiAccessor.getInstance()
                 .setAbout(
                         platform.getSelfId(),
                         "Hashgraph Demo v. 1.1\n" + "\n"
@@ -478,7 +479,7 @@ public class HashgraphDemoMain implements SwirldMain {
     public void run() {
         while (true) {
             if (window != null && !freezeCheckbox.getState()) {
-                eventsCache = GuiPlatformAccessor.getInstance().getAllEvents(platform.getSelfId());
+                eventsCache = PlatformGuiAccessor.getInstance().getAllEvents(platform.getSelfId());
                 // after this getAllEvents call, the set of events to draw is frozen
                 // for the duration of this screen redraw. But their status (consensus or not) may change
                 // while it is being drawn. If an event is discarded while being drawn, then it forgets its

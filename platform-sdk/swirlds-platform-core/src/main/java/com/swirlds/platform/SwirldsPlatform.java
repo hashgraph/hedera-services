@@ -55,6 +55,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.platformstatus.PlatformStatus;
@@ -118,7 +119,7 @@ import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
+import com.swirlds.platform.gui.PlatformGuiAccessor;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.AddedEventMetrics;
@@ -139,9 +140,8 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.stats.StatConstructor;
+import com.swirlds.platform.system.PlatformExitCode;
 import com.swirlds.platform.system.Shutdown;
-import com.swirlds.platform.system.SystemExitCode;
-import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.threading.PauseAndLoad;
 import com.swirlds.platform.util.PlatformComponents;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -647,9 +647,9 @@ public class SwirldsPlatform implements Platform, Startable {
                         Pair.of(swirldStateManager, "swirldStateManager")));
 
         // To be removed once the GUI component is better integrated with the platform.
-        GuiPlatformAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
-        GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
-        GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
+        PlatformGuiAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
+        PlatformGuiAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
+        PlatformGuiAccessor.getInstance().setConsensusReference(selfId, consensusRef);
     }
 
     /**
@@ -742,7 +742,7 @@ public class SwirldsPlatform implements Platform, Startable {
             logger.error(EXCEPTION.getMarker(), "Saved state not loaded:", e);
             // if requireStateLoad is on, we exit. if not, we just log it
             if (stateConfig.requireStateLoad()) {
-                SystemExitUtils.exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED);
+                SystemExitUtils.exitSystem(PlatformExitCode.SAVED_STATE_NOT_LOADED);
             }
         }
         return new LoadedState(createNullReservation(), null);

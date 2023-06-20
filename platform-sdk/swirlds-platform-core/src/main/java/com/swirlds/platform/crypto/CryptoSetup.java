@@ -24,15 +24,16 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.gui.GuiUtils;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.Utilities;
-import com.swirlds.platform.system.SystemExitCode;
-import com.swirlds.platform.system.SystemExitUtils;
+import com.swirlds.platform.system.PlatformExitCode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -118,11 +119,11 @@ public final class CryptoSetup {
             logger.error(EXCEPTION.getMarker(), "Exception while loading/generating keys", e);
             if (Utilities.isRootCauseSuppliedType(e, NoSuchAlgorithmException.class)
                     || Utilities.isRootCauseSuppliedType(e, NoSuchProviderException.class)) {
-                CommonUtils.tellUserConsolePopup(
+                GuiUtils.tellUserConsolePopup(
                         "ERROR",
                         "ERROR: This Java installation does not have the needed cryptography " + "providers installed");
             }
-            SystemExitUtils.exitSystem(SystemExitCode.KEY_LOADING_FAILED);
+            SystemExitUtils.exitSystem(PlatformExitCode.KEY_LOADING_FAILED);
             throw new CryptographyException(e); // will never reach this line due to exit above
         }
 

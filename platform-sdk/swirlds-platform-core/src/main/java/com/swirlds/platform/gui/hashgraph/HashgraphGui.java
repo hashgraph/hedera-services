@@ -16,11 +16,12 @@
 
 package com.swirlds.platform.gui.hashgraph;
 
+import com.swirlds.gui.PrePaintableJPanel;
+import com.swirlds.gui.hashgraph.HashgraphGuiSource;
+import com.swirlds.gui.hashgraph.PairPanel;
 import com.swirlds.platform.gui.hashgraph.internal.CachingGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.HashgraphGuiControls;
 import com.swirlds.platform.gui.hashgraph.internal.HashgraphPicture;
-import com.swirlds.platform.gui.hashgraph.internal.PairPanel;
-import com.swirlds.platform.gui.internal.PrePaintableJPanel;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;

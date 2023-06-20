@@ -55,6 +55,8 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.SystemExitCode;
+import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -76,6 +78,7 @@ import com.swirlds.demo.virtualmerkle.state.VirtualMerkleStateInitializer;
 import com.swirlds.demo.virtualmerkle.transaction.handler.VirtualMerkleTransactionHandler;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.fcqueue.FCQueueStatistics;
+import com.swirlds.gui.GuiAccessor;
 import com.swirlds.logging.payloads.ApplicationFinishedPayload;
 import com.swirlds.logging.payloads.CreateTransactionFailedPayload;
 import com.swirlds.merkle.map.MerkleMap;
@@ -83,9 +86,6 @@ import com.swirlds.merkle.map.test.pta.MapKey;
 import com.swirlds.merkle.map.test.pta.TransactionRecord;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
-import com.swirlds.platform.system.SystemExitCode;
-import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import java.io.File;
 import java.io.FileInputStream;
@@ -537,7 +537,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         platform.getNotificationEngine().register(PlatformStatusChangeListener.class, this::platformStatusChange);
         registerReconnectCompleteListener();
 
-        GuiPlatformAccessor.getInstance().setAbout(selfId, "Platform Testing Demo");
+        GuiAccessor.getInstance().setAbout(selfId, "Platform Testing Demo");
         try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
                 UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
             final PlatformTestingToolState state = wrapper.get();

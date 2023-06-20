@@ -16,10 +16,11 @@
 
 package com.swirlds.platform.gui.internal;
 
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.gui.WindowManager;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
+import com.swirlds.platform.gui.PlatformGuiAccessor;
 import com.swirlds.platform.gui.hashgraph.internal.ShadowgraphGuiSource;
 
 /**
@@ -40,14 +41,14 @@ public class PlatformHashgraphGuiSource implements ShadowgraphGuiSource {
 
     @Override
     public ShadowGraph getShadowGraph() {
-        final SwirldsPlatform platform = getPlatform();
+        final Platform platform = getPlatform();
         if (platform == null) {
             return null;
         }
-        return GuiPlatformAccessor.getInstance().getShadowGraph(platform.getSelfId());
+        return PlatformGuiAccessor.getInstance().getShadowGraph(platform.getSelfId());
     }
 
-    private SwirldsPlatform getPlatform() {
-        return WinBrowser.memberDisplayed.platform;
+    private Platform getPlatform() {
+        return WindowManager.memberDisplayed.getPlatform();
     }
 }

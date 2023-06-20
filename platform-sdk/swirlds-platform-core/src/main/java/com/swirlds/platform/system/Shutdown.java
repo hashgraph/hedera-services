@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.system;
 
+import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,7 +37,7 @@ public final class Shutdown {
      * @param exitCode the exit code to return when the JVM has been shut down
      */
     @Observer(ShutdownRequestedTrigger.class)
-    public void shutdown(@Nullable final String reason, @NonNull final SystemExitCode exitCode) {
+    public void shutdown(@Nullable final String reason, @NonNull final PlatformExitCode exitCode) {
         Objects.requireNonNull(exitCode);
         SystemExitUtils.exitSystem(exitCode, reason);
     }
