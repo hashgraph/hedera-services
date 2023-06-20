@@ -57,6 +57,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
+    private static final int COST_25 = 25;
+
     @Mock(strictness = LENIENT)
     private QueryContext context;
 
@@ -73,12 +75,12 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
 
     @SuppressWarnings("DataFlowIssue")
     @Test
-    void extractHeader_nullArg() {
+    void extractHeaderThrowsOnNullArg() {
         Assertions.assertThatThrownBy(() -> subject.extractHeader(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    void extractHeader_hasAccountRecordsQuery() {
+    void extractHeaderHasAccountRecordsQuery() {
         final var queryHeader = QueryHeader.newBuilder()
                 .payment((Transaction) null)
                 .responseType(COST_ANSWER)
@@ -94,7 +96,7 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void extractHeader_hasNoAccountRecordsQuery() {
+    void extractHeaderHasNoAccountRecordsQuery() {
         final var query = Query.newBuilder()
                 .cryptoGetProxyStakers(CryptoGetStakersQuery.DEFAULT)
                 .build();
@@ -103,12 +105,12 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
 
     @SuppressWarnings("DataFlowIssue")
     @Test
-    void createEmptyResponse_nullArg() {
+    void createEmptyResponseThrowsForNullArg() {
         Assertions.assertThatThrownBy(() -> subject.createEmptyResponse(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    void createEmptyResponse_success() {
+    void createEmptyResponseSuccess() {
         final var headerInput = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.DUPLICATE_TRANSACTION)
                 .cost(10)
@@ -124,17 +126,17 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
 
     @SuppressWarnings("DataFlowIssue")
     @Test
-    void validate_nullArg() {
+    void validatesThrowsOnNullArg() {
         Assertions.assertThatThrownBy(() -> subject.validate(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    void validate_noAccountRecordsQuery() {
+    void validatesNoAccountRecordsQuery() {
         Assertions.assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    void validate_accountDoesntExist() {
+    void validatesAccountDoesntExist() {
         refreshStoresWithCurrentTokenOnlyInReadable();
         mockQueryContext(
                 BaseCryptoHandler.asAccount(987),
@@ -146,7 +148,7 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void validate_accountIsDeleted() {
+    void validatesAccountIsDeleted() {
         deleteAccount = deleteAccount.copyBuilder().deleted(true).build();
         refreshStoresWithCurrentTokenOnlyInReadable();
         mockQueryContext(
@@ -159,7 +161,7 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void validate_accountIsSmartContract() {
+    void validatesAccountIsSmartContract() {
         account = account.copyBuilder().smartContract(true).build();
         refreshStoresWithCurrentTokenOnlyInReadable();
         mockQueryContext(
@@ -171,7 +173,7 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void validate_succeeds() {
+    void validateSucceeds() {
         refreshStoresWithCurrentTokenOnlyInReadable();
         mockQueryContext(
                 id,
@@ -184,7 +186,7 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
 
     @SuppressWarnings("DataFlowIssue")
     @Test
-    void findResponse_nullArgs() {
+    void findResponseThrowsOnNullArgs() {
         Assertions.assertThatThrownBy(() -> subject.findResponse(null, ResponseHeader.DEFAULT))
                 .isInstanceOf(NullPointerException.class);
 
@@ -193,7 +195,7 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void findResponse_noGetAccountRecordsQuery() {
+    void findResponseHasNoGetAccountRecordsQuery() {
         given(context.query())
                 .willReturn(Query.newBuilder()
                         .cryptoGetProxyStakers(CryptoGetStakersQuery.DEFAULT)
@@ -204,10 +206,8 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
                 .isInstanceOf(NullPointerException.class);
     }
 
-    private static final int COST_25 = 25;
-
     @Test
-    void findResponse_responseHeaderNotOk() {
+    void findResponseHasNonOkResponseHeader() {
         mockQueryContext(id, QueryHeader.newBuilder().responseType(ANSWER_ONLY).build());
         mockNonEmptyRecords();
         final var notOkResponseInput = ResponseHeader.newBuilder()
@@ -230,7 +230,7 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void findResponse_costOnly() {
+    void findResponseForCostOnly() {
         mockQueryContext(id, QueryHeader.newBuilder().responseType(COST_ANSWER).build());
         mockNonEmptyRecords();
         final var costHeader = ResponseHeader.newBuilder()
@@ -255,7 +255,7 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
 
     @CsvSource({"ANSWER_ONLY", "COST_ANSWER_STATE_PROOF", "ANSWER_STATE_PROOF"})
     @ParameterizedTest()
-    void findResponse_nonCostResponseTypes(String responseType) {
+    void findResponseWithNonCostResponseTypes(String responseType) {
         // This is a success case (which is the same for every response type except COST_ANSWER)
 
         final var cost50 = 50;
