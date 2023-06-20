@@ -293,6 +293,15 @@ public class BaseTokenHandler {
         return newTokenRels;
     }
 
+    /**
+     * Creates a new {@link TokenRelation} with the account and token. This is called when there is
+     * no association yet, but have open slots for maxAutoAssociations on the account.
+     * @param account the account to link the tokens to
+     * @param token the token to link to the account
+     * @param accountStore the account store
+     * @param tokenRelStore the token relation store
+     * @param context the handle context
+     */
     protected void autoAssociate(
             final Account account,
             final Token token,
@@ -303,13 +312,14 @@ public class BaseTokenHandler {
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
 
         final var accountId = asAccount(account.accountNumber());
-        final var tokenId = BaseTokenHandler.asToken(token.tokenNumber());
-
+        final var tokenId = asToken(token.tokenNumber());
+        // If token is already associated, no need to associate again
         validateTrue(tokenRelStore.get(accountId, tokenId) == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
         validateTrue(
                 tokenRelStore.sizeOfState() + 1 < tokensConfig.maxAggregateRels(),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
+        // Check is number of used associations is less than maxAutoAssociations
         final var numAssociations = account.numberAssociations();
         validateFalse(
                 entitiesConfig.limitTokenAssociations() && numAssociations == tokensConfig.maxPerAccount(),
@@ -319,6 +329,7 @@ public class BaseTokenHandler {
         final var usedAutoAssociations = account.usedAutoAssociations();
         validateFalse(usedAutoAssociations >= maxAutoAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 
+        // Create new token relation and commit to store
         final var newTokenRel = TokenRelation.newBuilder()
                 .tokenNumber(tokenId.tokenNum())
                 .accountNumber(account.accountNumber())
