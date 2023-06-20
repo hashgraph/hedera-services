@@ -37,6 +37,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.Key;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.InvalidKeyException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -45,7 +46,6 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
@@ -183,7 +183,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
                             numEOAliases.incrementAndGet();
                         }
                     } catch (final InvalidProtocolBufferException
-                            | DecoderException
+                            | InvalidKeyException
                             | IllegalArgumentException ignore) {
                         // any expected exception means no eth mapping
                     }
@@ -259,7 +259,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
             final Key key = Key.parseFrom(alias);
             final JKey jKey = JKey.mapKey(key);
             return tryAddressRecovery(jKey, ADDRESS_RECOVERY_FN);
-        } catch (InvalidProtocolBufferException | DecoderException | IllegalArgumentException ignore) {
+        } catch (InvalidProtocolBufferException | InvalidKeyException | IllegalArgumentException ignore) {
             // any expected exception means no eth mapping
             return null;
         }
@@ -274,7 +274,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
             final Key key = Key.parseFrom(ret);
             final JKey jKey = JKey.mapKey(key);
             return tryAddressRecovery(jKey, ADDRESS_RECOVERY_FN);
-        } catch (InvalidProtocolBufferException | DecoderException | IllegalArgumentException ignore) {
+        } catch (InvalidProtocolBufferException | InvalidKeyException | IllegalArgumentException ignore) {
             // any expected exception means no eth mapping
             return null;
         }

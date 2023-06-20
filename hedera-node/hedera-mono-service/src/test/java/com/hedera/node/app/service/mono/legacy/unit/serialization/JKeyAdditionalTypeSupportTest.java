@@ -31,26 +31,27 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import java.io.ByteArrayInputStream;
-import org.apache.commons.codec.DecoderException;
+import java.io.IOException;
+import java.security.InvalidKeyException;
 import org.junit.jupiter.api.Test;
 
 class JKeyAdditionalTypeSupportTest {
     @Test
-    void serializingJContractIDKeyTest() throws Exception {
+    void serializingJContractIDKeyTest() throws IOException, InvalidKeyException {
         final var cid = ContractID.newBuilder().setShardNum(0).setRealmNum(0).setContractNum(1001);
         final var key = Key.newBuilder().setContractID(cid).build();
         commonAssertions(key);
     }
 
     @Test
-    void serializingJRSA_3072KeyTest() throws Exception {
+    void serializingJRSA_3072KeyTest() throws IOException, InvalidKeyException {
         final var keyBytes = TxnUtils.randomUtf8ByteString(3072 / 8);
         final var key = Key.newBuilder().setRSA3072(keyBytes).build();
         commonAssertions(key);
     }
 
     @Test
-    void canMapAndUnmapContractAliasKeys() throws DecoderException {
+    void canMapAndUnmapContractAliasKeys() throws InvalidKeyException {
         final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
         final var input = ContractID.newBuilder()
                 .setEvmAddress(ByteString.copyFrom(mockAddr))
@@ -65,7 +66,7 @@ class JKeyAdditionalTypeSupportTest {
     }
 
     @Test
-    void canMapAndUnmapContractDelegateAliasKeys() throws DecoderException {
+    void canMapAndUnmapContractDelegateAliasKeys() throws InvalidKeyException {
         final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
         final var input = ContractID.newBuilder()
                 .setEvmAddress(ByteString.copyFrom(mockAddr))
@@ -79,7 +80,7 @@ class JKeyAdditionalTypeSupportTest {
         assertTrue(JKey.equalUpToDecodability(subject, reconstructed));
     }
 
-    private void commonAssertions(final Key key) throws Exception {
+    private void commonAssertions(final Key key) throws InvalidKeyException, IOException {
         final var jKey = JKey.mapKey(key);
 
         final var ser = JKeySerializer.serialize(jKey);

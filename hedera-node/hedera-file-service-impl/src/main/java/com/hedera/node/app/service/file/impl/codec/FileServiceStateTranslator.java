@@ -27,7 +27,7 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.commons.codec.DecoderException;
+import java.security.InvalidKeyException;
 
 /**
  * The class is used to convert a {@link com.hedera.node.app.service.mono.files.HFileMeta} content and metadata  to a {@link File} and vice versa during the migration process
@@ -82,7 +82,7 @@ public class FileServiceStateTranslator {
      */
     @NonNull
     public static FileMetadataAndContent pbjToState(
-            @NonNull FileID fileID, @NonNull ReadableFileStoreImpl readableFileStore) throws DecoderException {
+            @NonNull FileID fileID, @NonNull ReadableFileStoreImpl readableFileStore) throws InvalidKeyException {
         requireNonNull(fileID);
         requireNonNull(readableFileStore);
         final var optionalFile = readableFileStore.getFileLeaf(fileID);
@@ -95,7 +95,7 @@ public class FileServiceStateTranslator {
      * @return File and metadata pair object
      */
     @NonNull
-    public static FileMetadataAndContent pbjToState(@NonNull File file) throws DecoderException {
+    public static FileMetadataAndContent pbjToState(@NonNull File file) throws InvalidKeyException {
         requireNonNull(file);
         var keys = (file.hasKeys())
                 ? com.hedera.node.app.service.mono.legacy.core.jproto.JKey.convertKey(

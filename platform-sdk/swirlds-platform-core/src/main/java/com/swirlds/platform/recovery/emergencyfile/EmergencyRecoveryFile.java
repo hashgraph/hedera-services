@@ -34,7 +34,7 @@ import java.time.Instant;
  */
 public record EmergencyRecoveryFile(@NonNull Recovery recovery) {
     private static final String OUTPUT_FILENAME = "emergencyRecovery.yaml";
-    private static final String INPUT_FILENAME =
+    public static final String INPUT_FILENAME =
             ConfigurationHolder.getConfigData(StateConfig.class).emergencyStateFileName();
 
     /**

@@ -89,6 +89,7 @@ public interface QueryWorkflowInjectionModule {
                 networkHandlers.networkGetVersionInfoHandler(),
                 networkHandlers.networkTransactionGetReceiptHandler(),
                 networkHandlers.networkTransactionGetRecordHandler(),
+                networkHandlers.networkTransactionGetFastRecordHandler(),
                 scheduleHandlers.scheduleGetInfoHandler(),
                 tokenHandlers.tokenGetInfoHandler(),
                 tokenHandlers.tokenGetAccountNftInfosHandler(),
