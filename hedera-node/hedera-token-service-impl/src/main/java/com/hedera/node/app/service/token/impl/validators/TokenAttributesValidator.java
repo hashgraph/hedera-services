@@ -35,7 +35,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -49,21 +48,17 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenAttributesValidator {
-    private final ConfigProvider configProvider;
     public static final Key IMMUTABILITY_SENTINEL_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
 
     @Inject
-    public TokenAttributesValidator(@NonNull final ConfigProvider configProvider) {
-        this.configProvider = configProvider;
-    }
+    public TokenAttributesValidator() {}
 
     /**
      * Validates the token symbol, if it is exists and is not empty or not too long.
      * @param symbol the token symbol to validate
      */
-    public void validateTokenSymbol(@Nullable final String symbol) {
-        final var tokensConfig = configProvider.getConfiguration().getConfigData(TokensConfig.class);
+    public void validateTokenSymbol(@Nullable final String symbol, @NonNull final TokensConfig tokensConfig) {
         tokenStringCheck(symbol, tokensConfig.maxSymbolUtf8Bytes(), MISSING_TOKEN_SYMBOL, TOKEN_SYMBOL_TOO_LONG);
     }
 
@@ -71,8 +66,7 @@ public class TokenAttributesValidator {
      * Validates the token name, if it is exists and is not empty or not too long.
      * @param name the token name to validate
      */
-    public void validateTokenName(@Nullable final String name) {
-        final var tokensConfig = configProvider.getConfiguration().getConfigData(TokensConfig.class);
+    public void validateTokenName(@Nullable final String name, @NonNull final TokensConfig tokensConfig) {
         tokenStringCheck(name, tokensConfig.maxTokenNameUtf8Bytes(), MISSING_TOKEN_NAME, TOKEN_NAME_TOO_LONG);
     }
 

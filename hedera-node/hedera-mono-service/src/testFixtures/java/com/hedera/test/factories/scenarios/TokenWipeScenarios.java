@@ -16,15 +16,20 @@
 
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.TokenWipeFactory.newSignedTokenWipe;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.test.factories.txns.TokenWipeFactory;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public enum TokenWipeScenarios implements TxnHandlingScenario {
     VALID_WIPE_WITH_EXTANT_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenWipe()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenWipeFactory.newSignedTokenWipe()
                     .wiping(KNOWN_TOKEN_WITH_WIPE, MISC_ACCOUNT)
                     .nonPayerKts(TOKEN_WIPE_KT)
                     .get());
@@ -32,15 +37,20 @@ public enum TokenWipeScenarios implements TxnHandlingScenario {
     },
     WIPE_WITH_MISSING_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenWipe().wiping(MISSING_TOKEN, MISC_ACCOUNT).get());
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenWipeFactory.newSignedTokenWipe()
+                    .wiping(MISSING_TOKEN, MISC_ACCOUNT)
+                    .get());
         }
     },
     WIPE_FOR_TOKEN_WITHOUT_KEY {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenWipe()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenWipeFactory.newSignedTokenWipe()
                     .wiping(KNOWN_TOKEN_NO_SPECIAL_KEYS, MISC_ACCOUNT)
                     .nonPayerKts(TOKEN_KYC_KT)
                     .get());

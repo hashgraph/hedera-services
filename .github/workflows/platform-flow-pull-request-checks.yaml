@@ -22,7 +22,6 @@ on:
       - opened
       - reopened
       - synchronize
-      - labeled
     paths:
       - 'platform-sdk/**'
 
@@ -58,24 +57,9 @@ jobs:
     secrets:
       access-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
 
-  unit-label-check:
-    name: "Label Check [CI:UnitTests]"
-    runs-on: [self-hosted, Linux, small, scheduler, ephemeral]
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'CI:UnitTests') || contains(github.event.pull_request.labels.*.name, 'CI:FinalChecks') }}
-    steps:
-      - name: "Check Labels"
-        uses: jesusvasquez333/verify-pr-label-action@v1.4.0
-        if: github.event_name == 'pull_request'
-        with:
-          github-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
-          valid-labels: "CI:UnitTests, CI:FinalChecks"
-          disable-reviews: true
-
   unit-tests:
     name: Unit Tests
     uses: ./.github/workflows/platform-zxc-compile-platform-code.yaml
-    needs:
-      - unit-label-check
     with:
       custom-job-label: Standard
       enable-javadoc: false
@@ -87,24 +71,9 @@ jobs:
       sonar-token: ${{ secrets.PLATFORM_SONAR_TOKEN }}
       slack-api-token: ${{ secrets.PLATFORM_SLACK_API_TOKEN }}
 
-  final-label-check:
-    name: "Label Check [CI:FinalChecks]"
-    runs-on: [self-hosted, Linux, small, scheduler, ephemeral]
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'CI:FinalChecks') }}
-    steps:
-      - name: "Check Labels"
-        uses: jesusvasquez333/verify-pr-label-action@v1.4.0
-        if: github.event_name == 'pull_request'
-        with:
-          github-token: ${{ secrets.PLATFORM_GH_ACCESS_TOKEN }}
-          valid-labels: "CI:FinalChecks"
-          disable-reviews: true
-
   abbreviated-panel:
     name: JRS Panel
     uses: ./.github/workflows/zxc-jrs-regression.yaml
-    needs:
-      - final-label-check
     with:
       panel-config: "configs/suites/GCP-PRCheck-Abbrev-4N.json"
       branch-name: ${{ github.head_ref || github.ref_name }}

@@ -142,7 +142,8 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
     private void validateSemantics(final HandleContext context) {
         requireNonNull(context);
         final var op = context.body().tokenMintOrThrow();
-        validator.validateMint(op.amount(), op.metadata());
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        validator.validateMint(op.amount(), op.metadata(), tokensConfig);
     }
 
     /**

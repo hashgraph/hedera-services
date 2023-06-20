@@ -67,7 +67,6 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
@@ -677,9 +676,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .build();
     }
 
-    protected void givenStoresAndConfig(final ConfigProvider configProvider, final HandleContext handleContext) {
+    protected void givenStoresAndConfig(final HandleContext handleContext) {
         configuration = new HederaTestConfigBuilder().getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
