@@ -79,7 +79,6 @@ public class ReplayingEventsStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull final DoneReplayingEventsAction action) {
-        // always transition to a new status when done replaying events
         if (freezeRound != null) {
             // if a freeze boundary was crossed, we won't transition out of this state until the freeze state
             // has been saved

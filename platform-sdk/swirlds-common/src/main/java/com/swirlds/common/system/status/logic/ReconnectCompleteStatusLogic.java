@@ -60,7 +60,7 @@ public class ReconnectCompleteStatusLogic implements PlatformStatusLogic {
      */
     public ReconnectCompleteStatusLogic(
             final long reconnectStateRound,
-            final @Nullable Long freezeRound,
+            @Nullable final Long freezeRound,
             @NonNull final PlatformStatusConfig config) {
 
         this.reconnectStateRound = reconnectStateRound;

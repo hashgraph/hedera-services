@@ -28,6 +28,7 @@ import com.swirlds.common.system.status.actions.SelfEventReachedConsensusAction;
 import com.swirlds.common.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.system.status.actions.TimeElapsedAction;
+import com.swirlds.common.utility.DurationUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -45,7 +46,7 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
     /**
      * The last time a self event was observed reaching consensus
      */
-    private Instant lastTimeOwnEventReachedConsensus;
+    private Instant lastSelfEventConsensusTime;
 
     /**
      * Constructor
@@ -55,7 +56,7 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
      */
     public ActiveStatusLogic(@NonNull final Instant startTime, @NonNull final PlatformStatusConfig config) {
         // a self event had to reach consensus to arrive at the ACTIVE status
-        this.lastTimeOwnEventReachedConsensus = Objects.requireNonNull(startTime);
+        this.lastSelfEventConsensusTime = Objects.requireNonNull(startTime);
         this.config = Objects.requireNonNull(config);
     }
 
@@ -136,7 +137,7 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
     public PlatformStatusLogic processSelfEventReachedConsensusAction(
             @NonNull final SelfEventReachedConsensusAction action) {
 
-        lastTimeOwnEventReachedConsensus = action.instant();
+        lastSelfEventConsensusTime = action.instant();
         return this;
     }
 
@@ -176,10 +177,10 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processTimeElapsedAction(@NonNull final TimeElapsedAction action) {
-        final Duration timeSinceOwnEventReachedConsensus =
-                Duration.between(lastTimeOwnEventReachedConsensus, action.instant());
+        final Duration timeSinceSelfEventReachedConsensus =
+                Duration.between(lastSelfEventConsensusTime, action.instant());
 
-        if (timeSinceOwnEventReachedConsensus.compareTo(config.activeStatusDelay()) > 0) {
+        if (DurationUtils.isLonger(timeSinceSelfEventReachedConsensus, config.activeStatusDelay())) {
             return new CheckingStatusLogic(config);
         } else {
             return this;
