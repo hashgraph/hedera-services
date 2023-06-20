@@ -24,30 +24,35 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.BiConsumer;
 
 /**
- *
+ * Provides a static method to migrate the state of the consensus service from the merkle state to the pbj state and vise versa.
  */
 public class ConsensusServiceStateTranslator {
 
     @NonNull
+    /**
+     * Migrates the state of the consensus service from the merkle state to the pbj state.
+     */
     public static void migrateFromMerkleToPbj(
             com.swirlds.merkle.map.MerkleMap<
                             com.hedera.node.app.service.mono.utils.EntityNum,
                             com.hedera.node.app.service.mono.state.merkle.MerkleTopic>
                     monoTopics,
             WritableKVState<TopicID, Topic> appTopics) {
-        com.hedera.node.app.service.mono.utils.MiscUtils.forEach(
-                com.hedera.node.app.service.mono.state.adapters.MerkleMapLike.from(monoTopics), (num, merkleTopic) -> {
-                    final var pbjTopic = stateToPbj(merkleTopic);
-                    appTopics.put(new TopicID(0, 0, pbjTopic.topicNumber()), pbjTopic);
-                });
+        com.hedera.node.app.service.mono.state.adapters.MerkleMapLike.from(monoTopics)
+                .forEachNode(new PutConvertedTopic(appTopics));
     }
 
     @NonNull
+    /**
+     * Migrates the state of the consensus service from the pbj state to the merkle state.
+     */
     public static Topic stateToPbj(@NonNull com.hedera.node.app.service.mono.state.merkle.MerkleTopic monoTopic) {
         requireNonNull(monoTopic);
         final var topicBuilder = new Topic.Builder();
@@ -66,6 +71,9 @@ public class ConsensusServiceStateTranslator {
     }
 
     @NonNull
+    /**
+     * Migrates the state of the consensus service from the pbj state to the merkle state.
+     */
     public static com.hedera.node.app.service.mono.state.merkle.MerkleTopic pbjToState(
             @NonNull TopicID topicID, @NonNull ReadableTopicStore readableTopicStore) {
         requireNonNull(topicID);
@@ -75,6 +83,9 @@ public class ConsensusServiceStateTranslator {
     }
 
     @NonNull
+    /**
+     * Migrates the state of the consensus service from the pbj state to the merkle state.
+     */
     public static com.hedera.node.app.service.mono.state.merkle.MerkleTopic pbjToState(@NonNull Topic topic) {
         requireNonNull(topic);
         final com.hedera.node.app.service.mono.state.merkle.MerkleTopic monoTopic =
@@ -94,5 +105,20 @@ public class ConsensusServiceStateTranslator {
         monoTopic.setSequenceNumber(topic.sequenceNumber());
         monoTopic.setDeleted(topic.deleted());
         return monoTopic;
+    }
+
+    private static class PutConvertedTopic
+            implements BiConsumer<EntityNum, com.hedera.node.app.service.mono.state.merkle.MerkleTopic> {
+        private final WritableKVState<TopicID, Topic> appTopics;
+
+        public PutConvertedTopic(WritableKVState<TopicID, Topic> appTopics) {
+            this.appTopics = appTopics;
+        }
+
+        @Override
+        public void accept(EntityNum entityNum, com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic) {
+            final var pbjTopic = stateToPbj(merkleTopic);
+            appTopics.put(new TopicID(0, 0, pbjTopic.topicNumber()), pbjTopic);
+        }
     }
 }

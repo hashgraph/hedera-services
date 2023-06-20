@@ -38,7 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
+public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
 
     @BeforeEach
     void setUp() {}
@@ -53,8 +53,6 @@ public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
 
         assertMatch(convertedTopic, getExpectedMonoTopic());
     }
-
-
 
     @Test
     void createMerkleTopicFromTopicWithEmptyKeys() {
@@ -77,10 +75,13 @@ public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
 
     @Test
     void createTopicFromMerkleTopic() {
-        com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic =
-                getMerkleTopic( (com.hedera.node.app.service.mono.legacy.core.jproto.JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.adminKeyOrElse(Key.DEFAULT))
-                        .orElse(null),(com.hedera.node.app.service.mono.legacy.core.jproto.JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.submitKeyOrElse(Key.DEFAULT))
-                        .orElse(null));
+        com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic = getMerkleTopic(
+                (com.hedera.node.app.service.mono.legacy.core.jproto.JKey)
+                        com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.adminKeyOrElse(Key.DEFAULT))
+                                .orElse(null),
+                (com.hedera.node.app.service.mono.legacy.core.jproto.JKey)
+                        com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.submitKeyOrElse(Key.DEFAULT))
+                                .orElse(null));
 
         final Topic convertedTopic = ConsensusServiceStateTranslator.stateToPbj(merkleTopic);
 
@@ -89,8 +90,7 @@ public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
 
     @Test
     void createTopicFromMerkleTopicEmptyKeys() {
-        com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic =
-                getMerkleTopic(null, null);
+        com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic = getMerkleTopic(null, null);
 
         final Topic convertedTopic = ConsensusServiceStateTranslator.stateToPbj(merkleTopic);
 
@@ -119,11 +119,14 @@ public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
             }
         };
 
-        com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic =
-                getMerkleTopic( (com.hedera.node.app.service.mono.legacy.core.jproto.JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.adminKeyOrElse(Key.DEFAULT))
-                        .orElse(null),(com.hedera.node.app.service.mono.legacy.core.jproto.JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.submitKeyOrElse(Key.DEFAULT))
-                        .orElse(null));
-
+        com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic = getMerkleTopic(
+                (com.hedera.node.app.service.mono.legacy.core.jproto.JKey)
+                        com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.adminKeyOrElse(Key.DEFAULT))
+                                .orElse(null),
+                (com.hedera.node.app.service.mono.legacy.core.jproto.JKey)
+                        com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.submitKeyOrElse(Key.DEFAULT))
+                                .orElse(null));
+        monoTopics.put(topicEntityNum, merkleTopic);
         refreshStoresWithCurrentTopicOnlyInReadable();
         ConsensusServiceStateTranslator.migrateFromMerkleToPbj(monoTopics, appTopics);
 
@@ -136,16 +139,10 @@ public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
         assertEquals(expected.getMemo(), actual.getMemo());
         assertEquals(expected.getAdminKey(), actual.getAdminKey());
         assertEquals(expected.getSubmitKey(), actual.getSubmitKey());
-        assertEquals(
-                expected.getExpirationTimestamp(), actual.getExpirationTimestamp());
-        assertEquals(
-                expected.getAutoRenewDurationSeconds(),
-                actual.getAutoRenewDurationSeconds());
-        assertEquals(
-                expected.getAutoRenewAccountId(), actual.getAutoRenewAccountId());
-        assertEquals(
-                expected.getAutoRenewDurationSeconds(),
-                actual.getAutoRenewDurationSeconds());
+        assertEquals(expected.getExpirationTimestamp(), actual.getExpirationTimestamp());
+        assertEquals(expected.getAutoRenewDurationSeconds(), actual.getAutoRenewDurationSeconds());
+        assertEquals(expected.getAutoRenewAccountId(), actual.getAutoRenewAccountId());
+        assertEquals(expected.getAutoRenewDurationSeconds(), actual.getAutoRenewDurationSeconds());
         assertEquals(expected.isDeleted(), actual.isDeleted());
         assertEquals(expected.getSequenceNumber(), actual.getSequenceNumber());
     }
@@ -156,11 +153,11 @@ public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
         merkleTopic.setMemo(topic.memo());
         merkleTopic.setExpirationTimestamp(
                 new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expiry(), 0));
-        merkleTopic.setAdminKey(
-                (com.hedera.node.app.service.mono.legacy.core.jproto.JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.adminKeyOrElse(Key.DEFAULT))
+        merkleTopic.setAdminKey((com.hedera.node.app.service.mono.legacy.core.jproto.JKey)
+                com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.adminKeyOrElse(Key.DEFAULT))
                         .orElse(null));
-        merkleTopic.setSubmitKey(
-                (com.hedera.node.app.service.mono.legacy.core.jproto.JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.submitKeyOrElse(Key.DEFAULT))
+        merkleTopic.setSubmitKey((com.hedera.node.app.service.mono.legacy.core.jproto.JKey)
+                com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.submitKeyOrElse(Key.DEFAULT))
                         .orElse(null));
         merkleTopic.setAutoRenewDurationSeconds(topic.autoRenewPeriod());
         merkleTopic.setDeleted(topic.deleted());
@@ -184,8 +181,10 @@ public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
         return merkleTopic;
     }
 
-    private com.hedera.node.app.service.mono.state.merkle.MerkleTopic getMerkleTopic(com.hedera.node.app.service.mono.legacy.core.jproto.JKey adminKey, com.hedera.node.app.service.mono.legacy.core.jproto.JKey submitKey) {
-         com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic =
+    private com.hedera.node.app.service.mono.state.merkle.MerkleTopic getMerkleTopic(
+            com.hedera.node.app.service.mono.legacy.core.jproto.JKey adminKey,
+            com.hedera.node.app.service.mono.legacy.core.jproto.JKey submitKey) {
+        com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic =
                 new com.hedera.node.app.service.mono.state.merkle.MerkleTopic();
         merkleTopic.setMemo(topic.memo());
         merkleTopic.setExpirationTimestamp(
@@ -200,6 +199,5 @@ public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
         merkleTopic.setRunningHash(runningHash);
 
         return merkleTopic;
-
     }
 }
