@@ -67,6 +67,8 @@ public class PropertyNames {
     public static final String LEDGER_TOTAL_TINY_BAR_FLOAT = "ledger.totalTinyBarFloat";
     public static final String LEDGER_ID = "ledger.id";
     public static final String STAKING_PERIOD_MINS = "staking.periodMins";
+    public static final String STAKING_MAX_STAKE_REWARDED = "staking.maxStakeRewarded";
+    public static final String STAKING_REWARD_BALANCE_THRESHOLD = "staking.rewardBalanceThreshold";
     public static final String STAKING_REWARD_HISTORY_NUM_STORED_PERIODS = "staking.rewardHistory.numStoredPeriods";
     public static final String STAKING_STARTUP_HELPER_RECOMPUTE = "staking.startupHelper.recompute";
     public static final String CONFIG_VERSION = "hedera.config.version";

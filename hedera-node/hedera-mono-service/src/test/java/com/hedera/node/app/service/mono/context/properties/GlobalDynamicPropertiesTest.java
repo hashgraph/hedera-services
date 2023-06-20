@@ -109,8 +109,10 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_IS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_STAKE_REWARDED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_BALANCE_THRESHOLD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_START_THRESH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
@@ -338,6 +340,8 @@ class GlobalDynamicPropertiesTest {
         assertEquals(76L, subject.maxDailyStakeRewardThPerH());
         assertEquals(88L, subject.traceabilityMinFreeToUsedGasThrottleRatio());
         assertEquals(89L, subject.traceabilityMaxExportsPerConsSec());
+        assertEquals(101L, subject.maxStakeRewarded());
+        assertEquals(102L, subject.stakingRewardBalanceThreshold());
     }
 
     @Test
@@ -482,10 +486,10 @@ class GlobalDynamicPropertiesTest {
         assertEquals(67L, subject.schedulingMaxTxnPerSecond());
         assertEquals(68L, subject.scheduleThrottleMaxGasLimit());
         assertEquals(69L, subject.schedulingMaxExpirationFutureSeconds());
-        assertEquals(76L, subject.getStakingRewardRate());
+        assertEquals(76L, subject.stakingRewardRate());
         assertEquals(70L, subject.maxPrecedingRecords());
         assertEquals(71L, subject.maxFollowingRecords());
-        assertEquals(76L, subject.getStakingRewardRate());
+        assertEquals(76L, subject.stakingRewardRate());
         assertEquals(77L, subject.maxDailyStakeRewardThPerH());
         assertEquals(81L, subject.maxNumAccounts());
         assertEquals(82L, subject.maxNumContracts());
@@ -699,6 +703,8 @@ class GlobalDynamicPropertiesTest {
         given(properties.getIntProperty(STAKING_SUM_OF_CONSENSUS_WEIGHTS)).willReturn(i + 97);
         given(properties.getIntProperty(CACHE_CRYPTO_TRANSFER_WARM_THREADS)).willReturn(i + 98);
         given(properties.getIntProperty(CONFIG_VERSION)).willReturn(i + 99);
+        given(properties.getLongProperty(STAKING_MAX_STAKE_REWARDED)).willReturn(i + 100L);
+        given(properties.getLongProperty(STAKING_REWARD_BALANCE_THRESHOLD)).willReturn(i + 101L);
     }
 
     private Set<EntityType> typesFor(final int i) {

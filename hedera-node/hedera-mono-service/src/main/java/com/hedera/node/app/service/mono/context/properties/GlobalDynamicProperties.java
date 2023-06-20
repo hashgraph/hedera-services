@@ -113,8 +113,10 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_IS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_STAKE_REWARDED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_BALANCE_THRESHOLD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_START_THRESH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
@@ -258,6 +260,8 @@ public class GlobalDynamicProperties implements EvmProperties {
     private KnownBlockValues knownBlockValues;
     private long exchangeRateGasReq;
     private long stakingRewardRate;
+    private long stakingMaxStakeRewarded;
+    private long stakingRewardBalanceThreshold;
     private long stakingStartThreshold;
     private int nodeRewardPercent;
     private int stakingRewardPercent;
@@ -407,6 +411,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         enableHRCAssociate = properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED);
         knownBlockValues = properties.getBlockValuesProperty(CONTRACTS_KNOWN_BLOCK_HASH);
         exchangeRateGasReq = properties.getLongProperty(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST);
+        stakingMaxStakeRewarded = properties.getLongProperty(STAKING_MAX_STAKE_REWARDED);
+        stakingRewardBalanceThreshold = properties.getLongProperty(STAKING_REWARD_BALANCE_THRESHOLD);
         stakingRewardRate = properties.getLongProperty(STAKING_REWARD_RATE);
         stakingStartThreshold = properties.getLongProperty(STAKING_START_THRESH);
         nodeRewardPercent = properties.getIntProperty(STAKING_FEES_NODE_REWARD_PERCENT);
@@ -793,7 +799,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         return exchangeRateGasReq;
     }
 
-    public long getStakingRewardRate() {
+    public long stakingRewardRate() {
         return stakingRewardRate;
     }
 
@@ -964,5 +970,13 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public int cacheCryptoTransferWarmThreads() {
         return cacheWarmThreads;
+    }
+
+    public long maxStakeRewarded() {
+        return stakingMaxStakeRewarded;
+    }
+
+    public long stakingRewardBalanceThreshold() {
+        return stakingRewardBalanceThreshold;
     }
 }
