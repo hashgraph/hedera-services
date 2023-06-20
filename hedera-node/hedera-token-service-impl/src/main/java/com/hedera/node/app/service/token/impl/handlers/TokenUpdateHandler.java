@@ -162,12 +162,12 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
                                 existingTreasuryAccount.tinybarBalance());
                 validateFalse(isDetached, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
                 updateTreasuryTitles(existingTreasuryAccount, newTreasuryAccount, token, accountStore, tokenRelStore);
+                // validate token's treasury doesn't have any NFT balances
+                tokenUpdateValidator.validateNftBalances(token, tokenRelStore);
+                // If the token is fungible, transfer fungible balance to new treasury
+                // If it is non-fungible token transfer the ownership of the NFTs from old treasury to new treasury
+                transferTokensToNewTreasury(existingTreasury, newTreasury, token, tokenRelStore, accountStore);
             }
-            // validate token's treasury doesn't have any NFT balances
-            tokenUpdateValidator.validateNftBalances(token, tokenRelStore);
-            // If the token is fungible, transfer fungible balance to new treasury
-            // If it is non-fungible token transfer the ownership of the NFTs from old treasury to new treasury
-            transferTokensToNewTreasury(existingTreasury, newTreasury, token, tokenRelStore, accountStore);
         }
 
         final var tokenBuilder = customizeToken(token, resolvedExpiry, op);

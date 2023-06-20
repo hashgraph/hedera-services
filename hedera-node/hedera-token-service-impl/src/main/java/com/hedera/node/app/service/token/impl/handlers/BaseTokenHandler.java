@@ -350,10 +350,7 @@ public class BaseTokenHandler {
     public static boolean isExpiryOnlyUpdateOp(final TokenUpdateTransactionBody op) {
         final var defaultOp = TokenUpdateTransactionBody.DEFAULT;
         final var copyDefaultWithExpiry =
-                defaultOp.copyBuilder()
-                        .expiry(op.expiry())
-                        .token(op.token())
-                        .build();
+                defaultOp.copyBuilder().expiry(op.expiry()).token(op.token()).build();
         return op.equals(copyDefaultWithExpiry);
     }
 
