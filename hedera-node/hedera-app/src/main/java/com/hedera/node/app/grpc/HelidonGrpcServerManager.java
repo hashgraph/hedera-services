@@ -153,7 +153,7 @@ public final class HelidonGrpcServerManager implements GrpcServerManager {
             logger.debug("Starting Helidon TLS gRPC server on port {}", tlsPort);
             tlsServer = GrpcServer.create(
                     GrpcServerConfiguration.builder()
-                            .port(port)
+                            .port(tlsPort)
                             .tlsConfig(GrpcTlsDescriptor.builder()
                                     .enabled(true)
                                     .tlsCert(Resource.create(Path.of(nettyConfig.tlsCrtPath())))

@@ -17,6 +17,7 @@
 package com.hedera.node.app.services;
 
 import com.hedera.node.app.spi.Service;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import javax.inject.Singleton;
 
@@ -25,5 +26,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public interface ServicesRegistry {
+    /**
+     * Gets the full set of services registered.
+     *
+     * @return The set of services. May be empty.
+     */
+    @NonNull
     Set<Service> services();
 }
