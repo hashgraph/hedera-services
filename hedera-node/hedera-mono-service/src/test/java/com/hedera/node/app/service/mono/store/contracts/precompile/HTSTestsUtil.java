@@ -504,6 +504,26 @@ public class HTSTestsUtil {
                             .build(),
                     payer));
 
+    public static final List<BalanceChange> balanceChangesForLazyCreateNFT = List.of(
+            BalanceChange.changingNftOwnership(
+                    Id.fromGrpcToken(token),
+                    token,
+                    NftTransfer.newBuilder()
+                            .setSenderAccountID(sender)
+                            .setReceiverAccountID(receiverAliased)
+                            .setSerialNumber(3L)
+                            .build(),
+                    payer),
+            BalanceChange.changingNftOwnership(
+                    Id.fromGrpcToken(token),
+                    token,
+                    NftTransfer.newBuilder()
+                            .setSenderAccountID(sender)
+                            .setReceiverAccountID(receiverAliased)
+                            .setSerialNumber(4L)
+                            .build(),
+                    payer));
+
     public static final List<BalanceChange> hbarOnlyChanges = List.of(
             BalanceChange.changingHbar(
                     AccountAmount.newBuilder()

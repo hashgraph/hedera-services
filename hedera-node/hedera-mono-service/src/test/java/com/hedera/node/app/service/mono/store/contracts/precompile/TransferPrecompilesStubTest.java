@@ -489,7 +489,7 @@ class TransferPrecompilesStubTest {
 
     private static List<BalanceChange> getBasicFungibleChanges() {
         final AccountID payer = asAccount("0.0.1234");
-        final AccountID nullAccount = asAccount("0.0.0");
+        final AccountID receiverAccount = asAccount("0.0.820");
         final AccountID account = asAccount("0.0.1077");
         final var token = new Id(0, 0, 1078);
         return List.of(
@@ -498,7 +498,7 @@ class TransferPrecompilesStubTest {
                         token.asGrpcToken(),
                         AccountAmount.newBuilder()
                                 .setAmount(20)
-                                .setAccountID(nullAccount)
+                                .setAccountID(receiverAccount)
                                 .build(),
                         payer),
                 BalanceChange.changingFtUnits(

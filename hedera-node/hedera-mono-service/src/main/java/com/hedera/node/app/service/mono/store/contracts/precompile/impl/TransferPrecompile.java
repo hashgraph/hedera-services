@@ -255,13 +255,13 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var isDebit = units < 0;
             final var isCredit = units > 0;
 
+            if (change.hasAlias()) {
+                replaceAliasWithId(change, changes, completedLazyCreates);
+            }
+
             // check whether the balance change is negative e.g. for "from" field, if not validate the "to" field.
             if (isCredit && !change.isForCustomFee()) {
                 validateFalseOrRevert(isSystemAccountDetected(change), CONTRACT_REVERT_EXECUTED);
-            }
-
-            if (change.hasAlias()) {
-                replaceAliasWithId(change, changes, completedLazyCreates);
             }
 
             if (change.isForCustomFee() && isDebit) {
@@ -850,6 +850,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 ? change.counterPartyAccountId().getAccountNum()
                 : change.getAccount().num();
 
-        return accountNum != 0 && accountNum <= 750;
+        return accountNum <= 750;
     }
 }
