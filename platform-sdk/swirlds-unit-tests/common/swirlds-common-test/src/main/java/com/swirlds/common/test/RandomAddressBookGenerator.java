@@ -70,12 +70,6 @@ public class RandomAddressBookGenerator {
     private HashStrategy hashStrategy = HashStrategy.NO_HASH;
 
     /**
-     * If true then IDs will be generated 0, 1, 2, 3, etc. with no gaps. If false then there may be some gaps
-     * and the first node ID may not be 0.
-     */
-    private boolean sequentialIds = false;
-
-    /**
      * Describes different ways that the random address book has its weight distributed if the custom strategy
      * lambda is unset.
      */
@@ -225,13 +219,9 @@ public class RandomAddressBookGenerator {
      */
     private NodeId getNextNodeId() {
         final NodeId nextId;
-        if (sequentialIds) {
-            nextId = previousNodeId == null ? NodeId.FIRST_NODE_ID : new NodeId(previousNodeId.id() + 1);
-        } else {
-            // randomly advance between 1 and 3 steps
-            final int offset = random.nextInt(3);
-            nextId = previousNodeId == null ? new NodeId(offset) : new NodeId(previousNodeId.id() + offset + 1L);
-        }
+        // randomly advance between 1 and 3 steps
+        final int offset = random.nextInt(3);
+        nextId = previousNodeId == null ? new NodeId(offset) : new NodeId(previousNodeId.id() + offset + 1L);
         previousNodeId = nextId;
         return nextId;
     }
@@ -381,27 +371,6 @@ public class RandomAddressBookGenerator {
      */
     public RandomAddressBookGenerator setHashStrategy(final HashStrategy hashStrategy) {
         this.hashStrategy = hashStrategy;
-        return this;
-    }
-
-    /**
-     * <p>
-     * Specify if sequential IDs should be used. If true then IDs will start at 0 and will not have any gaps.
-     * If false then there may be some gaps between IDs.
-     * </p>
-     *
-     * <p>
-     * FUTURE WORK: eventually, most if not all tests should be resilient with respect to non-sequential node IDs.
-     * When it is necessary to support non-sequential node IDs in production then we may want to remove this setter
-     * and always generate non-sequentially.
-     * </p>
-     *
-     * @return this object
-     * @deprecated for removal in 0.40.0; there is no alternative, addresses must be able to be non-sequential
-     */
-    @Deprecated(forRemoval = true, since = "0.40.0")
-    public RandomAddressBookGenerator setSequentialIds(final boolean sequentialIds) {
-        this.sequentialIds = sequentialIds;
         return this;
     }
 

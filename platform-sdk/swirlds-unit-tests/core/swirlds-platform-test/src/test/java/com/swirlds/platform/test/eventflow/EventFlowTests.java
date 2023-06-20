@@ -567,7 +567,6 @@ class EventFlowTests {
                 .setSize(numNodes)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
-                .setSequentialIds(true)
                 .build();
         when(settingsProvider.getTransactionMaxBytes()).thenReturn(TX_MAX_BYTES);
         when(settingsProvider.getThrottleTransactionQueueSize()).thenReturn(THROTTLE_TRANSACTION_QUEUE_SIZE);

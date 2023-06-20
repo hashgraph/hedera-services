@@ -63,7 +63,6 @@ public class CryptoArgsProvider {
         final AddressBook addresses = new RandomAddressBookGenerator()
                 .setSize(NUMBER_OF_ADDRESSES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(false)
                 .build();
 
         for (int i = 0; i < addresses.getSize(); i++) {

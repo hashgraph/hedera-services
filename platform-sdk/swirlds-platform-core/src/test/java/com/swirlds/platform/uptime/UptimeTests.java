@@ -107,10 +107,8 @@ class UptimeTests {
                 TestPlatformContextBuilder.create().build();
         final FakeTime time = new FakeTime();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(10)
-                .setSequentialIds(false)
-                .build();
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(10).build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final UptimeTracker uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, time);
@@ -242,10 +240,8 @@ class UptimeTests {
                 TestPlatformContextBuilder.create().build();
         final FakeTime time = new FakeTime();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(10)
-                .setSequentialIds(false)
-                .build();
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(10).build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final UptimeTracker uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, time);
@@ -589,10 +585,8 @@ class UptimeTests {
                 TestPlatformContextBuilder.create().build();
         final FakeTime time = new FakeTime();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(3)
-                .setSequentialIds(false)
-                .build();
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(3).build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final UptimeTracker uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, time);

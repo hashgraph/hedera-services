@@ -274,7 +274,6 @@ class CriticalQuorumTest {
             final AtomicInteger index = new AtomicInteger(0);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(false)
                     .setCustomWeightGenerator(id -> weights.get(index.getAndIncrement()))
                     .build();
             final String name = numNodes + " nodes, one third of nodes are zero-weight, remaining have random weight "
@@ -297,7 +296,6 @@ class CriticalQuorumTest {
             final AtomicInteger index = new AtomicInteger(0);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(false)
                     .setCustomWeightGenerator(id -> weights.get(index.getAndIncrement()))
                     .build();
             final String name =
@@ -320,7 +318,6 @@ class CriticalQuorumTest {
             final AtomicInteger index = new AtomicInteger(0);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(false)
                     .setCustomWeightGenerator(id -> weights.get(index.getAndIncrement()))
                     .build();
             final String name = numNodes + " nodes, one node has strong minority, remaining weight evenly distributed";
@@ -342,7 +339,6 @@ class CriticalQuorumTest {
             final AtomicInteger index = new AtomicInteger(0);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(false)
                     .setCustomWeightGenerator(id -> weights.get(index.getAndIncrement()))
                     .build();
             final String name = numNodes + " node" + (numNodes == 1 ? "" : "s") + " unbalanced";
@@ -361,7 +357,6 @@ class CriticalQuorumTest {
         for (int numNodes = 1; numNodes <= 9; numNodes++) {
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(false)
                     .setCustomWeightGenerator(id -> 1L)
                     .build();
 

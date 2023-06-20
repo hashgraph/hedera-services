@@ -351,9 +351,8 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      * @param id a node ID
      * @return true if this address book contains an address for the given node ID
      */
-    public boolean contains(@NonNull final NodeId id) {
-        Objects.requireNonNull(id, "nodeId is null");
-        return addresses.containsKey(id);
+    public boolean contains(@Nullable final NodeId id) {
+        return id != null && addresses.containsKey(id);
     }
 
     /**

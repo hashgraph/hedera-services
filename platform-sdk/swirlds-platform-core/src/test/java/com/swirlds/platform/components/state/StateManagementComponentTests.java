@@ -113,7 +113,6 @@ class StateManagementComponentTests {
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(false)
                 .build();
         final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
@@ -161,7 +160,6 @@ class StateManagementComponentTests {
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(false)
                 .build();
         final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
@@ -256,7 +254,6 @@ class StateManagementComponentTests {
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(false)
                 .build();
         final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
@@ -303,7 +300,6 @@ class StateManagementComponentTests {
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(false)
                 .build();
         final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
@@ -382,7 +378,6 @@ class StateManagementComponentTests {
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(false)
                 .build();
         final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
@@ -402,7 +397,6 @@ class StateManagementComponentTests {
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(false)
                 .build();
         final DefaultStateManagementComponent component = newStateManagementComponent(
                 addressBook, defaultConfigBuilder().withValue("state.saveReconnectStateToDisk", true));

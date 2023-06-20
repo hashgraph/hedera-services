@@ -70,7 +70,6 @@ class StateSigningTests {
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
 
@@ -171,7 +170,6 @@ class StateSigningTests {
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
 
@@ -265,7 +263,6 @@ class StateSigningTests {
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
 
@@ -347,7 +344,6 @@ class StateSigningTests {
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
 
@@ -399,7 +395,6 @@ class StateSigningTests {
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
 
@@ -458,7 +453,6 @@ class StateSigningTests {
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
 

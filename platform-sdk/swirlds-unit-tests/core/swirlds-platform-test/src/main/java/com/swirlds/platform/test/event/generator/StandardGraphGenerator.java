@@ -150,7 +150,6 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
                 .setNodeIds(weightMap.keySet())
                 .setCustomWeightGenerator(weightMap::get)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
-                .setSequentialIds(false)
                 .build();
     }
 
