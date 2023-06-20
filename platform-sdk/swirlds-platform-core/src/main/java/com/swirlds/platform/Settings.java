@@ -44,7 +44,6 @@ import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_BYTES_PER_EV
 import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.NUM_CONNECTIONS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.NUM_CRYPTO_THREADS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.REMOVED_SETTINGS;
 import static com.swirlds.platform.SettingConstants.SAVED_STRING;
 import static com.swirlds.platform.SettingConstants.SETTINGS_TXT;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
@@ -399,10 +398,7 @@ public class Settings {
                 final String[] pars = splitLine(line);
                 if (pars.length > 0) { // ignore empty lines
                     try {
-                        if (!handleSetting(pars)) {
-                            CommonUtils.tellUserConsole(
-                                    "bad name of setting in settings.txt line " + count + ": " + originalLine);
-                        }
+                        handleSetting(pars);
                     } catch (final Exception e) {
                         CommonUtils.tellUserConsole(
                                 "syntax error in settings.txt on line " + count + ":    " + originalLine);
@@ -452,35 +448,25 @@ public class Settings {
             name = split[0];
             subName = split[1];
         }
-        if (!REMOVED_SETTINGS.contains(name)) {
-            final String val = pars.length > 1 ? pars[1].trim() : ""; // the first parameter passed in, or "" if none
-            boolean good = false; // is name a valid name of a non-final static field in Settings?
-            final Field field = getFieldByName(Settings.class.getDeclaredFields(), name);
-            if (field != null && !Modifier.isFinal(field.getModifiers())) {
-                try {
-                    if (subName == null) {
-                        good = setValue(field, this, val);
-                    } else {
-                        final Field subField = getFieldByName(field.getType().getDeclaredFields(), subName);
-                        if (subField != null) {
-                            good = setValue(subField, field.get(this), val);
-                        }
+        final String val = pars.length > 1 ? pars[1].trim() : ""; // the first parameter passed in, or "" if none
+        boolean good = false; // is name a valid name of a non-final static field in Settings?
+        final Field field = getFieldByName(Settings.class.getDeclaredFields(), name);
+        if (field != null && !Modifier.isFinal(field.getModifiers())) {
+            try {
+                if (subName == null) {
+                    good = setValue(field, this, val);
+                } else {
+                    final Field subField = getFieldByName(field.getType().getDeclaredFields(), subName);
+                    if (subField != null) {
+                        good = setValue(subField, field.get(this), val);
                     }
-                } catch (final IllegalArgumentException | IllegalAccessException | SettingsException e) {
-                    logger.error(
-                            EXCEPTION.getMarker(), "illegal line in settings.txt: {}, {}  {}", pars[0], pars[1], e);
                 }
-            }
-
-            if (!good) {
-                final String err = "WARNING: " + pars[0] + " is not a valid setting name.";
-                // this only happens if settings.txt exist, so it's internal, not users, so print it
-                CommonUtils.tellUserConsole(err);
-                logger.warn(STARTUP.getMarker(), err);
-                return false;
+            } catch (final IllegalArgumentException | IllegalAccessException | SettingsException e) {
+                logger.error(EXCEPTION.getMarker(), "illegal line in settings.txt: {}, {}  {}", pars[0], pars[1], e);
             }
         }
-        return true;
+
+        return good;
     }
 
     /**
