@@ -136,7 +136,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_PROFILES_ACTIVE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_REALM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION;
@@ -496,7 +495,6 @@ public final class BootstrapProperties implements PropertySource {
             FEES_PERCENT_CONGESTION_MULTIPLIERS,
             FEES_PERCENT_UTILIZATION_SCALE_FACTORS,
             FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER,
-            HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION,
             TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO,
             TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC,
             HEDERA_TXN_MAX_MEMO_UTF8_BYTES,
@@ -677,7 +675,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(HEDERA_RECORD_STREAM_SIG_FILE_VERSION, AS_INT),
             entry(HEDERA_RECORD_STREAM_QUEUE_CAPACITY, AS_INT),
             entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, AS_INT),
-            entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, AS_BOOLEAN),
             entry(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO, AS_LONG),
             entry(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC, AS_LONG),
             entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, AS_BOOLEAN),
