@@ -17,6 +17,8 @@
 package com.swirlds.platform.componentframework;
 
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Map;
 
 /**
@@ -43,5 +45,5 @@ public interface TaskProcessor {
      *
      * @return a map of references to the task processing methods
      */
-    Map<Class<?>, InterruptableConsumer<?>> getProcessingMethods();
+    @NonNull Map<Class<?>, InterruptableConsumer<?>> getProcessingMethods();
 }

@@ -17,6 +17,8 @@
 package com.swirlds.common.threading.utility;
 
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -30,11 +32,11 @@ public class MultiHandler {
      */
     private final Map<Class<?>, InterruptableConsumer<?>> subHandlers;
 
-    public MultiHandler(final Map<Class<?>, InterruptableConsumer<?>> subHandlers) {
+    public MultiHandler(@NonNull final Map<Class<?>, InterruptableConsumer<?>> subHandlers) {
         this.subHandlers = new HashMap<>(subHandlers);
     }
 
-    public boolean containsHandlerFor(final Class<?> clazz) {
+    public boolean containsHandlerFor(@NonNull final Class<?> clazz) {
         return subHandlers.containsKey(clazz);
     }
 
@@ -45,7 +47,7 @@ public class MultiHandler {
      * 		the object to be handled
      */
     @SuppressWarnings("unchecked")
-    public void handle(final Object object) throws InterruptedException {
+    public void handle(@NonNull final Object object) throws InterruptedException {
         Objects.requireNonNull(object, "null objects not supported");
         final Class<?> clazz = object.getClass();
         final InterruptableConsumer<Object> handler = (InterruptableConsumer<Object>) subHandlers.get(clazz);
