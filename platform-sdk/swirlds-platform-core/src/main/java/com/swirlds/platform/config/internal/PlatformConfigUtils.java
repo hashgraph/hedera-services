@@ -37,7 +37,7 @@ public class PlatformConfigUtils {
     }
 
     public static void logNotKnownConfigProperties(@NonNull final Configuration configuration) {
-        Objects.requireNonNull(configuration);
+        Objects.requireNonNull(configuration, "configuration must not be null");
 
         final Set<String> configNames = configuration.getConfigDataTypes().stream()
                 .flatMap(configDataType -> {
