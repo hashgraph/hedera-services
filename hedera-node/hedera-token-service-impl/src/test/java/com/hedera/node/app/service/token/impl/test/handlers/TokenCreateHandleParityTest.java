@@ -70,18 +70,13 @@ import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidato
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.ConfigProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenCreateHandleParityTest {
-    @Mock
-    private ConfigProvider configProvider;
-
     private ReadableAccountStore accountStore;
     private TokenCreateHandler subject;
     private CustomFeesValidator customFeesValidator;
@@ -90,7 +85,7 @@ class TokenCreateHandleParityTest {
 
     @BeforeEach
     void setUp() {
-        tokenFieldsValidator = new TokenAttributesValidator(configProvider);
+        tokenFieldsValidator = new TokenAttributesValidator();
         customFeesValidator = new CustomFeesValidator();
         tokenCreateValidator = new TokenCreateValidator(tokenFieldsValidator);
         accountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();

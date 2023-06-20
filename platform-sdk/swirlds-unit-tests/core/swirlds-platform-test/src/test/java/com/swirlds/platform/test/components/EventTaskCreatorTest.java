@@ -74,7 +74,7 @@ class EventTaskCreatorTest {
         eventMapper = mock(EventMapper.class);
         addressBook = prepareAddressBook();
         address = mock(Address.class);
-        selfId = new NodeId(1);
+        selfId = addressBook.getNodeId(addressBook.getSize() - 1);
         eventIntakeMetrics = mock(EventIntakeMetrics.class);
         eventQueueThread = mock(BlockingQueue.class);
         syncManager = mock(SyncManager.class);

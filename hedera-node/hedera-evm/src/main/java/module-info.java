@@ -13,10 +13,10 @@ module com.hedera.node.app.service.evm {
     requires transitive org.hyperledger.besu.secp256k1;
     requires transitive tuweni.bytes;
     requires transitive tuweni.units;
-    requires com.github.spotbugs.annotations;
     requires com.google.common;
     requires com.sun.jna;
     requires org.bouncycastle.provider;
+    requires static com.github.spotbugs.annotations;
 
     exports com.hedera.node.app.service.evm.store.contracts.utils;
     exports com.hedera.node.app.service.evm.contracts.execution;
