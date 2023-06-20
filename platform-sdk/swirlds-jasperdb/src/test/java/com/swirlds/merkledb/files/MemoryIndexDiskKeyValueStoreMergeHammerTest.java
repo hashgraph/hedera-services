@@ -63,9 +63,9 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
 
     @BeforeAll
     public static void setup() {
-        LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-        Configuration config = ctx.getConfiguration();
-        LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+        final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+        final Configuration config = ctx.getConfiguration();
+        final LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
         currentLogLevel = loggerConfig.getLevel();
         // To prevent excessive logging we reduce the log level to WARN for this test.
         // See https://github.com/hashgraph/hedera-services/issues/7083 for the context
