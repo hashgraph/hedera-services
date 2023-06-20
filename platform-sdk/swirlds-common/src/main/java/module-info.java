@@ -146,8 +146,8 @@ module com.swirlds.common {
             com.fasterxml.jackson.databind;
 
     exports com.swirlds.common.metrics.extensions;
-    exports com.swirlds.common.system.platformstatus;
-    exports com.swirlds.common.system.platformstatus.statusactions;
+    exports com.swirlds.common.system.status;
+    exports com.swirlds.common.system.status.actions;
 
     requires transitive com.swirlds.base;
     requires com.swirlds.config;
