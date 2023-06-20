@@ -44,19 +44,23 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
     private final PlatformStatusConfig config;
 
     /**
-     * The last time a self event was observed reaching consensus
+     * The last wall clock time a self event was observed reaching consensus
      */
-    private Instant lastSelfEventConsensusTime;
+    private Instant lastWallClockTimeSelfEventReachedConsensus;
 
     /**
      * Constructor
      *
-     * @param startTime the time when the platform transitioned to the {@link PlatformStatus#ACTIVE} status
-     * @param config    the platform status config
+     * @param lastWallClockTimeSelfEventReachedConsensus the wall clock time when the self event that caused the
+     *                                                   transition to {@link PlatformStatus#ACTIVE} reached consensus
+     * @param config                                     the platform status config
      */
-    public ActiveStatusLogic(@NonNull final Instant startTime, @NonNull final PlatformStatusConfig config) {
-        // a self event had to reach consensus to arrive at the ACTIVE status
-        this.lastSelfEventConsensusTime = Objects.requireNonNull(startTime);
+    public ActiveStatusLogic(
+            @NonNull final Instant lastWallClockTimeSelfEventReachedConsensus,
+            @NonNull final PlatformStatusConfig config) {
+
+        this.lastWallClockTimeSelfEventReachedConsensus =
+                Objects.requireNonNull(lastWallClockTimeSelfEventReachedConsensus);
         this.config = Objects.requireNonNull(config);
     }
 
@@ -130,14 +134,14 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
      * {@inheritDoc}
      * <p>
      * Receiving a {@link SelfEventReachedConsensusAction} while in {@link PlatformStatus#ACTIVE} doesn't ever result in
-     * a status transition, but this logic method does record the time the event reached consensus.
+     * a status transition, but this logic method does record the wall clock time the event reached consensus.
      */
     @NonNull
     @Override
     public PlatformStatusLogic processSelfEventReachedConsensusAction(
             @NonNull final SelfEventReachedConsensusAction action) {
 
-        lastSelfEventConsensusTime = action.instant();
+        lastWallClockTimeSelfEventReachedConsensus = action.instant();
         return this;
     }
 
@@ -178,7 +182,7 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
     @Override
     public PlatformStatusLogic processTimeElapsedAction(@NonNull final TimeElapsedAction action) {
         final Duration timeSinceSelfEventReachedConsensus =
-                Duration.between(lastSelfEventConsensusTime, action.instant());
+                Duration.between(lastWallClockTimeSelfEventReachedConsensus, action.instant());
 
         if (DurationUtils.isLonger(timeSinceSelfEventReachedConsensus, config.activeStatusDelay())) {
             return new CheckingStatusLogic(config);
