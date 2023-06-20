@@ -25,7 +25,6 @@ virtualMap.preferredFlushQueueSize,            10000
                                           #          Events           #
                                           #############################
 
-consensus.roundsExpired,                       1500                         # differs from mainnet
 event.enableEventStreaming,                    true
 event.eventsLogDir,                            /opt/hgcapp/eventsStreams
 event.eventsLogPeriod,                         5
