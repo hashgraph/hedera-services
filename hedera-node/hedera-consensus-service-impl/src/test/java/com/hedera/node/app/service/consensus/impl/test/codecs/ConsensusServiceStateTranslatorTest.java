@@ -25,7 +25,7 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestBase;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.swirlds.merkle.map.MerkleMap;
@@ -51,22 +51,10 @@ public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
         final com.hedera.node.app.service.mono.state.merkle.MerkleTopic convertedTopic =
                 ConsensusServiceStateTranslator.pbjToState(topic);
 
-        assertEquals(convertedTopic.getMemo(), getExpectedMonoTopic().getMemo());
-        assertEquals(convertedTopic.getAdminKey(), getExpectedMonoTopic().getAdminKey());
-        assertEquals(convertedTopic.getSubmitKey(), getExpectedMonoTopic().getSubmitKey());
-        assertEquals(
-                convertedTopic.getExpirationTimestamp(), getExpectedMonoTopic().getExpirationTimestamp());
-        assertEquals(
-                convertedTopic.getAutoRenewDurationSeconds(),
-                getExpectedMonoTopic().getAutoRenewDurationSeconds());
-        assertEquals(
-                convertedTopic.getAutoRenewAccountId(), getExpectedMonoTopic().getAutoRenewAccountId());
-        assertEquals(
-                convertedTopic.getAutoRenewDurationSeconds(),
-                getExpectedMonoTopic().getAutoRenewDurationSeconds());
-        assertEquals(convertedTopic.isDeleted(), getExpectedMonoTopic().isDeleted());
-        assertEquals(convertedTopic.getSequenceNumber(), getExpectedMonoTopic().getSequenceNumber());
+        assertMatch(convertedTopic, getExpectedMonoTopic());
     }
+
+
 
     @Test
     void createMerkleTopicFromTopicWithEmptyKeys() {
@@ -76,24 +64,7 @@ public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
         final com.hedera.node.app.service.mono.state.merkle.MerkleTopic convertedTopic =
                 ConsensusServiceStateTranslator.pbjToState(topicNoKeys);
 
-        assertEquals(convertedTopic.getMemo(), getExpectedMonoTopicNoKeys().getMemo());
-        assertEquals(convertedTopic.getAdminKey(), getExpectedMonoTopicNoKeys().getAdminKey());
-        assertEquals(convertedTopic.getSubmitKey(), getExpectedMonoTopicNoKeys().getSubmitKey());
-        assertEquals(
-                convertedTopic.getExpirationTimestamp(),
-                getExpectedMonoTopicNoKeys().getExpirationTimestamp());
-        assertEquals(
-                convertedTopic.getAutoRenewDurationSeconds(),
-                getExpectedMonoTopicNoKeys().getAutoRenewDurationSeconds());
-        assertEquals(
-                convertedTopic.getAutoRenewAccountId(),
-                getExpectedMonoTopicNoKeys().getAutoRenewAccountId());
-        assertEquals(
-                convertedTopic.getAutoRenewDurationSeconds(),
-                getExpectedMonoTopicNoKeys().getAutoRenewDurationSeconds());
-        assertEquals(convertedTopic.isDeleted(), getExpectedMonoTopicNoKeys().isDeleted());
-        assertEquals(
-                convertedTopic.getSequenceNumber(), getExpectedMonoTopicNoKeys().getSequenceNumber());
+        assertMatch(convertedTopic, getExpectedMonoTopicNoKeys());
     }
 
     @Test
@@ -101,42 +72,15 @@ public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
         final com.hedera.node.app.service.mono.state.merkle.MerkleTopic convertedTopic =
                 ConsensusServiceStateTranslator.pbjToState(topicId, readableStore);
 
-        assertEquals(convertedTopic.getMemo(), getExpectedMonoTopic().getMemo());
-        assertEquals(convertedTopic.getAdminKey(), getExpectedMonoTopic().getAdminKey());
-        assertEquals(convertedTopic.getSubmitKey(), getExpectedMonoTopic().getSubmitKey());
-        assertEquals(
-                convertedTopic.getExpirationTimestamp(), getExpectedMonoTopic().getExpirationTimestamp());
-        assertEquals(
-                convertedTopic.getAutoRenewDurationSeconds(),
-                getExpectedMonoTopic().getAutoRenewDurationSeconds());
-        assertEquals(
-                convertedTopic.getAutoRenewAccountId(), getExpectedMonoTopic().getAutoRenewAccountId());
-        assertEquals(
-                convertedTopic.getAutoRenewDurationSeconds(),
-                getExpectedMonoTopic().getAutoRenewDurationSeconds());
-        assertEquals(convertedTopic.isDeleted(), getExpectedMonoTopic().isDeleted());
-        assertEquals(convertedTopic.getSequenceNumber(), getExpectedMonoTopic().getSequenceNumber());
+        assertMatch(convertedTopic, getExpectedMonoTopic());
     }
 
     @Test
     void createTopicFromMerkleTopic() {
         com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic =
-                new com.hedera.node.app.service.mono.state.merkle.MerkleTopic();
-        merkleTopic.setMemo(topic.memo());
-        merkleTopic.setExpirationTimestamp(
-                new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expiry(), 0));
-        merkleTopic.setAdminKey(
-                (JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.adminKeyOrElse(Key.DEFAULT))
+                getMerkleTopic( (com.hedera.node.app.service.mono.legacy.core.jproto.JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.adminKeyOrElse(Key.DEFAULT))
+                        .orElse(null),(com.hedera.node.app.service.mono.legacy.core.jproto.JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.submitKeyOrElse(Key.DEFAULT))
                         .orElse(null));
-        merkleTopic.setSubmitKey(
-                (JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.submitKeyOrElse(Key.DEFAULT))
-                        .orElse(null));
-        merkleTopic.setAutoRenewDurationSeconds(topic.autoRenewPeriod());
-        merkleTopic.setDeleted(true);
-        merkleTopic.setSequenceNumber(topic.sequenceNumber());
-        merkleTopic.setAutoRenewAccountId(
-                new com.hedera.node.app.service.mono.state.submerkle.EntityId(0, 0, autoRenewId.accountNum()));
-        merkleTopic.setRunningHash(runningHash);
 
         final Topic convertedTopic = ConsensusServiceStateTranslator.stateToPbj(merkleTopic);
 
@@ -146,16 +90,7 @@ public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
     @Test
     void createTopicFromMerkleTopicEmptyKeys() {
         com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic =
-                new com.hedera.node.app.service.mono.state.merkle.MerkleTopic();
-        merkleTopic.setMemo(topic.memo());
-        merkleTopic.setExpirationTimestamp(
-                new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expiry(), 0));
-        merkleTopic.setAutoRenewDurationSeconds(topic.autoRenewPeriod());
-        merkleTopic.setDeleted(true);
-        merkleTopic.setSequenceNumber(topic.sequenceNumber());
-        merkleTopic.setAutoRenewAccountId(
-                new com.hedera.node.app.service.mono.state.submerkle.EntityId(0, 0, autoRenewId.accountNum()));
-        merkleTopic.setRunningHash(runningHash);
+                getMerkleTopic(null, null);
 
         final Topic convertedTopic = ConsensusServiceStateTranslator.stateToPbj(merkleTopic);
 
@@ -185,23 +120,9 @@ public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
         };
 
         com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic =
-                new com.hedera.node.app.service.mono.state.merkle.MerkleTopic();
-        merkleTopic.setMemo(topic.memo());
-        merkleTopic.setAdminKey(
-                (JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.adminKeyOrElse(Key.DEFAULT))
+                getMerkleTopic( (com.hedera.node.app.service.mono.legacy.core.jproto.JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.adminKeyOrElse(Key.DEFAULT))
+                        .orElse(null),(com.hedera.node.app.service.mono.legacy.core.jproto.JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.submitKeyOrElse(Key.DEFAULT))
                         .orElse(null));
-        merkleTopic.setSubmitKey(
-                (JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.submitKeyOrElse(Key.DEFAULT))
-                        .orElse(null));
-        merkleTopic.setExpirationTimestamp(
-                new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expiry(), 0));
-        merkleTopic.setAutoRenewDurationSeconds(topic.autoRenewPeriod());
-        merkleTopic.setDeleted(true);
-        merkleTopic.setSequenceNumber(topic.sequenceNumber());
-        merkleTopic.setAutoRenewAccountId(
-                new com.hedera.node.app.service.mono.state.submerkle.EntityId(0, 0, autoRenewId.accountNum()));
-        merkleTopic.setRunningHash(runningHash);
-        monoTopics.put(topicEntityNum, merkleTopic);
 
         refreshStoresWithCurrentTopicOnlyInReadable();
         ConsensusServiceStateTranslator.migrateFromMerkleToPbj(monoTopics, appTopics);
@@ -211,6 +132,24 @@ public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
         assertEquals(createTopic(), convertedTopic);
     }
 
+    private void assertMatch(MerkleTopic expected, MerkleTopic actual) {
+        assertEquals(expected.getMemo(), actual.getMemo());
+        assertEquals(expected.getAdminKey(), actual.getAdminKey());
+        assertEquals(expected.getSubmitKey(), actual.getSubmitKey());
+        assertEquals(
+                expected.getExpirationTimestamp(), actual.getExpirationTimestamp());
+        assertEquals(
+                expected.getAutoRenewDurationSeconds(),
+                actual.getAutoRenewDurationSeconds());
+        assertEquals(
+                expected.getAutoRenewAccountId(), actual.getAutoRenewAccountId());
+        assertEquals(
+                expected.getAutoRenewDurationSeconds(),
+                actual.getAutoRenewDurationSeconds());
+        assertEquals(expected.isDeleted(), actual.isDeleted());
+        assertEquals(expected.getSequenceNumber(), actual.getSequenceNumber());
+    }
+
     private com.hedera.node.app.service.mono.state.merkle.MerkleTopic getExpectedMonoTopic() {
         com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic =
                 new com.hedera.node.app.service.mono.state.merkle.MerkleTopic();
@@ -218,10 +157,10 @@ public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
         merkleTopic.setExpirationTimestamp(
                 new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expiry(), 0));
         merkleTopic.setAdminKey(
-                (JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.adminKeyOrElse(Key.DEFAULT))
+                (com.hedera.node.app.service.mono.legacy.core.jproto.JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.adminKeyOrElse(Key.DEFAULT))
                         .orElse(null));
         merkleTopic.setSubmitKey(
-                (JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.submitKeyOrElse(Key.DEFAULT))
+                (com.hedera.node.app.service.mono.legacy.core.jproto.JKey) com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbjKey(topic.submitKeyOrElse(Key.DEFAULT))
                         .orElse(null));
         merkleTopic.setAutoRenewDurationSeconds(topic.autoRenewPeriod());
         merkleTopic.setDeleted(topic.deleted());
@@ -243,5 +182,24 @@ public class ConsenusServiceStateTranslatorTest extends ConsensusTestBase {
         merkleTopic.setAutoRenewAccountId(
                 new com.hedera.node.app.service.mono.state.submerkle.EntityId(0, 0, topic.autoRenewAccountNumber()));
         return merkleTopic;
+    }
+
+    private com.hedera.node.app.service.mono.state.merkle.MerkleTopic getMerkleTopic(com.hedera.node.app.service.mono.legacy.core.jproto.JKey adminKey, com.hedera.node.app.service.mono.legacy.core.jproto.JKey submitKey) {
+         com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic =
+                new com.hedera.node.app.service.mono.state.merkle.MerkleTopic();
+        merkleTopic.setMemo(topic.memo());
+        merkleTopic.setExpirationTimestamp(
+                new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expiry(), 0));
+        merkleTopic.setAdminKey(adminKey);
+        merkleTopic.setSubmitKey(submitKey);
+        merkleTopic.setAutoRenewDurationSeconds(topic.autoRenewPeriod());
+        merkleTopic.setDeleted(true);
+        merkleTopic.setSequenceNumber(topic.sequenceNumber());
+        merkleTopic.setAutoRenewAccountId(
+                new com.hedera.node.app.service.mono.state.submerkle.EntityId(0, 0, autoRenewId.accountNum()));
+        merkleTopic.setRunningHash(runningHash);
+
+        return merkleTopic;
+
     }
 }
