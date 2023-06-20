@@ -48,11 +48,6 @@ public class EventDescriptor implements SelfSerializable {
     private long generation;
 
     /**
-     * Save some computation by caching the hash code.
-     */
-    private int hashCode;
-
-    /**
      * Zero arg constructor, required for deserialization. Do not use manually.
      */
     public EventDescriptor() {}
@@ -68,8 +63,6 @@ public class EventDescriptor implements SelfSerializable {
         this.hash = Objects.requireNonNull(hash, "hash must not be null");
         this.creator = Objects.requireNonNull(creator, "creator must not be null");
         this.generation = generation;
-
-        hashCode = hash.hashCode();
     }
 
     /**
@@ -151,9 +144,6 @@ public class EventDescriptor implements SelfSerializable {
             }
         }
         generation = in.readLong();
-
-        // Hashes are assumed to be unique
-        hashCode = hash.hashCode();
     }
 
     /**
@@ -170,10 +160,6 @@ public class EventDescriptor implements SelfSerializable {
 
         final EventDescriptor that = (EventDescriptor) o;
 
-        if (this.hashCode != that.hashCode) {
-            return false;
-        }
-
         return Objects.equals(creator, that.creator) && generation == that.generation && hash.equals(that.hash);
     }
 
@@ -185,7 +171,7 @@ public class EventDescriptor implements SelfSerializable {
         if (hash == null) {
             throw new IllegalStateException("EventDescriptor improperly initialized");
         }
-        return hashCode;
+        return hash.hashCode();
     }
 
     @Override
