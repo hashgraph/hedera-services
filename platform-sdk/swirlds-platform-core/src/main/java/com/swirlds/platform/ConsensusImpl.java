@@ -22,11 +22,13 @@ import static com.swirlds.platform.internal.EventImpl.MIN_TRANS_TIMESTAMP_INCR_N
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -515,25 +517,28 @@ public class ConsensusImpl implements Consensus {
             return null;
         }
         List<EventImpl> cons = new LinkedList<>(); // all events reaching consensus now, in consensus order
-        int voterId = (int) event.getCreatorId().id();
+        final NodeId voterId = event.getCreatorId();
+        final int voterIndex = addressBook.getIndexOfNodeId(voterId);
         for (RoundInfo.ElectionRound election = roundInfo.elections;
                 election != null;
                 election = election.nextElection) { // for all elections
             if (election.age == 1) {
                 // first round of an election. Vote TRUE for self-ancestors of those you firstSee. Don't decide.
-                EventImpl w = firstSee(event, election.event.getCreatorId().id());
+                final int electionEventCreatorIdIndex = addressBook.getIndexOfNodeId(election.event.getCreatorId());
+                EventImpl w = firstSee(event, electionEventCreatorIdIndex);
                 while (w != null && w.getRoundCreated() > event.getRoundCreated() - 1 && w.getSelfParent() != null) {
                     w = firstSelfWitnessS(w.getSelfParent());
                 }
-                election.vote[voterId] = (election.event == w);
+                election.vote[voterIndex] = (election.event == w);
             } else {
                 // either a coin round or normal round, so count votes from witnesses you strongly see
                 long yesWeight = 0; // total weight of all members voting yes
                 long noWeight = 0; // total weight of all members voting yes
                 for (EventImpl w : stronglySeen) {
-                    int id = (int) w.getCreatorId().id();
-                    long weight = addressBook.getAddress(w.getCreatorId()).getWeight();
-                    if (election.prevRound.vote[id]) {
+                    final NodeId id = w.getCreatorId();
+                    long weight = addressBook.getAddress(id).getWeight();
+                    final int nodeIndex = addressBook.getIndexOfNodeId(id);
+                    if (election.prevRound.vote[nodeIndex]) {
                         yesWeight += weight;
                     } else {
                         noWeight += weight;
@@ -543,16 +548,16 @@ public class ConsensusImpl implements Consensus {
                 boolean superMajority = Utilities.isSuperMajority(yesWeight, totalWeight)
                         || Utilities.isSuperMajority(noWeight, totalWeight);
 
-                election.vote[voterId] = (yesWeight >= noWeight);
+                election.vote[voterIndex] = (yesWeight >= noWeight);
                 if ((election.age % config.coinFreq()) == 0) {
                     // a coin round. Vote randomly unless you strongly see a supermajority. Don't decide.
                     numCoinRounds++;
                     if (!superMajority) {
                         if ((election.age % (2 * config.coinFreq())) == config.coinFreq()) {
-                            election.vote[voterId] = true; // every other "coin round" is just coin=true
+                            election.vote[voterIndex] = true; // every other "coin round" is just coin=true
                         } else {
                             // coin is one bit from signature (LSB of second of two middle bytes)
-                            election.vote[voterId] = coin(event);
+                            election.vote[voterIndex] = coin(event);
                         }
                     }
                 } else {
@@ -564,7 +569,7 @@ public class ConsensusImpl implements Consensus {
                         List<EventImpl> c = setFamous(
                                 election.event,
                                 rounds.get(election.event.getRoundCreated()),
-                                election.vote[voterId],
+                                election.vote[voterIndex],
                                 election);
                         if (c != null) {
                             cons.addAll(c);
@@ -638,7 +643,7 @@ public class ConsensusImpl implements Consensus {
         long round;
 
         round(event); // find the round, and store it using event.setRoundCreated()
-        for (long m = 0; m < numMembers; m++) {
+        for (int m = 0; m < numMembers; m++) {
             EventImpl s = stronglySeeS1(event, m);
             if (s != null) {
                 stronglySeen.add(s);
@@ -663,7 +668,7 @@ public class ConsensusImpl implements Consensus {
         if (roundInfo != null) {
             return roundInfo;
         }
-        roundInfo = new RoundInfo(round, addressBook.getSize());
+        roundInfo = new RoundInfo(round, addressBook);
         rounds.put(round, roundInfo);
 
         // create elections in this round based on the previous one
@@ -1111,7 +1116,7 @@ public class ConsensusImpl implements Consensus {
     }
 
     /**
-     * The last event created by m that is an ancestor of x (function from SWIRLDS-TR-2020-01).
+     * The last event created by the member at index m that is an ancestor of x (function from SWIRLDS-TR-2020-01).
      * This has aggressive memoization: the first time it is called with a given x, it immediately calculates and stores
      * results for all m.
      * This result is memoized.
@@ -1119,10 +1124,10 @@ public class ConsensusImpl implements Consensus {
      * @param x
      * 		the event being queried
      * @param m
-     * 		the member ID of the creator
-     * @return the last event created by m that is an ancestor of x, or null if none
+     * 		the index of the member ID of the creator
+     * @return the last event created by member at index m that is an ancestor of x, or null if none
      */
-    private EventImpl lastSee(EventImpl x, long m) {
+    private EventImpl lastSee(EventImpl x, int m) {
         int numMembers;
         EventImpl sp, op;
 
@@ -1130,7 +1135,7 @@ public class ConsensusImpl implements Consensus {
             return null;
         }
         if (x.sizeLastSee() != 0) { // return memoized answer, if available
-            return x.getLastSee((int) m);
+            return x.getLastSee(m);
         }
         // memoize answers for all choices of m, then return answer for just this m
         numMembers = getAddressBook().getSize();
@@ -1140,7 +1145,8 @@ public class ConsensusImpl implements Consensus {
         sp = x.getSelfParent();
 
         for (int mm = 0; mm < numMembers; mm++) {
-            if (x.getCreatorId().id() == mm) {
+            final int IdxCreatorIdIndex = addressBook.getIndexOfNodeId(x.getCreatorId());
+            if (IdxCreatorIdIndex == mm) {
                 x.setLastSee(mm, x);
             } else if (sp == null && op == null) {
                 x.setLastSee(mm, null);
@@ -1156,33 +1162,34 @@ public class ConsensusImpl implements Consensus {
                 }
             }
         }
-        return x.getLastSee((int) m);
+        return x.getLastSee(m);
     }
 
     /**
-     * The witness y created by m that is seen by event x through an event z created by m2 (function from
+     * The witness y created by the member at index m that is seen by event x through an event z created by the member at index m2 (function from
      * SWIRLDS-TR-2020-01).
      * This result is not memoized.
      *
      * @param x
      * 		the event being queried
      * @param m
-     * 		the creator of y, the event seen
+     * 		the index of the creator of y, the event seen
      * @param m2
-     * 		the creator of z, the intermediate event through which x sees y
-     * @return the event y that is created by m and seen by x through an event by m2
+     * 		the index of the creator of z, the intermediate event through which x sees y
+     * @return the event y that is created by the member at index m and seen by x through an event by the member at index m2
      */
-    private EventImpl seeThru(EventImpl x, long m, long m2) {
+    private EventImpl seeThru(EventImpl x, int m, int m2) {
         if (x == null) {
             return null;
         }
-        if (m == m2 && m2 == x.getCreatorId().id()) {
+        final int creatorIndex = addressBook.getIndexOfNodeId(x.getCreatorId());
+        if (m == m2 && m2 == creatorIndex) {
             return firstSelfWitnessS(x.getSelfParent());
         }
         return firstSee(lastSee(x, m2), m);
     }
 
-    /**
+    /** TODO: update comment
      * The witness created by m in the parent round of x that x strongly sees (function from SWIRLDS-TR-2020-01).
      * This result is memoized.
      *
@@ -1193,17 +1200,17 @@ public class ConsensusImpl implements Consensus {
      * @param x
      * 		the event being queried
      * @param m
-     * 		the member ID of the creator
-     * @return witness created by m in the parent round of x that x strongly sees, or null if none
+     * 		the index of the member ID of the creator
+     * @return witness created by the member at index m in the parent round of x that x strongly sees, or null if none
      */
-    private EventImpl stronglySeeP(EventImpl x, long m) {
+    private EventImpl stronglySeeP(@NonNull final EventImpl x, final int m) {
         long t = System.nanoTime(); // Used to update statistic for dot product time
         EventImpl result; // the witness to return (possibly null)
 
         if (x == null) { // if there is no event, then it can't see anything
             result = null;
         } else if (x.sizeStronglySeeP() != 0) { // return memoized answer, if available
-            result = x.getStronglySeeP((int) m);
+            result = x.getStronglySeeP(m);
         } else { // calculate the answer, and remember it for next time
             // find and memoize answers for all choices of m, then return answer for just this m
             int numMembers = getAddressBook().getSize(); // number of members
@@ -1227,9 +1234,10 @@ public class ConsensusImpl implements Consensus {
                         x.setStronglySeeP(mm, null);
                     } else {
                         long weight = 0;
-                        for (long m3 = 0; m3 < numMembers; m3++) {
+                        for (int m3 = 0; m3 < numMembers; m3++) {
                             if (seeThru(x, mm, m3) == st) { // only count intermediates that see the canonical witness
-                                weight += addressBook.getAddress(m3).getWeight();
+                                final NodeId nodeId = addressBook.getNodeId(m3);
+                                weight += addressBook.getAddress(nodeId).getWeight();
                             }
                         }
                         if (Utilities.isSuperMajority(weight, totalWeight)) { // strongly see supermajority of
@@ -1241,7 +1249,7 @@ public class ConsensusImpl implements Consensus {
                     }
                 }
             }
-            result = x.getStronglySeeP((int) m);
+            result = x.getStronglySeeP(m);
         }
         t = System.nanoTime() - t; // nanoseconds spent doing the dot product
         consensusMetrics.dotProductTime(t);
@@ -1359,9 +1367,10 @@ public class ConsensusImpl implements Consensus {
         // parents have equal rounds (not -1), so check if x can strongly see witnesses with a supermajority of weight
         weight = 0;
         int numStronglySeen = 0;
-        for (long m = 0; m < numMembers; m++) {
+        for (int m = 0; m < numMembers; m++) {
             if (stronglySeeP(x, m) != null) {
-                weight += addressBook.getAddress(m).getWeight();
+                NodeId nodeId = addressBook.getNodeId(m);
+                weight += addressBook.getAddress(nodeId).getWeight();
                 numStronglySeen++;
             }
         }
@@ -1435,28 +1444,23 @@ public class ConsensusImpl implements Consensus {
      * @param x
      * 		the event being queried
      * @param m
-     * 		the member ID of the creator
-     * @return event by m that x strongly sees in the round before the created round of x, or null if none
+     * 		the index of the member ID of the creator
+     * @return event by the member at index m that x strongly sees in the round before the created round of x, or null if none
      */
-    private EventImpl stronglySeeS1(EventImpl x, long m) {
+    private EventImpl stronglySeeS1(EventImpl x, int m) {
         return stronglySeeP(firstWitnessS(x), m);
     }
 
     /**
-     * The first witness in round r that is a self-ancestor of x, where r is the round of the last event by m
-     * that is
-     * seen by x (function from SWIRLDS-TR-2020-01).
-     * This result is not memoized.
+     * The first witness in round r that is a self-ancestor of x, where r is the round of the last event by m that is
+     * seen by x (function from SWIRLDS-TR-2020-01). This result is not memoized.
      *
-     * @param x
-     * 		the event being queried
-     * @param m
-     * 		the member ID of the creator
-     * @return firstSelfWitnessS(lastSee ( x, m)), which is the first witness in round r that is a
-     * 		self-ancestor
-     * 		of x, where r is the round of the last event by m that is seen by x, or null if none
+     * @param x the event being queried
+     * @param m the index of the member ID of the creator
+     * @return firstSelfWitnessS(lastSee(x, m)), which is the first witness in round r that is a self-ancestor of x,
+     * where r is the round of the last event by the member at index m that is seen by x, or null if none
      */
-    private EventImpl firstSee(EventImpl x, long m) {
+    private EventImpl firstSee(EventImpl x, int m) {
         return firstSelfWitnessS(lastSee(x, m));
     }
 
