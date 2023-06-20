@@ -303,11 +303,11 @@ public class BaseTokenHandler {
      * @param context the handle context
      */
     protected void autoAssociate(
-            final Account account,
-            final Token token,
-            final WritableAccountStore accountStore,
-            final WritableTokenRelationStore tokenRelStore,
-            final HandleContext context) {
+            @NonNull final Account account,
+            @NonNull final Token token,
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final WritableTokenRelationStore tokenRelStore,
+            @NonNull final HandleContext context) {
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
 
@@ -322,7 +322,7 @@ public class BaseTokenHandler {
         // Check is number of used associations is less than maxAutoAssociations
         final var numAssociations = account.numberAssociations();
         validateFalse(
-                entitiesConfig.limitTokenAssociations() && numAssociations == tokensConfig.maxPerAccount(),
+                entitiesConfig.limitTokenAssociations() && numAssociations >= tokensConfig.maxPerAccount(),
                 TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
         final var maxAutoAssociations = account.maxAutoAssociations();
@@ -336,13 +336,14 @@ public class BaseTokenHandler {
                 .automaticAssociation(true)
                 .kycGranted(!token.hasKycKey())
                 .frozen(token.hasFreezeKey() && token.accountsFrozenByDefault())
-                .previousToken(0)
+                .previousToken(-1)
                 .nextToken(account.headTokenNumber())
                 .build();
 
         final var copyAccount = account.copyBuilder()
                 .numberAssociations(numAssociations + 1)
                 .usedAutoAssociations(usedAutoAssociations + 1)
+                .headTokenNumber(tokenId.tokenNum())
                 .build();
 
         accountStore.put(copyAccount);
@@ -358,7 +359,7 @@ public class BaseTokenHandler {
      * @param op the token update op to check
      * @return true if the given token update op is an expiry-only update op
      */
-    public static boolean isExpiryOnlyUpdateOp(final TokenUpdateTransactionBody op) {
+    public static boolean isExpiryOnlyUpdateOp(@NonNull final TokenUpdateTransactionBody op) {
         final var defaultOp = TokenUpdateTransactionBody.DEFAULT;
         final var copyDefaultWithExpiry =
                 defaultOp.copyBuilder().expiry(op.expiry()).token(op.token()).build();

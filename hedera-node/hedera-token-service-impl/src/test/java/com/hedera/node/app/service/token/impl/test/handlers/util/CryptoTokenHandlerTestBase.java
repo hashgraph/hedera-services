@@ -555,7 +555,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 supplyKey,
                 feeScheduleKey,
                 pauseKey,
-                0,
+                2,
                 deleted,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.FINITE,
@@ -635,7 +635,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         return TokenRelation.newBuilder()
                 .tokenNumber(nonFungibleTokenNum.longValue())
                 .accountNumber(accountNum)
-                .balance(1000L)
+                .balance(1)
                 .frozen(false)
                 .kycGranted(true)
                 .deleted(false)

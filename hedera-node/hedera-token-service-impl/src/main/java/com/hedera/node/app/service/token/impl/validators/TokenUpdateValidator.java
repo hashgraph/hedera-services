@@ -16,12 +16,9 @@
 
 package com.hedera.node.app.service.token.impl.validators;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
-import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
@@ -30,7 +27,6 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -48,8 +44,9 @@ public class TokenUpdateValidator {
         this.validator = validator;
     }
 
-    public record ValidationResult(Token token, ExpiryMeta resolvedExpiryMeta) {}
+    public record ValidationResult(@NonNull Token token, @NonNull ExpiryMeta resolvedExpiryMeta) {}
 
+    @NonNull
     public ValidationResult validateSemantics(
             @NonNull final HandleContext context, @NonNull final TokenUpdateTransactionBody op) {
         final var readableAccountStore = context.readableStore(ReadableAccountStore.class);
@@ -118,13 +115,5 @@ public class TokenUpdateValidator {
                 op.hasAutoRenewPeriod() ? op.autoRenewPeriodOrThrow().seconds() : NA,
                 op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow().accountNum() : NA);
         return expiryValidator.resolveUpdateAttempt(givenExpiryMeta, updateExpiryMeta);
-    }
-
-    public void validateNftBalances(final Token token, @NonNull final ReadableTokenRelationStore tokenRelStore) {
-        if (token.tokenType().equals(NON_FUNGIBLE_UNIQUE)) {
-            final var tokenRel =
-                    tokenRelStore.get(asAccount(token.treasuryAccountNumber()), asToken(token.tokenNumber()));
-            validateTrue(tokenRel.balance() == 0, CURRENT_TREASURY_STILL_OWNS_NFTS);
-        }
     }
 }

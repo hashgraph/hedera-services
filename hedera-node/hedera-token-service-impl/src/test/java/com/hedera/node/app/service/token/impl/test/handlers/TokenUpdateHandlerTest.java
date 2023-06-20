@@ -409,8 +409,82 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedToken.autoRenewSecs()).isEqualTo(fungibleToken.autoRenewSecs());
         assertThat(modifiedToken.tokenType()).isEqualTo(FUNGIBLE_COMMON);
 
-        assertThat(rel.frozen()).isEqualTo(false);
-        assertThat(rel.kycGranted()).isEqualTo(true);
+        assertThat(rel.frozen()).isFalse();
+        assertThat(rel.kycGranted()).isTrue();
+    }
+
+    @Test
+    void worksWithUnassociatedNewTreasuryIfAutoAssociationsAvailableForNFT() {
+        txn = new TokenUpdateBuilder()
+                .withTreasury(payerId)
+                .withToken(nonFungibleTokenId)
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        writableTokenRelStore.remove(TokenRelation.newBuilder()
+                .tokenNumber(nonFungibleTokenId.tokenNum())
+                .accountNumber(payerId.accountNum())
+                .build());
+        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        assertThat(writableTokenRelStore.get(payerId, nonFungibleTokenId)).isNull();
+
+        final var token = readableTokenStore.get(nonFungibleTokenId);
+        assertThat(token.symbol()).isEqualTo(nonFungibleToken.symbol());
+        assertThat(token.name()).isEqualTo(nonFungibleToken.name());
+        assertThat(token.treasuryAccountNumber()).isEqualTo(nonFungibleToken.treasuryAccountNumber());
+        assertThat(token.adminKey()).isEqualTo(nonFungibleToken.adminKey());
+        assertThat(token.supplyKey()).isEqualTo(nonFungibleToken.supplyKey());
+        assertThat(token.kycKey()).isEqualTo(nonFungibleToken.kycKey());
+        assertThat(token.freezeKey()).isEqualTo(nonFungibleToken.freezeKey());
+        assertThat(token.wipeKey()).isEqualTo(nonFungibleToken.wipeKey());
+        assertThat(token.feeScheduleKey()).isEqualTo(nonFungibleToken.feeScheduleKey());
+        assertThat(token.pauseKey()).isEqualTo(nonFungibleToken.pauseKey());
+        assertThat(token.autoRenewAccountNumber()).isEqualTo(nonFungibleToken.autoRenewAccountNumber());
+        assertThat(token.expiry()).isEqualTo(nonFungibleToken.expiry());
+        assertThat(token.memo()).isEqualTo(nonFungibleToken.memo());
+        assertThat(token.autoRenewSecs()).isEqualTo(nonFungibleToken.autoRenewSecs());
+        assertThat(token.tokenType()).isEqualTo(NON_FUNGIBLE_UNIQUE);
+
+        final var newTreasury = writableAccountStore.get(payerId);
+        final var oldTreasury = writableAccountStore.get(treasuryId);
+        assertThat(newTreasury.numberOwnedNfts()).isEqualTo(2);
+        assertThat(oldTreasury.numberOwnedNfts()).isEqualTo(2);
+
+        final var newTreasuryRel = writableTokenRelStore.get(payerId, nonFungibleTokenId);
+        final var oldTreasuryRel = writableTokenRelStore.get(treasuryId, nonFungibleTokenId);
+        assertThat(newTreasuryRel).isNull();
+        assertThat(oldTreasuryRel.balance()).isEqualTo(1);
+
+        assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
+
+        final var rel = writableTokenRelStore.get(payerId, nonFungibleTokenId);
+
+        assertThat(rel).isNotNull();
+        final var modifiedToken = writableTokenStore.get(nonFungibleTokenId);
+        assertThat(modifiedToken.symbol()).isEqualTo("TTT");
+        assertThat(modifiedToken.name()).isEqualTo("TestToken1");
+        assertThat(modifiedToken.treasuryAccountNumber()).isEqualTo(payerId.accountNum());
+        assertThat(rel.balance()).isEqualTo(1);
+        assertThat(modifiedToken.adminKey()).isEqualTo(B_COMPLEX_KEY);
+        assertThat(modifiedToken.supplyKey()).isEqualTo(B_COMPLEX_KEY);
+        assertThat(modifiedToken.kycKey()).isEqualTo(B_COMPLEX_KEY);
+        assertThat(modifiedToken.freezeKey()).isEqualTo(B_COMPLEX_KEY);
+        assertThat(modifiedToken.wipeKey()).isEqualTo(B_COMPLEX_KEY);
+        assertThat(modifiedToken.feeScheduleKey()).isEqualTo(B_COMPLEX_KEY);
+        assertThat(modifiedToken.pauseKey()).isEqualTo(B_COMPLEX_KEY);
+        assertThat(modifiedToken.autoRenewAccountNumber()).isEqualTo(ownerId.accountNum());
+        assertThat(modifiedToken.expiry()).isEqualTo(1234600L);
+        assertThat(modifiedToken.memo()).isEqualTo("test token1");
+        assertThat(modifiedToken.autoRenewSecs()).isEqualTo(fungibleToken.autoRenewSecs());
+        assertThat(modifiedToken.tokenType()).isEqualTo(NON_FUNGIBLE_UNIQUE);
+
+        assertThat(rel.frozen()).isFalse();
+        assertThat(rel.kycGranted()).isTrue();
+
+        final var modifiedNewTreasury = writableAccountStore.get(payerId);
+        final var modifiedOldTreasury = writableAccountStore.get(treasuryId);
+        assertThat(modifiedNewTreasury.numberOwnedNfts()).isEqualTo(3);
+        assertThat(modifiedOldTreasury.numberOwnedNfts()).isEqualTo(1);
     }
 
     @Test
@@ -740,8 +814,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedToken.autoRenewSecs()).isEqualTo(fungibleToken.autoRenewSecs());
         assertThat(modifiedToken.tokenType()).isEqualTo(FUNGIBLE_COMMON);
 
-        assertThat(rel.frozen()).isEqualTo(false);
-        //            assertThat(rel.kycGranted()).isEqualTo(false);
+        assertThat(rel.frozen()).isFalse();
+        assertThat(rel.kycGranted()).isTrue();
     }
 
     @Test
@@ -784,6 +858,10 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .copyBuilder()
                 .balance(1)
                 .build();
+        configuration = new HederaTestConfigBuilder()
+                .withValue("tokens.nfts.useTreasuryWildcards", "false")
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(configuration);
         writableTokenRelStore.put(copyTokenRel);
         given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
         txn = new TokenUpdateBuilder().withToken(nonFungibleTokenId).build();

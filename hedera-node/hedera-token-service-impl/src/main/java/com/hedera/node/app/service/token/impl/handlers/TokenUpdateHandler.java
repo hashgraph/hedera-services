@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -36,7 +35,6 @@ import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.isKeyRemoval;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -53,7 +51,6 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateValidator;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -131,7 +128,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         // and if the treasury is not already associated with the token, see if it has auto associations
         // enabled and has open slots. If so, auto-associate.
         // We allow existing treasuries to have any nft balances left over, but the new treasury should
-        // not have any balances left over.Transfer all balances for the current token to new treasury
+        // not have any balances left over. Transfer all balances for the current token to new treasury
         if (op.hasTreasury()) {
             final var existingTreasury = asAccount(token.treasuryAccountNumber());
             final var newTreasury = op.treasuryOrThrow();
@@ -154,16 +151,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
 
             if (!newTreasury.equals(existingTreasury)) {
                 // TODO : Not sure why we are checking existing treasury account here
-                final var existingTreasuryAccount = accountStore.getAccountById(existingTreasury);
-                final var isDetached = context.expiryValidator()
-                        .isDetached(
-                                EntityType.ACCOUNT,
-                                existingTreasuryAccount.expiredAndPendingRemoval(),
-                                existingTreasuryAccount.tinybarBalance());
-                validateFalse(isDetached, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+                final var existingTreasuryAccount = getIfUsable(
+                        existingTreasury, accountStore, context.expiryValidator(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
                 updateTreasuryTitles(existingTreasuryAccount, newTreasuryAccount, token, accountStore, tokenRelStore);
-                // validate token's treasury doesn't have any NFT balances
-                tokenUpdateValidator.validateNftBalances(token, tokenRelStore);
                 // If the token is fungible, transfer fungible balance to new treasury
                 // If it is non-fungible token transfer the ownership of the NFTs from old treasury to new treasury
                 transferTokensToNewTreasury(existingTreasury, newTreasury, token, tokenRelStore, accountStore);
@@ -200,11 +190,11 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             if (token.tokenType().equals(FUNGIBLE_COMMON)) {
                 // Transfers fungible balances and updates account's numOfPositiveBalances
                 // and puts to modifications on state.
-                transferFungibleTokens(oldTreasuryRel, newTreasuryRel, tokenRelStore, accountStore);
+                transferFungibleTokensToTreasury(oldTreasuryRel, newTreasuryRel, tokenRelStore, accountStore);
             } else {
                 // Transfers NFT ownerships and updates account's numOwnedNfts and
                 // tokenRelation's balance and puts to modifications on state.
-                changeOwner(oldTreasuryRel, newTreasuryRel, tokenRelStore, accountStore);
+                changeOwnerToNewTreasury(oldTreasuryRel, newTreasuryRel, tokenRelStore, accountStore);
             }
         }
     }
@@ -216,7 +206,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
      * @param tokenRelStore token relationship store
      * @param accountStore account store
      */
-    private void transferFungibleTokens(
+    private void transferFungibleTokensToTreasury(
             final TokenRelation fromTreasuryRel,
             final TokenRelation toTreasuryRel,
             final WritableTokenRelationStore tokenRelStore,
@@ -277,7 +267,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
      * @param tokenRelStore token relationship store
      * @param accountStore account store
      */
-    private void changeOwner(
+    private void changeOwnerToNewTreasury(
             final TokenRelation fromTreasuryRel,
             final TokenRelation toTreasuryRel,
             final WritableTokenRelationStore tokenRelStore,
@@ -299,7 +289,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         accountStore.put(
                 fromTreasuryCopy.numberOwnedNfts(fromNftsOwned - fromRelBalance).build());
         accountStore.put(
-                toTreasuryCopy.numberOwnedNfts(toNftsWOwned + toRelBalance).build());
+                toTreasuryCopy.numberOwnedNfts(toNftsWOwned + fromRelBalance).build());
         tokenRelStore.put(fromRelCopy.balance(0).build());
         tokenRelStore.put(toRelCopy.balance(toRelBalance + fromRelBalance).build());
         // TODO : Need to build record transfer list for this case. Not needed for this PR.
