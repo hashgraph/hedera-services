@@ -833,6 +833,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventMapper.getMostRecentEventsByEachCreator());
     }
 
+    // Do not merge this. I am creating this branch to test the automated CI panel that is run against PRs.
+
     /**
      * Used to load the state received from the sender.
      *
