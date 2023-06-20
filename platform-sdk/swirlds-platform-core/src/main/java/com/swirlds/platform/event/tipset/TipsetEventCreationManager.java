@@ -175,7 +175,7 @@ public class TipsetEventCreationManager implements Lifecycle {
             return;
         }
 
-        final GossipEvent event = eventCreator.createNewEvent();
+        final GossipEvent event = eventCreator.maybeCreateEvent();
         if (event != null) {
             newEventHandler.accept(event);
 

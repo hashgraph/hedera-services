@@ -169,7 +169,7 @@ public class TipsetEventCreator {
      * @return the new event, or null if it is not legal to create a new event
      */
     @Nullable
-    public GossipEvent createNewEvent() {
+    public GossipEvent maybeCreateEvent() {
         final long bullyScore = tipsetScoreCalculator.getBullyScore();
         tipsetMetrics.getBullyScoreMetric().update(bullyScore);
 

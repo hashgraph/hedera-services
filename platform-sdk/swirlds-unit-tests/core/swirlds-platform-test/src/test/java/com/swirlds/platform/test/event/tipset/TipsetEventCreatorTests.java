@@ -260,7 +260,7 @@ class TipsetEventCreatorTests {
                 final NodeId nodeId = address.getNodeId();
                 final TipsetEventCreator eventCreator = nodes.get(nodeId).tipsetEventCreator;
 
-                final GossipEvent event = eventCreator.createNewEvent();
+                final GossipEvent event = eventCreator.maybeCreateEvent();
 
                 // In this test, it should be impossible for a node to be unable to create an event.
                 assertNotNull(event);
@@ -315,7 +315,7 @@ class TipsetEventCreatorTests {
                 final NodeId nodeId = address.getNodeId();
                 final TipsetEventCreator eventCreator = nodes.get(nodeId).tipsetEventCreator;
 
-                final GossipEvent event = eventCreator.createNewEvent();
+                final GossipEvent event = eventCreator.maybeCreateEvent();
 
                 // It's possible a node may not be able to create an event. But we are guaranteed
                 // to be able to create at least one event per cycle.
@@ -373,7 +373,7 @@ class TipsetEventCreatorTests {
                     final NodeId nodeId = address.getNodeId();
                     final TipsetEventCreator eventCreator = nodes.get(nodeId).tipsetEventCreator;
 
-                    final GossipEvent event = eventCreator.createNewEvent();
+                    final GossipEvent event = eventCreator.maybeCreateEvent();
 
                     if (count == 0) {
                         // The first time we attempt to create an event we should be able to do so.
