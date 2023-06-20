@@ -22,9 +22,9 @@ import static java.util.stream.Collectors.toSet;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.InvalidKeyException;
 import java.util.Optional;
 import java.util.Set;
-import org.apache.commons.codec.DecoderException;
 
 // This class should not exist. Right now we have code that needs to map from a JKey to a
 // HederaKey, but that should be an implementation detail handled somewhere in the token
@@ -45,7 +45,7 @@ public class Utils {
                 return Optional.empty();
             }
             return Optional.of(fcKey);
-        } catch (DecoderException ignore) {
+        } catch (InvalidKeyException ignore) {
             return Optional.empty();
         }
     }
@@ -61,10 +61,11 @@ public class Utils {
                 return Optional.empty();
             }
             return Optional.of(fcKey);
-        } catch (DecoderException ignore) {
+        } catch (InvalidKeyException ignore) {
             return Optional.empty();
         }
     }
+
     /**
      * Converts a set of {@link com.hedera.hapi.node.base.Key} to a set of {@link HederaKey}
      *

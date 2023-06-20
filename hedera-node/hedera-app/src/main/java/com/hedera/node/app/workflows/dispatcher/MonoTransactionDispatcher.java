@@ -100,6 +100,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             case TOKEN_FEE_SCHEDULE_UPDATE -> dispatchTokenFeeScheduleUpdate(context);
             case TOKEN_DELETION -> dispatchTokenDeletion(context);
             case TOKEN_BURN -> dispatchTokenBurn(context);
+            case TOKEN_WIPE -> dispatchTokenWipe(context);
                 // ------------------ admin --------------------------
             case FREEZE -> dispatchFreeze(context);
                 //  ------------------ util --------------------------
@@ -262,6 +263,11 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
 
     private void dispatchTokenBurn(@NonNull final HandleContext handleContext) {
         final var handler = handlers.tokenBurnHandler();
+        handler.handle(handleContext);
+    }
+
+    private void dispatchTokenWipe(@NonNull final HandleContext handleContext) {
+        final var handler = handlers.tokenAccountWipeHandler();
         handler.handle(handleContext);
     }
 

@@ -19,6 +19,7 @@ package com.swirlds.common.threading.locks.internal;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
@@ -55,6 +56,7 @@ public final class AutoNoOpLock implements AutoClosableLock {
      *
      * @return an instance of a no-op auto-lock
      */
+    @NonNull
     public static AutoClosableLock getInstance() {
         return instance;
     }
@@ -63,6 +65,7 @@ public final class AutoNoOpLock implements AutoClosableLock {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public Locked lock() {
         return locked;
     }
@@ -71,6 +74,7 @@ public final class AutoNoOpLock implements AutoClosableLock {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public Locked lockInterruptibly() {
         return locked;
     }
@@ -79,6 +83,7 @@ public final class AutoNoOpLock implements AutoClosableLock {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public MaybeLocked tryLock() {
         return maybeLocked;
     }
@@ -87,7 +92,8 @@ public final class AutoNoOpLock implements AutoClosableLock {
      * {@inheritDoc}
      */
     @Override
-    public MaybeLocked tryLock(final long time, final TimeUnit unit) {
+    @NonNull
+    public MaybeLocked tryLock(final long time, @NonNull final TimeUnit unit) {
         return maybeLocked;
     }
 
@@ -98,6 +104,7 @@ public final class AutoNoOpLock implements AutoClosableLock {
      * 		if called
      */
     @Override
+    @NonNull
     public Condition newCondition() {
         throw new UnsupportedOperationException();
     }

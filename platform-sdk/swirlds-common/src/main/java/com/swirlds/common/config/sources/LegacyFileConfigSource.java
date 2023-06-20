@@ -16,7 +16,6 @@
 
 package com.swirlds.common.config.sources;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
 import java.io.IOException;
@@ -28,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -77,7 +77,7 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
      * @throws IOException if the file can not be loaded or parsed
      */
     public LegacyFileConfigSource(final Path filePath, final int ordinal) throws IOException {
-        this.filePath = ArgumentUtils.throwArgNull(filePath, "filePath");
+        this.filePath = Objects.requireNonNull(filePath, "filePath must not be null");
         this.ordinal = ordinal;
         this.internalProperties = Collections.unmodifiableMap(loadSettings(filePath.toFile()));
     }

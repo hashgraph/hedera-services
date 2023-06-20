@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.stats.cycle;
 
-import com.swirlds.common.time.Time;
+import com.swirlds.base.time.Time;
 import java.util.Arrays;
 
 /**

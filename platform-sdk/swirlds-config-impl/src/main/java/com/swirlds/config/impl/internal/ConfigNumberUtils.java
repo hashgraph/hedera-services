@@ -16,7 +16,6 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.base.ArgumentUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -39,9 +38,9 @@ public final class ConfigNumberUtils {
      */
     public static <T extends Number> int compare(
             @NonNull final T value, @NonNull final Class<T> valueType, @NonNull final Number number) {
-        ArgumentUtils.throwArgNull(value, "value");
-        ArgumentUtils.throwArgNull(valueType, "valueType");
-        ArgumentUtils.throwArgNull(number, "number");
+        Objects.requireNonNull(value, "value must not be null");
+        Objects.requireNonNull(valueType, "valueType must not be null");
+        Objects.requireNonNull(number, "number must not be null");
 
         if (Objects.equals(valueType, Integer.class) || Objects.equals(valueType, Integer.TYPE)) {
             return Integer.compare(value.intValue(), number.intValue());
@@ -72,7 +71,7 @@ public final class ConfigNumberUtils {
      * @throws IllegalArgumentException if the given value is not a valid number
      */
     public static long getLongValue(@NonNull final Object value) {
-        ArgumentUtils.throwArgNull(value, "value");
+        Objects.requireNonNull(value, "value must not be null");
         if (value instanceof Number number) {
             return number.longValue();
         }
@@ -86,7 +85,7 @@ public final class ConfigNumberUtils {
      * @return true if the given class represents a number
      */
     public static boolean isNumber(@NonNull final Class<?> cls) {
-        ArgumentUtils.throwArgNull(cls, "cls");
+        Objects.requireNonNull(cls, "cls must not be null");
         if (Number.class.isAssignableFrom(cls)) {
             return true;
         }

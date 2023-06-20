@@ -16,15 +16,20 @@
 
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.TokenGrantKycFactory.newSignedTokenGrantKyc;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.test.factories.txns.TokenGrantKycFactory;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public enum TokenKycGrantScenarios implements TxnHandlingScenario {
     VALID_GRANT_WITH_EXTANT_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenGrantKyc()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenGrantKycFactory.newSignedTokenGrantKyc()
                     .granting(KNOWN_TOKEN_WITH_KYC, MISC_ACCOUNT)
                     .nonPayerKts(TOKEN_KYC_KT)
                     .get());
