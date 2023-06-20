@@ -26,16 +26,9 @@ public final class SettingConstants {
     /** name of the settings used file */
     static final String SETTING_USED_FILENAME = "settingsUsed.txt";
 
-    static final String CONFIG_TXT = "config.txt";
-    static final String SETTINGS_TXT = "settings.txt";
     static final String DATA_STRING = "data";
     static final String SAVED_STRING = "saved";
-    static final String KEYS_STRING = "keys";
-    static final String APPS_STRING = "apps";
-    static final String LOG4J2_CONFIG_FILE = "log4j2.xml";
     static final int NUM_CRYPTO_THREADS_DEFAULT_VALUE = 32;
-    static final int SIGNED_STATE_FREQ_DEFAULT_VALUE = 1;
-    static final int MAX_EVENT_QUEUE_FOR_CONS_DEFAULT_VALUE = 10_000;
     static final int THROTTLE_TRANSACTION_QUEUE_SIZE_DEFAULT_VALUE = 100_000;
     static final int NUM_CONNECTIONS_DEFAULT_VALUE = 40;
     static final int MAX_OUTGOING_SYNCS_DEFAULT_VALUE = 2;
@@ -69,7 +62,6 @@ public final class SettingConstants {
     static final boolean LOAD_KEYS_FROM_PFX_FILES_DEFAULT_VALUE = true;
     static final int MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE = 245760;
     static final int MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE = 245760;
-    static final int RANDOM_EVENT_PROBABILITY_DEFAULT_VALUE = 0;
     static final int THREAD_DUMP_PERIOD_MS_DEFAULT_VALUE = 0;
     static final String THREAD_DUMP_LOG_DIR_DEFAULT_VALUE = "data/threadDump";
     static final int JVM_PAUSE_DETECTOR_SLEEP_MS_DEFAULT_VALUE = 1000;
