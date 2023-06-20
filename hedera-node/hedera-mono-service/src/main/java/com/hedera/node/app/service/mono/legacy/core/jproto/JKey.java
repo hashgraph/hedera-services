@@ -312,7 +312,7 @@ public abstract class JKey implements HederaKey {
         if (depth > MAX_KEY_DEPTH) {
             throw new InvalidKeyException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
         }
-        if (!(jkey.hasThresholdKey() || jkey.hasKeyList() || jkey.isEmpty())) {
+        if (!(jkey.hasThresholdKey() || jkey.hasKeyList())) {
             return convertJKeyBasic(jkey);
         } else if (jkey.hasThresholdKey()) {
             List<JKey> jKeys = jkey.getThresholdKey().getKeys().getKeysList();
@@ -327,7 +327,7 @@ public abstract class JKey implements HederaKey {
                     .setThresholdKey(ThresholdKey.newBuilder().setKeys(keys).setThreshold(thd))
                     .build();
             return result;
-        } else if (jkey.hasKeyList()) {
+        } else {
             List<JKey> jKeys = jkey.getKeyList().getKeysList();
             List<Key> tkeys = new ArrayList<>();
             for (JKey aKey : jKeys) {
@@ -336,8 +336,6 @@ public abstract class JKey implements HederaKey {
             }
             KeyList keys = KeyList.newBuilder().addAllKeys(tkeys).build();
             return Key.newBuilder().setKeyList(keys).build();
-        } else {
-            return Key.newBuilder().build();
         }
     }
 
