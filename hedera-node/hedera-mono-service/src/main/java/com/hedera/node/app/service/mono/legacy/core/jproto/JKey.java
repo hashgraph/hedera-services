@@ -312,7 +312,9 @@ public abstract class JKey implements HederaKey {
         if (depth > MAX_KEY_DEPTH) {
             throw new InvalidKeyException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
         }
-        if (!(jkey.hasThresholdKey() || jkey.hasKeyList())) {
+        if (jkey.isEmpty()) {
+            return jkey.convertJKeyEmpty();
+        } else if (!(jkey.hasThresholdKey() || jkey.hasKeyList())) {
             return convertJKeyBasic(jkey);
         } else if (jkey.hasThresholdKey()) {
             List<JKey> jKeys = jkey.getThresholdKey().getKeys().getKeysList();
@@ -327,7 +329,7 @@ public abstract class JKey implements HederaKey {
                     .setThresholdKey(ThresholdKey.newBuilder().setKeys(keys).setThreshold(thd))
                     .build();
             return result;
-        } else {
+        } else if (jkey.hasKeyList()) {
             List<JKey> jKeys = jkey.getKeyList().getKeysList();
             List<Key> tkeys = new ArrayList<>();
             for (JKey aKey : jKeys) {
@@ -336,7 +338,18 @@ public abstract class JKey implements HederaKey {
             }
             KeyList keys = KeyList.newBuilder().addAllKeys(tkeys).build();
             return Key.newBuilder().setKeyList(keys).build();
+        } else {
+            return Key.newBuilder().build();
         }
+    }
+
+    /**
+     * Convert an empty JKey to an appropriate empty Key.
+     * Typically this just creates a new Key, but subclasses may override with specific behavior.
+     * @return An empty Key.
+     */
+    protected Key convertJKeyEmpty() {
+        return Key.newBuilder().build();
     }
 
     public static boolean equalUpToDecodability(JKey a, JKey b) {
