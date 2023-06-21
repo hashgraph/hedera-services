@@ -248,7 +248,7 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "0") long genesisFreezeTime) {
 
     /**
-     * @return Absolut path to the emergency recovery file load directory.
+     * @return Absolute path to the emergency recovery file load directory.
      */
     public Path getEmergencyRecoveryFileLoadDir() {
         return getAbsolutePath().resolve(emergencyRecoveryFileLoadDir());
