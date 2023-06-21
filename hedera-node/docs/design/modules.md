@@ -12,7 +12,7 @@ Java modules.
 Each module needs a `build.gradle.kts` file that describes the module.
 
 General best practices for all our (Java) modules are defined in custom plugins that can be found
-under `buildSrc/src/main/kotlin`. For a Java module the `com.hedera.hashgraph.javaConventions` plugin should be used.
+under `build-logic/src/main/kotlin`. For a Java module the `com.hedera.hashgraph.javaConventions` plugin should be used.
 Next to this each module should have a description. Since nothing else is needed for a minimal module the most simple
 `build.gradle.kts` looks like this:
 

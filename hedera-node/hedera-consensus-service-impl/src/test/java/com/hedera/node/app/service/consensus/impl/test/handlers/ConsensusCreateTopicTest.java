@@ -65,7 +65,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ConsensusCreateTopicHandlerTest extends ConsensusHandlerTestBase {
+class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Mock
     private ReadableAccountStore accountStore;
