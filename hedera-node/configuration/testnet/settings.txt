@@ -4,7 +4,7 @@
 
 chatter.useChatter,                            false
 doUpnp,                                        false
-maxOutgoingSyncs,                              8
+maxOutgoingSyncs,                              4                          # differs from mainnet
 numConnections,                                1000
 useLoopbackIp,                                 false
 
@@ -17,7 +17,6 @@ merkleDb.iteratorInputBufferBytes,             16777216
 state.checkSignedStateFromDisk,                true
 state.saveStatePeriod,                         900
 state.signedStateDisk,                         5
-state.signedStateKeep,                         10
 state.mainClassNameOverride,                   com.hedera.services.ServicesMain
 virtualMap.preferredFlushQueueSize,            10000
 

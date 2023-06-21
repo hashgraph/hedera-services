@@ -17,7 +17,6 @@ merkleDb.iteratorInputBufferBytes,             16777216
 state.checkSignedStateFromDisk,                true
 state.saveStatePeriod,                         900
 state.signedStateDisk,                         5
-state.signedStateKeep,                         10
 state.mainClassNameOverride,                   com.hedera.services.ServicesMain
 virtualMap.preferredFlushQueueSize,            10000
 
