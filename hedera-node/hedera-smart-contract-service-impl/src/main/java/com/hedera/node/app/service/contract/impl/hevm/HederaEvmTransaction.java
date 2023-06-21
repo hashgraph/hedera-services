@@ -38,6 +38,10 @@ public record HederaEvmTransaction(
         return contractId == null;
     }
 
+    public boolean isEthereumTransaction() {
+        return relayerId != null;
+    }
+
     public @NonNull ContractID contractIdOrThrow() {
         return Objects.requireNonNull(contractId);
     }

@@ -46,12 +46,15 @@ public class CustomGasCharging {
      * @return the result of the gas charging
      * @throws HandleException if the gas charging fails fo
      */
-    public GasChargingResult tryToChargeGas(
+    public long chargeGasAllowance(
             @NonNull final HederaEvmAccount sender,
             @Nullable final HederaEvmAccount relayer,
             @NonNull final HederaEvmContext context,
             @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final HederaEvmTransaction transaction) {
+        if (context.staticCall()) {
+            return 0L;
+        }
         throw new AssertionError("Not implemented");
     }
 }

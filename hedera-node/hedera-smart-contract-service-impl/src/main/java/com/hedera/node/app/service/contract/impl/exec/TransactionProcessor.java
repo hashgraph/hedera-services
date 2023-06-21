@@ -92,19 +92,12 @@ public class TransactionProcessor {
         throw new AssertionError("Not implemented");
     }
 
-    private void chargeGasFor(
-            @NonNull final InitialCall initialCall,
-            @NonNull final HederaEvmContext context,
-            @NonNull final HederaEvmTransaction transaction) {
-        final var upfrontCost = transaction.upfrontCostGiven(context.gasPrice());
-        final var payerBalance = initialCall.fromAccount.getBalance().toLong();
-        validateTrue(payerBalance >= upfrontCost, INSUFFICIENT_PAYER_BALANCE);
-    }
-
     private boolean maybeLazyCreate(
             @NonNull final HederaEvmTransaction transaction,
             @Nullable final HederaEvmAccount to,
             @NonNull final Configuration config) {
-        return to == null && transaction.relayerId() != null && messageCallProcessor.isImplicitCreationEnabled(config);
+        return to == null &&
+                transaction.isEthereumTransaction() &&
+                messageCallProcessor.isImplicitCreationEnabled(config);
     }
 }

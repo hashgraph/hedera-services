@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.test.exec.gas;
 
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -26,7 +25,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownContextWith;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownHapiCall;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class CustomGasChargingTest {
@@ -35,9 +40,6 @@ class CustomGasChargingTest {
 
     @Mock
     private HederaEvmAccount relayer;
-
-    @Mock
-    private HederaEvmContext context;
 
     @Mock
     private HederaEvmBlocks blocks;
@@ -56,5 +58,14 @@ class CustomGasChargingTest {
     }
 
     @Test
-    void name() {}
+    void staticCallsDoNotChargeGas() {
+        final var allowanceCharged = subject.chargeGasAllowance(
+                sender,
+                relayer,
+                wellKnownContextWith(blocks, true),
+                worldUpdater,
+                wellKnownHapiCall());
+        assertEquals(0, allowanceCharged);
+        verifyNoInteractions(gasCalculator);
+    }
 }
