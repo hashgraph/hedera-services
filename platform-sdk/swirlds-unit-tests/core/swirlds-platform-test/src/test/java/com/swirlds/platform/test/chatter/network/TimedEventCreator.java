@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.chatter.network;
 
-import com.swirlds.common.time.Time;
+import com.swirlds.base.time.Time;
 import com.swirlds.platform.test.chatter.network.framework.SimulatedChatterEvent;
 import com.swirlds.platform.test.chatter.network.framework.SimulatedEventCreator;
 import com.swirlds.platform.test.simulated.config.NodeConfig;

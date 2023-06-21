@@ -16,9 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
-import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -59,7 +57,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
-import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
@@ -82,12 +79,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -199,7 +194,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                 someErc20ApproveAllowanceScenarioInOneCall(),
                 getErc20TokenDecimalsFromErc721TokenFails(),
                 transferErc20TokenReceiverContract(),
-                transferErc20TokenAliasedSender(),
                 directCallsWorkForErc20(),
                 erc20TransferFromAllowance(),
                 erc20TransferFromSelf(),
@@ -686,90 +680,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .withErcFungibleTransferStatus(true)))),
                         getAccountBalance(ERC_20_CONTRACT).hasTokenBalance(FUNGIBLE_TOKEN, 3),
                         getAccountBalance(nestedContract).hasTokenBalance(FUNGIBLE_TOKEN, 2));
-    }
-
-    private HapiSpec transferErc20TokenAliasedSender() {
-        final var aliasedTransferTxn = "aliasedTransferTxn";
-        final var addLiquidityTxn = "addLiquidityTxn";
-        final var create2Txn = "create2Txn";
-
-        final var ACCOUNT_A = "AccountA";
-        final var ACCOUNT_B = "AccountB";
-
-        final var ALIASED_TRANSFER = "AliasedTransfer";
-        final byte[][] ALIASED_ADDRESS = new byte[1][1];
-
-        final AtomicReference<String> childMirror = new AtomicReference<>();
-        final AtomicReference<String> childEip1014 = new AtomicReference<>();
-
-        return defaultHapiSpec("transferErc20TokenAliasedSender")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(OWNER),
-                        cryptoCreate(ACCOUNT),
-                        cryptoCreate(ACCOUNT_A).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(ACCOUNT_B).balance(ONE_MILLION_HBARS),
-                        tokenCreate(TOKEN_NAME)
-                                .adminKey(MULTI_KEY)
-                                .initialSupply(10000)
-                                .treasury(ACCOUNT_A),
-                        tokenAssociate(ACCOUNT_B, TOKEN_NAME),
-                        uploadInitCode(ALIASED_TRANSFER),
-                        contractCreate(ALIASED_TRANSFER).gas(300_000),
-                        withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                contractCall(
-                                                ALIASED_TRANSFER,
-                                                "deployWithCREATE2",
-                                                asHeadlongAddress(asHexedAddress(
-                                                        spec.registry().getTokenID(TOKEN_NAME))))
-                                        .exposingResultTo(result -> {
-                                            final var res = (Address) result[0];
-                                            ALIASED_ADDRESS[0] = res.value().toByteArray();
-                                        })
-                                        .payingWith(ACCOUNT)
-                                        .alsoSigningWithFullPrefix(MULTI_KEY)
-                                        .via(create2Txn)
-                                        .gas(GAS_TO_OFFER)
-                                        .hasKnownStatus(SUCCESS))))
-                .when(
-                        captureChildCreate2MetaFor(2, 0, "setup", create2Txn, childMirror, childEip1014),
-                        withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                contractCall(
-                                                ALIASED_TRANSFER,
-                                                "giveTokensToOperator",
-                                                HapiParserUtil.asHeadlongAddress(asAddress(
-                                                        spec.registry().getTokenID(TOKEN_NAME))),
-                                                HapiParserUtil.asHeadlongAddress(asAddress(
-                                                        spec.registry().getAccountID(ACCOUNT_A))),
-                                                1500L)
-                                        .payingWith(ACCOUNT)
-                                        .alsoSigningWithFullPrefix(MULTI_KEY)
-                                        .via(addLiquidityTxn)
-                                        .gas(GAS_TO_OFFER)
-                                        .hasKnownStatus(SUCCESS))),
-                        withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                contractCall(
-                                                ALIASED_TRANSFER,
-                                                TRANSFER,
-                                                HapiParserUtil.asHeadlongAddress(asAddress(
-                                                        spec.registry().getAccountID(ACCOUNT_B))),
-                                                BigInteger.valueOf(1000))
-                                        .payingWith(ACCOUNT)
-                                        .alsoSigningWithFullPrefix(MULTI_KEY)
-                                        .via(aliasedTransferTxn)
-                                        .gas(GAS_TO_OFFER)
-                                        .hasKnownStatus(SUCCESS))))
-                .then(
-                        sourcing(() -> getContractInfo(
-                                        asContractString(contractIdFromHexedMirrorAddress(childMirror.get())))
-                                .hasToken(ExpectedTokenRel.relationshipWith(TOKEN_NAME)
-                                        .balance(500))
-                                .logged()),
-                        getAccountBalance(ACCOUNT_B).hasTokenBalance(TOKEN_NAME, 1000),
-                        getAccountBalance(ACCOUNT_A).hasTokenBalance(TOKEN_NAME, 8500));
     }
 
     private HapiSpec transferErc20TokenFromContractWithNoApproval() {

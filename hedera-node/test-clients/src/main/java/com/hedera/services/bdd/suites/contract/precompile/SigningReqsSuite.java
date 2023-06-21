@@ -16,27 +16,21 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.*;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.*;
 import com.hedera.services.bdd.spec.assertions.*;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.*;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -58,7 +52,7 @@ public class SigningReqsSuite extends HapiSuite {
 
     private static final String LEGACY_ACTIVATIONS_PROP = "contracts.keys.legacyActivations";
     public static final String AUTO_RENEW = "autoRenew";
-    public static final String AR_KEY = "arKey";
+    public static final int GAS_TO_OFFER = 1_000_000;
 
     public static void main(String... args) {
         new SigningReqsSuite().runSuiteAsync();
@@ -71,144 +65,7 @@ public class SigningReqsSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                newAutoRenewAccountMustSignUpdate(),
-                newTreasuryAccountMustSignUpdate(),
-                autoRenewAccountMustSignCreation(),
-                fractionalFeeCollectorMustSign(),
-                selfDenominatedFixedCollectorMustSign(),
-                autoRenewAccountCanUseLegacySigActivationIfConfigured());
-    }
-
-    @SuppressWarnings("java:S5960")
-    private HapiSpec selfDenominatedFixedCollectorMustSign() {
-        final var fcKey = "fcKey";
-        final var arKey = AR_KEY;
-        final var feeCollector = "feeCollector";
-        final var autoRenew = AUTO_RENEW;
-        final AtomicLong contractId = new AtomicLong();
-        final AtomicReference<Address> autoRenewAlias = new AtomicReference<>();
-        final AtomicReference<Address> feeCollectorAlias = new AtomicReference<>();
-        final AtomicReference<TokenID> createdToken = new AtomicReference<>();
-
-        return defaultHapiSpec("SelfDenominatedFixedCollectorMustSign")
-                .given(
-                        newKeyNamed(arKey).shape(SECP256K1),
-                        newKeyNamed(fcKey).shape(SECP256K1),
-                        cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
-                        cryptoCreateWithExposingId(autoRenew, arKey, autoRenewAlias),
-                        cryptoCreateWithExposingId(feeCollector, fcKey, feeCollectorAlias),
-                        uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
-                        contractCreate(MINIMAL_CREATIONS_CONTRACT)
-                                .gas(GAS_TO_OFFER)
-                                .exposingNumTo(contractId::set))
-                .when(
-                        sourcing(() -> contractCall(
-                                        MINIMAL_CREATIONS_CONTRACT,
-                                        "makeRenewableTokenWithSelfDenominatedFixedFee",
-                                        autoRenewAlias.get(),
-                                        THREE_MONTHS_IN_SECONDS,
-                                        feeCollectorAlias.get())
-                                .via(FIRST_CREATE_TXN)
-                                .gas(10L * GAS_TO_OFFER)
-                                .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(CIVILIAN)
-                                .alsoSigningWithFullPrefix(autoRenew)
-                                .refusingEthConversion()
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing(() -> contractCall(
-                                        MINIMAL_CREATIONS_CONTRACT,
-                                        "makeRenewableTokenWithSelfDenominatedFixedFee",
-                                        autoRenewAlias.get(),
-                                        THREE_MONTHS_IN_SECONDS,
-                                        feeCollectorAlias.get())
-                                .via(FIRST_CREATE_TXN)
-                                .gas(10L * GAS_TO_OFFER)
-                                .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(CIVILIAN)
-                                .alsoSigningWithFullPrefix(autoRenew, feeCollector)
-                                .refusingEthConversion()))
-                .then(
-                        getTxnRecord(FIRST_CREATE_TXN)
-                                .andAllChildRecords()
-                                .exposingTokenCreationsTo(creations -> createdToken.set(creations.get(0))),
-                        sourcing(() -> getTokenInfo(asTokenString(createdToken.get()))
-                                .hasAutoRenewAccount(autoRenew)
-                                .logged()
-                                .hasCustom((spec, fees) -> {
-                                    assertEquals(1, fees.size());
-                                    final var fee = fees.get(0);
-                                    assertTrue(fee.hasFixedFee());
-                                    assertEquals(
-                                            createdToken.get(),
-                                            fee.getFixedFee().getDenominatingTokenId());
-                                    assertEquals(
-                                            spec.registry().getAccountID(feeCollector), fee.getFeeCollectorAccountId());
-                                })));
-    }
-
-    @SuppressWarnings("java:S5960")
-    private HapiSpec fractionalFeeCollectorMustSign() {
-        final var fcKey = "fcKey";
-        final var arKey = AR_KEY;
-        final var feeCollector = "feeCollector";
-        final var autoRenew = AUTO_RENEW;
-        final AtomicLong contractId = new AtomicLong();
-        final AtomicReference<Address> autoRenewAlias = new AtomicReference<>();
-        final AtomicReference<Address> feeCollectorAlias = new AtomicReference<>();
-        final AtomicReference<TokenID> createdToken = new AtomicReference<>();
-
-        return defaultHapiSpec("FractionalFeeCollectorMustSign")
-                .given(
-                        newKeyNamed(arKey).shape(SECP256K1),
-                        newKeyNamed(fcKey).shape(SECP256K1),
-                        cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
-                        cryptoCreateWithExposingId(autoRenew, arKey, autoRenewAlias),
-                        cryptoCreateWithExposingId(feeCollector, fcKey, feeCollectorAlias),
-                        uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
-                        contractCreate(MINIMAL_CREATIONS_CONTRACT)
-                                .gas(GAS_TO_OFFER)
-                                .exposingNumTo(contractId::set))
-                .when(
-                        sourcing(() -> contractCall(
-                                        MINIMAL_CREATIONS_CONTRACT,
-                                        "makeRenewableTokenWithFractionalFee",
-                                        autoRenewAlias.get(),
-                                        THREE_MONTHS_IN_SECONDS,
-                                        feeCollectorAlias.get())
-                                .via(FIRST_CREATE_TXN)
-                                .gas(10L * GAS_TO_OFFER)
-                                .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(CIVILIAN)
-                                .alsoSigningWithFullPrefix(autoRenew)
-                                .refusingEthConversion()
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing(() -> contractCall(
-                                        MINIMAL_CREATIONS_CONTRACT,
-                                        "makeRenewableTokenWithFractionalFee",
-                                        autoRenewAlias.get(),
-                                        THREE_MONTHS_IN_SECONDS,
-                                        feeCollectorAlias.get())
-                                .via(FIRST_CREATE_TXN)
-                                .gas(10L * GAS_TO_OFFER)
-                                .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(CIVILIAN)
-                                .alsoSigningWithFullPrefix(autoRenew, feeCollector)
-                                .refusingEthConversion()))
-                .then(
-                        getTxnRecord(FIRST_CREATE_TXN)
-                                .andAllChildRecords()
-                                .exposingTokenCreationsTo(creations -> createdToken.set(creations.get(0))),
-                        sourcing(() -> getTokenInfo(asTokenString(createdToken.get()))
-                                .hasAutoRenewAccount(autoRenew)
-                                .logged()
-                                .hasCustom((spec, fees) -> {
-                                    assertEquals(1, fees.size());
-                                    final var fee = fees.get(0);
-                                    assertTrue(fee.hasFractionalFee());
-                                    assertEquals(
-                                            spec.registry().getAccountID(feeCollector), fee.getFeeCollectorAccountId());
-                                })));
+        return List.of(autoRenewAccountCanUseLegacySigActivationIfConfigured());
     }
 
     private HapiSpec autoRenewAccountCanUseLegacySigActivationIfConfigured() {
@@ -275,164 +132,6 @@ public class SigningReqsSuite extends HapiSuite {
                                         .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
                         sourcing(() ->
                                 getTokenInfo(asTokenString(createdToken.get())).hasAutoRenewAccount(autoRenew)));
-    }
-
-    private HapiSpec autoRenewAccountMustSignCreation() {
-        final var arKey = AR_KEY;
-        final var autoRenew = AUTO_RENEW;
-        final AtomicReference<Address> autoRenewAlias = new AtomicReference<>();
-        final AtomicLong contractId = new AtomicLong();
-        final AtomicReference<TokenID> createdToken = new AtomicReference<>();
-
-        return defaultHapiSpec("AutoRenewAccountMustSignCreation")
-                .given(
-                        newKeyNamed(arKey).shape(SECP256K1),
-                        cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
-                        cryptoCreateWithExposingId(autoRenew, arKey, autoRenewAlias),
-                        uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
-                        contractCreate(MINIMAL_CREATIONS_CONTRACT)
-                                .exposingNumTo(contractId::set)
-                                .gas(GAS_TO_OFFER))
-                .when(
-                        // Fails without the auto-renew account's full-prefix signature
-                        sourcing(() -> contractCall(
-                                        MINIMAL_CREATIONS_CONTRACT,
-                                        "makeRenewableToken",
-                                        autoRenewAlias.get(),
-                                        THREE_MONTHS_IN_SECONDS)
-                                .via(FIRST_CREATE_TXN)
-                                .gas(10L * GAS_TO_OFFER)
-                                .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(CIVILIAN)
-                                .refusingEthConversion()
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        // Succeeds with the full-prefix signature
-                        sourcing(() -> contractCall(
-                                        MINIMAL_CREATIONS_CONTRACT,
-                                        "makeRenewableToken",
-                                        autoRenewAlias.get(),
-                                        THREE_MONTHS_IN_SECONDS)
-                                .via(SECOND_CREATE_TXN)
-                                .gas(10L * GAS_TO_OFFER)
-                                .sending(DEFAULT_AMOUNT_TO_SEND)
-                                .payingWith(CIVILIAN)
-                                .alsoSigningWithFullPrefix(arKey)
-                                .refusingEthConversion()))
-                .then(
-                        getTxnRecord(SECOND_CREATE_TXN)
-                                .andAllChildRecords()
-                                .exposingTokenCreationsTo(creations -> createdToken.set(creations.get(0))),
-                        childRecordsCheck(
-                                FIRST_CREATE_TXN,
-                                CONTRACT_REVERT_EXECUTED,
-                                TransactionRecordAsserts.recordWith()
-                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
-                        sourcing(() ->
-                                getTokenInfo(asTokenString(createdToken.get())).hasAutoRenewAccount(autoRenew)));
-    }
-
-    private HapiSpec newTreasuryAccountMustSignUpdate() {
-        final var ft = "fungibleToken";
-        final var ntKey = "ntKey";
-        final var updateTxn = "updateTxn";
-        final var newTreasury = "newTreasury";
-        final AtomicReference<Address> tokenMirrorAddr = new AtomicReference<>();
-        final AtomicReference<Address> newTreasuryAliasAddr = new AtomicReference<>();
-
-        return defaultHapiSpec("NewTreasuryAccountMustSignUpdate")
-                .given(
-                        newKeyNamed(ntKey).shape(SECP256K1),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(newTreasury)
-                                // The new treasury must either already be associated or
-                                // have open auto-association slots; it's therefore a bit
-                                // odd that we require it to also sign, but this is the
-                                // HAPI behavior, so we should be consistent for now
-                                .maxAutomaticTokenAssociations(1)
-                                .key(ntKey)
-                                .exposingCreatedIdTo(id -> newTreasuryAliasAddr.set(idAsHeadlongAddress(id))),
-                        cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
-                        uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
-                        contractCreate(MINIMAL_CREATIONS_CONTRACT).gas(GAS_TO_OFFER),
-                        tokenCreate(ft)
-                                .adminKey(CIVILIAN)
-                                .treasury(TOKEN_TREASURY)
-                                .exposingCreatedIdTo(idLit -> tokenMirrorAddr.set(idAsHeadlongAddress(asToken(idLit)))))
-                .when(sourcing(() -> contractCall(
-                                MINIMAL_CREATIONS_CONTRACT,
-                                "updateTokenWithNewTreasury",
-                                tokenMirrorAddr.get(),
-                                newTreasuryAliasAddr.get())
-                        .via(updateTxn)
-                        .gas(10L * GAS_TO_OFFER)
-                        .sending(DEFAULT_AMOUNT_TO_SEND)
-                        .payingWith(CIVILIAN)
-                        .refusingEthConversion()
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
-                .then(
-                        childRecordsCheck(
-                                updateTxn,
-                                CONTRACT_REVERT_EXECUTED,
-                                TransactionRecordAsserts.recordWith()
-                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
-                        // Treasury account is unchanged
-                        getTokenInfo(ft).hasTreasury(TOKEN_TREASURY));
-    }
-
-    private HapiSpec newAutoRenewAccountMustSignUpdate() {
-        final var ft = "fungibleToken";
-        final var narKey = "narKey";
-        final var adminKey = "adminKey";
-        final var updateTxn = "updateTxn";
-        final var newAutoRenewAccount = "newAutoRenewAccount";
-        final AtomicReference<Address> tokenMirrorAddr = new AtomicReference<>();
-        final AtomicReference<Address> newAutoRenewAliasAddr = new AtomicReference<>();
-
-        return defaultHapiSpec("newAutoRenewAccountMustSignUpdate")
-                .given(
-                        newKeyNamed(adminKey),
-                        newKeyNamed(narKey).shape(SECP256K1),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(newAutoRenewAccount)
-                                .maxAutomaticTokenAssociations(2)
-                                .key(narKey)
-                                .exposingCreatedIdTo(id -> newAutoRenewAliasAddr.set(idAsHeadlongAddress(id))),
-                        cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
-                        uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
-                        contractCreate(MINIMAL_CREATIONS_CONTRACT).gas(GAS_TO_OFFER),
-                        tokenCreate(ft)
-                                .autoRenewAccount(TOKEN_TREASURY)
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS - 3600L)
-                                .adminKey(CIVILIAN)
-                                .treasury(TOKEN_TREASURY)
-                                .exposingCreatedIdTo(idLit -> tokenMirrorAddr.set(idAsHeadlongAddress(asToken(idLit)))))
-                .when(sourcing(() -> contractCall(
-                                MINIMAL_CREATIONS_CONTRACT,
-                                "updateTokenWithNewAutoRenewInfo",
-                                tokenMirrorAddr.get(),
-                                newAutoRenewAliasAddr.get(),
-                                THREE_MONTHS_IN_SECONDS + 3600)
-                        .via(updateTxn)
-                        .gas(10L * GAS_TO_OFFER)
-                        .sending(DEFAULT_AMOUNT_TO_SEND)
-                        .payingWith(CIVILIAN)
-                        .refusingEthConversion()
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
-                .then(
-                        childRecordsCheck(
-                                updateTxn,
-                                CONTRACT_REVERT_EXECUTED,
-                                TransactionRecordAsserts.recordWith()
-                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
-                        // Auto-renew account is unchanged
-                        getTokenInfo(ft).hasAutoRenewAccount(TOKEN_TREASURY));
-    }
-
-    private static HapiCryptoCreate cryptoCreateWithExposingId(
-            String accountName, String keyName, AtomicReference<Address> addressReference) {
-        return cryptoCreate(accountName)
-                .key(keyName)
-                .exposingCreatedIdTo(id -> addressReference.set(idAsHeadlongAddress(id)));
     }
 
     @Override

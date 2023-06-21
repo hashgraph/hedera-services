@@ -16,13 +16,13 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -46,7 +46,7 @@ class ConfigPropertiesService implements ConfigLifecycle {
     private boolean initialized = false;
 
     ConfigPropertiesService(@NonNull final ConfigSourceService configSourceService) {
-        this.configSourceService = ArgumentUtils.throwArgNull(configSourceService, "configSourceService");
+        this.configSourceService = Objects.requireNonNull(configSourceService, "configSourceService must not be null");
         internalProperties = new HashMap<>();
     }
 

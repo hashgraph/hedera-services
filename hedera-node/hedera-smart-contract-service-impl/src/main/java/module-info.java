@@ -14,8 +14,8 @@ module com.hedera.node.app.service.contract.impl {
     requires transitive tuweni.units;
     requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app.service.token;
-    requires com.github.spotbugs.annotations;
     requires com.swirlds.jasperdb;
+    requires static com.github.spotbugs.annotations;
     requires org.bouncycastle.provider;
 
     provides com.hedera.node.app.service.contract.ContractService with

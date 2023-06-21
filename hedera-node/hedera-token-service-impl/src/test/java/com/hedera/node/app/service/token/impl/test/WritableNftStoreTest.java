@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test;
 
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
@@ -108,5 +109,47 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
 
         assertEquals(1, writableNftStore.sizeOfState());
         assertEquals(Set.of(id), writableNftStore.modifiedNfts());
+    }
+
+    @Test
+    void removesByUniqueTokenId() {
+        // Set up the NFT state with an existing NFT
+        final var nftToRemove =
+                UniqueTokenId.newBuilder().tokenTypeNumber(1).serialNumber(1).build();
+        writableNftState = emptyWritableNftStateBuilder()
+                .value(
+                        nftToRemove,
+                        Nft.newBuilder().id(nftToRemove).ownerNumber(12345).build())
+                .build();
+        assertTrue(writableNftState.contains(nftToRemove));
+        given(writableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(writableNftState);
+        writableNftStore = new WritableNftStore(writableStates);
+        assertNotNull(writableNftStore.get(nftToRemove));
+
+        writableNftStore.remove(nftToRemove);
+
+        // Assert the NFT is removed
+        assertNull(writableNftStore.get(nftToRemove));
+    }
+
+    @Test
+    void removesByTokenIdAndSerialNum() {
+        // Set up the NFT state with an existing NFT
+        final var nftToRemove =
+                UniqueTokenId.newBuilder().tokenTypeNumber(1).serialNumber(1).build();
+        writableNftState = emptyWritableNftStateBuilder()
+                .value(
+                        nftToRemove,
+                        Nft.newBuilder().id(nftToRemove).ownerNumber(12345).build())
+                .build();
+        assertTrue(writableNftState.contains(nftToRemove));
+        given(writableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(writableNftState);
+        writableNftStore = new WritableNftStore(writableStates);
+        assertNotNull(writableNftStore.get(nftToRemove));
+
+        writableNftStore.remove(asToken(nftToRemove.tokenTypeNumber()), nftToRemove.serialNumber());
+
+        // Assert the NFT is removed
+        assertNull(writableNftStore.get(nftToRemove));
     }
 }

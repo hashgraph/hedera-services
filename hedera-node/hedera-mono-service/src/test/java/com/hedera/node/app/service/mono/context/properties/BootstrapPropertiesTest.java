@@ -136,7 +136,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_PROFILES_ACTIVE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_REALM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION;
@@ -344,7 +343,7 @@ class BootstrapPropertiesTest {
             entry(AUTO_RENEW_GRANT_FREE_RENEWALS, false),
             entry(CONTRACTS_ALLOW_CREATE2, true),
             entry(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, false),
-            entry(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, 10_000_000L),
+            entry(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, 0L),
             entry(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS, Set.<Address>of()),
             entry(
                     CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
@@ -547,7 +546,6 @@ class BootstrapPropertiesTest {
             entry(CONTRACTS_SIDECARS, EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE, SidecarType.CONTRACT_BYTECODE)),
             entry(CONTRACTS_SIDECAR_VALIDATION_ENABLED, false),
             entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, 256),
-            entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, false),
             entry(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO, 9L),
             entry(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC, 10L),
             entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false),

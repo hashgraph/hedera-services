@@ -16,10 +16,12 @@
 
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.node.app.service.mono.txns.contract.ContractCreateTransitionLogic;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Key;
+import java.security.InvalidKeyException;
 import org.junit.jupiter.api.Test;
 
 class JContractIDKeyTest {
@@ -45,5 +47,16 @@ class JContractIDKeyTest {
         assertFalse(subject.isForScheduledTxn());
         subject.setForScheduledTxn(true);
         assertTrue(subject.isForScheduledTxn());
+    }
+
+    @Test
+    void standinContractKeyConvertsPerUsual() throws InvalidKeyException {
+        final var expectedProtoKey = Key.newBuilder()
+                .setContractID(ContractID.newBuilder().setContractNum(0).build())
+                .build();
+
+        final var actualProtoKey = JKey.mapJKey(ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY);
+
+        assertEquals(expectedProtoKey, actualProtoKey);
     }
 }

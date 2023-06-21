@@ -25,12 +25,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockStates;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockWritableStates;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenDissociateScenarios.TOKEN_DISSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET;
@@ -45,10 +39,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -60,33 +54,40 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
+import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
-import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private ExpiryValidator expiryValidator;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private HandleContext handleContext;
+
     private static final AccountID ACCOUNT_1339 =
             AccountID.newBuilder().accountNum(MISC_ACCOUNT.getAccountNum()).build();
-    private static final AccountID ACCOUNT_2020 = IdConvenienceUtils.fromAccountNum(2020);
+    private static final AccountID ACCOUNT_2020 = BaseCryptoHandler.asAccount(2020);
     private static final TokenID TOKEN_555_ID =
             TokenID.newBuilder().tokenNum(555).build();
     private static final TokenID TOKEN_666_ID =
@@ -189,7 +190,8 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             final var txn = newDissociateTxn(
                     AccountID.newBuilder().accountNum(accountNumber).build(), List.of(TOKEN_555_ID));
             given(context.body()).willReturn(txn);
-
+            given(expiryValidator.expirationStatus(eq(EntityType.ACCOUNT), eq(true), anyLong()))
+                    .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
             Assertions.assertThatThrownBy(() -> subject.handle(context))
                     .isInstanceOf(HandleException.class)
                     .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
@@ -375,8 +377,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             // Since the account had no positive balances, its number of positive balances should still be zero
             Assertions.assertThat(savedAcct.numberPositiveBalances()).isZero();
             // Verify that the token rel was removed
-            final var supposedlyDeletedTokenRel =
-                    writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID).orElse(null);
+            final var supposedlyDeletedTokenRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID);
             Assertions.assertThat(supposedlyDeletedTokenRel).isNull();
         }
 
@@ -420,8 +421,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             // Since the account had no positive balances, its number of positive balances should still be zero
             Assertions.assertThat(savedAcct.numberPositiveBalances()).isZero();
             // Verify that the token rel was removed
-            final var supposedlyDeletedTokenRel =
-                    writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID).orElse(null);
+            final var supposedlyDeletedTokenRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID);
             Assertions.assertThat(supposedlyDeletedTokenRel).isNull();
         }
 
@@ -498,13 +498,11 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             Assertions.assertThat(treasuryAcct.headTokenNumber()).isEqualTo(TOKEN_555_ID.tokenNum());
 
             // Verify that the token rel with account 1339 was removed
-            final var supposedlyDeletedTokenRel =
-                    writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID).orElse(null);
+            final var supposedlyDeletedTokenRel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID);
             Assertions.assertThat(supposedlyDeletedTokenRel).isNull();
 
             // Verify that the token rel with the treasury account was updated
-            final var treasuryTokenRel =
-                    writableTokenRelStore.get(ACCOUNT_2020, TOKEN_555_ID).orElse(null);
+            final var treasuryTokenRel = writableTokenRelStore.get(ACCOUNT_2020, TOKEN_555_ID);
             Assertions.assertThat(treasuryTokenRel).isNotNull();
             // Verify that the treasury balance is now equal to its supply
             Assertions.assertThat(treasuryTokenRel.balance()).isEqualTo(totalSupply);
@@ -513,7 +511,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         @Test
         void multipleTokenRelsAreRemoved() {
             // Represents a token that won't be found
-            final var token444Id = IdConvenienceUtils.fromTokenNum(444);
+            final var token444Id = BaseTokenHandler.asToken(444);
             // Represents a token that is deleted
             final var token555 = Token.newBuilder()
                     .tokenNumber(TOKEN_555_ID.tokenNum())
@@ -583,44 +581,16 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             Assertions.assertThat(savedAcct.numberPositiveBalances()).isZero();
 
             // Verify that the token rels were removed
-            final var token444Rel =
-                    writableTokenRelStore.get(ACCOUNT_1339, token444Id).orElse(null);
+            final var token444Rel = writableTokenRelStore.get(ACCOUNT_1339, token444Id);
             Assertions.assertThat(token444Rel).isNull();
-            final var token555Rel =
-                    writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID).orElse(null);
+            final var token555Rel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_555_ID);
             Assertions.assertThat(token555Rel).isNull();
-            final var token666Rel =
-                    writableTokenRelStore.get(ACCOUNT_1339, TOKEN_666_ID).orElse(null);
+            final var token666Rel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_666_ID);
             Assertions.assertThat(token666Rel).isNull();
-        }
-
-        private ReadableTokenStore newReadableStoreWithTokens(Token... tokens) {
-            final var backingMap = new HashMap<EntityNum, Token>();
-            for (final Token token : tokens) {
-                backingMap.put(
-                        EntityNum.fromTokenId(fromPbj(IdConvenienceUtils.fromTokenNum(token.tokenNumber()))), token);
-            }
-
-            final var wrappingState = new MapWritableKVState<>(TOKENS_KEY, backingMap);
-            return new ReadableTokenStoreImpl(mockStates(Map.of(TOKENS_KEY, wrappingState)));
-        }
-
-        private WritableAccountStore newWritableStoreWithAccounts(Account... accounts) {
-            final var backingMap = new HashMap<AccountID, Account>();
-            for (final Account account : accounts) {
-                backingMap.put(IdConvenienceUtils.fromAccountNum(account.accountNumber()), account);
-            }
-
-            final var wrappingState = new MapWritableKVState<>(ACCOUNTS_KEY, backingMap);
-            return new WritableAccountStore(mockWritableStates(Map.of(
-                    ACCOUNTS_KEY, wrappingState, ALIASES_KEY, new MapWritableKVState<>(ALIASES_KEY, new HashMap<>()))));
         }
     }
 
     private HandleContext mockContext() {
-        final var handleContext = mock(HandleContext.class);
-
-        final var expiryValidator = mock(ExpiryValidator.class);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
                 .willReturn(ResponseCodeEnum.OK);

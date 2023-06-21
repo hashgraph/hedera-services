@@ -37,7 +37,9 @@ import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.OSHealthCheckConfig;
+import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.export.ConfigExport;
@@ -53,6 +55,7 @@ import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsProvider;
@@ -74,11 +77,10 @@ import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
-import com.swirlds.p2p.portforwarding.PortForwarder;
-import com.swirlds.p2p.portforwarding.PortMapping;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.config.ConfigMappings;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.config.internal.ConfigMappings;
+import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.ConfigPropertiesSource;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -97,8 +99,10 @@ import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.network.Network;
+import com.swirlds.platform.portforwarding.PortForwarder;
+import com.swirlds.platform.portforwarding.PortMapping;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
@@ -118,6 +122,7 @@ import java.awt.GraphicsEnvironment;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -190,7 +195,7 @@ public class Browser {
 
         // The properties from the config.txt
         final LegacyConfigProperties configurationProperties = LegacyConfigPropertiesLoader.loadConfigFile(
-                Settings.getInstance().getConfigPath());
+                ConfigurationHolder.getConfigData(PathsConfig.class).getConfigPath());
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
@@ -232,7 +237,9 @@ public class Browser {
                 .withConfigDataType(PreconsensusEventStreamConfig.class)
                 .withConfigDataType(SyncConfig.class)
                 .withConfigDataType(UptimeConfig.class)
-                .withConfigDataType(RecycleBinConfig.class);
+                .withConfigDataType(RecycleBinConfig.class)
+                .withConfigDataType(EventConfig.class)
+                .withConfigDataType(PathsConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
@@ -240,6 +247,7 @@ public class Browser {
         }
 
         this.configuration = configurationBuilder.build();
+        PlatformConfigUtils.logNotKnownConfigProperties(configuration);
 
         // Set the configuration on all SwirldMain instances.
         appMains.values().forEach(swirldMain -> swirldMain.setConfiguration(configuration));
@@ -298,13 +306,13 @@ public class Browser {
             // simulation to run.
 
             try {
-
-                if (Files.exists(Settings.getInstance().getConfigPath())) {
-                    CommonUtils.tellUserConsole("Reading the configuration from the file:   "
-                            + Settings.getInstance().getConfigPath());
+                final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
+                if (Files.exists(pathsConfig.getConfigPath())) {
+                    CommonUtils.tellUserConsole(
+                            "Reading the configuration from the file:   " + pathsConfig.getConfigPath());
                 } else {
-                    CommonUtils.tellUserConsole("A config.txt file could be created here:   "
-                            + Settings.getInstance().getConfigPath());
+                    CommonUtils.tellUserConsole(
+                            "A config.txt file could be created here:   " + pathsConfig.getConfigPath());
                     return;
                 }
                 // instantiate all Platform objects, which each instantiates a Statistics object
@@ -420,7 +428,8 @@ public class Browser {
         final StringBuilder settingsUsedBuilder = new StringBuilder();
 
         // Add all settings values to the string builder
-        if (Files.exists(Settings.getInstance().getSettingsPath())) {
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
+        if (Files.exists(pathsConfig.getSettingsPath())) {
             Settings.getInstance().addSettingsUsed(settingsUsedBuilder);
         }
 
@@ -432,8 +441,7 @@ public class Browser {
         ConfigExport.addConfigContents(configuration, settingsUsedBuilder);
 
         // Write the settingsUsed.txt file
-        final Path settingsUsedPath =
-                Settings.getInstance().getSettingsUsedDir().resolve(SettingConstants.SETTING_USED_FILENAME);
+        final Path settingsUsedPath = pathsConfig.getSettingsUsedDir().resolve(SettingConstants.SETTING_USED_FILENAME);
         try (final OutputStream outputStream = new FileOutputStream(settingsUsedPath.toFile())) {
             outputStream.write(settingsUsedBuilder.toString().getBytes(StandardCharsets.UTF_8));
         } catch (final IOException | RuntimeException e) {
@@ -469,31 +477,21 @@ public class Browser {
         if (args != null) {
             for (final String item : args) {
                 final String arg = item.trim().toLowerCase();
-                switch (arg) {
-                    case "-local":
-                    case "-log":
-                        currentOption = arg;
-                        break;
-                    default:
-                        if (currentOption != null) {
-                            switch (currentOption) {
-                                case "-local":
-                                    try {
-                                        localNodesToStart.add(new NodeId(Integer.parseInt(arg)));
-                                    } catch (final NumberFormatException ex) {
-                                        // Intentionally suppress the NumberFormatException
-                                    }
-                                    break;
-                                case "-log":
-                                    Settings.getInstance().setLogPath(getAbsolutePath(arg));
-                                    break;
-                            }
-                        }
+                if (arg.equals("-local")) {
+                    currentOption = arg;
+                } else if (currentOption != null) {
+                    try {
+                        localNodesToStart.add(new NodeId(Integer.parseInt(arg)));
+                    } catch (final NumberFormatException ex) {
+                        // Intentionally suppress the NumberFormatException
+                    }
                 }
             }
         }
 
-        launch(localNodesToStart, Settings.getInstance().getLogPath());
+        launch(
+                localNodesToStart,
+                ConfigurationHolder.getConfigData(PathsConfig.class).getLogPath());
     }
 
     /**
@@ -558,6 +556,7 @@ public class Browser {
             if (!Files.exists(dir)) {
                 rethrowIO(() -> Files.createDirectories(dir));
             }
+            logger.info(STARTUP.getMarker(), "Starting thread dump generator and save to directory {}", dir);
             ThreadDumpGenerator.generateThreadDumpAtIntervals(
                     dir, Settings.getInstance().getThreadDumpPeriodMs());
         }
@@ -646,6 +645,14 @@ public class Browser {
                 // the name of this swirld
                 final String swirldName = appDefinition.getSwirldName();
                 final SoftwareVersion appVersion = appMain.getSoftwareVersion();
+
+                final RecycleBin recycleBin;
+                try {
+                    recycleBin = RecycleBin.create(configuration, nodeId);
+                } catch (IOException e) {
+                    throw new UncheckedIOException("unable to create recycle bin", e);
+                }
+
                 // We can't send a "real" dispatch, since the dispatcher will not have been started by the
                 // time this class is used.
                 final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
@@ -663,6 +670,15 @@ public class Browser {
                 // check software version compatibility
                 final boolean softwareUpgrade =
                         BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState.getNullable());
+
+                if (softwareUpgrade) {
+                    try {
+                        logger.info(STARTUP.getMarker(), "Clearing recycle bin as part of software upgrade workflow.");
+                        recycleBin.clear();
+                    } catch (final IOException e) {
+                        throw new UncheckedIOException("Failed to clear recycle bin", e);
+                    }
+                }
 
                 // Initialize the address book from the configuration and platform saved state.
                 final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
@@ -682,6 +698,7 @@ public class Browser {
                 final SwirldsPlatform platform = new SwirldsPlatform(
                         platformContext,
                         crypto.get(nodeId),
+                        recycleBin,
                         initialAddressBook,
                         nodeId,
                         mainClassName,
@@ -689,8 +706,7 @@ public class Browser {
                         appVersion,
                         appMain::newState,
                         loadedSignedState,
-                        emergencyRecoveryManager,
-                        softwareUpgrade);
+                        emergencyRecoveryManager);
                 platforms.add(platform);
 
                 new InfoMember(infoSwirld, instanceNumber, platform);
@@ -703,6 +719,9 @@ public class Browser {
                         .setThreadName("appMain")
                         .setRunnable(appMain)
                         .build();
+                // IMPORTATNT: this swirlds app thread must be non-daemon,
+                // so that the JVM will not exit when the main thread exits
+                appThread.setDaemon(false);
                 appRunThreads[ownHostIndex] = appThread;
 
                 ownHostIndex++;

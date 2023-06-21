@@ -32,7 +32,6 @@ import javax.inject.Singleton;
 public class QueryDispatcher {
 
     private static final String QUERY_NOT_SET = "Query not set";
-    private static final String GET_FAST_RECORD_IS_NOT_SUPPORTED = "TransactionGetFastRecord is not supported";
 
     private final QueryHandlers handlers;
 
@@ -79,6 +78,7 @@ public class QueryDispatcher {
             case NETWORK_GET_EXECUTION_TIME -> handlers.networkGetExecutionTimeHandler();
             case TRANSACTION_GET_RECEIPT -> handlers.networkTransactionGetReceiptHandler();
             case TRANSACTION_GET_RECORD -> handlers.networkTransactionGetRecordHandler();
+            case TRANSACTION_GET_FAST_RECORD -> handlers.networkTransactionGetFastRecordHandler();
 
             case SCHEDULE_GET_INFO -> handlers.scheduleGetInfoHandler();
 
@@ -87,8 +87,6 @@ public class QueryDispatcher {
             case TOKEN_GET_NFT_INFO -> handlers.tokenGetNftInfoHandler();
             case TOKEN_GET_NFT_INFOS -> handlers.tokenGetNftInfosHandler();
 
-            case TRANSACTION_GET_FAST_RECORD -> throw new UnsupportedOperationException(
-                    GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case UNSET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }

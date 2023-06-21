@@ -17,58 +17,33 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.settings.ParsingUtils.parseDuration;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.SettingConstants.APPS_STRING;
 import static com.swirlds.platform.SettingConstants.BUFFER_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.CONFIG_TXT;
-import static com.swirlds.platform.SettingConstants.CSV_APPEND_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.CSV_FILE_NAME_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.CSV_OUTPUT_FOLDER_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.CSV_WRITE_FREQUENCY_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DATA_STRING;
 import static com.swirlds.platform.SettingConstants.DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DELAY_SHUFFLE_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.DISABLE_METRICS_OUTPUT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DO_UPNP_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.ENABLE_EVENT_STREAMING_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.EVENTS_LOG_DIR_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.EVENTS_LOG_PERIOD_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.EVENT_INTAKE_QUEUE_SIZE_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.EVENT_INTAKE_QUEUE_THROTTLE_SIZE_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.EVENT_STREAM_QUEUE_CAPACITY_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.FREEZE_SECONDS_AFTER_STARTUP_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.GOSSIP_WITH_DIFFERENT_VERSIONS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.HALF_LIFE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.JVM_PAUSE_DETECTOR_SLEEP_MS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.JVM_PAUSE_REPORT_MS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.KEYS_STRING;
 import static com.swirlds.platform.SettingConstants.LOAD_KEYS_FROM_PFX_FILES_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.LOG4J2_CONFIG_FILE;
 import static com.swirlds.platform.SettingConstants.LOG_STACK_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_ADDRESS_SIZE_ALLOWED_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.MAX_EVENT_QUEUE_FOR_CONS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_INCOMING_SYNCS_INC_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_OUTGOING_SYNCS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.NUM_CONNECTIONS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.NUM_CRYPTO_THREADS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.PROMETHEUS_ENDPOINT_ENABLED_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.PROMETHEUS_ENDPOINT_MAX_BACKLOG_ALLOWED_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.PROMETHEUS_ENDPOINT_PORT_NUMBER_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.RANDOM_EVENT_PROBABILITY_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.RESCUE_CHILDLESS_INVERSE_PROBABILITY_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SAVED_STRING;
-import static com.swirlds.platform.SettingConstants.SETTINGS_TXT;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_CALLER_SKIPS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_HEARTBEAT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SOCKET_IP_TOS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.STALE_EVENT_PREVENTION_THRESHOLD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.STATS_BUFFER_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.STATS_RECENT_SECONDS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.STATS_SKIP_SECONDS_DEFAULT_VALUE;
@@ -87,9 +62,10 @@ import static com.swirlds.platform.SettingConstants.USE_TLS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.VERBOSE_STATISTICS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.VERIFY_EVENT_SIGS_DEFAULT_VALUE;
 
+import com.swirlds.common.config.PathsConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.settings.SettingsException;
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.config.api.Configuration;
@@ -146,23 +122,13 @@ public class Settings {
     private static final Logger logger = LogManager.getLogger(Settings.class);
 
     private static final Settings INSTANCE = new Settings();
-    /** path to config.txt (which might not exist) */
-    private final Path configPath = getAbsolutePath(CONFIG_TXT);
-    /** path to settings.txt (which might not exist) */
-    private final Path settingsPath = getAbsolutePath(SETTINGS_TXT);
     /** the directory where the settings used file will be created on startup if and only if settings.txt exists */
     private final Path settingsUsedDir = getAbsolutePath();
-    /** path to data/keys/ */
-    private final Path keysDirPath = getAbsolutePath().resolve(DATA_STRING).resolve(KEYS_STRING);
-    /** path to data/apps/ */
-    private final Path appsDirPath = getAbsolutePath().resolve(DATA_STRING).resolve(APPS_STRING);
 
     ///////////////////////////////////////////
     // settings from settings.txt file
     /** priority for threads that don't sync (all but SyncCaller, SyncListener,SyncServer */
     private final int threadPriorityNonSync = THREAD_PRIORITY_NON_SYNC_DEFAULT_VALUE;
-    /** path to log4j2.xml (which might not exist) */
-    private Path logPath = rethrowIO(() -> getAbsolutePath(LOG4J2_CONFIG_FILE));
     /** verify event signatures (rather than just trusting they are correct)? */
     private boolean verifyEventSigs = VERIFY_EVENT_SIGS_DEFAULT_VALUE;
     /** number of threads used to verify signatures and generate keys, in parallel */
@@ -171,8 +137,6 @@ public class Settings {
     private boolean showInternalStats = SHOW_INTERNAL_STATS_DEFAULT_VALUE;
     /** show expand statistics values, inlcude mean, min, max, stdDev */
     private boolean verboseStatistics = VERBOSE_STATISTICS_DEFAULT_VALUE;
-    /** max events that can be put in the forCons queue (q2) in ConsensusRoundHandler (0 for infinity) */
-    private int maxEventQueueForCons = MAX_EVENT_QUEUE_FOR_CONS_DEFAULT_VALUE;
     /**
      * Stop accepting new non-system transactions into the 4 transaction queues if any of them have more than this
      * many.
@@ -204,9 +168,6 @@ public class Settings {
      * @see <a href="https://en.wikipedia.org/wiki/Type_of_service">Type of Service</a>
      */
     private int socketIpTos = SOCKET_IP_TOS_DEFAULT_VALUE;
-    /** half life of some of the various statistics (give half the weight to the last halfLife seconds) */
-    private double halfLife = HALF_LIFE_DEFAULT_VALUE;
-
     /** when converting an exception to a string for logging, should it include the stack trace? */
     private boolean logStack = LOG_STACK_DEFAULT_VALUE;
     /** should TLS be turned on, rather than making all sockets unencrypted? */
@@ -253,7 +214,8 @@ public class Settings {
      */
     private int freezeSecondsAfterStartup = FREEZE_SECONDS_AFTER_STARTUP_DEFAULT_VALUE;
     /**
-     * When enabled, the platform will try to load node keys from .pfx files located in {@link #keysDirPath}. If even a
+     * When enabled, the platform will try to load node keys from .pfx files located in
+     * {@link com.swirlds.common.config.PathsConfig.keysDirPath}. If even a
      * single key is missing, the platform will warn and exit.
      * <p>
      * If disabled, the platform will generate keys deterministically.
@@ -267,83 +229,14 @@ public class Settings {
     /** the maximum number of transactions that a single event may contain */
     private int maxTransactionCountPerEvent = MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE;
     /**
-     * The absolute or relative folder path where all the statistics CSV files will be written. If this value is null or
-     * an empty string, the current folder selection behavior will be used (ie: the SDK base path).
-     */
-    private String csvOutputFolder = CSV_OUTPUT_FOLDER_DEFAULT_VALUE;
-    /**
-     * Disable all metrics-outputs. If {@code true}, this overrides all other specific settings concerning
-     * metrics-output.
-     */
-    private boolean disableMetricsOutput = DISABLE_METRICS_OUTPUT_DEFAULT_VALUE;
-    /**
-     * The prefix of the name of the CSV file that the platform will write statistics to. If this value is null or an
-     * empty string, the platform will not write any statistics.
-     */
-    private String csvFileName = CSV_FILE_NAME_DEFAULT_VALUE;
-    /**
      * The path to look for an emergency recovery file on node start. If a file is present in this directory at startup,
      * emergency recovery will begin.
      */
     private Path emergencyRecoveryFileLoadDir =
             getAbsolutePath().resolve(DATA_STRING).resolve(SAVED_STRING);
-    /**
-     * The frequency, in milliseconds, at which values are written to the statistics CSV file.
-     */
-    private int csvWriteFrequency = CSV_WRITE_FREQUENCY_DEFAULT_VALUE;
-    /** Indicates whether statistics should be appended to the CSV file. */
-    private boolean csvAppend = CSV_APPEND_DEFAULT_VALUE;
-    /** Indicates if a prometheus endpoint should be offered **/
-    private boolean prometheusEndpointEnabled = PROMETHEUS_ENDPOINT_ENABLED_DEFAULT_VALUE;
-    /** Port of the Prometheus endpoint **/
-    private int prometheusEndpointPortNumber = PROMETHEUS_ENDPOINT_PORT_NUMBER_DEFAULT_VALUE;
-    /** Backlog of the Prometheus endpoint (= number of incoming TCP connections the system will queue) **/
-    private int prometheusEndpointMaxBacklogAllowed = PROMETHEUS_ENDPOINT_MAX_BACKLOG_ALLOWED_DEFAULT_VALUE;
-
-    /** The value for the event intake queue at which the node should stop syncing */
-    private int eventIntakeQueueThrottleSize = EVENT_INTAKE_QUEUE_THROTTLE_SIZE_DEFAULT_VALUE;
-    /**
-     * The size of the event intake queue, {@link QueueThreadConfiguration#UNLIMITED_CAPACITY} for unbounded. It is best
-     * that this queue is large, but not unbounded. Filling it up can cause sync threads to drop TCP connections, but
-     * leaving it unbounded can cause out of memory errors, even with the {@link #eventIntakeQueueThrottleSize}, because
-     * syncs that started before the throttle engages can grow the queue to very large sizes on larger networks.
-     */
-    private int eventIntakeQueueSize = EVENT_INTAKE_QUEUE_SIZE_DEFAULT_VALUE;
-    /**
-     * The probability that after a sync, a node will create an event with a random other parent. The probability is is
-     * 1 in X, where X is the value of randomEventProbability. A value of 0 means that a node will not create any random
-     * events.
-     * <p>
-     * This feature is used to get consensus on events with no descendants which are created by nodes who go offline.
-     */
-    private int randomEventProbability = RANDOM_EVENT_PROBABILITY_DEFAULT_VALUE;
-    /**
-     * A setting used to prevent a node from generating events that will probably become stale. This value is multiplied
-     * by the address book size and compared to the number of events received in a sync. If ( numEventsReceived >
-     * staleEventPreventionThreshold * addressBookSize ) then we will not create an event for that sync, to reduce the
-     * probability of creating an event that will become stale.
-     */
-    private int staleEventPreventionThreshold = STALE_EVENT_PREVENTION_THRESHOLD_DEFAULT_VALUE;
-    /**
-     * The probability that we will create a child for a childless event. The probability is 1 / X, where X is the value
-     * of rescueChildlessInverseProbability. A value of 0 means that a node will not create any children for childless
-     * events.
-     */
-    private int rescueChildlessInverseProbability = RESCUE_CHILDLESS_INVERSE_PROBABILITY_DEFAULT_VALUE;
-
-    ///////////////////////////////////////////
-    // Setting for stream event
-    /** enable stream event to server */
-    private boolean enableEventStreaming = ENABLE_EVENT_STREAMING_DEFAULT_VALUE;
-    /** capacity of the blockingQueue from which we take events and write to EventStream files */
-    private int eventStreamQueueCapacity = EVENT_STREAM_QUEUE_CAPACITY_DEFAULT_VALUE;
-    /** period of generating eventStream file */
-    private long eventsLogPeriod = EVENTS_LOG_PERIOD_DEFAULT_VALUE;
 
     ///////////////////////////////////////////
     // Setting for thread dump
-    /** eventStream files will be generated in this directory */
-    private String eventsLogDir = EVENTS_LOG_DIR_DEFAULT_VALUE;
     /** period of generating thread dump file in the unit of milliseconds */
     private long threadDumpPeriodMs = THREAD_DUMP_PERIOD_MS_DEFAULT_VALUE;
 
@@ -377,7 +270,6 @@ public class Settings {
         SettingsCommon.maxTransactionBytesPerEvent = getInstance().getMaxTransactionBytesPerEvent();
         SettingsCommon.maxAddressSizeAllowed = getInstance().getMaxAddressSizeAllowed();
         SettingsCommon.transactionMaxBytes = getInstance().getTransactionMaxBytes();
-        SettingsCommon.halfLife = getInstance().getHalfLife();
         SettingsCommon.logStack = getInstance().isLogStack();
         SettingsCommon.showInternalStats = getInstance().isShowInternalStats();
         SettingsCommon.verboseStatistics = getInstance().isVerboseStatistics();
@@ -454,6 +346,8 @@ public class Settings {
      * this source file. The settings.txt file is only used for testing and debugging.
      */
     public void loadSettings() {
+        final Path settingsPath =
+                ConfigurationHolder.getConfigData(PathsConfig.class).getSettingsPath();
         loadSettings(settingsPath.toFile());
     }
 
@@ -472,8 +366,9 @@ public class Settings {
         try {
             scanner = new Scanner(settingsFile, StandardCharsets.UTF_8.name());
         } catch (final FileNotFoundException e) { // this should never happen
-            CommonUtils.tellUserConsole(
-                    "The file " + Settings.getInstance().getSettingsPath() + " exists, but can't be opened. " + e);
+            final Path settingsPath =
+                    ConfigurationHolder.getConfigData(PathsConfig.class).getSettingsPath();
+            CommonUtils.tellUserConsole("The file " + settingsPath + " exists, but can't be opened. " + e);
             return;
         }
 
@@ -493,10 +388,7 @@ public class Settings {
                 final String[] pars = splitLine(line);
                 if (pars.length > 0) { // ignore empty lines
                     try {
-                        if (!handleSetting(pars)) {
-                            CommonUtils.tellUserConsole(
-                                    "bad name of setting in settings.txt line " + count + ": " + originalLine);
-                        }
+                        handleSetting(pars);
                     } catch (final Exception e) {
                         CommonUtils.tellUserConsole(
                                 "syntax error in settings.txt on line " + count + ":    " + originalLine);
@@ -564,14 +456,7 @@ public class Settings {
             }
         }
 
-        if (!good) {
-            final String err = "WARNING: " + pars[0] + " is not a valid setting name.";
-            // this only happens if settings.txt exist, so it's internal, not users, so print it
-            CommonUtils.tellUserConsole(err);
-            logger.warn(STARTUP.getMarker(), err);
-            return false;
-        }
-        return true;
+        return good;
     }
 
     /**
@@ -669,34 +554,6 @@ public class Settings {
         return list.toArray(new String[0][0]);
     }
 
-    public Path getConfigPath() {
-        return configPath;
-    }
-
-    public Path getSettingsPath() {
-        return settingsPath;
-    }
-
-    public Path getSettingsUsedDir() {
-        return settingsUsedDir;
-    }
-
-    public Path getKeysDirPath() {
-        return keysDirPath;
-    }
-
-    public Path getAppsDirPath() {
-        return appsDirPath;
-    }
-
-    public Path getLogPath() {
-        return logPath;
-    }
-
-    public void setLogPath(final Path logPath) {
-        this.logPath = logPath;
-    }
-
     public boolean isVerifyEventSigs() {
         return verifyEventSigs;
     }
@@ -711,10 +568,6 @@ public class Settings {
 
     public boolean isVerboseStatistics() {
         return verboseStatistics;
-    }
-
-    public int getMaxEventQueueForCons() {
-        return maxEventQueueForCons;
     }
 
     public int getThrottleTransactionQueueSize() {
@@ -751,10 +604,6 @@ public class Settings {
 
     public void setSocketIpTos(final int socketIpTos) {
         this.socketIpTos = socketIpTos;
-    }
-
-    public double getHalfLife() {
-        return halfLife;
     }
 
     public boolean isLogStack() {
@@ -851,82 +700,6 @@ public class Settings {
 
     public int getMaxTransactionCountPerEvent() {
         return maxTransactionCountPerEvent;
-    }
-
-    public String getCsvOutputFolder() {
-        return csvOutputFolder;
-    }
-
-    public boolean isDisableMetricsOutput() {
-        return disableMetricsOutput;
-    }
-
-    public String getCsvFileName() {
-        return csvFileName;
-    }
-
-    public int getCsvWriteFrequency() {
-        return csvWriteFrequency;
-    }
-
-    public boolean isCsvAppend() {
-        return csvAppend;
-    }
-
-    public boolean getPrometheusEndpointEnabled() {
-        return prometheusEndpointEnabled;
-    }
-
-    public int getPrometheusEndpointPortNumber() {
-        return prometheusEndpointPortNumber;
-    }
-
-    public int getPrometheusEndpointMaxBacklogAllowed() {
-        return prometheusEndpointMaxBacklogAllowed;
-    }
-
-    public int getEventIntakeQueueThrottleSize() {
-        return eventIntakeQueueThrottleSize;
-    }
-
-    public void setEventIntakeQueueThrottleSize(final int eventIntakeQueueThrottleSize) {
-        this.eventIntakeQueueThrottleSize = eventIntakeQueueThrottleSize;
-    }
-
-    public int getEventIntakeQueueSize() {
-        return eventIntakeQueueSize;
-    }
-
-    public int getRandomEventProbability() {
-        return randomEventProbability;
-    }
-
-    public int getStaleEventPreventionThreshold() {
-        return staleEventPreventionThreshold;
-    }
-
-    public void setStaleEventPreventionThreshold(final int staleEventPreventionThreshold) {
-        this.staleEventPreventionThreshold = staleEventPreventionThreshold;
-    }
-
-    public int getRescueChildlessInverseProbability() {
-        return rescueChildlessInverseProbability;
-    }
-
-    public boolean isEnableEventStreaming() {
-        return enableEventStreaming;
-    }
-
-    public int getEventStreamQueueCapacity() {
-        return eventStreamQueueCapacity;
-    }
-
-    public long getEventsLogPeriod() {
-        return eventsLogPeriod;
-    }
-
-    public String getEventsLogDir() {
-        return eventsLogDir;
     }
 
     public long getThreadDumpPeriodMs() {

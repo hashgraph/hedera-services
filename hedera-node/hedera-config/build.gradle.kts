@@ -23,11 +23,13 @@ description = "Hedera Configuration"
 
 dependencies {
     javaModuleDependencies {
+        testImplementation(project(":config"))
         testImplementation(gav("org.assertj.core"))
         testImplementation(gav("org.hyperledger.besu.datatypes"))
         testImplementation(gav("org.junit.jupiter.api"))
         testImplementation(gav("org.junit.jupiter.params"))
         testImplementation(gav("org.mockito"))
         testImplementation(gav("org.mockito.junit.jupiter"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
     }
 }

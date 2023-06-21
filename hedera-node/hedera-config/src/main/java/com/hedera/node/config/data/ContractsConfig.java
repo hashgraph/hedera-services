@@ -35,7 +35,7 @@ public record ContractsConfig(
         @ConfigProperty(defaultValue = "false") boolean allowAutoAssociations,
         // @ConfigProperty(defaultValue =
         // "TokenAssociateToAccount,TokenDissociateFromAccount,TokenFreezeAccount,TokenUnfreezeAccount,TokenGrantKycToAccount,TokenRevokeKycFromAccount,TokenAccountWipe,TokenBurn,TokenDelete,TokenMint,TokenUnpause,TokenPause,TokenCreate,TokenUpdate,ContractCall,CryptoTransfer") Set<HederaFunctionality> allowSystemUseOfHapiSigs,
-        @ConfigProperty(defaultValue = "10000000") long maxNumWithHapiSigsAccess,
+        @ConfigProperty(defaultValue = "0") long maxNumWithHapiSigsAccess,
         // @ConfigProperty(defaultValue = "") Set<Address> withSpecialHapiSigsAccess,
         @ConfigProperty(defaultValue = "false") boolean enforceCreationThrottle,
         @ConfigProperty(defaultValue = "15000000") long maxGasPerSec,

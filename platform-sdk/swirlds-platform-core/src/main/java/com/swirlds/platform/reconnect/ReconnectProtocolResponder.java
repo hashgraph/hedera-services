@@ -18,7 +18,6 @@ package com.swirlds.platform.reconnect;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.state.query.LatestSignedStateProvider;
@@ -29,6 +28,7 @@ import com.swirlds.platform.network.unidirectional.NetworkProtocolResponder;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,13 +67,13 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
             @NonNull final ReconnectThrottle reconnectThrottle,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final ReconnectMetrics stats) {
-        this.threadManager = ArgumentUtils.throwArgNull(threadManager, "threadManager");
+        this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
         this.latestSignedStateProvider =
-                ArgumentUtils.throwArgNull(latestSignedStateProvider, "latestSignedStateProvider");
-        this.config = ArgumentUtils.throwArgNull(config, "config");
-        this.fallenBehindManager = ArgumentUtils.throwArgNull(fallenBehindManager, "fallenBehindManager");
-        this.reconnectThrottle = ArgumentUtils.throwArgNull(reconnectThrottle, "reconnectThrottle");
-        this.stats = ArgumentUtils.throwArgNull(stats, "stats");
+                Objects.requireNonNull(latestSignedStateProvider, "latestSignedStateProvider must not be null");
+        this.config = Objects.requireNonNull(config, "config must not be null");
+        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager, "fallenBehindManager must not be null");
+        this.reconnectThrottle = Objects.requireNonNull(reconnectThrottle, "reconnectThrottle must not be null");
+        this.stats = Objects.requireNonNull(stats, "stats must not be null");
     }
 
     /** {@inheritDoc} */

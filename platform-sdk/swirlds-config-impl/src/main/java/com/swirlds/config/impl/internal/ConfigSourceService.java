@@ -16,11 +16,11 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Stream;
 
@@ -45,7 +45,7 @@ class ConfigSourceService implements ConfigLifecycle {
 
     void addConfigSource(@NonNull final ConfigSource configSource) {
         throwIfInitialized();
-        ArgumentUtils.throwArgNull(configSource, "configSource");
+        Objects.requireNonNull(configSource, "configSource must not be null");
         sources.add(configSource);
     }
 

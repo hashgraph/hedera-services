@@ -38,13 +38,13 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.codec.DecoderException;
 
 @Singleton
 public class AdaptedMonoProcessLogic implements ProcessLogic {
@@ -120,7 +120,7 @@ public class AdaptedMonoProcessLogic implements ProcessLogic {
     private JKey mapToJKey(@NonNull final Key key) {
         try {
             return JKey.mapKey(key);
-        } catch (DecoderException e) {
+        } catch (InvalidKeyException e) {
             throw new IllegalArgumentException("Unable to map key", e);
         }
     }

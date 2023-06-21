@@ -65,7 +65,7 @@ public class WritableSingletonStateStack<T> implements WritableSingletonState<T>
     @Override
     @NonNull
     public String getStateKey() {
-        return getCurrent().getStateKey();
+        return stateKey;
     }
 
     @Override

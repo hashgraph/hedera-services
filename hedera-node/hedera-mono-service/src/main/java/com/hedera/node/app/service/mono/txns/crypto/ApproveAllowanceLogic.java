@@ -101,14 +101,16 @@ public class ApproveAllowanceLogic {
             final var cryptoMap = accountToApprove.getMutableCryptoAllowances();
 
             final var spender = Id.fromGrpcAccount(allowance.getSpender());
-            accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
-
             final var amount = allowance.getAmount();
 
             if (cryptoMap.containsKey(spender.asEntityNum()) && amount == 0) {
+                // spender need not be validated as being a valid account when removing allowances,
+                // since it might be deleted and allowance is being removed by owner if it exists in map.
                 removeEntity(cryptoMap, spender, accountToApprove);
             }
             if (amount > 0) {
+                // To add allowances spender should be validated as being a valid account
+                accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
                 cryptoMap.put(spender.asEntityNum(), amount);
                 validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
                 entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
@@ -140,16 +142,19 @@ public class ApproveAllowanceLogic {
             final var tokensMap = accountToApprove.getMutableFungibleTokenAllowances();
 
             final var spender = Id.fromGrpcAccount(allowance.getSpender());
-            accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
-
             final var amount = allowance.getAmount();
             final var tokenId = allowance.getTokenId();
 
             final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId), spender.asEntityNum());
             if (tokensMap.containsKey(key) && amount == 0) {
+                // spender need not be validated as being a valid account when removing allowances,
+                // since it might be deleted and allowance is being removed by owner if it exists in map.
                 removeTokenEntity(key, tokensMap, accountToApprove);
             }
             if (amount > 0) {
+                // To add allowances spender should be validated as being a valid account
+                accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
+
                 tokensMap.put(key, amount);
                 validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
                 entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
@@ -173,18 +178,25 @@ public class ApproveAllowanceLogic {
             final var owner = allowance.getOwner();
             final var approvingAccount = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
             final var spenderId = Id.fromGrpcAccount(allowance.getSpender());
-            accountStore.loadAccountOrFailWith(spenderId, INVALID_ALLOWANCE_SPENDER_ID);
-
             final var tokenId = Id.fromGrpcToken(allowance.getTokenId());
+
             if (allowance.hasApprovedForAll()) {
                 final var approveForAllNfts = approvingAccount.getMutableApprovedForAllNfts();
                 final var key = FcTokenAllowanceId.from(tokenId.asEntityNum(), spenderId.asEntityNum());
                 if (allowance.getApprovedForAll().getValue()) {
+                    // Validate the spender/operator account
+                    accountStore.loadAccountOrFailWith(spenderId, INVALID_ALLOWANCE_SPENDER_ID);
                     approveForAllNfts.add(key);
                 } else {
+                    // Need not validate anything here to revoke the approval
                     approveForAllNfts.remove(key);
                 }
                 validateAllowanceLimitsOn(approvingAccount, dynamicProperties.maxAllowanceLimitPerAccount());
+            }
+
+            if (allowance.getSerialNumbersCount() > 0) {
+                // To add allowance for any serials, need to validate spender
+                accountStore.loadAccountOrFailWith(spenderId, INVALID_ALLOWANCE_SPENDER_ID);
             }
 
             final var nfts = updateSpender(

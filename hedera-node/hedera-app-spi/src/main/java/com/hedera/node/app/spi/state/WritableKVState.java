@@ -44,6 +44,17 @@ public interface WritableKVState<K, V> extends ReadableKVState<K, V> {
     V getForModify(@NonNull K key);
 
     /**
+     * Gets the original value associated with the given key before any modifications were made to
+     * it. The returned value will be {@code null} if the key does not exist.
+     *
+     * @param key The key. Cannot be null, otherwise an exception is thrown.
+     * @return The original value, or null if there is no such key in the state
+     * @throws NullPointerException if the key is null.
+     */
+    @Nullable
+    V getOriginalValue(@NonNull K key);
+
+    /**
      * Adds a new value to the store, or updates an existing value. It is generally preferred to use
      * {@link #getForModify(K)} to get a writable value, and only use this method if the key does
      * not already exist in the store.

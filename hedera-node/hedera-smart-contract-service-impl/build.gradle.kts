@@ -21,8 +21,8 @@ description = "Default Hedera Smart Contract Service Implementation"
 dependencies {
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
-        testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
-        testImplementation(testFixtures(project(":hedera-node:node-config")))
+        testImplementation(testFixtures(project(":app-spi")))
+        testImplementation(testFixtures(project(":config")))
 
         testRuntimeOnly(gav("org.mockito.inline"))
     }
@@ -36,8 +36,9 @@ java.sourceSets["main"].java.srcDir(generatedSources)
 // https://github.com/autonomousapps/dependency-analysis-android-gradle-plugin/issues/900
 dependencyAnalysis.issues {
     onUnusedDependencies {
-        exclude(":hedera-node:node-app-service-mono")
-        exclude(":hedera-node:node-app-service-token")
+        exclude(":config")
+        exclude(":app-service-mono")
+        exclude(":app-service-token")
         exclude("org.apache.tuweni:tuweni-units")
     }
 }
