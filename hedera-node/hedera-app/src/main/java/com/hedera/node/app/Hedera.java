@@ -25,12 +25,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.config.ConfigProviderImpl;
-import com.hedera.node.app.grpc.GrpcServiceBuilder;
-import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
-import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
-import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -52,10 +48,10 @@ import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
-import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
-import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
+import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.WritableFreezeStore;
 import com.hedera.node.app.spi.state.WritableKVState;
@@ -88,16 +84,10 @@ import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.gui.SwirldsGui;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import io.helidon.grpc.server.GrpcRouting;
-import io.helidon.grpc.server.GrpcServer;
-import io.helidon.grpc.server.GrpcServerConfiguration;
 import java.nio.charset.Charset;
-import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -151,14 +141,14 @@ public final class Hedera implements SwirldMain {
     private record ServiceRegistration(
             @NonNull String name, @NonNull Service service, @NonNull MerkleSchemaRegistry registry) {}
 
+    /** Required for state management. Used by platform for deserialization of state. */
+    private final ConstructableRegistry constructableRegistry;
     /** The registry of all known services */
-    private final Map<String, ServiceRegistration> serviceRegistry;
+    private final ServicesRegistry servicesRegistry;
     /** The current version of THIS software */
     private final SerializableSemVers version;
     /** The BootstrapProperties for this node */
     private final BootstrapProperties bootstrapProps;
-    /** A latch used to signal shutdown of the gRPC server */
-    private final CountDownLatch shutdownLatch = new CountDownLatch(1);
     /** The Hashgraph Platform. This is set during state initialization. */
     private Platform platform;
     /** The configuration for this node */
@@ -189,6 +179,8 @@ public final class Hedera implements SwirldMain {
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final BootstrapProperties bootstrapProps) {
 
+        this.constructableRegistry = requireNonNull(constructableRegistry);
+
         // Load properties, configuration, and other things that can be done before a state is created.
         this.bootstrapProps = requireNonNull(bootstrapProps);
 
@@ -196,14 +188,19 @@ public final class Hedera implements SwirldMain {
         version = SEMANTIC_VERSIONS.deployedSoftwareVersion();
         logger.info("Creating Hedera Consensus Node v{} with HAPI v{}", version.getServices(), version.getProto());
 
-        // Create all the service implementations, and register their schemas.
+        // Create all the service implementations
         logger.info("Registering schemas for services");
-        final var path = System.getProperty("merkle.db.path", null); // Might want to move to Bootstrap props
-        serviceRegistry = createServicesRegistry(constructableRegistry, path == null ? null : Path.of(path));
-        serviceRegistry
-                .values()
-                .forEach(reg ->
-                        logger.info("Registered service {} with implementation {}", reg.name, reg.service.getClass()));
+        // FUTURE: Use the service loader framework to load these services!
+        this.servicesRegistry = new ServicesRegistryImpl(Set.of(
+                new ConsensusServiceImpl(),
+                new ContractServiceImpl(),
+                new FileServiceImpl(),
+                new FreezeServiceImpl(),
+                new NetworkServiceImpl(),
+                new ScheduleServiceImpl(),
+                new TokenServiceImpl(),
+                new UtilServiceImpl(),
+                new RecordCacheService()));
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor
         // OTHER THAN the default constructor to make sure it has the config and other info
@@ -216,37 +213,6 @@ public final class Hedera implements SwirldMain {
             logger.error("Failed to register MerkleHederaState with ConstructableRegistry", e);
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Create all service implementations and register their schemas. Return these as a map of service name to
-     * {@link ServiceRegistration}. Later, when we migrate, we will use this map to migrate each service to its latest
-     * schema.
-     */
-    private Map<String, ServiceRegistration> createServicesRegistry(
-            @NonNull final ConstructableRegistry constructableRegistry, @Nullable final Path storageDir) {
-
-        final var services = Map.of(
-                ConsensusService.NAME, new ConsensusServiceImpl(),
-                ContractService.NAME, new ContractServiceImpl(),
-                FileService.NAME, new FileServiceImpl(),
-                FreezeService.NAME, new FreezeServiceImpl(),
-                NetworkService.NAME, new NetworkServiceImpl(),
-                ScheduleService.NAME, new ScheduleServiceImpl(),
-                TokenService.NAME, new TokenServiceImpl(),
-                UtilService.NAME, new UtilServiceImpl(),
-                RecordCacheService.NAME, new RecordCacheService());
-
-        final var map = new HashMap<String, ServiceRegistration>();
-        for (final var entry : services.entrySet()) {
-            final var serviceName = entry.getKey();
-            final var service = entry.getValue();
-            final var registry = new MerkleSchemaRegistry(constructableRegistry, serviceName);
-            service.registerSchemas(registry);
-            map.put(serviceName, new ServiceRegistration(serviceName, service, registry));
-        }
-
-        return map;
     }
 
     /**
@@ -271,8 +237,8 @@ public final class Hedera implements SwirldMain {
 
     /**
      * {@inheritDoc}
-     * <p>
-     * Called by the platform <b>ONLY</b> during genesis (that is, if there is no saved state). However, it is also
+     *
+     * <p>Called by the platform <b>ONLY</b> during genesis (that is, if there is no saved state). However, it is also
      * called indirectly by {@link ConstructableRegistry} due to registration in this class' constructor.
      *
      * @return A new {@link SwirldState} instance.
@@ -341,10 +307,13 @@ public final class Hedera implements SwirldMain {
                 deserializedVersion == null ? null : PbjConverter.toPbj(deserializedVersion.getServices());
         final var currentVersion = PbjConverter.toPbj(version.getServices());
         logger.info("Migrating from version {} to {}", previousVersion, currentVersion);
-        for (final var registration : serviceRegistry.values()) {
+        for (final var service : servicesRegistry.services()) {
             // FUTURE We should have metrics here to keep track of how long it takes to migrate each service
-            registration.registry.migrate(state, previousVersion, currentVersion, configProvider.getConfiguration());
-            logger.info("Migrated Service {}", registration.name);
+            final var serviceName = service.getServiceName();
+            final var registry = new MerkleSchemaRegistry(constructableRegistry, serviceName);
+            service.registerSchemas(registry);
+            registry.migrate(state, previousVersion, currentVersion, configProvider.getConfiguration());
+            logger.info("Migrated Service {}", serviceName);
         }
     }
 
@@ -356,14 +325,14 @@ public final class Hedera implements SwirldMain {
 
     /**
      * {@inheritDoc}
-     * <p>
-     * Called <b>AFTER</b> init and migrate have been called on the state (either the new state created from
+     *
+     * <p>Called <b>AFTER</b> init and migrate have been called on the state (either the new state created from
      * {@link #newState()} or an instance of {@link MerkleHederaState} created by the platform and loaded from the saved
      * state).
      */
     @Override
     public void init(@NonNull final Platform platform, @NonNull final NodeId nodeId) {
-        assert this.platform == platform : "Platform should be the same instance";
+        assert this.platform == platform : "Platform must be the same instance";
         logger.info("Initializing Hedera app with HederaNode#{}", nodeId);
 
         // Ensure the prefetch queue is created and thread pool is active instead of waiting
@@ -450,60 +419,20 @@ public final class Hedera implements SwirldMain {
 
     /*==================================================================================================================
     *
-    * Run the app.
+    * Other app lifecycle methods
     *
     =================================================================================================================*/
 
     /**
      * {@inheritDoc}
-     * <p>
-     * Called by the platform after <b>ALL</b> initialization to start the gRPC servers and begin operation.
+     *
+     * <p>Called by the platform after <b>ALL</b> initialization to start the gRPC servers and begin operation, or by
+     * the notification listener when it is time to restart the gRPC server after it had been stopped (such as during
+     * reconnect).
      */
     @Override
     public void run() {
-        // Start the gRPC server.
-        logger.info("Starting modular gRPC server");
-        final var port = daggerApp.nodeLocalProperties().workflowsPort();
-
-        // Create the Ingest and Query workflows. While we are in transition, some required facilities come
-        // from `hedera-app`, and some from `mono-service`. Eventually we'll transition all facilities to be
-        // from the app module. But this code can be ignorant of that complexity, since the Dagger dependency
-        // graph takes care of it.
-        final var ingestWorkflow =
-                daggerApp.ingestComponentFactory().get().create().ingestWorkflow();
-        final var queryWorkflow =
-                daggerApp.queryComponentFactory().get().create().queryWorkflow();
-
-        // Setup and start the grpc server.
-        // At some point I'd like to somehow move the metadata for which transactions are supported
-        // by a service to the service, instead of having them all hardcoded here. It isn't clear
-        // yet what that API would look like, so for now we do it this way. Maybe we should have
-        // a set of annotations that generate the metadata, or maybe we have some code. Whatever
-        // we do should work also with workflows.
-        final var grpcServer = GrpcServer.create(
-                GrpcServerConfiguration.builder().port(port).build(),
-                GrpcRouting.builder()
-                        .register(new GrpcServiceBuilder("proto.ConsensusService", ingestWorkflow, queryWorkflow)
-                                .transaction("createTopic")
-                                .transaction("updateTopic")
-                                .transaction("deleteTopic")
-                                .query("getTopicInfo")
-                                .transaction("submitMessage")
-                                .build(daggerApp.platform().getContext().getMetrics()))
-                        .build());
-        grpcServer.whenShutdown().thenAccept(server -> shutdownLatch.countDown());
-        grpcServer.start();
-
-        // Block this main thread until the server terminates.
-        // TODO: Uncomment this code once we enable all operations to work with workflows.
-        // Currently, we are enabling each operation step-by-step to work with new Grpc binding.
-        //        try {
-        //            shutdownLatch.await();
-        //        } catch (InterruptedException ignored) {
-        //            // An interrupt on this thread means we want to shut down the server.
-        //            shutdown();
-        //            Thread.currentThread().interrupt();
-        //        }
+        startGrpcServer();
     }
 
     /**
@@ -530,15 +459,20 @@ public final class Hedera implements SwirldMain {
 
     /*==================================================================================================================
     *
-    * Shutdown of a Hedera node
+    * gRPC Server Lifecycle
     *
     =================================================================================================================*/
+
+    /** Start the gRPC Server if it is not already running. */
+    void startGrpcServer() {
+        daggerApp.grpcServerManager().start();
+    }
 
     /**
      * Called to perform orderly shutdown of the gRPC servers.
      */
-    public void shutdown() {
-        shutdownLatch.countDown();
+    public void shutdownGrpcServer() {
+        daggerApp.grpcServerManager().stop();
     }
 
     /*==================================================================================================================
@@ -549,7 +483,7 @@ public final class Hedera implements SwirldMain {
 
     /** Implements the code flow for initializing the state of a new Hedera node with NO SAVED STATE. */
     private void genesis(@NonNull final MerkleHederaState state, @NonNull final SwirldDualState dualState) {
-        logger.debug("Genesis Initialization");
+        logger.info("Genesis Initialization");
 
         logger.info("Initializing Configuration");
         this.configProvider = new ConfigProviderImpl(true);
@@ -756,6 +690,7 @@ public final class Hedera implements SwirldMain {
                     .crypto(CryptographyHolder.get())
                     .selfId(nodeSelfAccount)
                     .genesisUsage(trigger == InitTrigger.GENESIS)
+                    .servicesRegistry(servicesRegistry)
                     .build();
         }
     }
