@@ -28,12 +28,16 @@ val helidonVersion = "3.2.1"
 val jacksonVersion = "2.13.5"
 val log4jVersion = "2.17.1"
 val mockitoVersion = "4.6.1"
-val nettyVersion = "4.1.90.Final"
+val nettyVersion = "4.1.94.Final"
 val protobufVersion = "3.21.7"
 val swirldsVersion = "0.39.0-alpha.3"
 val systemStubsVersion = "2.0.2"
 val testContainersVersion = "1.17.2"
 val tuweniVersion = "2.2.0"
+
+dependencies {
+    api(enforcedPlatform("io.netty:netty-bom:$nettyVersion"))
+}
 
 dependencies.constraints {
     javaModuleDependencies {
@@ -97,7 +101,7 @@ dependencies.constraints {
         api(gav("org.hyperledger.besu.datatypes", besuVersion))
         api(gav("org.hyperledger.besu.evm", besuVersion))
         api(gav("org.hyperledger.besu.secp256k1", besuNativeVersion))
-        api(gav("org.json", "20210307"))
+        api(gav("org.json", "20230227"))
         api(gav("org.junit.jupiter.api", "5.9.0"))
         api(gav("org.junitpioneer", "2.0.1"))
         api(gav("org.mockito", mockitoVersion))
