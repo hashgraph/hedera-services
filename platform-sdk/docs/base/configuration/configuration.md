@@ -381,7 +381,8 @@ When creating a new config source it often makes sense to overwrite the default 
 method. The method returns an ordinal number that is used internally to sort all config sources. Here a config source
 with a higher ordinal number will overwrite properties of all config sources with a smaller ordinal number. The internal
 class `com.swirlds.config.impl.sources.ConfigSourceOrdinalConstants` provides constant ordinal numbers for all default
-implementations of config sources and can be used as a reference for custom ordinals.
+implementations of config sources and can be used as a reference for custom ordinals. If 2 instances have the same ordinal
+number the api does not define what instance will have the higher priority.
 
 ### Adding custom converters to the configuration
 
