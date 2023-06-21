@@ -16,7 +16,7 @@ jasperDb.iteratorInputBufferBytes,             16777216
 merkleDb.iteratorInputBufferBytes,             16777216
 state.checkSignedStateFromDisk,                true
 state.saveStatePeriod,                         300                          # differs from mainnet
-state.signedStateDisk,                         5
+state.signedStateDisk,                         3                            # differs from mainnet
 state.mainClassNameOverride,                   com.hedera.services.ServicesMain
 virtualMap.preferredFlushQueueSize,            10000
 
