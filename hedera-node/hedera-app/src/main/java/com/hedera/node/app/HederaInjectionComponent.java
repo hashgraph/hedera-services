@@ -25,6 +25,8 @@ import com.hedera.node.app.components.QueryInjectionComponent;
 import com.hedera.node.app.config.ConfigModule;
 import com.hedera.node.app.config.GenesisUsage;
 import com.hedera.node.app.fees.FeesInjectionModule;
+import com.hedera.node.app.grpc.GrpcInjectionModule;
+import com.hedera.node.app.grpc.GrpcServerManager;
 import com.hedera.node.app.info.InfoInjectionModule;
 import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.service.mono.LegacyMonoInjectionModule;
@@ -35,6 +37,7 @@ import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.state.StateModule;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.services.ServicesInjectionModule;
+import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.solvency.SolvencyInjectionModule;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaState;
@@ -66,6 +69,7 @@ import javax.inject.Singleton;
             WorkflowsInjectionModule.class,
             HederaStateInjectionModule.class,
             FeesInjectionModule.class,
+            GrpcInjectionModule.class,
             MetricsInjectionModule.class,
             AuthorizerInjectionModule.class,
             InfoInjectionModule.class,
@@ -87,8 +91,13 @@ public interface HederaInjectionComponent extends ServicesApp {
 
     RecordCache recordCache();
 
+    GrpcServerManager grpcServerManager();
+
     @Component.Builder
     interface Builder {
+        @BindsInstance
+        Builder servicesRegistry(ServicesRegistry registry);
+
         @BindsInstance
         Builder initTrigger(InitTrigger initTrigger);
 
