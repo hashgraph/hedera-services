@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 class TaskModuleTest {
 
     /** This array must contain the names of _all_ `SystemTask`s */
-    static final String[] EXPECTED_SYSTEM_TASK_SIMPLE_NAMES = {"ExpiryProcess", "TraceabilityExportTask"};
+    static final String[] EXPECTED_SYSTEM_TASK_SIMPLE_NAMES = {"ExpiryProcess"};
 
     /** Scope for all modules containing `SystemTasks` (to limit the search for them) */
     static final String MODULE_PREFIX_FOR_ALL_SYSTEM_TASKS = "com.hedera.node.app.service.*";
