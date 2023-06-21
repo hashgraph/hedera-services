@@ -22,12 +22,12 @@ dependencies {
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
 
-        testImplementation(testFixtures(project(":hedera-node:node-app-service-mono")))
-        testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
-        testImplementation(testFixtures(project(":hedera-node:node-config")))
-        testImplementation(project(":hedera-node:node-app"))
-        testImplementation(project(":hedera-node:node-app-service-consensus-impl"))
-        testImplementation(project(":hedera-node:node-app-service-token"))
+        testImplementation(testFixtures(project(":app-service-mono")))
+        testImplementation(testFixtures(project(":app-spi")))
+        testImplementation(testFixtures(project(":config")))
+        testImplementation(project(":app"))
+        testImplementation(project(":app-service-consensus-impl"))
+        testImplementation(project(":app-service-token"))
         testImplementation(gav("com.google.protobuf"))
         testImplementation(gav("com.swirlds.common"))
         testImplementation(gav("org.assertj.core"))

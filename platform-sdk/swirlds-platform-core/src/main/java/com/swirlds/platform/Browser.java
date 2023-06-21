@@ -39,6 +39,7 @@ import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.OSHealthCheckConfig;
+import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.export.ConfigExport;
@@ -77,8 +78,9 @@ import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.config.ConfigMappings;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.config.internal.ConfigMappings;
+import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.ConfigPropertiesSource;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -193,7 +195,7 @@ public class Browser {
 
         // The properties from the config.txt
         final LegacyConfigProperties configurationProperties = LegacyConfigPropertiesLoader.loadConfigFile(
-                Settings.getInstance().getConfigPath());
+                ConfigurationHolder.getConfigData(PathsConfig.class).getConfigPath());
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
@@ -236,7 +238,8 @@ public class Browser {
                 .withConfigDataType(SyncConfig.class)
                 .withConfigDataType(UptimeConfig.class)
                 .withConfigDataType(RecycleBinConfig.class)
-                .withConfigDataType(EventConfig.class);
+                .withConfigDataType(EventConfig.class)
+                .withConfigDataType(PathsConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
@@ -244,6 +247,7 @@ public class Browser {
         }
 
         this.configuration = configurationBuilder.build();
+        PlatformConfigUtils.logNotKnownConfigProperties(configuration);
 
         // Set the configuration on all SwirldMain instances.
         appMains.values().forEach(swirldMain -> swirldMain.setConfiguration(configuration));
@@ -302,13 +306,13 @@ public class Browser {
             // simulation to run.
 
             try {
-
-                if (Files.exists(Settings.getInstance().getConfigPath())) {
-                    CommonUtils.tellUserConsole("Reading the configuration from the file:   "
-                            + Settings.getInstance().getConfigPath());
+                final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
+                if (Files.exists(pathsConfig.getConfigPath())) {
+                    CommonUtils.tellUserConsole(
+                            "Reading the configuration from the file:   " + pathsConfig.getConfigPath());
                 } else {
-                    CommonUtils.tellUserConsole("A config.txt file could be created here:   "
-                            + Settings.getInstance().getConfigPath());
+                    CommonUtils.tellUserConsole(
+                            "A config.txt file could be created here:   " + pathsConfig.getConfigPath());
                     return;
                 }
                 // instantiate all Platform objects, which each instantiates a Statistics object
@@ -424,7 +428,8 @@ public class Browser {
         final StringBuilder settingsUsedBuilder = new StringBuilder();
 
         // Add all settings values to the string builder
-        if (Files.exists(Settings.getInstance().getSettingsPath())) {
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
+        if (Files.exists(pathsConfig.getSettingsPath())) {
             Settings.getInstance().addSettingsUsed(settingsUsedBuilder);
         }
 
@@ -436,8 +441,7 @@ public class Browser {
         ConfigExport.addConfigContents(configuration, settingsUsedBuilder);
 
         // Write the settingsUsed.txt file
-        final Path settingsUsedPath =
-                Settings.getInstance().getSettingsUsedDir().resolve(SettingConstants.SETTING_USED_FILENAME);
+        final Path settingsUsedPath = pathsConfig.getSettingsUsedDir().resolve(SettingConstants.SETTING_USED_FILENAME);
         try (final OutputStream outputStream = new FileOutputStream(settingsUsedPath.toFile())) {
             outputStream.write(settingsUsedBuilder.toString().getBytes(StandardCharsets.UTF_8));
         } catch (final IOException | RuntimeException e) {
@@ -473,31 +477,21 @@ public class Browser {
         if (args != null) {
             for (final String item : args) {
                 final String arg = item.trim().toLowerCase();
-                switch (arg) {
-                    case "-local":
-                    case "-log":
-                        currentOption = arg;
-                        break;
-                    default:
-                        if (currentOption != null) {
-                            switch (currentOption) {
-                                case "-local":
-                                    try {
-                                        localNodesToStart.add(new NodeId(Integer.parseInt(arg)));
-                                    } catch (final NumberFormatException ex) {
-                                        // Intentionally suppress the NumberFormatException
-                                    }
-                                    break;
-                                case "-log":
-                                    Settings.getInstance().setLogPath(getAbsolutePath(arg));
-                                    break;
-                            }
-                        }
+                if (arg.equals("-local")) {
+                    currentOption = arg;
+                } else if (currentOption != null) {
+                    try {
+                        localNodesToStart.add(new NodeId(Integer.parseInt(arg)));
+                    } catch (final NumberFormatException ex) {
+                        // Intentionally suppress the NumberFormatException
+                    }
                 }
             }
         }
 
-        launch(localNodesToStart, Settings.getInstance().getLogPath());
+        launch(
+                localNodesToStart,
+                ConfigurationHolder.getConfigData(PathsConfig.class).getLogPath());
     }
 
     /**

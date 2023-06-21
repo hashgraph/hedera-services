@@ -25,12 +25,12 @@ plugins {
 protobuf {
     val libs = the<VersionCatalogsExtension>().named("libs")
     protoc {
-        artifact = "com.google.protobuf:protoc:" + libs.findVersion("com.google.protobuf").get()
+        artifact = "com.google.protobuf:protoc:" + libs.findVersion("google-proto").get()
     }
     plugins {
         // Add GRPC plugin as we need to generate GRPC services
         id("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:" + libs.findVersion("grpc.protobuf").get()
+            artifact = "io.grpc:protoc-gen-grpc-java:" + libs.findVersion("grpc-proto").get()
         }
     }
     generateProtoTasks {

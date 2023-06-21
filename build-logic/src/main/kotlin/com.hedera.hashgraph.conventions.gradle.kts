@@ -74,6 +74,32 @@ repositories {
     }
 }
 
+val internal: Configuration = configurations.create("internal") {
+    isCanBeConsumed = false
+    isCanBeResolved = false
+}
+
+dependencies {
+    "internal"(platform("com.hedera.hashgraph:hedera-platform"))
+}
+javaModuleDependencies {
+    versionsFromConsistentResolution(":app")
+}
+configurations.getByName("mainRuntimeClasspath") {
+    extendsFrom(internal)
+}
+sourceSets.all {
+    configurations.getByName(annotationProcessorConfigurationName) {
+        extendsFrom(internal)
+    }
+    configurations.getByName(compileClasspathConfigurationName) {
+        extendsFrom(internal)
+    }
+    configurations.getByName(runtimeClasspathConfigurationName) {
+        extendsFrom(internal)
+    }
+}
+
 // Make sure we use UTF-8 encoding when compiling
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"

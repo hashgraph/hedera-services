@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.config;
+package com.swirlds.platform.config.internal;
 
 import com.swirlds.common.config.sources.ConfigMapping;
 import com.swirlds.common.config.sources.MappedConfigSource;
@@ -32,7 +32,7 @@ import java.util.List;
 public final class ConfigMappings {
     private ConfigMappings() {}
 
-    private static final List<ConfigMapping> MAPPINGS = List.of(
+    static final List<ConfigMapping> MAPPINGS = List.of(
             new ConfigMapping("consensus.roundsNonAncient", "state.roundsNonAncient"),
             new ConfigMapping("consensus.roundsExpired", "state.roundsExpired"),
             new ConfigMapping("consensus.coinFreq", "coinFreq"),
@@ -58,7 +58,13 @@ public final class ConfigMappings {
             new ConfigMapping("metrics.disableMetricsOutput", "disableMetricsOutput"),
             new ConfigMapping("prometheus.endpointEnabled", "prometheusEndpointEnabled"),
             new ConfigMapping("prometheus.endpointPortNumber", "prometheusEndpointPortNumber"),
-            new ConfigMapping("prometheus.endpointMaxBacklogAllowed", "prometheusEndpointMaxBacklogAllowed"));
+            new ConfigMapping("prometheus.endpointMaxBacklogAllowed", "prometheusEndpointMaxBacklogAllowed"),
+            new ConfigMapping("paths.configPath", "configPath"),
+            new ConfigMapping("paths.settingsPath", "settingsPath"),
+            new ConfigMapping("paths.settingsUsedDir", "settingsUsedDir"),
+            new ConfigMapping("paths.keysDirPath", "keysDirPath"),
+            new ConfigMapping("paths.appsDirPath", "appsDirPath"),
+            new ConfigMapping("paths.logPath", "logPath"));
 
     /**
      * Add all known aliases to the provided config source
