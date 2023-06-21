@@ -18,20 +18,6 @@ name: "Node: Deploy Release Artifact"
 on:
   workflow_dispatch:
     inputs:
-      #      new-version:
-      #        description: "New Version:"
-      #        type: string
-      #        required: false
-      #        default: ""
-      #      trigger-env-deploy:
-      #        description: "Deploy to Environment:"
-      #        type: choice
-      #        required: true
-      #        options:
-      #          - none
-      #          - integration
-      #          - preview
-      #        default: none
       dry-run-enabled:
         description: "Perform Dry Run"
         type: boolean
@@ -68,13 +54,10 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     uses: ./.github/workflows/node-zxc-build-release-artifact.yaml
     with:
-      #      version-policy: ${{ github.event.inputs.new-verison != '' && 'specified' || 'branch-commit' }}
       version-policy: branch-commit
-      #      new-version: ${{ github.event.inputs.new-version }}
-      #      trigger-env-deploy: ${{ github.event.inputs.trigger-env-deploy }}
       trigger-env-deploy: none
       dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
-      java-version: ${{ github.event.inputs.java-version || '17.0.3' }}
+      java-version: ${{ github.event.inputs.java-version || '17.0.7' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
       gradle-version: ${{ github.event.inputs.gradle-version || 'wrapper' }}
 
@@ -201,11 +184,11 @@ jobs:
           REQ_JSON="$(jq --compact-output --null-input \
                       --arg ref "${{ github.ref }}" \
                       --arg jdist "${{ github.event.inputs.java-distribution || 'temurin' }}" \
-                      --arg jver "${{ github.event.inputs.java-version || '17.0.3' }}" \
+                      --arg jver "${{ github.event.inputs.java-version || '17.0.7' }}" \
                       --arg gver "${{ github.event.inputs.gradle-version || 'wrapper' }}" \
                       --arg vpol "${VERSION_POLICY}" \
                       --arg vnum "${VERSION_NUM}" \
-                      '{"ref": $ref, "java": {"distribution": $jdist, "version": $jver}, "gradle": {"version": $gver}, "release": {"version": {"policy": $vpol, "number": $vnum}}}')"
+                      '{"mode": "new", "ref": $ref, "java": {"distribution": $jdist, "version": $jver}, "gradle": {"version": $gver}, "release": {"version": {"policy": $vpol, "number": $vnum}}}')"
 
           echo "payload=${REQ_JSON}" >>"${GITHUB_OUTPUT}"
           printf "## Dispatch Payload\n\`\`\`json\n%s\n\`\`\`\n" "$(jq '.' <<<"${REQ_JSON}")" >>"${GITHUB_STEP_SUMMARY}"

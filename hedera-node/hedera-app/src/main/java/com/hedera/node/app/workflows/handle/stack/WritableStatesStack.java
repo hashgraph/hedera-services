@@ -77,7 +77,7 @@ public class WritableStatesStack implements WritableStates {
     @NonNull
     @Override
     public <E> WritableQueueState<E> getQueue(@NonNull String stateKey) {
-        throw new UnsupportedOperationException("getQueue is not supported yet");
+        return new WritableQueueStateStack<>(this, stateKey);
     }
 
     @Override
