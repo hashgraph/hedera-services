@@ -44,7 +44,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +76,8 @@ public class HederaWorldState implements HederaMutableWorldState {
     private final FunctionalityThrottling handleThrottling;
     private final SigImpactHistorian sigImpactHistorian;
     private final List<ContractID> provisionalContractCreations = new LinkedList<>();
-    private final Map<ContractID, Long> contractNonces = new HashMap<>();
+    private final Map<ContractID, Long> contractNonces =
+            new TreeMap<>(Comparator.comparingLong(ContractID::getContractNum));
     private final GlobalDynamicProperties dynamicProperties;
     private final RecordsHistorian recordsHistorian;
     private final CodeCache codeCache;
@@ -183,8 +184,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
     @Override
     public Map<ContractID, Long> getContractNonces() {
-        final var copy = new HashMap<>(contractNonces);
-        return copy;
+        return contractNonces;
     }
 
     @Override

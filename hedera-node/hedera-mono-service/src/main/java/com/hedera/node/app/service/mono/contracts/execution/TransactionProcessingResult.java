@@ -23,10 +23,10 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -42,7 +42,7 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
     private List<SolidityAction> actions;
 
     private List<ContractID> createdContracts = Collections.emptyList();
-    private Map<ContractID, Long> contractNonces = new HashMap<>();
+    private Map<ContractID, Long> contractNonces = new TreeMap<>();
 
     public static TransactionProcessingResult failed(
             final long gasUsed,
