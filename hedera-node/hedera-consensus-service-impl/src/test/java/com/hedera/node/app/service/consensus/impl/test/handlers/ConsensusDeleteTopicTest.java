@@ -34,6 +34,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
@@ -41,7 +42,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -74,7 +74,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
         subject = new ConsensusDeleteTopicHandler();
 
         writableTopicState = writableTopicStateWithOneKey();
-        given(writableStates.<EntityNum, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
+        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         writableStore = new WritableTopicStore(writableStates);
     }
 
@@ -146,7 +146,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
         given(handleContext.body()).willReturn(txn);
 
         writableTopicState = emptyWritableTopicState();
-        given(writableStates.<EntityNum, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
+        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         writableStore = new WritableTopicStore(writableStates);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
@@ -161,7 +161,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
         given(handleContext.body()).willReturn(txn);
 
         topic = new Topic(
-                topicId.topicNum(),
+                topicId,
                 sequenceNumber,
                 expirationTime,
                 autoRenewSecs,
@@ -173,7 +173,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
                 null);
 
         writableTopicState = writableTopicStateWithOneKey();
-        given(writableStates.<EntityNum, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
+        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         writableStore = new WritableTopicStore(writableStates);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
@@ -188,14 +188,16 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
         final var txn = newDeleteTxn();
         given(handleContext.body()).willReturn(txn);
 
-        final var existingTopic = writableStore.get(topicEntityNum.longValue());
+        final var existingTopic = writableStore.get(
+                TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build());
         assertTrue(existingTopic.isPresent());
         assertFalse(existingTopic.get().deleted());
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
         subject.handle(handleContext);
 
-        final var changedTopic = writableStore.get(topicEntityNum.longValue());
+        final var changedTopic = writableStore.get(
+                TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build());
 
         assertTrue(changedTopic.isPresent());
         assertTrue(changedTopic.get().deleted());
