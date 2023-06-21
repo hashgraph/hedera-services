@@ -16,8 +16,12 @@
 
 package com.hedera.node.app.spi;
 
+import static java.util.Collections.emptySet;
+
 import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /**
  * A definition of an interface that will be implemented by each conceptual "service" like
@@ -32,6 +36,17 @@ public interface Service {
      */
     @NonNull
     String getServiceName();
+
+    /**
+     * If this service exposes RPC endpoints, then this method returns the RPC service definitions.
+     * Otherwise, it returns an empty set.
+     *
+     * @return The RPC service definitions if this service is exposed via RPC.
+     */
+    @NonNull
+    default Set<RpcServiceDefinition> rpcDefinitions() {
+        return emptySet();
+    }
 
     /**
      * Registers the schemas this service really uses with the given {@link SchemaRegistry}.
