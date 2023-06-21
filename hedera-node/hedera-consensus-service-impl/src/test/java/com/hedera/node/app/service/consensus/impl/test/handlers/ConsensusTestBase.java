@@ -48,14 +48,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ConsensusHandlerTestBase {
+public class ConsensusTestBase {
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
     protected final String payerIdLiteral = "0.0.3";
     protected final AccountID payerId = protoToPbj(asAccount(payerIdLiteral), AccountID.class);
     public static final AccountID anotherPayer =
             AccountID.newBuilder().accountNum(13257).build();
-    protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
+    protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(1).build();
     protected final byte[] runningHash = "runningHash".getBytes();
 
     protected final Key adminKey = key;
@@ -76,6 +76,8 @@ public class ConsensusHandlerTestBase {
     protected final Instant consensusTimestamp = Instant.ofEpochSecond(1_234_567L);
 
     protected Topic topic;
+
+    protected Topic topicNoKeys;
 
     @Mock
     protected ReadableStates readableStates;
@@ -171,6 +173,17 @@ public class ConsensusHandlerTestBase {
                 memo,
                 withAdminKey ? key : null,
                 withSubmitKey ? key : null);
+        topicNoKeys = new Topic(
+                topicId.topicNum(),
+                sequenceNumber,
+                expirationTime,
+                autoRenewSecs,
+                autoRenewAccountNumber,
+                deleted,
+                Bytes.wrap(runningHash),
+                memo,
+                null,
+                null);
     }
 
     protected Topic createTopic() {
@@ -178,6 +191,19 @@ public class ConsensusHandlerTestBase {
                 .topicNumber(topicId.topicNum())
                 .adminKey(key)
                 .submitKey(key)
+                .autoRenewPeriod(autoRenewSecs)
+                .autoRenewAccountNumber(autoRenewId.accountNum())
+                .expiry(expirationTime)
+                .sequenceNumber(sequenceNumber)
+                .memo(memo)
+                .deleted(true)
+                .runningHash(Bytes.wrap(runningHash))
+                .build();
+    }
+
+    protected Topic createTopicEmptyKeys() {
+        return new Topic.Builder()
+                .topicNumber(topicId.topicNum())
                 .autoRenewPeriod(autoRenewSecs)
                 .autoRenewAccountNumber(autoRenewId.accountNum())
                 .expiry(expirationTime)
