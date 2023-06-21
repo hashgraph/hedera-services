@@ -24,13 +24,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandlerTestBase;
+import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestBase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class WritableTopicStoreTest extends ConsensusHandlerTestBase {
+class WritableTopicStoreTest extends ConsensusTestBase {
     private Topic topic;
 
     @Test

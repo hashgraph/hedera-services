@@ -29,13 +29,13 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
-import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandlerTestBase;
+import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestBase;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ReadableTopicStoreImplTest extends ConsensusHandlerTestBase {
+class ReadableTopicStoreImplTest extends ConsensusTestBase {
     private ReadableTopicStore subject;
 
     @BeforeEach
