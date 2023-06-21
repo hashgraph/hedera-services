@@ -16,6 +16,8 @@
 
 package com.swirlds.fchashmap;
 
+import static java.util.Objects.requireNonNull;
+
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.fchashmap.internal.FCHashMapEntrySet;
@@ -23,7 +25,6 @@ import com.swirlds.fchashmap.internal.FCHashMapFamily;
 import com.swirlds.fchashmap.internal.Mutation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.AbstractMap;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -290,8 +291,8 @@ public class FCHashMap<K, V> extends AbstractMap<K, V> implements FastCopyable {
      */
     @Override
     public V put(@NonNull final K key, @NonNull final V value) {
-        Objects.requireNonNull(key, "key must not be null");
-        Objects.requireNonNull(value, "value must not be null");
+        requireNonNull(key, "key must not be null");
+        requireNonNull(value, "value must not be null");
         throwIfImmutable();
         return family.mutate(key, value, size);
     }
@@ -302,7 +303,7 @@ public class FCHashMap<K, V> extends AbstractMap<K, V> implements FastCopyable {
     @SuppressWarnings("unchecked")
     @Override
     public V remove(@NonNull final Object key) {
-        Objects.requireNonNull(key, "key must not be null");
+        requireNonNull(key, "key must not be null");
         throwIfImmutable();
         return family.mutate((K) key, null, size);
     }
