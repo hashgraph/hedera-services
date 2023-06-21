@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -99,5 +101,9 @@ public class JKeyList extends JKey {
             }
         }
         return false;
+    }
+
+    protected Key convertJKeyEmpty() {
+        return Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
     }
 }

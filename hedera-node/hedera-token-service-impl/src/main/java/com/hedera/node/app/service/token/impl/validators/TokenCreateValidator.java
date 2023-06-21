@@ -122,7 +122,7 @@ public class TokenCreateValidator {
         tokenAttributesValidator.validateTokenSymbol(op.symbol(), config);
         tokenAttributesValidator.validateTokenName(op.name(), config);
 
-        tokenAttributesValidator.checkKeys(
+        tokenAttributesValidator.validateTokenKeys(
                 op.hasAdminKey(), op.adminKey(),
                 op.hasKycKey(), op.kycKey(),
                 op.hasWipeKey(), op.wipeKey(),

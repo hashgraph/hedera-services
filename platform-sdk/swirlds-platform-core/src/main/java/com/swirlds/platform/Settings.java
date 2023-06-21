@@ -17,14 +17,11 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.settings.ParsingUtils.parseDuration;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.SettingConstants.APPS_STRING;
 import static com.swirlds.platform.SettingConstants.BUFFER_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.CONFIG_TXT;
 import static com.swirlds.platform.SettingConstants.DATA_STRING;
 import static com.swirlds.platform.SettingConstants.DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DELAY_SHUFFLE_DEFAULT_VALUE;
@@ -33,9 +30,7 @@ import static com.swirlds.platform.SettingConstants.FREEZE_SECONDS_AFTER_STARTUP
 import static com.swirlds.platform.SettingConstants.GOSSIP_WITH_DIFFERENT_VERSIONS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.JVM_PAUSE_DETECTOR_SLEEP_MS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.JVM_PAUSE_REPORT_MS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.KEYS_STRING;
 import static com.swirlds.platform.SettingConstants.LOAD_KEYS_FROM_PFX_FILES_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.LOG4J2_CONFIG_FILE;
 import static com.swirlds.platform.SettingConstants.LOG_STACK_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_ADDRESS_SIZE_ALLOWED_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_INCOMING_SYNCS_INC_DEFAULT_VALUE;
@@ -46,7 +41,6 @@ import static com.swirlds.platform.SettingConstants.NUM_CONNECTIONS_DEFAULT_VALU
 import static com.swirlds.platform.SettingConstants.NUM_CRYPTO_THREADS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.REMOVED_SETTINGS;
 import static com.swirlds.platform.SettingConstants.SAVED_STRING;
-import static com.swirlds.platform.SettingConstants.SETTINGS_TXT;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_CALLER_SKIPS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_HEARTBEAT_DEFAULT_VALUE;
@@ -69,6 +63,8 @@ import static com.swirlds.platform.SettingConstants.USE_TLS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.VERBOSE_STATISTICS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.VERIFY_EVENT_SIGS_DEFAULT_VALUE;
 
+import com.swirlds.common.config.PathsConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.settings.SettingsException;
 import com.swirlds.common.utility.CommonUtils;
@@ -127,23 +123,13 @@ public class Settings {
     private static final Logger logger = LogManager.getLogger(Settings.class);
 
     private static final Settings INSTANCE = new Settings();
-    /** path to config.txt (which might not exist) */
-    private final Path configPath = getAbsolutePath(CONFIG_TXT);
-    /** path to settings.txt (which might not exist) */
-    private final Path settingsPath = getAbsolutePath(SETTINGS_TXT);
     /** the directory where the settings used file will be created on startup if and only if settings.txt exists */
     private final Path settingsUsedDir = getAbsolutePath();
-    /** path to data/keys/ */
-    private final Path keysDirPath = getAbsolutePath().resolve(DATA_STRING).resolve(KEYS_STRING);
-    /** path to data/apps/ */
-    private final Path appsDirPath = getAbsolutePath().resolve(DATA_STRING).resolve(APPS_STRING);
 
     ///////////////////////////////////////////
     // settings from settings.txt file
     /** priority for threads that don't sync (all but SyncCaller, SyncListener,SyncServer */
     private final int threadPriorityNonSync = THREAD_PRIORITY_NON_SYNC_DEFAULT_VALUE;
-    /** path to log4j2.xml (which might not exist) */
-    private Path logPath = rethrowIO(() -> getAbsolutePath(LOG4J2_CONFIG_FILE));
     /** verify event signatures (rather than just trusting they are correct)? */
     private boolean verifyEventSigs = VERIFY_EVENT_SIGS_DEFAULT_VALUE;
     /** number of threads used to verify signatures and generate keys, in parallel */
@@ -229,7 +215,8 @@ public class Settings {
      */
     private int freezeSecondsAfterStartup = FREEZE_SECONDS_AFTER_STARTUP_DEFAULT_VALUE;
     /**
-     * When enabled, the platform will try to load node keys from .pfx files located in {@link #keysDirPath}. If even a
+     * When enabled, the platform will try to load node keys from .pfx files located in
+     * {@link com.swirlds.common.config.PathsConfig.keysDirPath}. If even a
      * single key is missing, the platform will warn and exit.
      * <p>
      * If disabled, the platform will generate keys deterministically.
@@ -360,6 +347,8 @@ public class Settings {
      * this source file. The settings.txt file is only used for testing and debugging.
      */
     public void loadSettings() {
+        final Path settingsPath =
+                ConfigurationHolder.getConfigData(PathsConfig.class).getSettingsPath();
         loadSettings(settingsPath.toFile());
     }
 
@@ -378,8 +367,9 @@ public class Settings {
         try {
             scanner = new Scanner(settingsFile, StandardCharsets.UTF_8.name());
         } catch (final FileNotFoundException e) { // this should never happen
-            CommonUtils.tellUserConsole(
-                    "The file " + Settings.getInstance().getSettingsPath() + " exists, but can't be opened. " + e);
+            final Path settingsPath =
+                    ConfigurationHolder.getConfigData(PathsConfig.class).getSettingsPath();
+            CommonUtils.tellUserConsole("The file " + settingsPath + " exists, but can't be opened. " + e);
             return;
         }
 
@@ -576,34 +566,6 @@ public class Settings {
             }
         }
         return list.toArray(new String[0][0]);
-    }
-
-    public Path getConfigPath() {
-        return configPath;
-    }
-
-    public Path getSettingsPath() {
-        return settingsPath;
-    }
-
-    public Path getSettingsUsedDir() {
-        return settingsUsedDir;
-    }
-
-    public Path getKeysDirPath() {
-        return keysDirPath;
-    }
-
-    public Path getAppsDirPath() {
-        return appsDirPath;
-    }
-
-    public Path getLogPath() {
-        return logPath;
-    }
-
-    public void setLogPath(final Path logPath) {
-        this.logPath = logPath;
     }
 
     public boolean isVerifyEventSigs() {

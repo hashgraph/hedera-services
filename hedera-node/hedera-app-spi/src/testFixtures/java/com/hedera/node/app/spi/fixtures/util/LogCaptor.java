@@ -66,12 +66,16 @@ public class LogCaptor {
         this.logger.removeAppender(appender);
     }
 
+    public List<String> debugLogs() {
+        return eventsAt(Level.DEBUG);
+    }
+
     public List<String> infoLogs() {
-        return eventsAt("INFO");
+        return eventsAt(Level.INFO);
     }
 
     public List<String> errorLogs() {
-        return eventsAt("ERROR");
+        return eventsAt(Level.ERROR);
     }
 
     /**
@@ -85,7 +89,7 @@ public class LogCaptor {
      * @param level Usually one of [DEBUG|INFO|WARN|ERROR]
      * @return List of log events at the given log level
      */
-    private List<String> eventsAt(@NonNull final String level) {
+    private List<String> eventsAt(@NonNull final Level level) {
         requireNonNull(level);
         final String logText = capture.toString();
         final Matcher m = EVENT_PATTERN.matcher(logText);
@@ -102,7 +106,7 @@ public class LogCaptor {
             }
             // now check if the current match is the level we're looking for
             String matchLevel = m.group(0);
-            if (level.equals(matchLevel)) {
+            if (level.equals(Level.getLevel(matchLevel))) {
                 prevLevelMatch = true;
             }
             // move the start index for the next search to the end of the current match

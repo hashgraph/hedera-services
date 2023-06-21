@@ -21,6 +21,8 @@ import static com.swirlds.logging.LogMarker.CERTIFICATES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
+import com.swirlds.common.config.PathsConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.system.NodeId;
@@ -83,7 +85,8 @@ public final class CryptoSetup {
                         .setDaemon(false)
                         .buildFactory());
 
-        final Path keysDirPath = Settings.getInstance().getKeysDirPath();
+        final Path keysDirPath =
+                ConfigurationHolder.getConfigData(PathsConfig.class).getKeysDirPath();
         final Map<NodeId, KeysAndCerts> keysAndCerts;
         try {
             if (Settings.getInstance().isLoadKeysFromPfxFiles()) {
