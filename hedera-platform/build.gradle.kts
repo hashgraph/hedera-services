@@ -23,13 +23,13 @@ val besuVersion = "23.1.2"
 val bouncycastleVersion = "1.70"
 val daggerVersion = "2.42"
 val eclipseCollectionsVersion = "10.4.0"
-val grpcVersion = "1.45.1"
-val helidonVersion = "3.0.2"
-val jacksonVersion = "2.13.3"
+val grpcVersion = "1.54.1"
+val helidonVersion = "3.2.1"
+val jacksonVersion = "2.13.5"
 val log4jVersion = "2.17.1"
 val mockitoVersion = "4.6.1"
-val nettyVersion = "4.1.77.Final"
-val protobufVersion = "3.19.4"
+val nettyVersion = "4.1.90.Final"
+val protobufVersion = "3.21.7"
 val swirldsVersion = "0.39.0-alpha.3"
 val systemStubsVersion = "2.0.2"
 val testContainersVersion = "1.17.2"
@@ -72,6 +72,7 @@ dependencies.constraints {
         api(gav("io.helidon.grpc.client", helidonVersion))
         api(gav("io.helidon.grpc.core", helidonVersion))
         api(gav("io.helidon.grpc.server", helidonVersion))
+        api(gav("io.netty.codec.http2", nettyVersion))
         api(gav("io.netty.handler", nettyVersion))
         api(gav("io.netty.transport", nettyVersion))
         api(gav("io.netty.transport.classes.epoll", nettyVersion))
