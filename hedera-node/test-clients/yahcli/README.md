@@ -28,6 +28,7 @@ appear below.
 16. [Changing a staking election](#changing-a-staking-election)
 17. [Scheduling a transaction](#scheduling-a-transaction)
 18. [Scheduling public key list update](#scheduling-public-key-list-update)
+18. [Activating staking after a network reset](#activating-staking)
 
 # Setting up the working directory
 
@@ -585,3 +586,41 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 --config 
 Use info account S to check the key list of the account
 $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 --config /test-clients/yahcli/config.yml  -a 3 -n localhost -p 2 accounts info S
 ```
+
+# Activating staking
+
+After resetting a network like previewnet or testnet, we generally want to re-activate staking. We 
+can do this using the `activate-staking` command. For example,
+```
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -p 2 -n integration activate-staking
+.i. SUCCESS - staking activated on network 'integration' with,
+.i.   * Reward rate of               273972602739726
+.i.   * 0.0.800 balance credit of    25000000000000000
+.i.   * 0.0.8161 staked to node6 for 178571428571428571
+.i.   * 0.0.8162 staked to node4 for 178571428571428571
+.i.   * 0.0.8156 staked to node5 for 178571428571428571
+.i.   * 0.0.8157 staked to node3 for 178571428571428571
+.i.   * 0.0.8158 staked to node2 for 178571428571428571
+.i.   * 0.0.8159 staked to node0 for 178571428571428571
+.i.   * 0.0.8160 staked to node1 for 178571428571428571
+```
+
+
+The above example shows the default values used by the command; in particular, 
+  1. The reward rate per 24-hour period is `273972602739726` tinybar.
+  2. The amount deposited into `0.0.800` is 250M hbar.
+  3. Each node gets one newly created staking account whose balance is min stake for the network size
+    as it appears in _config.yml_. 
+
+You can configure these values as below,
+```
+$ docker run -it -v $(pwd):/launch yahcli:$TAG -n localhost -p 2 activate-staking -p 1bh -r 2mh -b 3kh
+Log level is WARN
+Targeting localhost, paying with 0.0.2
+.i. SUCCESS - staking activated on network 'localhost' with,
+.i.   * Reward rate of               200000000000000
+.i.   * 0.0.800 balance credit of    300000000000
+.i.   * 0.0.1005 staked to node0 for 100000000000000000
+```
+
+Note the `kh`/`mh`/`bh` suffixes to express thousands, millions, and billions of hbar, respectively.
