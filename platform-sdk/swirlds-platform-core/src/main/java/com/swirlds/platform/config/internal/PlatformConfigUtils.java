@@ -29,6 +29,9 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * This class contains utility methods for the platform config.
+ */
 public class PlatformConfigUtils {
     private static final Logger logger = LogManager.getLogger(PlatformConfigUtils.class);
 
@@ -36,6 +39,11 @@ public class PlatformConfigUtils {
         // Utility class
     }
 
+    /**
+     * Logs all configuration properties that are not known by any configuration data type.
+     *
+     * @param configuration the configuration to check
+     */
     public static void logNotKnownConfigProperties(@NonNull final Configuration configuration) {
         Objects.requireNonNull(configuration, "configuration must not be null");
 
