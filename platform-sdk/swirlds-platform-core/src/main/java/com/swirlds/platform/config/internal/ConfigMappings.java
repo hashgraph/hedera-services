@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.config;
+package com.swirlds.platform.config.internal;
 
 import com.swirlds.common.config.sources.ConfigMapping;
 import com.swirlds.common.config.sources.MappedConfigSource;
@@ -32,7 +32,7 @@ import java.util.List;
 public final class ConfigMappings {
     private ConfigMappings() {}
 
-    private static final List<ConfigMapping> MAPPINGS = List.of(
+    static final List<ConfigMapping> MAPPINGS = List.of(
             new ConfigMapping("consensus.roundsNonAncient", "state.roundsNonAncient"),
             new ConfigMapping("consensus.roundsExpired", "state.roundsExpired"),
             new ConfigMapping("consensus.coinFreq", "coinFreq"),

@@ -40,7 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-class ConsensusSubmitMessageHandlerParityTest extends ConsensusHandlerTestBase {
+class ConsensusSubmitMessageParityTest extends ConsensusTestBase {
     @Mock
     private ReadableAccountStore accountStore;
 

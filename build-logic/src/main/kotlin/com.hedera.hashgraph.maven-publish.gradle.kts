@@ -25,6 +25,14 @@ publishing {
     publications {
         create<MavenPublication>("maven") {
             from(components.getByName("java"))
+            versionMapping {
+                usage("java-api") {
+                    fromResolutionResult()
+                }
+                usage("java-runtime") {
+                    fromResolutionResult()
+                }
+            }
 
             pom {
                 packaging = findProperty("maven.project.packaging")?.toString() ?: "jar"

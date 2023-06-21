@@ -26,6 +26,7 @@ dependencies {
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
 
+        testImplementation(project(":app-service-mono"))
         testImplementation(gav("awaitility"))
         testImplementation(gav("com.swirlds.config"))
         testImplementation(gav("io.github.classgraph"))
@@ -42,12 +43,12 @@ dependencies {
         testImplementation(gav("org.mockito.junit.jupiter"))
         testCompileOnly(gav("com.github.spotbugs.annotations"))
 
-        jmhImplementation(project(":hedera-node:node-app-hapi-utils"))
-        jmhImplementation(project(":hedera-node:node-app-spi"))
+        jmhImplementation(project(":app-hapi-utils"))
+        jmhImplementation(project(":app-spi"))
         jmhImplementation(gav("com.github.spotbugs.annotations"))
         jmhImplementation(gav("com.google.common"))
         jmhImplementation(gav("com.google.protobuf"))
-        jmhImplementation(project(":hedera-node:node-hapi"))
+        jmhImplementation(project(":hapi"))
         jmhImplementation(gav("com.swirlds.common"))
         jmhImplementation(gav("com.swirlds.fcqueue"))
         jmhImplementation(gav("com.swirlds.jasperdb"))
@@ -65,7 +66,7 @@ dependencies {
     }
 }
 
-val apt = configurations.create("apt")
+val apt = configurations.create("apt") { extendsFrom(configurations.internal.get()) }
 
 dependencies { @Suppress("UnstableApiUsage") apt(javaModuleDependencies.gav("dagger.compiler")) }
 
