@@ -23,6 +23,7 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +42,7 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
     private List<SolidityAction> actions;
 
     private List<ContractID> createdContracts = Collections.emptyList();
+    private Map<ContractID, Long> contractNonces = new HashMap<>();
 
     public static TransactionProcessingResult failed(
             final long gasUsed,
@@ -113,8 +115,16 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
         this.createdContracts = createdContracts;
     }
 
+    public void setContractNonces(Map<ContractID, Long> contractNonces) {
+        this.contractNonces = contractNonces;
+    }
+
     public List<ContractID> getCreatedContracts() {
         return createdContracts;
+    }
+
+    public Map<ContractID, Long> getContractNonces() {
+        return contractNonces;
     }
 
     public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {

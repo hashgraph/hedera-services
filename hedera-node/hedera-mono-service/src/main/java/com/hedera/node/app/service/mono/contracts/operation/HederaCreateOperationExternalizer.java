@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.node.app.service.mono.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.contractIdFromEvmAddress;
 
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -43,7 +42,6 @@ import java.util.Collections;
 import java.util.List;
 import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
@@ -95,13 +93,6 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
             createdContractId = updater.idOfLastNewAddress();
         }
 
-        if (dynamicProperties.isContractsNoncesExternalizationEnabled()) {
-            final MutableAccount contractAccount = frame.getWorldUpdater()
-                    .getAccount(childFrame.getContractAddress())
-                    .getMutable();
-            updateContractNonces(createdContractId, contractAccount.getNonce());
-        }
-
         sideEffects.trackNewContract(createdContractId, childFrame.getContractAddress());
         final var childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
         childRecord.onlyExternalizeIfSuccessful();
@@ -116,13 +107,6 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
                     recordsHistorian, childRecord, syntheticOp, List.of(contractBytecodeSidecar));
         } else {
             updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticOp, Collections.emptyList());
-        }
-    }
-
-    @Override
-    public void updateParentContractNonce(Address accountAddress, Long nonce) {
-        if (dynamicProperties.isContractsNoncesExternalizationEnabled()) {
-            updateContractNonces(contractIdFromEvmAddress(accountAddress), nonce);
         }
     }
 
@@ -171,9 +155,5 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
 
         // set initial contract nonce to 1
         updater.trackingAccounts().set(hollowAccountID, ETHEREUM_NONCE, 1L);
-    }
-
-    private void updateContractNonces(ContractID contractID, Long nonce) {
-        recordsHistorian.updateContractNonces(contractID, nonce);
     }
 }

@@ -122,6 +122,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             final long maxGasAllowanceInTinybars,
             final BigInteger offeredGasPrice) {
         worldState.clearProvisionalContractCreations();
+        worldState.clearContractNonces();
 
         var op = contractCallTxn.getContractCall();
 
@@ -201,6 +202,9 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             for (final var createdContract : createdContracts) {
                 sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
             }
+
+            final var createdNonces = worldState.getContractNonces();
+            result.setContractNonces(createdNonces);
         }
         log.info("--------------------------");
         worldLedgers.accounts().idSet().forEach(id -> {

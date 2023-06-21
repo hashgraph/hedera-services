@@ -2172,26 +2172,32 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .via(deployContractTxn)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))))
-                .then(withOpContext((spec, opLog) -> {
-                    HapiGetTxnRecord op = getTxnRecord(deployContractTxn)
-                            .logged()
-                            .hasPriority(recordWith()
-                                    .contractCallResult(resultWith()
-                                            .contractWithNonce(spec.registry().getContractId(contract), 5L)));
-                    allRunFor(spec, op);
-                }),
+                .then(
+                        withOpContext((spec, opLog) -> {
+                            HapiGetTxnRecord op = getTxnRecord(deployContractTxn)
+                                    .logged()
+                                    .hasPriority(recordWith()
+                                            .contractCallResult(resultWith()
+                                                    .contractWithNonce(
+                                                            spec.registry().getContractId(contract), 5L)));
+                            allRunFor(spec, op);
+                        }),
                         contractCall(contract, "deployChildFromParentContract", BigInteger.ZERO)
                                 .gas(GAS_TO_OFFER)
                                 .via("committedInnerCreation"),
                         contractCall(contract, "deployChildAndRevertFromParentContract", BigInteger.ONE)
                                 .gas(GAS_TO_OFFER)
                                 .via("revertedInnerCreation"),
-                        getTxnRecord("committedInnerCreation").andAllChildRecords().logged(),
+                        getTxnRecord("committedInnerCreation")
+                                .andAllChildRecords()
+                                .logged(),
                         // TODO - this record should not have any contract_nonces entries, but it has two,
                         // corresponding to the child contract and the creating parent contract (which
                         // actually didn't change due to the revert); compare with the nonces logged at
                         // end of ContractCallTransitionLogic on this branch
-                        getTxnRecord("revertedInnerCreation").andAllChildRecords().logged());
+                        getTxnRecord("revertedInnerCreation")
+                                .andAllChildRecords()
+                                .logged());
     }
 
     @Override

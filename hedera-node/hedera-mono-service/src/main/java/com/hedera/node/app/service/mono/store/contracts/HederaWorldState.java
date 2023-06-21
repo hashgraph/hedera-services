@@ -44,6 +44,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +76,7 @@ public class HederaWorldState implements HederaMutableWorldState {
     private final FunctionalityThrottling handleThrottling;
     private final SigImpactHistorian sigImpactHistorian;
     private final List<ContractID> provisionalContractCreations = new LinkedList<>();
+    private final Map<ContractID, Long> contractNonces = new HashMap<>();
     private final GlobalDynamicProperties dynamicProperties;
     private final RecordsHistorian recordsHistorian;
     private final CodeCache codeCache;
@@ -147,6 +149,11 @@ public class HederaWorldState implements HederaMutableWorldState {
         provisionalContractCreations.clear();
     }
 
+    @Override
+    public void clearContractNonces() {
+        contractNonces.clear();
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -171,6 +178,12 @@ public class HederaWorldState implements HederaMutableWorldState {
         // transaction we handle is also a contract operation)
         final var copy = new ArrayList<>(provisionalContractCreations);
         copy.sort(CONTRACT_ID_COMPARATOR);
+        return copy;
+    }
+
+    @Override
+    public Map<ContractID, Long> getContractNonces() {
+        final var copy = new HashMap<>(contractNonces);
         return copy;
     }
 
@@ -309,6 +322,7 @@ public class HederaWorldState implements HederaMutableWorldState {
             trackNewlyCreatedAccounts(
                     entityAccess,
                     wrapped.provisionalContractCreations,
+                    wrapped.contractNonces,
                     impactHistorian,
                     getDeletedAccountAddresses(),
                     updatedAccounts);
@@ -337,6 +351,7 @@ public class HederaWorldState implements HederaMutableWorldState {
         private void trackNewlyCreatedAccounts(
                 final EntityAccess entityAccess,
                 final List<ContractID> provisionalCreations,
+                final Map<ContractID, Long> contractNonces,
                 final SigImpactHistorian impactHistorian,
                 final Collection<Address> deletedAddresses,
                 final Collection<UpdateTrackingAccount<Account>> updatedAccounts) {
@@ -353,6 +368,10 @@ public class HederaWorldState implements HederaMutableWorldState {
 
                 final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
                 trackIfNewlyCreated(accountId, entityAccess, provisionalCreations);
+
+                if (dynamicProperties.isContractsNoncesExternalizationEnabled()) {
+                    trackContractNonces(accountId, entityAccess, contractNonces);
+                }
             }
         }
 
@@ -368,6 +387,29 @@ public class HederaWorldState implements HederaMutableWorldState {
             final var isSmartContract = (Boolean) trackingAccounts().get(accountId, AccountProperty.IS_SMART_CONTRACT);
             if (Boolean.TRUE.equals(isSmartContract) && !entityAccess.isExtant(asTypedEvmAddress(accountId))) {
                 provisionalContractCreations.add(asContract(accountId));
+            }
+        }
+
+        void trackContractNonces(
+                final AccountID accountId,
+                final EntityAccess entityAccess,
+                final Map<ContractID, Long> contractNonces) {
+            final var accounts = trackingAccounts();
+            if (!accounts.contains(accountId)) {
+                log.error("Account {} missing in tracking ledgers", accountId);
+                return;
+            }
+            final var isSmartContract = (Boolean) trackingAccounts().get(accountId, AccountProperty.IS_SMART_CONTRACT);
+            if (Boolean.TRUE.equals(isSmartContract)) {
+                final var trackingNonce = ((long) trackingAccounts().get(accountId, AccountProperty.ETHEREUM_NONCE));
+                if (entityAccess.isExtant(asTypedEvmAddress(accountId))) {
+                    final var stateNonce = entityAccess.getNonce(asTypedEvmAddress(accountId));
+                    if (trackingNonce > stateNonce) {
+                        contractNonces.put(asContract(accountId), trackingNonce);
+                    }
+                } else {
+                    contractNonces.put(asContract(accountId), trackingNonce);
+                }
             }
         }
 
