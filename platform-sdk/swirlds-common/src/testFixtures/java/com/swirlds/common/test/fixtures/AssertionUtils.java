@@ -18,6 +18,11 @@ package com.swirlds.common.test.fixtures;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
@@ -33,7 +38,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
-import org.junit.jupiter.api.Assertions;
 
 /**
  * Contains various useful assertions.
@@ -81,16 +85,16 @@ public final class AssertionUtils {
             if (CompareTo.isGreaterThan(elapsed, maxDuration)) {
                 condition.getAsBoolean();
                 if (cause == null) {
-                    Assertions.fail(message);
+                    fail(message);
                 } else {
-                    Assertions.fail(message, cause.get());
+                    fail(message, cause.get());
                 }
             }
 
             try {
                 MILLISECONDS.sleep(1);
             } catch (final InterruptedException e) {
-                Assertions.fail("test was interrupted", e);
+                fail("test was interrupted", e);
             }
         }
     }
@@ -246,9 +250,9 @@ public final class AssertionUtils {
                 })
                 .build(true);
 
-        Assertions.assertFalse(error.get(), "exception encountered while handling operation");
+        assertFalse(error.get(), "exception encountered while handling operation");
         final boolean completed = latch.await(maxDuration.toMillis(), MILLISECONDS);
-        Assertions.assertTrue(completed, message);
+        assertTrue(completed, message);
     }
 
     /**
@@ -283,9 +287,9 @@ public final class AssertionUtils {
                 })
                 .build(true);
 
-        Assertions.assertFalse(error.get(), "exception encountered while handling operation");
+        assertFalse(error.get(), "exception encountered while handling operation");
         final boolean completed = latch.await(maxDuration.toMillis(), MILLISECONDS);
-        Assertions.assertTrue(completed, message);
+        assertTrue(completed, message);
 
         return value.get();
     }
@@ -317,7 +321,7 @@ public final class AssertionUtils {
                 .setComponent("assertion-utils")
                 .setThreadName("assert-prompt-throw")
                 .setRunnable(() -> {
-                    Assertions.assertThrows(expectedException, operation::run, message);
+                    assertThrows(expectedException, operation::run, message);
                     latch.countDown();
                 })
                 .setExceptionHandler((final Thread thread, final Throwable exception) -> {
@@ -326,10 +330,10 @@ public final class AssertionUtils {
                 })
                 .build(true);
 
-        Assertions.assertFalse(error.get(), message);
+        assertFalse(error.get(), message);
 
         final boolean completed = latch.await(maxDuration.toMillis(), MILLISECONDS);
-        Assertions.assertTrue(completed, message);
+        assertTrue(completed, message);
     }
 
     /**
@@ -345,12 +349,11 @@ public final class AssertionUtils {
     public static <T> void assertIteratorEquality(final Iterator<T> iteratorA, final Iterator<T> iteratorB) {
         int count = 0;
         while (iteratorA.hasNext() && iteratorB.hasNext()) {
-            Assertions.assertEquals(
-                    iteratorA.next(), iteratorB.next(), "The element at position " + count + " does not match.");
+            assertEquals(iteratorA.next(), iteratorB.next(), "The element at position " + count + " does not match.");
             count++;
         }
-        Assertions.assertFalse(iteratorA.hasNext(), "iterator A is not depleted");
-        Assertions.assertFalse(iteratorB.hasNext(), "iterator B is not depleted");
+        assertFalse(iteratorA.hasNext(), "iterator A is not depleted");
+        assertFalse(iteratorB.hasNext(), "iterator B is not depleted");
     }
 
     /**
@@ -365,8 +368,7 @@ public final class AssertionUtils {
      * 		the permitted tolerance
      */
     public static void assertApproximatelyEquals(final double expected, final double actual, final double tolerance) {
-        Assertions.assertTrue(
-                Math.abs(expected - actual) <= tolerance, "expected: " + expected + ", actual: " + actual);
+        assertTrue(Math.abs(expected - actual) <= tolerance, "expected: " + expected + ", actual: " + actual);
     }
 
     /**
