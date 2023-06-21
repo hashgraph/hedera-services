@@ -270,6 +270,12 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
+    void returnsNullWithDeletedAccount() {
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM).deleted(true));
+        assertNull(subject.getAddress(ACCOUNT_NUM));
+    }
+
+    @Test
     void returnsLongZeroAddressWithNonAddressAlias() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM, SOME_OTHER_ALIAS));
         assertEquals(LONG_ZERO_ADDRESS, subject.getAddress(ACCOUNT_NUM));
@@ -342,6 +348,34 @@ class DispatchingEvmFrameStateTest {
 
         assertTrue(reasonToHaltDeletion.isPresent());
         assertEquals(MISSING_ADDRESS, reasonToHaltDeletion.get());
+    }
+
+    @Test
+    void missingAccountsCannotPayFees() {
+        assertThrows(IllegalArgumentException.class, () -> subject.collectFee(EVM_ADDRESS, 123L));
+    }
+
+    @Test
+    void delegatesFeeCollection() {
+        given(dispatch.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe()))).willReturn(new EntityNumber(ACCOUNT_NUM));
+
+        subject.collectFee(EVM_ADDRESS, 123L);
+
+        verify(dispatch).collectFee(ACCOUNT_NUM, 123L);
+    }
+
+    @Test
+    void missingAccountsCannotGetRefunds() {
+        assertThrows(IllegalArgumentException.class, () -> subject.refundFee(EVM_ADDRESS, 123L));
+    }
+
+    @Test
+    void delegatesFeeRefunding() {
+        given(dispatch.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe()))).willReturn(new EntityNumber(ACCOUNT_NUM));
+
+        subject.refundFee(EVM_ADDRESS, 123L);
+
+        verify(dispatch).refundFee(ACCOUNT_NUM, 123L);
     }
 
     @Test

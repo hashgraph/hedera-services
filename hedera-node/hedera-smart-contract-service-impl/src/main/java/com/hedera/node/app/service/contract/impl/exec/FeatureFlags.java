@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
+
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -38,5 +41,16 @@ public interface FeatureFlags {
      * @param frame the {@link MessageFrame} to check
      * @return whether implicit creation should be enabled
      */
-    boolean isImplicitCreationEnabled(@NonNull MessageFrame frame);
+    default boolean isImplicitCreationEnabled(@NonNull MessageFrame frame) {
+        return isImplicitCreationEnabled(configOf(frame));
+    }
+
+    /**
+     * Whether "implicit creation" of accounts via sending value or targeting a {@code CREATE2} to an EIP-1014 address
+     * should be enabled for the given {@code frame}.
+     *
+     * @param config the {@link Configuration} to check
+     * @return whether implicit creation should be enabled
+     */
+    boolean isImplicitCreationEnabled(@NonNull Configuration config);
 }

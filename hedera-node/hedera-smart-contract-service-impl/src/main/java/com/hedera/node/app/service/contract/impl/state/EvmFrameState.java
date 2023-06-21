@@ -57,6 +57,25 @@ public interface EvmFrameState {
     }
 
     /**
+     * Collects the given fee from the given account. The caller should have already
+     * verified that the account exists and has sufficient balance to pay the fee, so
+     * this method surfaces any problem by throwing an exception.
+     *
+     * @param payer the account to collect the fee from
+     * @param amount the amount to collect
+     * @throws IllegalArgumentException if the collection fails for any reason
+     */
+    void collectFee(@NonNull Address payer, long amount);
+
+    /**
+     * Refunds the given {@code amount} of fees from the given {@code fromEntityNumber}.
+     *
+     * @param payer the address of the account to refund the fees to
+     * @param amount          the amount of fees to collect
+     */
+    void refundFee(@NonNull Address payer, long amount);
+
+    /**
      * Tries to transfer the given amount from a sending contract to the recipient. The sender
      * has already authorized this action, in the sense that it is the address that has initiated
      * either a message call with value or a {@code selfdestruct}. The recipient, however, must

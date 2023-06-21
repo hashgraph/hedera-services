@@ -16,9 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.PendingCreation;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -30,6 +34,47 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
  * A {@link WorldUpdater} extension with additional methods for Hedera-specific operations.
  */
 public interface HederaWorldUpdater extends WorldUpdater {
+    /**
+     * Returns the {@link HederaEvmAccount} for the given account id, or null if no
+     * such account (or contract).
+     *
+     * @param accountId the id of the account to get
+     * @return the account, or null if no such account
+     */
+    @Nullable
+    HederaEvmAccount getHederaAccount(@NonNull AccountID accountId);
+
+    /**
+     * Returns the {@link HederaEvmAccount} for the given contract id, or null if no
+     * such contract (or account).
+     *
+     * @param contractId the id of the contract to get
+     * @return the account, or null if no such account
+     */
+    @Nullable
+    HederaEvmAccount getHederaAccount(@NonNull ContractID contractId);
+
+    /**
+     * Collects the given fee from the given account. The caller should have already
+     * verified that the account exists and has sufficient balance to pay the fee, so
+     * this method surfaces any problem by throwing an exception.
+     *
+     * @param payer the account to collect the fee from
+     * @param amount the amount to collect
+     * @throws IllegalArgumentException if the collection fails for any reason
+     */
+    void collectFee(@NonNull Address payer, long amount);
+
+    /**
+     * Refunds the given fee to the given account. The caller should have already
+     * verified that the account exists, so this method surfaces any problem by
+     * throwing an exception.
+     *
+     * @param payer the account to refund the fee to
+     * @param amount the amount to refund
+     */
+    void refundFee(@NonNull Address payer, long amount);
+
     /**
      * Tries to transfer the given amount from a sending contract to the recipient. The sender
      * has already authorized this action, in the sense that it is the address that has initiated

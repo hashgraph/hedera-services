@@ -31,6 +31,8 @@ module com.hedera.node.app.service.contract.impl {
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.infra to
             com.hedera.node.app.service.contract.impl.test;
+    exports com.hedera.node.app.service.contract.impl.exec.gas to
+            com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.exec.v030 to
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.exec.utils to

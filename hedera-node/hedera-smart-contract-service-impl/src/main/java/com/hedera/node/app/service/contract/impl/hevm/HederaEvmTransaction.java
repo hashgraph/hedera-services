@@ -22,14 +22,36 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+import java.util.Objects;
+
 public record HederaEvmTransaction(
-        @NonNull AccountID sender,
-        @Nullable AccountID relayer,
-        @Nullable ContractID contract,
+        @NonNull AccountID senderId,
+        @Nullable AccountID relayerId,
+        @Nullable ContractID contractId,
         long nonce,
         @NonNull Bytes callData,
         @Nullable Bytes chainId,
         long value,
         long gasLimit,
-        long gasPrice,
-        long maxGasAllowance) {}
+        long offeredGasPrice,
+        long maxGasAllowance) {
+    public boolean isCreate() {
+        return contractId == null;
+    }
+
+    public @NonNull ContractID contractIdOrThrow() {
+        return Objects.requireNonNull(contractId);
+    }
+
+    public boolean hasValue() {
+        return value > 0;
+    }
+
+    public long upfrontCostGiven(final long gasPrice) {
+        try {
+            return Math.multiplyExact(gasLimit, gasPrice) + value;
+        } catch (Exception ignore) {
+            return Long.MAX_VALUE;
+        }
+    }
+}

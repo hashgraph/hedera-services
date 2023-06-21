@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.processors;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.isSameResult;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -28,10 +29,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.Optional;
@@ -69,6 +72,9 @@ class CustomMessageCallProcessorTest {
     private MessageFrame frame;
 
     @Mock
+    private FeatureFlags featureFlags;
+
+    @Mock
     private AddressChecks addressChecks;
 
     @Mock
@@ -84,6 +90,9 @@ class CustomMessageCallProcessorTest {
     private PrecompileContractRegistry registry;
 
     @Mock
+    private Configuration config;
+
+    @Mock
     private ProxyWorldUpdater proxyWorldUpdater;
 
     private CustomMessageCallProcessor subject;
@@ -91,7 +100,13 @@ class CustomMessageCallProcessorTest {
     @BeforeEach
     void setUp() {
         subject = new CustomMessageCallProcessor(
-                evm, registry, addressChecks, Map.of(TestHelpers.HTS_PRECOMPILE_ADDRESS, htsPrecompile));
+                evm, featureFlags, registry, addressChecks, Map.of(TestHelpers.HTS_PRECOMPILE_ADDRESS, htsPrecompile));
+    }
+
+    @Test
+    void delegatesLazyCreationCheck() {
+        given(featureFlags.isImplicitCreationEnabled(config)).willReturn(true);
+        assertTrue(subject.isImplicitCreationEnabled(config));
     }
 
     @Test

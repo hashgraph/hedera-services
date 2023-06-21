@@ -29,6 +29,8 @@ module com.hedera.node.app.service.contract.impl.test {
             org.junit.platform.commons;
     opens com.hedera.node.app.service.contract.impl.test.exec.operations to
             org.junit.platform.commons;
+    opens com.hedera.node.app.service.contract.impl.test.exec to
+            org.junit.platform.commons;
     opens com.hedera.node.app.service.contract.impl.test.exec.v030 to
             org.junit.platform.commons;
     opens com.hedera.node.app.service.contract.impl.test.exec.v034 to

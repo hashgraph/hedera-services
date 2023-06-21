@@ -16,14 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.MISSING_ENTITY_NUMBER;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.meta.bni.Scope;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -105,6 +102,48 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         this.scope = requireNonNull(scope);
         this.evmFrameStateFactory = requireNonNull(evmFrameStateFactory);
         this.evmFrameState = evmFrameStateFactory.createIn(scope);
+    }
+
+    @Nullable
+    @Override
+    public HederaEvmAccount getHederaAccount(@NonNull AccountID accountId) {
+        final Address address;
+        if (accountId.hasAlias()) {
+            address = pbjToBesuAddress(accountId.aliasOrThrow());
+        } else {
+            try {
+                address = evmFrameState.getAddress(accountId.accountNumOrElse(0L));
+            } catch (IllegalArgumentException ignore) {
+                return null;
+            }
+        }
+        return address == null ? null : (HederaEvmAccount) get(address);
+    }
+
+    @Nullable
+    @Override
+    public HederaEvmAccount getHederaAccount(@NonNull ContractID contractId) {
+        final Address address;
+        if (contractId.hasEvmAddress()) {
+            address = pbjToBesuAddress(contractId.evmAddressOrThrow());
+        } else {
+            try {
+                address = evmFrameState.getAddress(contractId.contractNumOrElse(0L));
+            } catch (IllegalArgumentException ignore) {
+                return null;
+            }
+        }
+        return address == null ? null : (HederaEvmAccount) get(address);
+    }
+
+    @Override
+    public void collectFee(@NonNull final Address payer, final long amount) {
+        throw new AssertionError("Not implemented");
+    }
+
+    @Override
+    public void refundFee(@NonNull final Address payer, final long amount) {
+        throw new AssertionError("Not implemented");
     }
 
     /**

@@ -16,16 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.exec.v034;
 
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.testConfigOf;
-
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.v030.Version030FeatureFlags;
 import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * The v0.34+ implementation of {@link FeatureFlags}; lazy creation enabled if config says so.
@@ -38,10 +36,8 @@ public class Version034FeatureFlags extends Version030FeatureFlags {
     }
 
     @Override
-    public boolean isImplicitCreationEnabled(@NonNull final MessageFrame frame) {
-        return testConfigOf(
-                frame,
-                config -> config.getConfigData(AutoCreationConfig.class).enabled()
-                        && config.getConfigData(LazyCreationConfig.class).enabled());
+    public boolean isImplicitCreationEnabled(@NonNull final Configuration config) {
+        return config.getConfigData(AutoCreationConfig.class).enabled()
+                && config.getConfigData(LazyCreationConfig.class).enabled();
     }
 }

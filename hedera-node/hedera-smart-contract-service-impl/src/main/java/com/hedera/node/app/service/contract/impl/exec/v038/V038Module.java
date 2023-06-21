@@ -54,7 +54,6 @@ import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
-import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 /**
  * Provides the Services 0.38 EVM implementation, which consists of Shanghai operations and
@@ -69,7 +68,7 @@ public interface V038Module {
     @Singleton
     @ServicesV038
     static TransactionProcessor provideTransactionProcessor(
-            @ServicesV038 @NonNull final MessageCallProcessor messageCallProcessor,
+            @ServicesV038 @NonNull final CustomMessageCallProcessor messageCallProcessor,
             @ServicesV038 @NonNull final ContractCreationProcessor contractCreationProcessor,
             @NonNull final GasCalculator gasCalculator) {
         return new TransactionProcessor(gasCalculator, messageCallProcessor, contractCreationProcessor);
@@ -93,12 +92,13 @@ public interface V038Module {
     @Provides
     @Singleton
     @ServicesV038
-    static MessageCallProcessor provideMessageCallProcessor(
+    static CustomMessageCallProcessor provideMessageCallProcessor(
             @ServicesV038 @NonNull final EVM evm,
+            @ServicesV038 @NonNull final FeatureFlags featureFlags,
             @ServicesV038 @NonNull final AddressChecks addressChecks,
             @ServicesV038 @NonNull final PrecompileContractRegistry registry,
             @NonNull final Map<Address, PrecompiledContract> hederaPrecompiles) {
-        return new CustomMessageCallProcessor(evm, registry, addressChecks, hederaPrecompiles);
+        return new CustomMessageCallProcessor(evm, featureFlags, registry, addressChecks, hederaPrecompiles);
     }
 
     @Provides

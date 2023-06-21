@@ -58,6 +58,11 @@ class ProxyEvmAccountTest {
     }
 
     @Test
+    void notTokenFacade() {
+        assertFalse(subject.isTokenFacade());
+    }
+
+    @Test
     void accountHashNotSupported() {
         assertThrows(UnsupportedOperationException.class, subject::getAddressHash);
     }

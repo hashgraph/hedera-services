@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -23,8 +24,10 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
@@ -34,6 +37,7 @@ public class TestHelpers {
     public static long REQUIRED_GAS = 123L;
     public static long NONCE = 678;
     public static long VALUE = 999_999;
+    public static long INTRINSIC_GAS = 12_345;
     public static long GAS_LIMIT = 1_000_000;
     public static long GAS_PRICE = 666;
     public static long NETWORK_GAS_PRICE = 777;
@@ -49,6 +53,8 @@ public class TestHelpers {
     public static Address HTS_PRECOMPILE_ADDRESS = Address.fromHexString("0x167");
     public static Address NON_SYSTEM_LONG_ZERO_ADDRESS = Address.fromHexString("0x1234576890");
     public static Address EIP_1014_ADDRESS = Address.fromHexString("0x89abcdef89abcdef89abcdef89abcdef89abcdef");
+    public static ContractID CALLED_CONTRACT_EVM_ADDRESS =
+            ContractID.newBuilder().evmAddress(tuweniToPbjBytes(EIP_1014_ADDRESS)).build();
 
     public static void assertSameResult(
             final Operation.OperationResult expected, final Operation.OperationResult actual) {
@@ -63,17 +69,56 @@ public class TestHelpers {
     }
 
     public static HederaEvmTransaction wellKnownHapiCall() {
+        return wellKnownHapiCall(null, VALUE);
+    }
+
+    public static HederaEvmTransaction wellKnownRelayedHapiCall(final long value) {
+        return wellKnownHapiCall(RELAYER_ID, value);
+    }
+
+    public static HederaEvmTransaction wellKnownRelayedHapiCallWithGasLimit(final long gasLimit) {
+        return wellKnownHapiCall(RELAYER_ID, VALUE, gasLimit);
+    }
+
+    public static HederaEvmTransaction wellKnownHapiCall(
+            @Nullable final AccountID relayer,
+            final long value) {
+        return wellKnownHapiCall(relayer, value, GAS_LIMIT);
+    }
+
+    public static HederaEvmTransaction wellKnownHapiCall(
+            @Nullable final AccountID relayer,
+            final long value,
+            final long gasLimit) {
         return new HederaEvmTransaction(
                 SENDER_ID,
-                null,
+                relayer,
                 CALLED_CONTRACT_ID,
                 NONCE,
                 CALL_DATA,
                 MAINNET_CHAIN_ID,
-                VALUE,
-                GAS_LIMIT,
+                value,
+                gasLimit,
                 GAS_PRICE,
                 MAX_GAS_ALLOWANCE);
+    }
+
+    public static HederaEvmTransaction wellKnownLazyCreationWithGasLimit(final long gasLimit) {
+        return new HederaEvmTransaction(
+                SENDER_ID,
+                RELAYER_ID,
+                CALLED_CONTRACT_EVM_ADDRESS,
+                NONCE,
+                CALL_DATA,
+                MAINNET_CHAIN_ID,
+                VALUE,
+                gasLimit,
+                GAS_PRICE,
+                MAX_GAS_ALLOWANCE);
+    }
+
+    public static HederaEvmContext wellKnownContextWith(@NonNull final HederaEvmBlocks blocks) {
+        return new HederaEvmContext(NETWORK_GAS_PRICE, false, blocks);
     }
 
     public static HederaEvmContext wellKnownContextWith(

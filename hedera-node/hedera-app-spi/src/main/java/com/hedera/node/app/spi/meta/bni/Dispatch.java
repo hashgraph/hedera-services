@@ -145,6 +145,22 @@ public interface Dispatch {
             long amount, long fromEntityNumber, long toEntityNumber, @NonNull VerificationStrategy strategy);
 
     /**
+     * Collects the given {@code amount} of fees from the given {@code fromEntityNumber}.
+     *
+     * @param fromEntityNumber the number of the entity to collect fees from
+     * @param amount          the amount of fees to collect
+     */
+    void collectFee(long fromEntityNumber, long amount);
+
+    /**
+     * Refunds the given {@code amount} of fees from the given {@code fromEntityNumber}.
+     *
+     * @param fromEntityNumber the number of the entity to refund fees to
+     * @param amount          the amount of fees to collect
+     */
+    void refundFee(long fromEntityNumber, long amount);
+
+    /**
      * Links the given {@code evmAddress} to the given {@code entityNumber} as an alias.
      *
      * <p>The entity number does not have to exist yet, since during a {@code CREATE} or {@code CREATE2}

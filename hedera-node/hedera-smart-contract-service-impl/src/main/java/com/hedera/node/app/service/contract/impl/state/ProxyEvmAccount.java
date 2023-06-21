@@ -107,6 +107,14 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
 
     // --- Hedera-specific methods ---
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isTokenFacade() {
+        return false;
+    }
+
+    /**
      * Returns the number of treasury titles held by this account.
      *
      * @return the number of treasury titles held by this account

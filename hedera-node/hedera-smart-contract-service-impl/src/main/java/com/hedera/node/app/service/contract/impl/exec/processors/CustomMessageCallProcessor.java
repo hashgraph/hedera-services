@@ -25,10 +25,13 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.PRECOMPILE_ER
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -51,19 +54,22 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
  * and the core {@link MessageCallProcessor#process(MessageFrame, OperationTracer)} logic we inherit.
  */
 public class CustomMessageCallProcessor extends MessageCallProcessor {
+    private final FeatureFlags featureFlags;
     private final AddressChecks addressChecks;
     private final PrecompileContractRegistry precompiles;
     private final Map<Address, PrecompiledContract> hederaPrecompiles;
 
     public CustomMessageCallProcessor(
             @NonNull final EVM evm,
+            @NonNull final FeatureFlags featureFlags,
             @NonNull final PrecompileContractRegistry precompiles,
             @NonNull final AddressChecks addressChecks,
             @NonNull final Map<Address, PrecompiledContract> hederaPrecompiles) {
         super(evm, precompiles);
-        this.precompiles = precompiles;
-        this.addressChecks = addressChecks;
-        this.hederaPrecompiles = hederaPrecompiles;
+        this.featureFlags = Objects.requireNonNull(featureFlags);
+        this.precompiles = Objects.requireNonNull(precompiles);
+        this.addressChecks = Objects.requireNonNull(addressChecks);
+        this.hederaPrecompiles = Objects.requireNonNull(hederaPrecompiles);
     }
 
     /**
@@ -101,6 +107,10 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
                 frame.setState(MessageFrame.State.CODE_EXECUTING);
             }
         }
+    }
+
+    public boolean isImplicitCreationEnabled(@NonNull Configuration config) {
+        return featureFlags.isImplicitCreationEnabled(config);
     }
 
     private void doExecute(

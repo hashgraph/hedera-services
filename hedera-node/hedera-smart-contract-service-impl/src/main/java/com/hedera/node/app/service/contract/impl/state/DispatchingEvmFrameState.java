@@ -212,6 +212,9 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public Address getAddress(final long number) {
         final var account = validatedAccount(number);
+        if (account.deleted()) {
+            return null;
+        }
         final var alias = account.alias();
         if (alias.length() == EVM_ADDRESS_LENGTH_AS_LONG) {
             return pbjToBesuAddress(alias);
@@ -239,6 +242,30 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public void finalizeHollowAccount(@NonNull final Address address) {
         dispatch.finalizeHollowAccountAsContract(tuweniToPbjBytes(address));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void collectFee(@NonNull final Address payer, final long amount) {
+        final var number = maybeMissingNumberOf(payer, dispatch);
+        if (number == MISSING_ENTITY_NUMBER) {
+            throw new IllegalArgumentException("Cannot collect fee from missing account " + payer);
+        }
+        dispatch.collectFee(number, amount);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void refundFee(@NonNull final Address payer, final long amount) {
+        final var number = maybeMissingNumberOf(payer, dispatch);
+        if (number == MISSING_ENTITY_NUMBER) {
+            throw new IllegalArgumentException("Cannot refund fee to missing account " + payer);
+        }
+        dispatch.refundFee(number, amount);
     }
 
     /**

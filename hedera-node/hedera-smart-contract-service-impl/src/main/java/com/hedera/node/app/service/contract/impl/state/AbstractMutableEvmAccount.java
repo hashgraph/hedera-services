@@ -42,7 +42,7 @@ import org.hyperledger.besu.evm.account.MutableAccount;
  *     <li>{@link MutableAccount#getUpdatedStorage()} - The {@link EvmFrameState} manages transaction boundaries.</li>
  *  </ul>
  */
-public abstract class AbstractMutableEvmAccount implements MutableAccount, EvmAccount {
+public abstract class AbstractMutableEvmAccount implements MutableAccount, EvmAccount, HederaEvmAccount {
     /**
      * Unlike in Besu, we don't store the address hash in state (c.f. {@link Account#getAddressHash()} javadoc);
      * and also don't support {@link org.hyperledger.besu.evm.worldstate.WorldState#streamAccounts(Bytes32, int)}. So

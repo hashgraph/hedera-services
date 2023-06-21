@@ -16,4 +16,37 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
-public class HederaEvmTransactionResult {}
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.contract.ContractLoginfo;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
+
+public record HederaEvmTransactionResult(
+        long gasUsed,
+        long gasPrice,
+        @Nullable Bytes recipient,
+        @NonNull Bytes output,
+        @Nullable Bytes haltReason,
+        @Nullable ResponseCodeEnum abortReason,
+        @Nullable Bytes revertReason,
+        @NonNull List<ContractLoginfo> logs) {
+    public HederaEvmTransactionResult {
+        requireNonNull(output);
+        requireNonNull(logs);
+    }
+
+    /**
+     * Create a result for a transaction that was aborted before entering the EVM due to a
+     * Hedera-specific reason.
+     *
+     * @param reason the reason for the abort
+     * @return the result
+     */
+    public static HederaEvmTransactionResult abortFor(@NonNull final ResponseCodeEnum reason) {
+        return new HederaEvmTransactionResult(0, 0, null, Bytes.EMPTY, null, reason, null, List.of());
+    }
+}
