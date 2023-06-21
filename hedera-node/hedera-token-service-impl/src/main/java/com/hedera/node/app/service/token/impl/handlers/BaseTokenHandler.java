@@ -20,9 +20,14 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -33,9 +38,13 @@ import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.data.EntitiesConfig;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -284,7 +293,79 @@ public class BaseTokenHandler {
         return newTokenRels;
     }
 
+    /**
+     * Creates a new {@link TokenRelation} with the account and token. This is called when there is
+     * no association yet, but have open slots for maxAutoAssociations on the account.
+     * @param account the account to link the tokens to
+     * @param token the token to link to the account
+     * @param accountStore the account store
+     * @param tokenRelStore the token relation store
+     * @param context the handle context
+     */
+    protected void autoAssociate(
+            @NonNull final Account account,
+            @NonNull final Token token,
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final WritableTokenRelationStore tokenRelStore,
+            @NonNull final HandleContext context) {
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
+
+        final var accountId = asAccount(account.accountNumber());
+        final var tokenId = asToken(token.tokenNumber());
+        // If token is already associated, no need to associate again
+        validateTrue(tokenRelStore.get(accountId, tokenId) == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+        validateTrue(
+                tokenRelStore.sizeOfState() + 1 < tokensConfig.maxAggregateRels(),
+                MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+
+        // Check is number of used associations is less than maxAutoAssociations
+        final var numAssociations = account.numberAssociations();
+        validateFalse(
+                entitiesConfig.limitTokenAssociations() && numAssociations >= tokensConfig.maxPerAccount(),
+                TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+
+        final var maxAutoAssociations = account.maxAutoAssociations();
+        final var usedAutoAssociations = account.usedAutoAssociations();
+        validateFalse(usedAutoAssociations >= maxAutoAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+
+        // Create new token relation and commit to store
+        final var newTokenRel = TokenRelation.newBuilder()
+                .tokenNumber(tokenId.tokenNum())
+                .accountNumber(account.accountNumber())
+                .automaticAssociation(true)
+                .kycGranted(!token.hasKycKey())
+                .frozen(token.hasFreezeKey() && token.accountsFrozenByDefault())
+                .previousToken(-1)
+                .nextToken(account.headTokenNumber())
+                .build();
+
+        final var copyAccount = account.copyBuilder()
+                .numberAssociations(numAssociations + 1)
+                .usedAutoAssociations(usedAutoAssociations + 1)
+                .headTokenNumber(tokenId.tokenNum())
+                .build();
+
+        accountStore.put(copyAccount);
+        tokenRelStore.put(newTokenRel);
+    }
+
     /* ------------------------- Helper functions ------------------------- */
+
+    /**
+     * Returns true if the given token update op is an expiry-only update op.
+     * This is needed for validating whether a token update op has admin key present on the token,
+     * to update any other fields other than expiry.
+     * @param op the token update op to check
+     * @return true if the given token update op is an expiry-only update op
+     */
+    public static boolean isExpiryOnlyUpdateOp(@NonNull final TokenUpdateTransactionBody op) {
+        final var defaultOp = TokenUpdateTransactionBody.DEFAULT;
+        final var copyDefaultWithExpiry =
+                defaultOp.copyBuilder().expiry(op.expiry()).token(op.token()).build();
+        return op.equals(copyDefaultWithExpiry);
+    }
+
     @NonNull
     public static TokenID asToken(final long num) {
         return TokenID.newBuilder().tokenNum(num).build();

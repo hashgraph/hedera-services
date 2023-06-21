@@ -16,11 +16,8 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.platform.SettingConstants.APPS_STRING;
 import static com.swirlds.platform.SettingConstants.BUFFER_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.CONFIG_TXT;
-import static com.swirlds.platform.SettingConstants.DATA_STRING;
 import static com.swirlds.platform.SettingConstants.DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DELAY_SHUFFLE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DO_UPNP_DEFAULT_VALUE;
@@ -28,9 +25,7 @@ import static com.swirlds.platform.SettingConstants.FREEZE_SECONDS_AFTER_STARTUP
 import static com.swirlds.platform.SettingConstants.GOSSIP_WITH_DIFFERENT_VERSIONS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.JVM_PAUSE_DETECTOR_SLEEP_MS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.JVM_PAUSE_REPORT_MS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.KEYS_STRING;
 import static com.swirlds.platform.SettingConstants.LOAD_KEYS_FROM_PFX_FILES_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.LOG4J2_CONFIG_FILE;
 import static com.swirlds.platform.SettingConstants.LOG_STACK_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_ADDRESS_SIZE_ALLOWED_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_INCOMING_SYNCS_INC_DEFAULT_VALUE;
@@ -39,7 +34,6 @@ import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_BYTES_PER_EV
 import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.NUM_CONNECTIONS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.NUM_CRYPTO_THREADS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.SETTINGS_TXT;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_CALLER_SKIPS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_HEARTBEAT_DEFAULT_VALUE;
@@ -65,7 +59,6 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
-import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.test.framework.TestTypeTags;
@@ -200,21 +193,9 @@ class SettingsTest {
     public void checkGetDefaultSettings() {
         // given
         final Settings settings = Settings.getInstance();
-        final Path configPath = FileUtils.getAbsolutePath(CONFIG_TXT);
-        final Path settingsPath = FileUtils.getAbsolutePath(SETTINGS_TXT);
-        final Path keysDirectoryPath =
-                FileUtils.getAbsolutePath().resolve(DATA_STRING).resolve(KEYS_STRING);
-        final Path appsDirectoryPath =
-                FileUtils.getAbsolutePath().resolve(DATA_STRING).resolve(APPS_STRING);
-        final Path logPath = FileUtils.rethrowIO(() -> FileUtils.getAbsolutePath(LOG4J2_CONFIG_FILE));
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
 
         // then
-        Assertions.assertEquals(configPath, settings.getConfigPath());
-        Assertions.assertEquals(settingsPath, settings.getSettingsPath());
-        Assertions.assertEquals(keysDirectoryPath, settings.getKeysDirPath());
-        Assertions.assertEquals(appsDirectoryPath, settings.getAppsDirPath());
-        Assertions.assertEquals(logPath, settings.getLogPath());
         Assertions.assertEquals(VERIFY_EVENT_SIGS_DEFAULT_VALUE, settings.isVerifyEventSigs());
         Assertions.assertEquals(NUM_CRYPTO_THREADS_DEFAULT_VALUE, settings.getNumCryptoThreads());
         Assertions.assertEquals(SHOW_INTERNAL_STATS_DEFAULT_VALUE, settings.isShowInternalStats());
@@ -266,13 +247,6 @@ class SettingsTest {
     public void checkGetLoadedSettings() throws IOException {
         // given
         final Settings settings = Settings.getInstance();
-        final Path configPath = FileUtils.getAbsolutePath(CONFIG_TXT);
-        final Path settingsPath = FileUtils.getAbsolutePath(SETTINGS_TXT);
-        final Path keysDirectoryPath =
-                FileUtils.getAbsolutePath().resolve(DATA_STRING).resolve(KEYS_STRING);
-        final Path appsDirectoryPath =
-                FileUtils.getAbsolutePath().resolve(DATA_STRING).resolve(APPS_STRING);
-        final Path logPath = FileUtils.rethrowIO(() -> FileUtils.getAbsolutePath(LOG4J2_CONFIG_FILE));
         final File settingsFile =
                 new File(SettingsTest.class.getResource("settings4.txt").getFile());
         Assertions.assertTrue(settingsFile.exists());
@@ -285,11 +259,6 @@ class SettingsTest {
 
         // then
         // These values shouldn't change as they are final
-        Assertions.assertEquals(configPath, settings.getConfigPath());
-        Assertions.assertEquals(settingsPath, settings.getSettingsPath());
-        Assertions.assertEquals(keysDirectoryPath, settings.getKeysDirPath());
-        Assertions.assertEquals(appsDirectoryPath, settings.getAppsDirPath());
-        Assertions.assertEquals(logPath, settings.getLogPath());
         Assertions.assertEquals(THREAD_PRIORITY_NON_SYNC_DEFAULT_VALUE, settings.getThreadPriorityNonSync());
 
         // These values should change

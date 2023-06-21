@@ -114,7 +114,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         givenMintTxn(nonFungibleTokenId, List.of(metadata1, metadata2), null);
 
         assertThat(writableTokenRelStore.get(treasuryId, nonFungibleTokenId).balance())
-                .isEqualTo(1000L);
+                .isEqualTo(1L);
         assertThat(writableAccountStore.get(treasuryId).tinybarBalance()).isEqualTo(10000L);
         assertThat(writableAccountStore.get(treasuryId).numberOwnedNfts()).isEqualTo(2);
         assertThat(writableTokenStore.get(nonFungibleTokenId).totalSupply()).isEqualTo(1000L);
@@ -124,7 +124,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
 
         // treasury relation balance will increase by metadata list size
         assertThat(writableTokenRelStore.get(treasuryId, nonFungibleTokenId).balance())
-                .isEqualTo(1002L);
+                .isEqualTo(3L);
         // tinybar balance should not get affected
         assertThat(writableAccountStore.get(treasuryId).tinybarBalance()).isEqualTo(10000L);
 
@@ -132,7 +132,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableAccountStore.get(treasuryId).numberOwnedNfts()).isEqualTo(4);
         // treasury relation supply will not increase since its not fungible token change
         assertThat(writableTokenStore.get(nonFungibleTokenId).totalSupply()).isEqualTo(1000L);
-        assertThat(recordBuilder.serialNumbers()).isEqualTo(List.of(1L, 2L));
+        assertThat(recordBuilder.serialNumbers()).isEqualTo(List.of(3L, 4L));
     }
 
     @Test
