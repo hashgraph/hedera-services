@@ -23,14 +23,11 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.*;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
-import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
@@ -65,10 +62,7 @@ public class TransactionProcessor {
             @NonNull final Configuration config) {
         try {
             final var initialCall = computeInitialCall(transaction, worldUpdater, context, config);
-            final var intrinsicGasCost =
-                    gasCalculator.transactionIntrinsicGasCost(
-                            Bytes.EMPTY, transaction.isCreate());
-            validateTrue(transaction.gasLimit() >= intrinsicGasCost, INSUFFICIENT_GAS);
+            // TODO - use CustomGasCharging when finished
         } catch (final HandleException failure) {
             return HederaEvmTransactionResult.abortFor(failure.getStatus());
         }
@@ -111,8 +105,6 @@ public class TransactionProcessor {
             @NonNull final HederaEvmTransaction transaction,
             @Nullable final HederaEvmAccount to,
             @NonNull final Configuration config) {
-        return to == null
-                && transaction.relayerId() != null
-                && messageCallProcessor.isImplicitCreationEnabled(config);
+        return to == null && transaction.relayerId() != null && messageCallProcessor.isImplicitCreationEnabled(config);
     }
 }

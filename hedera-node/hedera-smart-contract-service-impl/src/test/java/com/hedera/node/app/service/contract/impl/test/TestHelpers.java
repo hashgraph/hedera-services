@@ -24,7 +24,6 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
-import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -53,8 +52,9 @@ public class TestHelpers {
     public static Address HTS_PRECOMPILE_ADDRESS = Address.fromHexString("0x167");
     public static Address NON_SYSTEM_LONG_ZERO_ADDRESS = Address.fromHexString("0x1234576890");
     public static Address EIP_1014_ADDRESS = Address.fromHexString("0x89abcdef89abcdef89abcdef89abcdef89abcdef");
-    public static ContractID CALLED_CONTRACT_EVM_ADDRESS =
-            ContractID.newBuilder().evmAddress(tuweniToPbjBytes(EIP_1014_ADDRESS)).build();
+    public static ContractID CALLED_CONTRACT_EVM_ADDRESS = ContractID.newBuilder()
+            .evmAddress(tuweniToPbjBytes(EIP_1014_ADDRESS))
+            .build();
 
     public static void assertSameResult(
             final Operation.OperationResult expected, final Operation.OperationResult actual) {
@@ -80,16 +80,12 @@ public class TestHelpers {
         return wellKnownHapiCall(RELAYER_ID, VALUE, gasLimit);
     }
 
-    public static HederaEvmTransaction wellKnownHapiCall(
-            @Nullable final AccountID relayer,
-            final long value) {
+    public static HederaEvmTransaction wellKnownHapiCall(@Nullable final AccountID relayer, final long value) {
         return wellKnownHapiCall(relayer, value, GAS_LIMIT);
     }
 
     public static HederaEvmTransaction wellKnownHapiCall(
-            @Nullable final AccountID relayer,
-            final long value,
-            final long gasLimit) {
+            @Nullable final AccountID relayer, final long value, final long gasLimit) {
         return new HederaEvmTransaction(
                 SENDER_ID,
                 relayer,

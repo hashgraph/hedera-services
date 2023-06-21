@@ -31,8 +31,5 @@ class HederaEvmTransactionResultTest {
     }
 
     @Test
-    void computesUpfrontCostNoOverflow() {
-
-
-    }
+    void computesUpfrontCostNoOverflow() {}
 }

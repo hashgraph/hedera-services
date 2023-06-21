@@ -39,7 +39,7 @@ public class ActiveContractVerificationStrategy implements VerificationStrategy 
     }
 
     /**
-     * {@inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public Decision maybeVerifySignature(@NonNull final Key key, @NonNull final KeyRole keyRole) {

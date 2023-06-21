@@ -30,7 +30,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
@@ -66,6 +65,7 @@ class TransactionProcessorTest {
 
     @Mock
     private HederaEvmAccount senderAccount;
+
     @Mock
     private HederaEvmAccount calledAccount;
 
@@ -86,26 +86,6 @@ class TransactionProcessorTest {
         givenSenderAccount();
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
         assertAbortsWith(wellKnownRelayedHapiCall(0), INVALID_CONTRACT_ID);
-    }
-
-    @Test
-    void initialCallWithLessThanIntrinsicGasAborts() {
-        givenSenderAccount();
-        given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
-        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false))
-                .willReturn(INTRINSIC_GAS);
-        assertAbortsWith(wellKnownLazyCreationWithGasLimit(INTRINSIC_GAS - 1), INSUFFICIENT_GAS);
-    }
-
-    @Test
-    void senderWithLessThanUpfrontCostAborts() {
-        final var txn = wellKnownLazyCreationWithGasLimit(INTRINSIC_GAS);
-        givenSenderAccount(txn.upfrontCostGiven(NETWORK_GAS_PRICE) - 1);
-        givenEvmReceiverAccount();
-        given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
-        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false))
-                .willReturn(INTRINSIC_GAS);
-        assertAbortsWith(txn, INSUFFICIENT_PAYER_BALANCE);
     }
 
     private void assertAbortsWith(@NonNull final ResponseCodeEnum reason) {
@@ -131,6 +111,7 @@ class TransactionProcessorTest {
     private void givenReceiverAccount() {
         given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(calledAccount);
     }
+
     private void givenEvmReceiverAccount() {
         given(worldUpdater.getHederaAccount(CALLED_CONTRACT_EVM_ADDRESS)).willReturn(calledAccount);
     }

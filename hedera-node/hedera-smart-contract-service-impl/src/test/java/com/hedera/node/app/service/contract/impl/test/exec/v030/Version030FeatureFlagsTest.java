@@ -37,6 +37,8 @@ class Version030FeatureFlagsTest {
 
     @Test
     void everythingIsDisabled() {
+        final var config = new HederaTestConfigBuilder().getOrCreateConfig();
+        given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);
         assertFalse(subject.isImplicitCreationEnabled(frame));
     }
 
