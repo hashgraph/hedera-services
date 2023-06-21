@@ -45,7 +45,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -252,7 +251,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var createdTopic = topicStore.get(1_234L);
+        final var createdTopic =
+                topicStore.get(TopicID.newBuilder().topicNum(1_234L).build());
         assertTrue(createdTopic.isPresent());
 
         final var actualTopic = createdTopic.get();
@@ -265,7 +265,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(autoRenewId.accountNum(), actualTopic.autoRenewAccountNumber());
         final var topicID = TopicID.newBuilder().topicNum(1_234L).build();
         verify(recordBuilder).topicID(topicID);
-        assertTrue(topicStore.get(1234L).isPresent());
+        assertTrue(topicStore.get(TopicID.newBuilder().topicNum(1_234L).build()).isPresent());
     }
 
     @Test
@@ -287,7 +287,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var createdTopic = topicStore.get(1_234L);
+        final var createdTopic =
+                topicStore.get(TopicID.newBuilder().topicNum(1_234L).build());
         assertTrue(createdTopic.isPresent());
 
         final var actualTopic = createdTopic.get();
@@ -300,7 +301,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(autoRenewId.accountNum(), actualTopic.autoRenewAccountNumber());
         final var topicID = TopicID.newBuilder().topicNum(1_234L).build();
         verify(recordBuilder).topicID(topicID);
-        assertTrue(topicStore.get(1234L).isPresent());
+        assertTrue(topicStore.get(TopicID.newBuilder().topicNum(1_234L).build()).isPresent());
     }
 
     @Test
@@ -379,7 +380,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.body()).willReturn(txnBody);
         final var writableState = writableTopicStateWithOneKey();
 
-        given(writableStates.<EntityNum, Topic>get(TOPICS_KEY)).willReturn(writableState);
+        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableState);
         final var topicStore = new WritableTopicStore(writableStates);
         assertEquals(1, topicStore.sizeOfState());
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(topicStore);
@@ -406,7 +407,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var writableState = writableTopicStateWithOneKey();
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
-        given(writableStates.<EntityNum, Topic>get(TOPICS_KEY)).willReturn(writableState);
+        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableState);
         final var topicStore = new WritableTopicStore(writableStates);
         assertEquals(1, topicStore.sizeOfState());
 
