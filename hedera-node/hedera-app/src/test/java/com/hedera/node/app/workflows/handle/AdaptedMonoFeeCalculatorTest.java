@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.fees.AdaptedMonoFeeCalculator;
 import com.hedera.node.app.fees.MonoGetTopicInfoUsage;
@@ -54,7 +55,6 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.time.Instant;
@@ -82,7 +82,7 @@ class AdaptedMonoFeeCalculatorTest {
     private static final Map<SubType, FeeData> TYPED_PRICES = Map.of(SubType.DEFAULT, FeeData.getDefaultInstance());
 
     private static final Topic MOCK_TOPIC = new Topic(
-            com.hedera.hapi.node.base.TopicID.newBuilder().topicNum(1L).build(),
+            TopicID.newBuilder().topicNum(1L).build(),
             2L,
             3L,
             4L,
@@ -95,7 +95,7 @@ class AdaptedMonoFeeCalculatorTest {
 
     private static final TransactionBody MOCK_TXN = TransactionBody.newBuilder()
             .setConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody.newBuilder()
-                    .setTopicID(TopicID.newBuilder()
+                    .setTopicID(com.hederahashgraph.api.proto.java.TopicID.newBuilder()
                             .setTopicNum(MOCK_TOPIC.id().topicNum())
                             .build()))
             .build();
@@ -185,7 +185,7 @@ class AdaptedMonoFeeCalculatorTest {
 
         given(workingStateAccessor.getHederaState()).willReturn(state);
         given(state.createReadableStates(ConsensusService.NAME)).willReturn(readableStates);
-        given(readableStates.<com.hedera.hapi.node.base.TopicID, Topic>get(ConsensusServiceImpl.TOPICS_KEY))
+        given(readableStates.<TopicID, Topic>get(ConsensusServiceImpl.TOPICS_KEY))
                 .willReturn(wellKnownTopicsKVS());
 
         final var mappedTopic = MonoGetTopicInfoUsage.monoTopicFrom(MOCK_TOPIC);
@@ -212,7 +212,7 @@ class AdaptedMonoFeeCalculatorTest {
         given(stateAccessor.get()).willReturn(wrapper);
         given(wrapper.get()).willReturn(state);
         given(state.createReadableStates(ConsensusService.NAME)).willReturn(readableStates);
-        given(readableStates.<com.hedera.hapi.node.base.TopicID, Topic>get(ConsensusServiceImpl.TOPICS_KEY))
+        given(readableStates.<TopicID, Topic>get(ConsensusServiceImpl.TOPICS_KEY))
                 .willReturn(wellKnownTopicsKVS());
 
         final var mappedTopic = MonoGetTopicInfoUsage.monoTopicFrom(MOCK_TOPIC);
@@ -261,8 +261,8 @@ class AdaptedMonoFeeCalculatorTest {
         assertSame(expected, assessment);
     }
 
-    private MapReadableKVState<com.hedera.hapi.node.base.TopicID, Topic> wellKnownTopicsKVS() {
-        return MapReadableKVState.<com.hedera.hapi.node.base.TopicID, Topic>builder(ConsensusServiceImpl.TOPICS_KEY)
+    private MapReadableKVState<TopicID, Topic> wellKnownTopicsKVS() {
+        return MapReadableKVState.<TopicID, Topic>builder(ConsensusServiceImpl.TOPICS_KEY)
                 .value(MOCK_TOPIC.id(), MOCK_TOPIC)
                 .build();
     }
