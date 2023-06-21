@@ -57,7 +57,8 @@ public interface ConfigSource {
     /**
      * Returns the ordinal. The ordinal is used to define a priority order of all config sources while the config source
      * with the highest ordinal has the highest priority. A config source will overwrite values of properties that are
-     * already defined by a config source with a lower ordinal.
+     * already defined by a config source with a lower ordinal. If 2 instances have the same ordinal number the api does
+     * not define what instance will have the higher priority.
      *
      * @return the ordinal
      */

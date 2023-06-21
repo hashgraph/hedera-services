@@ -38,4 +38,5 @@ dependencies {
     testImplementation(testFixtures(project(":swirlds-common")))
     testImplementation(testLibs.bundles.junit)
     testImplementation(testLibs.bundles.mocking)
+    testImplementation(libs.log4j.core)
 }
