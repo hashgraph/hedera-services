@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.spi.signatures;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -75,7 +77,9 @@ public interface SignatureVerification {
      *
      * @param key The key for which verification failed
      */
+    @NonNull
     static SignatureVerification failedVerification(@NonNull final Key key) {
+        requireNonNull(key, "Key must not be null");
         return new SignatureVerification() {
             @NonNull
             @Override
