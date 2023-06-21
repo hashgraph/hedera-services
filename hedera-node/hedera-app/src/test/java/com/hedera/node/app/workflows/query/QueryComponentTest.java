@@ -88,6 +88,7 @@ class QueryComponentTest {
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
                 .genesisUsage(false)
+                .servicesRegistry(Set::of)
                 .build();
 
         // Simulate an empty (but iterable) state for the record cache

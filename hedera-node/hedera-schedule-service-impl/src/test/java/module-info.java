@@ -4,7 +4,6 @@ module com.hedera.node.app.service.schedule.impl.test {
     requires com.hedera.node.app.service.token;
     requires com.hedera.node.app.spi.test.fixtures;
     requires com.swirlds.common;
-    requires org.apache.commons.codec;
     requires org.junit.jupiter.api;
     requires org.mockito.junit.jupiter;
     requires org.mockito;

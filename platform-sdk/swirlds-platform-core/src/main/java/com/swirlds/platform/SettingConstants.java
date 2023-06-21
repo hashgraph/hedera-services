@@ -16,8 +16,6 @@
 
 package com.swirlds.platform;
 
-import java.util.Set;
-
 /**
  * @deprecated will be replaced by the {@link com.swirlds.config.api.Configuration} API in near future. If you need
  * 		to use this class please try to do as less static access as possible.
@@ -28,16 +26,9 @@ public final class SettingConstants {
     /** name of the settings used file */
     static final String SETTING_USED_FILENAME = "settingsUsed.txt";
 
-    static final String CONFIG_TXT = "config.txt";
-    static final String SETTINGS_TXT = "settings.txt";
     static final String DATA_STRING = "data";
     static final String SAVED_STRING = "saved";
-    static final String KEYS_STRING = "keys";
-    static final String APPS_STRING = "apps";
-    static final String LOG4J2_CONFIG_FILE = "log4j2.xml";
     static final int NUM_CRYPTO_THREADS_DEFAULT_VALUE = 32;
-    static final int SIGNED_STATE_FREQ_DEFAULT_VALUE = 1;
-    static final int MAX_EVENT_QUEUE_FOR_CONS_DEFAULT_VALUE = 10_000;
     static final int THROTTLE_TRANSACTION_QUEUE_SIZE_DEFAULT_VALUE = 100_000;
     static final int NUM_CONNECTIONS_DEFAULT_VALUE = 40;
     static final int MAX_OUTGOING_SYNCS_DEFAULT_VALUE = 2;
@@ -71,142 +62,11 @@ public final class SettingConstants {
     static final boolean LOAD_KEYS_FROM_PFX_FILES_DEFAULT_VALUE = true;
     static final int MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE = 245760;
     static final int MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE = 245760;
-    static final int RANDOM_EVENT_PROBABILITY_DEFAULT_VALUE = 0;
     static final int THREAD_DUMP_PERIOD_MS_DEFAULT_VALUE = 0;
     static final String THREAD_DUMP_LOG_DIR_DEFAULT_VALUE = "data/threadDump";
     static final int JVM_PAUSE_DETECTOR_SLEEP_MS_DEFAULT_VALUE = 1000;
     static final int JVM_PAUSE_REPORT_MS_DEFAULT_VALUE = 1000;
     static final boolean GOSSIP_WITH_DIFFERENT_VERSIONS_DEFAULT_VALUE = false;
-
-    static final Set<String> REMOVED_SETTINGS = Set.of(
-            "reconnectg.active",
-            "reconnectg.reconnectWindowSeconds",
-            "reconnectg.fallenBehindThreshold",
-            "reconnectg.asyncStreamTimeoutMilliseconds",
-            "reconnectg.asyncOutputStreamFlushMilliseconds",
-            "reconnectg.asyncStreamBufferSize",
-            "reconnectg.asyncStreams",
-            "reconnectg.maxAckDelayMilliseconds",
-            "reconnectg.maximumReconnectFailuresBeforeShutdown",
-            "reconnectg.minimumTimeBetweenReconnects",
-            "chatter.useChatter",
-            "chatter.attemptedChatterEventPerSecond",
-            "chatter.chatteringCreationThreshold",
-            "chatter.chatterIntakeThrottle",
-            "chatter.otherEventDelay",
-            "chatter.selfEventQueueCapacity",
-            "chatter.otherEventQueueCapacity",
-            "chatter.descriptorQueueCapacity",
-            "chatter.processingTimeInterval",
-            "chatter.heartbeatInterval",
-            "chatter.futureGenerationLimit",
-            "chatter.criticalQuorumSoftening",
-            "chatter.sleepAfterFailedNegotiation",
-            "fcHashMap.maximumGCQueueSize",
-            "fcHashMap.gCQueueThresholdPeriod",
-            "fcHashMap.archiveEnabled",
-            "fcHashMap.rebuildSplitFactor",
-            "fcHashMap.rebuildThreadCount",
-            "jasperDb.maxNumOfKeys",
-            "jasperDb.hashesRamToDiskThreshold",
-            "jasperDb.mediumMergeCutoffMb",
-            "jasperDb.smallMergeCutoffMb",
-            "jasperDb.mergePeriodUnit",
-            "jasperDb.maxNumberOfFilesInMerge",
-            "jasperDb.minNumberOfFilesInMerge",
-            "jasperDb.mergeActivatePeriod",
-            "jasperDb.mediumMergePeriod",
-            "jasperDb.fullMergePeriod",
-            "jasperDb.maxDataFileBytes",
-            "jasperDb.moveListChunkSize",
-            "jasperDb.maxRamUsedForMergingGb",
-            "jasperDb.iteratorInputBufferBytes",
-            "jasperDb.writerOutputBufferBytes",
-            "jasperDb.reconnectKeyLeakMitigationEnabled",
-            "jasperDb.keySetBloomFilterHashCount",
-            "jasperDb.keySetBloomFilterSizeInBytes",
-            "jasperDb.keySetHalfDiskHashMapSize",
-            "jasperDb.keySetHalfDiskHashMapBuffer",
-            "jasperDb.indexRebuildingEnforced",
-            "jasperDb.leafRecordCacheSize",
-            "virtualMap.percentHashThreads",
-            "virtualMap.numHashThreads",
-            "virtualMap.percentCleanerThreads",
-            "virtualMap.numCleanerThreads",
-            "virtualMap.maximumVirtualMapSize",
-            "virtualMap.virtualMapWarningThreshold",
-            "virtualMap.virtualMapWarningInterval",
-            "virtualMap.flushInterval",
-            "virtualMap.copyFlushThreshold",
-            "virtualMap.familyThrottleThreshold",
-            "virtualMap.preferredFlushQueueSize",
-            "virtualMap.flushThrottleStepSize",
-            "virtualMap.maximumFlushThrottlePeriod",
-            "state.savedStateDirectory",
-            "state.mainClassNameOverride",
-            "state.cleanSavedStateDirectory",
-            "state.stateSavingQueueSize",
-            "state.saveStatePeriod",
-            "state.saveReconnectStateToDisk",
-            "state.signedStateDisk",
-            "state.dumpStateOnAnyISS",
-            "state.dumpStateOnFatal",
-            "state.haltOnAnyIss",
-            "state.automatedSelfIssRecovery",
-            "state.haltOnCatastrophicIss",
-            "state.secondsBetweenISSDumps",
-            "state.secondsBetweenIssLogs",
-            "state.stateDeletionErrorLogFrequencySeconds",
-            "state.enableHashStreamLogging",
-            "state.debugHashDepth",
-            "state.maxAgeOfFutureStateSignatures",
-            "state.roundsToKeepForSigning",
-            "state.roundsToKeepAfterSigning",
-            "state.suspiciousSignedStateAge",
-            "state.stateHistoryEnabled",
-            "state.debugStackTracesEnabled",
-            "state.requireStateLoad",
-            "state.emergencyStateFileName",
-            "state.checkSignedStateFromDisk",
-            "signedStateFreq",
-            "maxEventQueueForCons",
-            "eventIntakeQueueThrottleSize",
-            "eventIntakeQueueSize",
-            "randomEventProbability",
-            "staleEventPreventionThreshold",
-            "rescueChildlessInverseProbability",
-            "eventStreamQueueCapacity",
-            "eventsLogPeriod",
-            "eventsLogDir",
-            "enableEventStreaming",
-            "event.maxEventQueueForCons",
-            "event.eventIntakeQueueThrottleSize",
-            "event.eventIntakeQueueSize",
-            "event.randomEventProbability",
-            "event.staleEventPreventionThreshold",
-            "event.rescueChildlessInverseProbability",
-            "event.eventStreamQueueCapacity",
-            "event.eventsLogPeriod",
-            "event.eventsLogDir",
-            "event.enableEventStreaming",
-            "halfLife",
-            "csvWriteFrequency",
-            "csvOutputFolder",
-            "csvFileName",
-            "csvAppend",
-            "prometheusEndpointEnabled",
-            "prometheusEndpointPortNumber",
-            "prometheusEndpointMaxBacklogAllowed",
-            "disableMetricsOutput",
-            "metrics.halfLife",
-            "metrics.csvWriteFrequency",
-            "metrics.csvOutputFolder",
-            "metrics.csvFileName",
-            "metrics.csvAppend",
-            "metrics.prometheusEndpointEnabled",
-            "metrics.prometheusEndpointPortNumber",
-            "metrics.prometheusEndpointMaxBacklogAllowed",
-            "metrics.disableMetricsOutput");
 
     private SettingConstants() {}
 }
