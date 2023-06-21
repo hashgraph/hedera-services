@@ -35,6 +35,6 @@ dependencies {
     implementation("net.swiftzer.semver:semver:1.1.2")
     implementation("org.gradlex:extra-java-module-info:1.4")
     implementation("org.gradlex:java-ecosystem-capabilities:1.1")
-    implementation("org.gradlex:java-module-dependencies:1.3")
+    implementation("org.gradlex:java-module-dependencies:1.3.1")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.5.0.2730")
 }
