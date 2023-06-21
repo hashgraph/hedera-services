@@ -44,6 +44,7 @@ dependencies {
 
         itestImplementation(project(":app"))
         itestImplementation(project(":app-spi"))
+        itestImplementation(project(":config"))
         itestImplementation(project(":hapi"))
         itestImplementation(testFixtures(project(":app-spi")))
         itestImplementation(gav("com.github.spotbugs.annotations"))
@@ -53,6 +54,7 @@ dependencies {
         itestImplementation(gav("io.grpc"))
         itestImplementation(gav("io.helidon.grpc.client"))
         itestImplementation(gav("io.helidon.grpc.server"))
+        itestImplementation(gav("org.apache.logging.log4j"))
         itestImplementation(gav("org.assertj.core"))
         itestImplementation(gav("org.bouncycastle.provider"))
         itestImplementation(gav("org.junit.jupiter.api"))
