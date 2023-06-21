@@ -40,7 +40,7 @@ public final class VirtualMapMigration {
     private static final String COMPONENT_NAME = "virtual-map-migration";
 
     /**
-     * Extract all key-value pairs from a virtual map and pass it to a handler.
+     * Extract all key-value pairs from a virtual map and pass it to a handler in a deterministic order.
      *
      * @param threadManager
      * 		responsible for creating and managing threads
@@ -128,6 +128,59 @@ public final class VirtualMapMigration {
                 threads.forEach(Thread::interrupt);
                 throw e;
             }
+        }
+    }
+
+    /**
+     * Extract all key-value pairs from a virtual map and pass it to a handler concurrently.
+     *
+     * @param threadManager
+     * 		responsible for creating and managing threads
+     * @param source
+     * 		a virtual map to read from, will not be modified by this method
+     * @param threadCount
+     * 		the number of threads used for reading from the original map
+     * @param <K>
+     * 		the type of the key
+     * @param <V>
+     * 		the type of the value
+     */
+    public static <K extends VirtualKey, V extends VirtualValue> void extractVirtualMapDataC(
+            final ThreadManager threadManager,
+            final VirtualMap<K, V> source,
+            final InterruptableConsumer<Pair<K, V>> handler,
+            final int threadCount)
+            throws InterruptedException {
+
+        final long firstLeafPath = source.getState().getFirstLeafPath();
+        final long lastLeafPath = source.getState().getLastLeafPath();
+        if (firstLeafPath == Path.INVALID_PATH || lastLeafPath == Path.INVALID_PATH) {
+            return;
+        }
+
+        final RecordAccessor<K, V> recordAccessor = source.getRoot().getRecords();
+
+        // A collection of threads iterate over the map. Each thread writes into its own output queue.
+        final List<Thread> threads = new ArrayList<>(threadCount);
+
+        for (int threadIndex = 0; threadIndex < threadCount; threadIndex++) {
+
+            final long firstPath = firstLeafPath + threadIndex;
+
+            threads.add(new ThreadConfiguration(threadManager)
+                    .setComponent(COMPONENT_NAME)
+                    .setThreadName("reader-" + threadCount)
+                    .setInterruptableRunnable(() -> {
+                        for (long path = firstPath; path <= lastLeafPath; path += threadCount) {
+                            final VirtualLeafRecord<K, V> leafRecord = recordAccessor.findLeafRecord(path, false);
+                            handler.accept(Pair.of(leafRecord.getKey(), leafRecord.getValue()));
+                        }
+                    })
+                    .build(true));
+        }
+
+        for (Thread thread : threads) {
+            thread.join();
         }
     }
 }
