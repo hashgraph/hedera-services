@@ -1104,7 +1104,7 @@ public class SwirldsPlatform implements Platform, Startable {
         if (tipsetEventCreator != null) {
             // The event creator is intentionally started before replaying the preconsensus event stream.
             // This prevents the event creator's intake queue from filling up and blocking. Note that
-            // this component won't actually create events util the platform has the appropriate status.
+            // this component won't actually create events until the platform has the appropriate status.
             tipsetEventCreator.start();
         }
 

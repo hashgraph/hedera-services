@@ -66,6 +66,9 @@ public class ChatterEventCreator {
 
     private final Time time;
 
+    /**
+     * If true, event creation is being handled by the tipset algorithm and this class should not create any events.
+     */
     private final boolean disabled;
 
     public ChatterEventCreator(

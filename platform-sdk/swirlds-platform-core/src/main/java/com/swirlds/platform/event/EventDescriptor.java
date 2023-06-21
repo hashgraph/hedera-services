@@ -53,7 +53,7 @@ public class EventDescriptor implements SelfSerializable {
     public EventDescriptor() {}
 
     /**
-     * Create a new gossip event descriptor.
+     * Create a new event descriptor.
      *
      * @param hash       the hash of the event
      * @param creator    the creator of the event
@@ -73,7 +73,7 @@ public class EventDescriptor implements SelfSerializable {
     @NonNull
     public Hash getHash() {
         if (hash == null) {
-            throw new IllegalStateException("EventDescriptor improperly initialized");
+            throw new IllegalStateException("EventDescriptor improperly initialized: the hash is null");
         }
         return hash;
     }
@@ -86,7 +86,7 @@ public class EventDescriptor implements SelfSerializable {
     @NonNull
     public NodeId getCreator() {
         if (hash == null) {
-            throw new IllegalStateException("EventDescriptor improperly initialized");
+            throw new IllegalStateException("EventDescriptor improperly initialized: the hash is null");
         }
         return creator;
     }
@@ -120,7 +120,7 @@ public class EventDescriptor implements SelfSerializable {
      * {@inheritDoc}
      */
     @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         out.writeSerializable(hash, false);
         out.writeSerializable(creator, false);
         out.writeLong(generation);
@@ -130,7 +130,7 @@ public class EventDescriptor implements SelfSerializable {
      * {@inheritDoc}
      */
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         hash = in.readSerializable(false, Hash::new);
         if (hash == null) {
             throw new IOException("hash cannot be null");
@@ -169,7 +169,7 @@ public class EventDescriptor implements SelfSerializable {
     @Override
     public int hashCode() {
         if (hash == null) {
-            throw new IllegalStateException("EventDescriptor improperly initialized");
+            throw new IllegalStateException("EventDescriptor improperly initialized: the hash is null");
         }
         return hash.hashCode();
     }

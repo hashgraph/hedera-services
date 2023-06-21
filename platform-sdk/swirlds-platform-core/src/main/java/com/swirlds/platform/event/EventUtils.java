@@ -190,11 +190,12 @@ public abstract class EventUtils {
             // where n is the number of transactions in x (so each can have a different time),
             // or n=1 if there are no transactions (so each event is a different time).
 
-            final int parentTransactions = selfParent.getHashedData().getTransactions() == null
+            final int parentTransactionCount = selfParent.getHashedData().getTransactions() == null
                     ? 0
                     : selfParent.getHashedData().getTransactions().length;
 
-            return calculateNewEventCreationTime(now, selfParent.getHashedData().getTimeCreated(), parentTransactions);
+            return calculateNewEventCreationTime(
+                    now, selfParent.getHashedData().getTimeCreated(), parentTransactionCount);
         }
 
         return now;

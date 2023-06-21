@@ -81,11 +81,11 @@ public abstract class AbstractSequenceMap<K, V> implements SequenceMap<K, V> {
      *                                   if the lowest allowed sequence number is 100 and the capacity is 10, then
      *                                   values with a sequence number between 100 and 109 (inclusive) will be allowed,
      *                                   and any value with a sequence number outside that range will be rejected.
-     * @param getSequenceNumberFromKey   a method that extracts the sequence number from a 1key
      * @param allowExpansion             if true, then instead of rejecting elements with a sequence number higher than
      *                                   the allowed by the current capacity, increase capacity and then insert the
      *                                   element. Does not expand if the sequence number is too low to fit in the
      *                                   current capacity.
+     * @param getSequenceNumberFromKey   a method that extracts the sequence number from a 1key
      */
     @SuppressWarnings("unchecked")
     protected AbstractSequenceMap(
@@ -94,10 +94,10 @@ public abstract class AbstractSequenceMap<K, V> implements SequenceMap<K, V> {
             final boolean allowExpansion,
             @NonNull final ToLongFunction<K> getSequenceNumberFromKey) {
 
-        this.sequenceNumberCapacity = sequenceNumberCapacity;
-        this.getSequenceNumberFromKey = Objects.requireNonNull(getSequenceNumberFromKey);
-        this.allowExpansion = allowExpansion;
         this.initialFirstSequenceNumber = initialFirstSequenceNumber;
+        this.sequenceNumberCapacity = sequenceNumberCapacity;
+        this.allowExpansion = allowExpansion;
+        this.getSequenceNumberFromKey = Objects.requireNonNull(getSequenceNumberFromKey);
 
         data = buildDataMap();
         keySets = new SequenceKeySet[sequenceNumberCapacity];
@@ -462,8 +462,8 @@ public abstract class AbstractSequenceMap<K, V> implements SequenceMap<K, V> {
             }
 
             // Create new key sets for the added capacity
-            for (int offest = 0; offest < (sequenceNumberCapacity - oldCapacity); offest++) {
-                final long newSequenceNumber = firstSequenceNumber + oldCapacity + offest;
+            for (int offset = 0; offset < (sequenceNumberCapacity - oldCapacity); offset++) {
+                final long newSequenceNumber = firstSequenceNumber + oldCapacity + offset;
                 final int index = getSequenceKeyIndex(newSequenceNumber);
                 keySets[index] = new SequenceKeySet<>(newSequenceNumber);
             }

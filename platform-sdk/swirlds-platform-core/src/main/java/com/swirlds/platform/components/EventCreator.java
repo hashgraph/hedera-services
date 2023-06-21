@@ -81,33 +81,27 @@ public class EventCreator {
     /** This object is used for checking whether this node should create an event or not */
     private final EventCreationRules eventCreationRules;
 
+    /**
+     * If true, event creation is being handled by the tipset algorithm and this class should not create any events.
+     */
     private final boolean disabled;
 
     /**
      * Construct a new EventCreator.
      *
-     * @param softwareVersion
-     *      the software version of the node
-     * @param selfId
-     * 		the ID of this node
-     * @param signer
-     * 		responsible for signing new events
-     * @param graphGenerationsSupplier
-     * 		supplies the key generation number from the hashgraph
-     * @param transactionSupplier
-     * 		this method supplies transactions that should be inserted into newly created events
-     * @param newEventHandler
-     * 		this method is passed all newly created events
-     * @param selfEventStorage
-     * 		stores the most recent event created by me
-     * @param eventMapper
-     * 		the object that tracks the most recent events from each node
-     * @param transactionPool
-     * 		the TransactionPool
-     * @param inFreeze
-     * 		indicates if the system is currently in a freeze
-     * @param eventCreationRules
-     * 		the object used for checking if we should create an event or not
+     * @param platformContext          the platform context for this node
+     * @param softwareVersion          the software version of the node
+     * @param selfId                   the ID of this node
+     * @param signer                   responsible for signing new events
+     * @param graphGenerationsSupplier supplies the key generation number from the hashgraph
+     * @param transactionSupplier      this method supplies transactions that should be inserted into newly created
+     *                                 events
+     * @param newEventHandler          this method is passed all newly created events
+     * @param selfEventStorage         stores the most recent event created by me
+     * @param eventMapper              the object that tracks the most recent events from each node
+     * @param transactionPool          the TransactionPool
+     * @param inFreeze                 indicates if the system is currently in a freeze
+     * @param eventCreationRules       the object used for checking if we should create an event or not
      */
     public EventCreator(
             @NonNull final PlatformContext platformContext,
@@ -143,8 +137,7 @@ public class EventCreator {
     /**
      * Create a new event and push it into the gossip/consensus pipeline.
      *
-     * @param otherId
-     * 		the node ID that will supply the other parent for this event
+     * @param otherId the node ID that will supply the other parent for this event
      */
     public boolean createEvent(final NodeId otherId) {
 
@@ -215,11 +208,10 @@ public class EventCreator {
     }
 
     /**
-     * Check if the most recent event from the given node has been used as an other parent by an
-     * event created by the current node.
+     * Check if the most recent event from the given node has been used as an other parent by an event created by the
+     * current node.
      *
-     * @param otherId
-     * 		the ID of the node supplying the other parent
+     * @param otherId the ID of the node supplying the other parent
      */
     protected boolean hasOtherParentAlreadyBeenUsed(final NodeId otherId) {
         return !Objects.equals(selfId, otherId) && eventMapper.hasMostRecentEventBeenUsedAsOtherParent(otherId);
@@ -235,8 +227,7 @@ public class EventCreator {
     /**
      * Write to the log (if configured) every time an event is created.
      *
-     * @param event
-     * 		the created event to be logged
+     * @param event the created event to be logged
      */
     protected void logEventCreation(final EventImpl event) {
         logger.debug(CREATE_EVENT.getMarker(), "Creating {}", event::toMediumString);

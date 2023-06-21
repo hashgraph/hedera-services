@@ -68,7 +68,8 @@ public abstract class AbstractQueueThreadConfiguration<C extends AbstractQueueTh
     private InterruptableRunnable idleCallback;
 
     /**
-     * The callback to run whenever a batch of elements has been handled, if not null.
+     * The callback to run whenever a batch of elements has been handled. No callback is called if the callback is
+     * null.
      */
     private InterruptableRunnable batchHandledCallback;
 
