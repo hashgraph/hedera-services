@@ -373,7 +373,7 @@ jobs:
             html-to-markdown snyk-test.html -o snyk
             cat snyk/snyk-test.html.md >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           if [[ -f "snyk-code.json" ]]; then
             snyk-to-html -i snyk-code.json -o snyk-code.html --summary
             html-to-markdown snyk-code.html -o snyk
