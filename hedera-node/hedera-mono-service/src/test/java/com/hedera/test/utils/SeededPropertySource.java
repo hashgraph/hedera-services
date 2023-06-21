@@ -49,6 +49,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
+import com.hedera.node.app.service.mono.state.submerkle.ContractNonceInfo;
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
@@ -110,6 +111,7 @@ public class SeededPropertySource {
         final var gasUsed = nextUnsignedLong();
         final var logs = nextEvmLogs(3);
         final var createdContractIds = nextEntityIds(2);
+        final var createdContractNonces = nextContractNonces(2);
         final var evmAddress = nextBytes(20);
         // call nextStateChanges(), even though state changes are not part of EvmFnResult anymore,
         // in order to advance SEEDED_RANDOM and get correct values for subsequent fields
@@ -122,6 +124,7 @@ public class SeededPropertySource {
                 gasUsed,
                 logs,
                 createdContractIds,
+                createdContractNonces,
                 evmAddress,
                 nextUnsignedLong(),
                 nextUnsignedLong(),
@@ -790,6 +793,7 @@ public class SeededPropertySource {
                 gasUsed,
                 List.of(),
                 List.of(),
+                List.of(),
                 evmAddress,
                 nextUnsignedLong(),
                 nextUnsignedLong(),
@@ -987,6 +991,10 @@ public class SeededPropertySource {
         return IntStream.range(0, n).mapToObj(i -> nextEntityId()).toList();
     }
 
+    public List<ContractNonceInfo> nextContractNonces(final int n) {
+        return IntStream.range(0, n).mapToObj(i -> nextContractNonce()).toList();
+    }
+
     public long[] nextUnsignedLongs(final int n) {
         return IntStream.range(0, n).mapToLong(i -> nextUnsignedLong()).toArray();
     }
@@ -1099,6 +1107,11 @@ public class SeededPropertySource {
 
     public EntityId nextEntityId() {
         return new EntityId(nextUnsignedLong(), nextUnsignedLong(), nextUnsignedLong());
+    }
+
+    public ContractNonceInfo nextContractNonce() {
+        return new ContractNonceInfo(
+                new EntityId(nextUnsignedLong(), nextUnsignedLong(), nextUnsignedLong()), nextUnsignedLong());
     }
 
     public RichInstant nextRichInstant() {

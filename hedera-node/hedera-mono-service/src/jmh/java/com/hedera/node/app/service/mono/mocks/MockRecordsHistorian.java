@@ -23,7 +23,6 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.stream.RecordStreamObject;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.swirlds.common.crypto.RunningHash;
 import java.time.Instant;
@@ -129,11 +128,6 @@ public class MockRecordsHistorian implements RecordsHistorian {
     @Override
     public boolean nextSystemTransactionIdIsUnknown() {
         return true;
-    }
-
-    @Override
-    public void updateContractNonces(ContractID contractId, Long contractNonce) {
-        // No-op
     }
 
     @Override

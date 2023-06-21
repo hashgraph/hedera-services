@@ -313,6 +313,10 @@ public class EvmFnResult implements SelfSerializable {
         return functionParameters;
     }
 
+    public List<ContractNonceInfo> getContractNonces() {
+        return contractNonces;
+    }
+
     public EntityId getSenderId() {
         return senderId;
     }

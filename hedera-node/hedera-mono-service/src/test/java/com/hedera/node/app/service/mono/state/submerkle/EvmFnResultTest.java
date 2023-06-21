@@ -32,11 +32,11 @@ import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessin
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ContractNonceInfo;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,18 +62,27 @@ class EvmFnResultTest {
     private static final String error = "Oops!";
     private static final EntityId contractId = new EntityId(0L, 0L, 3L);
     private static final EntityId senderId = new EntityId(0L, 0L, 42L);
-    private static final Map<ContractID, Long> contractNonces = Map.of(
-            ContractID.newBuilder()
-                    .setShardNum(0L)
-                    .setRealmNum(0L)
-                    .setContractNum(1L)
-                    .build(),
-            1L);
     private static final Address recipient = EntityNum.fromLong(3L).toEvmAddress();
     private static final List<EntityId> createdContractIds =
             List.of(new EntityId(2L, 3L, 4L), new EntityId(3L, 4L, 5L));
+
+    private static final List<ContractNonceInfo> createdContractNonces = List.of(
+            new ContractNonceInfo(new EntityId(5L, 6L, 7L), 2L), new ContractNonceInfo(new EntityId(8L, 9L, 10L), 1L));
+
     private static final List<ContractID> grpcCreatedContractIds =
             createdContractIds.stream().map(EntityId::toGrpcContractId).toList();
+
+    private static final Map<ContractID, Long> grpcCreatedContractNonces =
+            new TreeMap<>(Comparator.comparingLong(ContractID::getContractNum)) {
+                {
+                    put(new EntityId(5L, 6L, 7L).toGrpcContractId(), 2L);
+                }
+
+                {
+                    put(new EntityId(8L, 9L, 10L).toGrpcContractId(), 1L);
+                }
+            };
+
     private final List<EvmLog> logs = List.of(logFrom(0), logFrom(1));
     private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>(Map.of(
             Address.fromHexString("0x6"),
@@ -93,6 +102,7 @@ class EvmFnResultTest {
                 gasUsed,
                 logs,
                 createdContractIds,
+                createdContractNonces,
                 evmAddress,
                 gas,
                 amount,
@@ -127,6 +137,7 @@ class EvmFnResultTest {
                 gasUsed,
                 Collections.emptyList(),
                 Collections.emptyList(),
+                Collections.emptyList(),
                 new byte[0],
                 0L,
                 0L,
@@ -157,6 +168,7 @@ class EvmFnResultTest {
                 gasUsed,
                 EvmLog.fromBesu(besuLogs),
                 createdContractIds,
+                createdContractNonces,
                 new byte[0],
                 0L,
                 0L,
@@ -173,9 +185,11 @@ class EvmFnResultTest {
                 Collections.emptyMap(),
                 Collections.emptyList());
         input.setCreatedContracts(grpcCreatedContractIds);
+        input.setContractNonces(grpcCreatedContractNonces);
 
         final var actual = EvmFnResult.fromCall(input);
-
+        System.out.println(expected);
+        System.out.println(actual);
         assertEquals(expected, actual);
     }
 
@@ -198,6 +212,7 @@ class EvmFnResultTest {
                 gasUsed,
                 EvmLog.fromBesu(besuLogs),
                 createdContractIds,
+                createdContractNonces,
                 evmAddress,
                 0L,
                 0L,
@@ -214,6 +229,7 @@ class EvmFnResultTest {
                 Collections.emptyMap(),
                 Collections.emptyList());
         input.setCreatedContracts(grpcCreatedContractIds);
+        input.setContractNonces(grpcCreatedContractNonces);
 
         final var actual = EvmFnResult.fromCreate(input, evmAddress);
 
@@ -231,6 +247,7 @@ class EvmFnResultTest {
                 gasUsed,
                 logs,
                 createdContractIds,
+                createdContractNonces,
                 evmAddress,
                 gas,
                 amount,
@@ -244,6 +261,7 @@ class EvmFnResultTest {
                 gasUsed,
                 logs,
                 createdContractIds,
+                createdContractNonces,
                 evmAddress,
                 gas,
                 amount,
@@ -257,6 +275,7 @@ class EvmFnResultTest {
                 gasUsed,
                 logs,
                 createdContractIds,
+                createdContractNonces,
                 Address.ZERO.toArray(),
                 gas,
                 amount,
@@ -270,6 +289,7 @@ class EvmFnResultTest {
                 gasUsed,
                 logs,
                 createdContractIds,
+                createdContractNonces,
                 evmAddress,
                 gas,
                 amount,
@@ -283,6 +303,7 @@ class EvmFnResultTest {
                 gasUsed,
                 List.of(logFrom(1)),
                 createdContractIds,
+                createdContractNonces,
                 evmAddress,
                 gas,
                 amount,
@@ -296,6 +317,7 @@ class EvmFnResultTest {
                 gasUsed,
                 logs,
                 List.of(new EntityId(1L, 1L, 42L)),
+                createdContractNonces,
                 evmAddress,
                 gas,
                 amount,
@@ -309,6 +331,7 @@ class EvmFnResultTest {
                 gasUsed,
                 logs,
                 createdContractIds,
+                createdContractNonces,
                 evmAddress,
                 gas,
                 amount,
@@ -322,6 +345,7 @@ class EvmFnResultTest {
                 gasUsed,
                 logs,
                 createdContractIds,
+                createdContractNonces,
                 evmAddress,
                 gas,
                 amount,
@@ -354,6 +378,7 @@ class EvmFnResultTest {
                         subject.getGasUsed(),
                         subject.getLogs(),
                         subject.getCreatedContractIds(),
+                        subject.getContractNonces(),
                         subject.getEvmAddress(),
                         subject.getGas(),
                         subject.getAmount(),
@@ -386,6 +411,9 @@ class EvmFnResultTest {
                         + ", "
                         + "logs="
                         + logs
+                        + ", "
+                        + "contractNonces="
+                        + createdContractNonces
                         + ", evmAddress=0000000000000000000000000000000000000009, "
                         + "gas="
                         + gas
@@ -417,6 +445,7 @@ class EvmFnResultTest {
                 gasUsed,
                 logs,
                 createdContractIds,
+                createdContractNonces,
                 evmAddress,
                 gas,
                 amount,
@@ -433,6 +462,9 @@ class EvmFnResultTest {
                         .map(EntityId::toGrpcContractId)
                         .collect(toList()))
                 .addAllLogInfo(logs.stream().map(EvmLog::toGrpc).collect(toList()))
+                .addAllContractNonces(createdContractNonces.stream()
+                        .map(ContractNonceInfo::toGrpc)
+                        .collect(toList()))
                 .setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
                 .setGas(gas)
                 .setAmount(amount)
@@ -451,6 +483,7 @@ class EvmFnResultTest {
                 null,
                 bloom,
                 gasUsed,
+                Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
                 EvmFnResult.EMPTY,
@@ -482,6 +515,9 @@ class EvmFnResultTest {
                 .setContractID(contractId.toGrpcContractId())
                 .addAllCreatedContractIDs(createdContractIds.stream()
                         .map(EntityId::toGrpcContractId)
+                        .collect(toList()))
+                .addAllContractNonces(createdContractNonces.stream()
+                        .map(ContractNonceInfo::toGrpc)
                         .collect(toList()))
                 .addAllLogInfo(logs.stream().map(EvmLog::toGrpc).collect(toList()))
                 .setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
@@ -528,37 +564,6 @@ class EvmFnResultTest {
         assertEquals(3, subject.getAmount());
         assertArrayEquals(oneByte, subject.getFunctionParameters());
         assertEquals(senderId, subject.getSenderId());
-    }
-
-    @Test
-    void contractNoncesExternalizationWorks() {
-        subject.setContractNonces(contractNonces);
-
-        final var actual = subject.toGrpc();
-        final var expected = ContractFunctionResult.newBuilder()
-                .setGasUsed(gasUsed)
-                .setContractCallResult(ByteString.copyFrom(result))
-                .setBloom(ByteString.copyFrom(bloom))
-                .setErrorMessage(error)
-                .setContractID(contractId.toGrpcContractId())
-                .addAllCreatedContractIDs(createdContractIds.stream()
-                        .map(EntityId::toGrpcContractId)
-                        .collect(toList()))
-                .addAllLogInfo(logs.stream().map(EvmLog::toGrpc).collect(toList()))
-                .setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
-                .setGas(gas)
-                .setAmount(amount)
-                .setFunctionParameters(ByteString.copyFrom(functionParameters))
-                .setSenderId(senderId.toGrpcAccountId())
-                .addAllContractNonces(contractNonces.entrySet().stream()
-                        .map(contractNonceInfo -> ContractNonceInfo.newBuilder()
-                                .setContractId(contractNonceInfo.getKey())
-                                .setNonce(contractNonceInfo.getValue())
-                                .build())
-                        .collect(toList()))
-                .build();
-
-        assertEquals(expected, actual);
     }
 
     private static EvmLog logFrom(final int s) {
