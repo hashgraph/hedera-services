@@ -27,12 +27,12 @@ single master-list of all libraries that have been approved for the project, inc
 Our Gradle build has a single version number for all projects. It is defined in gradle.properties. Changing this version
 number will automatically apply to every subproject.
 
-## buildSrc
+## build-logic
 
 Gradle has plugins. One type of plugin is the "convention plugin". A convention plugin is a plugin that applies a
-certain set of defaults to all builds that include that convention. We define one such `hedera-convention` in buildSrc.
+certain set of defaults to all builds that include that convention. We define one such `hedera-convention` in build-logic.
 It is then used by each of the subprojects to reduce the amount of boilerplate. We can create additional conventions in
-the future if need be. buildSrc is a special directory in Gradle for hosting custom project plugins.
+the future if need be. 'build-logic' is a special directory in Gradle for hosting custom project plugins.
 
 ## Sub Projects
 
