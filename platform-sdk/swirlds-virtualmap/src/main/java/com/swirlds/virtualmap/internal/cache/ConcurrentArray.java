@@ -317,7 +317,7 @@ final class ConcurrentArray<T> {
                         result.complete(null);
                     }
                 } catch (Exception e) {
-                    result.cancelWithError(true, e);
+                    result.cancelWithError(e);
                 }
             });
             nextIndex += size;
