@@ -150,7 +150,7 @@ dependencyResolutionManagement {
             version("com.google.common", "31.1-jre")
             version("com.google.protobuf", "3.19.4")
             version("com.google.protobuf.util", "3.19.2")
-            version("com.hedera.pbj.runtime", "0.6.1")
+            version("com.hedera.pbj.runtime", "0.7.0")
             version("com.sun.jna", "5.12.1")
             version("com.swirlds.base", swirldsVersion)
             version("com.swirlds.cli", swirldsVersion)
