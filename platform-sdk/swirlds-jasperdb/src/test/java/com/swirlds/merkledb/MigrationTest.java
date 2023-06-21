@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -98,7 +97,7 @@ class MigrationTest {
     private static long bytesToLong(byte[] bytes) {
         long result = 0L;
         for (byte b : bytes) {
-            result = result * 256 + ((long)b & 0xff);
+            result = result * 256 + ((long) b & 0xff);
         }
         return result;
     }
@@ -138,8 +137,7 @@ class MigrationTest {
                 (final Pair<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> pair) -> {
                     checkSum2.addAndGet(bytesToLong(pair.getValue().getData()));
                 },
-                32
-        );
+                32);
         assertEquals(checkSum, checkSum2.get());
     }
 }
