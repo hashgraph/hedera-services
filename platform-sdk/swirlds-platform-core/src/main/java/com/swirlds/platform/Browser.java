@@ -77,9 +77,11 @@ import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.config.ConfigMappings;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.config.internal.ConfigMappings;
+import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.ConfigPropertiesSource;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -223,6 +225,7 @@ public class Browser {
                 .withConfigDataType(ReconnectConfig.class)
                 .withConfigDataType(FCHashMapConfig.class)
                 .withConfigDataType(JasperDbConfig.class)
+                .withConfigDataType(MerkleDbConfig.class)
                 .withConfigDataType(ChatterConfig.class)
                 .withConfigDataType(AddressBookConfig.class)
                 .withConfigDataType(VirtualMapConfig.class)
@@ -246,6 +249,7 @@ public class Browser {
         }
 
         this.configuration = configurationBuilder.build();
+        PlatformConfigUtils.logNotKnownConfigProperties(configuration);
 
         // Set the configuration on all SwirldMain instances.
         appMains.values().forEach(swirldMain -> swirldMain.setConfiguration(configuration));
