@@ -29,20 +29,12 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.RealmID;
-import com.hederahashgraph.api.proto.java.ShardID;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hederahashgraph.api.proto.java.*;
 import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 
@@ -59,6 +51,7 @@ public class HapiSpecSetup {
         return defaultNodeProps;
     }
 
+    private Set<ResponseCodeEnum> streamlinedIngestChecks = null;
     private HapiPropertySource ciPropertiesMap = null;
     private static HapiPropertySource DEFAULT_PROPERTY_SOURCE = null;
     private static final HapiPropertySource BASE_DEFAULT_PROPERTY_SOURCE = JutilPropertySource.getDefaultInstance();
@@ -620,6 +613,7 @@ public class HapiSpecSetup {
     /**
      * Stream the set of HAPI operations that should be submitted to workflow port 60211/60212.
      * This code is needed to test each operation through the new workflow code.
+     *
      * @return set of hapi operations
      */
     public Set<HederaFunctionality> workflowOperations() {
@@ -630,5 +624,34 @@ public class HapiSpecSetup {
         return Stream.of(workflowOps.split(","))
                 .map(HederaFunctionality::valueOf)
                 .collect(toSet());
+    }
+
+    /**
+     * Returns the set of response codes that should be always be enforced on ingest. When
+     * {@link HapiTxnOp#hasPrecheck(ResponseCodeEnum)} is given a response code <i>not</i> in
+     * this set, it will automatically accept {@code OK} in its place, but switch the expected
+     * consensus status to that response code.
+     *
+     * <p>That is, for a non-streamlined status like {@link ResponseCodeEnum#INVALID_ACCOUNT_AMOUNTS},
+     * {@code hasPrecheck(INVALID_ACCOUNT_AMOUNTS)} is equivalent to,
+     * <pre>{@code
+     *     cryptoTransfer(...)
+     *         .hasPrecheckFrom(OK, INVALID_ACCOUNT_AMOUNTS)
+     *         .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS)
+     * }</pre>
+     *
+     * @return the set of response codes that should be always be enforced on ingest
+     */
+    public Set<ResponseCodeEnum> streamlinedIngestChecks() {
+        if (streamlinedIngestChecks == null) {
+            final var nominal = props.get("spec.streamlinedIngestChecks");
+            streamlinedIngestChecks = EnumSet.copyOf(
+                    nominal.isEmpty()
+                            ? Collections.emptySet()
+                            : Stream.of(nominal.split(","))
+                                    .map(ResponseCodeEnum::valueOf)
+                                    .collect(Collectors.toSet()));
+        }
+        return streamlinedIngestChecks;
     }
 }
