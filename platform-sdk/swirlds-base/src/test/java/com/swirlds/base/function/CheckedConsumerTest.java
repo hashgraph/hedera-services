@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 class CheckedConsumerTest {
 
     @Test
-    void of() {
+    void testOf() {
         // given
         final List<String> list = new ArrayList<>();
         final CheckedConsumer<String, RuntimeException> consumer = CheckedConsumer.of(s -> list.add(s));
@@ -41,7 +41,7 @@ class CheckedConsumerTest {
     }
 
     @Test
-    void ofNull() {
+    void testOfNull() {
         assertThrows(NullPointerException.class, () -> CheckedConsumer.of(null));
     }
 }
