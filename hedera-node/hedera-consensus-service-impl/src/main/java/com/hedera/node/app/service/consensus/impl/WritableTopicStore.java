@@ -26,7 +26,6 @@ import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -59,7 +58,7 @@ public class WritableTopicStore {
      * @param topic - the topic to be mapped onto a new {@link MerkleTopic} and persisted.
      */
     public void put(@NonNull final Topic topic) {
-        Objects.requireNonNull(topicState).put(topic.id(), Objects.requireNonNull(topic));
+        topicState.put(requireNonNull(topic.id()), requireNonNull(topic));
     }
 
     /**
@@ -74,8 +73,8 @@ public class WritableTopicStore {
      * Returns the {@link Topic} with the given number. If no such topic exists, returns {@code Optional.empty()}
      * @param topicID - the id of the topic to be retrieved.
      */
-    public Optional<Topic> get(final TopicID topicID) {
-        final var topic = Objects.requireNonNull(topicState).get(topicID);
+    public Optional<Topic> get(@NonNull final TopicID topicID) {
+        final var topic = topicState.get(topicID);
         return Optional.ofNullable(topic);
     }
 
@@ -86,7 +85,7 @@ public class WritableTopicStore {
      */
     public Optional<Topic> getForModify(@NonNull final TopicID topicID) {
         requireNonNull(topicID);
-        final var topic = Objects.requireNonNull(topicState).getForModify(topicID);
+        final var topic = topicState.getForModify(topicID);
         return Optional.ofNullable(topic);
     }
 

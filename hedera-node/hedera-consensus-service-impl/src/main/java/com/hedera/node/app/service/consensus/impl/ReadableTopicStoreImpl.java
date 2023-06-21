@@ -26,7 +26,6 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -65,6 +64,6 @@ public class ReadableTopicStoreImpl implements ReadableTopicStore {
 
     @NonNull
     public Optional<Topic> getTopicLeaf(@NonNull final TopicID id) {
-        return Optional.ofNullable(Objects.requireNonNull(topicState).get(id));
+        return Optional.ofNullable(topicState.get(id));
     }
 }
