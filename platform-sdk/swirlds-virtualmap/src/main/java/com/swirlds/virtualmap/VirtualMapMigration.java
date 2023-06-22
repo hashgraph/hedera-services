@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -162,6 +163,7 @@ public final class VirtualMapMigration {
 
         // A collection of threads iterate over the map. Each thread writes into its own output queue.
         final List<Thread> threads = new ArrayList<>(threadCount);
+        final AtomicReference<Throwable> throwable = new AtomicReference<>();
 
         for (int threadIndex = 0; threadIndex < threadCount; threadIndex++) {
 
@@ -171,9 +173,15 @@ public final class VirtualMapMigration {
                     .setComponent(COMPONENT_NAME)
                     .setThreadName("reader-" + threadCount)
                     .setInterruptableRunnable(() -> {
-                        for (long path = firstPath; path <= lastLeafPath; path += threadCount) {
-                            final VirtualLeafRecord<K, V> leafRecord = recordAccessor.findLeafRecord(path, false);
-                            handler.accept(Pair.of(leafRecord.getKey(), leafRecord.getValue()));
+                        try {
+                            for (long path = firstPath; path <= lastLeafPath; path += threadCount) {
+                                final VirtualLeafRecord<K, V> leafRecord = recordAccessor.findLeafRecord(path, false);
+                                handler.accept(Pair.of(leafRecord.getKey(), leafRecord.getValue()));
+                            }
+                        } catch (final Throwable t) {
+                            if (throwable.compareAndSet(null, t)) {
+                                threads.forEach(Thread::interrupt);
+                            }
                         }
                     })
                     .build(true));
@@ -181,6 +189,10 @@ public final class VirtualMapMigration {
 
         for (Thread thread : threads) {
             thread.join();
+        }
+
+        if (throwable.get() != null) {
+            throw new InterruptedException(throwable.get().toString());
         }
     }
 }
