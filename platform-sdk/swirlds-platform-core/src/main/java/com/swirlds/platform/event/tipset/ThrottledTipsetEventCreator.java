@@ -119,7 +119,7 @@ public class ThrottledTipsetEventCreator implements TipsetEventCreator {
      */
     @Nullable
     @Override
-    public GossipEvent maybeCreateEvent() { // TODO test this logic
+    public GossipEvent maybeCreateEvent() {
         if (!isEventCreationPermitted()) {
             return null;
         }
