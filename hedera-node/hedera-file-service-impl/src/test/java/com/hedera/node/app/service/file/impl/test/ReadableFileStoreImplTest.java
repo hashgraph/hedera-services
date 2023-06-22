@@ -42,7 +42,7 @@ class ReadableFileStoreImplTest extends FileTestBase {
 
         assertNotNull(fileMeta);
 
-        assertEquals(fileId.fileNum(), fileMeta.fileId().fileNum());
+        assertEquals(fileId, fileMeta.fileId());
         assertEquals(keys, fileMeta.keys());
 
         assertEquals(memo, fileMeta.memo());

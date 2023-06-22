@@ -210,7 +210,7 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
 
         subject.handle(handleContext);
-        ;
+
         final FileID createdFileId = FileID.newBuilder().fileNum(1_234L).build();
         final var createdFile = fileStore.get(createdFileId);
         assertTrue(createdFile.isPresent());
@@ -220,7 +220,7 @@ class FileCreateTest extends FileTestBase {
         assertEquals(keys, actualFile.keys());
         assertEquals(1_234_567L, actualFile.expirationTime());
         assertEquals(contentsBytes, actualFile.contents());
-        assertEquals(fileId.fileNum(), actualFile.fileId().fileNum());
+        assertEquals(fileId, actualFile.fileId());
         assertFalse(actualFile.deleted());
         verify(recordBuilder).fileID(FileID.newBuilder().fileNum(1_234L).build());
         assertTrue(fileStore.get(createdFileId).isPresent());
@@ -251,7 +251,7 @@ class FileCreateTest extends FileTestBase {
         assertEquals(keys, actualFile.keys());
         assertEquals(1_234_567L, actualFile.expirationTime());
         assertEquals(contentsBytes, actualFile.contents());
-        assertEquals(fileId.fileNum(), actualFile.fileId().fileNum());
+        assertEquals(fileId, actualFile.fileId());
         assertFalse(actualFile.deleted());
         verify(recordBuilder).fileID(FileID.newBuilder().fileNum(1_234L).build());
         assertTrue(fileStore.get(createdFileId).isPresent());
