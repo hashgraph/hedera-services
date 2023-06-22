@@ -242,7 +242,8 @@ public class Browser {
                 .withConfigDataType(UptimeConfig.class)
                 .withConfigDataType(RecycleBinConfig.class)
                 .withConfigDataType(EventConfig.class)
-                .withConfigDataType(PathsConfig.class);
+                .withConfigDataType(PathsConfig.class)
+                .withConfigDataType(SocketConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
