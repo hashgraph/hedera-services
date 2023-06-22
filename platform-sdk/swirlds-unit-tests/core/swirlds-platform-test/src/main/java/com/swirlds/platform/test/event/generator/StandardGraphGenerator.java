@@ -388,8 +388,8 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * Get the next node that is creating an event.
      */
     private EventSource<?> getNextEventSource(final long eventIndex) {
-        final int nodeID = weightedChoice(getRandom(), getSourceWeights(eventIndex));
-        return sources.get(nodeID);
+        final int nodeIndex = weightedChoice(getRandom(), getSourceWeights(eventIndex));
+        return sources.get(nodeIndex);
     }
 
     /**
@@ -401,8 +401,8 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     private EventSource<?> getNextOtherParentSource(final long eventIndex, final EventSource<?> source) {
         final List<Double> affinityVector =
                 getOtherParentAffinityVector(eventIndex, addressBook.getIndexOfNodeId(source.getNodeId()));
-        final int nodeID = weightedChoice(getRandom(), affinityVector);
-        return sources.get(nodeID);
+        final int nodeIndex = weightedChoice(getRandom(), affinityVector);
+        return sources.get(nodeIndex);
     }
 
     /**
