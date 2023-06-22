@@ -24,11 +24,14 @@ import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateNotification;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
+import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
+import java.util.Objects;
 
 /**
  * Default implementation of the {@link AppCommunicationComponent}
@@ -37,8 +40,17 @@ public class DefaultAppCommunicationComponent implements AppCommunicationCompone
 
     private final NotificationEngine notificationEngine;
 
-    public DefaultAppCommunicationComponent(final NotificationEngine notificationEngine) {
-        this.notificationEngine = notificationEngine;
+    /**
+     * The state machine responsible for platform status
+     */
+    private final PlatformStatusStateMachine platformStatusStateMachine;
+
+    public DefaultAppCommunicationComponent(
+            @NonNull final NotificationEngine notificationEngine,
+            @NonNull final PlatformStatusStateMachine platformStatusStateMachine) {
+
+        this.notificationEngine = Objects.requireNonNull(notificationEngine);
+        this.platformStatusStateMachine = Objects.requireNonNull(platformStatusStateMachine);
     }
 
     @Override
@@ -54,6 +66,8 @@ public class DefaultAppCommunicationComponent implements AppCommunicationCompone
                             signedState.getSwirldState(),
                             directory,
                             signedState.isFreezeState()));
+
+            platformStatusStateMachine.processStatusAction(new StateWrittenToDiskAction(signedState.getRound()));
         }
     }
 

@@ -329,7 +329,7 @@ public class SyncGossip extends AbstractGossip {
                 addressBook,
                 selfId,
                 topology.getConnectionGraph(),
-                updatePlatformStatus,
+                announceFallenBehind,
                 () -> getReconnectController().start(),
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }

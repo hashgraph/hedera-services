@@ -200,7 +200,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 addressBook,
                 selfId,
                 topology.getConnectionGraph(),
-                updatePlatformStatus,
+                announceFallenBehind,
                 // Fallen behind callback is intentional no-op, is impossible to fall behind
                 () -> {},
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));

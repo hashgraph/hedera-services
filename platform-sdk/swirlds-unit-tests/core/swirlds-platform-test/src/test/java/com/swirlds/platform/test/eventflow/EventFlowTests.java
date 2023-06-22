@@ -39,6 +39,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -637,7 +638,7 @@ class EventFlowTests {
                 eventStreamManager,
                 signedStateTracker,
                 e -> {},
-                () -> {},
+                mock(PlatformStatusStateMachine.class),
                 (round) -> {},
                 SoftwareVersion.NO_VERSION);
     }

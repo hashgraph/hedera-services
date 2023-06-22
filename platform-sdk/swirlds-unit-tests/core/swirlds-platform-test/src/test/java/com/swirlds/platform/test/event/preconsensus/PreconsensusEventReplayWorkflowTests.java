@@ -32,7 +32,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.components.EventTaskDispatcher;
@@ -54,8 +54,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -80,8 +78,6 @@ class PreconsensusEventReplayWorkflowTests {
 
         final AtomicReference<TestPhase> phase = new AtomicReference<>(TestPhase.SET_STARTUP_STATUS);
         final long minimumGenerationNonAncient = random.nextLong(1, 1000);
-
-        final AtomicReference<PlatformStatus> currentStatus = new AtomicReference<>(PlatformStatus.STARTING_UP);
 
         final List<EventImpl> events = new ArrayList<>();
         final StandardGraphGenerator graphGenerator = buildGraphGenerator(random);
@@ -170,24 +166,6 @@ class PreconsensusEventReplayWorkflowTests {
         when(latestImmutableState.get()).thenReturn(signedState);
         when(stateManagementComponent.getLatestImmutableState(any())).thenReturn(latestImmutableState);
 
-        final Supplier<PlatformStatus> getPlatformStats = currentStatus::get;
-
-        final Consumer<PlatformStatus> setPlatformStats = status -> {
-            if (phase.get() == TestPhase.SET_STARTUP_STATUS) {
-                assertEquals(PlatformStatus.STARTING_UP, currentStatus.get());
-                assertEquals(PlatformStatus.REPLAYING_EVENTS, status);
-                currentStatus.set(status);
-                phase.set(TestPhase.REPLAY_EVENTS);
-            } else if (phase.get() == TestPhase.SET_FINISH_STATUS) {
-                assertEquals(PlatformStatus.REPLAYING_EVENTS, currentStatus.get());
-                assertEquals(PlatformStatus.OBSERVING, status);
-                currentStatus.set(status);
-                phase.set(TestPhase.TEST_FINISHED);
-            } else {
-                fail("platform status set in wrong phase");
-            }
-        };
-
         replayPreconsensusEvents(
                 TestPlatformContextBuilder.create().build(),
                 AdHocThreadManager.getStaticThreadManager(),
@@ -199,6 +177,7 @@ class PreconsensusEventReplayWorkflowTests {
                 consensusRoundHandler,
                 stateHashSignQueue,
                 stateManagementComponent,
+                mock(PlatformStatusStateMachine.class),
                 minimumGenerationNonAncient);
 
         assertEquals(TestPhase.TEST_FINISHED, phase.get());

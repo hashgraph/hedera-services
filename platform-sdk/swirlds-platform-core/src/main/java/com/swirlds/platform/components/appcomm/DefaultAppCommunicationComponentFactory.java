@@ -16,9 +16,10 @@
 
 package com.swirlds.platform.components.appcomm;
 
-import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
-
 import com.swirlds.common.notification.NotificationEngine;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Creates instances of {@link DefaultAppCommunicationComponent}
@@ -32,22 +33,20 @@ public class DefaultAppCommunicationComponentFactory implements AppCommunication
      */
     private final NotificationEngine notificationEngine;
 
-    public DefaultAppCommunicationComponentFactory(final NotificationEngine notificationEngine) {
-        this.notificationEngine = notificationEngine;
+    /**
+     * The state machine responsible for platform status
+     */
+    private final PlatformStatusStateMachine platformStatusStateMachine;
+
+    public DefaultAppCommunicationComponentFactory(
+            @NonNull final NotificationEngine notificationEngine,
+            @NonNull final PlatformStatusStateMachine platformStatusStateMachine) {
+
+        this.notificationEngine = Objects.requireNonNull(notificationEngine);
+        this.platformStatusStateMachine = Objects.requireNonNull(platformStatusStateMachine);
     }
 
     public AppCommunicationComponent build() {
-        verifyInputs();
-        return new DefaultAppCommunicationComponent(notificationEngine);
-    }
-
-    private void verifyInputs() {
-        final StringBuilder errors = new StringBuilder();
-        if (notificationEngine == null) {
-            addLine(errors, "systemTransactionSubmitter must not be null");
-        }
-        if (!errors.isEmpty()) {
-            throw new IllegalStateException("Unable to build StateManagementComponent:\n" + errors);
-        }
+        return new DefaultAppCommunicationComponent(notificationEngine, platformStatusStateMachine);
     }
 }

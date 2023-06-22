@@ -59,6 +59,9 @@ import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.common.system.status.SyncPlatformStatusStateMachine;
+import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
+import com.swirlds.common.system.status.actions.ReconnectCompleteAction;
+import com.swirlds.common.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.threading.framework.QueueThread;
@@ -371,7 +374,7 @@ public class SwirldsPlatform implements Platform, Startable {
         this.crypto = crypto;
 
         startUpEventFrozenManager = new StartUpEventFrozenManager(metrics, Instant::now);
-        freezeManager = new FreezeManager(platformStatusStateMachine::getCurrentStatus);
+        freezeManager = new FreezeManager();
         FreezeMetrics.registerFreezeMetrics(metrics, freezeManager, startUpEventFrozenManager);
         EventCounter.registerEventCounterMetrics(metrics);
 
@@ -379,7 +382,7 @@ public class SwirldsPlatform implements Platform, Startable {
         final ManualWiring wiring = new ManualWiring(platformContext, threadManager, getAddressBook(), freezeManager);
         metrics.addUpdater(wiring::updateMetrics);
         final AppCommunicationComponent appCommunicationComponent =
-                wiring.wireAppCommunicationComponent(notificationEngine);
+                wiring.wireAppCommunicationComponent(notificationEngine, platformStatusStateMachine);
 
         preconsensusEventFileManager = buildPreconsensusEventFileManager(emergencyRecoveryManager);
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
@@ -488,7 +491,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     postConsensusSystemTransactionManager,
                     metrics,
                     PlatformConstructor.settingsProvider(),
-                    freezeManager::isFreezeStarted,
+                    this::isFreezeStarted,
                     stateToLoad);
 
             // SwirldStateManager will get a copy of the state loaded, that copy will become stateCons.
@@ -505,7 +508,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     eventStreamManager,
                     stateHashSignQueue,
                     preconsensusEventWriter::waitUntilDurable,
-                    freezeManager::freezeStarted,
+                    platformStatusStateMachine,
                     stateManagementComponent::roundAppliedToState,
                     appVersion));
 
@@ -658,6 +661,15 @@ public class SwirldsPlatform implements Platform, Startable {
         GuiPlatformAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
         GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
+    }
+
+    /**
+     * Returns whether the platform status is currently {@link PlatformStatus#FREEZING}.
+     *
+     * @return {@code true} if the platform status is currently {@link PlatformStatus#FREEZING}, otherwise {@code false}
+     */
+    private boolean isFreezeStarted() {
+        return platformStatusStateMachine.getCurrentStatus() == PlatformStatus.FREEZING;
     }
 
     /**
@@ -917,6 +929,7 @@ public class SwirldsPlatform implements Platform, Startable {
         }
 
         gossip.resetFallenBehind();
+        platformStatusStateMachine.processStatusAction(new ReconnectCompleteAction(signedState.getRound()));
     }
 
     /**
@@ -952,7 +965,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     eventMapper,
                     eventMapper,
                     swirldStateManager.getTransactionPool(),
-                    freezeManager::isFreezeStarted,
+                    this::isFreezeStarted,
                     new EventCreationRules(List.of()));
         }
     }
@@ -1101,7 +1114,13 @@ public class SwirldsPlatform implements Platform, Startable {
                     consensusRoundHandler,
                     stateHashSignQueue,
                     stateManagementComponent,
+                    platformStatusStateMachine,
                     initialMinimumGenerationNonAncient);
+        } else {
+            // if preconsensus events aren't being replayed, advance through that part of the state machine anyway
+            platformStatusStateMachine.processStatusAction(new StartedReplayingEventsAction());
+            platformStatusStateMachine.processStatusAction(
+                    new DoneReplayingEventsAction(Time.getCurrent().now()));
         }
     }
 

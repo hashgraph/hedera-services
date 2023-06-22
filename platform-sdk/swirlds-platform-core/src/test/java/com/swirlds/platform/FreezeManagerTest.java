@@ -20,63 +20,71 @@ import static com.swirlds.common.system.EventCreationRuleResponse.DONT_CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import com.swirlds.platform.state.signed.SignedState;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class FreezeManagerTest {
-
     private FreezeManager freezeManager;
-    private final AtomicInteger checkStatusCounter = new AtomicInteger(0);
+    private SignedState freezeState;
+    private SignedState nonFreezeState;
+
+    private void assertFrozen() {
+        assertTrue(freezeManager.isEventCreationFrozen());
+        assertEquals(DONT_CREATE, freezeManager.shouldCreateEvent());
+    }
+
+    private void assertNotFrozen() {
+        assertFalse(freezeManager.isEventCreationFrozen());
+        assertEquals(PASS, freezeManager.shouldCreateEvent());
+    }
 
     @BeforeEach
     public void setup() {
-        freezeManager = new FreezeManager(checkStatusCounter::incrementAndGet);
+        freezeManager = new FreezeManager();
+
+        freezeState = mock(SignedState.class);
+        nonFreezeState = mock(SignedState.class);
+        when(freezeState.isFreezeState()).thenReturn(true);
+        when(nonFreezeState.isFreezeState()).thenReturn(false);
     }
 
     @Test
-    void testEventCreationFrozen() {
-        assertFalse(freezeManager.isEventCreationFrozen(), "EventCreationFrozen should be false by default");
-
+    @DisplayName("Test that freezeEventCreation works as expected")
+    void freezeEventCreation() {
+        assertNotFrozen();
         freezeManager.freezeEventCreation();
-        assertTrue(freezeManager.isEventCreationFrozen(), "EventCreationFrozen should be true");
+        assertFrozen();
     }
 
     @Test
-    void shouldCreateEventTest() {
-        assertFalse(freezeManager.isEventCreationFrozen(), "EventCreationFrozen should be false by default");
-        assertEquals(PASS, freezeManager.shouldCreateEvent(), "should PASS when event creation is not frozen");
-
-        freezeManager.freezeEventCreation();
-        assertEquals(
-                DONT_CREATE,
-                freezeManager.shouldCreateEvent(),
-                "should not create events during event creation frozen");
+    @DisplayName("Test that freeze occurs when signed state has enough signatures")
+    void signedStateHasEnoughSignatures() {
+        assertNotFrozen();
+        freezeManager.stateHasEnoughSignatures(freezeState);
+        assertFrozen();
     }
 
     @Test
-    void freezeStateTest() {
-        assertFalse(freezeManager.isFreezeStarted(), "Freeze status should initialize to NOT_IN_FREEZE");
-        assertFalse(freezeManager.isFreezeComplete(), "Freeze status should initialize to NOT_IN_FREEZE");
-        assertEquals(0, checkStatusCounter.get(), "Status should not have been updated yet.");
+    @DisplayName("Test that freeze occurs when signed state doesn't have enough signatures")
+    void signedStateLacksSignatures() {
+        assertNotFrozen();
+        freezeManager.stateLacksSignatures(freezeState);
+        assertFrozen();
+    }
 
-        assertThrows(
-                IllegalStateException.class,
-                freezeManager::freezeComplete,
-                "Cannot transaction from not in freeze to freeze complete.");
-        freezeManager.freezeStarted();
-
-        assertTrue(freezeManager.isFreezeStarted(), "inFreeze should be true after inFreeze() is called.");
-        assertFalse(freezeManager.isFreezeComplete(), "Freeze status should not be FREEZE_COMPLETE");
-        assertEquals(1, checkStatusCounter.get(), "Status should have been updated once.");
-
-        freezeManager.freezeComplete();
-
-        assertFalse(freezeManager.isFreezeStarted(), "inFreeze should be true after inFreeze() is called.");
-        assertTrue(freezeManager.isFreezeComplete(), "Freeze status should not be FREEZE_COMPLETE");
-        assertEquals(2, checkStatusCounter.get(), "Status should have been updated twice.");
+    @Test
+    @DisplayName("signed states that aren't freeze states have no effect on state")
+    void nonFreezeStates() {
+        assertNotFrozen();
+        freezeManager.stateHasEnoughSignatures(nonFreezeState);
+        assertNotFrozen();
+        freezeManager.stateLacksSignatures(nonFreezeState);
+        assertNotFrozen();
     }
 }

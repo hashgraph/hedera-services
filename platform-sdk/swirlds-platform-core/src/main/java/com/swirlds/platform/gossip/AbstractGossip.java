@@ -100,7 +100,12 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected final SyncManagerImpl syncManager;
     protected final ReconnectThrottle reconnectThrottle;
     protected final ReconnectMetrics reconnectMetrics;
-    protected final Runnable updatePlatformStatus;
+
+    /**
+     * A runnable that announces to the platform that this node has fallen behind.
+     */
+    protected final Runnable announceFallenBehind;
+
     protected final List<Startable> thingsToStart = new ArrayList<>();
 
     /** the number of active connections this node has to other nodes */
@@ -123,7 +128,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
-     * @param updatePlatformStatus          a method that updates the platform status, when called
+     * @param announceFallenBehind          a method which announces that this node has fallen behind
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
@@ -142,14 +147,14 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
-            @NonNull final Runnable updatePlatformStatus,
+            @NonNull final Runnable announceFallenBehind,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
-        this.updatePlatformStatus = Objects.requireNonNull(updatePlatformStatus);
+        this.announceFallenBehind = Objects.requireNonNull(announceFallenBehind);
 
         criticalQuorum = buildCriticalQuorum();
         eventObserverDispatcher.addObserver(criticalQuorum);
@@ -313,7 +318,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         Objects.requireNonNull(sc);
 
         activeConnectionNumber.getAndIncrement();
-        updatePlatformStatus.run();
         networkMetrics.connectionEstablished(sc);
     }
 
@@ -328,7 +332,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         if (connectionNumber < 0) {
             logger.error(EXCEPTION.getMarker(), "activeConnectionNumber is {}, this is a bug!", connectionNumber);
         }
-        updatePlatformStatus.run();
 
         networkMetrics.recordDisconnect(conn);
     }

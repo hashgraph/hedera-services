@@ -24,6 +24,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -101,12 +102,16 @@ public class ManualWiring {
     /**
      * Creates and wires the {@link AppCommunicationComponent}.
      *
-     * @param notificationEngine passes notifications between the platform and the application
+     * @param notificationEngine         passes notifications between the platform and the application
+     * @param platformStatusStateMachine the platform status state machine
      * @return a fully wired {@link AppCommunicationComponent}
      */
-    public AppCommunicationComponent wireAppCommunicationComponent(final NotificationEngine notificationEngine) {
+    public AppCommunicationComponent wireAppCommunicationComponent(
+            @NonNull final NotificationEngine notificationEngine,
+            @NonNull final PlatformStatusStateMachine platformStatusStateMachine) {
+
         final AppCommunicationComponent appCommunicationComponent =
-                new DefaultAppCommunicationComponentFactory(notificationEngine).build();
+                new DefaultAppCommunicationComponentFactory(notificationEngine, platformStatusStateMachine).build();
         platformComponentList.add(appCommunicationComponent);
         return appCommunicationComponent;
     }
@@ -176,10 +181,7 @@ public class ManualWiring {
         });
 
         // FUTURE WORK: make the call to the app communication component asynchronous
-        stateManagementComponentFactory.stateToDiskConsumer((ss, path, success) -> {
-            freezeManager.stateToDisk(ss, path, success);
-            appCommunicationComponent.stateToDiskAttempt(ss, path, success);
-        });
+        stateManagementComponentFactory.stateToDiskConsumer(appCommunicationComponent::stateToDiskAttempt);
 
         stateManagementComponentFactory.stateLacksSignaturesConsumer(freezeManager::stateLacksSignatures);
         stateManagementComponentFactory.newCompleteStateConsumer(freezeManager::stateHasEnoughSignatures);

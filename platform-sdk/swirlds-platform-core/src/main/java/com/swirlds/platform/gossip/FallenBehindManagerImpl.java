@@ -46,8 +46,12 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
      * fallen behind. This Set is made from a ConcurrentHashMap, so it needs no synchronization
      */
     private final Set<NodeId> notYetReportFallenBehind;
-    /** Called on any fallen behind status change */
-    private final Runnable notifyPlatform;
+
+    /**
+     * A runnable which announces to the platform that this node has fallen behind
+     */
+    private final Runnable announceFallenBehind;
+
     /** Called when the status becomes fallen behind */
     private final Runnable fallenBehindCallback;
 
@@ -59,7 +63,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final RandomGraph connectionGraph,
-            @NonNull final Runnable notifyPlatform,
+            @NonNull final Runnable announceFallenBehind,
             @NonNull final Runnable fallenBehindCallback,
             @NonNull final ReconnectConfig config) {
         Objects.requireNonNull(addressBook, "addressBook");
@@ -75,7 +79,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
         for (final int neighbor : neighbors) {
             allNeighbors.add(addressBook.getNodeId(neighbor));
         }
-        this.notifyPlatform = Objects.requireNonNull(notifyPlatform, "notifyPlatform must not be null");
+        this.announceFallenBehind = Objects.requireNonNull(announceFallenBehind);
         this.fallenBehindCallback =
                 Objects.requireNonNull(fallenBehindCallback, "fallenBehindCallback must not be null");
         this.config = Objects.requireNonNull(config, "config must not be null");
@@ -94,7 +98,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
             notYetReportFallenBehind.remove(id);
             numReportFallenBehind++;
             if (!previouslyFallenBehind && hasFallenBehind()) {
-                notifyPlatform.run();
+                announceFallenBehind.run();
                 fallenBehindCallback.run();
             }
         }
@@ -138,7 +142,6 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
         numReportFallenBehind = 0;
         reportFallenBehind.clear();
         notYetReportFallenBehind.clear();
-        notifyPlatform.run();
     }
 
     @Override

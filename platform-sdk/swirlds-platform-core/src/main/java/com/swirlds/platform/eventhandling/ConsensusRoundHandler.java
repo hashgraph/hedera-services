@@ -39,6 +39,8 @@ import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.system.SoftwareVersion;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
+import com.swirlds.common.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
@@ -114,8 +116,10 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     /** A queue that accepts signed states for hashing and signature collection. */
     private final BlockingQueue<ReservedSignedState> stateHashSignQueue;
 
-    /** puts the system in a freeze state when executed */
-    private final Runnable enterFreezePeriod;
+    /**
+     * The state machine that manages the platform status.
+     */
+    private final PlatformStatusStateMachine platformStatusStateMachine;
 
     private boolean addedFirstRoundInFreeze = false;
 
@@ -149,17 +153,17 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      * Instantiate, but don't start any threads yet. The Platform should first instantiate the
      * {@link ConsensusRoundHandler}. Then the Platform should call start to start the queue thread.
      *
-     * @param platformContext          contains various platform utilities
-     * @param threadManager            responsible for creating and managing threads
-     * @param selfId                   the id of this node
-     * @param swirldStateManager       the swirld state manager to send events to
-     * @param consensusHandlingMetrics statistics updated by {@link ConsensusRoundHandler}
-     * @param eventStreamManager       the event stream manager to send consensus events to
-     * @param stateHashSignQueue       the queue thread that handles hashing and collecting signatures of new
-     *                                 self-signed states
-     * @param waitForEventDurability   a method that blocks until an event becomes durable.
-     * @param enterFreezePeriod        puts the system in a freeze state when executed
-     * @param softwareVersion          the current version of the software
+     * @param platformContext            contains various platform utilities
+     * @param threadManager              responsible for creating and managing threads
+     * @param selfId                     the id of this node
+     * @param swirldStateManager         the swirld state manager to send events to
+     * @param consensusHandlingMetrics   statistics updated by {@link ConsensusRoundHandler}
+     * @param eventStreamManager         the event stream manager to send consensus events to
+     * @param stateHashSignQueue         the queue thread that handles hashing and collecting signatures of new
+     *                                   self-signed states
+     * @param waitForEventDurability     a method that blocks until an event becomes durable.
+     * @param platformStatusStateMachine the state machine that manages the platform status
+     * @param softwareVersion            the current version of the software
      */
     public ConsensusRoundHandler(
             @NonNull final PlatformContext platformContext,
@@ -170,7 +174,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
             @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
             @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
-            @NonNull final Runnable enterFreezePeriod,
+            @NonNull final PlatformStatusStateMachine platformStatusStateMachine,
             @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
 
@@ -181,8 +185,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         this.consensusHandlingMetrics = consensusHandlingMetrics;
         this.eventStreamManager = eventStreamManager;
         this.stateHashSignQueue = stateHashSignQueue;
+        this.platformStatusStateMachine = Objects.requireNonNull(platformStatusStateMachine);
         this.softwareVersion = softwareVersion;
-        this.enterFreezePeriod = enterFreezePeriod;
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         final ConsensusConfig consensusConfig =
@@ -325,7 +329,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         if (!addedFirstRoundInFreeze && isRoundInFreezePeriod(consensusRound)) {
             addedFirstRoundInFreeze = true;
-            enterFreezePeriod.run();
+            platformStatusStateMachine.processStatusAction(new FreezePeriodEnteredAction(consensusRound.getRoundNum()));
         }
 
         addConsensusRound(consensusRound);
