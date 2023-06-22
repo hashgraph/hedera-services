@@ -28,7 +28,7 @@ val helidonVersion = "3.2.1"
 val jacksonVersion = "2.13.5"
 val log4jVersion = "2.17.1"
 val mockitoVersion = "4.6.1"
-val nettyVersion = "4.1.94.Final"
+val nettyVersion = "4.1.87.Final"
 val protobufVersion = "3.21.7"
 val swirldsVersion = "0.39.0-alpha.3"
 val systemStubsVersion = "2.0.2"
@@ -76,7 +76,6 @@ dependencies.constraints {
         api(gav("io.helidon.grpc.client", helidonVersion))
         api(gav("io.helidon.grpc.core", helidonVersion))
         api(gav("io.helidon.grpc.server", helidonVersion))
-        api(gav("io.netty.codec.http2", nettyVersion))
         api(gav("io.netty.handler", nettyVersion))
         api(gav("io.netty.transport", nettyVersion))
         api(gav("io.netty.transport.classes.epoll", nettyVersion))
