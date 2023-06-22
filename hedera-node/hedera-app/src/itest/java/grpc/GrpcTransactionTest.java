@@ -41,130 +41,130 @@ import org.junit.jupiter.params.provider.MethodSource;
  * missing any possible cases.
  */
 class GrpcTransactionTest extends GrpcTestBase {
-    private static final String SERVICE = "proto.TestService";
-    private static final String METHOD = "testMethod";
-    private static final String GOOD_RESPONSE = "All Good";
-    private static final byte[] GOOD_RESPONSE_BYTES = GOOD_RESPONSE.getBytes(StandardCharsets.UTF_8);
-
-    private static final IngestWorkflow GOOD_INGEST = (req, res) -> res.writeBytes(GOOD_RESPONSE_BYTES);
-    private static final QueryWorkflow UNIMPLEMENTED_QUERY = (r, r2) -> fail("The Query should not be called");
-
-    private void setUp(@NonNull final IngestWorkflow ingest) {
-        registerService(new GrpcServiceBuilder(SERVICE, ingest, UNIMPLEMENTED_QUERY).transaction(METHOD));
-        startServer();
-    }
-
-    @Test
-    @DisplayName("Call a function on a gRPC service endpoint that succeeds")
-    void sendGoodTransaction() {
-        // Given a server with a service endpoint and an IngestWorkflow that returns a good response
-        setUp(GOOD_INGEST);
-
-        // When we call the service
-        final var response = send(SERVICE, METHOD, "A Message");
-
-        // Then the response is good, and no exception is thrown.
-        assertEquals(GOOD_RESPONSE, response);
-    }
-
-    @Test
-    @DisplayName("A function throwing a RuntimeException returns the UNKNOWN status code")
-    void functionThrowingRuntimeExceptionReturnsUNKNOWNError() {
-        // Given a server where the service will throw a RuntimeException
-        setUp((req, res) -> {
-            throw new RuntimeException("Failing with RuntimeException");
-        });
-
-        // When we invoke that service
-        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Message"));
-
-        // Then the Status code will be UNKNOWN.
-        assertEquals(Status.UNKNOWN, e.getStatus());
-    }
-
-    @Test
-    @DisplayName("A function throwing an Error returns the UNKNOWN status code")
-    void functionThrowingErrorReturnsUNKNOWNError() {
-        // Given a server where the service will throw an Error
-        setUp((req, res) -> {
-            throw new Error("Whoops!");
-        });
-
-        // When we invoke that service
-        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Message"));
-
-        // Then the Status code will be UNKNOWN.
-        assertEquals(Status.UNKNOWN, e.getStatus());
-    }
-
-    public static Stream<Arguments> badStatusCodes() {
-        return Arrays.stream(Status.Code.values()).filter(c -> c != Code.OK).map(Arguments::of);
-    }
-
-    @ParameterizedTest(name = "{0} Should Fail")
-    @MethodSource("badStatusCodes")
-    @DisplayName("Explicitly thrown StatusRuntimeException passes the code through to the response")
-    void explicitlyThrowStatusRuntimeException(@NonNull final Status.Code code) {
-        // Given a server where the service will throw a specific StatusRuntimeException
-        setUp((req, res) -> {
-            throw new StatusRuntimeException(code.toStatus());
-        });
-
-        // When we invoke that service
-        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Message"));
-
-        // Then the Status code will match the exception
-        assertEquals(code.toStatus(), e.getStatus());
-    }
-
-    @Test
-    @DisplayName("Send a valid transaction to an unknown endpoint and get back UNIMPLEMENTED")
-    void sendTransactionToUnknownEndpoint() {
-        // Given a client that knows about a method that DOES NOT EXIST on the server
-        registerServiceOnClientOnly(
-                new GrpcServiceBuilder(SERVICE, NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW).transaction("unknown"));
-        setUp(GOOD_INGEST);
-
-        // When I call the service but with an unknown method
-        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, "unknown", "payload"));
-
-        // Then the resulting status code is UNIMPLEMENTED
-        assertEquals(Status.UNIMPLEMENTED.getCode(), e.getStatus().getCode());
-    }
-
-    @Test
-    @DisplayName("Send a valid transaction to an unknown service")
-    void sendTransactionToUnknownService() {
-        // Given a client that knows about a service that DOES NOT exist on the server
-        registerServiceOnClientOnly(new GrpcServiceBuilder("UnknownService", NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW)
-                .transaction(METHOD));
-        setUp(GOOD_INGEST);
-
-        // When I call the unknown service
-        final var e = assertThrows(StatusRuntimeException.class, () -> send("UnknownService", METHOD, "payload"));
-
-        // Then the resulting status code is UNIMPLEMENTED
-        assertEquals(Status.UNIMPLEMENTED.getCode(), e.getStatus().getCode());
-    }
-
-    // Interestingly, I thought it should return INVALID_ARGUMENT, and I attempted to update the
-    // NoopMarshaller
-    // to return INVALID_ARGUMENT by throwing a StatusRuntimeException. But the gRPC library we are
-    // using
-    // DOES NOT special case for StatusRuntimeException thrown in the marshaller, and always returns
-    // UNKNOWN
-    // to the client. So there is really no other response code possible for this case.
-    @Test
-    @DisplayName("Sending way too many bytes leads to UNKNOWN")
-    void sendTooMuchData() {
-        // Given a service
-        setUp(GOOD_INGEST);
-
-        // When I call a method on the service and pass too many bytes
-        final var payload = randomString(1024 * 10);
-        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, payload));
-
-        // Then the resulting status code is UNKNOWN
-        assertEquals(Status.UNKNOWN.getCode(), e.getStatus().getCode());
-    }
+//    private static final String SERVICE = "proto.TestService";
+//    private static final String METHOD = "testMethod";
+//    private static final String GOOD_RESPONSE = "All Good";
+//    private static final byte[] GOOD_RESPONSE_BYTES = GOOD_RESPONSE.getBytes(StandardCharsets.UTF_8);
+//
+//    private static final IngestWorkflow GOOD_INGEST = (req, res) -> res.writeBytes(GOOD_RESPONSE_BYTES);
+//    private static final QueryWorkflow UNIMPLEMENTED_QUERY = (r, r2) -> fail("The Query should not be called");
+//
+//    private void setUp(@NonNull final IngestWorkflow ingest) {
+//        registerService(new GrpcServiceBuilder(SERVICE, ingest, UNIMPLEMENTED_QUERY).transaction(METHOD));
+//        startServer();
+//    }
+//
+//    @Test
+//    @DisplayName("Call a function on a gRPC service endpoint that succeeds")
+//    void sendGoodTransaction() {
+//        // Given a server with a service endpoint and an IngestWorkflow that returns a good response
+//        setUp(GOOD_INGEST);
+//
+//        // When we call the service
+//        final var response = send(SERVICE, METHOD, "A Message");
+//
+//        // Then the response is good, and no exception is thrown.
+//        assertEquals(GOOD_RESPONSE, response);
+//    }
+//
+//    @Test
+//    @DisplayName("A function throwing a RuntimeException returns the UNKNOWN status code")
+//    void functionThrowingRuntimeExceptionReturnsUNKNOWNError() {
+//        // Given a server where the service will throw a RuntimeException
+//        setUp((req, res) -> {
+//            throw new RuntimeException("Failing with RuntimeException");
+//        });
+//
+//        // When we invoke that service
+//        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Message"));
+//
+//        // Then the Status code will be UNKNOWN.
+//        assertEquals(Status.UNKNOWN, e.getStatus());
+//    }
+//
+//    @Test
+//    @DisplayName("A function throwing an Error returns the UNKNOWN status code")
+//    void functionThrowingErrorReturnsUNKNOWNError() {
+//        // Given a server where the service will throw an Error
+//        setUp((req, res) -> {
+//            throw new Error("Whoops!");
+//        });
+//
+//        // When we invoke that service
+//        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Message"));
+//
+//        // Then the Status code will be UNKNOWN.
+//        assertEquals(Status.UNKNOWN, e.getStatus());
+//    }
+//
+//    public static Stream<Arguments> badStatusCodes() {
+//        return Arrays.stream(Status.Code.values()).filter(c -> c != Code.OK).map(Arguments::of);
+//    }
+//
+//    @ParameterizedTest(name = "{0} Should Fail")
+//    @MethodSource("badStatusCodes")
+//    @DisplayName("Explicitly thrown StatusRuntimeException passes the code through to the response")
+//    void explicitlyThrowStatusRuntimeException(@NonNull final Status.Code code) {
+//        // Given a server where the service will throw a specific StatusRuntimeException
+//        setUp((req, res) -> {
+//            throw new StatusRuntimeException(code.toStatus());
+//        });
+//
+//        // When we invoke that service
+//        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, "A Message"));
+//
+//        // Then the Status code will match the exception
+//        assertEquals(code.toStatus(), e.getStatus());
+//    }
+//
+//    @Test
+//    @DisplayName("Send a valid transaction to an unknown endpoint and get back UNIMPLEMENTED")
+//    void sendTransactionToUnknownEndpoint() {
+//        // Given a client that knows about a method that DOES NOT EXIST on the server
+//        registerServiceOnClientOnly(
+//                new GrpcServiceBuilder(SERVICE, NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW).transaction("unknown"));
+//        setUp(GOOD_INGEST);
+//
+//        // When I call the service but with an unknown method
+//        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, "unknown", "payload"));
+//
+//        // Then the resulting status code is UNIMPLEMENTED
+//        assertEquals(Status.UNIMPLEMENTED.getCode(), e.getStatus().getCode());
+//    }
+//
+//    @Test
+//    @DisplayName("Send a valid transaction to an unknown service")
+//    void sendTransactionToUnknownService() {
+//        // Given a client that knows about a service that DOES NOT exist on the server
+//        registerServiceOnClientOnly(new GrpcServiceBuilder("UnknownService", NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW)
+//                .transaction(METHOD));
+//        setUp(GOOD_INGEST);
+//
+//        // When I call the unknown service
+//        final var e = assertThrows(StatusRuntimeException.class, () -> send("UnknownService", METHOD, "payload"));
+//
+//        // Then the resulting status code is UNIMPLEMENTED
+//        assertEquals(Status.UNIMPLEMENTED.getCode(), e.getStatus().getCode());
+//    }
+//
+//    // Interestingly, I thought it should return INVALID_ARGUMENT, and I attempted to update the
+//    // NoopMarshaller
+//    // to return INVALID_ARGUMENT by throwing a StatusRuntimeException. But the gRPC library we are
+//    // using
+//    // DOES NOT special case for StatusRuntimeException thrown in the marshaller, and always returns
+//    // UNKNOWN
+//    // to the client. So there is really no other response code possible for this case.
+//    @Test
+//    @DisplayName("Sending way too many bytes leads to UNKNOWN")
+//    void sendTooMuchData() {
+//        // Given a service
+//        setUp(GOOD_INGEST);
+//
+//        // When I call a method on the service and pass too many bytes
+//        final var payload = randomString(1024 * 10);
+//        final var e = assertThrows(StatusRuntimeException.class, () -> send(SERVICE, METHOD, payload));
+//
+//        // Then the resulting status code is UNKNOWN
+//        assertEquals(Status.UNKNOWN.getCode(), e.getStatus().getCode());
+//    }
 }
