@@ -34,6 +34,7 @@ import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.function.LongSupplier;
 import javax.inject.Inject;
@@ -42,7 +43,10 @@ import javax.inject.Singleton;
 /**
  * An implementation of {@link AttributeValidator} that encapsulates the current policies for
  * validating attributes of entities, <i>without</i> any use of {@code mono-service} code.
+ *
+ * @deprecated Use {@link AttributeValidatorImpl} instead.
  */
+@Deprecated(forRemoval = true)
 @Singleton
 public class StandardizedAttributeValidator implements AttributeValidator {
     private final long maxEntityLifetime;
@@ -97,7 +101,10 @@ public class StandardizedAttributeValidator implements AttributeValidator {
      * {@inheritDoc}
      */
     @Override
-    public void validateMemo(@NonNull final String memo) {
+    public void validateMemo(@Nullable final String memo) {
+        if (memo == null) {
+            return;
+        }
         final var raw = memo.getBytes(StandardCharsets.UTF_8);
         if (raw.length > dynamicProperties.maxMemoUtf8Bytes()) {
             throw new HandleException(MEMO_TOO_LONG);
