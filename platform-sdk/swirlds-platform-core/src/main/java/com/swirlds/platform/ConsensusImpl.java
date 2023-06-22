@@ -37,6 +37,7 @@ import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
+import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import java.time.Instant;
@@ -223,14 +224,22 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
     @Override
     public void loadFromSignedState(final SignedState signedState) {
         reset();
+        final PlatformData platformData = signedState.getState().getPlatformState().getPlatformData();
+        if (platformData.getEvents() != null) {
+            loadLegacyState(platformData);
+        } else {
+            loadSnapshot(platformData.getSnapshot());
+        }
+    }
+
+    private void loadLegacyState(final PlatformData platformData){
         migrationMode = true;
-        // TODO check state version and load snapshot if available
 
         // create all the rounds that we have events for
-        rounds.loadFromMinGen(signedState.getMinGenInfo());
+        rounds.loadFromMinGen(platformData.getMinGenInfo());
         update(rounds.getFameDecidedBelow());
 
-        for (final EventImpl event : signedState.getEvents()) {
+        for (final EventImpl event : platformData.getEvents()) {
             event.setRoundCreated(
                     // this is where round created used to be stored, only needed for migration
                     event.getConsensusData().getRoundCreated());
@@ -242,7 +251,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         }
 
         // The minTimestamp is just above the last transaction that has been handled
-        minTimestamp = ConsensusUtils.calcMinTimestampForNextEvent(signedState.getConsensusTimestamp());
+        minTimestamp = ConsensusUtils.calcMinTimestampForNextEvent(platformData.getConsensusTimestamp());
 
         logger.debug(
                 STARTUP.getMarker(),
