@@ -37,12 +37,17 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
+import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
+import com.hedera.node.app.service.token.impl.handlers.transfer.TransferStep;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -64,10 +69,6 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var op = context.body().cryptoTransferOrThrow();
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final var tokenStore = context.createStore(ReadableTokenStore.class);
-//        // Translate the transaction into a sequence of composable accounting operations
-//        final var steps = decomposeToSteps(cryptoTransfer);
-//
-//        return steps.stream().flatMap(TransferStep::authorizingKeys).collect(toSet());
         for (final var transfers : op.tokenTransfersOrElse(emptyList())) {
             final var tokenMeta = tokenStore.getTokenMeta(transfers.tokenOrElse(TokenID.DEFAULT));
             if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
@@ -77,39 +78,61 @@ public class CryptoTransferHandler implements TransactionHandler {
 
         final var hbarTransfers = op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
         checkFungibleTokenTransfers(hbarTransfers, context, accountStore, true);
+
+        //        // Translate the transaction into a sequence of composable accounting operations
+//        final var steps = decomposeToSteps(cryptoTransfer);
+//
+//        return steps.stream().flatMap(TransferStep::authorizingKeys).collect(toSet());
     }
 
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         final var txn = context.body();
         final var op = txn.cryptoTransferOrThrow();
+        final var transferContext = new TransferContextImpl(context);
+        // Ensures all aliases specified in the transfer exist
+        // If the aliases are in receiver section, and don't exist they will be auto-created
+        // This step populates resolved aliases and number of auto creations in the transferContext,
+        // which is used by subsequent steps and throttling
+        ensureExistenceOfAliasesOrCreate(op, transferContext);
 
-        final var steps = decomposeIntoSteps(op);
-
-        final var context = new StateTransferContext(handleContext);
+        final var steps = decomposeIntoSteps(op, transferContext);
         for (final var step : steps) {
-            step.doIn(context);
+            // Apply all changes to the handleContext's States
+            step.doIn(transferContext);
         }
-        // At this point we successfully applied all steps in the transfer to the handleContext's States
     }
 
-    private void decomposeIntoSteps(final CryptoTransferTransactionBody op) {
-        // Must return steps to:
-        //
-        //   1. (c,o) Ensure existence of alias-referenced accounts
-        //   2. (+,c) Charge custom fees for token transfers
-        //   3. (o)   Ensure associations of token recipients
-        //   4. (+)   Do zero-sum hbar balance changes
-        //   5. (+)   Do zero-sum fungible token transfers
-        //   6. (+)   Change NFT owners
-        //   7. (+,c) Pay staking rewards, possibly to previously unmentioned stakee accounts
-        //
-        // where each step can validate the preconditions it needs from a TransferContext
-        // in the process of performing its (sequenced) action
-        //
-        // LEGEND: '+' = creates new BalanceChange(s) from either the transaction body, custom fee schedule, or staking reward situation
-        //         'c' = updates an existing BalanceChange
-        //         'o' = causes a side effect not represented as BalanceChange
+    private void ensureExistenceOfAliasesOrCreate(@NonNull final CryptoTransferTransactionBody op,
+                                          @NonNull final TransferContextImpl transferContext) {
+        final var ensureAliasExistence = new EnsureAliasesStep(op);
+        ensureAliasExistence.doIn(transferContext);
+    }
+
+    /**
+     * Decomposes a crypto transfer into a sequence of steps that can be executed in order.
+     * Each step validates the preconditions needed from TransferContextImpl in order to perform its action.
+     * Steps are as follows:
+     * <ol>
+     *     <li>(c,o)Ensure existence of alias-referenced accounts</li>
+     *     <li>(+,c)Charge custom fees for token transfers</li>
+     *     <li>(o)Ensure associations of token recipients</li>
+     *     <li>(+)Do zero-sum hbar balance changes</li>
+     *     <li>(+)Do zero-sum fungible token transfers</li>
+     *     <li>(+)Change NFT owners</li>
+     *     <li>(+,c)Pay staking rewards, possibly to previously unmentioned stakee accounts</li>
+     * </ol>
+     * LEGEND: '+' = creates new BalanceChange(s) from either the transaction body, custom fee schedule, or staking reward situation
+     *        'c' = updates an existing BalanceChange
+     *        'o' = causes a side effect not represented as BalanceChange
+     * @param op The crypto transfer transaction body
+     * @param transferContext The transfer context
+     * @return A list of steps to execute
+     */
+    private List<TransferStep> decomposeIntoSteps(final CryptoTransferTransactionBody op,
+                                                  final TransferContextImpl transferContext) {
+        final List<TransferStep> steps = new ArrayList<>();
+        return steps;
     }
 
     /**

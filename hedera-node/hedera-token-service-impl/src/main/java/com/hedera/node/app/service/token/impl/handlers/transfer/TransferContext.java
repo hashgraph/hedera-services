@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 
 public interface TransferContext {
     // Throw if the fee cannot be charged for whatever reason
@@ -28,11 +27,11 @@ public interface TransferContext {
 
     // Some convenience methods for manipulating the HandleContext's States
     // with validations enforced
-    AccountID createFromAlias(Bytes alias);
+    AccountID getOrCreateFromAlias(AccountID aliasedId);
+    AccountID getFromAlias(AccountID aliasedId, boolean isForToken);
 
     // Debit an account based on the HAPI payer having an approved allowance from the given owner
     default void debitHbarViaApproval(AccountID owner, long amount) {
-        // Implementation begins with
-        validateTrue(payerHasGrantedHbarApproval(spender, amount), SPENDER_DOES_NOT_HAVE_ALLOWANCE);
+
     }
 }
