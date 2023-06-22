@@ -84,8 +84,7 @@ public class TestHelpers {
     }
 
     public static HederaEvmTransaction wellKnownRelayedHapiCallWithUserGasPriceAndMaxAllowance(
-            final long gasPrice,
-            final long maxGasAllowance) {
+            final long gasPrice, final long maxGasAllowance) {
         return wellKnownHapiCall(RELAYER_ID, VALUE, GAS_LIMIT, gasPrice, maxGasAllowance);
     }
 

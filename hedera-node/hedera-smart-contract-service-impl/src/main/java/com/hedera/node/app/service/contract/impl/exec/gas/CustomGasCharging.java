@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.exec.gas;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -24,13 +28,8 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Singleton;
-
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Objects.requireNonNull;
 
 @Singleton
 public class CustomGasCharging {
@@ -61,45 +60,53 @@ public class CustomGasCharging {
         if (context.staticCall()) {
             return 0L;
         }
-
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, transaction.isCreate());
         validateTrue(transaction.gasLimit() >= intrinsicGas, INSUFFICIENT_GAS);
-
-        final var gasCost = transaction.gasCostGiven(context.gasPrice());
-        if (transaction.isEthereumTransaction())  {
-            if (transaction.requiresFullRelayerAllowance()) {
-                validateTrue(transaction.maxGasAllowance() >= gasCost, INSUFFICIENT_TX_FEE);
-                validateAndCharge(gasCost, requireNonNull(relayer), worldUpdater);
-                return gasCost;
-            } else if (transaction.offeredGasPrice() >= context.gasPrice()) {
-                validateAndCharge(gasCost, sender, worldUpdater);
-                return 0L;
-            } else {
-                final var relayerGasCost = gasCost - transaction.offeredGasCost();
-                validateTrue(transaction.maxGasAllowance() >= relayerGasCost, INSUFFICIENT_TX_FEE);
-                validateAndCharge(
-                        transaction.offeredGasCost(),
-                        relayerGasCost,
-                        sender,
-                        requireNonNull(relayer),
-                        worldUpdater);
-                return relayerGasCost;
-            }
+        if (transaction.isEthereumTransaction()) {
+            return chargeWithRelayer(sender, requireNonNull(relayer), context, worldUpdater, transaction);
         } else {
-            final var upfrontCost = transaction.upfrontCostGiven(context.gasPrice());
-            // Validate up-front cost is covered just for consistency with existing code
-            validateTrue(sender.getBalance().toLong() >= upfrontCost, INSUFFICIENT_PAYER_BALANCE);
-            validateAndCharge(gasCost, sender, worldUpdater);
-            // We don't even have a relayer to charge in this code path
+            chargeWithOnlySender(sender, context, worldUpdater, transaction);
             return 0L;
         }
     }
 
+    private void chargeWithOnlySender(
+            @NonNull final HederaEvmAccount sender,
+            @NonNull final HederaEvmContext context,
+            @NonNull final HederaWorldUpdater worldUpdater,
+            @NonNull final HederaEvmTransaction transaction) {
+        final var gasCost = transaction.gasCostGiven(context.gasPrice());
+        final var upfrontCost = transaction.upfrontCostGiven(context.gasPrice());
+        // We validate up-front cost here just for consistency with existing code
+        validateTrue(sender.getBalance().toLong() >= upfrontCost, INSUFFICIENT_PAYER_BALANCE);
+        validateAndCharge(gasCost, sender, worldUpdater);
+    }
+
+    private long chargeWithRelayer(
+            @NonNull final HederaEvmAccount sender,
+            @NonNull final HederaEvmAccount relayer,
+            @NonNull final HederaEvmContext context,
+            @NonNull final HederaWorldUpdater worldUpdater,
+            @NonNull final HederaEvmTransaction transaction) {
+        final var gasCost = transaction.gasCostGiven(context.gasPrice());
+        if (transaction.requiresFullRelayerAllowance()) {
+            validateTrue(transaction.maxGasAllowance() >= gasCost, INSUFFICIENT_TX_FEE);
+            validateAndCharge(gasCost, requireNonNull(relayer), worldUpdater);
+            return gasCost;
+        } else if (transaction.offeredGasPrice() >= context.gasPrice()) {
+            validateAndCharge(gasCost, sender, worldUpdater);
+            return 0L;
+        } else {
+            final var relayerGasCost = gasCost - transaction.offeredGasCost();
+            validateTrue(transaction.maxGasAllowance() >= relayerGasCost, INSUFFICIENT_TX_FEE);
+            validateAndCharge(
+                    transaction.offeredGasCost(), relayerGasCost, sender, requireNonNull(relayer), worldUpdater);
+            return relayerGasCost;
+        }
+    }
 
     private void validateAndCharge(
-            final long amount,
-            @NonNull final HederaEvmAccount payer,
-            @NonNull final HederaWorldUpdater worldUpdater) {
+            final long amount, @NonNull final HederaEvmAccount payer, @NonNull final HederaWorldUpdater worldUpdater) {
         validateTrue(payer.getBalance().toLong() >= amount, INSUFFICIENT_PAYER_BALANCE);
         worldUpdater.collectFee(payer.hederaId(), amount);
     }

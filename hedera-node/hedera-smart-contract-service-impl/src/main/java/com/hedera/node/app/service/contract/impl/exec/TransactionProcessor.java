@@ -96,8 +96,8 @@ public class TransactionProcessor {
             @NonNull final HederaEvmTransaction transaction,
             @Nullable final HederaEvmAccount to,
             @NonNull final Configuration config) {
-        return to == null &&
-                transaction.isEthereumTransaction() &&
-                messageCallProcessor.isImplicitCreationEnabled(config);
+        return to == null
+                && transaction.isEthereumTransaction()
+                && messageCallProcessor.isImplicitCreationEnabled(config);
     }
 }
