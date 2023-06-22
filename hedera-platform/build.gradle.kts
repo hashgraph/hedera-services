@@ -68,6 +68,7 @@ dependencies.constraints {
         api(gav("dagger", daggerVersion))
         api(gav("dagger.compiler", daggerVersion))
         api(gav("grpc.netty", grpcVersion))
+        api(gav("grpc.protobuf", grpcVersion))
         api(gav("grpc.stub", grpcVersion))
         api(gav("headlong", "6.1.1"))
         api(gav("info.picocli", "4.6.3"))

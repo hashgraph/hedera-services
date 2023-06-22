@@ -267,6 +267,7 @@ module com.hedera.node.app.service.mono {
     requires transitive com.swirlds.merkle;
     requires transitive com.swirlds.virtualmap;
     requires transitive dagger;
+    requires transitive grpc.netty;
     requires transitive grpc.stub;
     requires transitive headlong;
     requires transitive io.grpc;
@@ -282,10 +283,9 @@ module com.hedera.node.app.service.mono {
     requires com.swirlds.base;
     requires com.swirlds.logging;
     requires com.swirlds.platform;
-    requires grpc.netty;
     requires io.netty.handler;
-    requires io.netty.transport;
     requires io.netty.transport.classes.epoll;
+    requires io.netty.transport;
     requires org.apache.commons.codec;
     requires org.apache.commons.collections4;
     requires org.apache.commons.io;
