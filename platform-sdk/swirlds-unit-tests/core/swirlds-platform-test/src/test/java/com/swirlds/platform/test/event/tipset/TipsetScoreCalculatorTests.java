@@ -20,6 +20,7 @@ import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.RandomUtils.randomHash;
 import static com.swirlds.platform.Utilities.isSuperMajority;
 import static com.swirlds.platform.event.tipset.Tipset.merge;
+import static com.swirlds.platform.event.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -32,6 +33,7 @@ import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.tipset.Tipset;
+import com.swirlds.platform.event.tipset.TipsetAdvancementWeight;
 import com.swirlds.platform.event.tipset.TipsetScoreCalculator;
 import com.swirlds.platform.event.tipset.TipsetTracker;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -75,7 +77,7 @@ class TipsetScoreCalculatorTests {
         final TipsetScoreCalculator window = new TipsetScoreCalculator(platformContext, addressBook, windowId, builder);
 
         List<EventDescriptor> previousParents = List.of();
-        long runningAdvancementScore = 0;
+        TipsetAdvancementWeight runningAdvancementScore = ZERO_ADVANCEMENT_WEIGHT;
         Tipset previousSnapshot = window.getSnapshot();
 
         for (int eventIndex = 0; eventIndex < 1000; eventIndex++) {
@@ -141,11 +143,12 @@ class TipsetScoreCalculatorTests {
                 newTipset = merge(parentTipsets).advance(creator, generation);
             }
 
-            final long expectedAdvancementScoreChange =
-                    previousSnapshot.getTipAdvancementWeight(windowId, newTipset) - runningAdvancementScore;
+            final TipsetAdvancementWeight expectedAdvancementScoreChange = previousSnapshot
+                    .getTipAdvancementWeight(windowId, newTipset)
+                    .minus(runningAdvancementScore);
 
             // For events created by "this" node, check that the window is updated correctly.
-            final long advancementScoreChange = window.addEventAndGetAdvancementScore(fingerprint);
+            final TipsetAdvancementWeight advancementScoreChange = window.addEventAndGetAdvancementScore(fingerprint);
 
             assertEquals(expectedAdvancementScoreChange, advancementScoreChange);
 
@@ -159,17 +162,17 @@ class TipsetScoreCalculatorTests {
                 }
             }
             if (subsetOfPreviousParents) {
-                assertEquals(0, advancementScoreChange);
+                assertEquals(ZERO_ADVANCEMENT_WEIGHT, advancementScoreChange);
             }
             previousParents = parentFingerprints;
 
             // Validate that the snapshot advances correctly.
-            runningAdvancementScore += advancementScoreChange;
-            if (isSuperMajority(runningAdvancementScore + weightMap.get(windowId), totalWeight)) {
+            runningAdvancementScore = runningAdvancementScore.plus(advancementScoreChange);
+            if (isSuperMajority(runningAdvancementScore.advancementWeight() + weightMap.get(windowId), totalWeight)) {
                 // The snapshot should have been updated.
                 assertNotSame(previousSnapshot, window.getSnapshot());
                 previousSnapshot = window.getSnapshot();
-                runningAdvancementScore = 0;
+                runningAdvancementScore = ZERO_ADVANCEMENT_WEIGHT;
             } else {
                 // The snapshot should have not been updated.
                 assertSame(previousSnapshot, window.getSnapshot());
@@ -177,7 +180,6 @@ class TipsetScoreCalculatorTests {
         }
     }
 
-    // TODO this test is either broken or flaky
     @Test
     @DisplayName("Bully Test")
     void bullyTest() {
@@ -220,8 +222,8 @@ class TipsetScoreCalculatorTests {
         final EventDescriptor eventD1 = new EventDescriptor(randomHash(random), nodeD, 1);
         builder.addEvent(eventD1, List.of());
 
-        assertEquals(0, window.getTheoreticalAdvancementScore(List.of()));
-        assertEquals(0, window.addEventAndGetAdvancementScore(eventA1));
+        assertEquals(ZERO_ADVANCEMENT_WEIGHT, window.getTheoreticalAdvancementScore(List.of()));
+        assertEquals(ZERO_ADVANCEMENT_WEIGHT, window.addEventAndGetAdvancementScore(eventA1));
         assertSame(snapshot1, window.getSnapshot());
 
         // Each node creates another event. All nodes use all available other parents except the event from D.
@@ -234,8 +236,10 @@ class TipsetScoreCalculatorTests {
         final EventDescriptor eventD2 = new EventDescriptor(randomHash(random), nodeD, 2);
         builder.addEvent(eventD2, List.of(eventA1, eventB1, eventC1, eventD1));
 
-        assertEquals(2, window.getTheoreticalAdvancementScore(List.of(eventA1, eventB1, eventC1)));
-        assertEquals(2, window.addEventAndGetAdvancementScore(eventA2));
+        assertEquals(
+                TipsetAdvancementWeight.of(2, 0),
+                window.getTheoreticalAdvancementScore(List.of(eventA1, eventB1, eventC1)));
+        assertEquals(TipsetAdvancementWeight.of(2, 0), window.addEventAndGetAdvancementScore(eventA2));
 
         // This should have been enough to advance the snapshot window by 1.
         final Tipset snapshot2 = window.getSnapshot();
@@ -258,8 +262,10 @@ class TipsetScoreCalculatorTests {
         final EventDescriptor eventD3 = new EventDescriptor(randomHash(random), nodeD, 3);
         builder.addEvent(eventD3, List.of(eventA2, eventB2, eventC2, eventD2));
 
-        assertEquals(2, window.getTheoreticalAdvancementScore(List.of(eventA2, eventB2, eventC2)));
-        assertEquals(2, window.addEventAndGetAdvancementScore(eventA3));
+        assertEquals(
+                TipsetAdvancementWeight.of(2, 0),
+                window.getTheoreticalAdvancementScore(List.of(eventA2, eventB2, eventC2)));
+        assertEquals(TipsetAdvancementWeight.of(2, 0), window.addEventAndGetAdvancementScore(eventA3));
 
         final Tipset snapshot3 = window.getSnapshot();
         assertNotSame(snapshot2, snapshot3);
@@ -281,8 +287,10 @@ class TipsetScoreCalculatorTests {
         final EventDescriptor eventD4 = new EventDescriptor(randomHash(random), nodeD, 4);
         builder.addEvent(eventD4, List.of(eventA3, eventB3, eventD3));
 
-        assertEquals(2, window.getTheoreticalAdvancementScore(List.of(eventA3, eventB3, eventD3)));
-        assertEquals(2, window.addEventAndGetAdvancementScore(eventA4));
+        assertEquals(
+                TipsetAdvancementWeight.of(2, 0),
+                window.getTheoreticalAdvancementScore(List.of(eventA3, eventB3, eventD3)));
+        assertEquals(TipsetAdvancementWeight.of(2, 0), window.addEventAndGetAdvancementScore(eventA4));
 
         final Tipset snapshot4 = window.getSnapshot();
         assertNotSame(snapshot3, snapshot4);
@@ -302,8 +310,10 @@ class TipsetScoreCalculatorTests {
         final EventDescriptor eventC5 = new EventDescriptor(randomHash(random), nodeC, 5);
         builder.addEvent(eventC5, List.of(eventA4, eventB4, eventC4, eventD4));
 
-        assertEquals(3, window.getTheoreticalAdvancementScore(List.of(eventA4, eventB4, eventC4, eventD4)));
-        assertEquals(3, window.addEventAndGetAdvancementScore(eventA5));
+        assertEquals(
+                TipsetAdvancementWeight.of(3, 0),
+                window.getTheoreticalAdvancementScore(List.of(eventA4, eventB4, eventC4, eventD4)));
+        assertEquals(TipsetAdvancementWeight.of(3, 0), window.addEventAndGetAdvancementScore(eventA5));
 
         final Tipset snapshot5 = window.getSnapshot();
         assertNotSame(snapshot4, snapshot5);
@@ -323,8 +333,10 @@ class TipsetScoreCalculatorTests {
         final EventDescriptor eventC6 = new EventDescriptor(randomHash(random), nodeC, 6);
         builder.addEvent(eventC6, List.of(eventA5, eventB5, eventC5));
 
-        assertEquals(2, window.getTheoreticalAdvancementScore(List.of(eventA5, eventB5, eventC5)));
-        assertEquals(2, window.addEventAndGetAdvancementScore(eventA6));
+        assertEquals(
+                TipsetAdvancementWeight.of(2, 0),
+                window.getTheoreticalAdvancementScore(List.of(eventA5, eventB5, eventC5)));
+        assertEquals(TipsetAdvancementWeight.of(2, 0), window.addEventAndGetAdvancementScore(eventA6));
 
         final Tipset snapshot6 = window.getSnapshot();
         assertNotSame(snapshot5, snapshot6);
@@ -343,8 +355,10 @@ class TipsetScoreCalculatorTests {
         final EventDescriptor eventC7 = new EventDescriptor(randomHash(random), nodeC, 7);
         builder.addEvent(eventC7, List.of(eventA6, eventB6, eventC6));
 
-        assertEquals(2, window.getTheoreticalAdvancementScore(List.of(eventA6, eventB6, eventC6)));
-        assertEquals(2, window.addEventAndGetAdvancementScore(eventA7));
+        assertEquals(
+                TipsetAdvancementWeight.of(2, 0),
+                window.getTheoreticalAdvancementScore(List.of(eventA6, eventB6, eventC6)));
+        assertEquals(TipsetAdvancementWeight.of(2, 0), window.addEventAndGetAdvancementScore(eventA7));
 
         final Tipset snapshot7 = window.getSnapshot();
         assertNotSame(snapshot6, snapshot7);
@@ -355,4 +369,6 @@ class TipsetScoreCalculatorTests {
         assertEquals(0, window.getBullyScoreForNodeIndex(indexD));
         assertEquals(0, window.getMaxBullyScore());
     }
+
+    // TODO: note to the reviewers, I'm still planning on adding some additional tests for zero stake nodes
 }

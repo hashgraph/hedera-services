@@ -62,7 +62,8 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("TipsetEventCreatorImpl Tests")
 class TipsetEventCreatorImplTests {
@@ -179,7 +180,10 @@ class TipsetEventCreatorImplTests {
         tipsetTracker.addEvent(descriptor, getParentDescriptors(newEvent));
         if (selfParent != null) {
             // Except for a genesis event, all other new events must have a positive advancement score.
-            assertTrue(simulatedNode.tipsetScoreCalculator.addEventAndGetAdvancementScore(descriptor) > 0);
+            assertTrue(simulatedNode
+                    .tipsetScoreCalculator
+                    .addEventAndGetAdvancementScore(descriptor)
+                    .isNonzero());
         } else {
             simulatedNode.tipsetScoreCalculator.addEventAndGetAdvancementScore(descriptor);
         }
@@ -229,9 +233,10 @@ class TipsetEventCreatorImplTests {
     /**
      * Nodes take turns creating events in a round-robin fashion.
      */
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
     @DisplayName("Round Robin Test")
-    void roundRobinTest() {
+    void roundRobinTest(final boolean advancingClock) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 10;
@@ -254,7 +259,9 @@ class TipsetEventCreatorImplTests {
 
         for (int eventIndex = 0; eventIndex < 100; eventIndex++) {
             for (final Address address : addressBook) {
-                time.tick(Duration.ofMillis(10));
+                if (advancingClock) {
+                    time.tick(Duration.ofMillis(10));
+                }
 
                 transactionSupplier.set(generateRandomTransactions(random));
 
@@ -268,7 +275,10 @@ class TipsetEventCreatorImplTests {
 
                 linkAndDistributeEvent(nodes, events, event);
 
-                assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                if (advancingClock) {
+                    assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                }
+
                 validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker);
             }
         }
@@ -277,9 +287,10 @@ class TipsetEventCreatorImplTests {
     /**
      * Each cycle, randomize the order in which nodes are asked to create events.
      */
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
     @DisplayName("Random Order Test")
-    void randomOrderTest() {
+    void randomOrderTest(final boolean advancingClock) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 10;
@@ -309,7 +320,9 @@ class TipsetEventCreatorImplTests {
             boolean atLeastOneEventCreated = false;
 
             for (final Address address : addresses) {
-                time.tick(Duration.ofMillis(10));
+                if (advancingClock) {
+                    time.tick(Duration.ofMillis(10));
+                }
 
                 transactionSupplier.set(generateRandomTransactions(random));
 
@@ -327,7 +340,9 @@ class TipsetEventCreatorImplTests {
 
                 linkAndDistributeEvent(nodes, events, event);
 
-                assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                if (advancingClock) {
+                    assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                }
                 validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker);
             }
 
@@ -339,9 +354,10 @@ class TipsetEventCreatorImplTests {
      * Each node creates many events in a row without allowing others to take a turn. Eventually, a node should be
      * unable to create another event without first receiving an event from another node.
      */
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
     @DisplayName("Create Many Events In A Row Test")
-    void createManyEventsInARowTest() {
+    void createManyEventsInARowTest(final boolean advancingClock) {
         final Random random = getRandomPrintSeed();
 
         final int networkSize = 10;
@@ -367,7 +383,9 @@ class TipsetEventCreatorImplTests {
 
                 int count = 0;
                 while (true) {
-                    time.tick(Duration.ofMillis(10));
+                    if (advancingClock) {
+                        time.tick(Duration.ofMillis(10));
+                    }
 
                     transactionSupplier.set(generateRandomTransactions(random));
 
@@ -386,7 +404,9 @@ class TipsetEventCreatorImplTests {
 
                     linkAndDistributeEvent(nodes, events, event);
 
-                    assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                    if (advancingClock) {
+                        assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                    }
                     validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker);
 
                     // At best, we can create a genesis event and one event per node in the network.
@@ -398,6 +418,95 @@ class TipsetEventCreatorImplTests {
         }
     }
 
-    // TODO test with a bullied node
-    // TODO test shenanigans with timestamps
+    /**
+     * The tipset algorithm must still build on top of zero weight nodes, even though they don't help consensus to
+     * advance.
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    @DisplayName("Zero Weight Node Test")
+    void zeroWeightNodeTest(final boolean advancingClock) {
+        final Random random = getRandomPrintSeed();
+
+        final int networkSize = 10;
+
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+
+        final NodeId zeroWeightNode = addressBook.getNodeId(0);
+
+        for (final Address address : addressBook) {
+            if (address.getNodeId().equals(zeroWeightNode)) {
+                addressBook.add(address.copySetWeight(0));
+            } else {
+                addressBook.add(address.copySetWeight(1));
+            }
+        }
+
+        final FakeTime time = new FakeTime();
+
+        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+
+        // This tipset builder is used for validation. It's ok to use the same one for all nodes,
+        // since it just needs to build a tipset for each event.
+        final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
+
+        final Map<NodeId, SimulatedNode> nodes =
+                buildSimulatedNodes(random, time, addressBook, tipsetTracker, transactionSupplier::get);
+
+        final Map<Hash, EventImpl> events = new HashMap<>();
+
+        int zeroWeightNodeOtherParentCount = 0;
+
+        for (int eventIndex = 0; eventIndex < 100; eventIndex++) {
+
+            final List<Address> addresses = new ArrayList<>();
+            addressBook.iterator().forEachRemaining(addresses::add);
+            Collections.shuffle(addresses, random);
+
+            boolean atLeastOneEventCreated = false;
+
+            for (final Address address : addresses) {
+                if (advancingClock) {
+                    time.tick(Duration.ofMillis(10));
+                }
+
+                transactionSupplier.set(generateRandomTransactions(random));
+
+                final NodeId nodeId = address.getNodeId();
+                final TipsetEventCreator eventCreator = nodes.get(nodeId).tipsetEventCreator;
+
+                final GossipEvent event = eventCreator.maybeCreateEvent();
+
+                // It's possible a node may not be able to create an event. But we are guaranteed
+                // to be able to create at least one event per cycle.
+                if (event == null) {
+                    continue;
+                }
+                atLeastOneEventCreated = true;
+
+                final NodeId otherId = event.getUnhashedData().getOtherId();
+                if (otherId != null && otherId.equals(zeroWeightNode)) {
+                    zeroWeightNodeOtherParentCount++;
+                }
+
+                linkAndDistributeEvent(nodes, events, event);
+
+                if (advancingClock) {
+                    assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                }
+                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker);
+            }
+
+            assertTrue(atLeastOneEventCreated);
+        }
+
+        // This is just a heuristic. When running this, I typically see numbers around 100.
+        // Essentially, we need to make sure that we are choosing the zero weight node's events
+        // as other parents. Precisely how often is less important to this test, as long as we are
+        // doing it at least some of the time.
+        assertTrue(zeroWeightNodeOtherParentCount > 20);
+    }
+
+    // TODO: note to the reviewers, I'm still planning on adding some additional tests for zero stake nodes
 }

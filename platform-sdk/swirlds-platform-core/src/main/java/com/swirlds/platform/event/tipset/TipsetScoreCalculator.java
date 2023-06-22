@@ -17,6 +17,7 @@
 package com.swirlds.platform.event.tipset;
 
 import static com.swirlds.platform.Utilities.isSuperMajority;
+import static com.swirlds.platform.event.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
@@ -80,12 +81,12 @@ public class TipsetScoreCalculator {
     /**
      * The maximum possible advancement score for an event.
      */
-    private final long maximumPossibleScore;
+    private final long maximumPossibleAdvancementWeight;
 
     /**
-     * The previous tipset score.
+     * The previous tipset advancement score.
      */
-    private long previousScore = 0;
+    private TipsetAdvancementWeight previousScore = ZERO_ADVANCEMENT_WEIGHT;
 
     /**
      * Create a new tipset window.
@@ -108,7 +109,7 @@ public class TipsetScoreCalculator {
         nodeCount = addressBook.getSize();
         totalWeight = addressBook.getTotalWeight();
         selfWeight = addressBook.getAddress(selfId).getWeight();
-        maximumPossibleScore = totalWeight - selfWeight;
+        maximumPossibleAdvancementWeight = totalWeight - selfWeight;
         maxSnapshotHistorySize = platformContext
                 .getConfiguration()
                 .getConfigData(EventCreationConfig.class)
@@ -122,7 +123,7 @@ public class TipsetScoreCalculator {
      * Get the maximum possible tipset score that a new event can achieve.
      */
     public long getMaximumPossibleScore() {
-        return maximumPossibleScore;
+        return maximumPossibleAdvancementWeight;
     }
 
     /**
@@ -148,7 +149,7 @@ public class TipsetScoreCalculator {
      * @return the change in this event's tipset score compared to the tipset score of the previous event passed to this
      * method
      */
-    public long addEventAndGetAdvancementScore(@NonNull final EventDescriptor event) {
+    public TipsetAdvancementWeight addEventAndGetAdvancementScore(@NonNull final EventDescriptor event) {
         Objects.requireNonNull(event);
         if (!event.getCreator().equals(selfId)) {
             throw new IllegalArgumentException("event creator must be the same as the window ID");
@@ -159,21 +160,21 @@ public class TipsetScoreCalculator {
             throw new IllegalArgumentException("event " + event + " is not in the tipset tracker");
         }
 
-        final long score = snapshot.getTipAdvancementWeight(selfId, eventTipset);
-        if (score > maximumPossibleScore) {
-            throw new IllegalStateException(
-                    "score " + score + " is greater than the maximum possible score " + maximumPossibleScore);
+        final TipsetAdvancementWeight score = snapshot.getTipAdvancementWeight(selfId, eventTipset);
+        if (score.advancementWeight() > maximumPossibleAdvancementWeight) {
+            throw new IllegalStateException("score " + score + " is greater than the maximum possible score "
+                    + maximumPossibleAdvancementWeight);
         }
 
-        final long scoreImprovement = score - previousScore;
+        final TipsetAdvancementWeight scoreImprovement = score.minus(previousScore);
 
-        if (isSuperMajority(score + selfWeight, totalWeight)) {
+        if (isSuperMajority(score.advancementWeight() + selfWeight, totalWeight)) {
             snapshot = eventTipset;
             snapshotHistory.add(snapshot);
             if (snapshotHistory.size() > maxSnapshotHistorySize) {
                 snapshotHistory.remove();
             }
-            previousScore = 0;
+            previousScore = ZERO_ADVANCEMENT_WEIGHT;
         } else {
             previousScore = score;
         }
@@ -187,9 +188,9 @@ public class TipsetScoreCalculator {
      * @param parents the proposed parents of an event
      * @return the advancement score we would get by creating an event with the given parents
      */
-    public long getTheoreticalAdvancementScore(@NonNull final List<EventDescriptor> parents) {
+    public TipsetAdvancementWeight getTheoreticalAdvancementScore(@NonNull final List<EventDescriptor> parents) {
         if (parents.isEmpty()) {
-            return 0;
+            return ZERO_ADVANCEMENT_WEIGHT;
         }
 
         final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
@@ -200,7 +201,7 @@ public class TipsetScoreCalculator {
         // Don't bother advancing the self generation, since self advancement doesn't contribute to tipset score.
         final Tipset newTipset = Tipset.merge(parentTipsets);
 
-        return snapshot.getTipAdvancementWeight(selfId, newTipset) - previousScore;
+        return snapshot.getTipAdvancementWeight(selfId, newTipset).minus(previousScore);
     }
 
     /**

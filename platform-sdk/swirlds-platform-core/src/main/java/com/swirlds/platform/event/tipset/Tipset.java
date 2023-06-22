@@ -140,6 +140,7 @@ public class Tipset {
     /**
      * <p>
      * Get the combined weight of all nodes which experienced a tip advancement between this tipset and another tipset.
+     * Note that this method ignores advancement contributions from this node.
      * </p>
      *
      * <p>
@@ -148,12 +149,18 @@ public class Tipset {
      * count is defined as the sum of all tip advancements after being appropriately weighted.
      * </p>
      *
+     * <p>
+     * Advancements of non-zero stake nodes are tracked via {@link TipsetAdvancementWeight#advancementWeight()}, while
+     * advancements of zero stake nodes are tracked via {@link TipsetAdvancementWeight#zeroStakeAdvancementWeight()}.
+     *
      * @param selfId compute the advancement count relative to this node ID
      * @param that   the tipset to compare to
-     * @return the number of tip advancements to get from this tipset to that tipset
+     * @return the tipset advancement weight
      */
-    public long getTipAdvancementWeight(@NonNull final NodeId selfId, @NonNull final Tipset that) {
-        long count = 0;
+    @NonNull
+    public TipsetAdvancementWeight getTipAdvancementWeight(@NonNull final NodeId selfId, @NonNull final Tipset that) {
+        long nonzeroCount = 0;
+        long zeroCount = 0;
 
         final int selfIndex = addressBook.getIndexOfNodeId(selfId);
         for (int index = 0; index < tips.length; index++) {
@@ -165,11 +172,16 @@ public class Tipset {
             if (this.tips[index] < that.tips[index]) {
                 final NodeId nodeId = addressBook.getNodeId(index);
                 final Address address = addressBook.getAddress(nodeId);
-                count += address.getWeight();
+
+                if (address.getWeight() == 0) {
+                    zeroCount += 1;
+                } else {
+                    nonzeroCount += address.getWeight();
+                }
             }
         }
 
-        return count;
+        return TipsetAdvancementWeight.of(nonzeroCount, zeroCount);
     }
 
     /**

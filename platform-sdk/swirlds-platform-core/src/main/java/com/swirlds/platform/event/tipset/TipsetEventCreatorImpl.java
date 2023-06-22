@@ -18,6 +18,7 @@ package com.swirlds.platform.event.tipset;
 
 import static com.swirlds.platform.event.EventConstants.CREATOR_ID_UNDEFINED;
 import static com.swirlds.platform.event.EventConstants.GENERATION_UNDEFINED;
+import static com.swirlds.platform.event.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 import static com.swirlds.platform.event.tipset.TipsetUtils.buildDescriptor;
 import static com.swirlds.platform.event.tipset.TipsetUtils.getParentDescriptors;
 
@@ -123,8 +124,8 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         antiBullyingFactor = Math.max(1.0, eventCreationConfig.antiBullyingFactor());
         tipsetMetrics = new TipsetMetrics(platformContext);
         tipsetTracker = new TipsetTracker(addressBook);
-        tipsetScoreCalculator = new TipsetScoreCalculator(platformContext, addressBook, selfId, tipsetTracker);
         childlessOtherEventTracker = new ChildlessEventTracker();
+        tipsetScoreCalculator = new TipsetScoreCalculator(platformContext, addressBook, selfId, tipsetTracker);
     }
 
     /**
@@ -199,10 +200,11 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         Collections.shuffle(possibleOtherParents, random);
 
         EventDescriptor bestOtherParent = null;
-        long bestScore = 0;
+        TipsetAdvancementWeight bestScore = ZERO_ADVANCEMENT_WEIGHT;
         for (final EventDescriptor otherParent : possibleOtherParents) {
-            final long parentScore = tipsetScoreCalculator.getTheoreticalAdvancementScore(List.of(otherParent));
-            if (parentScore > bestScore) {
+            final TipsetAdvancementWeight parentScore =
+                    tipsetScoreCalculator.getTheoreticalAdvancementScore(List.of(otherParent));
+            if (parentScore.isGreaterThan(bestScore)) {
                 bestOtherParent = otherParent;
                 bestScore = parentScore;
             }
@@ -237,13 +239,14 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
             final int nodeIndex = addressBook.getIndexOfNodeId(nerd.getCreator());
             final int bullyScore = tipsetScoreCalculator.getBullyScoreForNodeIndex(nodeIndex);
 
-            final long tipsetScore = tipsetScoreCalculator.getTheoreticalAdvancementScore(List.of(nerd));
+            final TipsetAdvancementWeight tipsetScore =
+                    tipsetScoreCalculator.getTheoreticalAdvancementScore(List.of(nerd));
 
-            if (bullyScore > 1 && tipsetScore > 0) {
+            if (bullyScore > 1 && tipsetScore.isNonzero()) {
                 // Note: if bully score is greater than 1, it is mathematically not possible
-                // for the tipset score to be 0. But in the interest in extreme caution,
+                // for the advancement score to be zero. But in the interest in extreme caution,
                 // we check anyway, since it is very important never to create events with
-                // an advancement score of 0.
+                // an advancement score of zero.
 
                 nerds.add(nerd);
                 bullyScores.add(bullyScore);
@@ -291,8 +294,8 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
 
         final EventDescriptor descriptor = buildDescriptor(event);
         tipsetTracker.addEvent(descriptor, parentDescriptors);
-        final long score = tipsetScoreCalculator.addEventAndGetAdvancementScore(descriptor);
-        final double scoreRatio = score / (double) tipsetScoreCalculator.getMaximumPossibleScore();
+        final TipsetAdvancementWeight score = tipsetScoreCalculator.addEventAndGetAdvancementScore(descriptor);
+        final double scoreRatio = score.advancementWeight() / (double) tipsetScoreCalculator.getMaximumPossibleScore();
         tipsetMetrics.getTipsetScoreMetric().update(scoreRatio);
 
         lastSelfEvent = descriptor;
