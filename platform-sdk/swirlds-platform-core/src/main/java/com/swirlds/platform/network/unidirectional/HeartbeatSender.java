@@ -17,6 +17,7 @@
 package com.swirlds.platform.network.unidirectional;
 
 import com.swirlds.common.config.BasicConfig;
+import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.locks.locked.LockedResource;
@@ -77,13 +78,15 @@ public class HeartbeatSender implements InterruptableRunnable {
      * @param conn
      * 		the connection (which must already be connected)
      */
-    void doHeartbeat(final Connection conn) throws IOException, NetworkProtocolException {
+    void doHeartbeat(@NonNull final Connection conn) throws IOException, NetworkProtocolException {
+        Objects.requireNonNull(conn);
+
         final long startTime = System.nanoTime();
-        final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
+        final SocketConfig socketConfig = configuration.getConfigData(SocketConfig.class);
 
         conn.getDos().write(UnidirectionalProtocols.HEARTBEAT.getInitialByte());
         conn.getDos().flush();
-        conn.setTimeout(basicConfig.timeoutSyncClientSocket());
+        conn.setTimeout(socketConfig.timeoutSyncClientSocket());
         final byte b = conn.getDis().readByte();
         if (b != ByteConstants.HEARTBEAT_ACK) {
             throw new NetworkProtocolException(
