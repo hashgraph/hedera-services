@@ -270,7 +270,6 @@ module com.hedera.node.app.service.mono {
     requires transitive grpc.stub;
     requires transitive headlong;
     requires transitive io.grpc;
-    requires transitive io.helidon.grpc.server;
     requires transitive javax.inject;
     requires transitive org.apache.commons.lang3;
     requires transitive org.apache.logging.log4j;
@@ -283,10 +282,9 @@ module com.hedera.node.app.service.mono {
     requires com.swirlds.base;
     requires com.swirlds.logging;
     requires com.swirlds.platform;
-    requires io.helidon.common.configurable;
-    requires io.helidon.config;
-    requires io.helidon.grpc.core;
-    requires org.apache.commons.codec;
+    requires io.netty.handler;
+    requires io.netty.transport;
+    requires io.netty.transport.epoll;
     requires org.apache.commons.collections4;
     requires org.apache.commons.io;
     requires org.bouncycastle.provider;

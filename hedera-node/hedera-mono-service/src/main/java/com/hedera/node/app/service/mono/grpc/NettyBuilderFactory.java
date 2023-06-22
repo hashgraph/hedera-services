@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,10 @@
 
 package com.hedera.node.app.service.mono.grpc;
 
-import java.util.function.Consumer;
+import io.grpc.netty.NettyServerBuilder;
+import java.io.FileNotFoundException;
+import javax.net.ssl.SSLException;
 
-/** Defines a type able to configure and start the gRPC servers. */
-public interface GrpcServerManager {
-    void start(int port, int tlsPort, Consumer<String> println);
+public interface NettyBuilderFactory {
+    NettyServerBuilder builderFor(int port, boolean tlsSupport) throws FileNotFoundException, SSLException;
 }
