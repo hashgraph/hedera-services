@@ -18,14 +18,13 @@ package com.swirlds.platform.test.eventflow;
 
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.platform.state.SwirldStateManagerImpl;
-import com.swirlds.test.framework.TestQualifierTags;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -61,7 +60,6 @@ public class SwirldStateFlowTests extends EventFlowTests {
      */
     @ParameterizedTest
     @MethodSource({"preConsParams"})
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("All transactions sent to preHandle")
     void testPreHandle(final Long seed, final int numNodes, final int numTransactions) {
         testPreHandle(
@@ -77,7 +75,8 @@ public class SwirldStateFlowTests extends EventFlowTests {
      */
     @ParameterizedTest
     @MethodSource("postConsHandleParams")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
+    // Disabled due to https://github.com/hashgraph/hedera-services/issues/7230
+    @Disabled
     @DisplayName("Transactions handled post-consensus")
     void testPostConsensusHandle(final Long seed, final int numNodes, final int numEvents) {
         testPostConsensusHandle(seed, numNodes, numEvents, origSwirldState);
@@ -89,7 +88,8 @@ public class SwirldStateFlowTests extends EventFlowTests {
      */
     @ParameterizedTest
     @MethodSource("postConsHandleParams")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
+    // Disabled due to https://github.com/hashgraph/hedera-services/issues/7230
+    @Disabled
     @DisplayName("Next epoch copied to epoch")
     void testPostConsensusHandleEpochUpdate(final Long seed, final int numNodes, final int numEvents) {
         testPostConsensusHandleEpochUpdate(seed, numNodes, numEvents, origSwirldState);

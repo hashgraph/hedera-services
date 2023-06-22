@@ -18,6 +18,7 @@ package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.platform.test.event.source.EventSourceFactory.newStandardEventSources;
 
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.WeightGenerator;
 import com.swirlds.platform.test.event.TestSequence;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
@@ -80,6 +81,9 @@ public class ConsensusTestDefinition {
     private EventEmitter<?> node1EventEmitter;
 
     private EventEmitter<?> node2EventEmitter;
+
+    /** The address book generated from the graph */
+    private AddressBook addressBook;
 
     /** The test sequences generated using the current seed. {@code null} until {@link #setSeed(long)} is called. */
     private List<TestSequence> testSequences;
@@ -173,9 +177,18 @@ public class ConsensusTestDefinition {
             System.out.println("Node Weights: " + nodeWeights);
         }
         final GraphGenerator<?> graphGenerator = graphGeneratorProvider.getGraphGenerator(nodeWeights);
+        addressBook = graphGenerator.getAddressBook();
         node1EventEmitter = node1EventEmitterGenerator.getEventEmitter(graphGenerator.cleanCopy(), seed);
         node2EventEmitter = node2EventEmitterGenerator.getEventEmitter(graphGenerator.cleanCopy(), seed);
         testSequences = testSequenceGenerator.apply(this);
+    }
+
+    /**
+     * Returns the address book generated from the graph.  Must be called after {@link #setSeed(long)}.
+     * @return the address book generated from the graph
+     */
+    public AddressBook getAddressBook() {
+        return addressBook;
     }
 
     public int getNumberOfNodes() {

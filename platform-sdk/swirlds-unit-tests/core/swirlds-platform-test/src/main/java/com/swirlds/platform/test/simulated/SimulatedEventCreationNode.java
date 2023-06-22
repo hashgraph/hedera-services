@@ -103,7 +103,11 @@ public class SimulatedEventCreationNode implements GossipMessageHandler {
         final ChatterConfig chatterConfig =
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(ChatterConfig.class);
         criticalQuorum = new CriticalQuorumImpl(
-                new NoOpMetrics(), new NodeId(0), addressBook, false, chatterConfig.criticalQuorumSoftening());
+                new NoOpMetrics(),
+                addressBook.getNodeId(0),
+                addressBook,
+                false,
+                chatterConfig.criticalQuorumSoftening());
 
         final OtherParentTracker otherParentTracker = new OtherParentTracker();
         final LoggingEventCreationRules eventCreationRules = LoggingEventCreationRules.create(

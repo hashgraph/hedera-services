@@ -159,7 +159,7 @@ class EventFlowTests {
 
         final Random random = RandomUtils.initRandom(seed);
         init(random, numNodes, origSwirldState);
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         // Submits events
         final HashSet<ConsensusTransactionImpl> transactions = applyToWrapper.apply(wrapper);
@@ -246,7 +246,7 @@ class EventFlowTests {
 
         final Random random = RandomUtils.initRandom(seed);
         init(random, numNodes, origSwirldState, state);
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         final List<ConsensusRound> consensusRounds = wrapper.applyConsensusRounds(addressBook, numEvents);
 
@@ -300,7 +300,7 @@ class EventFlowTests {
         final Random random = RandomUtils.initRandom(seed);
 
         init(random, numNodes, origSwirldState, null, prepareConfig(signedStateFreq));
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         final List<ConsensusRound> consensusRounds = wrapper.applyConsensusRounds(addressBook, numEvents);
 
@@ -363,7 +363,7 @@ class EventFlowTests {
         final AtomicLong freezeRound = new AtomicLong(-1);
 
         init(random, numNodes, origSwirldState, null, prepareConfig(signedStateFreq));
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         final List<ConsensusRound> consensusRounds =
                 wrapper.applyConsensusRounds(addressBook, numEvents, newConsRound -> {
@@ -460,10 +460,10 @@ class EventFlowTests {
             final Long seed, final int numNodes, final int numTransactions, final SwirldState origSwirldState) {
         final Random random = RandomUtils.initRandom(seed);
         init(random, numNodes, origSwirldState);
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         final Set<ConsensusTransactionImpl> transactions = wrapper.applyPreConsensusEvents(
-                numTransactions, EventFlowTestUtils.createEventEmitter(random, numNodes, 1.0));
+                numTransactions, EventFlowTestUtils.createEventEmitter(random, addressBook, 1.0));
 
         assertEventuallyEquals(
                 transactions.size(),
@@ -494,10 +494,10 @@ class EventFlowTests {
             final Long seed, final int numNodes, final int numEvents, final SwirldState origSwirldState) {
         final Random random = RandomUtils.initRandom(seed);
         init(random, numNodes, origSwirldState);
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         final List<ConsensusRound> consensusRounds = wrapper.applyConsensusRounds(
-                addressBook, numEvents, EventFlowTestUtils.createEventEmitter(random, numNodes, 1.0));
+                addressBook, numEvents, EventFlowTestUtils.createEventEmitter(random, addressBook, 1.0));
 
         final HashSet<Transaction> systemTransactions = extractTransactions((selfNodeId) -> true, consensusRounds);
 
@@ -563,6 +563,7 @@ class EventFlowTests {
             final SwirldState swirldState,
             final State initialState,
             final Configuration config) {
+        // TODO: Decide if these properties should change, remove weight distribution strategy.
         addressBook = new RandomAddressBookGenerator(random)
                 .setSize(numNodes)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
@@ -594,7 +595,6 @@ class EventFlowTests {
                 .when(eventStreamManager)
                 .addEvents(anyList());
 
-        final AddressBook addressBook = new RandomAddressBookGenerator().build();
         final State state = getInitialState(swirldState, initialState, addressBook);
 
         systemTransactionTracker = new SystemTransactionTracker();
@@ -669,9 +669,9 @@ class EventFlowTests {
         return state;
     }
 
-    protected EventFlowWrapper createEventFlowWrapper(final Random random, final int numNodes) {
+    protected EventFlowWrapper createEventFlowWrapper(final Random random, final AddressBook addressBook) {
         return new EventFlowWrapper(
-                random, numNodes, preConsensusEventHandler, consensusEventHandler, swirldStateManager);
+                random, addressBook, preConsensusEventHandler, consensusEventHandler, swirldStateManager);
     }
 
     /**

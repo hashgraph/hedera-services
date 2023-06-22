@@ -19,6 +19,8 @@ package com.swirlds.platform.test.sync;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -38,6 +40,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * This class executes a single sync between two {@link SyncNode} instances. It defines the high level structure and
@@ -63,9 +66,14 @@ public class SyncTestExecutor {
     private BiConsumer<SyncNode, SyncNode> generationDefinitions;
     private Predicate<IndexedEvent> callerAddToGraphTest;
     private Predicate<IndexedEvent> listenerAddToGraphTest;
+    /** A randomly generated address book from the number of nodes in the parameters of the test. */
+    private AddressBook addressBook;
 
     public SyncTestExecutor(final SyncTestParams params) {
         this.params = params;
+        this.addressBook = new RandomAddressBookGenerator()
+                .setSize(params.getNumNetworkNodes())
+                .build();
 
         factoryConfig = (f) -> {};
         callerExecutorSupplier = () -> {
@@ -105,6 +113,16 @@ public class SyncTestExecutor {
     }
 
     /**
+     * Returns the address book.
+     *
+     * @return the address book
+     */
+    @NonNull
+    public AddressBook getAddressBook() {
+        return addressBook;
+    }
+
+    /**
      * Executes the following test phases in order:
      * <ol>
      *     <li>Initialization</li>
@@ -134,7 +152,8 @@ public class SyncTestExecutor {
             System.out.println("Using custom seed: " + params.getCustomSeed());
             random = new Random(params.getCustomSeed());
         }
-        final EventEmitterFactory factory = new EventEmitterFactory(random, params.getNumNetworkNodes());
+
+        final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
 
         factoryConfig.accept(factory);
 

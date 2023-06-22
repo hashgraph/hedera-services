@@ -19,6 +19,7 @@ package com.swirlds.platform.test.consensus;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.EventConstants;
@@ -33,6 +34,7 @@ import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -200,7 +202,7 @@ class IntakeAndConsensusTests {
         }
 
         @Override
-        public EventSource<?> getSource(final int nodeID) {
+        public EventSource<?> getSource(final NodeId nodeID) {
             return generator.getSource(nodeID);
         }
 
@@ -230,7 +232,7 @@ class IntakeAndConsensusTests {
         }
 
         @Override
-        public long getMaxGeneration(final long creatorId) {
+        public long getMaxGeneration(@NonNull final NodeId creatorId) {
             return generator.getMaxGeneration(creatorId);
         }
 

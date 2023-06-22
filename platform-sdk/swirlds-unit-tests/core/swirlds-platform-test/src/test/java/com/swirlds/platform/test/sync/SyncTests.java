@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.internal.SettingsCommon;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.threading.ReplaceSyncPhaseParallelExecutor;
 import com.swirlds.common.test.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
@@ -687,13 +688,15 @@ public class SyncTests {
     @ParameterizedTest
     @MethodSource({"tenNodeGraphParams", "tenNodeBigGraphParams", "tipExpiresBreakingSeed"})
     void tipExpiresAfterPhase1(final SyncTestParams params) throws Exception {
-        final long creatorIdToExpire = 0;
         final SyncTestExecutor executor = new SyncTestExecutor(params);
         final AtomicLong maxGen = new AtomicLong(EventConstants.GENERATION_UNDEFINED);
 
+        final NodeId creatorIdToExpire = executor.getAddressBook().getNodeId(0);
+        final int creatorIndex = executor.getAddressBook().getIndexOfNodeId(creatorIdToExpire);
+
         // node 0 should not create any events after CommonEvents
         executor.setFactoryConfig(
-                (factory) -> factory.getSourceFactory().addCustomSource((index) -> index == creatorIdToExpire, () -> {
+                (factory) -> factory.getSourceFactory().addCustomSource((index) -> index == creatorIndex, () -> {
                     final StandardEventSource source0 = new StandardEventSource(false);
                     source0.setNewEventWeight((r, index, prev) -> {
                         if (index <= params.getNumCommonEvents() / 2) {
@@ -827,10 +830,12 @@ public class SyncTests {
         final SyncTestExecutor executor = new SyncTestExecutor(params);
         final AtomicLong genToExpire = new AtomicLong(0);
 
+        final NodeId creatorId = executor.getAddressBook().getNodeId(0);
+
         // Set the generation to expire such that half the listener's graph, and therefore some events that need
         // to be sent to the caller, will be expired
         executor.setCustomPreSyncConfiguration(
-                (c, l) -> genToExpire.set(l.getEmitter().getGraphGenerator().getMaxGeneration(0) / 2));
+                (c, l) -> genToExpire.set(l.getEmitter().getGraphGenerator().getMaxGeneration(creatorId) / 2));
 
         // Expire events from the listener's graph after the supplied phase
         final Runnable expireEvents =
