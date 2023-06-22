@@ -155,14 +155,14 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         eventObserverDispatcher.addObserver(criticalQuorum);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-        final CryptoConfig configData = platformContext.getConfiguration().getConfigData(CryptoConfig.class);
+        final CryptoConfig cryptoConfig = platformContext.getConfiguration().getConfigData(CryptoConfig.class);
         final SocketConfig socketConfig = platformContext.getConfiguration().getConfigData(SocketConfig.class);
 
         topology = new StaticTopology(
                 addressBook, selfId, basicConfig.numConnections(), unidirectionalConnectionsEnabled());
 
         final SocketFactory socketFactory =
-                PlatformConstructor.socketFactory(crypto.getKeysAndCerts(), configData, socketConfig);
+                PlatformConstructor.socketFactory(crypto.getKeysAndCerts(), cryptoConfig, socketConfig);
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
                 selfId, socketConfig, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion);

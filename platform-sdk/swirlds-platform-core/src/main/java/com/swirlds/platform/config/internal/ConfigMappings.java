@@ -70,7 +70,7 @@ public final class ConfigMappings {
             new ConfigMapping("socket.timeoutSyncClientSocket", "timeoutSyncClientSocket"),
             new ConfigMapping("socket.timeoutSyncClientConnect", "timeoutSyncClientConnect"),
             new ConfigMapping("socket.timeoutServerAcceptConnect", "timeoutServerAcceptConnect"),
-            new ConfigMapping("socket.useTLS", "useTLS,       "),
+            new ConfigMapping("socket.useTLS", "useTLS"),
             new ConfigMapping("socket.doUpnp", "doUpnp"),
             new ConfigMapping("socket.useLoopbackIp", "useLoopbackIp"),
             new ConfigMapping("socket.tcpNoDelay", "tcpNoDelay"),
