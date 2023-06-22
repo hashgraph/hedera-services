@@ -37,11 +37,6 @@ public final class StaticSettingsProvider implements SettingsProvider {
     }
 
     @Override
-    public long getDelayShuffle() {
-        return settings.getDelayShuffle();
-    }
-
-    @Override
     public int getSocketIpTos() {
         return settings.getSocketIpTos();
     }
@@ -87,10 +82,5 @@ public final class StaticSettingsProvider implements SettingsProvider {
     @Override
     public int connectionStreamBufferSize() {
         return settings.getBufferSize();
-    }
-
-    @Override
-    public int sleepHeartbeatMillis() {
-        return settings.getSleepHeartbeat();
     }
 }

@@ -22,32 +22,20 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.SettingConstants.BUFFER_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.DATA_STRING;
 import static com.swirlds.platform.SettingConstants.DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.DELAY_SHUFFLE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DO_UPNP_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.FREEZE_SECONDS_AFTER_STARTUP_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.GOSSIP_WITH_DIFFERENT_VERSIONS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.JVM_PAUSE_DETECTOR_SLEEP_MS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.JVM_PAUSE_REPORT_MS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.LOAD_KEYS_FROM_PFX_FILES_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.LOG_STACK_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_ADDRESS_SIZE_ALLOWED_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_INCOMING_SYNCS_INC_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_OUTGOING_SYNCS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.NUM_CONNECTIONS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.NUM_CRYPTO_THREADS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.REMOVED_SETTINGS;
-import static com.swirlds.platform.SettingConstants.SAVED_STRING;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_CALLER_SKIPS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.SLEEP_HEARTBEAT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SOCKET_IP_TOS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.STATS_BUFFER_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.STATS_RECENT_SECONDS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.STATS_SKIP_SECONDS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.TCP_NO_DELAY_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.THREAD_DUMP_LOG_DIR_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.THREAD_DUMP_PERIOD_MS_DEFAULT_VALUE;
@@ -143,8 +131,6 @@ public class Settings {
      * many.
      */
     private int throttleTransactionQueueSize = THROTTLE_TRANSACTION_QUEUE_SIZE_DEFAULT_VALUE;
-    /** number of connections maintained by each member (syncs happen on random connections from that set */
-    private int numConnections = NUM_CONNECTIONS_DEFAULT_VALUE; // probably 40 is a good number
     /** maximum number of simultaneous outgoing syncs initiated by me */
     private int maxOutgoingSyncs = MAX_OUTGOING_SYNCS_DEFAULT_VALUE;
     /**
@@ -169,8 +155,6 @@ public class Settings {
      * @see <a href="https://en.wikipedia.org/wiki/Type_of_service">Type of Service</a>
      */
     private int socketIpTos = SOCKET_IP_TOS_DEFAULT_VALUE;
-    /** when converting an exception to a string for logging, should it include the stack trace? */
-    private boolean logStack = LOG_STACK_DEFAULT_VALUE;
     /** should TLS be turned on, rather than making all sockets unencrypted? */
     private boolean useTLS = USE_TLS_DEFAULT_VALUE;
     /** should this set up uPnP port forwarding on the router once every 60 seconds? */
@@ -187,13 +171,6 @@ public class Settings {
     private int timeoutServerAcceptConnect = TIMEOUT_SERVER_ACCEPT_CONNECT_DEFAULT_VALUE;
     /** check for deadlocks every this many milliseconds (-1 for never) */
     private int deadlockCheckPeriod = DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
-    /** send a heartbeat byte on each comm channel to keep it open, every this many milliseconds */
-    private int sleepHeartbeat = SLEEP_HEARTBEAT_DEFAULT_VALUE;
-    /**
-     * the working state (stateWork) resets to a copy of the consensus state (stateCons) (which is called a shuffle)
-     * when its queue is empty and the two are equal, but never twice within this many milliseconds
-     */
-    private long delayShuffle = DELAY_SHUFFLE_DEFAULT_VALUE;
     /** sleep sleepCallerSkips ms after the caller fails this many times to call a random member */
     private long callerSkipsBeforeSleep = CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE;
     /** caller sleeps this many milliseconds if it failed to connect to callerSkipsBeforeSleep in a row */
@@ -202,18 +179,13 @@ public class Settings {
     private int statsBufferSize = STATS_BUFFER_SIZE_DEFAULT_VALUE;
     /** number of seconds covered by "recent" history (in StatsBuffer etc.) */
     private double statsRecentSeconds = STATS_RECENT_SECONDS_DEFAULT_VALUE;
-    /** number of seconds that the "all" history window skips at the start */
-    private double statsSkipSeconds = STATS_SKIP_SECONDS_DEFAULT_VALUE;
     /** priority for threads that sync (in SyncCaller, SyncListener, SyncServer) */
     private int threadPrioritySync = THREAD_PRIORITY_SYNC_DEFAULT_VALUE; // Thread.MAX_PRIORITY;
     /** maximum number of bytes allowed in a transaction */
     private int transactionMaxBytes = TRANSACTION_MAX_BYTES_DEFAULT_VALUES;
     /** the maximum number of address allowed in a address book, the same as the maximum allowed network size */
     private int maxAddressSizeAllowed = MAX_ADDRESS_SIZE_ALLOWED_DEFAULT_VALUE;
-    /**
-     * do not create events for this many seconds after the platform has started (0 or less to not freeze at startup)
-     */
-    private int freezeSecondsAfterStartup = FREEZE_SECONDS_AFTER_STARTUP_DEFAULT_VALUE;
+
     /**
      * When enabled, the platform will try to load node keys from .pfx files located in
      * {@link com.swirlds.common.config.PathsConfig.keysDirPath}. If even a
@@ -229,12 +201,6 @@ public class Settings {
     private int maxTransactionBytesPerEvent = MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE;
     /** the maximum number of transactions that a single event may contain */
     private int maxTransactionCountPerEvent = MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE;
-    /**
-     * The path to look for an emergency recovery file on node start. If a file is present in this directory at startup,
-     * emergency recovery will begin.
-     */
-    private Path emergencyRecoveryFileLoadDir =
-            getAbsolutePath().resolve(DATA_STRING).resolve(SAVED_STRING);
 
     ///////////////////////////////////////////
     // Setting for thread dump
@@ -245,15 +211,6 @@ public class Settings {
     // Setting for JVMPauseDetectorThread
     /** thread dump files will be generated in this directory */
     private String threadDumpLogDir = THREAD_DUMP_LOG_DIR_DEFAULT_VALUE;
-    /** period of JVMPauseDetectorThread sleeping in the unit of milliseconds */
-    private int JVMPauseDetectorSleepMs = JVM_PAUSE_DETECTOR_SLEEP_MS_DEFAULT_VALUE;
-    /** log an error when JVMPauseDetectorThread detect a pause greater than this many milliseconds */
-    private int JVMPauseReportMs = JVM_PAUSE_REPORT_MS_DEFAULT_VALUE;
-    /**
-     * if set to false, the platform will refuse to gossip with a node which has a different version of either platform
-     * or application
-     */
-    private boolean gossipWithDifferentVersions = GOSSIP_WITH_DIFFERENT_VERSIONS_DEFAULT_VALUE;
 
     private Settings() {}
 
@@ -271,7 +228,6 @@ public class Settings {
         SettingsCommon.maxTransactionBytesPerEvent = getInstance().getMaxTransactionBytesPerEvent();
         SettingsCommon.maxAddressSizeAllowed = getInstance().getMaxAddressSizeAllowed();
         SettingsCommon.transactionMaxBytes = getInstance().getTransactionMaxBytes();
-        SettingsCommon.logStack = getInstance().isLogStack();
         SettingsCommon.showInternalStats = getInstance().isShowInternalStats();
         SettingsCommon.verboseStatistics = getInstance().isVerboseStatistics();
     }
@@ -389,10 +345,7 @@ public class Settings {
                 final String[] pars = splitLine(line);
                 if (pars.length > 0) { // ignore empty lines
                     try {
-                        if (!handleSetting(pars)) {
-                            CommonUtils.tellUserConsole(
-                                    "bad name of setting in settings.txt line " + count + ": " + originalLine);
-                        }
+                        handleSetting(pars);
                     } catch (final Exception e) {
                         CommonUtils.tellUserConsole(
                                 "syntax error in settings.txt on line " + count + ":    " + originalLine);
@@ -442,35 +395,25 @@ public class Settings {
             name = split[0];
             subName = split[1];
         }
-        if (!REMOVED_SETTINGS.contains(name)) {
-            final String val = pars.length > 1 ? pars[1].trim() : ""; // the first parameter passed in, or "" if none
-            boolean good = false; // is name a valid name of a non-final static field in Settings?
-            final Field field = getFieldByName(Settings.class.getDeclaredFields(), name);
-            if (field != null && !Modifier.isFinal(field.getModifiers())) {
-                try {
-                    if (subName == null) {
-                        good = setValue(field, this, val);
-                    } else {
-                        final Field subField = getFieldByName(field.getType().getDeclaredFields(), subName);
-                        if (subField != null) {
-                            good = setValue(subField, field.get(this), val);
-                        }
+        final String val = pars.length > 1 ? pars[1].trim() : ""; // the first parameter passed in, or "" if none
+        boolean good = false; // is name a valid name of a non-final static field in Settings?
+        final Field field = getFieldByName(Settings.class.getDeclaredFields(), name);
+        if (field != null && !Modifier.isFinal(field.getModifiers())) {
+            try {
+                if (subName == null) {
+                    good = setValue(field, this, val);
+                } else {
+                    final Field subField = getFieldByName(field.getType().getDeclaredFields(), subName);
+                    if (subField != null) {
+                        good = setValue(subField, field.get(this), val);
                     }
-                } catch (final IllegalArgumentException | IllegalAccessException | SettingsException e) {
-                    logger.error(
-                            EXCEPTION.getMarker(), "illegal line in settings.txt: {}, {}  {}", pars[0], pars[1], e);
                 }
-            }
-
-            if (!good) {
-                final String err = "WARNING: " + pars[0] + " is not a valid setting name.";
-                // this only happens if settings.txt exist, so it's internal, not users, so print it
-                CommonUtils.tellUserConsole(err);
-                logger.warn(STARTUP.getMarker(), err);
-                return false;
+            } catch (final IllegalArgumentException | IllegalAccessException | SettingsException e) {
+                logger.error(EXCEPTION.getMarker(), "illegal line in settings.txt: {}, {}  {}", pars[0], pars[1], e);
             }
         }
-        return true;
+
+        return good;
     }
 
     /**
@@ -588,10 +531,6 @@ public class Settings {
         return throttleTransactionQueueSize;
     }
 
-    public int getNumConnections() {
-        return numConnections;
-    }
-
     public int getMaxOutgoingSyncs() {
         return maxOutgoingSyncs;
     }
@@ -618,10 +557,6 @@ public class Settings {
 
     public void setSocketIpTos(final int socketIpTos) {
         this.socketIpTos = socketIpTos;
-    }
-
-    public boolean isLogStack() {
-        return logStack;
     }
 
     public boolean isUseTLS() {
@@ -660,24 +595,12 @@ public class Settings {
         return deadlockCheckPeriod;
     }
 
-    public int getSleepHeartbeat() {
-        return sleepHeartbeat;
-    }
-
-    public long getDelayShuffle() {
-        return delayShuffle;
-    }
-
     public long getCallerSkipsBeforeSleep() {
         return callerSkipsBeforeSleep;
     }
 
     public long getSleepCallerSkips() {
         return sleepCallerSkips;
-    }
-
-    public double getStatsSkipSeconds() {
-        return statsSkipSeconds;
     }
 
     public int getThreadPrioritySync() {
@@ -700,10 +623,6 @@ public class Settings {
         return maxAddressSizeAllowed;
     }
 
-    public int getFreezeSecondsAfterStartup() {
-        return freezeSecondsAfterStartup;
-    }
-
     public boolean isLoadKeysFromPfxFiles() {
         return loadKeysFromPfxFiles;
     }
@@ -722,21 +641,5 @@ public class Settings {
 
     public String getThreadDumpLogDir() {
         return threadDumpLogDir;
-    }
-
-    public int getJVMPauseDetectorSleepMs() {
-        return JVMPauseDetectorSleepMs;
-    }
-
-    public int getJVMPauseReportMs() {
-        return JVMPauseReportMs;
-    }
-
-    public boolean isGossipWithDifferentVersions() {
-        return gossipWithDifferentVersions;
-    }
-
-    public Path getEmergencyRecoveryFileLoadDir() {
-        return emergencyRecoveryFileLoadDir;
     }
 }
