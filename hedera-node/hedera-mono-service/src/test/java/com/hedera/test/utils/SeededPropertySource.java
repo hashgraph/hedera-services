@@ -111,11 +111,11 @@ public class SeededPropertySource {
         final var gasUsed = nextUnsignedLong();
         final var logs = nextEvmLogs(3);
         final var createdContractIds = nextEntityIds(2);
-        final var createdContractNonces = nextContractNonces(2);
         final var evmAddress = nextBytes(20);
         // call nextStateChanges(), even though state changes are not part of EvmFnResult anymore,
         // in order to advance SEEDED_RANDOM and get correct values for subsequent fields
         nextStateChanges(2, 5);
+        final var createdContractNonces = nextContractNonces(2);
         return new EvmFnResult(
                 contractId,
                 result,
@@ -1110,8 +1110,7 @@ public class SeededPropertySource {
     }
 
     public ContractNonceInfo nextContractNonce() {
-        return new ContractNonceInfo(
-                new EntityId(nextUnsignedLong(), nextUnsignedLong(), nextUnsignedLong()), nextUnsignedLong());
+        return new ContractNonceInfo(nextEntityId(), nextUnsignedLong());
     }
 
     public RichInstant nextRichInstant() {

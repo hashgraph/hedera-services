@@ -43,14 +43,14 @@ public class ContractNonceInfo implements SelfSerializable {
 
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        nonce = in.readLong();
         contractId = readNullableSerializable(in);
+        nonce = in.readLong();
     }
 
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeLong(nonce);
         writeNullableSerializable(contractId, out);
+        out.writeLong(nonce);
     }
 
     @Override

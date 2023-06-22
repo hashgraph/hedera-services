@@ -52,7 +52,9 @@ public class EvmFnResult implements SelfSerializable {
     static final int RELEASE_0250_VERSION = 4;
     static final int RELEASE_0260_VERSION = 5;
     static final int RELEASE_0290_VERSION = 6;
-    static final int CURRENT_VERSION = RELEASE_0290_VERSION;
+    // @TODO proper naming version convention
+    static final int RELEASE_0300_VERSION = 7;
+    static final int CURRENT_VERSION = RELEASE_0300_VERSION;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x2055c5c03ff84eb4L;
 
@@ -192,7 +194,9 @@ public class EvmFnResult implements SelfSerializable {
         if (version >= RELEASE_0260_VERSION) {
             senderId = readNullableSerializable(in);
         }
-        contractNonces = in.readSerializableList(MAX_CREATED_CONTRACT_NONCES, true, ContractNonceInfo::new);
+        if (version >= RELEASE_0300_VERSION) {
+            contractNonces = in.readSerializableList(MAX_CREATED_CONTRACT_NONCES, true, ContractNonceInfo::new);
+        }
     }
 
     @Override
@@ -339,6 +343,10 @@ public class EvmFnResult implements SelfSerializable {
 
     public void setSenderId(final EntityId senderId) {
         this.senderId = senderId;
+    }
+
+    public void setContractNonces(List<ContractNonceInfo> contractNonces) {
+        this.contractNonces = contractNonces;
     }
 
     public void updateForEvmCall(final EthTxData callContext, final EntityId senderId) {
