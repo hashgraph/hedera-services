@@ -38,9 +38,6 @@ public class SettingsCommon {
     /** the maximum number of address allowed in a address book, the same as the maximum allowed network size */
     public static int maxAddressSizeAllowed = Integer.MAX_VALUE;
 
-    // used by CommonUtils
-    public static boolean logStack;
-
     // used by AbstractStatistics
     public static boolean showInternalStats;
     public static boolean verboseStatistics;
