@@ -138,11 +138,6 @@ public class SyncManagerTest {
         }
     }
 
-    protected void resetTestSettings() {
-        Settings.getInstance().setMaxIncomingSyncsInc(10);
-        Settings.getInstance().setMaxOutgoingSyncs(10);
-    }
-
     /**
      * Verify that SyncManager's core functionality is working with basic input.
      */
@@ -150,7 +145,6 @@ public class SyncManagerTest {
     @Order(0)
     void basicTest() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
 
         final int[] neighbors = test.connectionGraph.getNeighbors(0);
 
@@ -204,7 +198,6 @@ public class SyncManagerTest {
     @Order(1)
     void shouldAcceptSyncTest() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
 
         // We should accept a sync if the event queue is empty and we aren't exceeding the maximum number of syncs
         test.hashgraph.eventIntakeQueueSize = 0;
@@ -226,7 +219,6 @@ public class SyncManagerTest {
     @Order(2)
     void shouldInitiateSyncTest() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
 
         // It is ok to initiate a sync if the intake queue is not full.
         test.hashgraph.eventIntakeQueueSize = 0;
@@ -244,7 +236,6 @@ public class SyncManagerTest {
     @Order(3)
     void getNeighborsToCall() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId selfId = test.hashgraph.selfId;
         final NodeId firstNode = addressBook.getNodeId(0);
@@ -270,7 +261,6 @@ public class SyncManagerTest {
     @Order(5)
     void shouldCreateEventTest() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId ID = addressBook.getNodeId(0);
         final NodeId OTHER_ID = addressBook.getNodeId(1);
@@ -308,10 +298,7 @@ public class SyncManagerTest {
     @Test
     @Order(7)
     void shouldCreateEventFreeze() {
-        resetTestSettings();
-
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId ID = addressBook.getNodeId(0);
         final NodeId OTHER_ID = addressBook.getNodeId(1);
@@ -342,8 +329,6 @@ public class SyncManagerTest {
     @Order(8)
     void shouldCreateEventFallenBehind() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
-
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId OTHER_ID = addressBook.getNodeId(1);
 
@@ -359,7 +344,6 @@ public class SyncManagerTest {
     @Test
     @Order(9)
     void shouldCreateEventThrottled() {
-        resetTestSettings();
         final int eventsRead = 0;
         final int eventsWritten = 0;
 
@@ -394,8 +378,6 @@ public class SyncManagerTest {
     @Order(10)
     void shouldCreateEventLargeRead() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
-
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId ID = addressBook.getNodeId(0);
         final NodeId OTHER_ID = addressBook.getNodeId(1);
