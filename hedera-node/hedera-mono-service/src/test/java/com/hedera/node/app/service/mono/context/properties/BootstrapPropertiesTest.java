@@ -193,9 +193,11 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_IS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_STAKE_REWARDED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_BALANCE_THRESHOLD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
@@ -501,6 +503,8 @@ class BootstrapPropertiesTest {
             entry(STAKING_IS_ENABLED, true),
             entry(STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS, Map.of()),
             entry(STAKING_PERIOD_MINS, 1440L),
+            entry(STAKING_MAX_STAKE_REWARDED, 5000000000000000000L),
+            entry(STAKING_REWARD_BALANCE_THRESHOLD, 0L),
             entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, false),
             entry(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, 365),
             entry(STAKING_STARTUP_HELPER_RECOMPUTE, EnumSet.allOf(StakeStartupHelper.RecomputeType.class)),
