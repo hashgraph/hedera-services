@@ -11,7 +11,7 @@ abstract class IoGrpcDependencyMetadataRule : ComponentMetadataRule {
                 removeAll { it.name == "grpc-api" }
                 removeAll { it.name == "grpc-context" }
                 removeAll { it.name == "grpc-core" }
-                add("io.helidon.grpc:io.grpc:3.2.1")
+                add("io.helidon.grpc:io.grpc")
             }
         }
     }

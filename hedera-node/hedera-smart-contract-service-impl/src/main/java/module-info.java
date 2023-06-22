@@ -16,7 +16,6 @@ module com.hedera.node.app.service.contract.impl {
     requires com.hedera.node.app.service.token;
     requires com.swirlds.jasperdb;
     requires static com.github.spotbugs.annotations;
-    requires static io.perfmark;
 
     provides com.hedera.node.app.service.contract.ContractService with
             ContractServiceImpl;
