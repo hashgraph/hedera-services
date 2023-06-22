@@ -45,10 +45,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * The platform status state machine
+ * A synchronous implementation of the platform status state machine
  */
-public class PlatformStatusStateMachine {
-    private static final Logger logger = LogManager.getLogger(PlatformStatusStateMachine.class);
+public class SyncPlatformStatusStateMachine {
+    private static final Logger logger = LogManager.getLogger(SyncPlatformStatusStateMachine.class);
 
     /**
      * A source of time
@@ -77,7 +77,7 @@ public class PlatformStatusStateMachine {
      * @param config             the platform status config
      * @param notificationEngine the notification engine
      */
-    public PlatformStatusStateMachine(
+    public SyncPlatformStatusStateMachine(
             @NonNull final Time time,
             @NonNull PlatformStatusConfig config,
             @NonNull final NotificationEngine notificationEngine) {

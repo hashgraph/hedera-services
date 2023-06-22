@@ -42,9 +42,9 @@ import org.junit.jupiter.api.Test;
 /**
  * Traverses every edge of the state machine
  */
-class PlatformStatusStateMachineTests {
+class SyncPlatformStatusStateMachineTests {
     private FakeTime time;
-    private PlatformStatusStateMachine stateMachine;
+    private SyncPlatformStatusStateMachine stateMachine;
 
     @BeforeEach
     void setup() {
@@ -54,7 +54,7 @@ class PlatformStatusStateMachineTests {
                 .withValue("platformStatus.activeStatusDelay", "10s")
                 .getOrCreateConfig();
 
-        stateMachine = new PlatformStatusStateMachine(
+        stateMachine = new SyncPlatformStatusStateMachine(
                 time, configuration.getConfigData(PlatformStatusConfig.class), mock(NotificationEngine.class));
     }
 
