@@ -18,12 +18,15 @@ package com.hedera.node.app.service.contract.impl.test;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -38,7 +41,7 @@ public class TestHelpers {
     public static long VALUE = 999_999;
     public static long INTRINSIC_GAS = 12_345;
     public static long GAS_LIMIT = 1_000_000;
-    public static long GAS_PRICE = 666;
+    public static long USER_OFFERED_GAS_PRICE = 666;
     public static long NETWORK_GAS_PRICE = 777;
     public static long MAX_GAS_ALLOWANCE = 666_666_666;
     public static Bytes CALL_DATA = Bytes.wrap(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
@@ -80,12 +83,27 @@ public class TestHelpers {
         return wellKnownHapiCall(RELAYER_ID, VALUE, gasLimit);
     }
 
+    public static HederaEvmTransaction wellKnownRelayedHapiCallWithUserGasPriceAndMaxAllowance(
+            final long gasPrice,
+            final long maxGasAllowance) {
+        return wellKnownHapiCall(RELAYER_ID, VALUE, GAS_LIMIT, gasPrice, maxGasAllowance);
+    }
+
     public static HederaEvmTransaction wellKnownHapiCall(@Nullable final AccountID relayer, final long value) {
         return wellKnownHapiCall(relayer, value, GAS_LIMIT);
     }
 
     public static HederaEvmTransaction wellKnownHapiCall(
             @Nullable final AccountID relayer, final long value, final long gasLimit) {
+        return wellKnownHapiCall(relayer, value, gasLimit, USER_OFFERED_GAS_PRICE, MAX_GAS_ALLOWANCE);
+    }
+
+    public static HederaEvmTransaction wellKnownHapiCall(
+            @Nullable final AccountID relayer,
+            final long value,
+            final long gasLimit,
+            final long userGasPrice,
+            final long maxGasAllowance) {
         return new HederaEvmTransaction(
                 SENDER_ID,
                 relayer,
@@ -95,22 +113,8 @@ public class TestHelpers {
                 MAINNET_CHAIN_ID,
                 value,
                 gasLimit,
-                GAS_PRICE,
-                MAX_GAS_ALLOWANCE);
-    }
-
-    public static HederaEvmTransaction wellKnownLazyCreationWithGasLimit(final long gasLimit) {
-        return new HederaEvmTransaction(
-                SENDER_ID,
-                RELAYER_ID,
-                CALLED_CONTRACT_EVM_ADDRESS,
-                NONCE,
-                CALL_DATA,
-                MAINNET_CHAIN_ID,
-                VALUE,
-                gasLimit,
-                GAS_PRICE,
-                MAX_GAS_ALLOWANCE);
+                userGasPrice,
+                maxGasAllowance);
     }
 
     public static HederaEvmContext wellKnownContextWith(@NonNull final HederaEvmBlocks blocks) {
@@ -120,5 +124,10 @@ public class TestHelpers {
     public static HederaEvmContext wellKnownContextWith(
             @NonNull final HederaEvmBlocks blocks, final boolean staticCall) {
         return new HederaEvmContext(NETWORK_GAS_PRICE, staticCall, blocks);
+    }
+
+    public static void assertFailsWith(@NonNull final ResponseCodeEnum status, @NonNull final Runnable something) {
+        final var ex = assertThrows(HandleException.class, something::run);
+        assertEquals(status, ex.getStatus());
     }
 }

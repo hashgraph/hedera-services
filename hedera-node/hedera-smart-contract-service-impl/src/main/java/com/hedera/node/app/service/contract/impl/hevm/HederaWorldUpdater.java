@@ -59,21 +59,21 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * verified that the account exists and has sufficient balance to pay the fee, so
      * this method surfaces any problem by throwing an exception.
      *
-     * @param payer the account to collect the fee from
-     * @param amount the amount to collect
+     * @param payerId the id of the account to collect the fee from
+     * @param amount      the amount to collect
      * @throws IllegalArgumentException if the collection fails for any reason
      */
-    void collectFee(@NonNull Address payer, long amount);
+    void collectFee(@NonNull AccountID payerId, long amount);
 
     /**
      * Refunds the given fee to the given account. The caller should have already
      * verified that the account exists, so this method surfaces any problem by
      * throwing an exception.
      *
-     * @param payer the account to refund the fee to
+     * @param payerId the id of the account to refund the fee to
      * @param amount the amount to refund
      */
-    void refundFee(@NonNull Address payer, long amount);
+    void refundFee(@NonNull AccountID payerId, long amount);
 
     /**
      * Tries to transfer the given amount from a sending contract to the recipient. The sender

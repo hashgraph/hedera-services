@@ -51,10 +51,27 @@ public record HederaEvmTransaction(
     }
 
     public long upfrontCostGiven(final long gasPrice) {
+        final var gasCost = gasCostGiven(gasPrice);
+        return gasCost == Long.MAX_VALUE ? Long.MAX_VALUE : gasCost + value;
+    }
+
+    public long gasCostGiven(final long gasPrice) {
         try {
-            return Math.multiplyExact(gasLimit, gasPrice) + value;
+            return Math.multiplyExact(gasLimit, gasPrice);
         } catch (Exception ignore) {
             return Long.MAX_VALUE;
         }
+    }
+
+    public long offeredGasCost() {
+        try {
+            return Math.multiplyExact(gasLimit, offeredGasPrice);
+        } catch (Exception ignore) {
+            return Long.MAX_VALUE;
+        }
+    }
+
+    public boolean requiresFullRelayerAllowance() {
+        return offeredGasPrice == 0L;
     }
 }
