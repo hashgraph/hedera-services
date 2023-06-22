@@ -77,9 +77,11 @@ import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.config.ConfigMappings;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.config.internal.ConfigMappings;
+import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.ConfigPropertiesSource;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
@@ -223,6 +225,7 @@ public class Browser {
                 .withConfigDataType(ReconnectConfig.class)
                 .withConfigDataType(FCHashMapConfig.class)
                 .withConfigDataType(JasperDbConfig.class)
+                .withConfigDataType(MerkleDbConfig.class)
                 .withConfigDataType(ChatterConfig.class)
                 .withConfigDataType(AddressBookConfig.class)
                 .withConfigDataType(VirtualMapConfig.class)
@@ -246,6 +249,7 @@ public class Browser {
         }
 
         this.configuration = configurationBuilder.build();
+        PlatformConfigUtils.logNotKnownConfigProperties(configuration);
 
         // Set the configuration on all SwirldMain instances.
         appMains.values().forEach(swirldMain -> swirldMain.setConfiguration(configuration));
@@ -562,13 +566,14 @@ public class Browser {
 
     /**
      * Instantiate and start the JVMPauseDetectorThread, if enabled via the
-     * {@link Settings#getJVMPauseDetectorSleepMs()} setting.
+     * {@link BasicConfig#jvmPauseDetectorSleepMs()} setting.
      */
-    private void startJVMPauseDetectorThread() {
-        if (Settings.getInstance().getJVMPauseDetectorSleepMs() > 0) {
+    private void startJVMPauseDetectorThread(@NonNull final Configuration configuration) {
+        final BasicConfig basicConfig = Objects.requireNonNull(configuration).getConfigData(BasicConfig.class);
+        if (basicConfig.jvmPauseDetectorSleepMs() > 0) {
             final JVMPauseDetectorThread jvmPauseDetectorThread = new JVMPauseDetectorThread(
                     (pauseTimeMs, allocTimeMs) -> {
-                        if (pauseTimeMs > Settings.getInstance().getJVMPauseReportMs()) {
+                        if (pauseTimeMs > basicConfig.jvmPauseReportMs()) {
                             logger.warn(
                                     EXCEPTION.getMarker(),
                                     "jvmPauseDetectorThread detected JVM paused for {} ms, allocation pause {} ms",
@@ -576,7 +581,7 @@ public class Browser {
                                     allocTimeMs);
                         }
                     },
-                    Settings.getInstance().getJVMPauseDetectorSleepMs());
+                    basicConfig.jvmPauseDetectorSleepMs());
             jvmPauseDetectorThread.start();
             logger.debug(STARTUP.getMarker(), "jvmPauseDetectorThread started");
         }
@@ -653,8 +658,10 @@ public class Browser {
 
                 // We can't send a "real" dispatch, since the dispatcher will not have been started by the
                 // time this class is used.
-                final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
-                        shutdown::shutdown, Settings.getInstance().getEmergencyRecoveryFileLoadDir());
+                final BasicConfig basicConfig =
+                        platformContext.getConfiguration().getConfigData(BasicConfig.class);
+                final EmergencyRecoveryManager emergencyRecoveryManager =
+                        new EmergencyRecoveryManager(shutdown::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
 
                 final ReservedSignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
                         platformContext,
@@ -860,7 +867,7 @@ public class Browser {
         startThreadDumpGenerator();
 
         // Initialize JVMPauseDetectorThread, if enabled via settings
-        startJVMPauseDetectorThread();
+        startJVMPauseDetectorThread(configuration);
 
         logger.info(STARTUP.getMarker(), "Starting metrics");
         metricsProvider.start();

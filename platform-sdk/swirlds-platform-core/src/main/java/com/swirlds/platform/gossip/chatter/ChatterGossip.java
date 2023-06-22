@@ -247,10 +247,10 @@ public class ChatterGossip extends AbstractGossip {
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
                             chatterConfig.sleepAfterFailedNegotiation(),
                             List.of(
-                                    new VersionCompareHandshake(appVersion, !settings.isGossipWithDifferentVersions()),
+                                    new VersionCompareHandshake(appVersion, !basicConfig.gossipWithDifferentVersions()),
                                     new VersionCompareHandshake(
                                             PlatformVersion.locateOrDefault(),
-                                            !settings.isGossipWithDifferentVersions())),
+                                            !basicConfig.gossipWithDifferentVersions())),
                             new NegotiationProtocols(List.of(
                                     new EmergencyReconnectProtocol(
                                             threadManager,

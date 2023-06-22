@@ -309,11 +309,15 @@ final class ConcurrentArray<T> {
             final T[] array = cur.array;
             final int size = cur.size.get();
             executor.execute(() -> {
-                for (int i = 0; i < size; ++i) {
-                    action.accept(array[i]);
-                }
-                if (count.decrementAndGet() == 0) {
-                    result.complete(null);
+                try {
+                    for (int i = 0; i < size; ++i) {
+                        action.accept(array[i]);
+                    }
+                    if (count.decrementAndGet() == 0) {
+                        result.complete(null);
+                    }
+                } catch (Exception e) {
+                    result.cancelWithError(e);
                 }
             });
             nextIndex += size;
