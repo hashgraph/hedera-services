@@ -47,7 +47,8 @@ import org.apache.logging.log4j.Logger;
 /**
  * A synchronous implementation of the platform status state machine
  * <p>
- * NOTE: This class is NOT thread-safe. It is expected that the caller will synchronize access to this class.
+ * NOTE: Processing of {@link PlatformStatusAction}s is not thread-safe. It is assumed that the caller will ensure that
+ * only one thread is calling {@link #processStatusAction(PlatformStatusAction)} at a time.
  */
 public class SyncPlatformStatusStateMachine implements PlatformStatusStateMachine {
     private static final Logger logger = LogManager.getLogger(SyncPlatformStatusStateMachine.class);
@@ -66,6 +67,11 @@ public class SyncPlatformStatusStateMachine implements PlatformStatusStateMachin
      * The object containing the state machine logic for the current status
      */
     private PlatformStatusLogic currentStatusLogic;
+
+    /**
+     * An object to facilitate the threadsafe access of the current platform status
+     */
+    private final PlatformStatusNexus statusNexus;
 
     /**
      * The time at which the current status started
@@ -87,6 +93,7 @@ public class SyncPlatformStatusStateMachine implements PlatformStatusStateMachin
         this.time = Objects.requireNonNull(time);
         this.notificationEngine = Objects.requireNonNull(notificationEngine);
         this.currentStatusLogic = new StartingUpStatusLogic(config);
+        this.statusNexus = new PlatformStatusNexus(currentStatusLogic.getStatus());
         this.currentStatusStartTime = time.now();
     }
 
@@ -165,16 +172,18 @@ public class SyncPlatformStatusStateMachine implements PlatformStatusStateMachin
                 PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newLogic.getStatus()));
 
         currentStatusLogic = newLogic;
+        statusNexus.setCurrentStatus(currentStatusLogic.getStatus());
+
         currentStatusStartTime = time.now();
     }
 
     /**
-     * Get the current platform status
-     *
-     * @return the current platform status
+     * {@inheritDoc}
      */
+    @Override
+    @NonNull
     public PlatformStatus getCurrentStatus() {
-        return currentStatusLogic.getStatus();
+        return statusNexus.getCurrentStatus();
     }
 
     /**

@@ -98,6 +98,15 @@ public class AsyncPlatformStatusStateMachine implements PlatformStatusStateMachi
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public PlatformStatus getCurrentStatus() {
+        return stateMachine.getCurrentStatus();
+    }
+
+    /**
      * Trigger a time elapsed action
      * <p>
      * This is the idle callback of the handle thread. It will be called when the handle thread isn't handling other

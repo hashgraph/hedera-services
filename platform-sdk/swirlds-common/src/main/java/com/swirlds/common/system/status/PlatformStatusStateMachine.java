@@ -33,4 +33,12 @@ public interface PlatformStatusStateMachine extends Startable, Stoppable {
      * @param action the action to process
      */
     void processStatusAction(@NonNull final PlatformStatusAction action);
+
+    /**
+     * Get the current status
+     *
+     * @return the current status
+     */
+    @NonNull
+    PlatformStatus getCurrentStatus();
 }
