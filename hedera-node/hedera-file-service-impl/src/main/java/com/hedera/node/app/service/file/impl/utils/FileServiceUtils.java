@@ -112,7 +112,7 @@ public class FileServiceUtils {
         }
 
         if (listKeys != null && listKeys.hasKeys()) {
-            for (Key key : listKeys.keys()) {
+            for (final Key key : listKeys.keys()) {
                 context.requireKey(key);
             }
         }
