@@ -566,13 +566,14 @@ public class Browser {
 
     /**
      * Instantiate and start the JVMPauseDetectorThread, if enabled via the
-     * {@link Settings#getJVMPauseDetectorSleepMs()} setting.
+     * {@link BasicConfig#jvmPauseDetectorSleepMs()} setting.
      */
-    private void startJVMPauseDetectorThread() {
-        if (Settings.getInstance().getJVMPauseDetectorSleepMs() > 0) {
+    private void startJVMPauseDetectorThread(@NonNull final Configuration configuration) {
+        final BasicConfig basicConfig = Objects.requireNonNull(configuration).getConfigData(BasicConfig.class);
+        if (basicConfig.jvmPauseDetectorSleepMs() > 0) {
             final JVMPauseDetectorThread jvmPauseDetectorThread = new JVMPauseDetectorThread(
                     (pauseTimeMs, allocTimeMs) -> {
-                        if (pauseTimeMs > Settings.getInstance().getJVMPauseReportMs()) {
+                        if (pauseTimeMs > basicConfig.jvmPauseReportMs()) {
                             logger.warn(
                                     EXCEPTION.getMarker(),
                                     "jvmPauseDetectorThread detected JVM paused for {} ms, allocation pause {} ms",
@@ -580,7 +581,7 @@ public class Browser {
                                     allocTimeMs);
                         }
                     },
-                    Settings.getInstance().getJVMPauseDetectorSleepMs());
+                    basicConfig.jvmPauseDetectorSleepMs());
             jvmPauseDetectorThread.start();
             logger.debug(STARTUP.getMarker(), "jvmPauseDetectorThread started");
         }
@@ -657,8 +658,10 @@ public class Browser {
 
                 // We can't send a "real" dispatch, since the dispatcher will not have been started by the
                 // time this class is used.
-                final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
-                        shutdown::shutdown, Settings.getInstance().getEmergencyRecoveryFileLoadDir());
+                final BasicConfig basicConfig =
+                        platformContext.getConfiguration().getConfigData(BasicConfig.class);
+                final EmergencyRecoveryManager emergencyRecoveryManager =
+                        new EmergencyRecoveryManager(shutdown::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
 
                 final ReservedSignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
                         platformContext,
@@ -864,7 +867,7 @@ public class Browser {
         startThreadDumpGenerator();
 
         // Initialize JVMPauseDetectorThread, if enabled via settings
-        startJVMPauseDetectorThread();
+        startJVMPauseDetectorThread(configuration);
 
         logger.info(STARTUP.getMarker(), "Starting metrics");
         metricsProvider.start();

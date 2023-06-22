@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
@@ -24,7 +25,7 @@ import java.util.function.Supplier;
 
 /**
  * This class is used for pausing event creation for a while, when the node starts from a saved state and {@link
- * Settings#freezeSecondsAfterStartup} is positive
+ * BasicConfig#freezeSecondsAfterStartup()} is positive
  */
 public class StartUpEventFrozenManager implements EventCreationRule {
     /** the time when this platforms startup event frozen ends */

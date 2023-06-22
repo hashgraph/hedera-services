@@ -17,22 +17,15 @@
 package com.swirlds.platform;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class TestSettings implements SettingsProvider {
     public final AtomicInteger transactionMaxBytes = new AtomicInteger(0);
-    public final AtomicLong delayShuffle = new AtomicLong(0);
     public final AtomicInteger ipTos = new AtomicInteger(-1);
     public final AtomicInteger throttleTransactionQueueSize = new AtomicInteger(100_000);
 
     @Override
     public int getTransactionMaxBytes() {
         return transactionMaxBytes.get();
-    }
-
-    @Override
-    public long getDelayShuffle() {
-        return delayShuffle.get();
     }
 
     @Override
@@ -77,11 +70,6 @@ public class TestSettings implements SettingsProvider {
 
     @Override
     public int connectionStreamBufferSize() {
-        return 0;
-    }
-
-    @Override
-    public int sleepHeartbeatMillis() {
         return 0;
     }
 }
