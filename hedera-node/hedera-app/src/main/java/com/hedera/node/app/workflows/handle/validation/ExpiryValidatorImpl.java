@@ -59,8 +59,7 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
     @NonNull
     @Override
     public ExpiryMeta resolveCreationAttempt(
-            final boolean entityCanSelfFundRenewal,
-            @NonNull final ExpiryMeta creationMeta) {
+            final boolean entityCanSelfFundRenewal, @NonNull final ExpiryMeta creationMeta) {
         if (creationMeta.hasAutoRenewNum()) {
             validateAutoRenewAccount(
                     creationMeta.autoRenewShard(), creationMeta.autoRenewRealm(), creationMeta.autoRenewNum());
@@ -88,8 +87,7 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
     @NonNull
     @Override
     public ExpiryMeta resolveUpdateAttempt(
-            @NonNull final ExpiryMeta currentMeta,
-            @NonNull final ExpiryMeta updateMeta) {
+            @NonNull final ExpiryMeta currentMeta, @NonNull final ExpiryMeta updateMeta) {
         if (updateMeta.hasAutoRenewNum()) {
             validateAutoRenewAccount(
                     updateMeta.autoRenewShard(), updateMeta.autoRenewRealm(), updateMeta.autoRenewNum());
@@ -134,7 +132,7 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
                 || balanceAvailableForSelfRenewal > 0
                 || !isMarkedExpired
                 || isExpiryDisabled(
-                isSmartContract, autoRenewConfig.expireAccounts(), autoRenewConfig.expireContracts())) {
+                        isSmartContract, autoRenewConfig.expireAccounts(), autoRenewConfig.expireContracts())) {
             return OK;
         }
 
@@ -175,7 +173,8 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
         final var autoRenewId = AccountID.newBuilder()
                 .shardNum(shard)
                 .realmNum(realm)
-                .accountNum(num).build();
+                .accountNum(num)
+                .build();
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         try {
             final var account = accountStore.getAccountById(autoRenewId);

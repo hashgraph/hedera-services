@@ -62,6 +62,7 @@ class ExpiryValidatorImplTest {
 
     @Mock
     private AttributeValidator attributeValidator;
+
     @Mock(strictness = LENIENT)
     private ReadableAccountStore accountStore;
 
@@ -99,9 +100,8 @@ class ExpiryValidatorImplTest {
 
     @Test
     void validatesShard() {
-        final var config = new HederaTestConfigBuilder()
-                .withValue("hedera.shard", 1L)
-                .getOrCreateConfig();
+        final var config =
+                new HederaTestConfigBuilder().withValue("hedera.shard", 1L).getOrCreateConfig();
         given(context.configuration()).willReturn(config);
         final var newMeta = new ExpiryMeta(A_TIME, A_PERIOD, 2L, 2L, AN_AUTO_RENEW_NUM);
 
@@ -138,7 +138,8 @@ class ExpiryValidatorImplTest {
 
     @Test
     void translatesFailureOnExplicitAutoRenewAccount() {
-        given(accountStore.getAccountById(AccountID.newBuilder().accountNum(AN_AUTO_RENEW_NUM).build()))
+        given(accountStore.getAccountById(
+                        AccountID.newBuilder().accountNum(AN_AUTO_RENEW_NUM).build()))
                 .willThrow(new InvalidTransactionException(
                         com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT));
 
@@ -210,7 +211,8 @@ class ExpiryValidatorImplTest {
 
     @Test
     void summarizesFullAutoRenewSpecPeriodCase() {
-        assertThatCode(() -> subject.resolveCreationAttempt(false, new ExpiryMeta(NOW.getEpochSecond() + A_PERIOD, A_PERIOD, AN_AUTO_RENEW_NUM)))
+        assertThatCode(() -> subject.resolveCreationAttempt(
+                        false, new ExpiryMeta(NOW.getEpochSecond() + A_PERIOD, A_PERIOD, AN_AUTO_RENEW_NUM)))
                 .doesNotThrowAnyException();
     }
 
@@ -267,7 +269,8 @@ class ExpiryValidatorImplTest {
         final var current = new ExpiryMeta(A_TIME, 0, NA);
         final var update = new ExpiryMeta(NA, B_PERIOD, AN_AUTO_RENEW_NUM);
 
-        given(accountStore.getAccountById(AccountID.newBuilder().accountNum(AN_AUTO_RENEW_NUM).build()))
+        given(accountStore.getAccountById(
+                        AccountID.newBuilder().accountNum(AN_AUTO_RENEW_NUM).build()))
                 .willThrow(new InvalidTransactionException(
                         com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT));
 
@@ -314,10 +317,12 @@ class ExpiryValidatorImplTest {
 
     @Test
     void failsIfAccountExpiredAndPendingRemoval() {
-        assertThat(subject.expirationStatus(EntityType.ACCOUNT, true, 0L)).isEqualTo(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        assertThat(subject.expirationStatus(EntityType.ACCOUNT, true, 0L))
+                .isEqualTo(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
         assertThat(subject.isDetached(EntityType.ACCOUNT, true, 0)).isTrue();
 
-        assertThat(subject.expirationStatus(EntityType.CONTRACT, true, 0L)).isEqualTo(CONTRACT_EXPIRED_AND_PENDING_REMOVAL);
+        assertThat(subject.expirationStatus(EntityType.CONTRACT, true, 0L))
+                .isEqualTo(CONTRACT_EXPIRED_AND_PENDING_REMOVAL);
         assertThat(subject.isDetached(EntityType.CONTRACT, true, 0)).isTrue();
     }
 

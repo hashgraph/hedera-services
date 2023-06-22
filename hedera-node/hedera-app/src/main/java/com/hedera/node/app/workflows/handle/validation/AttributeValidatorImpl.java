@@ -73,7 +73,8 @@ public class AttributeValidatorImpl implements AttributeValidator {
             return;
         }
         final var raw = memo.getBytes(StandardCharsets.UTF_8);
-        final var maxMemoUtf8Bytes = context.configuration().getConfigData(HederaConfig.class).transactionMaxMemoUtf8Bytes();
+        final var maxMemoUtf8Bytes =
+                context.configuration().getConfigData(HederaConfig.class).transactionMaxMemoUtf8Bytes();
         if (raw.length > maxMemoUtf8Bytes) {
             throw new HandleException(MEMO_TOO_LONG);
         } else if (containsZeroByte(raw)) {
@@ -86,7 +87,8 @@ public class AttributeValidatorImpl implements AttributeValidator {
      */
     @Override
     public void validateExpiry(long expiry) {
-        final var maxEntityLifetime = context.configuration().getConfigData(EntitiesConfig.class).maxLifetime();
+        final var maxEntityLifetime =
+                context.configuration().getConfigData(EntitiesConfig.class).maxLifetime();
         final var now = context.consensusNow().getEpochSecond();
         final var expiryGivenMaxLifetime = now + maxEntityLifetime;
         validateTrue(expiry > now && expiry <= expiryGivenMaxLifetime, INVALID_EXPIRATION_TIME);

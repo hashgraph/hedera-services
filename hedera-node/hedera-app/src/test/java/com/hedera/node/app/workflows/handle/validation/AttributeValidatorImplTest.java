@@ -49,7 +49,6 @@ class AttributeValidatorImplTest {
     private static final long maxLifetime = 3_000_000L;
     private static final byte[] MOCK_ED25519_KEY = "abcdefghabcdefghabcdefghabcdefgh".getBytes();
 
-
     @Mock(strictness = LENIENT)
     private HandleContext context;
 
@@ -98,7 +97,6 @@ class AttributeValidatorImplTest {
         final var now = Instant.ofEpochSecond(1_234_567L);
         given(context.consensusNow()).willReturn(now);
         assertThatCode(() -> subject.validateExpiry(now.getEpochSecond() + 1)).doesNotThrowAnyException();
-
     }
 
     @Test

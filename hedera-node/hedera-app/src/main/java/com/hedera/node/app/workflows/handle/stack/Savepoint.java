@@ -43,9 +43,7 @@ public class Savepoint {
      * @param configuration the configuration of the savepoint
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public Savepoint(
-            @NonNull final WrappedHederaState state,
-            @NonNull final Configuration configuration) {
+    public Savepoint(@NonNull final WrappedHederaState state, @NonNull final Configuration configuration) {
         this.state = requireNonNull(state, "state must not be null");
         this.configuration = requireNonNull(configuration, "configuration must not be null");
     }
