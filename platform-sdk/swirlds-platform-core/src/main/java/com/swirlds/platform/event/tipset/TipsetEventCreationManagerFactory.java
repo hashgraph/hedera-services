@@ -105,9 +105,6 @@ public final class TipsetEventCreationManagerFactory {
         final Consumer<GossipEvent> newEventHandler =
                 event -> abortAndThrowIfInterrupted(eventIntakeQueue::put, event, "intakeQueue.put() interrupted");
 
-        final TipsetEventCreationBlocker eventCreationBlocker = new TipsetEventCreationBlocker(
-                platformContext, transactionPool, eventIntakeQueue, platformStatusSupplier, startUpEventFrozenManager);
-
         final TipsetEventCreationManager manager = new TipsetEventCreationManager(
                 platformContext,
                 threadManager,
@@ -119,7 +116,9 @@ public final class TipsetEventCreationManagerFactory {
                 appVersion,
                 transactionPool,
                 newEventHandler,
-                eventCreationBlocker);
+                eventIntakeQueue,
+                platformStatusSupplier,
+                startUpEventFrozenManager);
 
         eventObserverDispatcher.addObserver((PreConsensusEventObserver) event -> abortAndThrowIfInterrupted(
                 manager::registerEvent,

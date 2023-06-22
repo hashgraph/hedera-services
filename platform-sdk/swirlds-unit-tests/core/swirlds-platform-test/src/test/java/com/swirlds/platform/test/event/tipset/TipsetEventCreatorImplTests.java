@@ -46,6 +46,7 @@ import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.tipset.TipsetEventCreator;
+import com.swirlds.platform.event.tipset.TipsetEventCreatorImpl;
 import com.swirlds.platform.event.tipset.TipsetScoreCalculator;
 import com.swirlds.platform.event.tipset.TipsetTracker;
 import com.swirlds.platform.internal.EventImpl;
@@ -63,8 +64,8 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("TipsetEventCreator Tests")
-class TipsetEventCreatorTests {
+@DisplayName("TipsetEventCreatorImpl Tests")
+class TipsetEventCreatorImplTests {
 
     /**
      * @param nodeId                the node ID of the simulated node
@@ -95,7 +96,7 @@ class TipsetEventCreatorTests {
 
         final SoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
-        return new TipsetEventCreator(
+        return new TipsetEventCreatorImpl(
                 platformContext, time, random, signer, addressBook, nodeId, softwareVersion, transactionSupplier);
     }
 
@@ -396,4 +397,7 @@ class TipsetEventCreatorTests {
             }
         }
     }
+
+    // TODO test with a bullied node
+    // TODO test shenanigans with timestamps
 }

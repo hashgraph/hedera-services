@@ -28,18 +28,22 @@ import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.threading.framework.BlockingQueueInserter;
 import com.swirlds.common.threading.framework.MultiQueueThread;
+import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.utility.throttle.RateLimiter;
-import com.swirlds.platform.components.transaction.TransactionSupplier;
+import com.swirlds.platform.StartUpEventFrozenManager;
+import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Manages the creation of events.
@@ -77,29 +81,21 @@ public class TipsetEventCreationManager implements Lifecycle {
     private final Consumer<GossipEvent> newEventHandler;
 
     /**
-     * Prevents events from being created too fast. Maximum speed is specified in configuration.
-     */
-    private final RateLimiter rateLimiter;
-
-    /**
-     * Prevents the creation of new events under various miscellaneous conditions.
-     */
-    private final TipsetEventCreationBlocker eventCreationBlocker;
-
-    /**
      * Constructor.
      *
-     * @param platformContext      the platform's context
-     * @param threadManager        manages the creation of new threads
-     * @param time                 provides the wall clock time
-     * @param random               a source of randomness, does not need to be cryptographically secure
-     * @param signer               can sign with this node's key
-     * @param addressBook          the current address book
-     * @param selfId               the ID of this node
-     * @param softwareVersion      the current software version
-     * @param transactionSupplier  provides transactions to be included in new events
-     * @param newEventHandler      called when a new event is created
-     * @param eventCreationBlocker prevents events from being created at various times
+     * @param platformContext           the platform's context
+     * @param threadManager             manages the creation of new threads
+     * @param time                      provides the wall clock time
+     * @param random                    a source of randomness, does not need to be cryptographically secure
+     * @param signer                    can sign with this node's key
+     * @param addressBook               the current address book
+     * @param selfId                    the ID of this node
+     * @param softwareVersion           the current software version
+     * @param transactionPool           provides transactions to be added to new events
+     * @param newEventHandler           when the event creator makes a new event, pass it to this lambda
+     * @param eventIntakeQueue          the queue to which new events should be added
+     * @param platformStatusSupplier    provides the current platform status
+     * @param startUpEventFrozenManager prevents event creation when the platform has just started up
      */
     public TipsetEventCreationManager(
             @NonNull final PlatformContext platformContext,
@@ -110,12 +106,13 @@ public class TipsetEventCreationManager implements Lifecycle {
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final TransactionSupplier transactionSupplier,
+            @NonNull final EventTransactionPool transactionPool,
             @NonNull final Consumer<GossipEvent> newEventHandler,
-            @NonNull final TipsetEventCreationBlocker eventCreationBlocker) {
+            @NonNull final QueueThread<EventIntakeTask> eventIntakeQueue,
+            @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
+            @NonNull final StartUpEventFrozenManager startUpEventFrozenManager) {
 
         this.newEventHandler = Objects.requireNonNull(newEventHandler);
-        this.eventCreationBlocker = Objects.requireNonNull(eventCreationBlocker);
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -125,13 +122,32 @@ public class TipsetEventCreationManager implements Lifecycle {
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
         Objects.requireNonNull(softwareVersion);
-        Objects.requireNonNull(transactionSupplier);
+        Objects.requireNonNull(transactionPool);
+        Objects.requireNonNull(eventIntakeQueue);
+        Objects.requireNonNull(platformStatusSupplier);
+        Objects.requireNonNull(startUpEventFrozenManager);
+
+        final TipsetEventCreator baseCreator = new TipsetEventCreatorImpl(
+                platformContext,
+                time,
+                random /* does not need to be cryptographically secure */,
+                signer,
+                addressBook,
+                selfId,
+                softwareVersion,
+                transactionPool);
+
+        eventCreator = new ThrottledTipsetEventCreator(
+                platformContext,
+                time,
+                transactionPool,
+                eventIntakeQueue,
+                platformStatusSupplier,
+                startUpEventFrozenManager,
+                baseCreator);
 
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
-
-        eventCreator = new TipsetEventCreator(
-                platformContext, time, random, signer, addressBook, selfId, softwareVersion, transactionSupplier);
 
         workQueue = new MultiQueueThreadConfiguration(threadManager)
                 .setThreadName("event-creator")
@@ -143,14 +159,6 @@ public class TipsetEventCreationManager implements Lifecycle {
                 .setBatchHandledCallback(this::maybeCreateEvent)
                 .setWaitForWorkDuration(eventCreationConfig.creationQueueWaitForWorkPeriod())
                 .build();
-
-        final double maxCreationRate = eventCreationConfig.maxCreationRate();
-        if (maxCreationRate > 0) {
-            rateLimiter = new RateLimiter(time, maxCreationRate);
-        } else {
-            // No brakes!
-            rateLimiter = null;
-        }
 
         eventInserter = workQueue.getInserter(EventImpl.class);
         minimumGenerationNonAncientInserter = workQueue.getInserter(Long.class);
@@ -197,23 +205,9 @@ public class TipsetEventCreationManager implements Lifecycle {
      * Create a new event if it is legal to do so.
      */
     private void maybeCreateEvent() {
-        if (!eventCreationBlocker.isEventCreationPermitted()) {
-            // Event creation is currently not permitted.
-            return;
-        }
-
-        if (rateLimiter != null && !rateLimiter.request()) {
-            // We have created a self event too recently
-            return;
-        }
-
         final GossipEvent event = eventCreator.maybeCreateEvent();
         if (event != null) {
             newEventHandler.accept(event);
-
-            if (rateLimiter != null) {
-                rateLimiter.trigger();
-            }
         }
     }
 

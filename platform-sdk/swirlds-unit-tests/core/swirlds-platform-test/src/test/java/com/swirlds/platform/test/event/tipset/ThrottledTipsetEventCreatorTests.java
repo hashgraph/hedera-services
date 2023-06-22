@@ -25,13 +25,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.event.EventIntakeTask;
-import com.swirlds.platform.event.tipset.TipsetEventCreationBlocker;
+import com.swirlds.platform.event.tipset.ThrottledTipsetEventCreator;
+import com.swirlds.platform.event.tipset.TipsetEventCreator;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,8 +42,8 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("TipsetEventCreationBlocker Tests")
-class TipsetEventCreationBlockerTests {
+@DisplayName("ThrottledTipsetEventCreator Tests")
+class ThrottledTipsetEventCreatorTests {
 
     @Test
     @DisplayName("Blocked by StartUpFrozenManager Test")
@@ -57,14 +59,20 @@ class TipsetEventCreationBlockerTests {
         final StartUpEventFrozenManager startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
         when(startUpEventFrozenManager.shouldCreateEvent()).thenAnswer(invocation -> shouldCreateEvent.get());
 
-        final TipsetEventCreationBlocker blocker = new TipsetEventCreationBlocker(
-                platformContext, transactionPool, eventIntakeQueue, platformStatusSupplier, startUpEventFrozenManager);
+        final ThrottledTipsetEventCreator eventCreator = new ThrottledTipsetEventCreator(
+                platformContext,
+                Time.getCurrent(),
+                transactionPool,
+                eventIntakeQueue,
+                platformStatusSupplier,
+                startUpEventFrozenManager,
+                mock(TipsetEventCreator.class));
 
-        assertFalse(blocker.isEventCreationPermitted());
+        assertFalse(eventCreator.isEventCreationPermitted());
 
         shouldCreateEvent.set(PASS);
 
-        assertTrue(blocker.isEventCreationPermitted());
+        assertTrue(eventCreator.isEventCreationPermitted());
     }
 
     @Test
@@ -81,14 +89,20 @@ class TipsetEventCreationBlockerTests {
         final EventTransactionPool transactionPool = mock(EventTransactionPool.class);
         when(transactionPool.numSignatureTransEvent()).thenAnswer(invocation -> numSignatureTransactions.get());
 
-        final TipsetEventCreationBlocker blocker = new TipsetEventCreationBlocker(
-                platformContext, transactionPool, eventIntakeQueue, platformStatusSupplier, startUpEventFrozenManager);
+        final ThrottledTipsetEventCreator eventCreator = new ThrottledTipsetEventCreator(
+                platformContext,
+                Time.getCurrent(),
+                transactionPool,
+                eventIntakeQueue,
+                platformStatusSupplier,
+                startUpEventFrozenManager,
+                mock(TipsetEventCreator.class));
 
-        assertFalse(blocker.isEventCreationPermitted());
+        assertFalse(eventCreator.isEventCreationPermitted());
 
         numSignatureTransactions.set(1);
 
-        assertTrue(blocker.isEventCreationPermitted());
+        assertTrue(eventCreator.isEventCreationPermitted());
     }
 
     @Test
@@ -103,8 +117,14 @@ class TipsetEventCreationBlockerTests {
 
         final AtomicReference<PlatformStatus> status = new AtomicReference<>();
 
-        final TipsetEventCreationBlocker blocker = new TipsetEventCreationBlocker(
-                platformContext, transactionPool, eventIntakeQueue, status::get, startUpEventFrozenManager);
+        final ThrottledTipsetEventCreator eventCreator = new ThrottledTipsetEventCreator(
+                platformContext,
+                Time.getCurrent(),
+                transactionPool,
+                eventIntakeQueue,
+                status::get,
+                startUpEventFrozenManager,
+                mock(TipsetEventCreator.class));
 
         for (final PlatformStatus platformStatus : PlatformStatus.values()) {
             if (platformStatus == FREEZING) {
@@ -115,9 +135,9 @@ class TipsetEventCreationBlockerTests {
             status.set(platformStatus);
 
             if (platformStatus == ACTIVE || platformStatus == CHECKING) {
-                assertTrue(blocker.isEventCreationPermitted());
+                assertTrue(eventCreator.isEventCreationPermitted());
             } else {
-                assertFalse(blocker.isEventCreationPermitted());
+                assertFalse(eventCreator.isEventCreationPermitted());
             }
         }
     }
