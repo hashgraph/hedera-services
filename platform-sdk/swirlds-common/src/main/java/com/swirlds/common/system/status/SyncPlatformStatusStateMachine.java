@@ -46,8 +46,10 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * A synchronous implementation of the platform status state machine
+ * <p>
+ * NOTE: This class is NOT thread-safe. It is expected that the caller will synchronize access to this class.
  */
-public class SyncPlatformStatusStateMachine {
+public class SyncPlatformStatusStateMachine implements PlatformStatusStateMachine {
     private static final Logger logger = LogManager.getLogger(SyncPlatformStatusStateMachine.class);
 
     /**
@@ -135,11 +137,7 @@ public class SyncPlatformStatusStateMachine {
     }
 
     /**
-     * Process a platform status action.
-     * <p>
-     * Repeated calls of this method cause the platform state machine to be traversed
-     *
-     * @param action the action to process
+     * {@inheritDoc}
      */
     public void processStatusAction(@NonNull final PlatformStatusAction action) {
         Objects.requireNonNull(action);
@@ -177,5 +175,21 @@ public class SyncPlatformStatusStateMachine {
      */
     public PlatformStatus getCurrentStatus() {
         return currentStatusLogic.getStatus();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void start() {
+        // no work needed
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public synchronized void stop() {
+        // no work needed
     }
 }
