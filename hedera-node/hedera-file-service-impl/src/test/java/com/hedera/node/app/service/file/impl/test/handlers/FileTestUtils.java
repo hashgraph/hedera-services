@@ -81,7 +81,7 @@ public final class FileTestUtils {
     }
 
     static FileMetadata newFileMeta(KeyList keys) {
-        FileID fileId = FileID.newBuilder().fileNum(2337).build();
+        final FileID fileId = FileID.newBuilder().fileNum(2337).build();
         return new FileMetadata(fileId, null, keys, null, null, false);
     }
 }
