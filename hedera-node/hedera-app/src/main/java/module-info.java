@@ -35,9 +35,6 @@ module com.hedera.node.app {
     requires com.swirlds.platform;
     requires grpc.stub;
     requires io.grpc;
-    requires io.helidon.common.configurable;
-    requires io.helidon.grpc.core;
-    requires io.helidon.grpc.server;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires org.hyperledger.besu.datatypes;
