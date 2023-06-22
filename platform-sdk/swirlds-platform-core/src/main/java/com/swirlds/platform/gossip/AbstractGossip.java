@@ -21,6 +21,7 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.state.Startable;
+import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
@@ -153,8 +154,9 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         criticalQuorum = buildCriticalQuorum();
         eventObserverDispatcher.addObserver(criticalQuorum);
 
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         topology = new StaticTopology(
-                addressBook, selfId, settings.getNumConnections(), unidirectionalConnectionsEnabled());
+                addressBook, selfId, basicConfig.numConnections(), unidirectionalConnectionsEnabled());
 
         final SocketFactory socketFactory = PlatformConstructor.socketFactory(
                 crypto.getKeysAndCerts(), platformContext.getConfiguration().getConfigData(CryptoConfig.class));

@@ -221,7 +221,7 @@ public class LegacySyncGossip extends AbstractGossip {
                     .setThreadName("heartbeat")
                     .setOtherNodeId(otherId)
                     .setWork(new HeartbeatSender(
-                            otherId, sharedConnectionLocks, networkMetrics, PlatformConstructor.settingsProvider()))
+                            otherId, sharedConnectionLocks, networkMetrics, platformContext.getConfiguration()))
                     .build());
         }
 

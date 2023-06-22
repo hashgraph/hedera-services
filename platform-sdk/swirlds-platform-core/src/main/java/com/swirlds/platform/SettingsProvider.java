@@ -30,11 +30,6 @@ public interface SettingsProvider {
     int getTransactionMaxBytes();
 
     /**
-     * @see Settings#delayShuffle
-     */
-    long getDelayShuffle();
-
-    /**
      * @see Settings#socketIpTos
      */
     int getSocketIpTos();
@@ -78,9 +73,4 @@ public interface SettingsProvider {
      * @see Settings#bufferSize
      */
     int connectionStreamBufferSize();
-
-    /**
-     * @see Settings#sleepHeartbeat
-     */
-    int sleepHeartbeatMillis();
 }
