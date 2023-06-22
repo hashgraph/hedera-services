@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
@@ -142,7 +142,7 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
 
         Assertions.assertThatThrownBy(() -> subject.validate(context))
                 .isInstanceOf(PreCheckException.class)
-                .has(responseCode(INVALID_ACCOUNT_ID));
+                .has(responseCode(INVALID_TRANSACTION_BODY));
     }
 
     @Test
