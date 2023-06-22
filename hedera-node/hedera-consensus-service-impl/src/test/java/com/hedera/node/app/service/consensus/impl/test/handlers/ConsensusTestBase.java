@@ -88,8 +88,8 @@ public class ConsensusTestBase {
     @Mock(strictness = LENIENT)
     protected HandleContext handleContext;
 
-    protected MapReadableKVState<EntityNum, Topic> readableTopicState;
-    protected MapWritableKVState<EntityNum, Topic> writableTopicState;
+    protected MapReadableKVState<TopicID, Topic> readableTopicState;
+    protected MapWritableKVState<TopicID, Topic> writableTopicState;
 
     protected ReadableTopicStore readableStore;
     protected WritableTopicStore writableStore;
@@ -103,8 +103,8 @@ public class ConsensusTestBase {
     protected void refreshStoresWithCurrentTopicOnlyInReadable() {
         readableTopicState = readableTopicState();
         writableTopicState = emptyWritableTopicState();
-        given(readableStates.<EntityNum, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
-        given(writableStates.<EntityNum, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
+        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
+        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         writableStore = new WritableTopicStore(writableStates);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
@@ -113,35 +113,35 @@ public class ConsensusTestBase {
     protected void refreshStoresWithCurrentTopicInBothReadableAndWritable() {
         readableTopicState = readableTopicState();
         writableTopicState = writableTopicStateWithOneKey();
-        given(readableStates.<EntityNum, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
-        given(writableStates.<EntityNum, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
+        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
+        given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         writableStore = new WritableTopicStore(writableStates);
         given(handleContext.writableStore(WritableTopicStore.class)).willReturn(writableStore);
     }
 
     @NonNull
-    protected MapWritableKVState<EntityNum, Topic> emptyWritableTopicState() {
-        return MapWritableKVState.<EntityNum, Topic>builder(TOPICS_KEY).build();
+    protected MapWritableKVState<TopicID, Topic> emptyWritableTopicState() {
+        return MapWritableKVState.<TopicID, Topic>builder(TOPICS_KEY).build();
     }
 
     @NonNull
-    protected MapWritableKVState<EntityNum, Topic> writableTopicStateWithOneKey() {
-        return MapWritableKVState.<EntityNum, Topic>builder(TOPICS_KEY)
-                .value(topicEntityNum, topic)
+    protected MapWritableKVState<TopicID, Topic> writableTopicStateWithOneKey() {
+        return MapWritableKVState.<TopicID, Topic>builder(TOPICS_KEY)
+                .value(topicId, topic)
                 .build();
     }
 
     @NonNull
-    protected MapReadableKVState<EntityNum, Topic> readableTopicState() {
-        return MapReadableKVState.<EntityNum, Topic>builder(TOPICS_KEY)
-                .value(topicEntityNum, topic)
+    protected MapReadableKVState<TopicID, Topic> readableTopicState() {
+        return MapReadableKVState.<TopicID, Topic>builder(TOPICS_KEY)
+                .value(topicId, topic)
                 .build();
     }
 
     @NonNull
-    protected MapReadableKVState<EntityNum, Topic> emptyReadableTopicState() {
-        return MapReadableKVState.<EntityNum, Topic>builder(TOPICS_KEY).build();
+    protected MapReadableKVState<TopicID, Topic> emptyReadableTopicState() {
+        return MapReadableKVState.<TopicID, Topic>builder(TOPICS_KEY).build();
     }
 
     protected void givenValidTopic() {
@@ -163,7 +163,7 @@ public class ConsensusTestBase {
     protected void givenValidTopic(
             long autoRenewAccountNumber, boolean deleted, boolean withAdminKey, boolean withSubmitKey) {
         topic = new Topic(
-                topicId.topicNum(),
+                topicId,
                 sequenceNumber,
                 expirationTime,
                 autoRenewSecs,
@@ -174,7 +174,7 @@ public class ConsensusTestBase {
                 withAdminKey ? key : null,
                 withSubmitKey ? key : null);
         topicNoKeys = new Topic(
-                topicId.topicNum(),
+                topicId,
                 sequenceNumber,
                 expirationTime,
                 autoRenewSecs,
@@ -188,7 +188,7 @@ public class ConsensusTestBase {
 
     protected Topic createTopic() {
         return new Topic.Builder()
-                .topicNumber(topicId.topicNum())
+                .id(topicId)
                 .adminKey(key)
                 .submitKey(key)
                 .autoRenewPeriod(autoRenewSecs)
@@ -203,7 +203,7 @@ public class ConsensusTestBase {
 
     protected Topic createTopicEmptyKeys() {
         return new Topic.Builder()
-                .topicNumber(topicId.topicNum())
+                .id(topicId)
                 .autoRenewPeriod(autoRenewSecs)
                 .autoRenewAccountNumber(autoRenewId.accountNum())
                 .expiry(expirationTime)

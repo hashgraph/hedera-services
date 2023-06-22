@@ -16,6 +16,7 @@
 
 package com.swirlds.demo.virtualmerkle.transaction.handler;
 
+import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.demo.platform.fs.stresstest.proto.CreateSmartContract;
 import com.swirlds.demo.platform.fs.stresstest.proto.VirtualMerkleTransaction;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKey;
@@ -33,6 +34,8 @@ import com.swirlds.jasperdb.VirtualHashRecordSerializer;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualMap;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeAll;
@@ -44,9 +47,12 @@ public class VirtualMerkleJPDBTransactionHandlerTest {
     private static VirtualMap<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> smartContractByteCodeVM;
 
     @BeforeAll
-    public static void beforeAll() {
+    public static void beforeAll() throws IOException {
 
         final Path pathToJasperDBStorageDir = Path.of("data", "saved", "JasperDB", "1");
+        if (Files.exists(pathToJasperDBStorageDir)) {
+            FileUtils.deleteDirectory(pathToJasperDBStorageDir);
+        }
 
         final long maximumNumberOfKeyValuePairsCreation = 28750;
         final SmartContractMapKeySerializer keySerializer = new SmartContractMapKeySerializer();
