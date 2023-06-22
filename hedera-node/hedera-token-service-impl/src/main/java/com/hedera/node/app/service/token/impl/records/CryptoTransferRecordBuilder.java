@@ -16,10 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.records;
 
-
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
-
 import java.util.List;
 
 /**

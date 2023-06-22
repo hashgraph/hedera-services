@@ -46,7 +46,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
@@ -80,9 +79,9 @@ public class CryptoTransferHandler implements TransactionHandler {
         checkFungibleTokenTransfers(hbarTransfers, context, accountStore, true);
 
         //        // Translate the transaction into a sequence of composable accounting operations
-//        final var steps = decomposeToSteps(cryptoTransfer);
-//
-//        return steps.stream().flatMap(TransferStep::authorizingKeys).collect(toSet());
+        //        final var steps = decomposeToSteps(cryptoTransfer);
+        //
+        //        return steps.stream().flatMap(TransferStep::authorizingKeys).collect(toSet());
     }
 
     @Override
@@ -103,8 +102,8 @@ public class CryptoTransferHandler implements TransactionHandler {
         }
     }
 
-    private void ensureExistenceOfAliasesOrCreate(@NonNull final CryptoTransferTransactionBody op,
-                                          @NonNull final TransferContextImpl transferContext) {
+    private void ensureExistenceOfAliasesOrCreate(
+            @NonNull final CryptoTransferTransactionBody op, @NonNull final TransferContextImpl transferContext) {
         final var ensureAliasExistence = new EnsureAliasesStep(op);
         ensureAliasExistence.doIn(transferContext);
     }
@@ -129,8 +128,8 @@ public class CryptoTransferHandler implements TransactionHandler {
      * @param transferContext The transfer context
      * @return A list of steps to execute
      */
-    private List<TransferStep> decomposeIntoSteps(final CryptoTransferTransactionBody op,
-                                                  final TransferContextImpl transferContext) {
+    private List<TransferStep> decomposeIntoSteps(
+            final CryptoTransferTransactionBody op, final TransferContextImpl transferContext) {
         final List<TransferStep> steps = new ArrayList<>();
         return steps;
     }

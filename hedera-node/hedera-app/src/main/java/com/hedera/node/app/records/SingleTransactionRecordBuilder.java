@@ -75,7 +75,7 @@ public class SingleTransactionRecordBuilder
                 PrngRecordBuilder,
                 TokenMintRecordBuilder,
                 TokenCreateRecordBuilder,
-        CryptoTransferRecordBuilder {
+                CryptoTransferRecordBuilder {
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes;
@@ -308,6 +308,7 @@ public class SingleTransactionRecordBuilder
         return status;
     }
 
+    @Override
     @NonNull
     public SingleTransactionRecordBuilder accountID(@NonNull final AccountID accountID) {
         this.accountID = accountID;

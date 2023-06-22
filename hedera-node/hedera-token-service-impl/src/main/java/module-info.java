@@ -16,6 +16,8 @@ module com.hedera.node.app.service.token.impl {
     requires org.slf4j;
     requires tuweni.bytes;
     requires static com.github.spotbugs.annotations;
+    requires org.hyperledger.besu.secp256k1;
+    requires org.bouncycastle.provider;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;
