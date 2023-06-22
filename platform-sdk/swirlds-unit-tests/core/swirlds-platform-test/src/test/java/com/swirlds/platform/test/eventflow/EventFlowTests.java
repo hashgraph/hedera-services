@@ -97,9 +97,6 @@ import org.mockito.stubbing.Answer;
  */
 class EventFlowTests {
 
-    /** Delay in milliseconds between shuffles. */
-    private static final long SHUFFLE_DELAY_MS = 600;
-
     /** The maximum allowed bytes per transaction */
     private static final Integer TX_MAX_BYTES = 10;
 
@@ -573,7 +570,6 @@ class EventFlowTests {
                 .setSequentialIds(true)
                 .build();
         when(settingsProvider.getTransactionMaxBytes()).thenReturn(TX_MAX_BYTES);
-        when(settingsProvider.getDelayShuffle()).thenReturn(SHUFFLE_DELAY_MS);
         when(settingsProvider.getThrottleTransactionQueueSize()).thenReturn(THROTTLE_TRANSACTION_QUEUE_SIZE);
         when(settingsProvider.getMaxTransactionBytesPerEvent()).thenReturn(2048);
 

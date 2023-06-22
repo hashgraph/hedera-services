@@ -24,6 +24,7 @@ description = "Hedera API"
 
 dependencies {
     javaModuleDependencies {
+        testImplementation(project(":hapi"))
         // we depend on the protoc compiled hapi during test as we test our pbj generated code
         // against it to make sure it is compatible
         testImplementation(gav("com.google.protobuf.util"))
