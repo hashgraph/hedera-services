@@ -163,12 +163,6 @@ public final class GrpcServiceBuilder {
         return this;
     }
 
-    /**
-     * Build a gRPC {@link ServiceDescriptor} for each transaction and query method registered with
-     * this builder.
-     *
-     * @return a non-null {@link ServiceDescriptor}.
-     */
     public Object build(final Metrics metrics) {
 //    public ServiceDescriptor build(final Metrics metrics) {
 //        final var builder = ServiceDescriptor.builder(null, serviceName);
