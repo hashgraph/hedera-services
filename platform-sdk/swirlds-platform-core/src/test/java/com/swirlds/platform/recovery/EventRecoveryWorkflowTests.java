@@ -16,10 +16,34 @@
 
 package com.swirlds.platform.recovery;
 
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.events.ConsensusEvent;
+import com.swirlds.common.test.RandomUtils;
+import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.EmergencyRecoveryFile;
+import com.swirlds.platform.state.MinGenInfo;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.RandomUtils.randomHash;
 import static com.swirlds.common.test.RandomUtils.randomPositiveLong;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -32,32 +56,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.events.ConsensusEvent;
-import com.swirlds.common.test.RandomUtils;
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.state.EmergencyRecoveryFile;
-import com.swirlds.platform.state.MinGenInfo;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 class EventRecoveryWorkflowTests {
 
@@ -119,71 +117,6 @@ class EventRecoveryWorkflowTests {
                 assertEquals(minGenForRound.get(expectedRound), minGenInfo.minimumGeneration(), "unexpected round");
                 expectedRound++;
             }
-
-            roundNumber++;
-        }
-    }
-
-    @Test
-    @DisplayName("Collect Events For Round Test")
-    void collectEventsForRoundTest() {
-
-        // FUTURE WORK: this test can be removed once events are removed from the state.
-
-        final int roundsToSimulate = 50;
-        final int roundsNonAncient = 26;
-        final int eventsPerRound = 10;
-
-        final List<EventImpl> expectedEvents = new LinkedList<>();
-
-        long roundNumber = 1;
-
-        // Generate some initial rounds
-        for (long i = 0; i < roundsNonAncient + 1; i++) {
-            for (int eventIndex = 0; eventIndex < eventsPerRound; eventIndex++) {
-                final EventImpl event = mock(EventImpl.class);
-                when(event.getRoundReceived()).thenReturn(roundNumber);
-                expectedEvents.add(event);
-            }
-            roundNumber++;
-        }
-
-        // Simulate further rounds.
-        for (long i = 0; i < roundsToSimulate; i++) {
-
-            final EventImpl[] previousEvents = new EventImpl[expectedEvents.size()];
-            for (int index = 0; index < expectedEvents.size(); index++) {
-                previousEvents[index] = expectedEvents.get(index);
-            }
-
-            // Generate new events
-            final List<ConsensusEvent> newEvents = new ArrayList<>();
-            for (int eventIndex = 0; eventIndex < eventsPerRound; eventIndex++) {
-                final EventImpl event = mock(EventImpl.class);
-                when(event.getRoundReceived()).thenReturn(roundNumber);
-                newEvents.add(event);
-                expectedEvents.add(event);
-            }
-
-            // Remove old events
-            final long roundToRemove = expectedEvents.get(0).getRoundReceived();
-            final Iterator<EventImpl> iterator = expectedEvents.iterator();
-            while (iterator.hasNext()) {
-                if (iterator.next().getRoundReceived() == roundToRemove) {
-                    iterator.remove();
-                } else {
-                    break;
-                }
-            }
-
-            final Round round = mock(Round.class);
-            when(round.getRoundNum()).thenReturn(roundNumber);
-            when(round.iterator()).thenReturn(newEvents.iterator());
-
-            final EventImpl[] eventsForState =
-                    EventRecoveryWorkflow.collectEventsForRound(roundsNonAncient, previousEvents, round);
-
-            assertArrayEquals(expectedEvents.toArray(), eventsForState, "unexpected events");
 
             roundNumber++;
         }

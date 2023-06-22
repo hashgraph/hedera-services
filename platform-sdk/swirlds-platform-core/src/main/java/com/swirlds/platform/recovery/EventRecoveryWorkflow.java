@@ -350,9 +350,6 @@ public final class EventRecoveryWorkflow {
                 .getPlatformData()
                 .setRound(round.getRoundNum())
                 .setHashEventsCons(getHashEventsCons(previousState.get().getHashEventsCons(), round))
-                // TODO check if this can be removed
-                // .setEvents(collectEventsForRound(
-                //        roundsNonAncient, previousState.get().getEvents(), round))
                 .setConsensusTimestamp(currentRoundTimestamp)
                 .setSnapshot(new ConsensusSnapshot(
                         round.getRoundNum(),
@@ -478,33 +475,6 @@ public final class EventRecoveryWorkflow {
 
         return CompareTo.isLessThan(previousRoundTimestamp, freezeTime)
                 && CompareTo.isGreaterThanOrEqualTo(currentRoundTimestamp, freezeTime);
-    }
-
-    /**
-     * Collect the events that need to go into a signed state using the previous round's state and the new round.
-     *
-     * @param roundsNonAncient the number of rounds until an event becomes ancient
-     * @param previousEvents   the previous round's state
-     * @param round            the current round
-     * @return an array of all non-ancient events
-     */
-    static EventImpl[] collectEventsForRound(
-            final long roundsNonAncient, final EventImpl[] previousEvents, final Round round) {
-
-        final long firstRoundToKeep = round.getRoundNum() - roundsNonAncient;
-
-        final List<EventImpl> eventList = new ArrayList<>();
-        for (final EventImpl event : previousEvents) {
-            if (event.getRoundReceived() >= firstRoundToKeep) {
-                eventList.add(event);
-            }
-        }
-
-        for (final ConsensusEvent event : round) {
-            eventList.add((EventImpl) event);
-        }
-
-        return eventList.toArray(new EventImpl[0]);
     }
 
     /**
