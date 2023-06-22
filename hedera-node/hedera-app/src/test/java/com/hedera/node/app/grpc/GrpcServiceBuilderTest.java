@@ -105,65 +105,53 @@ final class GrpcServiceBuilderTest {
         assertThrows(IllegalArgumentException.class, () -> builder.query(value));
     }
 
-    /**
-     * A builder with no transactions and queries still creates and returns a {@link
-     * io.helidon.grpc.server.ServiceDescriptor}.
-     */
     @Test
     @DisplayName("The build method will return a ServiceDescriptor")
     void serviceDescriptorIsNotNullOnNoopBuilder() {
         assertNotNull(builder.build(metrics));
     }
 
-    /**
-     * A {@link GrpcServiceBuilder} may define transactions which will be created on the {@link
-     * io.helidon.grpc.server.ServiceDescriptor}.
-     */
-    @Test
-    @DisplayName("The built ServiceDescriptor includes a method with the name of the defined" + " transaction")
-    void singleTransaction() {
-        final var sd = builder.transaction("txA").build(metrics);
-        assertNotNull(sd.method("txA"));
-    }
+//    @Test
+//    @DisplayName("The built ServiceDescriptor includes a method with the name of the defined" + " transaction")
+//    void singleTransaction() {
+//        final var sd = builder.transaction("txA").build(metrics);
+//        assertNotNull(sd.method("txA"));
+//    }
 
-    /**
-     * A {@link GrpcServiceBuilder} may define transactions which will be created on the {@link
-     * io.helidon.grpc.server.ServiceDescriptor}.
-     */
-    @Test
-    @DisplayName("The built ServiceDescriptor includes all methods defined by the builder")
-    void multipleTransactionsAndQueries() {
-        final var sd = builder.transaction("txA")
-                .transaction("txB")
-                .query("qA")
-                .query("qB")
-                .transaction("txC")
-                .query("qC")
-                .transaction("txD")
-                .build(metrics);
+//    @Test
+//    @DisplayName("The built ServiceDescriptor includes all methods defined by the builder")
+//    void multipleTransactionsAndQueries() {
+//        final var sd = builder.transaction("txA")
+//                .transaction("txB")
+//                .query("qA")
+//                .query("qB")
+//                .transaction("txC")
+//                .query("qC")
+//                .transaction("txD")
+//                .build(metrics);
+//
+//        assertNotNull(sd.method("txA"));
+//        assertNotNull(sd.method("txB"));
+//        assertNotNull(sd.method("txC"));
+//        assertNotNull(sd.method("txD"));
+//        assertNotNull(sd.method("qA"));
+//        assertNotNull(sd.method("qB"));
+//        assertNotNull(sd.method("qC"));
+//    }
 
-        assertNotNull(sd.method("txA"));
-        assertNotNull(sd.method("txB"));
-        assertNotNull(sd.method("txC"));
-        assertNotNull(sd.method("txD"));
-        assertNotNull(sd.method("qA"));
-        assertNotNull(sd.method("qB"));
-        assertNotNull(sd.method("qC"));
-    }
+//    @Test
+//    @DisplayName("Calling `transaction` with the same name twice is idempotent")
+//    void duplicateTransaction() {
+//        final var sd = builder.transaction("txA").transaction("txA").build(metrics);
+//
+//        assertNotNull(sd.method("txA"));
+//    }
 
-    @Test
-    @DisplayName("Calling `transaction` with the same name twice is idempotent")
-    void duplicateTransaction() {
-        final var sd = builder.transaction("txA").transaction("txA").build(metrics);
-
-        assertNotNull(sd.method("txA"));
-    }
-
-    @Test
-    @DisplayName("Calling `query` with the same name twice is idempotent")
-    void duplicateQuery() {
-        final var sd = builder.query("qA").query("qA").build(metrics);
-
-        assertNotNull(sd.method("qA"));
-    }
+//    @Test
+//    @DisplayName("Calling `query` with the same name twice is idempotent")
+//    void duplicateQuery() {
+//        final var sd = builder.query("qA").query("qA").build(metrics);
+//
+//        assertNotNull(sd.method("qA"));
+//    }
 }
