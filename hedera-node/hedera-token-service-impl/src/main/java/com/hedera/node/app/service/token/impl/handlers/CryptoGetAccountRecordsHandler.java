@@ -72,7 +72,8 @@ public class CryptoGetAccountRecordsHandler extends PaidQueryHandler {
         requireNonNull(context);
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final var query = context.query();
-        final var op = query.cryptoGetAccountRecordsOrThrow();
+        final var op = query.cryptoGetAccountRecords();
+        validateTruePreCheck(op != null, INVALID_ACCOUNT_ID);
 
         final var account = accountStore.getAccountById(op.accountIDOrElse(AccountID.DEFAULT));
         validateTruePreCheck(account != null, INVALID_ACCOUNT_ID);

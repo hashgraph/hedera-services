@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
@@ -32,6 +33,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.file.FileGetInfoQuery;
 import com.hedera.hapi.node.token.CryptoGetAccountRecordsQuery;
 import com.hedera.hapi.node.token.CryptoGetAccountRecordsResponse;
 import com.hedera.hapi.node.token.CryptoGetStakersQuery;
@@ -132,7 +134,15 @@ class CryptoGetAccountRecordsHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void validatesNoAccountRecordsQuery() {
-        Assertions.assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(NullPointerException.class);
+        given(context.query())
+                .willReturn(Query.newBuilder()
+                        // Intentionally the wrong query type
+                        .fileGetInfo(FileGetInfoQuery.DEFAULT)
+                        .build());
+
+        Assertions.assertThatThrownBy(() -> subject.validate(context))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_ACCOUNT_ID));
     }
 
     @Test
