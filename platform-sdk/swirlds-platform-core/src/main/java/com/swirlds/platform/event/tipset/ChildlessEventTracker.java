@@ -21,6 +21,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -31,8 +32,6 @@ public class ChildlessEventTracker {
 
     private final Set<EventDescriptor> childlessEvents = new HashSet<>();
 
-    public ChildlessEventTracker() {}
-
     /**
      * Add a new event.
      *
@@ -40,7 +39,7 @@ public class ChildlessEventTracker {
      * @param parents         the parents of the event being added
      */
     public void addEvent(@NonNull final EventDescriptor eventDescriptor, @NonNull final List<EventDescriptor> parents) {
-
+        Objects.requireNonNull(eventDescriptor);
         childlessEvents.add(eventDescriptor);
 
         for (final EventDescriptor parent : parents) {

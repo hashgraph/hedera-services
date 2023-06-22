@@ -32,7 +32,11 @@ import java.util.function.Supplier;
  */
 public class TipsetEventCreationBlocker {
 
+    /**
+     * Prevent new events from being created if the event intake queue ever meets or exceeds this size.
+     */
     private final int eventIntakeThrottle;
+
     private final EventTransactionPool transactionPool;
     private final QueueThread<EventIntakeTask> eventIntakeQueue;
     private final Supplier<PlatformStatus> platformStatusSupplier;

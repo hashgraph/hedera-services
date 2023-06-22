@@ -57,7 +57,7 @@ public final class TipsetUtils {
     /**
      * Get the descriptors of an event's parents.
      *
-     * @param event the event to get the descriptor of
+     * @param event the event to get parent descriptors for
      */
     @NonNull
     public static List<EventDescriptor> getParentDescriptors(@NonNull final EventImpl event) {
@@ -74,7 +74,7 @@ public final class TipsetUtils {
     /**
      * Get the descriptors of an event's parents.
      *
-     * @param event the event to the parent descriptors of
+     * @param event the event to the parent descriptors for
      * @return a list of parent descriptors
      */
     @NonNull

@@ -85,7 +85,7 @@ public abstract class AbstractSequenceMap<K, V> implements SequenceMap<K, V> {
      *                                   the allowed by the current capacity, increase capacity and then insert the
      *                                   element. Does not expand if the sequence number is too low to fit in the
      *                                   current capacity.
-     * @param getSequenceNumberFromKey   a method that extracts the sequence number from a 1key
+     * @param getSequenceNumberFromKey   a method that extracts the sequence number from a key
      */
     @SuppressWarnings("unchecked")
     protected AbstractSequenceMap(

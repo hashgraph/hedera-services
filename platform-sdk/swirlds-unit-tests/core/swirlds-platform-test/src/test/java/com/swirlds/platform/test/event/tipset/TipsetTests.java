@@ -151,7 +151,7 @@ class TipsetTests {
                 expectedAdvancementCount++;
             }
         }
-        assertEquals(expectedAdvancementCount, initialTipset.getWeightedAdvancementCount(selfId, comparisonTipset));
+        assertEquals(expectedAdvancementCount, initialTipset.getTipAdvancementWeight(selfId, comparisonTipset));
     }
 
     @Test
@@ -206,6 +206,6 @@ class TipsetTests {
             }
         }
 
-        assertEquals(expectedAdvancementCount, initialTipset.getWeightedAdvancementCount(selfId, comparisonTipset));
+        assertEquals(expectedAdvancementCount, initialTipset.getTipAdvancementWeight(selfId, comparisonTipset));
     }
 }

@@ -31,12 +31,12 @@ import java.util.Objects;
 /**
  * Computes and tracks tipsets for non-ancient events.
  */
-public class TipsetBuilder {
+public class TipsetTracker {
 
     private static final int INITIAL_TIPSET_MAP_CAPACITY = 64;
 
     /**
-     * Tipsets for all recent events we know about.
+     * Tipsets for all non-ancient events we know about.
      */
     private final SequenceMap<EventDescriptor, Tipset> tipsets;
 
@@ -54,7 +54,7 @@ public class TipsetBuilder {
      *
      * @param addressBook the current address book
      */
-    public TipsetBuilder(@NonNull final AddressBook addressBook) {
+    public TipsetTracker(@NonNull final AddressBook addressBook) {
 
         this.addressBook = Objects.requireNonNull(addressBook);
 

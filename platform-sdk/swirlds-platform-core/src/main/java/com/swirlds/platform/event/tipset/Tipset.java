@@ -50,7 +50,7 @@ public class Tipset {
     }
 
     /**
-     * Build an empty tipset (i.e. where all tip weights are 0) using another tipset as a template.
+     * Build an empty tipset (i.e. where all generations are -1) using another tipset as a template.
      *
      * @param tipset the tipset to use as a template
      * @return a new empty tipset
@@ -67,7 +67,7 @@ public class Tipset {
      * <p>
      * The resulting tipset will contain the union of the node IDs of all source tipsets. The generation for each node
      * ID will be equal to the maximum generation found for that node ID from all source tipsets. If a tipset does not
-     * contain a generation for a node ID, the generation for that node ID is considered to be 0.
+     * contain a generation for a node ID, the generation for that node ID is considered to be -1.
      * </p>
      *
      * @param tipsets the tipsets to merge, must be non-empty, tipsets must be constructed from the same address book or
@@ -139,8 +139,7 @@ public class Tipset {
 
     /**
      * <p>
-     * Get the number of tip advancements, weighted using the provided function, between this tipset and another
-     * tipset.
+     * Get the combined weight of all nodes which experienced a tip advancement between this tipset and another tipset.
      * </p>
      *
      * <p>
@@ -153,7 +152,7 @@ public class Tipset {
      * @param that   the tipset to compare to
      * @return the number of tip advancements to get from this tipset to that tipset
      */
-    public long getWeightedAdvancementCount(@NonNull final NodeId selfId, @NonNull final Tipset that) {
+    public long getTipAdvancementWeight(@NonNull final NodeId selfId, @NonNull final Tipset that) {
         long count = 0;
 
         final int selfIndex = addressBook.getIndexOfNodeId(selfId);

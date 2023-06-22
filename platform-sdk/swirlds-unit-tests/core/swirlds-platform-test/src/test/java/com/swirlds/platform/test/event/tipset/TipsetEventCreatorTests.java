@@ -45,9 +45,9 @@ import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.tipset.TipsetBuilder;
 import com.swirlds.platform.event.tipset.TipsetEventCreator;
 import com.swirlds.platform.event.tipset.TipsetScoreCalculator;
+import com.swirlds.platform.event.tipset.TipsetTracker;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
@@ -107,7 +107,7 @@ class TipsetEventCreatorTests {
             @NonNull final Random random,
             @NonNull final Time time,
             @NonNull final AddressBook addressBook,
-            @NonNull final TipsetBuilder tipsetBuilder,
+            @NonNull final TipsetTracker tipsetTracker,
             @NonNull final TransactionSupplier transactionSupplier) {
 
         final Map<NodeId, SimulatedNode> eventCreators = new HashMap<>();
@@ -120,7 +120,7 @@ class TipsetEventCreatorTests {
                     buildEventCreator(random, time, addressBook, address.getNodeId(), transactionSupplier);
 
             final TipsetScoreCalculator tipsetScoreCalculator =
-                    new TipsetScoreCalculator(platformContext, addressBook, address.getNodeId(), tipsetBuilder);
+                    new TipsetScoreCalculator(platformContext, addressBook, address.getNodeId(), tipsetTracker);
 
             eventCreators.put(
                     address.getNodeId(), new SimulatedNode(address.getNodeId(), eventCreator, tipsetScoreCalculator));
@@ -134,7 +134,7 @@ class TipsetEventCreatorTests {
             @NonNull final GossipEvent newEvent,
             @NonNull final ConsensusTransactionImpl[] expectedTransactions,
             @NonNull final SimulatedNode simulatedNode,
-            @NonNull final TipsetBuilder tipsetBuilder) {
+            @NonNull final TipsetTracker tipsetTracker) {
 
         final EventImpl selfParent = events.get(newEvent.getHashedData().getSelfParentHash());
         final long selfParentGeneration = selfParent == null ? -1 : selfParent.getGeneration();
@@ -175,7 +175,7 @@ class TipsetEventCreatorTests {
 
         // Validate tipset constraints.
         final EventDescriptor descriptor = newEvent.getDescriptor();
-        tipsetBuilder.addEvent(descriptor, getParentDescriptors(newEvent));
+        tipsetTracker.addEvent(descriptor, getParentDescriptors(newEvent));
         if (selfParent != null) {
             // Except for a genesis event, all other new events must have a positive advancement score.
             assertTrue(simulatedNode.tipsetScoreCalculator.addEventAndGetAdvancementScore(descriptor) > 0);
@@ -244,10 +244,10 @@ class TipsetEventCreatorTests {
 
         // This tipset builder is used for validation. It's ok to use the same one for all nodes,
         // since it just needs to build a tipset for each event.
-        final TipsetBuilder tipsetBuilder = new TipsetBuilder(addressBook);
+        final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
 
         final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, tipsetBuilder, transactionSupplier::get);
+                buildSimulatedNodes(random, time, addressBook, tipsetTracker, transactionSupplier::get);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -268,7 +268,7 @@ class TipsetEventCreatorTests {
                 linkAndDistributeEvent(nodes, events, event);
 
                 assertEquals(event.getHashedData().getTimeCreated(), time.now());
-                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetBuilder);
+                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker);
             }
         }
     }
@@ -292,10 +292,10 @@ class TipsetEventCreatorTests {
 
         // This tipset builder is used for validation. It's ok to use the same one for all nodes,
         // since it just needs to build a tipset for each event.
-        final TipsetBuilder tipsetBuilder = new TipsetBuilder(addressBook);
+        final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
 
         final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, tipsetBuilder, transactionSupplier::get);
+                buildSimulatedNodes(random, time, addressBook, tipsetTracker, transactionSupplier::get);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -327,7 +327,7 @@ class TipsetEventCreatorTests {
                 linkAndDistributeEvent(nodes, events, event);
 
                 assertEquals(event.getHashedData().getTimeCreated(), time.now());
-                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetBuilder);
+                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker);
             }
 
             assertTrue(atLeastOneEventCreated);
@@ -354,10 +354,10 @@ class TipsetEventCreatorTests {
 
         // This tipset builder is used for validation. It's ok to use the same one for all nodes,
         // since it just needs to build a tipset for each event.
-        final TipsetBuilder tipsetBuilder = new TipsetBuilder(addressBook);
+        final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
 
         final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, tipsetBuilder, transactionSupplier::get);
+                buildSimulatedNodes(random, time, addressBook, tipsetTracker, transactionSupplier::get);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -386,7 +386,7 @@ class TipsetEventCreatorTests {
                     linkAndDistributeEvent(nodes, events, event);
 
                     assertEquals(event.getHashedData().getTimeCreated(), time.now());
-                    validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetBuilder);
+                    validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker);
 
                     // At best, we can create a genesis event and one event per node in the network.
                     // We are unlikely to create this many, but we definitely shouldn't be able to go beyond this.

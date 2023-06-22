@@ -29,7 +29,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.tipset.Tipset;
-import com.swirlds.platform.event.tipset.TipsetBuilder;
+import com.swirlds.platform.event.tipset.TipsetTracker;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,7 +42,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("TipsetTracker Tests")
-class TipsetBuilderTests {
+class TipsetTrackerTests {
 
     private static void assertTipsetEquality(
             @NonNull final AddressBook addressBook, @NonNull final Tipset expected, @NonNull final Tipset actual) {
@@ -69,7 +69,7 @@ class TipsetBuilderTests {
         final Map<NodeId, EventDescriptor> latestEvents = new HashMap<>();
         final Map<EventDescriptor, Tipset> expectedTipsets = new HashMap<>();
 
-        final TipsetBuilder tracker = new TipsetBuilder(addressBook);
+        final TipsetTracker tracker = new TipsetTracker(addressBook);
 
         for (int eventIndex = 0; eventIndex < 1000; eventIndex++) {
 

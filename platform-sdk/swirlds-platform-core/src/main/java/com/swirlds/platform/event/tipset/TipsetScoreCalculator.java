@@ -43,10 +43,12 @@ public class TipsetScoreCalculator {
     /**
      * Builds tipsets for each event. Is maintained outside this object.
      */
-    private final TipsetBuilder tipsetBuilder;
+    private final TipsetTracker tipsetTracker;
 
     /**
-     * The current tipset snapshot.
+     * The current tipset snapshot. This is updated to the latest self event's tipset whenever the targeted weighted
+     * advancement between the current snapshot and the new event's tipset exceeds the threshold of 2/3 consensus weight
+     * minus the self weight.
      */
     private Tipset snapshot;
 
@@ -58,7 +60,7 @@ public class TipsetScoreCalculator {
     /**
      * The number of snapshots to keep in {@link #snapshotHistory}.
      */
-    private final int snapshotHistorySize;
+    private final int maxSnapshotHistorySize;
 
     /**
      * The total number of nodes in the address book.
@@ -91,27 +93,27 @@ public class TipsetScoreCalculator {
      * @param platformContext the platform context
      * @param addressBook     the current address book
      * @param selfId          the ID of the node tracked by this window
-     * @param tipsetBuilder   builds tipsets for individual events
+     * @param tipsetTracker   builds tipsets for individual events
      */
     public TipsetScoreCalculator(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final TipsetBuilder tipsetBuilder) {
+            @NonNull final TipsetTracker tipsetTracker) {
 
         this.selfId = Objects.requireNonNull(selfId);
-        this.tipsetBuilder = Objects.requireNonNull(tipsetBuilder);
+        this.tipsetTracker = Objects.requireNonNull(tipsetTracker);
+        Objects.requireNonNull(addressBook);
 
         nodeCount = addressBook.getSize();
         totalWeight = addressBook.getTotalWeight();
         selfWeight = addressBook.getAddress(selfId).getWeight();
         maximumPossibleScore = totalWeight - selfWeight;
-        snapshotHistorySize = platformContext
+        maxSnapshotHistorySize = platformContext
                 .getConfiguration()
                 .getConfigData(EventCreationConfig.class)
                 .tipsetSnapshotHistorySize();
 
-        Objects.requireNonNull(addressBook);
         this.snapshot = new Tipset(addressBook);
         snapshotHistory.add(snapshot);
     }
@@ -137,10 +139,14 @@ public class TipsetScoreCalculator {
      * event caused consensus to advance more. A score change of 0 means that this event did not advance consensus. A
      * score change close to the total weight means that this event did a very good job at advancing consensus. It's
      * impossible to get a perfect score, since the weight of advancing self events is not included. The maximum score
-     * an event can achieve is equal to the sum of all weights minus the sum of this node's weight.
+     * an event can achieve is equal to the sum of all weights minus this node's weight.
+     * <p>
+     * Whenever the total advancement score of a new event exceeds the threshold (2/3 minus self weight), the snapshot
+     * is set to be equal to this event's tipset.
      *
      * @param event the event that is being added
-     * @return the change in the tipset advancement score
+     * @return the change in this event's tipset score compared to the tipset score of the previous event passed to this
+     * method
      */
     public long addEventAndGetAdvancementScore(@NonNull final EventDescriptor event) {
         Objects.requireNonNull(event);
@@ -148,12 +154,12 @@ public class TipsetScoreCalculator {
             throw new IllegalArgumentException("event creator must be the same as the window ID");
         }
 
-        final Tipset eventTipset = tipsetBuilder.getTipset(event);
+        final Tipset eventTipset = tipsetTracker.getTipset(event);
         if (eventTipset == null) {
             throw new IllegalArgumentException("event " + event + " is not in the tipset tracker");
         }
 
-        final long score = snapshot.getWeightedAdvancementCount(selfId, eventTipset);
+        final long score = snapshot.getTipAdvancementWeight(selfId, eventTipset);
         if (score > maximumPossibleScore) {
             throw new IllegalStateException(
                     "score " + score + " is greater than the maximum possible score " + maximumPossibleScore);
@@ -164,7 +170,7 @@ public class TipsetScoreCalculator {
         if (isSuperMajority(score + selfWeight, totalWeight)) {
             snapshot = eventTipset;
             snapshotHistory.add(snapshot);
-            if (snapshotHistory.size() > snapshotHistorySize) {
+            if (snapshotHistory.size() > maxSnapshotHistorySize) {
                 snapshotHistory.remove();
             }
             previousScore = 0;
@@ -188,23 +194,23 @@ public class TipsetScoreCalculator {
 
         final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
         for (final EventDescriptor parent : parents) {
-            parentTipsets.add(tipsetBuilder.getTipset(parent));
+            parentTipsets.add(tipsetTracker.getTipset(parent));
         }
 
         // Don't bother advancing the self generation, since self advancement doesn't contribute to tipset score.
         final Tipset newTipset = Tipset.merge(parentTipsets);
 
-        return snapshot.getWeightedAdvancementCount(selfId, newTipset) - previousScore;
+        return snapshot.getTipAdvancementWeight(selfId, newTipset) - previousScore;
     }
 
     /**
-     * Compute the current maximum bully score with respect to all nodes. This is a measure of how well slow node's
+     * Compute the current maximum bully score with respect to all nodes. This is a measure of how well slow nodes'
      * events are being incorporated in the hashgraph by faster nodes. A high score means slow nodes are being bullied
      * by fast nodes. A low score means slow nodes are being included in consensus. Lower scores are better.
      *
      * @return the current tipset bully score
      */
-    public int getBullyScore() {
+    public int getMaxBullyScore() {
         int bullyScore = 0;
         for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
             bullyScore = Math.max(bullyScore, getBullyScoreForNodeIndex(nodeIndex));
@@ -215,13 +221,17 @@ public class TipsetScoreCalculator {
     /**
      * Get the bully score with respect to one node. A high bully score means that we have access to events that could
      * go into our ancestry, but for whatever reason we have decided not to put into our ancestry.
+     * <p>
+     * The bully score is defined as the number times the snapshot has been advanced without updating the generation of
+     * a particular node. For nodes that do not have any events that are legal other parents, the bully score is defined
+     * to be 0, regardless of how many times the snapshot has been advanced.
      *
      * @param nodeIndex the index of the node in question
      * @return the bully score with respect to this node
      */
     public int getBullyScoreForNodeIndex(final int nodeIndex) {
         int bullyScore = 0;
-        final long latestGeneration = tipsetBuilder.getLatestGenerationForNodeIndex(nodeIndex);
+        final long latestGeneration = tipsetTracker.getLatestGenerationForNodeIndex(nodeIndex);
 
         // Iterate backwards in time until we find an event from the node being added to our ancestry, or if
         // we find that there are no eligible nodes to be added to our ancestry.

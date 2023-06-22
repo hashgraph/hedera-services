@@ -35,13 +35,14 @@ import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.PreConsensusEventObserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * A factory for creating {@link TipsetEventCreator} instances.
+ * A factory for creating {@link TipsetEventCreationManager} instances.
  */
 public final class TipsetEventCreationManagerFactory {
 
@@ -62,8 +63,9 @@ public final class TipsetEventCreationManagerFactory {
      * @param eventObserverDispatcher   wires together event intake logic
      * @param platformStatusSupplier    provides the current platform status
      * @param startUpEventFrozenManager manages the start-up event frozen state
-     * @return a new tipset event creation manager
+     * @return a new tipset event creation manager, or null if tipset event creation is disabled
      */
+    @Nullable
     public static TipsetEventCreationManager buildTipsetEventCreationManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,

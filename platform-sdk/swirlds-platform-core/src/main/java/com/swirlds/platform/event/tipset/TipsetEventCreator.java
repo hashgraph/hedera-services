@@ -56,12 +56,19 @@ public class TipsetEventCreator {
     private final Signer signer;
     private final AddressBook addressBook;
     private final NodeId selfId;
-    private final TipsetBuilder tipsetBuilder;
+    private final TipsetTracker tipsetTracker;
     private final TipsetScoreCalculator tipsetScoreCalculator;
     private final ChildlessEventTracker childlessOtherEventTracker;
     private final TransactionSupplier transactionSupplier;
     private final SoftwareVersion softwareVersion;
+
+    /**
+     * The bully score is divided by this number to get the probability of creating an event that reduces the bully
+     * score. The higher this number is, the lower the probability is that an event will be created that reduces the
+     * bully score.
+     */
     private final double antiBullyingFactor;
+
     private final TipsetMetrics tipsetMetrics;
 
     /**
@@ -115,8 +122,8 @@ public class TipsetEventCreator {
         cryptography = platformContext.getCryptography();
         antiBullyingFactor = Math.max(1.0, eventCreationConfig.antiBullyingFactor());
         tipsetMetrics = new TipsetMetrics(platformContext);
-        tipsetBuilder = new TipsetBuilder(addressBook);
-        tipsetScoreCalculator = new TipsetScoreCalculator(platformContext, addressBook, selfId, tipsetBuilder);
+        tipsetTracker = new TipsetTracker(addressBook);
+        tipsetScoreCalculator = new TipsetScoreCalculator(platformContext, addressBook, selfId, tipsetTracker);
         childlessOtherEventTracker = new ChildlessEventTracker();
     }
 
@@ -146,7 +153,7 @@ public class TipsetEventCreator {
         final EventDescriptor descriptor = buildDescriptor(event);
         final List<EventDescriptor> parentDescriptors = getParentDescriptors(event);
 
-        tipsetBuilder.addEvent(descriptor, parentDescriptors);
+        tipsetTracker.addEvent(descriptor, parentDescriptors);
 
         if (!selfEvent) {
             childlessOtherEventTracker.addEvent(descriptor, parentDescriptors);
@@ -159,7 +166,7 @@ public class TipsetEventCreator {
      * @param minimumGenerationNonAncient the new minimum generation non-ancient
      */
     public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        tipsetBuilder.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+        tipsetTracker.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
         childlessOtherEventTracker.pruneOldEvents(minimumGenerationNonAncient);
     }
 
@@ -170,7 +177,7 @@ public class TipsetEventCreator {
      */
     @Nullable
     public GossipEvent maybeCreateEvent() {
-        final long bullyScore = tipsetScoreCalculator.getBullyScore();
+        final long bullyScore = tipsetScoreCalculator.getMaxBullyScore();
         tipsetMetrics.getBullyScoreMetric().update(bullyScore);
 
         // Never bother with anti-bullying techniques if we have a bully score of 1. We are pretty much guaranteed
@@ -206,6 +213,8 @@ public class TipsetEventCreator {
 
         if (lastSelfEvent != null && bestOtherParent == null) {
             // There exist no parents that can advance consensus, and this is not our first event.
+            // The only time it's ok to create an event with no other parent is when we are creating
+            // our first event.
             return null;
         }
 
@@ -234,6 +243,11 @@ public class TipsetEventCreator {
             final long tipsetScore = tipsetScoreCalculator.getTheoreticalAdvancementScore(List.of(nerd));
 
             if (bullyScore > 1 && tipsetScore > 0) {
+                // Note: if bully score is greater than 1, it is mathematically not possible
+                // for the tipset score to be 0. But in the interest in extreme caution,
+                // we check anyway, since it is very important never to create events with
+                // an advancement score of 0.
+
                 nerds.add(nerd);
                 bullyScores.add(bullyScore);
                 bullyScoreSum += bullyScore;
@@ -241,8 +255,10 @@ public class TipsetEventCreator {
         }
 
         if (nerds.isEmpty()) {
-            // No eligible nerds, choose the event with the best tipset score.
-            return createEventByOptimizingTipsetScore();
+            // Note: this should be impossible, since we will not enter this method in the first
+            // place if there are no nerds. But better to be safe than sorry, and returning null
+            // is an acceptable way of saying "I can't create an event right now".
+            return null;
         }
 
         // Choose a random nerd.
@@ -277,7 +293,7 @@ public class TipsetEventCreator {
         final GossipEvent event = buildEventFromParents(otherParent);
 
         final EventDescriptor descriptor = buildDescriptor(event);
-        tipsetBuilder.addEvent(descriptor, parentDescriptors);
+        tipsetTracker.addEvent(descriptor, parentDescriptors);
         final long score = tipsetScoreCalculator.addEventAndGetAdvancementScore(descriptor);
         final double scoreRatio = score / (double) tipsetScoreCalculator.getMaximumPossibleScore();
         tipsetMetrics.getTipsetScoreMetric().update(scoreRatio);

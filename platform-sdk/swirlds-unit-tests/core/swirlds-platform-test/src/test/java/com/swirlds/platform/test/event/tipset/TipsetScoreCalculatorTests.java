@@ -32,8 +32,8 @@ import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.tipset.Tipset;
-import com.swirlds.platform.event.tipset.TipsetBuilder;
 import com.swirlds.platform.event.tipset.TipsetScoreCalculator;
+import com.swirlds.platform.event.tipset.TipsetTracker;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -71,7 +71,7 @@ class TipsetScoreCalculatorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final TipsetBuilder builder = new TipsetBuilder(addressBook);
+        final TipsetTracker builder = new TipsetTracker(addressBook);
         final TipsetScoreCalculator window = new TipsetScoreCalculator(platformContext, addressBook, windowId, builder);
 
         List<EventDescriptor> previousParents = List.of();
@@ -142,7 +142,7 @@ class TipsetScoreCalculatorTests {
             }
 
             final long expectedAdvancementScoreChange =
-                    previousSnapshot.getWeightedAdvancementCount(windowId, newTipset) - runningAdvancementScore;
+                    previousSnapshot.getTipAdvancementWeight(windowId, newTipset) - runningAdvancementScore;
 
             // For events created by "this" node, check that the window is updated correctly.
             final long advancementScoreChange = window.addEventAndGetAdvancementScore(fingerprint);
@@ -205,7 +205,7 @@ class TipsetScoreCalculatorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final TipsetBuilder builder = new TipsetBuilder(addressBook);
+        final TipsetTracker builder = new TipsetTracker(addressBook);
         final TipsetScoreCalculator window = new TipsetScoreCalculator(platformContext, addressBook, nodeA, builder);
 
         final Tipset snapshot1 = window.getSnapshot();
@@ -246,7 +246,7 @@ class TipsetScoreCalculatorTests {
         assertEquals(0, window.getBullyScoreForNodeIndex(indexB));
         assertEquals(0, window.getBullyScoreForNodeIndex(indexC));
         assertEquals(1, window.getBullyScoreForNodeIndex(indexD));
-        assertEquals(1, window.getBullyScore());
+        assertEquals(1, window.getMaxBullyScore());
 
         // Create another batch of events where D is bullied.
         final EventDescriptor eventA3 = new EventDescriptor(randomHash(random), nodeA, 3);
@@ -269,7 +269,7 @@ class TipsetScoreCalculatorTests {
         assertEquals(0, window.getBullyScoreForNodeIndex(indexB));
         assertEquals(0, window.getBullyScoreForNodeIndex(indexC));
         assertEquals(2, window.getBullyScoreForNodeIndex(indexD));
-        assertEquals(2, window.getBullyScore());
+        assertEquals(2, window.getMaxBullyScore());
 
         // Create a bach of events that don't bully D. Let's all bully C, because C is a jerk.
         final EventDescriptor eventA4 = new EventDescriptor(randomHash(random), nodeA, 4);
@@ -292,7 +292,7 @@ class TipsetScoreCalculatorTests {
         assertEquals(0, window.getBullyScoreForNodeIndex(indexB));
         assertEquals(1, window.getBullyScoreForNodeIndex(indexC));
         assertEquals(0, window.getBullyScoreForNodeIndex(indexD));
-        assertEquals(1, window.getBullyScore());
+        assertEquals(1, window.getMaxBullyScore());
 
         // Stop bullying C. D stops creating events.
         final EventDescriptor eventA5 = new EventDescriptor(randomHash(random), nodeA, 5);
@@ -312,7 +312,7 @@ class TipsetScoreCalculatorTests {
         assertEquals(0, window.getBullyScoreForNodeIndex(indexB));
         assertEquals(0, window.getBullyScoreForNodeIndex(indexC));
         assertEquals(0, window.getBullyScoreForNodeIndex(indexD));
-        assertEquals(0, window.getBullyScore());
+        assertEquals(0, window.getMaxBullyScore());
 
         // D still is not creating events. Since there is no legal event from D to use as a parent, this doesn't
         // count as bullying.
@@ -333,7 +333,7 @@ class TipsetScoreCalculatorTests {
         assertEquals(0, window.getBullyScoreForNodeIndex(indexB));
         assertEquals(0, window.getBullyScoreForNodeIndex(indexC));
         assertEquals(0, window.getBullyScoreForNodeIndex(indexD));
-        assertEquals(0, window.getBullyScore());
+        assertEquals(0, window.getMaxBullyScore());
 
         // Rinse and repeat.
         final EventDescriptor eventA7 = new EventDescriptor(randomHash(random), nodeA, 7);
@@ -353,6 +353,6 @@ class TipsetScoreCalculatorTests {
         assertEquals(0, window.getBullyScoreForNodeIndex(indexB));
         assertEquals(0, window.getBullyScoreForNodeIndex(indexC));
         assertEquals(0, window.getBullyScoreForNodeIndex(indexD));
-        assertEquals(0, window.getBullyScore());
+        assertEquals(0, window.getMaxBullyScore());
     }
 }

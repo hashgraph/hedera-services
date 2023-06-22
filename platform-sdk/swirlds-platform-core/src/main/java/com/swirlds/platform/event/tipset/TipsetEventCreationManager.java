@@ -46,14 +46,44 @@ import java.util.function.Consumer;
  */
 public class TipsetEventCreationManager implements Lifecycle {
 
+    /**
+     * Tracks the lifecycle of this object.
+     */
     private LifecyclePhase lifecyclePhase = NOT_STARTED;
+
+    /**
+     * The core logic for creating events.
+     */
     private final TipsetEventCreator eventCreator;
 
+    /**
+     * Contains tasks that need to be run on the processing thread for this component.
+     */
     private final MultiQueueThread workQueue;
+
+    /**
+     * The object used to enqueue new events onto the work queue.
+     */
     private final BlockingQueueInserter<EventImpl> eventInserter;
+
+    /**
+     * The object used to enqueue updates to the minimum generation non-ancient onto the work queue.
+     */
     private final BlockingQueueInserter<Long> minimumGenerationNonAncientInserter;
+
+    /**
+     * When the event creator makes a new event, pass it to this lambda.
+     */
     private final Consumer<GossipEvent> newEventHandler;
+
+    /**
+     * Prevents events from being created too fast. Maximum speed is specified in configuration.
+     */
     private final RateLimiter rateLimiter;
+
+    /**
+     * Prevents the creation of new events under various miscellaneous conditions.
+     */
     private final TipsetEventCreationBlocker eventCreationBlocker;
 
     /**
@@ -88,6 +118,7 @@ public class TipsetEventCreationManager implements Lifecycle {
         this.eventCreationBlocker = Objects.requireNonNull(eventCreationBlocker);
 
         Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(threadManager);
         Objects.requireNonNull(time);
         Objects.requireNonNull(random);
         Objects.requireNonNull(signer);
@@ -115,7 +146,7 @@ public class TipsetEventCreationManager implements Lifecycle {
 
         final double maxCreationRate = eventCreationConfig.maxCreationRate();
         if (maxCreationRate > 0) {
-            rateLimiter = new RateLimiter(time, eventCreationConfig.maxCreationRate());
+            rateLimiter = new RateLimiter(time, maxCreationRate);
         } else {
             // No brakes!
             rateLimiter = null;
@@ -126,7 +157,8 @@ public class TipsetEventCreationManager implements Lifecycle {
     }
 
     /**
-     * Add an event from the event intake.
+     * Add an event from the event intake to the work queue. A background thread will eventually pass this event to the
+     * event creator on the processing thread.
      *
      * @param event the event to add
      */
@@ -135,7 +167,7 @@ public class TipsetEventCreationManager implements Lifecycle {
     }
 
     /**
-     * Upgate the minimum generation non-ancient
+     * Update the minimum generation non-ancient
      *
      * @param minimumGenerationNonAncient the new minimum generation non-ancient
      */
@@ -144,7 +176,7 @@ public class TipsetEventCreationManager implements Lifecycle {
     }
 
     /**
-     * Pass an event into the event creator.
+     * Take an event from the work queue and pass it into the event creator.
      *
      * @param event the event to pass
      */
