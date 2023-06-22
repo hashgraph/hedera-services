@@ -965,10 +965,23 @@ public class GlobalDynamicProperties implements EvmProperties {
         return cacheWarmThreads;
     }
 
+    /**
+     * The maximum amount of stake that can be rewarded at the full reward rate (in tinybars). If twice this
+     * amount were staked for reward, then the effective reward rate would be cut in half.
+     *
+     * @return the maximum amount of stake that can be rewarded at the full reward rate
+     */
     public long maxStakeRewarded() {
         return stakingMaxStakeRewarded;
     }
 
+    /**
+     * The reward threshold balance of account {@code 0.0.800} (in tinybars). When the balance is this or more,
+     * then the reward rate set in the {@code staking.rewardRate} property is used.  When the balance is less
+     * than this threshold, then a fraction of that reward rate is used.
+     *
+     * @return the minimum balance of account {@code 0.0.800} required for the full reward rate to be used
+     */
     public long stakingRewardBalanceThreshold() {
         return stakingRewardBalanceThreshold;
     }

@@ -286,6 +286,13 @@ public class EndOfStakingPeriodCalculator {
         }
     }
 
+    /**
+     * Given the amount that was staked to reward at the start of the period that is now ending, returns
+     * the effective per-hbar reward rate for the period.
+     *
+     * @param stakedToReward the amount of hbars staked to reward at the start of the ending period
+     * @return the effective per-hbar reward rate for the period
+     */
     @VisibleForTesting
     long rewardRateForEndingPeriod(final long stakedToReward) {
         // The balance left in 0.0.800 (in tinybars), after paying all rewards earned so far
