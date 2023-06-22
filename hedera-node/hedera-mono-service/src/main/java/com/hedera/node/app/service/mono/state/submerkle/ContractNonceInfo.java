@@ -87,4 +87,16 @@ public class ContractNonceInfo implements SelfSerializable {
         grpc.setNonce(nonce);
         return grpc.build();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || ContractNonceInfo.class != o.getClass()) {
+            return false;
+        }
+        final ContractNonceInfo that = (ContractNonceInfo) o;
+        return contractId.equals(that.contractId) && nonce == that.nonce;
+    }
 }

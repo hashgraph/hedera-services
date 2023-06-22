@@ -188,8 +188,6 @@ class EvmFnResultTest {
         input.setContractNonces(grpcCreatedContractNonces);
 
         final var actual = EvmFnResult.fromCall(input);
-        System.out.println(expected);
-        System.out.println(actual);
         assertEquals(expected, actual);
     }
 
