@@ -6,6 +6,7 @@ module com.hedera.node.app.service.mono.test.fixtures {
     exports com.hedera.test.factories.scenarios;
 
     requires transitive com.hedera.node.app.hapi.utils;
+    requires transitive com.hedera.node.app.service.mono;
     requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.hapi;
@@ -13,12 +14,10 @@ module com.hedera.node.app.service.mono.test.fixtures {
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.merkle;
     requires transitive com.swirlds.virtualmap;
-    requires transitive org.apache.commons.codec;
     requires transitive org.bouncycastle.provider;
     requires com.hedera.node.app.service.evm;
-    requires com.hedera.node.app.service.mono;
-    requires com.hedera.pbj.runtime;
     requires com.google.common;
+    requires com.hedera.pbj.runtime;
     requires net.i2p.crypto.eddsa;
     requires org.junit.jupiter.api;
     requires org.mockito;

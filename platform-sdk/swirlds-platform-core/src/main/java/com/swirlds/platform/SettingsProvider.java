@@ -30,36 +30,6 @@ public interface SettingsProvider {
     int getTransactionMaxBytes();
 
     /**
-     * @see Settings#delayShuffle
-     */
-    long getDelayShuffle();
-
-    /**
-     * @see Settings#socketIpTos
-     */
-    int getSocketIpTos();
-
-    /**
-     * @see Settings#timeoutSyncClientSocket
-     */
-    int getTimeoutSyncClientSocket();
-
-    /**
-     * @see Settings#timeoutSyncClientConnect
-     */
-    int getTimeoutSyncClientConnect();
-
-    /**
-     * @see Settings#timeoutServerAcceptConnect
-     */
-    int getTimeoutServerAcceptConnect();
-
-    /**
-     * @see Settings#tcpNoDelay
-     */
-    boolean isTcpNoDelay();
-
-    /**
      * @see Settings#throttleTransactionQueueSize
      */
     int getThrottleTransactionQueueSize();
@@ -68,19 +38,4 @@ public interface SettingsProvider {
      * @see Settings#maxTransactionBytesPerEvent
      */
     int getMaxTransactionBytesPerEvent();
-
-    /**
-     * @see Settings#useLoopbackIp
-     */
-    boolean useLoopbackIp();
-
-    /**
-     * @see Settings#bufferSize
-     */
-    int connectionStreamBufferSize();
-
-    /**
-     * @see Settings#sleepHeartbeat
-     */
-    int sleepHeartbeatMillis();
 }
