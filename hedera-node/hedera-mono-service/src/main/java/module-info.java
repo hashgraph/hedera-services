@@ -282,9 +282,11 @@ module com.hedera.node.app.service.mono {
     requires com.swirlds.base;
     requires com.swirlds.logging;
     requires com.swirlds.platform;
+    requires grpc.netty;
     requires io.netty.handler;
     requires io.netty.transport;
-    requires io.netty.transport.epoll;
+    requires io.netty.transport.classes.epoll;
+    requires org.apache.commons.codec;
     requires org.apache.commons.collections4;
     requires org.apache.commons.io;
     requires org.bouncycastle.provider;

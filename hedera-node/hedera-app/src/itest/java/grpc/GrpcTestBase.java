@@ -29,13 +29,13 @@ import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.ConfigurationBuilder;
 import io.grpc.ManagedChannelBuilder;
-import io.helidon.grpc.client.ClientServiceDescriptor;
-import io.helidon.grpc.client.GrpcServiceClient;
-import io.helidon.grpc.server.GrpcRouting;
-import io.helidon.grpc.server.GrpcServer;
-import io.helidon.grpc.server.GrpcServerConfiguration;
-import io.helidon.grpc.server.MethodDescriptor;
-import io.helidon.grpc.server.ServiceDescriptor;
+//import io.helidon.grpc.client.ClientServiceDescriptor;
+//import io.helidon.grpc.client.GrpcServiceClient;
+//import io.helidon.grpc.server.GrpcRouting;
+//import io.helidon.grpc.server.GrpcServer;
+//import io.helidon.grpc.server.GrpcServerConfiguration;
+//import io.helidon.grpc.server.MethodDescriptor;
+//import io.helidon.grpc.server.ServiceDescriptor;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -64,154 +64,154 @@ abstract class GrpcTestBase extends TestBase {
     protected static final IngestWorkflow NOOP_INGEST_WORKFLOW = (requestBuffer, responseBuffer) -> {};
     /** A built-in {@link QueryWorkflow} which succeeds and does nothing. */
     protected static final QueryWorkflow NOOP_QUERY_WORKFLOW = (requestBuffer, responseBuffer) -> {};
-
-    /**
-     * This {@link GrpcServer} is used to handle the wire protocol tasks and delegate to our gRPC handlers
-     */
-    private GrpcServer grpcServer;
-
-    /**
-     * The {@link GrpcServiceClient}s to use for making different calls to the server. Each different gRPC service has
-     * its own client. The key in this map is the service name.
-     */
-    private final Map<String, GrpcServiceClient> clients = new HashMap<>();
-
-    /**
-     * The registered services. These must be created through {@link #registerService(GrpcServiceBuilder)} <b>BEFORE</b>
-     * the server is started to take any effect. These services will be registered on the server <b>AND</b> on the
-     * client.
-     */
-    private final Set<ServiceDescriptor> services = new HashSet<>();
-
-    /**
-     * The set of services to be registered <b>ON THE CLIENT ONLY</b>. The server won't know about these. This allows us
-     * to test cases where either the method or service is known to the client but not known to the server.
-     */
-    private final Set<ServiceDescriptor> clientOnlyServices = new HashSet<>();
-
-    /**
-     * Represents "this node" in our tests.
-     */
-    private final NodeId nodeSelfId = new NodeId(7);
-
-    /**
-     * The gRPC system has extensive metrics. This object allows us to inspect them and make sure they are being set
-     * correctly for different types of calls.
-     */
-    protected Metrics metrics = new DefaultMetrics(
-            nodeSelfId,
-            new MetricKeyRegistry(),
-            METRIC_EXECUTOR,
-            new DefaultMetricsFactory(),
-            ConfigurationBuilder.create()
-                    .withConfigDataType(MetricsConfig.class)
-                    .build()
-                    .getConfigData(MetricsConfig.class));
-
-    /** The host of our gRPC server. */
-    protected String host = "127.0.0.1";
-
-    /** The port our server is running on. We use an ephemeral port, so it is dynamic */
-    protected int port;
-
-    /**
-     * Registers the given service with this test server and client. This method must be called before the server is
-     * started.
-     *
-     * @param builder builds the service
-     */
-    protected void registerService(final GrpcServiceBuilder builder) {
-        services.add(builder.build(metrics));
-    }
-
-    protected void registerServiceOnClientOnly(final GrpcServiceBuilder builder) {
-        clientOnlyServices.add(builder.build(metrics));
-    }
-
-    /** Starts the grpcServer and sets up the clients. */
-    protected void startServer() {
-        final var latch = new CountDownLatch(1);
-
-        final var routingBuilder = GrpcRouting.builder();
-        services.forEach(routingBuilder::register);
-        grpcServer =
-                GrpcServer.create(GrpcServerConfiguration.builder().port(port).build(), routingBuilder.build());
-
-        grpcServer.start().thenAccept(server -> latch.countDown());
-
-        // Block this main thread until the server starts
-        try {
-            latch.await();
-        } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-            Assertions.fail("GRPC Server did not startup", e);
-        }
-
-        // Get the host and port dynamically now that the server is running.
-        host = "127.0.0.1"; // InetAddress.getLocalHost().getHostName();
-        port = grpcServer.port();
-
-        final var channel =
-                ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
-
-        // Collect the full set of services and method descriptors for the client side
-        //noinspection rawtypes
-        final var clientDescriptors = new HashMap<String, Set<MethodDescriptor>>();
-        services.forEach(s -> clientDescriptors.put(s.name(), new HashSet<>(s.methods())));
-        clientOnlyServices.forEach(s -> {
-            final var existingMethods = clientDescriptors.get(s.name());
-            if (existingMethods == null) {
-                clientDescriptors.put(s.name(), new HashSet<>(s.methods()));
-            } else {
-                existingMethods.addAll(s.methods());
-            }
-        });
-
-        // Setup the client side
-        clientDescriptors.forEach((serviceName, methods) -> {
-            final var builder = io.grpc.ServiceDescriptor.newBuilder(serviceName);
-            methods.forEach(method -> builder.addMethod(method.descriptor()));
-            final var clientServiceDescriptor = builder.build();
-            final var client = GrpcServiceClient.builder(
-                            channel,
-                            ClientServiceDescriptor.builder(clientServiceDescriptor)
-                                    .build())
-                    .build();
-
-            clients.put(serviceName, client);
-        });
-    }
-
-    @AfterEach
-    void tearDown() {
-        final var shutdownLatch = new CountDownLatch(1);
-        grpcServer.shutdown().thenRun(shutdownLatch::countDown);
-        try {
-            shutdownLatch.await();
-        } catch (final InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        clients.clear();
-        services.clear();
-    }
-
-    /**
-     * Called to invoke a service's function that had been previously registered with {@link
-     * #registerService(GrpcServiceBuilder)}, using the given payload and receiving the given response. Since the gRPC
-     * code only deals in bytes, we can test everything with just strings, no protobuf encoding required.
-     *
-     * @param service  The service to invoke
-     * @param function The function on the service to invoke
-     * @param payload  The payload to send to the function on the service
-     * @return The response from the service function.
-     */
-    protected String send(final String service, final String function, final String payload) {
-        final var client = clients.get(service);
-        assert client != null;
-        final var bb = BufferedData.wrap(payload.getBytes(StandardCharsets.UTF_8));
-        final BufferedData res = client.blockingUnary(function, bb);
-        final var rb = new byte[(int) res.remaining()];
-        res.readBytes(rb);
-        return new String(rb, StandardCharsets.UTF_8);
-    }
+//
+//    /**
+//     * This {@link GrpcServer} is used to handle the wire protocol tasks and delegate to our gRPC handlers
+//     */
+//    private GrpcServer grpcServer;
+//
+//    /**
+//     * The {@link GrpcServiceClient}s to use for making different calls to the server. Each different gRPC service has
+//     * its own client. The key in this map is the service name.
+//     */
+//    private final Map<String, GrpcServiceClient> clients = new HashMap<>();
+//
+//    /**
+//     * The registered services. These must be created through {@link #registerService(GrpcServiceBuilder)} <b>BEFORE</b>
+//     * the server is started to take any effect. These services will be registered on the server <b>AND</b> on the
+//     * client.
+//     */
+//    private final Set<ServiceDescriptor> services = new HashSet<>();
+//
+//    /**
+//     * The set of services to be registered <b>ON THE CLIENT ONLY</b>. The server won't know about these. This allows us
+//     * to test cases where either the method or service is known to the client but not known to the server.
+//     */
+//    private final Set<ServiceDescriptor> clientOnlyServices = new HashSet<>();
+//
+//    /**
+//     * Represents "this node" in our tests.
+//     */
+//    private final NodeId nodeSelfId = new NodeId(7);
+//
+//    /**
+//     * The gRPC system has extensive metrics. This object allows us to inspect them and make sure they are being set
+//     * correctly for different types of calls.
+//     */
+//    protected Metrics metrics = new DefaultMetrics(
+//            nodeSelfId,
+//            new MetricKeyRegistry(),
+//            METRIC_EXECUTOR,
+//            new DefaultMetricsFactory(),
+//            ConfigurationBuilder.create()
+//                    .withConfigDataType(MetricsConfig.class)
+//                    .build()
+//                    .getConfigData(MetricsConfig.class));
+//
+//    /** The host of our gRPC server. */
+//    protected String host = "127.0.0.1";
+//
+//    /** The port our server is running on. We use an ephemeral port, so it is dynamic */
+//    protected int port;
+//
+//    /**
+//     * Registers the given service with this test server and client. This method must be called before the server is
+//     * started.
+//     *
+//     * @param builder builds the service
+//     */
+//    protected void registerService(final GrpcServiceBuilder builder) {
+//        services.add(builder.build(metrics));
+//    }
+//
+//    protected void registerServiceOnClientOnly(final GrpcServiceBuilder builder) {
+//        clientOnlyServices.add(builder.build(metrics));
+//    }
+//
+//    /** Starts the grpcServer and sets up the clients. */
+//    protected void startServer() {
+//        final var latch = new CountDownLatch(1);
+//
+//        final var routingBuilder = GrpcRouting.builder();
+//        services.forEach(routingBuilder::register);
+//        grpcServer =
+//                GrpcServer.create(GrpcServerConfiguration.builder().port(port).build(), routingBuilder.build());
+//
+//        grpcServer.start().thenAccept(server -> latch.countDown());
+//
+//        // Block this main thread until the server starts
+//        try {
+//            latch.await();
+//        } catch (final InterruptedException e) {
+//            Thread.currentThread().interrupt();
+//            Assertions.fail("GRPC Server did not startup", e);
+//        }
+//
+//        // Get the host and port dynamically now that the server is running.
+//        host = "127.0.0.1"; // InetAddress.getLocalHost().getHostName();
+//        port = grpcServer.port();
+//
+//        final var channel =
+//                ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
+//
+//        // Collect the full set of services and method descriptors for the client side
+//        //noinspection rawtypes
+//        final var clientDescriptors = new HashMap<String, Set<MethodDescriptor>>();
+//        services.forEach(s -> clientDescriptors.put(s.name(), new HashSet<>(s.methods())));
+//        clientOnlyServices.forEach(s -> {
+//            final var existingMethods = clientDescriptors.get(s.name());
+//            if (existingMethods == null) {
+//                clientDescriptors.put(s.name(), new HashSet<>(s.methods()));
+//            } else {
+//                existingMethods.addAll(s.methods());
+//            }
+//        });
+//
+//        // Setup the client side
+//        clientDescriptors.forEach((serviceName, methods) -> {
+//            final var builder = io.grpc.ServiceDescriptor.newBuilder(serviceName);
+//            methods.forEach(method -> builder.addMethod(method.descriptor()));
+//            final var clientServiceDescriptor = builder.build();
+//            final var client = GrpcServiceClient.builder(
+//                            channel,
+//                            ClientServiceDescriptor.builder(clientServiceDescriptor)
+//                                    .build())
+//                    .build();
+//
+//            clients.put(serviceName, client);
+//        });
+//    }
+//
+//    @AfterEach
+//    void tearDown() {
+//        final var shutdownLatch = new CountDownLatch(1);
+//        grpcServer.shutdown().thenRun(shutdownLatch::countDown);
+//        try {
+//            shutdownLatch.await();
+//        } catch (final InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
+//        clients.clear();
+//        services.clear();
+//    }
+//
+//    /**
+//     * Called to invoke a service's function that had been previously registered with {@link
+//     * #registerService(GrpcServiceBuilder)}, using the given payload and receiving the given response. Since the gRPC
+//     * code only deals in bytes, we can test everything with just strings, no protobuf encoding required.
+//     *
+//     * @param service  The service to invoke
+//     * @param function The function on the service to invoke
+//     * @param payload  The payload to send to the function on the service
+//     * @return The response from the service function.
+//     */
+//    protected String send(final String service, final String function, final String payload) {
+//        final var client = clients.get(service);
+//        assert client != null;
+//        final var bb = BufferedData.wrap(payload.getBytes(StandardCharsets.UTF_8));
+//        final BufferedData res = client.blockingUnary(function, bb);
+//        final var rb = new byte[(int) res.remaining()];
+//        res.readBytes(rb);
+//        return new String(rb, StandardCharsets.UTF_8);
+//    }
 }

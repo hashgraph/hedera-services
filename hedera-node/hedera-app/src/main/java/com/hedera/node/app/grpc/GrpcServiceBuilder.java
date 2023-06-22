@@ -25,8 +25,8 @@ import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.MethodDescriptor;
-import io.helidon.grpc.core.MarshallerSupplier;
-import io.helidon.grpc.server.ServiceDescriptor;
+//import io.helidon.grpc.core.MarshallerSupplier;
+//import io.helidon.grpc.server.ServiceDescriptor;
 import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Set;
@@ -63,13 +63,13 @@ public final class GrpcServiceBuilder {
      * registered with the system. We only need the one, and it always returns the same
      * NoopMarshaller instance. This is fine to use with multiple app instances within the same JVM.
      */
-    private static final MarshallerSupplier MARSHALLER_SUPPLIER = new MarshallerSupplier() {
-        @Override
-        public <T> MethodDescriptor.Marshaller<T> get(final Class<T> clazz) {
-            //noinspection unchecked
-            return (MethodDescriptor.Marshaller<T>) MARSHALLER;
-        }
-    };
+//    private static final MarshallerSupplier MARSHALLER_SUPPLIER = new MarshallerSupplier() {
+//        @Override
+//        public <T> MethodDescriptor.Marshaller<T> get(final Class<T> clazz) {
+//            //noinspection unchecked
+//            return (MethodDescriptor.Marshaller<T>) MARSHALLER;
+//        }
+//    };
 
     /** The name of the service we are building. For example, the TokenService. */
     private final String serviceName;
@@ -169,18 +169,20 @@ public final class GrpcServiceBuilder {
      *
      * @return a non-null {@link ServiceDescriptor}.
      */
-    public ServiceDescriptor build(final Metrics metrics) {
-        final var builder = ServiceDescriptor.builder(null, serviceName);
-        txMethodNames.forEach(methodName -> {
-            logger.debug("Registering gRPC transaction method {}.{}", serviceName, methodName);
-            final var method = new TransactionMethod(serviceName, methodName, ingestWorkflow, metrics);
-            builder.unary(methodName, method, rules -> rules.marshallerSupplier(MARSHALLER_SUPPLIER));
-        });
-        queryMethodNames.forEach(methodName -> {
-            logger.debug("Registering gRPC query method {}.{}", serviceName, methodName);
-            final var method = new QueryMethod(serviceName, methodName, queryWorkflow, metrics);
-            builder.unary(methodName, method, rules -> rules.marshallerSupplier(MARSHALLER_SUPPLIER));
-        });
-        return builder.build();
+    public Object build(final Metrics metrics) {
+//    public ServiceDescriptor build(final Metrics metrics) {
+//        final var builder = ServiceDescriptor.builder(null, serviceName);
+//        txMethodNames.forEach(methodName -> {
+//            logger.debug("Registering gRPC transaction method {}.{}", serviceName, methodName);
+//            final var method = new TransactionMethod(serviceName, methodName, ingestWorkflow, metrics);
+//            builder.unary(methodName, method, rules -> rules.marshallerSupplier(MARSHALLER_SUPPLIER));
+//        });
+//        queryMethodNames.forEach(methodName -> {
+//            logger.debug("Registering gRPC query method {}.{}", serviceName, methodName);
+//            final var method = new QueryMethod(serviceName, methodName, queryWorkflow, metrics);
+//            builder.unary(methodName, method, rules -> rules.marshallerSupplier(MARSHALLER_SUPPLIER));
+//        });
+//        return builder.build();
+        return null;
     }
 }
