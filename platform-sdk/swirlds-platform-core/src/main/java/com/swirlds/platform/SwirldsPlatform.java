@@ -19,7 +19,6 @@ package com.swirlds.platform;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
@@ -43,8 +42,6 @@ import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
-import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.common.notification.listeners.StateLoadedFromDiskCompleteListener;
@@ -57,7 +54,11 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.AsyncPlatformStatusStateMachine;
 import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatusConfig;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
+import com.swirlds.common.system.status.SyncPlatformStatusStateMachine;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.threading.framework.QueueThread;
@@ -68,7 +69,6 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.logging.LogMarker;
-import com.swirlds.logging.payloads.PlatformStatusPayload;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventCreator;
@@ -182,9 +182,7 @@ public class SwirldsPlatform implements Platform, Startable {
      * Hashgraph Event graph. Used for gossiping.
      */
     private final ShadowGraph shadowGraph;
-    /** The last status of the platform that was determined */
-    private final AtomicReference<PlatformStatus> currentPlatformStatus =
-            new AtomicReference<>(PlatformStatus.STARTING_UP);
+
     /**
      * the object used to calculate consensus. it is volatile because the whole object is replaced when reading a state
      * from disk or getting it through reconnect
@@ -275,6 +273,11 @@ public class SwirldsPlatform implements Platform, Startable {
     private final PreconsensusEventWriter preconsensusEventWriter;
 
     /**
+     * Manages the status of the platform.
+     */
+    private final PlatformStatusStateMachine platformStatusStateMachine;
+
+    /**
      * Responsible for transmitting and receiving events from the network.
      */
     private final Gossip gossip;
@@ -343,10 +346,15 @@ public class SwirldsPlatform implements Platform, Startable {
 
         this.eventMapper = new EventMapper(platformContext.getMetrics(), selfId);
 
+        platformStatusStateMachine = buildPlatformStatusStateMachine(time);
+
         this.metrics = platformContext.getMetrics();
 
         metrics.getOrCreate(StatConstructor.createEnumStat(
-                "PlatformStatus", Metrics.PLATFORM_CATEGORY, PlatformStatus.values(), currentPlatformStatus::get));
+                "PlatformStatus",
+                Metrics.PLATFORM_CATEGORY,
+                PlatformStatus.values(),
+                platformStatusStateMachine::getCurrentStatus));
 
         registerAddressBookMetrics(metrics, initialAddressBook, selfId);
 
@@ -363,7 +371,7 @@ public class SwirldsPlatform implements Platform, Startable {
         this.crypto = crypto;
 
         startUpEventFrozenManager = new StartUpEventFrozenManager(metrics, Instant::now);
-        freezeManager = new FreezeManager(this::checkPlatformStatus);
+        freezeManager = new FreezeManager(platformStatusStateMachine::getCurrentStatus);
         FreezeMetrics.registerFreezeMetrics(metrics, freezeManager, startUpEventFrozenManager);
         EventCounter.registerEventCounterMetrics(metrics);
 
@@ -385,7 +393,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 this::haltRequested,
                 appCommunicationComponent,
                 preconsensusEventWriter,
-                currentPlatformStatus::get);
+                platformStatusStateMachine::getCurrentStatus);
         wiring.registerComponents(components);
 
         final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
@@ -594,7 +602,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     .build());
 
             transactionSubmitter = new SwirldTransactionSubmitter(
-                    currentPlatformStatus::get,
+                    platformStatusStateMachine::getCurrentStatus,
                     PlatformConstructor.settingsProvider(),
                     swirldStateManager::submitTransaction,
                     new TransactionMetrics(metrics));
@@ -622,7 +630,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     eventMapper,
                     eventIntakeMetrics,
                     eventLinker,
-                    this::checkPlatformStatus,
+                    platformStatusStateMachine::getCurrentStatus,
                     this::loadReconnectState,
                     this::clearAllPipelines);
 
@@ -1026,6 +1034,23 @@ public class SwirldsPlatform implements Platform, Startable {
     }
 
     /**
+     * Build the platform status state machine
+     *
+     * @param time a source of time
+     * @return the platform status state machine
+     */
+    @NonNull
+    private PlatformStatusStateMachine buildPlatformStatusStateMachine(@NonNull final Time time) {
+        final PlatformStatusConfig platformStatusConfig =
+                platformContext.getConfiguration().getConfigData(PlatformStatusConfig.class);
+
+        final PlatformStatusStateMachine syncStateMachine =
+                new SyncPlatformStatusStateMachine(time, platformStatusConfig, notificationEngine);
+
+        return new AsyncPlatformStatusStateMachine(platformContext, time, syncStateMachine, threadManager);
+    }
+
+    /**
      * Start this platform.
      */
     @Override
@@ -1039,10 +1064,6 @@ public class SwirldsPlatform implements Platform, Startable {
         replayPreconsensusEvents();
         configureStartupEventFreeze();
         gossip.start();
-
-        // in case of a single node network, the platform status update will not be triggered by connections, so it
-        // needs to be triggered now
-        checkPlatformStatus();
     }
 
     /**
@@ -1068,9 +1089,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 .getConfiguration()
                 .getConfigData(PreconsensusEventStreamConfig.class)
                 .enableReplay();
-        if (!enableReplay) {
-            setPlatformStatus(PlatformStatus.OBSERVING);
-        } else {
+        if (enableReplay) {
             PreconsensusEventReplayWorkflow.replayPreconsensusEvents(
                     platformContext,
                     threadManager,
@@ -1082,8 +1101,6 @@ public class SwirldsPlatform implements Platform, Startable {
                     consensusRoundHandler,
                     stateHashSignQueue,
                     stateManagementComponent,
-                    currentPlatformStatus::get,
-                    this::setPlatformStatus,
                     initialMinimumGenerationNonAncient);
         }
     }
@@ -1100,43 +1117,6 @@ public class SwirldsPlatform implements Platform, Startable {
             final Instant startUpEventFrozenEndTime = Instant.now().plusSeconds(freezeSecondsAfterStartup);
             startUpEventFrozenManager.setStartUpEventFrozenEndTime(startUpEventFrozenEndTime);
             logger.info(STARTUP.getMarker(), "startUpEventFrozenEndTime: {}", () -> startUpEventFrozenEndTime);
-        }
-    }
-
-    /**
-     * Checks the status of the platform and notifies the SwirldMain if there is a change in status
-     */
-    private void checkPlatformStatus() {
-        final int numNodes = initialAddressBook.getSize();
-
-        synchronized (currentPlatformStatus) {
-            if (numNodes > 1 && gossip.activeConnectionNumber() == 0) {
-                setPlatformStatus(PlatformStatus.DISCONNECTED);
-            } else if (gossip.hasFallenBehind()) {
-                setPlatformStatus(PlatformStatus.BEHIND);
-            } else if (freezeManager.isFreezeStarted()) {
-                setPlatformStatus(PlatformStatus.FREEZING);
-            } else if (freezeManager.isFreezeComplete()) {
-                setPlatformStatus(PlatformStatus.FREEZE_COMPLETE);
-            } else {
-                setPlatformStatus(PlatformStatus.ACTIVE);
-            }
-        }
-    }
-
-    /**
-     * Change the current platform status.
-     * @param newStatus the new platform status
-     */
-    private void setPlatformStatus(@NonNull final PlatformStatus newStatus) {
-        final PlatformStatus oldStatus = currentPlatformStatus.getAndSet(newStatus);
-        if (oldStatus != newStatus) {
-            logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                            "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
-                    .toString());
-
-            notificationEngine.dispatch(
-                    PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newStatus));
         }
     }
 

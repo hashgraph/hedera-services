@@ -17,9 +17,6 @@
 package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
-import static com.swirlds.common.system.status.PlatformStatus.OBSERVING;
-import static com.swirlds.common.system.status.PlatformStatus.REPLAYING_EVENTS;
-import static com.swirlds.common.system.status.PlatformStatus.STARTING_UP;
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
@@ -28,7 +25,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.EventTaskDispatcher;
@@ -41,8 +37,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,8 +61,6 @@ public final class PreconsensusEventReplayWorkflow {
      * @param consensusRoundHandler              the object responsible for applying transactions to consensus rounds
      * @param stateHashSignQueue                 the queue thread for hashing and signing states
      * @param stateManagementComponent           manages various copies of the state
-     * @param getPlatformStatus                  used to get the current platform status
-     * @param setPlatformStatus                  used to set the current platform status
      * @param initialMinimumGenerationNonAncient the minimum generation of events to replay
      */
     public static void replayPreconsensusEvents(
@@ -82,8 +74,6 @@ public final class PreconsensusEventReplayWorkflow {
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final Supplier<PlatformStatus> getPlatformStatus,
-            @NonNull final Consumer<PlatformStatus> setPlatformStatus,
             final long initialMinimumGenerationNonAncient) {
 
         Objects.requireNonNull(platformContext);
@@ -96,10 +86,6 @@ public final class PreconsensusEventReplayWorkflow {
         Objects.requireNonNull(consensusRoundHandler);
         Objects.requireNonNull(stateHashSignQueue);
         Objects.requireNonNull(stateManagementComponent);
-        Objects.requireNonNull(getPlatformStatus);
-        Objects.requireNonNull(setPlatformStatus);
-
-        setupReplayStatus(getPlatformStatus, setPlatformStatus);
 
         logger.info(
                 STARTUP.getMarker(),
@@ -133,46 +119,11 @@ public final class PreconsensusEventReplayWorkflow {
             Thread.currentThread().interrupt();
             throw new RuntimeException("interrupted while replaying preconsensus event stream", e);
         }
-
-        setupEndOfReplayStatus(getPlatformStatus, setPlatformStatus);
     }
 
     /**
-     * Update the platform status for PCES replay.
-     */
-    private static void setupReplayStatus(
-            @NonNull final Supplier<PlatformStatus> getPlatformStatus,
-            @NonNull final Consumer<PlatformStatus> setPlatformStatus) {
-
-        // Sanity check for platform status can be removed after we clean up platform status management
-        final PlatformStatus currentPlatformStatus = getPlatformStatus.get();
-        if (currentPlatformStatus != STARTING_UP) {
-            throw new IllegalStateException(
-                    "Platform status should be STARTING_UP, current status is " + currentPlatformStatus);
-        }
-
-        setPlatformStatus.accept(REPLAYING_EVENTS);
-    }
-
-    /**
-     * Update the platform status to indicate that PCES replay has completed.
-     */
-    private static void setupEndOfReplayStatus(
-            @NonNull final Supplier<PlatformStatus> getPlatformStatus,
-            @NonNull final Consumer<PlatformStatus> setPlatformStatus) {
-
-        // Sanity check for platform status can be removed after we clean up platform status management
-        final PlatformStatus currentPlatformStatus = getPlatformStatus.get();
-        if (currentPlatformStatus != REPLAYING_EVENTS) {
-            throw new IllegalStateException(
-                    "Platform status should be REPLAYING_EVENTS, current status is " + currentPlatformStatus);
-        }
-        setPlatformStatus.accept(OBSERVING);
-    }
-
-    /**
-     * Wait for all events to be replayed. Some of this work happens on asynchronous threads, so we need to wait for them
-     * to complete even after we exhaust all available events from the stream.
+     * Wait for all events to be replayed. Some of this work happens on asynchronous threads, so we need to wait for
+     * them to complete even after we exhaust all available events from the stream.
      */
     private static void waitForReplayToComplete(
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,

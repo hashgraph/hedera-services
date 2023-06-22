@@ -41,6 +41,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -69,9 +70,9 @@ public class SyncPlatformStatusStateMachine implements PlatformStatusStateMachin
     private PlatformStatusLogic currentStatusLogic;
 
     /**
-     * An object to facilitate the threadsafe access of the current platform status
+     * The current platform status, to be accessed in a thread safe manner
      */
-    private final PlatformStatusNexus statusNexus;
+    private final AtomicReference<PlatformStatus> currentStatus;
 
     /**
      * The time at which the current status started
@@ -93,7 +94,7 @@ public class SyncPlatformStatusStateMachine implements PlatformStatusStateMachin
         this.time = Objects.requireNonNull(time);
         this.notificationEngine = Objects.requireNonNull(notificationEngine);
         this.currentStatusLogic = new StartingUpStatusLogic(config);
-        this.statusNexus = new PlatformStatusNexus(currentStatusLogic.getStatus());
+        this.currentStatus = new AtomicReference<>(currentStatusLogic.getStatus());
         this.currentStatusStartTime = time.now();
     }
 
@@ -172,7 +173,7 @@ public class SyncPlatformStatusStateMachine implements PlatformStatusStateMachin
                 PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newLogic.getStatus()));
 
         currentStatusLogic = newLogic;
-        statusNexus.setCurrentStatus(currentStatusLogic.getStatus());
+        currentStatus.set(currentStatusLogic.getStatus());
 
         currentStatusStartTime = time.now();
     }
@@ -183,7 +184,7 @@ public class SyncPlatformStatusStateMachine implements PlatformStatusStateMachin
     @Override
     @NonNull
     public PlatformStatus getCurrentStatus() {
-        return statusNexus.getCurrentStatus();
+        return currentStatus.get();
     }
 
     /**
