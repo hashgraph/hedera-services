@@ -36,36 +36,6 @@ public final class StaticSettingsProvider implements SettingsProvider {
         return settings.getTransactionMaxBytes();
     }
 
-    @Override
-    public long getDelayShuffle() {
-        return settings.getDelayShuffle();
-    }
-
-    @Override
-    public int getSocketIpTos() {
-        return settings.getSocketIpTos();
-    }
-
-    @Override
-    public int getTimeoutSyncClientSocket() {
-        return settings.getTimeoutSyncClientSocket();
-    }
-
-    @Override
-    public int getTimeoutSyncClientConnect() {
-        return settings.getTimeoutSyncClientConnect();
-    }
-
-    @Override
-    public int getTimeoutServerAcceptConnect() {
-        return settings.getTimeoutServerAcceptConnect();
-    }
-
-    @Override
-    public boolean isTcpNoDelay() {
-        return settings.isTcpNoDelay();
-    }
-
     /**
      * @see Settings#getThrottleTransactionQueueSize()
      */
@@ -77,20 +47,5 @@ public final class StaticSettingsProvider implements SettingsProvider {
     @Override
     public int getMaxTransactionBytesPerEvent() {
         return settings.getMaxTransactionBytesPerEvent();
-    }
-
-    @Override
-    public boolean useLoopbackIp() {
-        return settings.isUseLoopbackIp();
-    }
-
-    @Override
-    public int connectionStreamBufferSize() {
-        return settings.getBufferSize();
-    }
-
-    @Override
-    public int sleepHeartbeatMillis() {
-        return settings.getSleepHeartbeat();
     }
 }
