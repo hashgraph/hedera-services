@@ -32,15 +32,6 @@ public final class SettingConstants {
     static final int THROTTLE_TRANSACTION_QUEUE_SIZE_DEFAULT_VALUE = 100_000;
     static final int MAX_OUTGOING_SYNCS_DEFAULT_VALUE = 2;
     static final int MAX_INCOMING_SYNCS_INC_DEFAULT_VALUE = 1;
-    static final int BUFFER_SIZE_DEFAULT_VALUE = 8 * 1024;
-    static final int SOCKET_IP_TOS_DEFAULT_VALUE = -1;
-    static final boolean USE_TLS_DEFAULT_VALUE = true;
-    static final boolean DO_UPNP_DEFAULT_VALUE = true;
-    static final boolean USE_LOOPBACK_IP_DEFAULT_VALUE = true;
-    static final boolean TCP_NO_DELAY_DEFAULT_VALUE = true;
-    static final int TIMEOUT_SYNC_CLIENT_SOCKET_DEFAULT_VALUE = 5_000;
-    static final int TIMEOUT_SYNC_CLIENT_CONNECT_DEFAULT_VALUE = 5_000;
-    static final int TIMEOUT_SERVER_ACCEPT_CONNECT_DEFAULT_VALUE = 5_000;
     static final int DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE = 1000;
     static final boolean VERIFY_EVENT_SIGS_DEFAULT_VALUE = true;
     static final boolean SHOW_INTERNAL_STATS_DEFAULT_VALUE = false;

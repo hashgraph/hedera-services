@@ -20,10 +20,8 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.settings.ParsingUtils.parseDuration;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.SettingConstants.BUFFER_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.DO_UPNP_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.LOAD_KEYS_FROM_PFX_FILES_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_ADDRESS_SIZE_ALLOWED_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_INCOMING_SYNCS_INC_DEFAULT_VALUE;
@@ -33,21 +31,14 @@ import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_COUNT_PER_EV
 import static com.swirlds.platform.SettingConstants.NUM_CRYPTO_THREADS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_CALLER_SKIPS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.SOCKET_IP_TOS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.STATS_BUFFER_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.STATS_RECENT_SECONDS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.TCP_NO_DELAY_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.THREAD_DUMP_LOG_DIR_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.THREAD_DUMP_PERIOD_MS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.THREAD_PRIORITY_NON_SYNC_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.THREAD_PRIORITY_SYNC_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.THROTTLE_TRANSACTION_QUEUE_SIZE_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.TIMEOUT_SERVER_ACCEPT_CONNECT_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.TIMEOUT_SYNC_CLIENT_CONNECT_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.TIMEOUT_SYNC_CLIENT_SOCKET_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.TRANSACTION_MAX_BYTES_DEFAULT_VALUES;
-import static com.swirlds.platform.SettingConstants.USE_LOOPBACK_IP_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.USE_TLS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.VERBOSE_STATISTICS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.VERIFY_EVENT_SIGS_DEFAULT_VALUE;
 
@@ -145,30 +136,6 @@ public class Settings {
      * a partner to sync with in about (maxOutgoingSyncs + maxIncomingSyncsInc) tries, on average.
      */
     private int maxIncomingSyncsInc = MAX_INCOMING_SYNCS_INC_DEFAULT_VALUE;
-    /** for BufferedInputStream and BufferedOutputStream for syncing */
-    private int bufferSize = BUFFER_SIZE_DEFAULT_VALUE;
-    /**
-     * The IP_TOS to set for a socket, from 0 to 255, or -1 to not set one. This number (if not -1) will be part of
-     * every TCP/IP packet, and is normally ignored by internet routers, but it is possible to make routers change their
-     * handling of packets based on this number, such as for providing different Quality of Service (QoS).
-     *
-     * @see <a href="https://en.wikipedia.org/wiki/Type_of_service">Type of Service</a>
-     */
-    private int socketIpTos = SOCKET_IP_TOS_DEFAULT_VALUE;
-    /** should TLS be turned on, rather than making all sockets unencrypted? */
-    private boolean useTLS = USE_TLS_DEFAULT_VALUE;
-    /** should this set up uPnP port forwarding on the router once every 60 seconds? */
-    private boolean doUpnp = DO_UPNP_DEFAULT_VALUE;
-    /** should be set to true when using the internet simulator */
-    private boolean useLoopbackIp = USE_LOOPBACK_IP_DEFAULT_VALUE;
-    /** if true, then Nagel's algorithm is disabled, which helps latency, hurts bandwidth usage */
-    private boolean tcpNoDelay = TCP_NO_DELAY_DEFAULT_VALUE;
-    /** timeout when waiting for data */
-    private int timeoutSyncClientSocket = TIMEOUT_SYNC_CLIENT_SOCKET_DEFAULT_VALUE;
-    /** timeout when establishing a connection */
-    private int timeoutSyncClientConnect = TIMEOUT_SYNC_CLIENT_CONNECT_DEFAULT_VALUE;
-    /** timeout when server is waiting for another member to create a connection */
-    private int timeoutServerAcceptConnect = TIMEOUT_SERVER_ACCEPT_CONNECT_DEFAULT_VALUE;
     /** check for deadlocks every this many milliseconds (-1 for never) */
     private int deadlockCheckPeriod = DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
     /** sleep sleepCallerSkips ms after the caller fails this many times to call a random member */
@@ -545,50 +512,6 @@ public class Settings {
 
     public void setMaxIncomingSyncsInc(final int maxIncomingSyncsInc) {
         this.maxIncomingSyncsInc = maxIncomingSyncsInc;
-    }
-
-    public int getBufferSize() {
-        return bufferSize;
-    }
-
-    public int getSocketIpTos() {
-        return socketIpTos;
-    }
-
-    public void setSocketIpTos(final int socketIpTos) {
-        this.socketIpTos = socketIpTos;
-    }
-
-    public boolean isUseTLS() {
-        return useTLS;
-    }
-
-    public void setUseTLS(final boolean useTLS) {
-        this.useTLS = useTLS;
-    }
-
-    public boolean isDoUpnp() {
-        return doUpnp;
-    }
-
-    public boolean isUseLoopbackIp() {
-        return useLoopbackIp;
-    }
-
-    public boolean isTcpNoDelay() {
-        return tcpNoDelay;
-    }
-
-    public int getTimeoutSyncClientSocket() {
-        return timeoutSyncClientSocket;
-    }
-
-    public int getTimeoutSyncClientConnect() {
-        return timeoutSyncClientConnect;
-    }
-
-    public int getTimeoutServerAcceptConnect() {
-        return timeoutServerAcceptConnect;
     }
 
     public int getDeadlockCheckPeriod() {
