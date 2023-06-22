@@ -17,9 +17,9 @@
 package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
-import static com.swirlds.common.system.platformstatus.PlatformStatus.OBSERVING;
-import static com.swirlds.common.system.platformstatus.PlatformStatus.REPLAYING_EVENTS;
-import static com.swirlds.common.system.platformstatus.PlatformStatus.STARTING_UP;
+import static com.swirlds.common.system.status.PlatformStatus.OBSERVING;
+import static com.swirlds.common.system.status.PlatformStatus.REPLAYING_EVENTS;
+import static com.swirlds.common.system.status.PlatformStatus.STARTING_UP;
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
@@ -28,7 +28,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.system.platformstatus.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.EventTaskDispatcher;
