@@ -77,7 +77,7 @@
 /gradle/                                        @hashgraph/release-engineering @hashgraph/release-engineering-managers
 gradlew                                         @hashgraph/release-engineering @hashgraph/release-engineering-managers
 gradlew.bat                                     @hashgraph/release-engineering @hashgraph/release-engineering-managers
-**/buildSrc/                                    @hashgraph/release-engineering @hashgraph/release-engineering-managers
+**/build-logic/                                 @hashgraph/release-engineering @hashgraph/release-engineering-managers
 **/gradle.*                                     @hashgraph/release-engineering @hashgraph/release-engineering-managers
 **/*.gradle.*                                   @hashgraph/release-engineering @hashgraph/release-engineering-managers
 

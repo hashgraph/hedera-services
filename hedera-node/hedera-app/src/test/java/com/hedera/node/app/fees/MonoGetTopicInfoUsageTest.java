@@ -70,7 +70,7 @@ class MonoGetTopicInfoUsageTest {
     private final boolean deleted = true;
 
     private final Topic topic = new Topic(
-            topicId.topicNum(),
+            topicId,
             sequenceNumber,
             expirationTime,
             autoRenewSecs,

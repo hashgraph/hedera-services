@@ -33,7 +33,7 @@ tasks.test {
     exclude("**/*")
 }
 
-configurations { evaluationDependsOn(":hedera-node:node-app-hapi-fees") }
+configurations { evaluationDependsOn(":app-hapi-fees") }
 
 sourceSets {
     // Needed because "resource" directory is misnamed. See
@@ -43,12 +43,12 @@ sourceSets {
 
 dependencies {
     javaModuleDependencies {
-        api(project(":hedera-node:node-app-hapi-fees"))
-        api(project(":hedera-node:node-app-hapi-utils"))
+        api(project(":app-hapi-fees"))
+        api(project(":app-hapi-utils"))
         api(gav("com.fasterxml.jackson.annotation"))
         api(gav("com.google.common"))
         api(gav("com.google.protobuf"))
-        api(project(":hedera-node:node-hapi"))
+        api(project(":hapi"))
         api(gav("com.swirlds.common"))
         api(gav("headlong"))
         api(gav("info.picocli"))
@@ -62,7 +62,7 @@ dependencies {
         api(gav("org.yaml.snakeyaml"))
         api(gav("tuweni.bytes"))
 
-        implementation(project(":hedera-node:node-app-service-evm"))
+        implementation(project(":app-service-evm"))
         implementation(gav("com.fasterxml.jackson.core"))
         implementation(gav("com.fasterxml.jackson.databind"))
         implementation(gav("com.github.docker.java.api"))
@@ -81,10 +81,11 @@ dependencies {
         implementation(gav("tuweni.units"))
 
         itestImplementation(project(path))
+        itestImplementation(project(":hapi"))
+        itestImplementation(gav("org.apache.commons.lang3"))
+        itestImplementation(gav("org.junit.jupiter.api"))
         itestImplementation(gav("org.testcontainers"))
         itestImplementation(gav("org.testcontainers.junit.jupiter"))
-        itestImplementation(project(":hedera-node:node-hapi"))
-        itestImplementation(gav("org.junit.jupiter.api"))
 
         eetImplementation(project(path))
         eetImplementation(gav("org.junit.jupiter.api"))
@@ -105,7 +106,7 @@ tasks.eet {
 }
 
 tasks.shadowJar {
-    dependsOn(project(":hedera-node:node-app-hapi-fees").tasks.jar)
+    dependsOn(project(":app-hapi-fees").tasks.jar)
 
     mergeServiceFiles()
 
@@ -125,7 +126,7 @@ tasks.shadowJar {
 
 val yahCliJar =
     tasks.register<ShadowJar>("yahCliJar") {
-        dependsOn(project(":hedera-node:node-app-hapi-fees").tasks.jar)
+        dependsOn(project(":app-hapi-fees").tasks.jar)
 
         group = "shadow"
         from(sourceSets.main.get().output)
@@ -150,7 +151,7 @@ val yahCliJar =
 
 val validationJar =
     tasks.register<ShadowJar>("validationJar") {
-        dependsOn(project(":hedera-node:node-app-hapi-fees").tasks.jar)
+        dependsOn(project(":app-hapi-fees").tasks.jar)
 
         group = "shadow"
         from(sourceSets.main.get().output)

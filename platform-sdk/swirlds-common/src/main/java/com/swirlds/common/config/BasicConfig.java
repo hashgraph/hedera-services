@@ -16,6 +16,8 @@
 
 package com.swirlds.common.config;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.nio.file.Path;
@@ -25,6 +27,8 @@ import java.time.Duration;
  * Basic configuration data record. This record contains all general config properties that can not be defined for a
  * specific subsystem. The record is based on the definition of config data objects as described in {@link ConfigData}.
  *
+ * @param configsUsedFilename
+ *      the name of the file that contains the list of config files used to create this config
  * @param verifyEventSigs
  * 		verify event signatures (rather than just trusting they are correct)?
  * @param numCryptoThreads
@@ -112,8 +116,6 @@ import java.time.Duration;
  * 		The probability that we will create a child for a childless event. The probability is 1 / X, where X is the
  * 		value of rescueChildlessInverseProbability. A value of 0 means that a node will not create any children for
  * 		childless events.
- * @param runPauseCheckTimer
- * 		Run a thread that checks if the JVM pauses for a long time
  * @param enableEventStreaming
  * 		enable stream event to server
  * @param eventStreamQueueCapacity
@@ -126,9 +128,9 @@ import java.time.Duration;
  * 		period of generating thread dump file in the unit of milliseconds
  * @param threadDumpLogDir
  * 		thread dump files will be generated in this directory
- * @param jVMPauseDetectorSleepMs
+ * @param jvmPauseDetectorSleepMs
  * 		period of JVMPauseDetectorThread sleeping in the unit of milliseconds
- * @param jVMPauseReportMs
+ * @param jvmPauseReportMs
  * 		log an error when JVMPauseDetectorThread detect a pause greater than this many milliseconds
  * @param enableStateRecovery
  * 		Setting for state recover
@@ -174,6 +176,9 @@ import java.time.Duration;
  * @param hangingThreadDuration
  *      the length of time a gossip thread is allowed to wait when it is asked to shutdown.
  *      If a gossip thread takes longer than this period to shut down, then an error message is written to the log.
+ * @param emergencyRecoveryFileLoadDir
+ *      The path to look for an emergency recovery file on node start. If a file is present in this directory at
+ *      startup, emergency recovery will begin.
  * @param genesisFreezeTime
  *      If this node starts from genesis, this value is used as the freeze time. This feature is deprecated and
  *      planned for removal in a future platform version.
@@ -203,43 +208,49 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "1000") int deadlockCheckPeriod,
         @ConfigProperty(defaultValue = "500") int sleepHeartbeat,
         @ConfigProperty(defaultValue = "200") long delayShuffle,
-        @ConfigProperty(value = "callerSkipsBeforeSleep", defaultValue = "30") long callerSkipsBeforeSleep,
-        @ConfigProperty(value = "sleepCallerSkips", defaultValue = "50") long sleepCallerSkips,
-        @ConfigProperty(value = "statsSkipSeconds", defaultValue = "60") double statsSkipSeconds,
-        @ConfigProperty(value = "threadPrioritySync", defaultValue = "5") int threadPrioritySync,
-        @ConfigProperty(value = "threadPriorityNonSync", defaultValue = "5") int threadPriorityNonSync,
-        @ConfigProperty(value = "maxAddressSizeAllowed", defaultValue = "1024") int maxAddressSizeAllowed,
-        @ConfigProperty(value = "freezeSecondsAfterStartup", defaultValue = "10") int freezeSecondsAfterStartup,
-        @ConfigProperty(value = "loadKeysFromPfxFiles", defaultValue = "true") boolean loadKeysFromPfxFiles,
-        @ConfigProperty(value = "maxTransactionBytesPerEvent", defaultValue = "245760") int maxTransactionBytesPerEvent,
-        @ConfigProperty(value = "maxTransactionCountPerEvent", defaultValue = "245760") int maxTransactionCountPerEvent,
-        @ConfigProperty(value = "eventIntakeQueueSize", defaultValue = "10000") int eventIntakeQueueSize,
-        @ConfigProperty(value = "randomEventProbability", defaultValue = "0") int randomEventProbability,
-        @ConfigProperty(value = "rescueChildlessInverseProbability", defaultValue = "10")
-                int rescueChildlessInverseProbability,
-        @ConfigProperty(value = "runPauseCheckTimer", defaultValue = "false") boolean runPauseCheckTimer,
-        @ConfigProperty(value = "enableEventStreaming", defaultValue = "false") boolean enableEventStreaming,
-        @ConfigProperty(value = "eventStreamQueueCapacity", defaultValue = "500") int eventStreamQueueCapacity,
-        @ConfigProperty(value = "eventsLogPeriod", defaultValue = "60") long eventsLogPeriod,
-        @ConfigProperty(value = "eventsLogDir", defaultValue = "./eventstreams") String eventsLogDir,
-        @ConfigProperty(value = "threadDumpPeriodMs", defaultValue = "0") long threadDumpPeriodMs,
-        @ConfigProperty(value = "threadDumpLogDir", defaultValue = "data/threadDump") String threadDumpLogDir,
-        @ConfigProperty(value = "JVMPauseDetectorSleepMs", defaultValue = "1000") int jVMPauseDetectorSleepMs,
-        @ConfigProperty(value = "JVMPauseReportMs", defaultValue = "1000") int jVMPauseReportMs,
-        @ConfigProperty(value = "enableStateRecovery", defaultValue = "false") boolean enableStateRecovery,
-        @ConfigProperty(value = "playbackStreamFileDirectory", defaultValue = "") String playbackStreamFileDirectory,
-        @ConfigProperty(value = "playbackEndTimeStamp", defaultValue = "") String playbackEndTimeStamp,
-        @ConfigProperty(value = "gossipWithDifferentVersions", defaultValue = "false")
-                boolean gossipWithDifferentVersions,
-        @ConfigProperty(value = "enablePingTrans", defaultValue = "true") boolean enablePingTrans,
-        @ConfigProperty(value = "pingTransFreq", defaultValue = "1") long pingTransFreq,
-        @ConfigProperty(value = "staleEventPreventionThreshold", defaultValue = "5") int staleEventPreventionThreshold,
-        @ConfigProperty(value = "eventIntakeQueueThrottleSize", defaultValue = "1000") int eventIntakeQueueThrottleSize,
-        @ConfigProperty(value = "transactionMaxBytes", defaultValue = "6144") int transactionMaxBytes,
-        @ConfigProperty(value = "useTLS", defaultValue = "true") boolean useTLS,
-        @ConfigProperty(value = "socketIpTos", defaultValue = "-1") int socketIpTos,
-        @ConfigProperty(value = "maxIncomingSyncsInc", defaultValue = "1") int maxIncomingSyncsInc,
-        @ConfigProperty(value = "maxOutgoingSyncs", defaultValue = "2") int maxOutgoingSyncs,
-        @ConfigProperty(value = "logPath", defaultValue = "log4j2.xml") Path logPath,
-        @ConfigProperty(value = "hangingThreadDuration", defaultValue = "60s") Duration hangingThreadDuration,
-        @ConfigProperty(value = "genesisFreezeTime", defaultValue = "0") long genesisFreezeTime) {}
+        @ConfigProperty(defaultValue = "30") long callerSkipsBeforeSleep,
+        @ConfigProperty(defaultValue = "50") long sleepCallerSkips,
+        @ConfigProperty(defaultValue = "60") double statsSkipSeconds,
+        @ConfigProperty(defaultValue = "5") int threadPrioritySync,
+        @ConfigProperty(defaultValue = "5") int threadPriorityNonSync,
+        @ConfigProperty(defaultValue = "1024") int maxAddressSizeAllowed,
+        @ConfigProperty(defaultValue = "10") int freezeSecondsAfterStartup,
+        @ConfigProperty(defaultValue = "true") boolean loadKeysFromPfxFiles,
+        @ConfigProperty(defaultValue = "245760") int maxTransactionBytesPerEvent,
+        @ConfigProperty(defaultValue = "245760") int maxTransactionCountPerEvent,
+        @ConfigProperty(defaultValue = "10000") int eventIntakeQueueSize,
+        @ConfigProperty(defaultValue = "0") int randomEventProbability,
+        @ConfigProperty(defaultValue = "10") int rescueChildlessInverseProbability,
+        @ConfigProperty(defaultValue = "false") boolean enableEventStreaming,
+        @ConfigProperty(defaultValue = "500") int eventStreamQueueCapacity,
+        @ConfigProperty(defaultValue = "60") long eventsLogPeriod,
+        @ConfigProperty(defaultValue = "./eventstreams") String eventsLogDir,
+        @ConfigProperty(defaultValue = "0") long threadDumpPeriodMs,
+        @ConfigProperty(defaultValue = "data/threadDump") String threadDumpLogDir,
+        @ConfigProperty(defaultValue = "1000") int jvmPauseDetectorSleepMs,
+        @ConfigProperty(defaultValue = "1000") int jvmPauseReportMs,
+        @ConfigProperty(defaultValue = "false") boolean enableStateRecovery,
+        @ConfigProperty(defaultValue = "") String playbackStreamFileDirectory,
+        @ConfigProperty(defaultValue = "") String playbackEndTimeStamp,
+        @ConfigProperty(defaultValue = "false") boolean gossipWithDifferentVersions,
+        @ConfigProperty(defaultValue = "true") boolean enablePingTrans,
+        @ConfigProperty(defaultValue = "1") long pingTransFreq,
+        @ConfigProperty(defaultValue = "5") int staleEventPreventionThreshold,
+        @ConfigProperty(defaultValue = "1000") int eventIntakeQueueThrottleSize,
+        @ConfigProperty(defaultValue = "6144") int transactionMaxBytes,
+        @ConfigProperty(defaultValue = "true") boolean useTLS,
+        @ConfigProperty(defaultValue = "-1") int socketIpTos,
+        @ConfigProperty(defaultValue = "1") int maxIncomingSyncsInc,
+        @ConfigProperty(defaultValue = "2") int maxOutgoingSyncs,
+        @ConfigProperty(defaultValue = "log4j2.xml") Path logPath,
+        @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration,
+        @ConfigProperty(defaultValue = "data/saved") String emergencyRecoveryFileLoadDir,
+        @ConfigProperty(defaultValue = "0") long genesisFreezeTime) {
+
+    /**
+     * @return Absolute path to the emergency recovery file load directory.
+     */
+    public Path getEmergencyRecoveryFileLoadDir() {
+        return getAbsolutePath().resolve(emergencyRecoveryFileLoadDir());
+    }
+}

@@ -19,26 +19,17 @@ package com.swirlds.platform;
 import static com.swirlds.platform.SettingConstants.BUFFER_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.DELAY_SHUFFLE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DO_UPNP_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.FREEZE_SECONDS_AFTER_STARTUP_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.GOSSIP_WITH_DIFFERENT_VERSIONS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.JVM_PAUSE_DETECTOR_SLEEP_MS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.JVM_PAUSE_REPORT_MS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.LOAD_KEYS_FROM_PFX_FILES_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.LOG_STACK_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_ADDRESS_SIZE_ALLOWED_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_INCOMING_SYNCS_INC_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_OUTGOING_SYNCS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.NUM_CONNECTIONS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.NUM_CRYPTO_THREADS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SLEEP_CALLER_SKIPS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.SLEEP_HEARTBEAT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SOCKET_IP_TOS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.STATS_SKIP_SECONDS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.TCP_NO_DELAY_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.THREAD_DUMP_LOG_DIR_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.THREAD_DUMP_PERIOD_MS_DEFAULT_VALUE;
@@ -202,7 +193,6 @@ class SettingsTest {
         Assertions.assertEquals(VERBOSE_STATISTICS_DEFAULT_VALUE, settings.isVerboseStatistics());
         Assertions.assertEquals(
                 THROTTLE_TRANSACTION_QUEUE_SIZE_DEFAULT_VALUE, settings.getThrottleTransactionQueueSize());
-        Assertions.assertEquals(NUM_CONNECTIONS_DEFAULT_VALUE, settings.getNumConnections());
         Assertions.assertEquals(MAX_OUTGOING_SYNCS_DEFAULT_VALUE, settings.getMaxOutgoingSyncs());
         Assertions.assertEquals(MAX_INCOMING_SYNCS_INC_DEFAULT_VALUE, settings.getMaxIncomingSyncsInc());
         Assertions.assertEquals(BUFFER_SIZE_DEFAULT_VALUE, settings.getBufferSize());
@@ -210,7 +200,6 @@ class SettingsTest {
         Assertions.assertEquals(
                 Integer.parseInt(ConsensusConfig.COIN_FREQ_DEFAULT_VALUE),
                 configuration.getConfigData(ConsensusConfig.class).coinFreq());
-        Assertions.assertEquals(LOG_STACK_DEFAULT_VALUE, settings.isLogStack());
         Assertions.assertEquals(USE_TLS_DEFAULT_VALUE, settings.isUseTLS());
         Assertions.assertEquals(DO_UPNP_DEFAULT_VALUE, settings.isDoUpnp());
         Assertions.assertEquals(USE_LOOPBACK_IP_DEFAULT_VALUE, settings.isUseLoopbackIp());
@@ -219,16 +208,12 @@ class SettingsTest {
         Assertions.assertEquals(TIMEOUT_SYNC_CLIENT_CONNECT_DEFAULT_VALUE, settings.getTimeoutSyncClientConnect());
         Assertions.assertEquals(TIMEOUT_SERVER_ACCEPT_CONNECT_DEFAULT_VALUE, settings.getTimeoutServerAcceptConnect());
         Assertions.assertEquals(DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE, settings.getDeadlockCheckPeriod());
-        Assertions.assertEquals(SLEEP_HEARTBEAT_DEFAULT_VALUE, settings.getSleepHeartbeat());
-        Assertions.assertEquals(DELAY_SHUFFLE_DEFAULT_VALUE, settings.getDelayShuffle());
         Assertions.assertEquals(CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE, settings.getCallerSkipsBeforeSleep());
         Assertions.assertEquals(SLEEP_CALLER_SKIPS_DEFAULT_VALUE, settings.getSleepCallerSkips());
-        Assertions.assertEquals(STATS_SKIP_SECONDS_DEFAULT_VALUE, settings.getStatsSkipSeconds());
         Assertions.assertEquals(THREAD_PRIORITY_SYNC_DEFAULT_VALUE, settings.getThreadPrioritySync());
         Assertions.assertEquals(THREAD_PRIORITY_NON_SYNC_DEFAULT_VALUE, settings.getThreadPriorityNonSync());
         Assertions.assertEquals(TRANSACTION_MAX_BYTES_DEFAULT_VALUES, settings.getTransactionMaxBytes());
         Assertions.assertEquals(MAX_ADDRESS_SIZE_ALLOWED_DEFAULT_VALUE, settings.getMaxAddressSizeAllowed());
-        Assertions.assertEquals(FREEZE_SECONDS_AFTER_STARTUP_DEFAULT_VALUE, settings.getFreezeSecondsAfterStartup());
         Assertions.assertEquals(LOAD_KEYS_FROM_PFX_FILES_DEFAULT_VALUE, settings.isLoadKeysFromPfxFiles());
         Assertions.assertEquals(
                 MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE, settings.getMaxTransactionBytesPerEvent());
@@ -236,9 +221,6 @@ class SettingsTest {
                 MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE, settings.getMaxTransactionCountPerEvent());
         Assertions.assertEquals(THREAD_DUMP_PERIOD_MS_DEFAULT_VALUE, settings.getThreadDumpPeriodMs());
         Assertions.assertEquals(THREAD_DUMP_LOG_DIR_DEFAULT_VALUE, settings.getThreadDumpLogDir());
-        Assertions.assertEquals(JVM_PAUSE_DETECTOR_SLEEP_MS_DEFAULT_VALUE, settings.getJVMPauseDetectorSleepMs());
-        Assertions.assertEquals(JVM_PAUSE_REPORT_MS_DEFAULT_VALUE, settings.getJVMPauseReportMs());
-        Assertions.assertEquals(GOSSIP_WITH_DIFFERENT_VERSIONS_DEFAULT_VALUE, settings.isGossipWithDifferentVersions());
     }
 
     @Test
@@ -267,12 +249,10 @@ class SettingsTest {
         Assertions.assertTrue(settings.isShowInternalStats());
         Assertions.assertTrue(settings.isVerboseStatistics());
         Assertions.assertEquals(200000, settings.getThrottleTransactionQueueSize());
-        Assertions.assertEquals(50, settings.getNumConnections());
         Assertions.assertEquals(3, settings.getMaxOutgoingSyncs());
         Assertions.assertEquals(2, settings.getMaxIncomingSyncsInc());
         Assertions.assertEquals(7000, settings.getBufferSize());
         Assertions.assertEquals(1, settings.getSocketIpTos());
-        Assertions.assertFalse(settings.isLogStack());
         Assertions.assertFalse(settings.isUseTLS());
         Assertions.assertFalse(settings.isDoUpnp());
         Assertions.assertFalse(settings.isUseLoopbackIp());
@@ -281,23 +261,16 @@ class SettingsTest {
         Assertions.assertEquals(1000, settings.getTimeoutSyncClientConnect());
         Assertions.assertEquals(1000, settings.getTimeoutServerAcceptConnect());
         Assertions.assertEquals(2000, settings.getDeadlockCheckPeriod());
-        Assertions.assertEquals(1000, settings.getSleepHeartbeat());
-        Assertions.assertEquals(300, settings.getDelayShuffle());
         Assertions.assertEquals(50, settings.getCallerSkipsBeforeSleep());
         Assertions.assertEquals(100, settings.getSleepCallerSkips());
-        Assertions.assertEquals(70, settings.getStatsSkipSeconds());
         Assertions.assertEquals(10, settings.getThreadPrioritySync());
         Assertions.assertEquals(7000, settings.getTransactionMaxBytes());
         Assertions.assertEquals(2048, settings.getMaxAddressSizeAllowed());
-        Assertions.assertEquals(15, settings.getFreezeSecondsAfterStartup());
         Assertions.assertFalse(settings.isLoadKeysFromPfxFiles());
         Assertions.assertEquals(300000, settings.getMaxTransactionBytesPerEvent());
         Assertions.assertEquals(300000, settings.getMaxTransactionCountPerEvent());
         Assertions.assertEquals(1, settings.getThreadDumpPeriodMs());
         Assertions.assertEquals("badData/badThreadDump", settings.getThreadDumpLogDir());
-        Assertions.assertEquals(2000, settings.getJVMPauseDetectorSleepMs());
-        Assertions.assertEquals(2000, settings.getJVMPauseReportMs());
-        Assertions.assertTrue(settings.isGossipWithDifferentVersions());
     }
 
     /**
