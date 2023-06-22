@@ -64,7 +64,17 @@ public final class ConfigMappings {
             new ConfigMapping("paths.settingsUsedDir", "settingsUsedDir"),
             new ConfigMapping("paths.keysDirPath", "keysDirPath"),
             new ConfigMapping("paths.appsDirPath", "appsDirPath"),
-            new ConfigMapping("paths.logPath", "logPath"));
+            new ConfigMapping("paths.logPath", "logPath"),
+            new ConfigMapping("socket.ipTos", "socketIpTos"),
+            new ConfigMapping("socket.bufferSize", "bufferSize"),
+            new ConfigMapping("socket.timeoutSyncClientSocket", "timeoutSyncClientSocket"),
+            new ConfigMapping("socket.timeoutSyncClientConnect", "timeoutSyncClientConnect"),
+            new ConfigMapping("socket.timeoutServerAcceptConnect", "timeoutServerAcceptConnect"),
+            new ConfigMapping("socket.useTLS", "useTLS,       "),
+            new ConfigMapping("socket.doUpnp", "doUpnp"),
+            new ConfigMapping("socket.useLoopbackIp", "useLoopbackIp"),
+            new ConfigMapping("socket.tcpNoDelay", "tcpNoDelay"),
+            new ConfigMapping("socket.deadlockCheckPeriod", "deadlockCheckPeriod"));
 
     /**
      * Add all known aliases to the provided config source
