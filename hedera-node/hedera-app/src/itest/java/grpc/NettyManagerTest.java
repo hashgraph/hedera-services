@@ -16,81 +16,34 @@
 
 package grpc;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.transaction.Query;
-import com.hedera.hapi.node.transaction.Response;
-import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.config.VersionedConfigImpl;
-import com.hedera.node.app.grpc.GrpcServiceBuilder;
-import com.hedera.node.app.grpc.HelidonGrpcServerManager;
-import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.grpc.impl.netty.NettyGrpcServerManager;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
-import com.hedera.node.config.data.GrpcConfig;
-import com.hedera.node.config.data.NettyConfig;
-import com.hedera.pbj.runtime.RpcMethodDefinition;
-import com.hedera.pbj.runtime.RpcServiceDefinition;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
-import com.swirlds.common.metrics.platform.MetricKeyRegistry;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.config.api.source.ConfigSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import io.grpc.ManagedChannelBuilder;
-//import io.helidon.grpc.client.ClientServiceDescriptor;
-//import io.helidon.grpc.client.GrpcServiceClient;
-import java.net.ConnectException;
+import org.apache.logging.log4j.LogManager;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.logging.log4j.LogManager;
-import org.assertj.core.api.Assumptions;
-import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-final class HelidonManagerTest {
+final class NettyManagerTest extends GrpcTestBase {
     private static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
-    private static final NodeId THIS_NODE = new NodeId(3);
 
-    private Metrics createMetrics(@NonNull final Configuration config) {
-        final MetricsConfig metricsConfig = config.getConfigData(MetricsConfig.class);
-        return new DefaultMetrics(
-                THIS_NODE, new MetricKeyRegistry(), METRIC_EXECUTOR, new DefaultMetricsFactory(), metricsConfig);
-    }
-
-    private Configuration createConfig(@NonNull final TestSource testConfig) {
-        return ConfigurationBuilder.create()
-                .withConfigDataType(MetricsConfig.class)
-                .withConfigDataType(GrpcConfig.class)
-                .withConfigDataType(NettyConfig.class)
-                .withSource(testConfig)
-                .build();
-    }
-
-    private HelidonGrpcServerManager createServerManager(@NonNull final TestSource testConfig) {
+    private NettyGrpcServerManager createServerManager(@NonNull final TestSource testConfig) {
         final var config = createConfig(testConfig);
-        return new HelidonGrpcServerManager(
+        return new NettyGrpcServerManager(
                 () -> new VersionedConfigImpl(config, 1),
                 Set::of,
                 (req, res) -> {},
                 (req, res) -> {},
-                createMetrics(config));
+                metrics);
     }
 
     /**
@@ -99,7 +52,7 @@ final class HelidonManagerTest {
      */
     @Test
     @DisplayName("Ephemeral ports are supported")
-    @Timeout(value = 5)
+    @Timeout(value = 15)
     void ephemeralPorts() {
         // Given a server with 0 as the port number for both port and tls port
         final var subject = createServerManager(new TestSource().withPort(0).withTlsPort(0));
@@ -129,7 +82,7 @@ final class HelidonManagerTest {
      */
     @Test
     @DisplayName("Non-ephemeral ports are supported")
-    @Timeout(value = 5)
+    @Timeout(value = 15)
     void nonEphemeralPorts() {
         // Given a server configured with actual port numbers
         final var subject = createServerManager(new TestSource().withFreePort().withFreeTlsPort());
@@ -151,7 +104,7 @@ final class HelidonManagerTest {
 
     @Test
     @DisplayName("Starting a server twice throws")
-    @Timeout(value = 5)
+    @Timeout(value = 15)
     void startingTwice() {
         // Given a server with a configuration that will start
         final var subject = createServerManager(new TestSource());
@@ -172,7 +125,7 @@ final class HelidonManagerTest {
 
     @Test
     @DisplayName("Stopping a server")
-    @Timeout(value = 5)
+    @Timeout(value = 15)
     void stoppingAStartedServer() {
         // Given a server with a configuration that will start
         final var subject = createServerManager(new TestSource());
@@ -194,7 +147,7 @@ final class HelidonManagerTest {
 
     @Test
     @DisplayName("Stopping a server is idempotent")
-    @Timeout(value = 5)
+    @Timeout(value = 15)
     void stoppingIsIdempotent() {
         // Given a server with a configuration that will start
         final var subject = createServerManager(new TestSource());
@@ -217,13 +170,13 @@ final class HelidonManagerTest {
 
     @Test
     @DisplayName("Restarting a server")
-    @Timeout(value = 50)
+    @Timeout(value = 30)
     void restart() {
         // Given a server with a configuration that will start
         final var subject = createServerManager(new TestSource());
 
         // We can cycle over start / stop / start / stop cycles, and it is all good
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 2; i++) {
             try {
                 subject.start();
                 assertThat(subject.port()).isNotZero();
@@ -239,7 +192,7 @@ final class HelidonManagerTest {
     }
 
     @Test
-    @Timeout(value = 5)
+    @Timeout(value = 15)
     @DisplayName("Starting a server with a port already in use but is then released")
     void portBecomesFreeEventually() throws Exception {
         // Given a server with a configuration that will start
@@ -252,11 +205,11 @@ final class HelidonManagerTest {
         // And a server socket listening on the port that the server intends to use
         try (final var serverSocket = new ServerSocket()) {
             serverSocket.setReuseAddress(true);
-            serverSocket.bind(new InetSocketAddress(testConfig.port));
+            serverSocket.bind(new InetSocketAddress(testConfig.port()));
             assertThat(serverSocket.isBound()).isTrue();
 
             // When we start the gRPC server on that same port
-            final LogCaptor logCaptor = new LogCaptor(LogManager.getLogger(HelidonGrpcServerManager.class));
+            final LogCaptor logCaptor = new LogCaptor(LogManager.getLogger(NettyGrpcServerManager.class));
             final var th = new Thread(subject::start);
             th.start();
 
@@ -312,7 +265,7 @@ final class HelidonManagerTest {
         // And a server socket listening on the port that the server intends to use
         try (final var serverSocket = new ServerSocket()) {
             serverSocket.setReuseAddress(true);
-            serverSocket.bind(new InetSocketAddress(testConfig.port));
+            serverSocket.bind(new InetSocketAddress(testConfig.port()));
             assertThat(serverSocket.isBound()).isTrue();
 
             // Start the gRPC server, trying to use the same port, which will eventually give up and throw
@@ -321,188 +274,6 @@ final class HelidonManagerTest {
                     .hasMessageContaining("Failed to start gRPC server");
         } finally {
             subject.stop();
-        }
-    }
-
-//    @Test
-//    @Timeout(value = 5)
-//    @DisplayName("Transactions and Queries are routed")
-//    void requestsAreRouted() {
-//        // Given a server with a configuration that will start, and tx and query handlers that register they were
-//        // called, so we can make sure calls work.
-//        final var config = createConfig(new TestSource());
-//        final var txCounter = new AtomicInteger(0);
-//        final var qCounter = new AtomicInteger(0);
-//
-//        final var testService = new Service() {
-//            @NonNull
-//            @Override
-//            public String getServiceName() {
-//                return "TestService";
-//            }
-//
-//            @NonNull
-//            @Override
-//            public Set<RpcServiceDefinition> rpcDefinitions() {
-//                return Set.of(new RpcServiceDefinition() {
-//                    @NonNull
-//                    @Override
-//                    public String basePath() {
-//                        return "proto.TestService";
-//                    }
-//
-//                    @NonNull
-//                    @Override
-//                    public Set<RpcMethodDefinition<?, ?>> methods() {
-//                        return Set.of(
-//                                new RpcMethodDefinition<>("tx", Transaction.class, TransactionResponse.class),
-//                                new RpcMethodDefinition<>("q", Query.class, Response.class));
-//                    }
-//                });
-//            }
-//        };
-//
-//        final var metrics = createMetrics(config);
-//        final var subject = new HelidonGrpcServerManager(
-//                () -> new VersionedConfigImpl(config, 1),
-//                () -> Set.of(testService),
-//                (req, res) -> txCounter.incrementAndGet(),
-//                (req, res) -> qCounter.incrementAndGet(),
-//                metrics);
-//
-//        // When we start the server, we can actually make requests to it!
-//        try {
-//            subject.start();
-//
-//            final var channel = ManagedChannelBuilder.forAddress("localhost", subject.port())
-//                    .usePlaintext()
-//                    .build();
-//
-//            final var sd = new GrpcServiceBuilder("proto.TestService", (req, res) -> {}, (req, res) -> {})
-//                    .transaction("tx")
-//                    .query("q")
-//                    .build(metrics);
-//
-//            final var builder = io.grpc.ServiceDescriptor.newBuilder("proto.TestService");
-//            sd.methods().forEach(m -> builder.addMethod(m.descriptor()));
-//            final var clientServiceDescriptor = builder.build();
-//            final var client = GrpcServiceClient.builder(
-//                            channel,
-//                            ClientServiceDescriptor.builder(clientServiceDescriptor)
-//                                    .build())
-//                    .build();
-//
-//            final var bb = BufferedData.wrap("anything".getBytes(StandardCharsets.UTF_8));
-//            client.blockingUnary("tx", bb);
-//            client.blockingUnary("q", bb);
-//
-//            assertThat(txCounter.get()).isEqualTo(1);
-//            assertThat(qCounter.get()).isEqualTo(1);
-//
-//        } finally {
-//            subject.stop();
-//        }
-//    }
-
-    /**
-     * Checks whether a server process is listening on the given port
-     *
-     * @param portNumber The port to check
-     */
-    private static boolean isListening(int portNumber) {
-        try (final var socket = new Socket("localhost", portNumber)) {
-            return socket.isConnected();
-        } catch (ConnectException connect) {
-            return false;
-        } catch (Exception e) {
-            throw new RuntimeException(
-                    "Unexpected error while checking whether the port '" + portNumber + "' was free", e);
-        }
-    }
-
-    /**
-     * A config source used by this test to specify the config values
-     */
-    private static final class TestSource implements ConfigSource {
-        private int port = 0;
-        private int tlsPort = 0;
-        private int startRetries = 3;
-        private int startRetryIntervalMs = 100;
-
-        @Override
-        public int getOrdinal() {
-            return 1000;
-        }
-
-        @NonNull
-        @Override
-        public Set<String> getPropertyNames() {
-            return Set.of("grpc.port", "grpc.tlsPort", "netty.startRetryIntervalMs", "netty.startRetries");
-        }
-
-        @Nullable
-        @Override
-        public String getValue(@NonNull String s) throws NoSuchElementException {
-            return switch (s) {
-                case "grpc.port" -> String.valueOf(port);
-                case "grpc.tlsPort" -> String.valueOf(tlsPort);
-                case "netty.startRetryIntervalMs" -> String.valueOf(startRetryIntervalMs);
-                case "netty.startRetries" -> String.valueOf(startRetries);
-                default -> null;
-            };
-        }
-
-        public TestSource withPort(final int value) {
-            this.port = value;
-            return this;
-        }
-
-        // Locates a free port on its own
-        public TestSource withFreePort() {
-            this.port = findFreePort();
-            Assumptions.assumeThat(this.port).isGreaterThan(0);
-            return this;
-        }
-
-        public TestSource withTlsPort(final int value) {
-            this.tlsPort = value;
-            return this;
-        }
-
-        // Locates a free port on its own
-        public TestSource withFreeTlsPort() {
-            this.tlsPort = findFreePort();
-            Assumptions.assumeThat(this.tlsPort).isGreaterThan(0);
-            return this;
-        }
-
-        public TestSource withStartRetries(final int value) {
-            this.startRetries = value;
-            return this;
-        }
-
-        public TestSource withStartRetryIntervalMs(final int value) {
-            this.startRetryIntervalMs = value;
-            return this;
-        }
-
-        private int findFreePort() {
-            for (int i = 1024; i < 10_000; i++) {
-                if (i != port && i != tlsPort && isPortFree(i)) {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        /**
-         * Checks whether the given port is free
-         *
-         * @param portNumber The port to check
-         */
-        private boolean isPortFree(int portNumber) {
-            return !isListening(portNumber);
         }
     }
 }

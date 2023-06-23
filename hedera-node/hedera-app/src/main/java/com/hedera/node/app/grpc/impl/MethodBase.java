@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.grpc;
+package com.hedera.node.app.grpc.impl;
 
 import static java.util.Objects.requireNonNull;
 
@@ -34,7 +34,7 @@ import org.apache.logging.log4j.Logger;
  * An instance of either {@link TransactionMethod} or {@link QueryMethod} is created per transaction
  * type and query type.
  */
-abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, BufferedData> {
+public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData, BufferedData> {
     private static final Logger logger = LogManager.getLogger(MethodBase.class);
 
     // To be set by configuration. See Issue #4294

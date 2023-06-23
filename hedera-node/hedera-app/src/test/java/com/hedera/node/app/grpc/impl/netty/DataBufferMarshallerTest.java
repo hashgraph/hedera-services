@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.grpc;
+package com.hedera.node.app.grpc.impl.netty;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.Hedera;
+import com.hedera.node.app.grpc.impl.netty.DataBufferMarshaller;
 import com.hedera.node.app.utils.TestUtils;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import java.io.ByteArrayInputStream;

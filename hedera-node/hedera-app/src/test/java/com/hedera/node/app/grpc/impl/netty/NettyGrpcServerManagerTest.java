@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.grpc;
+package com.hedera.node.app.grpc.impl.netty;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -38,7 +38,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-final class HelidonGrpcServerManagerTest {
+final class NettyGrpcServerManagerTest {
 
     private ConfigProvider configProvider;
     private ServicesRegistry services;
@@ -64,17 +64,17 @@ final class HelidonGrpcServerManagerTest {
     @DisplayName("Null arguments are not allowed")
     @SuppressWarnings("DataFlowIssue")
     void nullArgsThrow() {
-        assertThatThrownBy(() -> new HelidonGrpcServerManager(null, services, ingestWorkflow, queryWorkflow, metrics))
+        assertThatThrownBy(() -> new NettyGrpcServerManager(null, services, ingestWorkflow, queryWorkflow, metrics))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() ->
-                        new HelidonGrpcServerManager(configProvider, null, ingestWorkflow, queryWorkflow, metrics))
+                        new NettyGrpcServerManager(configProvider, null, ingestWorkflow, queryWorkflow, metrics))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HelidonGrpcServerManager(configProvider, services, null, queryWorkflow, metrics))
+        assertThatThrownBy(() -> new NettyGrpcServerManager(configProvider, services, null, queryWorkflow, metrics))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HelidonGrpcServerManager(configProvider, services, ingestWorkflow, null, metrics))
+        assertThatThrownBy(() -> new NettyGrpcServerManager(configProvider, services, ingestWorkflow, null, metrics))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() ->
-                        new HelidonGrpcServerManager(configProvider, services, ingestWorkflow, queryWorkflow, null))
+                        new NettyGrpcServerManager(configProvider, services, ingestWorkflow, queryWorkflow, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -82,7 +82,7 @@ final class HelidonGrpcServerManagerTest {
     @DisplayName("Ports are -1 when not started")
     void portsAreMinusOneWhenNotStarted() {
         final var subject =
-                new HelidonGrpcServerManager(configProvider, services, ingestWorkflow, queryWorkflow, metrics);
+                new NettyGrpcServerManager(configProvider, services, ingestWorkflow, queryWorkflow, metrics);
         assertThat(subject.port()).isEqualTo(-1);
         assertThat(subject.tlsPort()).isEqualTo(-1);
     }
