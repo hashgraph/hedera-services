@@ -45,7 +45,6 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -164,7 +163,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
     void validatesQueryIfDeletedTopic() throws Throwable {
         givenValidTopic(autoRenewId.accountNum(), true);
         readableTopicState = readableTopicState();
-        given(readableStates.<EntityNum, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
+        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
 
         final var query = createGetTopicInfoQuery(topicEntityNum.intValue());
@@ -188,7 +187,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
         when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
 
         final var config =
-                new HederaTestConfigBuilder().withValue("ledger.id", "0x03").getOrCreateConfig();
+                HederaTestConfigBuilder.create().withValue("ledger.id", "0x03").getOrCreateConfig();
         given(context.configuration()).willReturn(config);
 
         final var response = subject.findResponse(context, responseHeader);
@@ -211,7 +210,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
         when(context.createStore(ReadableTopicStore.class)).thenReturn(readableStore);
 
         final var config =
-                new HederaTestConfigBuilder().withValue("ledger.id", "0x03").getOrCreateConfig();
+                HederaTestConfigBuilder.create().withValue("ledger.id", "0x03").getOrCreateConfig();
         given(context.configuration()).willReturn(config);
 
         final var response = subject.findResponse(context, responseHeader);

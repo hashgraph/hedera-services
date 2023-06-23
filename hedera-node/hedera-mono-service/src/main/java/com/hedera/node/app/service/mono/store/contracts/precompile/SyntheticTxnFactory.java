@@ -524,7 +524,7 @@ public class SyntheticTxnFactory {
 
     public TransactionBody.Builder nodeStakeUpdate(
             final Timestamp stakingPeriodEnd, final List<NodeStake> nodeStakes, final PropertySource properties) {
-        final var stakingRewardRate = dynamicProperties.getStakingRewardRate();
+        final var stakingRewardRate = dynamicProperties.stakingRewardRate();
         final var threshold = dynamicProperties.getStakingStartThreshold();
         final var stakingPeriod = properties.getLongProperty(STAKING_PERIOD_MINS);
         final var stakingPeriodsStored = properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);

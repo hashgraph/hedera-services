@@ -55,7 +55,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
     @BeforeEach
     void setUp() {
         networkTransactionGetReceiptHandler = new NetworkTransactionGetReceiptHandler();
-        final var configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        final var configuration = HederaTestConfigBuilder.createConfig();
         lenient().when(context.configuration()).thenReturn(configuration);
     }
 

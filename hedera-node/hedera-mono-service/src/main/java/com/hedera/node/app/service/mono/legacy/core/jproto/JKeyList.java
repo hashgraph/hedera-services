@@ -103,6 +103,7 @@ public class JKeyList extends JKey {
         return false;
     }
 
+    @Override
     protected Key convertJKeyEmpty() {
         return Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
     }
