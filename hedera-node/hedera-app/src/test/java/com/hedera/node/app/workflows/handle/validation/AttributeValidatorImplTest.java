@@ -22,7 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator.MAX_NESTED_KEY_LEVELS;
+import static com.hedera.node.app.spi.validation.AttributeValidator.MAX_NESTED_KEY_LEVELS;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
@@ -56,7 +56,7 @@ class AttributeValidatorImplTest {
 
     @BeforeEach
     void setUp() {
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("entities.maxLifetime", maxLifetime)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
@@ -66,7 +66,7 @@ class AttributeValidatorImplTest {
 
     @Test
     void memoCheckWorks() {
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("hedera.transaction.maxMemoUtf8Bytes", 100)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
@@ -110,7 +110,7 @@ class AttributeValidatorImplTest {
 
     @Test
     void rejectsBriefAutoRenewPeriod() {
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("ledger.autoRenewPeriod.minDuration", 1_000L)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
@@ -122,7 +122,7 @@ class AttributeValidatorImplTest {
 
     @Test
     void rejectsOverLongAutoRenewPeriod() {
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("ledger.autoRenewPeriod.minDuration", 1_000L)
                 .withValue("ledger.autoRenewPeriod.maxDuration", 10_000L)
                 .getOrCreateConfig();
@@ -156,17 +156,17 @@ class AttributeValidatorImplTest {
         if (additionalLevels == 0) {
             builder.ed25519(Bytes.wrap(MOCK_ED25519_KEY));
             return builder;
-        } else {
-            var nestedBuilder = Key.newBuilder();
-            nestKeys(nestedBuilder, additionalLevels - 1);
-            if (additionalLevels % 2 == 0) {
-                builder.keyList(KeyList.newBuilder().keys(nestedBuilder.build()));
-            } else {
-                builder.thresholdKey(ThresholdKey.newBuilder()
-                        .threshold(1)
-                        .keys(KeyList.newBuilder().keys(nestedBuilder.build())));
-            }
-            return builder;
         }
+
+        var nestedBuilder = Key.newBuilder();
+        nestKeys(nestedBuilder, additionalLevels - 1);
+        if (additionalLevels % 2 == 0) {
+            builder.keyList(KeyList.newBuilder().keys(nestedBuilder.build()));
+        } else {
+            builder.thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(1)
+                    .keys(KeyList.newBuilder().keys(nestedBuilder.build())));
+        }
+        return builder;
     }
 }

@@ -74,7 +74,7 @@ class ExpiryValidatorImplTest {
     @BeforeEach
     void setUp() {
         given(context.consensusNow()).willReturn(NOW);
-        final var config = new HederaTestConfigBuilder().getOrCreateConfig();
+        final var config = HederaTestConfigBuilder.createConfig();
         given(context.configuration()).willReturn(config);
         given(context.attributeValidator()).willReturn(attributeValidator);
         given(accountStore.getAccountById(any())).willReturn(Account.DEFAULT);
@@ -101,7 +101,7 @@ class ExpiryValidatorImplTest {
     @Test
     void validatesShard() {
         final var config =
-                new HederaTestConfigBuilder().withValue("hedera.shard", 1L).getOrCreateConfig();
+                HederaTestConfigBuilder.create().withValue("hedera.shard", 1L).getOrCreateConfig();
         given(context.configuration()).willReturn(config);
         final var newMeta = new ExpiryMeta(A_TIME, A_PERIOD, 2L, 2L, AN_AUTO_RENEW_NUM);
 
@@ -112,7 +112,7 @@ class ExpiryValidatorImplTest {
 
     @Test
     void validatesRealm() {
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("hedera.shard", 1L)
                 .withValue("hedera.realm", 2L)
                 .getOrCreateConfig();
