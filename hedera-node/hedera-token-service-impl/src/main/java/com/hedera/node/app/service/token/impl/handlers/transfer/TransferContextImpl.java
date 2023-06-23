@@ -16,15 +16,19 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.Utils.isSerializedProtoKey;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.data.AutoCreationConfig;
+import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.HashMap;
 import java.util.Map;
@@ -62,9 +66,8 @@ public class TransferContextImpl implements TransferContext {
     @Override
     public void createFromAlias(Bytes alias, boolean isFromTokenTransfer) {
         if (isSerializedProtoKey(alias)) {
-            final var id = autoAccountCreator.create(alias, isFromTokenTransfer);
-            resolutions.put(alias, id);
-            accountStore.putAlias(alias.asUtf8String(), id.accountNum());
+            autoAccountCreator.create(alias, isFromTokenTransfer);
+            resolutions.put(alias, AccountID.DEFAULT);
             numAutoCreations++;
         } else if (isOfEvmAddressSize(alias)) {
             numLazyCreations++;

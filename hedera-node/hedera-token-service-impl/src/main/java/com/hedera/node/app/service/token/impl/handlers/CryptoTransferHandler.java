@@ -21,9 +21,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -45,6 +47,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.LazyCreationConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,6 +97,11 @@ public class CryptoTransferHandler implements TransactionHandler {
         // This step populates resolved aliases and number of auto creations in the transferContext,
         // which is used by subsequent steps and throttling
         ensureExistenceOfAliasesOrCreate(op, transferContext);
+        if(transferContext.numOfLazyCreations() > 0) {
+            final var config = context.configuration().getConfigData(LazyCreationConfig.class);
+            validateTrue(config.enabled(), NOT_SUPPORTED);
+        }
+
 
         final var steps = decomposeIntoSteps(op, transferContext);
         for (final var step : steps) {
@@ -103,7 +111,8 @@ public class CryptoTransferHandler implements TransactionHandler {
     }
 
     private void ensureExistenceOfAliasesOrCreate(
-            @NonNull final CryptoTransferTransactionBody op, @NonNull final TransferContextImpl transferContext) {
+            @NonNull final CryptoTransferTransactionBody op,
+            @NonNull final TransferContextImpl transferContext) {
         final var ensureAliasExistence = new EnsureAliasesStep(op);
         ensureAliasExistence.doIn(transferContext);
     }

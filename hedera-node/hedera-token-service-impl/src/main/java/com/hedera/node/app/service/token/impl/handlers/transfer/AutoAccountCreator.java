@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.LAZY_MEMO;
@@ -41,6 +42,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
+import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -81,6 +83,9 @@ public class AutoAccountCreator {
         validateTrue(
                 accountStore.sizeOfAccountState() + 1 <= accountsConfig.maxNumber(),
                 ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+
+        final var config = handleContext.configuration().getConfigData(AutoCreationConfig.class);
+        validateTrue(config.enabled(), NOT_SUPPORTED);
 
         final var tokensConfig = handleContext.configuration().getConfigData(TokensConfig.class);
         if (isByTokenTransfer) {
