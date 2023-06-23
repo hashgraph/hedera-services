@@ -28,6 +28,7 @@ import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetAccountD
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetByKeyHandler;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetExecutionTimeHandler;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetVersionInfoHandler;
+import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetFastRecordHandler;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetReceiptHandler;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetRecordHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleGetInfoHandler;
@@ -65,6 +66,7 @@ public record QueryHandlers(
         @NonNull NetworkGetVersionInfoHandler networkGetVersionInfoHandler,
         @NonNull NetworkTransactionGetReceiptHandler networkTransactionGetReceiptHandler,
         @NonNull NetworkTransactionGetRecordHandler networkTransactionGetRecordHandler,
+        @NonNull NetworkTransactionGetFastRecordHandler networkTransactionGetFastRecordHandler,
         @NonNull ScheduleGetInfoHandler scheduleGetInfoHandler,
         @NonNull TokenGetInfoHandler tokenGetInfoHandler,
         @NonNull TokenGetAccountNftInfosHandler tokenGetAccountNftInfosHandler,

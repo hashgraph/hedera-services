@@ -22,13 +22,12 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.test.handlers.FileHandlerTestBase;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ReadableFileStoreImplTest extends FileHandlerTestBase {
+class ReadableFileStoreImplTest extends FileTestBase {
     private ReadableFileStoreImpl subject;
 
     @BeforeEach
@@ -43,7 +42,7 @@ class ReadableFileStoreImplTest extends FileHandlerTestBase {
 
         assertNotNull(fileMeta);
 
-        assertEquals(fileId.fileNum(), fileMeta.fileNumber());
+        assertEquals(fileId, fileMeta.fileId());
         assertEquals(keys, fileMeta.keys());
 
         assertEquals(memo, fileMeta.memo());

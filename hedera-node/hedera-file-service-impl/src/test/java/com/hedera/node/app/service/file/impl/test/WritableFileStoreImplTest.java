@@ -20,14 +20,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.test.handlers.FileHandlerTestBase;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class WritableFileStoreImplTest extends FileHandlerTestBase {
+class WritableFileStoreImplTest extends FileTestBase {
     private File file;
 
     @Test
@@ -59,7 +58,7 @@ class WritableFileStoreImplTest extends FileHandlerTestBase {
         file = createFile();
         writableStore.put(file);
 
-        final var maybeReadFile = writableStore.get(fileId.fileNum());
+        final var maybeReadFile = writableStore.get(fileId);
 
         assertTrue(maybeReadFile.isPresent());
         final var readFile = maybeReadFile.get();
@@ -71,13 +70,13 @@ class WritableFileStoreImplTest extends FileHandlerTestBase {
         file = createFile();
         writableStore.put(file);
 
-        final var maybeReadFile = writableStore.get(fileId.fileNum());
+        final var maybeReadFile = writableStore.get(fileId);
 
         assertTrue(maybeReadFile.isPresent());
 
-        writableStore.removeFile(fileId.fileNum());
+        writableStore.removeFile(fileId);
 
-        final var readFile = writableStore.get(fileId.fileNum());
+        final var readFile = writableStore.get(fileId);
         assertEquals(readFile, Optional.empty());
     }
 }

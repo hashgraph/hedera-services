@@ -37,9 +37,9 @@ import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import java.security.InvalidKeyException;
 import java.util.Optional;
 import java.util.Set;
-import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
@@ -69,7 +69,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void scheduleDeleteHappyPath() throws DecoderException, PreCheckException {
+    void scheduleDeleteHappyPath() throws InvalidKeyException, PreCheckException, InvalidKeyException {
         final var txn = scheduleDeleteTransaction();
         scheduledTxn = givenSetupForScheduleDelete(txn);
         BDDMockito.given(schedule.hasAdminKey()).willReturn(true);

@@ -45,12 +45,12 @@ import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.security.InvalidKeyException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -253,7 +253,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
             if (op.hasSubmitKey() && !applyNewSubmitKey(op)) {
                 return false;
             }
-        } catch (DecoderException e) {
+        } catch (InvalidKeyException e) {
             log.error("Decoder exception updating topic {}. ", topicId, e);
             transactionContext.setStatus(BAD_ENCODING);
             return false;
@@ -261,7 +261,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
         return true;
     }
 
-    private boolean applyNewSubmitKey(final ConsensusUpdateTopicTransactionBody op) throws DecoderException {
+    private boolean applyNewSubmitKey(final ConsensusUpdateTopicTransactionBody op) throws InvalidKeyException {
         var newSubmitKey = op.getSubmitKey();
         if (!validator.hasGoodEncoding(newSubmitKey)) {
             transactionContext.setStatus(BAD_ENCODING);
@@ -273,7 +273,7 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 
     private boolean applyNewAdminKey(
             final ConsensusUpdateTopicTransactionBody op, final TopicID topicId, final MerkleTopic topic)
-            throws DecoderException {
+            throws InvalidKeyException {
         var newAdminKey = op.getAdminKey();
         if (!validator.hasGoodEncoding(newAdminKey)) {
             log.error(

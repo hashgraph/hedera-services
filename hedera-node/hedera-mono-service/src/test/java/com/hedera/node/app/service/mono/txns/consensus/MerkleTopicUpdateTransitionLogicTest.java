@@ -72,6 +72,8 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.merkle.map.MerkleMap;
+import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -167,7 +169,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     }
 
     @Test
-    void followsHappyPath() throws Throwable {
+    void followsHappyPath() throws InvalidKeyException, IOException {
         // given:
         givenExistingTopicWithAdminKey();
         givenValidTransactionWithAllOptions();
@@ -193,7 +195,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     }
 
     @Test
-    void clearsKeysIfRequested() throws Throwable {
+    void clearsKeysIfRequested() {
         // given:
         givenExistingTopicWithBothKeys();
         givenTransactionClearingKeys();
@@ -214,7 +216,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     }
 
     @Test
-    void failsOnInvalidMemo() throws Throwable {
+    void failsOnInvalidMemo() {
         // given:
         givenExistingTopicWithAdminKey();
         givenTransactionWithInvalidMemo();
@@ -231,7 +233,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     }
 
     @Test
-    void failsOnInvalidAdminKey() throws Throwable {
+    void failsOnInvalidAdminKey() {
         // given:
         givenExistingTopicWithAdminKey();
         givenTransactionWithInvalidAdminKey();
@@ -248,7 +250,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     }
 
     @Test
-    void failsOnInvalidSubmitKey() throws Throwable {
+    void failsOnInvalidSubmitKey() {
         // given:
         givenExistingTopicWithAdminKey();
         givenTransactionWithInvalidSubmitKey();
@@ -265,7 +267,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     }
 
     @Test
-    void failsOnInvalidAutoRenewPeriod() throws Throwable {
+    void failsOnInvalidAutoRenewPeriod() {
         // given:
         givenExistingTopicWithAdminKey();
         givenTransactionWithInvalidAutoRenewPeriod();
@@ -282,7 +284,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     }
 
     @Test
-    void failsOnInvalidExpirationTime() throws Throwable {
+    void failsOnInvalidExpirationTime() {
         // given:
         givenExistingTopicWithAdminKey();
         givenTransactionWithInvalidExpirationTime();
@@ -299,7 +301,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     }
 
     @Test
-    void failsOnExpirationTimeReduction() throws Throwable {
+    void failsOnExpirationTimeReduction() {
         // given:
         givenExistingTopicWithAdminKey();
         givenTransactionWithReducedExpirationTime();
@@ -316,7 +318,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     }
 
     @Test
-    void failsUnauthorizedOnMemoChange() throws Throwable {
+    void failsUnauthorizedOnMemoChange() {
         // given:
         givenExistingTopicWithoutAdminKey();
         givenTransactionWithMemo();
@@ -345,7 +347,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     }
 
     @Test
-    void failsOnInvalidAutoRenewAccount() throws Throwable {
+    void failsOnInvalidAutoRenewAccount() {
         // given:
         givenExistingTopicWithAdminKey();
         givenTransactionWithInvalidAutoRenewAccount();
@@ -358,7 +360,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     }
 
     @Test
-    void failsOnDetachedExistingAutoRenewAccount() throws Throwable {
+    void failsOnDetachedExistingAutoRenewAccount() {
         // given:
         givenExistingTopicWithAutoRenewAccount();
         givenValidTransactionWithAllOptions();
@@ -372,7 +374,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     }
 
     @Test
-    void failsOnDetachedNewAutoRenewAccount() throws Throwable {
+    void failsOnDetachedNewAutoRenewAccount() {
         // given:
         givenExistingTopicWithAdminKey();
         givenTransactionWithAutoRenewAccountNotClearingAdminKey();
@@ -386,7 +388,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     }
 
     @Test
-    void failsOnAutoRenewAccountNotAllowed() throws Throwable {
+    void failsOnAutoRenewAccountNotAllowed() {
         // given:
         givenExistingTopicWithAdminKey();
         givenTransactionWithAutoRenewAccountClearingAdminKey();
@@ -399,7 +401,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     }
 
     @Test
-    void clearsAutoRenewAccountIfCorrectSentinelUsed() throws Throwable {
+    void clearsAutoRenewAccountIfCorrectSentinelUsed() {
         // given:
         givenExistingTopicWithAutoRenewAccount();
         givenTransactionClearingAutoRenewAccount();
@@ -414,7 +416,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     }
 
     @Test
-    void doesntClearAutoRenewAccountIfSentinelWithAliasUsed() throws Throwable {
+    void doesntClearAutoRenewAccountIfSentinelWithAliasUsed() {
         // given:
         givenExistingTopicWithAutoRenewAccount();
         givenTransactionChangingAutoRenewAccountWithAliasId();
@@ -434,47 +436,61 @@ class MerkleTopicUpdateTransitionLogicTest {
         assertEquals(originalMerkleTopicClone, updatedTopic); // No change in values
     }
 
-    private void givenExistingTopicWithAdminKey() throws Throwable {
-        var existingTopic = new MerkleTopic(
-                EXISTING_MEMO,
-                JKey.mapKey(existingKey),
-                null,
-                EXISTING_AUTORENEW_PERIOD_SECONDS,
-                null,
-                EXISTING_EXPIRATION_TIME);
-        topics.put(EntityNum.fromTopicId(TOPIC_ID), existingTopic);
-        given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
+    private void givenExistingTopicWithAdminKey() {
+        MerkleTopic existingTopic = null;
+        try {
+            existingTopic = new MerkleTopic(
+                    EXISTING_MEMO,
+                    JKey.mapKey(existingKey),
+                    null,
+                    EXISTING_AUTORENEW_PERIOD_SECONDS,
+                    null,
+                    EXISTING_EXPIRATION_TIME);
+            topics.put(EntityNum.fromTopicId(TOPIC_ID), existingTopic);
+            given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
+        } catch (InvalidKeyException e) {
+            throw new IllegalArgumentException("Invalid key in test scenario", e);
+        }
     }
 
-    private void givenExistingTopicWithBothKeys() throws Throwable {
-        var existingTopic = new MerkleTopic(
-                EXISTING_MEMO,
-                JKey.mapKey(existingKey),
-                JKey.mapKey(existingKey),
-                EXISTING_AUTORENEW_PERIOD_SECONDS,
-                null,
-                EXISTING_EXPIRATION_TIME);
-        topics.put(EntityNum.fromTopicId(TOPIC_ID), existingTopic);
-        given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
+    private void givenExistingTopicWithBothKeys() {
+        MerkleTopic existingTopic = null;
+        try {
+            existingTopic = new MerkleTopic(
+                    EXISTING_MEMO,
+                    JKey.mapKey(existingKey),
+                    JKey.mapKey(existingKey),
+                    EXISTING_AUTORENEW_PERIOD_SECONDS,
+                    null,
+                    EXISTING_EXPIRATION_TIME);
+            topics.put(EntityNum.fromTopicId(TOPIC_ID), existingTopic);
+            given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
+        } catch (InvalidKeyException e) {
+            throw new IllegalArgumentException("Invalid key in test scenario", e);
+        }
     }
 
-    private void givenExistingTopicWithoutAdminKey() throws Throwable {
+    private void givenExistingTopicWithoutAdminKey() {
         var existingTopic = new MerkleTopic(
                 EXISTING_MEMO, null, null, EXISTING_AUTORENEW_PERIOD_SECONDS, null, EXISTING_EXPIRATION_TIME);
         topics.put(EntityNum.fromTopicId(TOPIC_ID), existingTopic);
         given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
     }
 
-    private void givenExistingTopicWithAutoRenewAccount() throws Throwable {
-        var existingTopic = new MerkleTopic(
-                EXISTING_MEMO,
-                JKey.mapKey(existingKey),
-                null,
-                EXISTING_AUTORENEW_PERIOD_SECONDS,
-                EntityId.fromGrpcAccountId(MISC_ACCOUNT),
-                EXISTING_EXPIRATION_TIME);
-        topics.put(EntityNum.fromTopicId(TOPIC_ID), existingTopic);
-        given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
+    private void givenExistingTopicWithAutoRenewAccount() {
+        try {
+            var existingTopic = new MerkleTopic(
+                    EXISTING_MEMO,
+                    JKey.mapKey(existingKey),
+                    null,
+                    EXISTING_AUTORENEW_PERIOD_SECONDS,
+                    EntityId.fromGrpcAccountId(MISC_ACCOUNT),
+                    EXISTING_EXPIRATION_TIME);
+            topics.put(EntityNum.fromTopicId(TOPIC_ID), existingTopic);
+            given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
+        } catch (InvalidKeyException e) {
+            throw new IllegalArgumentException("Invalid key in test scenario", e);
+        }
     }
 
     private void givenTransaction(ConsensusUpdateTopicTransactionBody.Builder body) {

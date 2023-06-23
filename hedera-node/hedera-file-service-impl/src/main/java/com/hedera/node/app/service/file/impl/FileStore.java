@@ -35,7 +35,7 @@ public abstract class FileStore {
     protected static @NonNull FileMetadata fileMetaFrom(@NonNull final File file) {
         Objects.requireNonNull(file);
         return new FileMetadata(
-                file.fileNumber(),
+                file.fileId(),
                 Timestamp.newBuilder().seconds(file.expirationTime()).build(),
                 file.keys(),
                 file.contents(),

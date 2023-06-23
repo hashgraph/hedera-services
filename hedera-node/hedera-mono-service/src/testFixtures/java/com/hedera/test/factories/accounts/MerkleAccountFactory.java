@@ -29,6 +29,7 @@ import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.security.InvalidKeyException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -192,11 +193,11 @@ public class MerkleAccountFactory {
         return this;
     }
 
-    public MerkleAccountFactory accountKeys(final KeyTree kt) throws Exception {
+    public MerkleAccountFactory accountKeys(final KeyTree kt) throws InvalidKeyException {
         return accountKeys(kt.asKey(keyFactory));
     }
 
-    public MerkleAccountFactory accountKeys(final Key k) throws Exception {
+    public MerkleAccountFactory accountKeys(final Key k) throws InvalidKeyException {
         return accountKeys(JKey.mapKey(k));
     }
 

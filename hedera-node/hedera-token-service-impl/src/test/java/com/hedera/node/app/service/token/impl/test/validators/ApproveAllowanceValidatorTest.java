@@ -30,12 +30,10 @@ import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,27 +44,23 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     private ApproveAllowanceValidator subject;
 
     @Mock(strictness = LENIENT)
-    private ConfigProvider configProvider;
-
-    @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
-        givenStoresAndConfig(configProvider, handleContext);
-        subject = new ApproveAllowanceValidator(configProvider);
+        givenStoresAndConfig(handleContext);
+        subject = new ApproveAllowanceValidator();
     }
 
     @Test
     void notSupportedFails() {
         givenApproveAllowanceTxn(
                 payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("hedera.allowances.isEnabled", false)
                 .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
+        given(handleContext.configuration()).willReturn(configuration);
         assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(NOT_SUPPORTED));
@@ -77,11 +71,10 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
         // each serial number is considered as one allowance for nft allowances
         givenApproveAllowanceTxn(
                 payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("hedera.allowances.maxTransactionLimit", 1)
                 .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
+        given(handleContext.configuration()).willReturn(configuration);
         assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(MAX_ALLOWANCES_EXCEEDED));
@@ -344,7 +337,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                         .serialNumbers(List.of(1L, 2L, 3L))
                         .build()));
 
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+        given(handleContext.configuration()).willReturn(configuration);
         assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_TOKEN_NFT_SERIAL_NUMBER));
@@ -364,7 +357,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                         .serialNumbers(List.of(1L, 2L, -3L))
                         .build()));
 
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+        given(handleContext.configuration()).willReturn(configuration);
         assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_TOKEN_NFT_SERIAL_NUMBER));
@@ -384,7 +377,7 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                         .serialNumbers(List.of(1L, 2L, 2L, 1L))
                         .build()));
 
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+        given(handleContext.configuration()).willReturn(configuration);
         assertThatNoException().isThrownBy(() -> subject.validate(handleContext, account, readableAccountStore));
     }
 
@@ -393,11 +386,10 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
         // each serial number is considered as one allowance
         givenApproveAllowanceTxn(
                 payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("hedera.allowances.maxTransactionLimit", 1)
                 .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
-
+        given(handleContext.configuration()).willReturn(configuration);
         assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(MAX_ALLOWANCES_EXCEEDED));

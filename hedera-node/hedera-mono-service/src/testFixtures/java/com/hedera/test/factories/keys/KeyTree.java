@@ -20,9 +20,9 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
+import java.security.InvalidKeyException;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import org.apache.commons.codec.DecoderException;
 
 public class KeyTree {
     private final KeyTreeNode root;
@@ -52,7 +52,7 @@ public class KeyTree {
         root.traverse(shouldVisit, visitor);
     }
 
-    public JKey asJKey() throws DecoderException {
+    public JKey asJKey() throws InvalidKeyException {
         return JKey.mapKey(asKey());
     }
 
