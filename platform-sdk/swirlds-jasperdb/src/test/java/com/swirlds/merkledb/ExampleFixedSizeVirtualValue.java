@@ -93,7 +93,7 @@ public final class ExampleFixedSizeVirtualValue extends ExampleByteArrayVirtualV
 
     @Override
     public VirtualValue copy() {
-        return new ExampleFixedSizeVirtualValue(id);
+        return new ExampleFixedSizeVirtualValue(id, data);
     }
 
     @Override
