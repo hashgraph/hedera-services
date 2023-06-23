@@ -20,3 +20,7 @@ plugins {
 }
 
 group = "com.hedera.hashgraph"
+
+javaPlatform {
+    allowDependencies()
+}
