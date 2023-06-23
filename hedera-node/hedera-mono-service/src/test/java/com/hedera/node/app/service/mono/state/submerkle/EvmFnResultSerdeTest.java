@@ -47,8 +47,8 @@ public class EvmFnResultSerdeTest extends SelfSerializableDataTest<EvmFnResult> 
             // Always empty before 0.26
             seeded.setSenderId(null);
         }
-        if (version < EvmFnResult.RELEASE_0300_VERSION) {
-            // @TODO proper comment - Always empty before 0.
+        if (version < EvmFnResult.RELEASE_0400_VERSION) {
+            // Always empty before 0.40
             seeded.setContractNonces(Collections.emptyList());
         }
         return seeded;

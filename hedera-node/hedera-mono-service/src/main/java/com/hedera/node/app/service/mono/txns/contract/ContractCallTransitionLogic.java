@@ -207,12 +207,14 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             result.setContractNonces(createdNonces);
         }
         log.info("--------------------------");
-        worldLedgers.accounts().idSet().forEach(id -> {
-            final var account = worldLedgers.accounts().getRef(id);
-            if (account.isSmartContract()) {
-                log.info("Contract 0.0.{} has nonce: {}", id.getAccountNum(), account.getEthereumNonce());
-            }
-        });
+        if (worldLedgers.accounts() != null && worldLedgers.accounts().size() > 0) {
+            worldLedgers.accounts().idSet().forEach(id -> {
+                final var account = worldLedgers.accounts().getRef(id);
+                if (account.isSmartContract()) {
+                    log.info("Contract 0.0.{} has nonce: {}", id.getAccountNum(), account.getEthereumNonce());
+                }
+            });
+        }
         recordService.externaliseEvmCallTransaction(result);
     }
 
