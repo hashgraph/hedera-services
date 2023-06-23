@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.config.internal;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.reflection.ConfigReflectionUtils;
@@ -64,7 +65,7 @@ public class PlatformConfigUtils {
                 .forEach(name -> {
                     final String message =
                             "Configuration property '%s' is not used by any configuration data type".formatted(name);
-                    logger.warn(STARTUP.getMarker(), message);
+                    logger.error(EXCEPTION.getMarker(), message);
                 });
     }
 
@@ -76,11 +77,12 @@ public class PlatformConfigUtils {
                 .collect(Collectors.toMap(ConfigMapping::originalName, ConfigMapping::mappedName));
 
         configNames.stream().filter(mappings::containsKey).forEach(name -> {
-            final String message = ("Configuration property '%s' was mapped to '%s'. "
-                            + "Consider change the new property name")
+            final String message = ("Configuration property '%s' was renamed to '%s'. "
+                            + "This build is currently backwards compatible with the old name, but this may not be true in "
+                            + "a future release, so it is important to switch to the new name.")
                     .formatted(name, mappings.get(name));
 
-            logger.info(STARTUP.getMarker(), message);
+            logger.warn(STARTUP.getMarker(), message);
         });
     }
 
