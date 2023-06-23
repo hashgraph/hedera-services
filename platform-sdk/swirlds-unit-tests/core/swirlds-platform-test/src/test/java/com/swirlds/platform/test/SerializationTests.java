@@ -25,7 +25,7 @@ import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.TransactionUtils;
-import com.swirlds.common.test.io.SerializationUtils;
+import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.test.event.RandomEventUtils;
 import com.swirlds.test.framework.TestTypeTags;

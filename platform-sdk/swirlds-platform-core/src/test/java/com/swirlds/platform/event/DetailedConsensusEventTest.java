@@ -27,7 +27,7 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
-import com.swirlds.common.test.io.InputOutputStream;
+import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.platform.internal.EventImpl;
 import java.io.IOException;
 import java.util.Random;

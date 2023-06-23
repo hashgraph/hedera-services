@@ -22,7 +22,7 @@ import static com.swirlds.common.system.transaction.SystemTransactionType.SYS_TR
 import static com.swirlds.common.system.transaction.SystemTransactionType.SYS_TRANS_STATE_SIG;
 import static com.swirlds.common.test.RandomUtils.randomHash;
 import static com.swirlds.common.test.RandomUtils.randomSignature;
-import static com.swirlds.common.test.io.SerializationUtils.serializeDeserialize;
+import static com.swirlds.common.test.fixtures.io.SerializationUtils.serializeDeserialize;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
