@@ -19,7 +19,6 @@ package com.swirlds.platform.test.event.tipset;
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
-import static com.swirlds.platform.event.tipset.TipsetUtils.getParentDescriptors;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -49,6 +48,7 @@ import com.swirlds.platform.event.tipset.TipsetEventCreator;
 import com.swirlds.platform.event.tipset.TipsetEventCreatorImpl;
 import com.swirlds.platform.event.tipset.TipsetScoreCalculator;
 import com.swirlds.platform.event.tipset.TipsetTracker;
+import com.swirlds.platform.event.tipset.TipsetUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
@@ -70,11 +70,13 @@ class TipsetEventCreatorImplTests {
 
     /**
      * @param nodeId                the node ID of the simulated node
+     * @param tipsetTracker         tracks tipsets of events
      * @param tipsetEventCreator    the event creator for the simulated node
      * @param tipsetScoreCalculator used to sanity check event creation logic
      */
     private record SimulatedNode(
             @NonNull NodeId nodeId,
+            @NonNull TipsetTracker tipsetTracker,
             @NonNull TipsetEventCreator tipsetEventCreator,
             @NonNull TipsetScoreCalculator tipsetScoreCalculator) {}
 
@@ -109,7 +111,6 @@ class TipsetEventCreatorImplTests {
             @NonNull final Random random,
             @NonNull final Time time,
             @NonNull final AddressBook addressBook,
-            @NonNull final TipsetTracker tipsetTracker,
             @NonNull final TransactionSupplier transactionSupplier) {
 
         final Map<NodeId, SimulatedNode> eventCreators = new HashMap<>();
@@ -121,11 +122,14 @@ class TipsetEventCreatorImplTests {
             final TipsetEventCreator eventCreator =
                     buildEventCreator(random, time, addressBook, address.getNodeId(), transactionSupplier);
 
+            final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
+
             final TipsetScoreCalculator tipsetScoreCalculator =
                     new TipsetScoreCalculator(platformContext, addressBook, address.getNodeId(), tipsetTracker);
 
             eventCreators.put(
-                    address.getNodeId(), new SimulatedNode(address.getNodeId(), eventCreator, tipsetScoreCalculator));
+                    address.getNodeId(),
+                    new SimulatedNode(address.getNodeId(), tipsetTracker, eventCreator, tipsetScoreCalculator));
         }
 
         return eventCreators;
@@ -136,7 +140,6 @@ class TipsetEventCreatorImplTests {
             @NonNull final GossipEvent newEvent,
             @NonNull final ConsensusTransactionImpl[] expectedTransactions,
             @NonNull final SimulatedNode simulatedNode,
-            @NonNull final TipsetTracker tipsetTracker,
             final boolean slowNode) {
 
         final EventImpl selfParent = events.get(newEvent.getHashedData().getSelfParentHash());
@@ -184,7 +187,6 @@ class TipsetEventCreatorImplTests {
 
         // Validate tipset constraints.
         final EventDescriptor descriptor = newEvent.getDescriptor();
-        tipsetTracker.addEvent(descriptor, getParentDescriptors(newEvent));
         if (selfParent != null) {
             // Except for a genesis event, all other new events must have a positive advancement score.
             assertTrue(simulatedNode
@@ -207,14 +209,23 @@ class TipsetEventCreatorImplTests {
             @NonNull final Map<Hash, EventImpl> events,
             @NonNull final GossipEvent event) {
 
-        distributeEvent(eventCreators, linkEvent(events, event));
+        distributeEvent(eventCreators, linkEvent(eventCreators, events, event));
     }
 
     /**
      * Link an event to its parents.
      */
     @NonNull
-    private EventImpl linkEvent(@NonNull final Map<Hash, EventImpl> events, @NonNull final GossipEvent event) {
+    private EventImpl linkEvent(
+            @NonNull final Map<NodeId, SimulatedNode> eventCreators,
+            @NonNull final Map<Hash, EventImpl> events,
+            @NonNull final GossipEvent event) {
+
+        eventCreators
+                .get(event.getHashedData().getCreatorId())
+                .tipsetTracker
+                .addEvent(event.getDescriptor(), TipsetUtils.getParentDescriptors(event));
+
         final EventImpl selfParent = events.get(event.getHashedData().getSelfParentHash());
         final EventImpl otherParent = events.get(event.getHashedData().getOtherParentHash());
 
@@ -230,8 +241,11 @@ class TipsetEventCreatorImplTests {
      */
     private void distributeEvent(
             @NonNull final Map<NodeId, SimulatedNode> eventCreators, @NonNull final EventImpl eventImpl) {
+
         for (final SimulatedNode eventCreator : eventCreators.values()) {
             eventCreator.tipsetEventCreator.registerEvent(eventImpl);
+            eventCreator.tipsetTracker.addEvent(
+                    eventImpl.getBaseEvent().getDescriptor(), TipsetUtils.getParentDescriptors(eventImpl));
         }
     }
 
@@ -271,12 +285,8 @@ class TipsetEventCreatorImplTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        // This tipset builder is used for validation. It's ok to use the same one for all nodes,
-        // since it just needs to build a tipset for each event.
-        final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
-
         final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, tipsetTracker, transactionSupplier::get);
+                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -302,7 +312,7 @@ class TipsetEventCreatorImplTests {
                     assertEquals(event.getHashedData().getTimeCreated(), time.now());
                 }
 
-                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker, false);
+                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), false);
             }
         }
     }
@@ -325,12 +335,8 @@ class TipsetEventCreatorImplTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        // This tipset builder is used for validation. It's ok to use the same one for all nodes,
-        // since it just needs to build a tipset for each event.
-        final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
-
         final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, tipsetTracker, transactionSupplier::get);
+                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -366,7 +372,7 @@ class TipsetEventCreatorImplTests {
                 if (advancingClock) {
                     assertEquals(event.getHashedData().getTimeCreated(), time.now());
                 }
-                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker, false);
+                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), false);
             }
 
             assertTrue(atLeastOneEventCreated);
@@ -392,12 +398,8 @@ class TipsetEventCreatorImplTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        // This tipset builder is used for validation. It's ok to use the same one for all nodes,
-        // since it just needs to build a tipset for each event.
-        final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
-
         final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, tipsetTracker, transactionSupplier::get);
+                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -430,7 +432,7 @@ class TipsetEventCreatorImplTests {
                     if (advancingClock) {
                         assertEquals(event.getHashedData().getTimeCreated(), time.now());
                     }
-                    validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker, false);
+                    validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), false);
 
                     // At best, we can create a genesis event and one event per node in the network.
                     // We are unlikely to create this many, but we definitely shouldn't be able to go beyond this.
@@ -470,12 +472,8 @@ class TipsetEventCreatorImplTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        // This tipset builder is used for validation. It's ok to use the same one for all nodes,
-        // since it just needs to build a tipset for each event.
-        final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
-
         final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, tipsetTracker, transactionSupplier::get);
+                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
 
@@ -518,7 +516,7 @@ class TipsetEventCreatorImplTests {
                 if (advancingClock) {
                     assertEquals(event.getHashedData().getTimeCreated(), time.now());
                 }
-                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker, false);
+                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), false);
             }
 
             assertTrue(atLeastOneEventCreated);
@@ -540,7 +538,7 @@ class TipsetEventCreatorImplTests {
     @ValueSource(booleans = {false, true})
     @DisplayName("Zero Weight Slow Node Test")
     void zeroWeightSlowNodeTest(final boolean advancingClock) {
-        final Random random = getRandomPrintSeed();
+        final Random random = getRandomPrintSeed(1010882678853618067L); // TODO
 
         final int networkSize = 10;
 
@@ -561,12 +559,8 @@ class TipsetEventCreatorImplTests {
 
         final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
 
-        // This tipset builder is used for validation. It's ok to use the same one for all nodes,
-        // since it just needs to build a tipset for each event.
-        final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
-
         final Map<NodeId, SimulatedNode> nodes =
-                buildSimulatedNodes(random, time, addressBook, tipsetTracker, transactionSupplier::get);
+                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
 
         final Map<Hash, EventImpl> events = new HashMap<>();
         final List<EventImpl> slowNodeEvents = new ArrayList<>();
@@ -614,7 +608,7 @@ class TipsetEventCreatorImplTests {
                         linkAndDistributeEvent(nodes, events, event);
                     } else {
                         // Most of the time, we don't immediately distribute the slow events.
-                        final EventImpl eventImpl = linkEvent(events, event);
+                        final EventImpl eventImpl = linkEvent(nodes, events, event);
                         slowNodeEvents.add(eventImpl);
                     }
                 } else {
@@ -625,7 +619,7 @@ class TipsetEventCreatorImplTests {
                 if (advancingClock) {
                     assertEquals(event.getHashedData().getTimeCreated(), time.now());
                 }
-                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker, true);
+                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), true);
             }
 
             assertTrue(atLeastOneEventCreated);

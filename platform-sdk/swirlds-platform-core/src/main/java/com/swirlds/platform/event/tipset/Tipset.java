@@ -191,7 +191,7 @@ public class Tipset {
     public String toString() {
         final StringBuilder sb = new StringBuilder("(");
         for (int index = 0; index < tips.length; index++) {
-            sb.append(index).append(":").append(tips[index]);
+            sb.append(addressBook.getNodeId(index)).append(":").append(tips[index]);
             if (index < tips.length - 1) {
                 sb.append(", ");
             }

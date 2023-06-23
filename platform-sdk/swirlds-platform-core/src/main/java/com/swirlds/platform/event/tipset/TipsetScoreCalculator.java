@@ -89,6 +89,11 @@ public class TipsetScoreCalculator {
     private TipsetAdvancementWeight previousScore = ZERO_ADVANCEMENT_WEIGHT;
 
     /**
+     * The tipset of the latest self event, or the starting snapshot if there has not yet been a self event.
+     */
+    private Tipset latestSelfEventTipset;
+
+    /**
      * Create a new tipset window.
      *
      * @param platformContext the platform context
@@ -115,7 +120,8 @@ public class TipsetScoreCalculator {
                 .getConfigData(EventCreationConfig.class)
                 .tipsetSnapshotHistorySize();
 
-        this.snapshot = new Tipset(addressBook);
+        snapshot = new Tipset(addressBook);
+        latestSelfEventTipset = snapshot;
         snapshotHistory.add(snapshot);
     }
 
@@ -179,6 +185,8 @@ public class TipsetScoreCalculator {
             previousScore = score;
         }
 
+        latestSelfEventTipset = eventTipset;
+
         return scoreImprovement;
     }
 
@@ -233,6 +241,11 @@ public class TipsetScoreCalculator {
     public int getBullyScoreForNodeIndex(final int nodeIndex) {
         int bullyScore = 0;
         final long latestGeneration = tipsetTracker.getLatestGenerationForNodeIndex(nodeIndex);
+
+        if (latestSelfEventTipset.getTipGenerationForNodeIndex(nodeIndex) == latestGeneration) {
+            // Our latest event has their latest event as an ancestor.
+            return 0;
+        }
 
         // Iterate backwards in time until we find an event from the node being added to our ancestry, or if
         // we find that there are no eligible nodes to be added to our ancestry.
