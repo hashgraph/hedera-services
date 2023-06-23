@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
@@ -42,9 +43,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionProcessorTest {
-    @Mock
-    private GasCalculator gasCalculator;
-
     @Mock
     private CustomMessageCallProcessor messageCallProcessor;
 
@@ -68,12 +66,14 @@ class TransactionProcessorTest {
 
     @Mock
     private HederaEvmAccount calledAccount;
+    @Mock
+    private CustomGasCharging gasCharging;
 
     private TransactionProcessor subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TransactionProcessor(gasCalculator, messageCallProcessor, contractCreationProcessor);
+        subject = new TransactionProcessor(gasCharging, messageCallProcessor, contractCreationProcessor);
     }
 
     @Test

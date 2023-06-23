@@ -117,7 +117,7 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
 
     @Override
     public @NonNull AccountID hederaId() {
-        throw new AssertionError("Not implemented");
+        return AccountID.newBuilder().accountNum(number).build();
     }
 
     /**

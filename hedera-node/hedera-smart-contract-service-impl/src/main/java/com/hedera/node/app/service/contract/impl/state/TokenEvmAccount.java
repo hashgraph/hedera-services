@@ -123,6 +123,6 @@ public class TokenEvmAccount extends AbstractMutableEvmAccount {
 
     @Override
     public AccountID hederaId() {
-        throw new AssertionError("Not implemented");
+        throw new IllegalStateException("Token facade has no usable Hedera id");
     }
 }

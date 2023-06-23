@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.*;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
@@ -29,7 +30,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
@@ -41,15 +41,15 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 public class TransactionProcessor {
     public static final String CONFIG_CONTEXT_VARIABLE = "contractsConfig";
 
-    private final GasCalculator gasCalculator;
+    private final CustomGasCharging gasCharging;
     private final CustomMessageCallProcessor messageCallProcessor;
     private final ContractCreationProcessor contractCreationProcessor;
 
     public TransactionProcessor(
-            @NonNull final GasCalculator gasCalculator,
+            @NonNull final CustomGasCharging gasCharging,
             @NonNull final CustomMessageCallProcessor messageCallProcessor,
             @NonNull final ContractCreationProcessor contractCreationProcessor) {
-        this.gasCalculator = Objects.requireNonNull(gasCalculator);
+        this.gasCharging = Objects.requireNonNull(gasCharging);
         this.messageCallProcessor = Objects.requireNonNull(messageCallProcessor);
         this.contractCreationProcessor = Objects.requireNonNull(contractCreationProcessor);
     }
@@ -69,7 +69,10 @@ public class TransactionProcessor {
         throw new AssertionError("Not implemented");
     }
 
-    private record InitialCall(@NonNull HederaEvmAccount fromAccount, @NonNull Address toAddress) {}
+    private record InitialCall(
+            @NonNull HederaEvmAccount sender,
+            @Nullable HederaEvmAccount relayer,
+            @NonNull Address toAddress) {}
 
     private InitialCall computeInitialCall(
             @NonNull final HederaEvmTransaction transaction,
@@ -77,8 +80,8 @@ public class TransactionProcessor {
             @NonNull final HederaEvmContext context,
             @NonNull final Configuration config) {
 
-        final var from = worldUpdater.getHederaAccount(transaction.senderId());
-        validateTrue(from != null, INVALID_ACCOUNT_ID);
+        final var sender = worldUpdater.getHederaAccount(transaction.senderId());
+        validateTrue(sender != null, INVALID_ACCOUNT_ID);
         if (transaction.isCreate()) {
             throw new AssertionError("Not implemented");
         } else {
@@ -86,7 +89,7 @@ public class TransactionProcessor {
             if (maybeLazyCreate(transaction, to, config)) {
                 validateTrue(transaction.hasValue(), INVALID_CONTRACT_ID);
                 final var evmAddress = transaction.contractIdOrThrow().evmAddressOrThrow();
-                return new InitialCall(from, pbjToBesuAddress(evmAddress));
+                return new InitialCall(sender, null, pbjToBesuAddress(evmAddress));
             }
         }
         throw new AssertionError("Not implemented");

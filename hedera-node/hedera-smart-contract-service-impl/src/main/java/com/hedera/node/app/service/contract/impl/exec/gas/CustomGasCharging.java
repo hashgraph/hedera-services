@@ -27,14 +27,29 @@ import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
+/**
+ * Implements the Hedera gas charging logic. The main difference from Besu here is that we can have a
+ * "relayer" account from an {@code EthereumTransaction}, in addition to the standard EOA {@code sender}
+ * account.
+ *
+ * <p>As with Besu, the sender offers a gas price for the transaction; and combined with the gas limit
+ * for the transaction, this implies a total cost for gas the sender is willing to pay.
+ *
+ * <p>So the relayer may offer a <i>gas allowance</i> to help pay for gas, in addition to what
+ * the sender has offered. The relayer's gas allowance is used only when the network's gas cost is
+ * greater than what the sender has offered.
+ */
 @Singleton
 public class CustomGasCharging {
     private final GasCalculator gasCalculator;
 
+    @Inject
     public CustomGasCharging(@NonNull final GasCalculator gasCalculator) {
         this.gasCalculator = gasCalculator;
     }
@@ -48,10 +63,10 @@ public class CustomGasCharging {
      * @param context the context of the transaction, including the network gas price
      * @param worldUpdater the world updater for the transaction
      * @param transaction the transaction to charge gas for
-     * @return the gas allowance charged to the relayer, if any
+     * @return the amount charged to the relayer, if any
      * @throws HandleException if the gas charging fails for any reason
      */
-    public long chargeGasAllowance(
+    public long chargeForGas(
             @NonNull final HederaEvmAccount sender,
             @Nullable final HederaEvmAccount relayer,
             @NonNull final HederaEvmContext context,
