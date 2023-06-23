@@ -69,11 +69,6 @@ public class TipsetScoreCalculator {
     private final int maxSnapshotHistorySize;
 
     /**
-     * The total number of nodes in the address book.
-     */
-    private final int nodeCount;
-
-    /**
      * The total weight of all nodes.
      */
     private final long totalWeight;
@@ -84,12 +79,12 @@ public class TipsetScoreCalculator {
     private final long selfWeight;
 
     /**
-     * The maximum possible advancement score for an event.
+     * The maximum possible advancement weight for an event.
      */
     private final long maximumPossibleAdvancementWeight;
 
     /**
-     * The previous tipset advancement score.
+     * The previous tipset advancement weight.
      */
     private TipsetAdvancementWeight previousScore = ZERO_ADVANCEMENT_WEIGHT;
 
@@ -119,7 +114,6 @@ public class TipsetScoreCalculator {
         this.childlessEventTracker = Objects.requireNonNull(childlessEventTracker);
         Objects.requireNonNull(addressBook);
 
-        nodeCount = addressBook.getSize();
         totalWeight = addressBook.getTotalWeight();
         selfWeight = addressBook.getAddress(selfId).getWeight();
         maximumPossibleAdvancementWeight = totalWeight - selfWeight;
@@ -214,7 +208,8 @@ public class TipsetScoreCalculator {
             parentTipsets.add(tipsetTracker.getTipset(parent));
         }
 
-        // Don't bother advancing the self generation, since self advancement doesn't contribute to tipset score.
+        // Don't bother advancing the self generation in this theoretical tipset,
+        // since self advancement doesn't contribute to tipset score.
         final Tipset newTipset = Tipset.merge(parentTipsets);
 
         return snapshot.getTipAdvancementWeight(selfId, newTipset).minus(previousScore);

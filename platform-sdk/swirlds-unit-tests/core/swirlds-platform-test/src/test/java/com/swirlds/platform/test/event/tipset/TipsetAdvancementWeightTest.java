@@ -73,9 +73,9 @@ class TipsetAdvancementWeightTest {
     @Test
     @DisplayName("isNonzero() Test")
     void isNonzeroTest() {
-        assertFalse(ZERO_ADVANCEMENT_WEIGHT.isNonzero());
-        assertTrue(TipsetAdvancementWeight.of(1, 0).isNonzero());
-        assertTrue(TipsetAdvancementWeight.of(0, 1).isNonzero());
-        assertTrue(TipsetAdvancementWeight.of(1, 1).isNonzero());
+        assertFalse(ZERO_ADVANCEMENT_WEIGHT.isNonZero());
+        assertTrue(TipsetAdvancementWeight.of(1, 0).isNonZero());
+        assertTrue(TipsetAdvancementWeight.of(0, 1).isNonZero());
+        assertTrue(TipsetAdvancementWeight.of(1, 1).isNonZero());
     }
 }

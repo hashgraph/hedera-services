@@ -46,7 +46,7 @@ public class TipsetMetrics {
                     + "node's events as other parents.");
     private final RunningAverageMetric bullyScoreMetric;
 
-    private final Map<NodeId, SpeedometerMetric> parentMetrics = new HashMap<>();
+    private final Map<NodeId, SpeedometerMetric> tipsetParentMetrics = new HashMap<>();
     private final Map<NodeId, SpeedometerMetric> pityParentMetrics = new HashMap<>();
 
     /**
@@ -64,15 +64,15 @@ public class TipsetMetrics {
             final NodeId nodeId = address.getNodeId();
 
             final SpeedometerMetric.Config parentConfig = new SpeedometerMetric.Config(
-                            "platform", "otherParent" + nodeId.id())
-                    .withDescription("Cycled when this node has used an event from this node as a "
+                            "platform", "tipsetParent" + nodeId.id())
+                    .withDescription("Cycled when this node has used an event from the target node as a "
                             + "parent because it optimized the tipset score.");
             final SpeedometerMetric parentMetric = metrics.getOrCreate(parentConfig);
-            parentMetrics.put(nodeId, parentMetric);
+            tipsetParentMetrics.put(nodeId, parentMetric);
 
             final SpeedometerMetric.Config pityParentConfig = new SpeedometerMetric.Config(
                             "platform", "pityParent" + nodeId.id())
-                    .withDescription("Cycled when this node has used an event from this node as a "
+                    .withDescription("Cycled when this node has used an event from the target node as a "
                             + "parent without consideration of tipset score optimization.");
             final SpeedometerMetric pityParentMetric = metrics.getOrCreate(pityParentConfig);
             pityParentMetrics.put(nodeId, pityParentMetric);
@@ -107,8 +107,8 @@ public class TipsetMetrics {
      * @return the parent metric
      */
     @NonNull
-    public SpeedometerMetric getParentMetric(@NonNull final NodeId nodeId) {
-        return parentMetrics.get(nodeId);
+    public SpeedometerMetric getTipsetParentMetric(@NonNull final NodeId nodeId) {
+        return tipsetParentMetrics.get(nodeId);
     }
 
     /**

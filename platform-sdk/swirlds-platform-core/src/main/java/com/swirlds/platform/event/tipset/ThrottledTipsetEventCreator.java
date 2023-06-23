@@ -130,10 +130,8 @@ public class ThrottledTipsetEventCreator implements TipsetEventCreator {
         }
 
         final GossipEvent event = baseCreator.maybeCreateEvent();
-        if (event != null) {
-            if (rateLimiter != null) {
-                rateLimiter.trigger();
-            }
+        if (event != null && rateLimiter != null) {
+            rateLimiter.trigger();
         }
         return event;
     }

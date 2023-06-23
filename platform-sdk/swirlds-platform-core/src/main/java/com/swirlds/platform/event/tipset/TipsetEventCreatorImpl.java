@@ -219,9 +219,9 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         }
 
         if (bestOtherParent != null) {
-            tipsetMetrics.getParentMetric(bestOtherParent.getCreator()).cycle();
+            tipsetMetrics.getTipsetParentMetric(bestOtherParent.getCreator()).cycle();
         }
-        return buildEvent(bestOtherParent);
+        return buildAndProcessEvent(bestOtherParent);
     }
 
     /**
@@ -245,7 +245,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
             final TipsetAdvancementWeight tipsetScore =
                     tipsetScoreCalculator.getTheoreticalAdvancementScore(List.of(nerd));
 
-            if (bullyScore > 1 && tipsetScore.isNonzero()) {
+            if (bullyScore > 1 && tipsetScore.isNonZero()) {
                 // Note: if bully score is greater than 1, it is mathematically not possible
                 // for the advancement score to be zero. But in the interest in extreme caution,
                 // we check anyway, since it is very important never to create events with
@@ -272,7 +272,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
             if (choice < runningSum) {
                 final EventDescriptor nerd = nerds.get(i);
                 tipsetMetrics.getPityParentMetric(nerd.getCreator()).cycle();
-                return buildEvent(nerd);
+                return buildAndProcessEvent(nerd);
             }
         }
 
@@ -286,7 +286,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
      * @param otherParent the other parent, or null if there is no other parent
      * @return the new event
      */
-    private GossipEvent buildEvent(@Nullable final EventDescriptor otherParent) {
+    private GossipEvent buildAndProcessEvent(@Nullable final EventDescriptor otherParent) {
         final List<EventDescriptor> parentDescriptors = new ArrayList<>(2);
         if (lastSelfEvent != null) {
             parentDescriptors.add(lastSelfEvent);
@@ -295,7 +295,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
             parentDescriptors.add(otherParent);
         }
 
-        final GossipEvent event = buildEventFromParents(otherParent);
+        final GossipEvent event = assembleEventObject(otherParent);
 
         final EventDescriptor descriptor = buildDescriptor(event);
         tipsetTracker.addEvent(descriptor, parentDescriptors);
@@ -307,6 +307,51 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         lastSelfEventCreationTime = event.getHashedData().getTimeCreated();
         lastSelfEventTransactionCount = event.getHashedData().getTransactions().length;
 
+        return event;
+    }
+
+    /**
+     * Given the parents, build the event object.
+     *
+     * @param otherParent the other parent
+     * @return the event
+     */
+    @NonNull
+    private GossipEvent assembleEventObject(@Nullable final EventDescriptor otherParent) {
+
+        final long selfParentGeneration = getGeneration(lastSelfEvent);
+        final Hash selfParentHash = getHash(lastSelfEvent);
+
+        final long otherParentGeneration = getGeneration(otherParent);
+        final Hash otherParentHash = getHash(otherParent);
+        final NodeId otherParentId = getCreator(otherParent);
+
+        final Instant now = time.now();
+        final Instant timeCreated;
+        if (lastSelfEvent == null) {
+            timeCreated = now;
+        } else {
+            timeCreated = EventUtils.calculateNewEventCreationTime(
+                    now, lastSelfEventCreationTime, lastSelfEventTransactionCount);
+        }
+
+        final BaseEventHashedData hashedData = new BaseEventHashedData(
+                softwareVersion,
+                selfId,
+                selfParentGeneration,
+                otherParentGeneration,
+                selfParentHash,
+                otherParentHash,
+                timeCreated,
+                transactionSupplier.getTransactions());
+        cryptography.digestSync(hashedData);
+
+        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(
+                otherParentId, signer.sign(hashedData.getHash().getValue()).getSignatureBytes());
+
+        final GossipEvent event = new GossipEvent(hashedData, unhashedData);
+        cryptography.digestSync(event);
+        event.buildDescriptor();
         return event;
     }
 
@@ -343,50 +388,5 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         } else {
             return descriptor.getCreator();
         }
-    }
-
-    /**
-     * Given the parents, build the event object.
-     *
-     * @param otherParent the other parent
-     * @return the event
-     */
-    @NonNull
-    private GossipEvent buildEventFromParents(@Nullable final EventDescriptor otherParent) {
-
-        final long selfParentGeneration = getGeneration(lastSelfEvent);
-        final Hash selfParentHash = getHash(lastSelfEvent);
-
-        final long otherParentGeneration = getGeneration(otherParent);
-        final Hash otherParentHash = getHash(otherParent);
-        final NodeId otherParentId = getCreator(otherParent);
-
-        final Instant now = time.now();
-        final Instant timeCreated;
-        if (lastSelfEvent == null) {
-            timeCreated = now;
-        } else {
-            timeCreated = EventUtils.calculateNewEventCreationTime(
-                    now, lastSelfEventCreationTime, lastSelfEventTransactionCount);
-        }
-
-        final BaseEventHashedData hashedData = new BaseEventHashedData(
-                softwareVersion,
-                selfId,
-                selfParentGeneration,
-                otherParentGeneration,
-                selfParentHash,
-                otherParentHash,
-                timeCreated,
-                transactionSupplier.getTransactions());
-        cryptography.digestSync(hashedData);
-
-        final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(
-                otherParentId, signer.sign(hashedData.getHash().getValue()).getSignatureBytes());
-
-        final GossipEvent event = new GossipEvent(hashedData, unhashedData);
-        cryptography.digestSync(event);
-        event.buildDescriptor();
-        return event;
     }
 }

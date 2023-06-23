@@ -21,7 +21,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Stores a weighed tipset advancement score.
  * <p>
- * If zero stake nodes were not a thing, we could use a long to a tipset advancement score. Or, if it was ok to ignore
+ * If zero stake nodes were not a thing, we could use a long as a tipset advancement score. Or, if it was ok to ignore
  * zero stake nodes, we could do the same as well. But since we don't want to allow zero sake nodes to get stale events,
  * we need to have a mechanism for separately tracking when zero stake nodes have advanced.
  *
@@ -91,7 +91,7 @@ public record TipsetAdvancementWeight(long advancementWeight, long zeroStakeAdva
     /**
      * Check if this weight is zero.
      */
-    public boolean isNonzero() {
+    public boolean isNonZero() {
         return advancementWeight != 0 || zeroStakeAdvancementWeight != 0;
     }
 }

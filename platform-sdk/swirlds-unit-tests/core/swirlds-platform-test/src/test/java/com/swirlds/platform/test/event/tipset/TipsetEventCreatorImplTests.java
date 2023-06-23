@@ -194,7 +194,7 @@ class TipsetEventCreatorImplTests {
             assertTrue(simulatedNode
                     .tipsetScoreCalculator
                     .addEventAndGetAdvancementScore(descriptor)
-                    .isNonzero());
+                    .isNonZero());
         } else {
             simulatedNode.tipsetScoreCalculator.addEventAndGetAdvancementScore(descriptor);
         }
