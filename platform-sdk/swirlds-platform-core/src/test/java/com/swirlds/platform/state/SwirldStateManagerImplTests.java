@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.SettingsProvider;
@@ -53,6 +54,7 @@ public class SwirldStateManagerImplTests {
                 mock(PreConsensusSystemTransactionManager.class),
                 mock(PostConsensusSystemTransactionManager.class),
                 mock(SwirldStateMetrics.class),
+                mock(PlatformStatusStateMachine.class),
                 mock(SettingsProvider.class),
                 () -> false,
                 initialState);

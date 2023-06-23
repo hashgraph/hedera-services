@@ -619,6 +619,7 @@ class EventFlowTests {
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
+                mock(PlatformStatusStateMachine.class),
                 settingsProvider,
                 () -> false,
                 state);

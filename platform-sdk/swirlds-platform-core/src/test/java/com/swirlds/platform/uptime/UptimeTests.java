@@ -32,6 +32,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.platform.consensus.GraphGenerations;
@@ -113,7 +114,8 @@ class UptimeTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final UptimeTracker uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, time);
+        final UptimeTracker uptimeTracker =
+                new UptimeTracker(platformContext, addressBook, mock(PlatformStatusStateMachine.class), selfId, time);
 
         // First, simulate a round starting at genesis
         final int eventCount = 100;
@@ -248,7 +250,8 @@ class UptimeTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final UptimeTracker uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, time);
+        final UptimeTracker uptimeTracker =
+                new UptimeTracker(platformContext, addressBook, mock(PlatformStatusStateMachine.class), selfId, time);
 
         // First, simulate a round starting at genesis
         final int eventCount = 100;
@@ -595,7 +598,8 @@ class UptimeTests {
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
-        final UptimeTracker uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, time);
+        final UptimeTracker uptimeTracker =
+                new UptimeTracker(platformContext, addressBook, mock(PlatformStatusStateMachine.class), selfId, time);
 
         // First, simulate a round starting at genesis
         final int eventCount = 100;

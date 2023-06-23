@@ -22,6 +22,6 @@ import java.time.Instant;
 /**
  * An action that is triggered when the platform observes a self event reaching consensus.
  *
- * @param instant the instant when this action was triggered
+ * @param wallClockTime the wall clock time when this action was triggered
  */
-public record SelfEventReachedConsensusAction(@NonNull Instant instant) implements PlatformStatusAction {}
+public record SelfEventReachedConsensusAction(@NonNull Instant wallClockTime) implements PlatformStatusAction {}

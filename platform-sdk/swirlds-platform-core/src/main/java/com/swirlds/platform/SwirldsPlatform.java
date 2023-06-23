@@ -490,6 +490,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     preConsensusSystemTransactionManager,
                     postConsensusSystemTransactionManager,
                     metrics,
+                    platformStatusStateMachine,
                     PlatformConstructor.settingsProvider(),
                     this::isFreezeStarted,
                     stateToLoad);

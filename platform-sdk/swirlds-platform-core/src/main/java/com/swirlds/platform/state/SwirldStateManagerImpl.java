@@ -24,6 +24,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
@@ -105,6 +106,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
      * @param preConsensusSystemTransactionManager  the manager for pre-consensus system transactions
      * @param postConsensusSystemTransactionManager the manager for post-consensus system transactions
      * @param swirldStateMetrics                    metrics related to SwirldState
+     * @param platformStatusStateMachine            the platform status state machine
      * @param settings                              a static settings provider
      * @param inFreeze                              indicates if the system is currently in a freeze
      * @param state                                 the genesis state
@@ -116,6 +118,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
             @NonNull final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
             @NonNull final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
             @NonNull final SwirldStateMetrics swirldStateMetrics,
+            @NonNull final PlatformStatusStateMachine platformStatusStateMachine,
             @NonNull final SettingsProvider settings,
             @NonNull final BooleanSupplier inFreeze,
             @NonNull final State state) {
@@ -126,13 +129,15 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
         this.preConsensusSystemTransactionManager = Objects.requireNonNull(preConsensusSystemTransactionManager);
         this.postConsensusSystemTransactionManager = Objects.requireNonNull(postConsensusSystemTransactionManager);
         this.stats = Objects.requireNonNull(swirldStateMetrics);
+        Objects.requireNonNull(platformStatusStateMachine);
         Objects.requireNonNull(settings);
         Objects.requireNonNull(inFreeze);
         Objects.requireNonNull(state);
 
         this.transactionPool = new EventTransactionPool(platformContext.getMetrics(), settings, inFreeze);
         this.transactionHandler = new TransactionHandler(selfId, stats);
-        this.uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, Time.getCurrent());
+        this.uptimeTracker =
+                new UptimeTracker(platformContext, addressBook, platformStatusStateMachine, selfId, Time.getCurrent());
         initialState(state);
     }
 

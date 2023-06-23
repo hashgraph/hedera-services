@@ -161,6 +161,7 @@ public final class PlatformConstructor {
      * @param preConsensusSystemTransactionManager  the manager which handles system transactions pre-consensus
      * @param postConsensusSystemTransactionManager the manager which handles system transactions post-consensus
      * @param metrics                               reference to the metrics-system
+     * @param platformStatusStateMachine            the platform status state machine
      * @param settings                              static settings provider
      * @param initialState                          the initial state
      * @return the newly constructed instance of {@link SwirldStateManager}
@@ -172,6 +173,7 @@ public final class PlatformConstructor {
             @NonNull final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
             @NonNull final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
             @NonNull final Metrics metrics,
+            @NonNull final PlatformStatusStateMachine platformStatusStateMachine,
             @NonNull final SettingsProvider settings,
             @NonNull final BooleanSupplier inFreezeChecker,
             @NonNull final State initialState) {
@@ -182,6 +184,7 @@ public final class PlatformConstructor {
         Objects.requireNonNull(preConsensusSystemTransactionManager);
         Objects.requireNonNull(postConsensusSystemTransactionManager);
         Objects.requireNonNull(metrics);
+        Objects.requireNonNull(platformStatusStateMachine);
         Objects.requireNonNull(settings);
         Objects.requireNonNull(inFreezeChecker);
         Objects.requireNonNull(initialState);
@@ -193,6 +196,7 @@ public final class PlatformConstructor {
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 new SwirldStateMetrics(metrics),
+                platformStatusStateMachine,
                 settings,
                 inFreezeChecker,
                 initialState);
