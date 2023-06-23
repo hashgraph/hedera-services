@@ -41,6 +41,7 @@ package com.hedera.node.app.service.mono.contracts.gascalculator;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
@@ -127,7 +128,7 @@ public class GasCalculatorHederaV18 extends PetersburgGasCalculator {
     }
 
     @Override
-    public long selfDestructOperationGasCost(final Account recipient, final Wei inheritance) {
+    public long selfDestructOperationGasCost(@Nullable final Account recipient, final Wei inheritance) {
         // Frontier gas cost
         return 0;
     }
