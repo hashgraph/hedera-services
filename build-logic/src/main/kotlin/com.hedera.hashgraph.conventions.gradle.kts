@@ -82,12 +82,15 @@ val internal: Configuration = configurations.create("internal") {
 dependencies {
     "internal"(platform("com.hedera.hashgraph:hedera-platform"))
 }
+
 javaModuleDependencies {
     versionsFromConsistentResolution(":app")
 }
+
 configurations.getByName("mainRuntimeClasspath") {
     extendsFrom(internal)
 }
+
 sourceSets.all {
     configurations.getByName(annotationProcessorConfigurationName) {
         extendsFrom(internal)
