@@ -88,6 +88,7 @@ public final class ConfigMappings {
      */
     @NonNull
     public static ConfigSource addConfigMapping(@NonNull final ConfigSource configSource) {
+        PlatformConfigUtils.logAppliedMappedProperties(configSource.getPropertyNames());
         final MappedConfigSource withAliases = new MappedConfigSource(configSource);
         MAPPINGS.forEach(withAliases::addMapping);
 
