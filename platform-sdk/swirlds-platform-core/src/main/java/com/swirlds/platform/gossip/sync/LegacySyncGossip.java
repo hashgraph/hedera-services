@@ -48,6 +48,7 @@ import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.shadowgraph.SimultaneousSyncThrottle;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.network.unidirectional.HeartbeatProtocolResponder;
 import com.swirlds.platform.network.unidirectional.HeartbeatSender;
@@ -175,8 +176,9 @@ public class LegacySyncGossip extends AbstractGossip {
 
         sharedConnectionLocks = new SharedConnectionLocks(topology, connectionManagers);
 
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         simultaneousSyncThrottle = new SimultaneousSyncThrottle(
-                platformContext.getMetrics(), settings.getMaxIncomingSyncsInc() + settings.getMaxOutgoingSyncs());
+                platformContext.getMetrics(), syncConfig.maxIncomingSyncsInc() + syncConfig.maxOutgoingSyncs());
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
@@ -226,7 +228,7 @@ public class LegacySyncGossip extends AbstractGossip {
         }
 
         // create and start threads to call other members
-        for (int i = 0; i < settings.getMaxOutgoingSyncs(); i++) {
+        for (int i = 0; i < syncConfig.maxOutgoingSyncs(); i++) {
             spawnSyncCaller(i);
         }
     }
