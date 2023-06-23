@@ -116,6 +116,9 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     /** A queue that accepts signed states for hashing and signature collection. */
     private final BlockingQueue<ReservedSignedState> stateHashSignQueue;
 
+    /** puts the system in a freeze state when executed */
+    private final Runnable enterFreezePeriod;
+
     /**
      * The state machine that manages the platform status.
      */
@@ -163,6 +166,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      *                                   self-signed states
      * @param waitForEventDurability     a method that blocks until an event becomes durable.
      * @param platformStatusStateMachine the state machine that manages the platform status
+     * @param enterFreezePeriod          puts the system in a freeze state when executed
      * @param softwareVersion            the current version of the software
      */
     public ConsensusRoundHandler(
@@ -175,6 +179,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
             @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
             @NonNull final PlatformStatusStateMachine platformStatusStateMachine,
+            @NonNull final Runnable enterFreezePeriod,
             @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
 
@@ -186,7 +191,9 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         this.eventStreamManager = eventStreamManager;
         this.stateHashSignQueue = stateHashSignQueue;
         this.platformStatusStateMachine = Objects.requireNonNull(platformStatusStateMachine);
+
         this.softwareVersion = softwareVersion;
+        this.enterFreezePeriod = enterFreezePeriod;
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         final ConsensusConfig consensusConfig =
@@ -329,6 +336,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         if (!addedFirstRoundInFreeze && isRoundInFreezePeriod(consensusRound)) {
             addedFirstRoundInFreeze = true;
+            enterFreezePeriod.run();
             platformStatusStateMachine.processStatusAction(new FreezePeriodEnteredAction(consensusRound.getRoundNum()));
         }
 

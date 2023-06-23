@@ -640,6 +640,7 @@ class EventFlowTests {
                 signedStateTracker,
                 e -> {},
                 mock(PlatformStatusStateMachine.class),
+                () -> {},
                 (round) -> {},
                 SoftwareVersion.NO_VERSION);
     }

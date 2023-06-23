@@ -126,6 +126,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 stateHashSignQueue,
                 e -> {},
                 mock(PlatformStatusStateMachine.class),
+                () -> {},
                 (round) -> {},
                 new BasicSoftwareVersion(1));
 
@@ -220,6 +221,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 stateHashSignQueue,
                 e -> {},
                 mock(PlatformStatusStateMachine.class),
+                () -> {},
                 (round) -> {},
                 new BasicSoftwareVersion(1));
         consensusRoundHandler.start();

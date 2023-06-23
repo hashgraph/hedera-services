@@ -212,6 +212,7 @@ public final class PlatformConstructor {
      * @param eventStreamManager          the instance that streams consensus events to disk
      * @param stateHashSignQueue          the queue for signed states that need signatures collected
      * @param waitForEventDurability      a method that blocks until an event becomes durable.
+     * @param enterFreezePeriod           a runnable executed when a freeze is entered
      * @param platformStatusStateMachine  the state machine that manages the platform status
      * @param roundAppliedToStateConsumer the consumer to invoke when a round has just been applied to the state
      * @param softwareVersion             the software version of the application
@@ -226,6 +227,7 @@ public final class PlatformConstructor {
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
             @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
             @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
+            @NonNull final Runnable enterFreezePeriod,
             @NonNull final PlatformStatusStateMachine platformStatusStateMachine,
             @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
@@ -240,6 +242,7 @@ public final class PlatformConstructor {
                 stateHashSignQueue,
                 waitForEventDurability,
                 platformStatusStateMachine,
+                enterFreezePeriod,
                 roundAppliedToStateConsumer,
                 softwareVersion);
     }

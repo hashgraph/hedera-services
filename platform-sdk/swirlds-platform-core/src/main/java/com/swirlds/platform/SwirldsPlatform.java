@@ -509,6 +509,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     eventStreamManager,
                     stateHashSignQueue,
                     preconsensusEventWriter::waitUntilDurable,
+                    freezeManager::freezeStarted,
                     platformStatusStateMachine,
                     stateManagementComponent::roundAppliedToState,
                     appVersion));
