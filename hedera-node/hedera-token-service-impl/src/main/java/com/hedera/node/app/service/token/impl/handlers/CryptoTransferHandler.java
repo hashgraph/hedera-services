@@ -140,6 +140,7 @@ public class CryptoTransferHandler implements TransactionHandler {
     private List<TransferStep> decomposeIntoSteps(
             final CryptoTransferTransactionBody op, final TransferContextImpl transferContext) {
         final List<TransferStep> steps = new ArrayList<>();
+        final var chargeCustomFees = new ChargeCustomFeesStep(op);
         return steps;
     }
 

@@ -56,12 +56,12 @@ import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class AutoAccountCreator {
-    private static final Logger log = LogManager.getLogger(AutoAccountCreator.class);
+public class AutoAccountCreationStep {
+    private static final Logger log = LogManager.getLogger(AutoAccountCreationStep.class);
     private FeeCalculator feeCalculator;
 
     @Inject
-    AutoAccountCreator(@NonNull final FeeCalculator feeCalculator) {
+    AutoAccountCreationStep(@NonNull final FeeCalculator feeCalculator) {
         this.feeCalculator = feeCalculator;
     }
 
@@ -72,7 +72,7 @@ public class AutoAccountCreator {
     // maxAutoAssociations needed on auto created account
     protected final Map<Bytes, Set<TokenID>> tokenAliasMap = new HashMap<>();
 
-    public AutoAccountCreator(
+    public AutoAccountCreationStep(
             @NonNull final WritableAccountStore accountStore, @NonNull final HandleContext handleContext) {
         this.handleContext = handleContext;
         this.accountStore = accountStore;
