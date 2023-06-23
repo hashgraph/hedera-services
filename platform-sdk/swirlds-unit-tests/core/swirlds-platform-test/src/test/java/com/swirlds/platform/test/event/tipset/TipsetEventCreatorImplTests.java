@@ -136,7 +136,8 @@ class TipsetEventCreatorImplTests {
             @NonNull final GossipEvent newEvent,
             @NonNull final ConsensusTransactionImpl[] expectedTransactions,
             @NonNull final SimulatedNode simulatedNode,
-            @NonNull final TipsetTracker tipsetTracker) {
+            @NonNull final TipsetTracker tipsetTracker,
+            final boolean slowNode) {
 
         final EventImpl selfParent = events.get(newEvent.getHashedData().getSelfParentHash());
         final long selfParentGeneration = selfParent == null ? -1 : selfParent.getGeneration();
@@ -157,8 +158,14 @@ class TipsetEventCreatorImplTests {
         }
 
         if (otherParent == null) {
-            // The only legal time to have no other-parent is at genesis before other events are received.
-            assertEquals(1, events.size());
+            if (slowNode) {
+                // During the slow node test, we intentionally don't distribute an event that ends up in the
+                // events map. So it's possible for this map to contain two events at this point in time.
+                assertTrue(events.size() == 1 || events.size() == 2);
+            } else {
+                // The only legal time to have no other-parent is at genesis before other events are received.
+                assertEquals(1, events.size());
+            }
             assertTrue(events.containsKey(newEvent.getHashedData().getHash()));
         }
 
@@ -200,6 +207,14 @@ class TipsetEventCreatorImplTests {
             @NonNull final Map<Hash, EventImpl> events,
             @NonNull final GossipEvent event) {
 
+        distributeEvent(eventCreators, linkEvent(events, event));
+    }
+
+    /**
+     * Link an event to its parents.
+     */
+    @NonNull
+    private EventImpl linkEvent(@NonNull final Map<Hash, EventImpl> events, @NonNull final GossipEvent event) {
         final EventImpl selfParent = events.get(event.getHashedData().getSelfParentHash());
         final EventImpl otherParent = events.get(event.getHashedData().getOtherParentHash());
 
@@ -207,6 +222,14 @@ class TipsetEventCreatorImplTests {
                 new EventImpl(event.getHashedData(), event.getUnhashedData(), selfParent, otherParent);
         events.put(event.getHashedData().getHash(), eventImpl);
 
+        return eventImpl;
+    }
+
+    /**
+     * Distribute an event to all nodes in the network.
+     */
+    private void distributeEvent(
+            @NonNull final Map<NodeId, SimulatedNode> eventCreators, @NonNull final EventImpl eventImpl) {
         for (final SimulatedNode eventCreator : eventCreators.values()) {
             eventCreator.tipsetEventCreator.registerEvent(eventImpl);
         }
@@ -279,7 +302,7 @@ class TipsetEventCreatorImplTests {
                     assertEquals(event.getHashedData().getTimeCreated(), time.now());
                 }
 
-                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker);
+                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker, false);
             }
         }
     }
@@ -343,7 +366,7 @@ class TipsetEventCreatorImplTests {
                 if (advancingClock) {
                     assertEquals(event.getHashedData().getTimeCreated(), time.now());
                 }
-                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker);
+                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker, false);
             }
 
             assertTrue(atLeastOneEventCreated);
@@ -407,7 +430,7 @@ class TipsetEventCreatorImplTests {
                     if (advancingClock) {
                         assertEquals(event.getHashedData().getTimeCreated(), time.now());
                     }
-                    validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker);
+                    validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker, false);
 
                     // At best, we can create a genesis event and one event per node in the network.
                     // We are unlikely to create this many, but we definitely shouldn't be able to go beyond this.
@@ -495,7 +518,7 @@ class TipsetEventCreatorImplTests {
                 if (advancingClock) {
                     assertEquals(event.getHashedData().getTimeCreated(), time.now());
                 }
-                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker);
+                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker, false);
             }
 
             assertTrue(atLeastOneEventCreated);
@@ -508,5 +531,110 @@ class TipsetEventCreatorImplTests {
         assertTrue(zeroWeightNodeOtherParentCount > 20);
     }
 
-    // TODO: note to the reviewers, I'm still planning on adding some additional tests for zero stake nodes
+    /**
+     * The tipset algorithm must still build on top of zero weight nodes, even though they don't help consensus to
+     * advance. Further disadvantage the zero weight node by delaying the propagation of its events, so that others find
+     * that they do not get transitive tipset score improvements by using it.
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    @DisplayName("Zero Weight Slow Node Test")
+    void zeroWeightSlowNodeTest(final boolean advancingClock) {
+        final Random random = getRandomPrintSeed();
+
+        final int networkSize = 10;
+
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+
+        final NodeId zeroWeightNode = addressBook.getNodeId(0);
+
+        for (final Address address : addressBook) {
+            if (address.getNodeId().equals(zeroWeightNode)) {
+                addressBook.add(address.copySetWeight(0));
+            } else {
+                addressBook.add(address.copySetWeight(1));
+            }
+        }
+
+        final FakeTime time = new FakeTime();
+
+        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+
+        // This tipset builder is used for validation. It's ok to use the same one for all nodes,
+        // since it just needs to build a tipset for each event.
+        final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
+
+        final Map<NodeId, SimulatedNode> nodes =
+                buildSimulatedNodes(random, time, addressBook, tipsetTracker, transactionSupplier::get);
+
+        final Map<Hash, EventImpl> events = new HashMap<>();
+        final List<EventImpl> slowNodeEvents = new ArrayList<>();
+        int zeroWeightNodeOtherParentCount = 0;
+
+        for (int eventIndex = 0; eventIndex < 100; eventIndex++) {
+
+            final List<Address> addresses = new ArrayList<>();
+            addressBook.iterator().forEachRemaining(addresses::add);
+            Collections.shuffle(addresses, random);
+
+            boolean atLeastOneEventCreated = false;
+
+            for (final Address address : addresses) {
+                if (advancingClock) {
+                    time.tick(Duration.ofMillis(10));
+                }
+
+                transactionSupplier.set(generateRandomTransactions(random));
+
+                final NodeId nodeId = address.getNodeId();
+                final TipsetEventCreator eventCreator = nodes.get(nodeId).tipsetEventCreator;
+
+                final GossipEvent event = eventCreator.maybeCreateEvent();
+
+                // It's possible a node may not be able to create an event. But we are guaranteed
+                // to be able to create at least one event per cycle.
+                if (event == null) {
+                    continue;
+                }
+                atLeastOneEventCreated = true;
+
+                final NodeId otherId = event.getUnhashedData().getOtherId();
+                if (otherId != null && otherId.equals(zeroWeightNode)) {
+                    zeroWeightNodeOtherParentCount++;
+                }
+
+                if (nodeId.equals(zeroWeightNode)) {
+                    if (random.nextDouble() < 0.1) {
+                        // Once in a while, take all the slow events and distribute them.
+                        for (final EventImpl slowEvent : slowNodeEvents) {
+                            distributeEvent(nodes, slowEvent);
+                        }
+                        slowNodeEvents.clear();
+                        linkAndDistributeEvent(nodes, events, event);
+                    } else {
+                        // Most of the time, we don't immediately distribute the slow events.
+                        final EventImpl eventImpl = linkEvent(events, event);
+                        slowNodeEvents.add(eventImpl);
+                    }
+                } else {
+                    // immediately distribute all events not created by the zero stake node
+                    linkAndDistributeEvent(nodes, events, event);
+                }
+
+                if (advancingClock) {
+                    assertEquals(event.getHashedData().getTimeCreated(), time.now());
+                }
+                validateNewEvent(events, event, transactionSupplier.get(), nodes.get(nodeId), tipsetTracker, true);
+            }
+
+            assertTrue(atLeastOneEventCreated);
+        }
+
+        // This is just a heuristic. When running this, I typically see numbers around 10.
+        // Essentially, we need to make sure that we are choosing the zero weight node's events
+        // as other parents. Precisely how often is less important to this test, as long as we are
+        // doing it at least some of the time.
+        assertTrue(zeroWeightNodeOtherParentCount > 1);
+    }
 }
