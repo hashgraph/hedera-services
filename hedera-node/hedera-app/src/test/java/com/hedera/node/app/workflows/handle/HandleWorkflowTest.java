@@ -32,6 +32,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.config.VersionedConfigImpl;
+import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.records.RecordManager;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -136,6 +137,9 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private SwirldTransaction platformTxn;
 
+    @Mock
+    private FeeAccumulator feeAccumulator;
+
     private HandleWorkflow workflow;
 
     @BeforeEach
@@ -161,6 +165,7 @@ class HandleWorkflowTest extends AppTestBase {
 
         doAnswer(invocation -> {
                     final var expanded = invocation.getArgument(2, Set.class);
+                    //noinspection unchecked
                     expanded.add(mock(ExpandedSignaturePair.class));
                     return null;
                 })
@@ -185,7 +190,8 @@ class HandleWorkflowTest extends AppTestBase {
                 signatureVerifier,
                 checker,
                 serviceLookup,
-                configProvider);
+                configProvider,
+                feeAccumulator);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -200,7 +206,8 @@ class HandleWorkflowTest extends AppTestBase {
                         signatureVerifier,
                         checker,
                         serviceLookup,
-                        configProvider))
+                        configProvider,
+                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,
@@ -211,7 +218,8 @@ class HandleWorkflowTest extends AppTestBase {
                         signatureVerifier,
                         checker,
                         serviceLookup,
-                        configProvider))
+                        configProvider,
+                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,
@@ -222,7 +230,8 @@ class HandleWorkflowTest extends AppTestBase {
                         signatureVerifier,
                         checker,
                         serviceLookup,
-                        configProvider))
+                        configProvider,
+                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,
@@ -233,7 +242,8 @@ class HandleWorkflowTest extends AppTestBase {
                         signatureVerifier,
                         checker,
                         serviceLookup,
-                        configProvider))
+                        configProvider,
+                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,
@@ -244,7 +254,8 @@ class HandleWorkflowTest extends AppTestBase {
                         signatureVerifier,
                         checker,
                         serviceLookup,
-                        configProvider))
+                        configProvider,
+                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,
@@ -255,7 +266,8 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         checker,
                         serviceLookup,
-                        configProvider))
+                        configProvider,
+                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,
@@ -266,7 +278,8 @@ class HandleWorkflowTest extends AppTestBase {
                         signatureVerifier,
                         null,
                         serviceLookup,
-                        configProvider))
+                        configProvider,
+                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,
@@ -277,7 +290,8 @@ class HandleWorkflowTest extends AppTestBase {
                         signatureVerifier,
                         checker,
                         null,
-                        configProvider))
+                        configProvider,
+                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         nodeInfo,
@@ -288,6 +302,19 @@ class HandleWorkflowTest extends AppTestBase {
                         signatureVerifier,
                         checker,
                         serviceLookup,
+                        null,
+                        feeAccumulator))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        nodeInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        recordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
                         null))
                 .isInstanceOf(NullPointerException.class);
     }

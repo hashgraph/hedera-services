@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.records.RecordManager;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
@@ -76,6 +77,7 @@ public class HandleWorkflow {
     private final TransactionChecker checker;
     private final ServiceScopeLookup serviceScopeLookup;
     private final ConfigProvider configProvider;
+    private final FeeAccumulator feeAccumulator;
 
     @Inject
     public HandleWorkflow(
@@ -87,7 +89,8 @@ public class HandleWorkflow {
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final TransactionChecker checker,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
-            @NonNull final ConfigProvider configProvider) {
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final FeeAccumulator feeAccumulator) {
         this.nodeInfo = requireNonNull(nodeInfo, "nodeInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -97,6 +100,7 @@ public class HandleWorkflow {
         this.checker = requireNonNull(checker, "checker must not be null");
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
+        this.feeAccumulator = requireNonNull(feeAccumulator, "feeAccumulator must not be null");
     }
 
     /**
@@ -159,7 +163,8 @@ public class HandleWorkflow {
                     recordListBuilder,
                     checker,
                     dispatcher,
-                    serviceScopeLookup);
+                    serviceScopeLookup,
+                    feeAccumulator);
 
             // Dispatch the transaction to the handler
             dispatcher.dispatchHandle(context);

@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
-import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -155,8 +154,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             final var state = wrappedState.get();
             final var storeFactory = new ReadableStoreFactory(state);
             final var paymentRequired = handler.requiresNodePayment(responseType);
-            Transaction allegedPayment = null;
-            TransactionBody txBody = null;
+            Transaction allegedPayment;
+            TransactionBody txBody;
             if (paymentRequired) {
                 allegedPayment = queryHeader.paymentOrThrow();
 
@@ -173,8 +172,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 queryChecker.checkPermissions(payer, function);
 
                 // 4.iv Calculate costs
-                final var feeData =
-                        feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
+                final var feeData = feeAccumulator.computePayment(query, Instant.now(), storeFactory);
                 fee = feeData.totalFee();
 
                 // 4.v Check account balances
@@ -195,8 +193,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
             if (handler.needsAnswerOnlyCost(responseType)) {
                 // 6.i Estimate costs
-                final var feeData =
-                        feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
+                final var feeData = feeAccumulator.computePayment(query, Instant.now(), storeFactory);
                 fee = feeData.totalFee();
 
                 final var header = createResponseHeader(responseType, OK, fee);

@@ -327,7 +327,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Test
     void testSuccessIfPaymentRequired() throws IOException {
         // given
-        given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
+        given(feeAccumulator.computePayment(any(Query.class), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
         given(handler.requiresNodePayment(any())).willReturn(true);
         when(handler.findResponse(any(), any()))
                 .thenReturn(Response.newBuilder()
@@ -540,7 +540,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Test
     void testPaidQueryWithInsufficientBalanceFails() throws PreCheckException, IOException {
         // given
-        given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
+        given(feeAccumulator.computePayment(any(Query.class), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, 12345L))
                 .when(queryChecker)
@@ -625,7 +625,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
                 .when(submissionManager)
                 .submit(txBody, payment.bodyBytes());
-        given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
+        given(feeAccumulator.computePayment(any(Query.class), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
         final var responseBuffer = newEmptyBuffer();
 
         // when

@@ -18,6 +18,7 @@ package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -41,6 +42,7 @@ import java.time.Instant;
  *     <li>Functionality to dispatch preceding and child transactions</li>
  * </ul>
  */
+@SuppressWarnings("UnusedReturnValue")
 public interface HandleContext {
 
     /**
@@ -155,6 +157,13 @@ public interface HandleContext {
      */
     @NonNull
     <T> T writableStore(@NonNull Class<T> storeInterface);
+
+    /**
+     * Returns the {@link FeeCalculator} that is based on the current context.
+     *
+     * @return the {@link FeeCalculator}
+     */
+    FeeCalculator feeCalculator();
 
     /**
      * Returns a record builder for the given record builder subtype.

@@ -20,6 +20,7 @@ import static com.hedera.node.app.spi.fixtures.Scenarios.ERIN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -30,7 +31,10 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -58,6 +62,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -100,6 +105,9 @@ class HandleContextImplTest extends StateTestBase {
     @Mock(strictness = Strictness.LENIENT)
     private ServiceScopeLookup serviceScopeLookup;
 
+    @Mock
+    private FeeAccumulator feeAccumulator;
+
     @BeforeEach
     void setup() {
         when(serviceScopeLookup.getServiceName(any())).thenReturn(TokenService.NAME);
@@ -115,7 +123,8 @@ class HandleContextImplTest extends StateTestBase {
                 recordListBuilder,
                 checker,
                 dispatcher,
-                serviceScopeLookup);
+                serviceScopeLookup,
+                feeAccumulator);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -130,7 +139,8 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         checker,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -141,7 +151,8 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         checker,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -152,7 +163,8 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         checker,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -163,7 +175,8 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         checker,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -174,7 +187,8 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         checker,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -185,7 +199,8 @@ class HandleContextImplTest extends StateTestBase {
                         null,
                         checker,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -196,7 +211,8 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         null,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -207,7 +223,8 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         checker,
                         null,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -218,6 +235,19 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         checker,
                         dispatcher,
+                        null,
+                        feeAccumulator))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        TransactionBody.DEFAULT,
+                        TransactionCategory.USER,
+                        recordBuilder,
+                        stack,
+                        verifier,
+                        recordListBuilder,
+                        checker,
+                        dispatcher,
+                        serviceScopeLookup,
                         null))
                 .isInstanceOf(NullPointerException.class);
     }
@@ -418,6 +448,43 @@ class HandleContextImplTest extends StateTestBase {
     }
 
     @Nested
+    @DisplayName("Handling of fee calculator")
+    final class FeeCalculatorTest {
+        @Test
+        void testFeeCalculatorQuery() {
+            // given
+            final var now = Instant.ofEpochSecond(123_456_789L);
+            when(recordBuilder.consensusNow()).thenReturn(now);
+            final var context = createContext(TransactionBody.DEFAULT);
+            final var query = Query.newBuilder().build();
+            final var feeCalculator = context.feeCalculator();
+
+            // when
+            feeCalculator.computePayment(query);
+
+            // then
+            verify(feeAccumulator).computePayment(eq(query), eq(now), any());
+        }
+
+        @Test
+        void testFeeCalculatorTransaction() {
+            // given
+            final var now = Instant.ofEpochSecond(123_456_789L);
+            when(recordBuilder.consensusNow()).thenReturn(now);
+            final var context = createContext(TransactionBody.DEFAULT);
+            final var transaction = Transaction.newBuilder().build();
+            final var key = Key.newBuilder().build();
+            final var feeCalculator = context.feeCalculator();
+
+            // when
+            feeCalculator.computePayment(transaction, key);
+
+            // then
+            verify(feeAccumulator).computePayment(transaction, key, now);
+        }
+    }
+
+    @Nested
     @DisplayName("Handling of record builder")
     final class RecordBuilderTest {
 
@@ -550,7 +617,8 @@ class HandleContextImplTest extends StateTestBase {
                     recordListBuilder,
                     checker,
                     dispatcher,
-                    serviceScopeLookup);
+                    serviceScopeLookup,
+                    feeAccumulator);
         }
 
         @SuppressWarnings("ConstantConditions")
