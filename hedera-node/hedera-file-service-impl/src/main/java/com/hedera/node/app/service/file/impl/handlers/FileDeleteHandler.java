@@ -78,7 +78,7 @@ public class FileDeleteHandler implements TransactionHandler {
         var fileId = fileDeleteTransactionBody.fileIDOrThrow();
 
         final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
-        var optionalFile = fileStore.get(fileId.fileNum());
+        var optionalFile = fileStore.get(fileId);
 
         if (optionalFile.isEmpty()) {
             throw new HandleException(INVALID_FILE_ID);
@@ -97,7 +97,7 @@ public class FileDeleteHandler implements TransactionHandler {
 
         /* Copy part of the fields from existing, delete the file content and set the deleted flag  */
         final var fileBuilder = new File.Builder()
-                .fileNumber(file.fileNumber())
+                .fileId(file.fileId())
                 .expirationTime(file.expirationTime())
                 .keys(file.keys())
                 .contents(null)
