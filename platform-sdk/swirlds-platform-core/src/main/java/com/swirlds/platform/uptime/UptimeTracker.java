@@ -55,8 +55,14 @@ public class UptimeTracker {
     private final UptimeMetrics uptimeMetrics;
     private final Duration degradationThreshold;
 
+    /**
+     * The last consensus time a self event was created.
+     */
     private final AtomicReference<Instant> lastSelfEventTime = new AtomicReference<>();
 
+    /**
+     * The state machine managing platform status
+     */
     private final PlatformStatusStateMachine platformStatusStateMachine;
 
     /**

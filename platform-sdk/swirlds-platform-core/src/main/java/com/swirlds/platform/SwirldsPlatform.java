@@ -492,7 +492,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     metrics,
                     platformStatusStateMachine,
                     PlatformConstructor.settingsProvider(),
-                    this::isFreezeStarted,
+                    freezeManager::isFreezeStarted,
                     stateToLoad);
 
             // SwirldStateManager will get a copy of the state loaded, that copy will become stateCons.
@@ -662,15 +662,6 @@ public class SwirldsPlatform implements Platform, Startable {
         GuiPlatformAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
         GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
-    }
-
-    /**
-     * Returns whether the platform status is currently {@link PlatformStatus#FREEZING}.
-     *
-     * @return {@code true} if the platform status is currently {@link PlatformStatus#FREEZING}, otherwise {@code false}
-     */
-    private boolean isFreezeStarted() {
-        return platformStatusStateMachine.getCurrentStatus() == PlatformStatus.FREEZING;
     }
 
     /**
@@ -966,7 +957,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     eventMapper,
                     eventMapper,
                     swirldStateManager.getTransactionPool(),
-                    this::isFreezeStarted,
+                    freezeManager::isFreezeStarted,
                     new EventCreationRules(List.of()));
         }
     }
