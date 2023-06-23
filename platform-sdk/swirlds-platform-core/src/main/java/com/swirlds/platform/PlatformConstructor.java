@@ -19,6 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.function.CheckedConsumer;
+import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.metrics.Metrics;
@@ -90,12 +91,19 @@ public final class PlatformConstructor {
         return StaticSettingsProvider.getSingleton();
     }
 
-    public static SocketFactory socketFactory(final KeysAndCerts keysAndCerts, final CryptoConfig cryptoConfig) {
-        if (!Settings.getInstance().isUseTLS()) {
-            return new TcpFactory(PlatformConstructor.settingsProvider());
+    public static SocketFactory socketFactory(
+            @NonNull final KeysAndCerts keysAndCerts,
+            @NonNull final CryptoConfig cryptoConfig,
+            @NonNull final SocketConfig socketConfig) {
+        Objects.requireNonNull(keysAndCerts);
+        Objects.requireNonNull(cryptoConfig);
+        Objects.requireNonNull(socketConfig);
+
+        if (!socketConfig.useTLS()) {
+            return new TcpFactory(socketConfig);
         }
         try {
-            return new TlsFactory(keysAndCerts, PlatformConstructor.settingsProvider(), cryptoConfig);
+            return new TlsFactory(keysAndCerts, socketConfig, cryptoConfig);
         } catch (final NoSuchAlgorithmException
                 | UnrecoverableKeyException
                 | KeyStoreException

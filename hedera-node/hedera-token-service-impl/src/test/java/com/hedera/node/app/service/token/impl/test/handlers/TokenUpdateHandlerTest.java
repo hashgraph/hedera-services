@@ -308,7 +308,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder()
                 .withSymbol("1234567890123456789012345678901234567890123456789012345678901234567890")
                 .build();
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxSymbolUtf8Bytes", "10")
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);
@@ -342,7 +342,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder()
                 .withName("1234567890123456789012345678901234567890123456789012345678901234567890")
                 .build();
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxTokenNameUtf8Bytes", "10")
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);
@@ -858,7 +858,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .copyBuilder()
                 .balance(1)
                 .build();
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.nfts.useTreasuryWildcards", "false")
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);

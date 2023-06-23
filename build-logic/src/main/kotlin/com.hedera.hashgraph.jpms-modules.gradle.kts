@@ -44,6 +44,7 @@ javaModuleDependencies {
     moduleNameToGA.put("io.netty.codec.http2", "io.netty:netty-codec-http2")
     moduleNameToGA.put("io.netty.codec.socks", "io.netty:netty-codec-socks")
     moduleNameToGA.put("io.netty.handler.proxy", "io.netty:netty-handler-proxy")
+    moduleNameToGA.put("io.perfmark", "io.perfmark:perfmark-api")
     moduleNameToGA.put("org.apache.logging.log4j.slf4j", "org.apache.logging.log4j:log4j-slf4j-impl")
     moduleNameToGA.put("org.bouncycastle.util", "org.bouncycastle:bcutil-jdk15on")
     moduleNameToGA.put("org.eclipse.collections.api", "org.eclipse.collections:eclipse-collections-api")
@@ -272,6 +273,7 @@ extraJavaModuleInfo {
     automaticModule("io.opencensus:opencensus-api", "io.opencensus.api")
     automaticModule("org.hyperledger.besu.internal:util", "org.hyperledger.besu.internal.util")
     automaticModule("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter")
+    automaticModule("io.perfmark:perfmark-api", "io.perfmark")
 
     // Automatic modules for PBJ dependencies
     automaticModule("org.antlr:antlr4", "org.antlr.antlr4")

@@ -95,6 +95,7 @@ public class JContractIDKey extends JKey {
         return !isEmpty();
     }
 
+    @Override
     protected Key convertJKeyEmpty() {
         return Key.newBuilder().setContractID(getContractID()).build();
     }

@@ -40,6 +40,7 @@ import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.OSHealthCheckConfig;
 import com.swirlds.common.config.PathsConfig;
+import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.export.ConfigExport;
@@ -241,7 +242,8 @@ public class Browser {
                 .withConfigDataType(UptimeConfig.class)
                 .withConfigDataType(RecycleBinConfig.class)
                 .withConfigDataType(EventConfig.class)
-                .withConfigDataType(PathsConfig.class);
+                .withConfigDataType(PathsConfig.class)
+                .withConfigDataType(SocketConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
@@ -288,14 +290,10 @@ public class Browser {
             Settings.populateSettingsCommon();
 
             // Update Settings based on config.txt
-            configurationProperties.tls().ifPresent(tls -> Settings.getInstance()
-                    .setUseTLS(tls));
             configurationProperties.maxSyncs().ifPresent(value -> Settings.getInstance()
                     .setMaxOutgoingSyncs(value));
             configurationProperties.transactionMaxBytes().ifPresent(value -> Settings.getInstance()
                     .setTransactionMaxBytes(value));
-            configurationProperties.ipTos().ifPresent(ipTos -> Settings.getInstance()
-                    .setSocketIpTos(ipTos));
 
             // Write the settingsUsed.txt file
             writeSettingsUsed(configuration);
@@ -337,7 +335,8 @@ public class Browser {
                         () -> (Arrays.toString(Network.getOwnAddresses2())));
 
                 // port forwarding
-                if (Settings.getInstance().isDoUpnp()) {
+                final SocketConfig socketConfig = configuration.getConfigData(SocketConfig.class);
+                if (socketConfig.doUpnp()) {
                     final List<PortMapping> portsToBeMapped = new LinkedList<>();
                     synchronized (getPlatforms()) {
                         for (final Platform p : getPlatforms()) {
