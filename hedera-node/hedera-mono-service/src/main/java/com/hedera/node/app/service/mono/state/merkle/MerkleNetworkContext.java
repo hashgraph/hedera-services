@@ -134,7 +134,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     private DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot = NO_GAS_THROTTLE_SNAPSHOT;
     private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
     private DeterministicThrottle.UsageSnapshot expiryUsageSnapshot = NEVER_USED_SNAPSHOT;
-    private long blockNo = 0L;
+    // When the BlockManager begins a new block, it uses 1 plus this value; init to -1 so first block is 0
+    private long blockNo = -1L;
     private Instant firstConsTimeOfCurrentBlock = null;
     private FCQueue<BytesElement> blockHashes = new FCQueue<>();
     private boolean stakingRewardsActivated;
