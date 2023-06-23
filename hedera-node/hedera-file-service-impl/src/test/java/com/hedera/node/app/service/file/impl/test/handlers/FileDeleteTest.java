@@ -85,7 +85,7 @@ class FileDeleteTest extends FileTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
-        final var configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        final var configuration = HederaTestConfigBuilder.createConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(configuration);
     }
 
@@ -139,7 +139,7 @@ class FileDeleteTest extends FileTestBase {
     void keysDoesntExist() {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
-        file = new File(fileId.fileNum(), expirationTime, null, Bytes.wrap(contents), memo, false);
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
@@ -159,7 +159,7 @@ class FileDeleteTest extends FileTestBase {
     void handleWorksAsExpected() {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
-        final var existingFile = writableStore.get(fileId.fileNum());
+        final var existingFile = writableStore.get(fileId);
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
 
@@ -168,7 +168,7 @@ class FileDeleteTest extends FileTestBase {
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         subject.handle(handleContext);
 
-        final var changedFile = writableStore.get(fileId.fileNum());
+        final var changedFile = writableStore.get(fileId);
 
         assertTrue(changedFile.isPresent());
         assertTrue(changedFile.get().deleted());

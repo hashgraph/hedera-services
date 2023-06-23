@@ -77,7 +77,7 @@ class UtilPrngHandlerTest {
 
     @BeforeEach
     void setUp() {
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("utilPrng.isEnabled", true)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
@@ -132,7 +132,7 @@ class UtilPrngHandlerTest {
     @Test
     void returnsIfNotEnabled() {
         givenTxnWithoutRange();
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("utilPrng.isEnabled", false)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
