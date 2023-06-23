@@ -251,7 +251,7 @@ public class Browser {
         }
 
         this.configuration = configurationBuilder.build();
-        PlatformConfigUtils.logNotKnownConfigProperties(configuration);
+        PlatformConfigUtils.checkConfiguration(configuration);
 
         // Set the configuration on all SwirldMain instances.
         appMains.values().forEach(swirldMain -> swirldMain.setConfiguration(configuration));
@@ -290,8 +290,6 @@ public class Browser {
             Settings.populateSettingsCommon();
 
             // Update Settings based on config.txt
-            configurationProperties.maxSyncs().ifPresent(value -> Settings.getInstance()
-                    .setMaxOutgoingSyncs(value));
             configurationProperties.transactionMaxBytes().ifPresent(value -> Settings.getInstance()
                     .setTransactionMaxBytes(value));
 

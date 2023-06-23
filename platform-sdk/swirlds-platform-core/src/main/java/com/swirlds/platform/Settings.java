@@ -20,17 +20,13 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.settings.ParsingUtils.parseDuration;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.SettingConstants.CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.LOAD_KEYS_FROM_PFX_FILES_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_ADDRESS_SIZE_ALLOWED_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.MAX_INCOMING_SYNCS_INC_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.MAX_OUTGOING_SYNCS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.NUM_CRYPTO_THREADS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.SLEEP_CALLER_SKIPS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.STATS_BUFFER_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.STATS_RECENT_SECONDS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.THREAD_DUMP_LOG_DIR_DEFAULT_VALUE;
@@ -122,26 +118,8 @@ public class Settings {
      * many.
      */
     private int throttleTransactionQueueSize = THROTTLE_TRANSACTION_QUEUE_SIZE_DEFAULT_VALUE;
-    /** maximum number of simultaneous outgoing syncs initiated by me */
-    private int maxOutgoingSyncs = MAX_OUTGOING_SYNCS_DEFAULT_VALUE;
-    /**
-     * maximum number of simultaneous incoming syncs initiated by others, minus maxOutgoingSyncs. If there is a moment
-     * where each member has maxOutgoingSyncs outgoing syncs in progress, then a fraction of at least:
-     *
-     * <pre>
-     * (1 / (maxOutgoingSyncs + maxIncomingSyncsInc))
-     * </pre>
-     * <p>
-     * members will be willing to accept another incoming sync. So even in the worst case, it should be possible to find
-     * a partner to sync with in about (maxOutgoingSyncs + maxIncomingSyncsInc) tries, on average.
-     */
-    private int maxIncomingSyncsInc = MAX_INCOMING_SYNCS_INC_DEFAULT_VALUE;
     /** check for deadlocks every this many milliseconds (-1 for never) */
     private int deadlockCheckPeriod = DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
-    /** sleep sleepCallerSkips ms after the caller fails this many times to call a random member */
-    private long callerSkipsBeforeSleep = CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE;
-    /** caller sleeps this many milliseconds if it failed to connect to callerSkipsBeforeSleep in a row */
-    private long sleepCallerSkips = SLEEP_CALLER_SKIPS_DEFAULT_VALUE;
     /** number of bins to store for the history (in StatsBuffer etc.) */
     private int statsBufferSize = STATS_BUFFER_SIZE_DEFAULT_VALUE;
     /** number of seconds covered by "recent" history (in StatsBuffer etc.) */
@@ -498,32 +476,8 @@ public class Settings {
         return throttleTransactionQueueSize;
     }
 
-    public int getMaxOutgoingSyncs() {
-        return maxOutgoingSyncs;
-    }
-
-    public void setMaxOutgoingSyncs(final int maxOutgoingSyncs) {
-        this.maxOutgoingSyncs = maxOutgoingSyncs;
-    }
-
-    public int getMaxIncomingSyncsInc() {
-        return maxIncomingSyncsInc;
-    }
-
-    public void setMaxIncomingSyncsInc(final int maxIncomingSyncsInc) {
-        this.maxIncomingSyncsInc = maxIncomingSyncsInc;
-    }
-
     public int getDeadlockCheckPeriod() {
         return deadlockCheckPeriod;
-    }
-
-    public long getCallerSkipsBeforeSleep() {
-        return callerSkipsBeforeSleep;
-    }
-
-    public long getSleepCallerSkips() {
-        return sleepCallerSkips;
     }
 
     public int getThreadPrioritySync() {

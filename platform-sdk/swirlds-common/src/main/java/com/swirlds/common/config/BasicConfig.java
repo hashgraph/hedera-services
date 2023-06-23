@@ -61,10 +61,6 @@ import java.time.Duration;
  * @param delayShuffle
  * 		the working state (stateWork) resets to a copy of the consensus state (stateCons) (which is called a shuffle)
  * 		when its queue is empty and the two are equal, but never twice within this many milliseconds
- * @param callerSkipsBeforeSleep
- * 		sleep sleepCallerSkips ms after the caller fails this many times to call a random member
- * @param sleepCallerSkips
- * 		caller sleeps this many milliseconds if it failed to connect to callerSkipsBeforeSleep in a row
  * @param statsSkipSeconds
  * 		number of seconds that the "all" history window skips at the start
  * @param threadPrioritySync
@@ -140,14 +136,6 @@ import java.time.Duration;
  * 		The value for the event intake queue at which the node should stop syncing
  * @param transactionMaxBytes
  * 		maximum number of bytes allowed in a transaction
- * @param maxIncomingSyncsInc
- * 		maximum number of simultaneous incoming syncs initiated by others, minus maxOutgoingSyncs. If there is a moment
- * 		where each member has maxOutgoingSyncs outgoing syncs in progress, then a fraction of at least:
- * 		(1 / (maxOutgoingSyncs + maxIncomingSyncsInc)) members will be willing to accept another incoming sync. So
- * 		even in the worst case, it should be possible to find a partner to sync with in about (maxOutgoingSyncs +
- * 		maxIncomingSyncsInc) tries, on average.
- * @param maxOutgoingSyncs
- * 		maximum number of simultaneous outgoing syncs initiated by me
  * @param logPath
  * 		path to log4j2.xml (which might not exist)
  * @param hangingThreadDuration
@@ -177,8 +165,6 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "true") boolean logStack,
         @ConfigProperty(defaultValue = "500") int sleepHeartbeat,
         @ConfigProperty(defaultValue = "200") long delayShuffle,
-        @ConfigProperty(defaultValue = "30") long callerSkipsBeforeSleep,
-        @ConfigProperty(defaultValue = "50") long sleepCallerSkips,
         @ConfigProperty(defaultValue = "60") double statsSkipSeconds,
         @ConfigProperty(defaultValue = "5") int threadPrioritySync,
         @ConfigProperty(defaultValue = "5") int threadPriorityNonSync,
@@ -207,8 +193,6 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "5") int staleEventPreventionThreshold,
         @ConfigProperty(defaultValue = "1000") int eventIntakeQueueThrottleSize,
         @ConfigProperty(defaultValue = "6144") int transactionMaxBytes,
-        @ConfigProperty(defaultValue = "1") int maxIncomingSyncsInc,
-        @ConfigProperty(defaultValue = "2") int maxOutgoingSyncs,
         @ConfigProperty(defaultValue = "log4j2.xml") Path logPath,
         @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration,
         @ConfigProperty(defaultValue = "data/saved") String emergencyRecoveryFileLoadDir,
