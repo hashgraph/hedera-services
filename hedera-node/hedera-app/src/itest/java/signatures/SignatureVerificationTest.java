@@ -71,7 +71,7 @@ class SignatureVerificationTest implements Scenarios {
 
     private static final long DEFAULT_CONFIG_VERSION = 1L;
     private static final VersionedConfiguration CONFIGURATION =
-            new VersionedConfigImpl(new HederaTestConfigBuilder().getOrCreateConfig(), DEFAULT_CONFIG_VERSION);
+            new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), DEFAULT_CONFIG_VERSION);
 
     @Test
     @DisplayName("Verify Hollow Account")
