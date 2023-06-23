@@ -17,9 +17,9 @@
 package com.swirlds.platform.test.event.tipset;
 
 import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
-import static com.swirlds.common.system.platformstatus.PlatformStatus.ACTIVE;
-import static com.swirlds.common.system.platformstatus.PlatformStatus.CHECKING;
-import static com.swirlds.common.system.platformstatus.PlatformStatus.FREEZING;
+import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.common.system.status.PlatformStatus.CHECKING;
+import static com.swirlds.common.system.status.PlatformStatus.FREEZING;
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.EventCreationRuleResponse;
-import com.swirlds.common.system.platformstatus.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.config.api.Configuration;

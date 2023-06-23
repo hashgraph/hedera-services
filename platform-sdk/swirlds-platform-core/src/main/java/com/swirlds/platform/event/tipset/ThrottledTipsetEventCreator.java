@@ -19,7 +19,7 @@ package com.swirlds.platform.event.tipset;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.EventCreationRuleResponse;
-import com.swirlds.common.system.platformstatus.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.platform.StartUpEventFrozenManager;

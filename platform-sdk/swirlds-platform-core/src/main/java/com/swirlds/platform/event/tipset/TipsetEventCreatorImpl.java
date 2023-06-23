@@ -258,9 +258,10 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         }
 
         if (nerds.isEmpty()) {
-            // This can happen if there is a childless nerd available for use as an other parent, but no childless
-            // nerds that provide a non-zero advancement score in the current snapshot.
-            return createEventByOptimizingTipsetScore();
+            // Note: this should be impossible, since we will not enter this method in the first
+            // place if there are no nerds. But better to be safe than sorry, and returning null
+            // is an acceptable way of saying "I can't create an event right now".
+            return null;
         }
 
         // Choose a random nerd.
