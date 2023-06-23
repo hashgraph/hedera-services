@@ -14,7 +14,7 @@
 chatter.useChatter,                       false
 doUpnp,                                   false
 maxOutgoingSyncs,                         1
-sync.syncAsProtocolEnabled,               false
+sync.syncAsProtocolEnabled,               true
 useLoopbackIp,                            false
 
                                           #############################

@@ -122,7 +122,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
 
         cryptography = platformContext.getCryptography();
         antiBullyingFactor = Math.max(1.0, eventCreationConfig.antiBullyingFactor());
-        tipsetMetrics = new TipsetMetrics(platformContext);
+        tipsetMetrics = new TipsetMetrics(platformContext, addressBook);
         tipsetTracker = new TipsetTracker(addressBook);
         childlessOtherEventTracker = new ChildlessEventTracker();
         tipsetScoreCalculator = new TipsetScoreCalculator(platformContext, addressBook, selfId, tipsetTracker);
@@ -217,6 +217,9 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
             return null;
         }
 
+        if (bestOtherParent != null) {
+            tipsetMetrics.getParentMetric(bestOtherParent.getCreator()).cycle();
+        }
         return buildEvent(bestOtherParent);
     }
 
@@ -267,7 +270,9 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         for (int i = 0; i < nerds.size(); i++) {
             runningSum += bullyScores.get(i);
             if (choice < runningSum) {
-                return buildEvent(nerds.get(i));
+                final EventDescriptor nerd = nerds.get(i);
+                tipsetMetrics.getPityParentMetric(nerd.getCreator()).cycle();
+                return buildEvent(nerd);
             }
         }
 
