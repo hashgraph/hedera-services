@@ -20,7 +20,6 @@ import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
@@ -28,7 +27,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
-import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
@@ -71,8 +69,7 @@ public class AppCommComponentTests {
             assertEquals(tmpDir, n.getFolder(), "Unexpected notification folder");
         });
 
-        final AppCommunicationComponent component =
-                new DefaultAppCommunicationComponent(notificationEngine, mock(PlatformStatusStateMachine.class));
+        final AppCommunicationComponent component = new DefaultAppCommunicationComponent(notificationEngine);
         component.stateToDiskAttempt(signedState, tmpDir, success);
 
         if (success) {
@@ -106,8 +103,7 @@ public class AppCommComponentTests {
             }
         });
 
-        final AppCommunicationComponent component =
-                new DefaultAppCommunicationComponent(notificationEngine, mock(PlatformStatusStateMachine.class));
+        final AppCommunicationComponent component = new DefaultAppCommunicationComponent(notificationEngine);
         component.newLatestCompleteStateEvent(signedState);
 
         // Allow the notification callback to execute
@@ -140,8 +136,7 @@ public class AppCommComponentTests {
             assertEquals(otherNodeId, n.getOtherNodeId(), "Unexpected other node id");
         });
 
-        final AppCommunicationComponent component =
-                new DefaultAppCommunicationComponent(notificationEngine, mock(PlatformStatusStateMachine.class));
+        final AppCommunicationComponent component = new DefaultAppCommunicationComponent(notificationEngine);
         component.iss(round, issType, otherNodeId);
 
         assertEquals(1, numInvocations.get(), "Unexpected number of notification callbacks");

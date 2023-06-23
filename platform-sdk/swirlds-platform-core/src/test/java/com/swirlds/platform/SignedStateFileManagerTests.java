@@ -44,6 +44,7 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.test.state.DummySwirldState;
@@ -200,7 +201,8 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 consumer,
-                x -> {});
+                x -> {},
+                mock(PlatformStatusStateMachine.class));
         manager.start();
 
         manager.saveSignedStateToDisk(signedState);
@@ -246,7 +248,8 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 consumer,
-                x -> {});
+                x -> {},
+                mock(PlatformStatusStateMachine.class));
         manager.start();
 
         final Thread thread = new ThreadConfiguration(getStaticThreadManager())
@@ -296,7 +299,8 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 consumer,
-                x -> {});
+                x -> {},
+                mock(PlatformStatusStateMachine.class));
         manager.start();
 
         manager.dumpState(signedState, "iss", false);
@@ -392,7 +396,8 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 consumer,
-                x -> {});
+                x -> {},
+                mock(PlatformStatusStateMachine.class));
         manager.start();
 
         final List<SignedState> states = new ArrayList<>();
@@ -467,7 +472,8 @@ class SignedStateFileManagerTests {
                 x -> {
                     assertTrue(x > minimumGenerationNonAncientSetByCallback.get());
                     minimumGenerationNonAncientSetByCallback.set(x);
-                });
+                },
+                mock(PlatformStatusStateMachine.class));
         manager.start();
 
         Instant timestamp;
@@ -599,7 +605,8 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 (ssw, path, success) -> {},
-                x -> {});
+                x -> {},
+                mock(PlatformStatusStateMachine.class));
         manager.start();
 
         final Path statesDirectory =

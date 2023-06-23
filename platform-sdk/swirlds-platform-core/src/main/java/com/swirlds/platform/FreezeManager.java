@@ -60,7 +60,7 @@ public class FreezeManager implements EventCreationRule {
         if (signedState.isFreezeState()) {
             logger.info(
                     FREEZE.getMarker(),
-                    "Collected enough signatures on the freeze state (round = {}). " + "Freezing event creation now.",
+                    "Collected enough signatures on the freeze state (round = {}). Freezing event creation now.",
                     signedState.getRound());
             freezeEventCreation();
         }

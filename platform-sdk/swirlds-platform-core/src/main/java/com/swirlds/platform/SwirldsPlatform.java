@@ -382,7 +382,7 @@ public class SwirldsPlatform implements Platform, Startable {
         final ManualWiring wiring = new ManualWiring(platformContext, threadManager, getAddressBook(), freezeManager);
         metrics.addUpdater(wiring::updateMetrics);
         final AppCommunicationComponent appCommunicationComponent =
-                wiring.wireAppCommunicationComponent(notificationEngine, platformStatusStateMachine);
+                wiring.wireAppCommunicationComponent(notificationEngine);
 
         preconsensusEventFileManager = buildPreconsensusEventFileManager(emergencyRecoveryManager);
         preconsensusEventWriter = components.add(buildPreconsensusEventWriter(preconsensusEventFileManager));
@@ -396,7 +396,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 this::haltRequested,
                 appCommunicationComponent,
                 preconsensusEventWriter,
-                platformStatusStateMachine::getCurrentStatus);
+                platformStatusStateMachine);
         wiring.registerComponents(components);
 
         final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =

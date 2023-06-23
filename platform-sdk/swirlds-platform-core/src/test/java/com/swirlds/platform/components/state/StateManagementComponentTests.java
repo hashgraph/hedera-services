@@ -34,7 +34,7 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.state.notifications.IssNotification;
-import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.test.AssertionUtils;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -677,6 +677,6 @@ class StateManagementComponentTests {
                 (msg) -> {},
                 (msg, t, code) -> {},
                 mock(PreconsensusEventWriter.class),
-                () -> PlatformStatus.ACTIVE);
+                mock(PlatformStatusStateMachine.class));
     }
 }

@@ -51,6 +51,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.common.test.AssertionUtils;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.config.api.Configuration;
@@ -287,7 +288,8 @@ class SignedStateFileReadWriteTest {
                 SELF_ID,
                 SWIRLD_NAME,
                 (ss, path, success) -> {},
-                x -> {});
+                x -> {},
+                mock(PlatformStatusStateMachine.class));
         manager.start();
 
         final int rounds = 3;

@@ -37,7 +37,7 @@ public class AsyncPlatformStatusStateMachine implements PlatformStatusStateMachi
     private final Time time;
 
     /**
-     * Background work is performed on this thread.
+     * The thread to handle incoming {@link PlatformStatusAction}s
      */
     private final QueueThread<PlatformStatusAction> handleThread;
 
@@ -62,6 +62,7 @@ public class AsyncPlatformStatusStateMachine implements PlatformStatusStateMachi
 
         this.time = Objects.requireNonNull(time);
         this.stateMachine = Objects.requireNonNull(stateMachine);
+        Objects.requireNonNull(threadManager);
 
         this.handleThread = new QueueThreadConfiguration<PlatformStatusAction>(threadManager)
                 .setComponent("platform-status")
@@ -94,6 +95,7 @@ public class AsyncPlatformStatusStateMachine implements PlatformStatusStateMachi
      */
     @Override
     public void processStatusAction(@NonNull final PlatformStatusAction action) {
+        Objects.requireNonNull(action);
         stateMachine.processStatusAction(action);
     }
 

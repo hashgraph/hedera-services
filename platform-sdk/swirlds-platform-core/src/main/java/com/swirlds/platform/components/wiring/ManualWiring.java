@@ -23,7 +23,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
@@ -51,7 +50,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -102,16 +100,12 @@ public class ManualWiring {
     /**
      * Creates and wires the {@link AppCommunicationComponent}.
      *
-     * @param notificationEngine         passes notifications between the platform and the application
-     * @param platformStatusStateMachine the platform status state machine
+     * @param notificationEngine passes notifications between the platform and the application
      * @return a fully wired {@link AppCommunicationComponent}
      */
-    public AppCommunicationComponent wireAppCommunicationComponent(
-            @NonNull final NotificationEngine notificationEngine,
-            @NonNull final PlatformStatusStateMachine platformStatusStateMachine) {
-
+    public AppCommunicationComponent wireAppCommunicationComponent(final NotificationEngine notificationEngine) {
         final AppCommunicationComponent appCommunicationComponent =
-                new DefaultAppCommunicationComponentFactory(notificationEngine, platformStatusStateMachine).build();
+                new DefaultAppCommunicationComponentFactory(notificationEngine).build();
         platformComponentList.add(appCommunicationComponent);
         return appCommunicationComponent;
     }
@@ -127,7 +121,7 @@ public class ManualWiring {
      * @param haltRequestedConsumer              consumer to invoke when a halt is requested
      * @param appCommunicationComponent          the {@link AppCommunicationComponent}
      * @param preconsensusEventWriter            writes preconsensus events to disk
-     * @param getPlatformStatus                  a supplier that returns the current platform status
+     * @param platformStatusStateMachine         the state machine that handles the platform status
      * @return a fully wired {@link StateManagementComponent}
      */
     public @NonNull StateManagementComponent wireStateManagementComponent(
@@ -139,7 +133,7 @@ public class ManualWiring {
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final AppCommunicationComponent appCommunicationComponent,
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
-            @NonNull final Supplier<PlatformStatus> getPlatformStatus) {
+            @NonNull final PlatformStatusStateMachine platformStatusStateMachine) {
 
         Objects.requireNonNull(platformSigner, "platformSigner");
         Objects.requireNonNull(mainClassName, "mainClassName");
@@ -149,7 +143,7 @@ public class ManualWiring {
         Objects.requireNonNull(haltRequestedConsumer, "haltRequestedConsumer");
         Objects.requireNonNull(appCommunicationComponent, "appCommunicationComponent");
         Objects.requireNonNull(preconsensusEventWriter, "preconsensusEventWriter");
-        Objects.requireNonNull(getPlatformStatus, "getPlatformStatus");
+        Objects.requireNonNull(platformStatusStateMachine);
 
         final StateManagementComponentFactory stateManagementComponentFactory =
                 new DefaultStateManagementComponentFactory(
@@ -160,7 +154,7 @@ public class ManualWiring {
                         mainClassName,
                         selfId,
                         swirldName,
-                        getPlatformStatus);
+                        platformStatusStateMachine);
 
         stateManagementComponentFactory.newLatestCompleteStateConsumer(ss -> {
             final ReservedSignedState reservedSignedState = ss.reserve("ManualWiring newLatestCompleteStateConsumer");
