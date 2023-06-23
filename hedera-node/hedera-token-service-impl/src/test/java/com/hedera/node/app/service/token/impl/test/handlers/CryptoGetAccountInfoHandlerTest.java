@@ -444,7 +444,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     }
 
     private void setupConfig() {
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
                 .withValue("ledger.id", "0x03")
                 .getOrCreateConfig();

@@ -158,7 +158,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableNftStore.class)).thenReturn(readableNftStore);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 1000)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
@@ -182,7 +182,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableNftStore.class)).thenReturn(store);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 1000)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
@@ -242,7 +242,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
         when(context.createStore(ReadableNftStore.class)).thenReturn(ReadableNftStore);
 
         final var config =
-                new HederaTestConfigBuilder().withValue("ledger.id", "0x03").getOrCreateConfig();
+                HederaTestConfigBuilder.create().withValue("ledger.id", "0x03").getOrCreateConfig();
         given(context.configuration()).willReturn(config);
 
         final var response = subject.findResponse(context, responseHeader);
