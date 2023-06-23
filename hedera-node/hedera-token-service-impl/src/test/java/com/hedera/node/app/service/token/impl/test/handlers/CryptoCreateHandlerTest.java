@@ -524,6 +524,23 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
+    void validateAliasInvalid() {
+        txn = new CryptoCreateBuilder()
+                .withStakedAccountId(3)
+                .withKey(null)
+                .withAlias(Bytes.wrap("alias"))
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("cryptoCreateWithAlias.enabled", true)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(config);
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(INVALID_ALIAS_KEY, msg.getStatus());
+    }
+
+    @Test
     void validateKeyAlias() {
         txn = new CryptoCreateBuilder()
                 .withStakedAccountId(3)
@@ -571,6 +588,19 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         txn = new CryptoCreateBuilder()
                 .withStakedAccountId(3)
                 .withProxyAccountNum(accountNum)
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        setupConfig();
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, msg.getStatus());
+    }
+
+    @Test
+    void validateProxyAccountDefault() {
+        txn = new CryptoCreateBuilder()
+                .withStakedAccountId(3)
+                .withProxyAccountNum(AccountID.DEFAULT.accountNum())
                 .build();
         given(handleContext.body()).willReturn(txn);
         setupConfig();
