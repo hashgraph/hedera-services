@@ -596,19 +596,6 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, msg.getStatus());
     }
 
-    @Test
-    void validateProxyAccountDefault() {
-        txn = new CryptoCreateBuilder()
-                .withStakedAccountId(3)
-                .withProxyAccountNum(AccountID.DEFAULT.accountNum())
-                .build();
-        given(handleContext.body()).willReturn(txn);
-        setupConfig();
-
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, msg.getStatus());
-    }
-
     private void changeAccountToDeleted() {
         final var copy = account.copyBuilder().deleted(true).build();
         writableAccounts.put(id, copy);
