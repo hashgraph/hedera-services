@@ -81,6 +81,16 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
         return account == null ? null : account;
     }
 
+    @Override
+    @Nullable
+    public AccountID getAccountIDByAlias(@NonNull final String alias) {
+        final var entityNum = aliases.get(alias);
+        if (entityNum == null) {
+            return null;
+        }
+        return AccountID.newBuilder().accountNum(entityNum.num()).build();
+    }
+
     /* Helper methods */
 
     /**
