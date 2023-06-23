@@ -57,7 +57,7 @@ class CustomChainIdOperationTest {
 
     @Test
     void usesContractsConfigFromContext() {
-        final var config = new HederaTestConfigBuilder().getOrCreateConfig();
+        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
         given(messageFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);
         given(messageFrame.getRemainingGas()).willReturn(Long.MAX_VALUE);
         final var contractsConfig = config.getConfigData(ContractsConfig.class);
