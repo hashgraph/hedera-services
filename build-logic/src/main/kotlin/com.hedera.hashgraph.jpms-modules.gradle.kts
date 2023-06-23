@@ -142,9 +142,9 @@ extraJavaModuleInfo {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
-    module("io.perfmark:perfmark-api", "io.perfmark.perfmark.api") {
+    module("io.perfmark:perfmark-api", "io.perfmark") {
         exportAllPackages()
-        requireAllDefinedDependencies()
+        // no dependencies
     }
     module("javax.inject:javax.inject", "javax.inject") {
         exportAllPackages()
@@ -266,7 +266,6 @@ extraJavaModuleInfo {
     automaticModule("org.hyperledger.besu:arithmetic", "org.hyperledger.besu.arithmetic")
     automaticModule("com.squareup:javapoet", "com.squareup.javapoet")
     automaticModule("org.checkerframework:checker-qual", "org.checkerframework.checker.qual")
-    automaticModule("io.perfmark:perfmark-api", "perfmark.api")
     automaticModule("org.rnorth.duct-tape:duct-tape", "org.rnorth.ducttape")
     automaticModule("io.opencensus:opencensus-api", "io.opencensus.api")
     automaticModule("org.hyperledger.besu.internal:util", "org.hyperledger.besu.internal.util")
