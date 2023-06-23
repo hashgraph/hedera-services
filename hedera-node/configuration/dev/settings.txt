@@ -19,3 +19,5 @@ jasperDb.iteratorInputBufferBytes,             16777216
 merkleDb.iteratorInputBufferBytes,             16777216
 virtualMap.preferredFlushQueueSize,            10000
 transThrottle,                                 false
+sync.syncAsProtocolEnabled,                    true
+sync.syncProtocolPermitCount,                  17

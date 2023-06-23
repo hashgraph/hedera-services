@@ -30,3 +30,5 @@ state.mainClassNameOverride,                   com.hedera.services.ServicesMain
 prometheusEndpointEnabled,                     true
 chatter.useChatter,                            false
 transThrottle,                                 false
+sync.syncAsProtocolEnabled,                    true
+sync.syncProtocolPermitCount,                  17
