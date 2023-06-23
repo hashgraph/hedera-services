@@ -175,21 +175,16 @@ public class FileTestBase {
     }
 
     protected void givenValidFile(boolean deleted, boolean withKeys) {
-        file = new File(fileId.fileNum(), expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
-        fileWithNoKeysAndMemo = new File(fileId.fileNum(), expirationTime, null, Bytes.wrap(contents), null, deleted);
-        fileWithNoContent = new File(fileId.fileNum(), expirationTime, withKeys ? keys : null, null, memo, deleted);
-        fileSystem = new File(
-                fileSystemfileId.fileNum(),
-                expirationTime,
-                withKeys ? keys : null,
-                Bytes.wrap(contents),
-                memo,
-                deleted);
+        file = new File(fileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
+        fileWithNoKeysAndMemo = new File(fileId, expirationTime, null, Bytes.wrap(contents), null, deleted);
+        fileWithNoContent = new File(fileId, expirationTime, withKeys ? keys : null, null, memo, deleted);
+        fileSystem =
+                new File(fileSystemfileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
     }
 
     protected File createFile() {
         return new File.Builder()
-                .fileNumber(fileId.fileNum())
+                .fileId(fileId)
                 .expirationTime(expirationTime)
                 .keys(keys)
                 .contents(Bytes.wrap(contents))
@@ -200,7 +195,7 @@ public class FileTestBase {
 
     protected File createFileEmptyMemoAndKeys() {
         return new File.Builder()
-                .fileNumber(fileId.fileNum())
+                .fileId(fileId)
                 .expirationTime(expirationTime)
                 .contents(Bytes.wrap(contents))
                 .deleted(true)
@@ -209,7 +204,7 @@ public class FileTestBase {
 
     protected File createFileWithoutContent() {
         return new File.Builder()
-                .fileNumber(fileId.fileNum())
+                .fileId(fileId)
                 .expirationTime(expirationTime)
                 .keys(keys)
                 .memo(memo)

@@ -313,8 +313,8 @@ class HandleContextImplTest extends StateTestBase {
         @Test
         void testAccessConfig() {
             // given
-            final var configuration1 = new HederaTestConfigBuilder().getOrCreateConfig();
-            final var configuration2 = new HederaTestConfigBuilder().getOrCreateConfig();
+            final var configuration1 = HederaTestConfigBuilder.createConfig();
+            final var configuration2 = HederaTestConfigBuilder.createConfig();
             when(savepoint1.configuration()).thenReturn(configuration1);
             when(savepoint2.configuration()).thenReturn(configuration2);
             when(stack.peek()).thenReturn(savepoint1);
@@ -470,11 +470,10 @@ class HandleContextImplTest extends StateTestBase {
     @DisplayName("Handling of record builder")
     final class RecordBuilderTest {
 
-        private static final Configuration CONFIGURATION = new HederaTestConfigBuilder().getOrCreateConfig();
-
         @BeforeEach
         void setup(@Mock Savepoint savepoint) {
-            lenient().when(savepoint.configuration()).thenReturn(CONFIGURATION);
+            final var configuration = HederaTestConfigBuilder.createConfig();
+            lenient().when(savepoint.configuration()).thenReturn(configuration);
             lenient().when(stack.peek()).thenReturn(savepoint);
         }
 
@@ -548,8 +547,8 @@ class HandleContextImplTest extends StateTestBase {
                 E_KEY, EGGPLANT,
                 F_KEY, FIG,
                 G_KEY, GRAPE);
-        private static final Configuration CONFIG_1 = new HederaTestConfigBuilder().getOrCreateConfig();
-        private static final Configuration CONFIG_2 = new HederaTestConfigBuilder().getOrCreateConfig();
+        private static final Configuration CONFIG_1 = HederaTestConfigBuilder.createConfig();
+        private static final Configuration CONFIG_2 = HederaTestConfigBuilder.createConfig();
 
         @Mock(strictness = LENIENT)
         private HederaState baseState;

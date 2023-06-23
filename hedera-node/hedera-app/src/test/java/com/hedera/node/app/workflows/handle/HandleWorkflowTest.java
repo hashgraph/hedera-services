@@ -80,8 +80,6 @@ class HandleWorkflowTest extends AppTestBase {
     private static final Instant CONSENSUS_NOW = Instant.parse("2000-01-01T00:00:00Z");
 
     private static final long CONFIG_VERSION = 11L;
-    private static final VersionedConfiguration CONFIGURATION =
-            new VersionedConfigImpl(new HederaTestConfigBuilder().getOrCreateConfig(), CONFIG_VERSION);
 
     private static final PreHandleResult OK_RESULT = createPreHandleResult(Status.SO_FAR_SO_GOOD, ResponseCodeEnum.OK);
 
@@ -161,7 +159,8 @@ class HandleWorkflowTest extends AppTestBase {
 
         when(serviceLookup.getServiceName(any())).thenReturn(TokenService.NAME);
 
-        when(configProvider.getConfiguration()).thenReturn(CONFIGURATION);
+        final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), CONFIG_VERSION);
+        when(configProvider.getConfiguration()).thenReturn(config);
 
         doAnswer(invocation -> {
                     final var context = invocation.getArgument(0, HandleContext.class);

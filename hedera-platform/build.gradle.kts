@@ -23,17 +23,21 @@ val besuVersion = "23.1.2"
 val bouncycastleVersion = "1.70"
 val daggerVersion = "2.42"
 val eclipseCollectionsVersion = "10.4.0"
-val grpcVersion = "1.45.1"
-val helidonVersion = "3.0.2"
-val jacksonVersion = "2.13.3"
+val grpcVersion = "1.54.1"
+val helidonVersion = "3.2.1"
+val jacksonVersion = "2.13.5"
 val log4jVersion = "2.17.1"
 val mockitoVersion = "4.6.1"
-val nettyVersion = "4.1.77.Final"
-val protobufVersion = "3.19.4"
+val nettyVersion = "4.1.87.Final"
+val protobufVersion = "3.21.7"
 val swirldsVersion = "0.39.0-alpha.3"
 val systemStubsVersion = "2.0.2"
 val testContainersVersion = "1.17.2"
 val tuweniVersion = "2.2.0"
+
+dependencies {
+    api(enforcedPlatform("io.netty:netty-bom:$nettyVersion"))
+}
 
 dependencies.constraints {
     javaModuleDependencies {
@@ -76,6 +80,7 @@ dependencies.constraints {
         api(gav("io.netty.transport", nettyVersion))
         api(gav("io.netty.transport.classes.epoll", nettyVersion))
         api(gav("io.netty.transport.epoll", nettyVersion))
+        api(gav("io.perfmark", "0.25.0"))
         api(gav("javax.inject", "1"))
         api(gav("net.i2p.crypto.eddsa", "0.3.0"))
         api(gav("org.antlr.antlr4.runtime", "4.11.1"))
@@ -95,7 +100,7 @@ dependencies.constraints {
         api(gav("org.hyperledger.besu.datatypes", besuVersion))
         api(gav("org.hyperledger.besu.evm", besuVersion))
         api(gav("org.hyperledger.besu.secp256k1", besuNativeVersion))
-        api(gav("org.json", "20210307"))
+        api(gav("org.json", "20230227"))
         api(gav("org.junit.jupiter.api", "5.9.0"))
         api(gav("org.junitpioneer", "2.0.1"))
         api(gav("org.mockito", mockitoVersion))
