@@ -81,7 +81,8 @@ class MonoExpiryValidatorTest {
     void setUp() {
         subject =
                 new MonoExpiryValidator(accountStore, attributeValidator, consensusSecondNow, numbers, configProvider);
-        final var configuration = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), DEFAULT_CONFIG_VERSION);
+        final var configuration =
+                new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), DEFAULT_CONFIG_VERSION);
         given(configProvider.getConfiguration()).willReturn(configuration);
     }
 
