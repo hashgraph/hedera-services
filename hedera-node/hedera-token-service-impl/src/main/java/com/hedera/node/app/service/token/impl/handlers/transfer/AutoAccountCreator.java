@@ -17,12 +17,9 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
-import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.tryAddressRecovery;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.LAZY_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.isRecoveredEvmAddress;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.Utils.asKeyFromAlias;
 import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
@@ -46,16 +43,23 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.UnaryOperator;
+
 import javax.inject.Inject;
 
 public class AutoAccountCreator {
+    private static final Logger log = LogManager.getLogger(AutoAccountCreator.class);
     private FeeCalculator feeCalculator;
 
     @Inject
@@ -76,28 +80,28 @@ public class AutoAccountCreator {
         this.accountStore = accountStore;
     }
 
-    public AccountID create(boolean isForToken, final Bytes alias) {
+    public AccountID create(@NonNull final Bytes alias, final boolean isByTokenTransfer) {
         final var accountsConfig = handleContext.configuration().getConfigData(AccountsConfig.class);
         validateTrue(
                 accountStore.sizeOfAccountState() + 1 <= accountsConfig.maxNumber(),
                 ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
         final var tokensConfig = handleContext.configuration().getConfigData(TokensConfig.class);
-        if (isForToken) {
+        if (isByTokenTransfer) {
             validateTrue(tokensConfig.autoCreationsIsEnabled(), ResponseCodeEnum.NOT_SUPPORTED);
         }
 
-        TransactionBody.Builder syntheticCreation;
+        final TransactionBody.Builder syntheticCreation;
         String memo;
 
         // checks tokenAliasMap if the change consists an alias that is already used in previous
         // iteration of the token transfer list. This map is used to count number of
         // maxAutoAssociations needed on auto created account
-        if (isForToken) {
+        if (isByTokenTransfer) {
             tokenAliasMap.putIfAbsent(alias, Collections.emptySet());
         }
-        final var maxAutoAssociations =
-                tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
+        
+        final var maxAutoAssociations = tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
         final var isAliasEVMAddress = EntityIdUtils.isOfEvmAddressSize(alias);
         if (isAliasEVMAddress) {
             syntheticCreation = createHollowAccount(alias, 0L);
@@ -108,26 +112,26 @@ public class AutoAccountCreator {
             memo = AUTO_MEMO;
         }
 
-        syntheticCreation.memo(memo);
-        handleContext.dispatchRemovableChildTransaction(syntheticCreation.build(), CryptoCreateRecordBuilder.class);
+
+        final var childRecord = handleContext.dispatchRemovableChildTransaction(
+                syntheticCreation.memo(memo).build(),
+                CryptoCreateRecordBuilder.class);
 
         var fee = autoCreationFeeFor(syntheticCreation);
         if (isAliasEVMAddress) {
             fee += getLazyCreationFinalizationFee();
         }
 
-        final var childRecord = handleContext.addRemovableChildRecordBuilder(CryptoCreateRecordBuilder.class);
-
         if (!isAliasEVMAddress) {
             final var key = asKeyFromAlias(alias);
             if (key.hasEcdsaSecp256k1()) {
                 final var evmAddress = tryAddressRecovery(key, EthSigsUtils::recoverAddressFromPubKey);
-                childRecord.evmAddress(evmAddress);
+                childRecord.evmAddress(Bytes.wrap(evmAddress));
             }
         }
-
-        childRecord.transactionFee(fee);
-        return asAccount(newEntityNum);
+        // TODO: Not sure if fee should be set here
+//        childRecord.transactionFee(fee);
+        return null;
     }
 
     private long getLazyCreationFinalizationFee() {
@@ -165,26 +169,27 @@ public class AutoAccountCreator {
         return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
     }
 
+    public static boolean isRecoveredEvmAddress(final Bytes address) {
+        return address != null && address.length() == EVM_ADDRESS_LEN;
+    }
+
     @Nullable
-    public static Bytes tryAddressRecovery(@Nullable final Key key, final UnaryOperator<Bytes> addressRecovery) {
+    public static byte[] tryAddressRecovery(@Nullable final Key key, final UnaryOperator<byte[]> addressRecovery) {
         if (key != null && key.hasEcdsaSecp256k1()) {
             // Only compressed keys are stored at the moment
             final var keyBytes = key.ecdsaSecp256k1();
             if (keyBytes.length() == ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
-                final var evmAddress = addressRecovery.apply(keyBytes);
-                if (isRecoveredEvmAddress(evmAddress)) {
+                final var keyBytesArray = keyBytes.toByteArray();
+                final var evmAddress = addressRecovery.apply(keyBytesArray);
+                if (isRecoveredEvmAddress(Bytes.wrap(evmAddress))) {
                     return evmAddress;
                 } else {
                     // Not ever expected, since above checks should imply a valid input to the
                     // LibSecp256k1 library
-                    log.warn("Unable to recover EVM address from {}", () -> hex(keyBytes.toByteArray()));
+                    log.warn("Unable to recover EVM address from {}", () -> hex(keyBytesArray));
                 }
             }
         }
         return null;
-    }
-
-    public static boolean isRecoveredEvmAddress(final Bytes address) {
-        return address != null && address.length() == EVM_ADDRESS_LEN;
     }
 }

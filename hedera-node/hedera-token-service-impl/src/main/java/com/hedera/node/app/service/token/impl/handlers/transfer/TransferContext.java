@@ -29,7 +29,7 @@ public interface TransferContext {
 
     AccountID getFromAlias(AccountID aliasedId);
 
-    void createFromAlias(Bytes alias);
+    void createFromAlias(Bytes alias, boolean isFromTokenTransfer);
 
     // Debit an account based on the HAPI payer having an approved allowance from the given owner
     default void debitHbarViaApproval(AccountID owner, long amount) {}

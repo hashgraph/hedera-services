@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.Utils.isSerializedProtoKey;
 
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
@@ -60,10 +61,11 @@ public class TransferContextImpl implements TransferContext {
     }
 
     @Override
-    public void createFromAlias(Bytes alias) {
+    public void createFromAlias(Bytes alias, boolean isFromTokenTransfer) {
         if (isSerializedProtoKey(alias)) {
-            final var id = autoAccountCreator.create(alias);
+            final var id = autoAccountCreator.create(alias, isFromTokenTransfer);
             resolutions.put(alias, id);
+            accountStore.putAlias(alias.asUtf8String(), id.accountNum());
             numAutoCreations++;
         } else if (isOfEvmAddressSize(alias)) {
             numLazyCreations++;
@@ -74,24 +76,26 @@ public class TransferContextImpl implements TransferContext {
     public void debitHbarViaApproval(final AccountID owner, final long amount) {}
 
     @Override
+    public int numOfAutoCreations() {
+        return numAutoCreations;
+    }
+
+    @Override
     public void chargeExtraFeeToHapiPayer(final long amount) {}
 
     @Override
     public void chargeCustomFeeTo(final AccountID payer, final long amount, final TokenID denomination) {}
 
-    public int numAutoCreations() {
-        return numAutoCreations;
-    }
-
-    public int numLazyCreations() {
-        return numLazyCreations;
-    }
-
     public Map<Bytes, AccountID> resolutions() {
         return resolutions;
     }
 
-    public static boolean isOfEvmAddressSize(final ByteString alias) {
-        return alias.size() == EVM_ADDRESS_SIZE;
+    @Override
+    public int numOfLazyCreations() {
+        return numLazyCreations;
+    }
+
+    public static boolean isOfEvmAddressSize(final Bytes alias) {
+        return alias.length() == EVM_ADDRESS_SIZE;
     }
 }

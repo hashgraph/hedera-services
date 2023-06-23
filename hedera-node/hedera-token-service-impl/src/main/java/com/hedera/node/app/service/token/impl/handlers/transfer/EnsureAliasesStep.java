@@ -26,6 +26,7 @@ import static java.util.Collections.emptyList;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -80,16 +81,7 @@ public class EnsureAliasesStep implements TransferStep {
             }
 
             for (final var nftAdjust : tt.nftTransfersOrElse(emptyList())) {
-                final var receiverId = nftAdjust.receiverAccountIDOrThrow();
-                final var senderId = nftAdjust.senderAccountIDOrThrow();
-                // sender can't be a missing accountId. It will fail if the alias doesn't exist
-                if (isAlias(senderId)) {
-                    transferContext.getFromAlias(senderId);
-                }
-                // receiver can be a missing accountId. It will be created if it doesn't exist
-                if (isAlias(receiverId)) {
-                    transferContext.getOrCreateFromAlias(receiverId);
-                }
+                resolveForNft(nftAdjust, transferContext);
             }
         }
     }
@@ -104,7 +96,7 @@ public class EnsureAliasesStep implements TransferStep {
      */
     private void resolveHbarAdjusts(final List<AccountAmount> hbarTransfers, final TransferContext transferContext) {
         for (final var aa : hbarTransfers) {
-            resolveForHbar(aa, transferContext, false);
+            resolveForHbar(aa, transferContext);
         }
     }
 
@@ -116,7 +108,9 @@ public class EnsureAliasesStep implements TransferStep {
                 if (account == null) {
                     final var isInResolutions = transferContext.resolutions().containsKey(accountId.alias());
                     validateTrue(!isInResolutions, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
-                    transferContext.createFromAlias(accountId.alias());
+                    transferContext.createFromAlias(accountId.alias(), false);
+                } else {
+                    validateTrue(account != null, INVALID_ACCOUNT_ID);
                 }
             } else {
                 validateTrue(account != null, INVALID_ACCOUNT_ID);
@@ -128,15 +122,40 @@ public class EnsureAliasesStep implements TransferStep {
         final var accountId = adjust.accountIDOrThrow();
         final var account = transferContext.getFromAlias(accountId);
         if (account == null) {
+            // If the token resolutions map already contains this unknown alias, we can assume
+            // it was successfully auto-created by a prior mention in this CryptoTransfer.
+            // (If it appeared in a sender location, this transfer will fail anyway.)
             validateFalse(tokenTransferResolutions.containsKey(accountId.alias()), INVALID_ALIAS_KEY);
             final var isInResolutions = transferContext.resolutions().containsKey(accountId.alias());
             if (adjust.amount() > 0 && !isInResolutions) {
-                return transferContext.createFromAlias(accountId.alias());
+                transferContext.createFromAlias(accountId.alias(), true);
             } else {
                 validateTrue(transferContext.resolutions().containsKey(accountId.alias()), INVALID_ACCOUNT_ID);
             }
         }
         return account;
+    }
+
+    private void resolveForNft(final NftTransfer nftAdjust, TransferContext transferContext) {
+        final var receiverId = nftAdjust.receiverAccountIDOrThrow();
+        final var senderId = nftAdjust.senderAccountIDOrThrow();
+        // sender can't be a missing accountId. It will fail if the alias doesn't exist
+        if (isAlias(senderId)) {
+            final var sender = transferContext.getFromAlias(senderId);
+            validateTrue(sender != null, INVALID_ACCOUNT_ID);
+        }
+        // Note a repeated alias is still valid for the NFT receiver case
+        if (isAlias(receiverId)) {
+            final var receiver = transferContext.getFromAlias(receiverId);
+            if(receiver == null){
+                final var isInResolutions = transferContext.resolutions().containsKey(senderId.alias());
+               if(!isInResolutions){
+                     transferContext.createFromAlias(receiverId.alias(), false);
+               }
+            } else {
+                validateTrue(receiver != null, INVALID_ACCOUNT_ID);
+            }
+        }
     }
 
     /**
