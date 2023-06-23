@@ -131,7 +131,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                         Collections.emptyMap()));
         storeFactory = new ReadableStoreFactory(fakeHederaState);
 
-        final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(false), DEFAULT_CONFIG_VERSION);
+        final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), DEFAULT_CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(config);
 
         workflow = new PreHandleWorkflowImpl(

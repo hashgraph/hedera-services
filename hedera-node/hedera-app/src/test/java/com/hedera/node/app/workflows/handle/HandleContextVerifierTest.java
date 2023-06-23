@@ -65,7 +65,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HandleContextVerifierTest {
 
     private static final HederaConfig HEDERA_CONFIG =
-            new HederaTestConfigBuilder().getOrCreateConfig().getConfigData(HederaConfig.class);
+            HederaTestConfigBuilder.createConfig().getConfigData(HederaConfig.class);
 
     @SuppressWarnings("ConstantConditions")
     @Test
