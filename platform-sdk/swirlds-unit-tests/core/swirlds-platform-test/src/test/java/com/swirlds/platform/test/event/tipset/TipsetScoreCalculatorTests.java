@@ -33,6 +33,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.event.EventDescriptor;
+import com.swirlds.platform.event.tipset.ChildlessEventTracker;
 import com.swirlds.platform.event.tipset.Tipset;
 import com.swirlds.platform.event.tipset.TipsetAdvancementWeight;
 import com.swirlds.platform.event.tipset.TipsetScoreCalculator;
@@ -75,8 +76,9 @@ class TipsetScoreCalculatorTests {
                 TestPlatformContextBuilder.create().build();
 
         final TipsetTracker builder = new TipsetTracker(addressBook);
+        final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
         final TipsetScoreCalculator calculator =
-                new TipsetScoreCalculator(platformContext, addressBook, selfId, builder);
+                new TipsetScoreCalculator(platformContext, addressBook, selfId, builder, childlessEventTracker);
 
         List<EventDescriptor> previousParents = List.of();
         TipsetAdvancementWeight runningAdvancementScore = ZERO_ADVANCEMENT_WEIGHT;
@@ -200,29 +202,29 @@ class TipsetScoreCalculatorTests {
         final NodeId nodeC = addressBook.getNodeId(2);
         final NodeId nodeD = addressBook.getNodeId(3);
 
-        final int indexA = addressBook.getIndexOfNodeId(nodeA);
-        final int indexB = addressBook.getIndexOfNodeId(nodeB);
-        final int indexC = addressBook.getIndexOfNodeId(nodeC);
-        final int indexD = addressBook.getIndexOfNodeId(nodeD);
-
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final TipsetTracker builder = new TipsetTracker(addressBook);
+        final TipsetTracker tracker = new TipsetTracker(addressBook);
+        final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
         final TipsetScoreCalculator calculator =
-                new TipsetScoreCalculator(platformContext, addressBook, nodeA, builder);
+                new TipsetScoreCalculator(platformContext, addressBook, nodeA, tracker, childlessEventTracker);
 
         final Tipset snapshot1 = calculator.getSnapshot();
 
         // Each node creates an event.
         final EventDescriptor eventA1 = new EventDescriptor(randomHash(random), nodeA, 1);
-        builder.addEvent(eventA1, List.of());
+        tracker.addEvent(eventA1, List.of());
+        childlessEventTracker.addEvent(eventA1, List.of());
         final EventDescriptor eventB1 = new EventDescriptor(randomHash(random), nodeB, 1);
-        builder.addEvent(eventB1, List.of());
+        tracker.addEvent(eventB1, List.of());
+        childlessEventTracker.addEvent(eventB1, List.of());
         final EventDescriptor eventC1 = new EventDescriptor(randomHash(random), nodeC, 1);
-        builder.addEvent(eventC1, List.of());
+        tracker.addEvent(eventC1, List.of());
+        childlessEventTracker.addEvent(eventC1, List.of());
         final EventDescriptor eventD1 = new EventDescriptor(randomHash(random), nodeD, 1);
-        builder.addEvent(eventD1, List.of());
+        tracker.addEvent(eventD1, List.of());
+        childlessEventTracker.addEvent(eventD1, List.of());
 
         assertEquals(ZERO_ADVANCEMENT_WEIGHT, calculator.getTheoreticalAdvancementScore(List.of()));
         assertEquals(ZERO_ADVANCEMENT_WEIGHT, calculator.addEventAndGetAdvancementScore(eventA1));
@@ -230,13 +232,17 @@ class TipsetScoreCalculatorTests {
 
         // Each node creates another event. All nodes use all available other parents except the event from D.
         final EventDescriptor eventA2 = new EventDescriptor(randomHash(random), nodeA, 2);
-        builder.addEvent(eventA2, List.of(eventA1, eventB1, eventC1));
+        tracker.addEvent(eventA2, List.of(eventA1, eventB1, eventC1));
+        childlessEventTracker.addEvent(eventA2, List.of(eventA1, eventB1, eventC1));
         final EventDescriptor eventB2 = new EventDescriptor(randomHash(random), nodeB, 2);
-        builder.addEvent(eventB2, List.of(eventA1, eventB1, eventC1));
+        tracker.addEvent(eventB2, List.of(eventA1, eventB1, eventC1));
+        childlessEventTracker.addEvent(eventB2, List.of(eventA1, eventB1, eventC1));
         final EventDescriptor eventC2 = new EventDescriptor(randomHash(random), nodeC, 2);
-        builder.addEvent(eventC2, List.of(eventA1, eventB1, eventC1));
+        tracker.addEvent(eventC2, List.of(eventA1, eventB1, eventC1));
+        childlessEventTracker.addEvent(eventC2, List.of(eventA1, eventB1, eventC1));
         final EventDescriptor eventD2 = new EventDescriptor(randomHash(random), nodeD, 2);
-        builder.addEvent(eventD2, List.of(eventA1, eventB1, eventC1, eventD1));
+        tracker.addEvent(eventD2, List.of(eventA1, eventB1, eventC1, eventD1));
+        childlessEventTracker.addEvent(eventD2, List.of(eventA1, eventB1, eventC1, eventD1));
 
         assertEquals(
                 TipsetAdvancementWeight.of(2, 0),
@@ -248,21 +254,25 @@ class TipsetScoreCalculatorTests {
         assertNotSame(snapshot1, snapshot2);
 
         // D should have a bully score of 1, all others a score of 0.
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexA));
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexB));
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexC));
-        assertEquals(1, calculator.getBullyScoreForNodeIndex(indexD));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeA));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeB));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeC));
+        assertEquals(1, calculator.getBullyScoreForNode(nodeD));
         assertEquals(1, calculator.getMaxBullyScore());
 
         // Create another batch of events where D is bullied.
         final EventDescriptor eventA3 = new EventDescriptor(randomHash(random), nodeA, 3);
-        builder.addEvent(eventA3, List.of(eventA2, eventB2, eventC2));
+        tracker.addEvent(eventA3, List.of(eventA2, eventB2, eventC2));
+        childlessEventTracker.addEvent(eventA3, List.of(eventA2, eventB2, eventC2));
         final EventDescriptor eventB3 = new EventDescriptor(randomHash(random), nodeB, 3);
-        builder.addEvent(eventB3, List.of(eventA2, eventB2, eventC2));
+        tracker.addEvent(eventB3, List.of(eventA2, eventB2, eventC2));
+        childlessEventTracker.addEvent(eventB3, List.of(eventA2, eventB2, eventC2));
         final EventDescriptor eventC3 = new EventDescriptor(randomHash(random), nodeC, 3);
-        builder.addEvent(eventC3, List.of(eventA2, eventB2, eventC2));
+        tracker.addEvent(eventC3, List.of(eventA2, eventB2, eventC2));
+        childlessEventTracker.addEvent(eventC3, List.of(eventA2, eventB2, eventC2));
         final EventDescriptor eventD3 = new EventDescriptor(randomHash(random), nodeD, 3);
-        builder.addEvent(eventD3, List.of(eventA2, eventB2, eventC2, eventD2));
+        tracker.addEvent(eventD3, List.of(eventA2, eventB2, eventC2, eventD2));
+        childlessEventTracker.addEvent(eventD3, List.of(eventA2, eventB2, eventC2, eventD2));
 
         assertEquals(
                 TipsetAdvancementWeight.of(2, 0),
@@ -273,21 +283,25 @@ class TipsetScoreCalculatorTests {
         assertNotSame(snapshot2, snapshot3);
 
         // D should have a bully score of 2, all others a score of 0.
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexA));
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexB));
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexC));
-        assertEquals(2, calculator.getBullyScoreForNodeIndex(indexD));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeA));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeB));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeC));
+        assertEquals(2, calculator.getBullyScoreForNode(nodeD));
         assertEquals(2, calculator.getMaxBullyScore());
 
         // Create a bach of events that don't bully D. Let's all bully C, because C is a jerk.
         final EventDescriptor eventA4 = new EventDescriptor(randomHash(random), nodeA, 4);
-        builder.addEvent(eventA4, List.of(eventA3, eventB3, eventD3));
+        tracker.addEvent(eventA4, List.of(eventA3, eventB3, eventD3));
+        childlessEventTracker.addEvent(eventA4, List.of(eventA3, eventB3, eventD3));
         final EventDescriptor eventB4 = new EventDescriptor(randomHash(random), nodeB, 4);
-        builder.addEvent(eventB4, List.of(eventA3, eventB3, eventD3));
+        tracker.addEvent(eventB4, List.of(eventA3, eventB3, eventD3));
+        childlessEventTracker.addEvent(eventB4, List.of(eventA3, eventB3, eventD3));
         final EventDescriptor eventC4 = new EventDescriptor(randomHash(random), nodeC, 4);
-        builder.addEvent(eventC4, List.of(eventA3, eventB3, eventC3, eventD3));
+        tracker.addEvent(eventC4, List.of(eventA3, eventB3, eventC3, eventD3));
+        childlessEventTracker.addEvent(eventC4, List.of(eventA3, eventB3, eventC3, eventD3));
         final EventDescriptor eventD4 = new EventDescriptor(randomHash(random), nodeD, 4);
-        builder.addEvent(eventD4, List.of(eventA3, eventB3, eventD3));
+        tracker.addEvent(eventD4, List.of(eventA3, eventB3, eventD3));
+        childlessEventTracker.addEvent(eventD4, List.of(eventA3, eventB3, eventD3));
 
         assertEquals(
                 TipsetAdvancementWeight.of(2, 0),
@@ -298,19 +312,22 @@ class TipsetScoreCalculatorTests {
         assertNotSame(snapshot3, snapshot4);
 
         // Now, all nodes should have a bully score of 0 except for C, which should have a score of 1.
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexA));
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexB));
-        assertEquals(1, calculator.getBullyScoreForNodeIndex(indexC));
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexD));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeA));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeB));
+        assertEquals(1, calculator.getBullyScoreForNode(nodeC));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeD));
         assertEquals(1, calculator.getMaxBullyScore());
 
         // Stop bullying C. D stops creating events.
         final EventDescriptor eventA5 = new EventDescriptor(randomHash(random), nodeA, 5);
-        builder.addEvent(eventA5, List.of(eventA4, eventB4, eventC4, eventD4));
+        tracker.addEvent(eventA5, List.of(eventA4, eventB4, eventC4, eventD4));
+        childlessEventTracker.addEvent(eventA5, List.of(eventA4, eventB4, eventC4, eventD4));
         final EventDescriptor eventB5 = new EventDescriptor(randomHash(random), nodeB, 5);
-        builder.addEvent(eventB5, List.of(eventA4, eventB4, eventC4, eventD4));
+        tracker.addEvent(eventB5, List.of(eventA4, eventB4, eventC4, eventD4));
+        childlessEventTracker.addEvent(eventB5, List.of(eventA4, eventB4, eventC4, eventD4));
         final EventDescriptor eventC5 = new EventDescriptor(randomHash(random), nodeC, 5);
-        builder.addEvent(eventC5, List.of(eventA4, eventB4, eventC4, eventD4));
+        tracker.addEvent(eventC5, List.of(eventA4, eventB4, eventC4, eventD4));
+        childlessEventTracker.addEvent(eventC5, List.of(eventA4, eventB4, eventC4, eventD4));
 
         assertEquals(
                 TipsetAdvancementWeight.of(3, 0),
@@ -320,20 +337,23 @@ class TipsetScoreCalculatorTests {
         final Tipset snapshot5 = calculator.getSnapshot();
         assertNotSame(snapshot4, snapshot5);
 
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexA));
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexB));
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexC));
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexD));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeA));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeB));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeC));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeD));
         assertEquals(0, calculator.getMaxBullyScore());
 
         // D still is not creating events. Since there is no legal event from D to use as a parent, this doesn't
         // count as bullying.
         final EventDescriptor eventA6 = new EventDescriptor(randomHash(random), nodeA, 6);
-        builder.addEvent(eventA6, List.of(eventA5, eventB5, eventC5));
+        tracker.addEvent(eventA6, List.of(eventA5, eventB5, eventC5));
+        childlessEventTracker.addEvent(eventA6, List.of(eventA5, eventB5, eventC5));
         final EventDescriptor eventB6 = new EventDescriptor(randomHash(random), nodeB, 6);
-        builder.addEvent(eventB6, List.of(eventA5, eventB5, eventC5));
+        tracker.addEvent(eventB6, List.of(eventA5, eventB5, eventC5));
+        childlessEventTracker.addEvent(eventB6, List.of(eventA5, eventB5, eventC5));
         final EventDescriptor eventC6 = new EventDescriptor(randomHash(random), nodeC, 6);
-        builder.addEvent(eventC6, List.of(eventA5, eventB5, eventC5));
+        tracker.addEvent(eventC6, List.of(eventA5, eventB5, eventC5));
+        childlessEventTracker.addEvent(eventC6, List.of(eventA5, eventB5, eventC5));
 
         assertEquals(
                 TipsetAdvancementWeight.of(2, 0),
@@ -343,19 +363,22 @@ class TipsetScoreCalculatorTests {
         final Tipset snapshot6 = calculator.getSnapshot();
         assertNotSame(snapshot5, snapshot6);
 
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexA));
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexB));
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexC));
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexD));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeA));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeB));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeC));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeD));
         assertEquals(0, calculator.getMaxBullyScore());
 
         // Rinse and repeat.
         final EventDescriptor eventA7 = new EventDescriptor(randomHash(random), nodeA, 7);
-        builder.addEvent(eventA7, List.of(eventA6, eventB6, eventC6));
+        tracker.addEvent(eventA7, List.of(eventA6, eventB6, eventC6));
+        childlessEventTracker.addEvent(eventA7, List.of(eventA6, eventB6, eventC6));
         final EventDescriptor eventB7 = new EventDescriptor(randomHash(random), nodeB, 7);
-        builder.addEvent(eventB7, List.of(eventA6, eventB6, eventC6));
+        tracker.addEvent(eventB7, List.of(eventA6, eventB6, eventC6));
+        childlessEventTracker.addEvent(eventB7, List.of(eventA6, eventB6, eventC6));
         final EventDescriptor eventC7 = new EventDescriptor(randomHash(random), nodeC, 7);
-        builder.addEvent(eventC7, List.of(eventA6, eventB6, eventC6));
+        tracker.addEvent(eventC7, List.of(eventA6, eventB6, eventC6));
+        childlessEventTracker.addEvent(eventC7, List.of(eventA6, eventB6, eventC6));
 
         assertEquals(
                 TipsetAdvancementWeight.of(2, 0),
@@ -365,10 +388,10 @@ class TipsetScoreCalculatorTests {
         final Tipset snapshot7 = calculator.getSnapshot();
         assertNotSame(snapshot6, snapshot7);
 
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexA));
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexB));
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexC));
-        assertEquals(0, calculator.getBullyScoreForNodeIndex(indexD));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeA));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeB));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeC));
+        assertEquals(0, calculator.getBullyScoreForNode(nodeD));
         assertEquals(0, calculator.getMaxBullyScore());
     }
 
@@ -397,8 +420,9 @@ class TipsetScoreCalculatorTests {
                 TestPlatformContextBuilder.create().build();
 
         final TipsetTracker builder = new TipsetTracker(addressBook);
+        final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
         final TipsetScoreCalculator calculator =
-                new TipsetScoreCalculator(platformContext, addressBook, nodeA, builder);
+                new TipsetScoreCalculator(platformContext, addressBook, nodeA, builder, childlessEventTracker);
 
         final Tipset snapshot1 = calculator.getSnapshot();
 

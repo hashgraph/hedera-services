@@ -20,6 +20,7 @@ import static com.swirlds.platform.event.tipset.Tipset.merge;
 
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.event.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,9 +42,9 @@ public class TipsetTracker {
     private final SequenceMap<EventDescriptor, Tipset> tipsets;
 
     /**
-     * This tipset is equivalent to a tipset that would be created by merging all tipsets of all events that
-     * this object has ever observed. If you ask this tipset for the generation for a particular node,
-     * it will return the highest generation of all events we have ever received from that node.
+     * This tipset is equivalent to a tipset that would be created by merging all tipsets of all events that this object
+     * has ever observed. If you ask this tipset for the generation for a particular node, it will return the highest
+     * generation of all events we have ever received from that node.
      */
     private Tipset latestGenerations;
 
@@ -76,7 +77,7 @@ public class TipsetTracker {
      * Add a new event to the tracker.
      *
      * @param eventDescriptor the descriptor of the event to add
-     * @param parents          the parents of the event being added
+     * @param parents         the parents of the event being added
      * @return the tipset for the event that was added
      */
     @NonNull
@@ -116,13 +117,13 @@ public class TipsetTracker {
     }
 
     /**
-     * Get the highest generation of all events we have received from a particular node index.
+     * Get the highest generation of all events we have received from a particular node.
      *
-     * @param nodeIndex the index of the node
-     * @return the highest generation of all events received by a node index
+     * @param nodeId the node in question
+     * @return the highest generation of all events received by a given node
      */
-    public long getLatestGenerationForNodeIndex(final int nodeIndex) {
-        return latestGenerations.getTipGenerationForNodeIndex(nodeIndex);
+    public long getLatestGenerationForNode(@NonNull final NodeId nodeId) {
+        return latestGenerations.getTipGenerationForNode(nodeId);
     }
 
     /**

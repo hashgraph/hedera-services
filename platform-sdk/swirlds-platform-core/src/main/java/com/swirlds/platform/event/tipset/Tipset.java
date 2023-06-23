@@ -106,13 +106,13 @@ public class Tipset {
     }
 
     /**
-     * Get the tip generation for a given node index.
+     * Get the tip generation for a given node
      *
-     * @param index the index of the node in question
-     * @return the tip generation for the node index
+     * @param nodeId the node in question
+     * @return the tip generation for the node
      */
-    public long getTipGenerationForNodeIndex(final int index) {
-        return tips[index];
+    public long getTipGenerationForNode(@NonNull final NodeId nodeId) {
+        return tips[addressBook.getIndexOfNodeId(nodeId)];
     }
 
     /**

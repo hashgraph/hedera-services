@@ -47,6 +47,11 @@ public class TipsetScoreCalculator {
     private final TipsetTracker tipsetTracker;
 
     /**
+     * Tracks non-ancient events without children.
+     */
+    private final ChildlessEventTracker childlessEventTracker;
+
+    /**
      * The current tipset snapshot. This is updated to the latest self event's tipset whenever the targeted weighted
      * advancement between the current snapshot and the new event's tipset exceeds the threshold of 2/3 consensus weight
      * minus the self weight.
@@ -96,19 +101,22 @@ public class TipsetScoreCalculator {
     /**
      * Create a new tipset window.
      *
-     * @param platformContext the platform context
-     * @param addressBook     the current address book
-     * @param selfId          the ID of the node tracked by this window
-     * @param tipsetTracker   builds tipsets for individual events
+     * @param platformContext       the platform context
+     * @param addressBook           the current address book
+     * @param selfId                the ID of the node tracked by this window
+     * @param tipsetTracker         builds tipsets for individual events
+     * @param childlessEventTracker tracks non-ancient events without children
      */
     public TipsetScoreCalculator(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final TipsetTracker tipsetTracker) {
+            @NonNull final TipsetTracker tipsetTracker,
+            @NonNull final ChildlessEventTracker childlessEventTracker) {
 
         this.selfId = Objects.requireNonNull(selfId);
         this.tipsetTracker = Objects.requireNonNull(tipsetTracker);
+        this.childlessEventTracker = Objects.requireNonNull(childlessEventTracker);
         Objects.requireNonNull(addressBook);
 
         nodeCount = addressBook.getSize();
@@ -221,8 +229,8 @@ public class TipsetScoreCalculator {
      */
     public int getMaxBullyScore() {
         int bullyScore = 0;
-        for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
-            bullyScore = Math.max(bullyScore, getBullyScoreForNodeIndex(nodeIndex));
+        for (final EventDescriptor eventDescriptor : childlessEventTracker.getChildlessEvents()) {
+            bullyScore = Math.max(bullyScore, getBullyScoreForNode(eventDescriptor.getCreator()));
         }
         return bullyScore;
     }
@@ -235,14 +243,14 @@ public class TipsetScoreCalculator {
      * a particular node. For nodes that do not have any events that are legal other parents, the bully score is defined
      * to be 0, regardless of how many times the snapshot has been advanced.
      *
-     * @param nodeIndex the index of the node in question
+     * @param nodeId the node to compute the bully score for
      * @return the bully score with respect to this node
      */
-    public int getBullyScoreForNodeIndex(final int nodeIndex) {
+    public int getBullyScoreForNode(@NonNull final NodeId nodeId) {
         int bullyScore = 0;
-        final long latestGeneration = tipsetTracker.getLatestGenerationForNodeIndex(nodeIndex);
+        final long latestGeneration = tipsetTracker.getLatestGenerationForNode(nodeId);
 
-        if (latestSelfEventTipset.getTipGenerationForNodeIndex(nodeIndex) == latestGeneration) {
+        if (latestSelfEventTipset.getTipGenerationForNode(nodeId) == latestGeneration) {
             // Our latest event has their latest event as an ancestor.
             return 0;
         }
@@ -257,8 +265,8 @@ public class TipsetScoreCalculator {
             final Tipset currentTipset = previousTipset;
             previousTipset = iterator.next();
 
-            final long previousGeneration = previousTipset.getTipGenerationForNodeIndex(nodeIndex);
-            final long currentGeneration = currentTipset.getTipGenerationForNodeIndex(nodeIndex);
+            final long previousGeneration = previousTipset.getTipGenerationForNode(nodeId);
+            final long currentGeneration = currentTipset.getTipGenerationForNode(nodeId);
 
             if (currentGeneration == latestGeneration || previousGeneration < currentGeneration) {
                 // We stop increasing the bully score if we observe one of the two following events:

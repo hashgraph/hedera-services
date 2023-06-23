@@ -125,7 +125,8 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         tipsetMetrics = new TipsetMetrics(platformContext, addressBook);
         tipsetTracker = new TipsetTracker(addressBook);
         childlessOtherEventTracker = new ChildlessEventTracker();
-        tipsetScoreCalculator = new TipsetScoreCalculator(platformContext, addressBook, selfId, tipsetTracker);
+        tipsetScoreCalculator = new TipsetScoreCalculator(
+                platformContext, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
     }
 
     /**
@@ -239,8 +240,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         int bullyScoreSum = 0;
         final List<Integer> bullyScores = new ArrayList<>(possibleOtherParents.size());
         for (final EventDescriptor nerd : possibleOtherParents) {
-            final int nodeIndex = addressBook.getIndexOfNodeId(nerd.getCreator());
-            final int bullyScore = tipsetScoreCalculator.getBullyScoreForNodeIndex(nodeIndex);
+            final int bullyScore = tipsetScoreCalculator.getBullyScoreForNode(nerd.getCreator());
 
             final TipsetAdvancementWeight tipsetScore =
                     tipsetScoreCalculator.getTheoreticalAdvancementScore(List.of(nerd));

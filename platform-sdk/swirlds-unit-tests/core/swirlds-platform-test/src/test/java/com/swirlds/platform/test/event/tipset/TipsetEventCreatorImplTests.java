@@ -44,6 +44,7 @@ import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.tipset.ChildlessEventTracker;
 import com.swirlds.platform.event.tipset.TipsetEventCreator;
 import com.swirlds.platform.event.tipset.TipsetEventCreatorImpl;
 import com.swirlds.platform.event.tipset.TipsetScoreCalculator;
@@ -124,8 +125,9 @@ class TipsetEventCreatorImplTests {
 
             final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
 
-            final TipsetScoreCalculator tipsetScoreCalculator =
-                    new TipsetScoreCalculator(platformContext, addressBook, address.getNodeId(), tipsetTracker);
+            final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
+            final TipsetScoreCalculator tipsetScoreCalculator = new TipsetScoreCalculator(
+                    platformContext, addressBook, address.getNodeId(), tipsetTracker, childlessEventTracker);
 
             eventCreators.put(
                     address.getNodeId(),
@@ -538,7 +540,7 @@ class TipsetEventCreatorImplTests {
     @ValueSource(booleans = {false, true})
     @DisplayName("Zero Weight Slow Node Test")
     void zeroWeightSlowNodeTest(final boolean advancingClock) {
-        final Random random = getRandomPrintSeed(1010882678853618067L); // TODO
+        final Random random = getRandomPrintSeed();
 
         final int networkSize = 10;
 
@@ -599,7 +601,7 @@ class TipsetEventCreatorImplTests {
                 }
 
                 if (nodeId.equals(zeroWeightNode)) {
-                    if (random.nextDouble() < 0.1) {
+                    if (random.nextDouble() < 0.1 || slowNodeEvents.size() > 10) {
                         // Once in a while, take all the slow events and distribute them.
                         for (final EventImpl slowEvent : slowNodeEvents) {
                             distributeEvent(nodes, slowEvent);
