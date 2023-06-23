@@ -147,11 +147,11 @@ public class EnsureAliasesStep implements TransferStep {
         // Note a repeated alias is still valid for the NFT receiver case
         if (isAlias(receiverId)) {
             final var receiver = transferContext.getFromAlias(receiverId);
-            if(receiver == null){
+            if (receiver == null) {
                 final var isInResolutions = transferContext.resolutions().containsKey(senderId.alias());
-               if(!isInResolutions){
-                     transferContext.createFromAlias(receiverId.alias(), false);
-               }
+                if (!isInResolutions) {
+                    transferContext.createFromAlias(receiverId.alias(), false);
+                }
             } else {
                 validateTrue(receiver != null, INVALID_ACCOUNT_ID);
             }

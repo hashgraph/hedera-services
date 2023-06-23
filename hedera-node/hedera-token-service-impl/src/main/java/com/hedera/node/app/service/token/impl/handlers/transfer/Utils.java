@@ -24,7 +24,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Objects;

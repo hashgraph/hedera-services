@@ -43,20 +43,16 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.UnaryOperator;
-
 import javax.inject.Inject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class AutoAccountCreator {
     private static final Logger log = LogManager.getLogger(AutoAccountCreator.class);
@@ -100,8 +96,9 @@ public class AutoAccountCreator {
         if (isByTokenTransfer) {
             tokenAliasMap.putIfAbsent(alias, Collections.emptySet());
         }
-        
-        final var maxAutoAssociations = tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
+
+        final var maxAutoAssociations =
+                tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
         final var isAliasEVMAddress = EntityIdUtils.isOfEvmAddressSize(alias);
         if (isAliasEVMAddress) {
             syntheticCreation = createHollowAccount(alias, 0L);
@@ -112,10 +109,8 @@ public class AutoAccountCreator {
             memo = AUTO_MEMO;
         }
 
-
         final var childRecord = handleContext.dispatchRemovableChildTransaction(
-                syntheticCreation.memo(memo).build(),
-                CryptoCreateRecordBuilder.class);
+                syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class);
 
         var fee = autoCreationFeeFor(syntheticCreation);
         if (isAliasEVMAddress) {
@@ -130,7 +125,7 @@ public class AutoAccountCreator {
             }
         }
         // TODO: Not sure if fee should be set here
-//        childRecord.transactionFee(fee);
+        //        childRecord.transactionFee(fee);
         return null;
     }
 

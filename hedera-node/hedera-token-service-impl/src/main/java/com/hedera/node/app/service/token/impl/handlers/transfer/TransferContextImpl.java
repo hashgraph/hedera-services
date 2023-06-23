@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_S
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.Utils.isSerializedProtoKey;
 
-import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
