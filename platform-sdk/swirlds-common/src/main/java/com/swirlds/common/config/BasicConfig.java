@@ -54,24 +54,8 @@ import java.time.Duration;
  * 		the maximum number of slowdown bytes to be sent during a sync
  * @param numConnections
  * 		number of connections maintained by each member (syncs happen on random connections from that set
- * @param bufferSize
- * 		for BufferedInputStream and BufferedOutputStream for syncing
  * @param logStack
  * 		when converting an exception to a string for logging, should it include the stack trace?
- * @param doUpnp
- * 		should this set up uPnP port forwarding on the router once every 60 seconds?
- * @param useLoopbackIp
- * 		should be set to true when using the internet simulator
- * @param tcpNoDelay
- * 		if true, then Nagel's algorithm is disabled, which helps latency, hurts bandwidth usage
- * @param timeoutSyncClientSocket
- * 		timeout when waiting for data
- * @param timeoutSyncClientConnect
- * 		timeout when establishing a connection
- * @param timeoutServerAcceptConnect
- * 		timeout when server is waiting for another member to create a connection
- * @param deadlockCheckPeriod
- * 		check for deadlocks every this many milliseconds (-1 for never)
  * @param sleepHeartbeat
  * 		send a heartbeat byte on each comm channel to keep it open, every this many milliseconds
  * @param delayShuffle
@@ -156,13 +140,6 @@ import java.time.Duration;
  * 		The value for the event intake queue at which the node should stop syncing
  * @param transactionMaxBytes
  * 		maximum number of bytes allowed in a transaction
- * @param useTLS
- * 		should TLS be turned on, rather than making all sockets unencrypted?
- * @param socketIpTos
- * 		The IP_TOS to set for a socket, from 0 to 255, or -1 to not set one. This number (if not -1) will be part of
- * 		every TCP/IP packet, and is normally ignored by internet routers, but it is possible to make routers change
- * 		their handling of packets based on this number, such as for providing different Quality of Service (QoS). <a
- * 		href="https://en.wikipedia.org/wiki/Type_of_service">Type of Service</a>
  * @param maxIncomingSyncsInc
  * 		maximum number of simultaneous incoming syncs initiated by others, minus maxOutgoingSyncs. If there is a moment
  * 		where each member has maxOutgoingSyncs outgoing syncs in progress, then a fraction of at least:
@@ -197,15 +174,7 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "0.05") double throttle7extra,
         @ConfigProperty(defaultValue = "104857600") int throttle7maxBytes,
         @ConfigProperty(defaultValue = "40") int numConnections,
-        @ConfigProperty(defaultValue = "8192") int bufferSize,
         @ConfigProperty(defaultValue = "true") boolean logStack,
-        @ConfigProperty(defaultValue = "true") boolean doUpnp,
-        @ConfigProperty(defaultValue = "true") boolean useLoopbackIp,
-        @ConfigProperty(defaultValue = "true") boolean tcpNoDelay,
-        @ConfigProperty(defaultValue = "5000") int timeoutSyncClientSocket,
-        @ConfigProperty(defaultValue = "5000") int timeoutSyncClientConnect,
-        @ConfigProperty(defaultValue = "5000") int timeoutServerAcceptConnect,
-        @ConfigProperty(defaultValue = "1000") int deadlockCheckPeriod,
         @ConfigProperty(defaultValue = "500") int sleepHeartbeat,
         @ConfigProperty(defaultValue = "200") long delayShuffle,
         @ConfigProperty(defaultValue = "30") long callerSkipsBeforeSleep,
@@ -238,8 +207,6 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "5") int staleEventPreventionThreshold,
         @ConfigProperty(defaultValue = "1000") int eventIntakeQueueThrottleSize,
         @ConfigProperty(defaultValue = "6144") int transactionMaxBytes,
-        @ConfigProperty(defaultValue = "true") boolean useTLS,
-        @ConfigProperty(defaultValue = "-1") int socketIpTos,
         @ConfigProperty(defaultValue = "1") int maxIncomingSyncsInc,
         @ConfigProperty(defaultValue = "2") int maxOutgoingSyncs,
         @ConfigProperty(defaultValue = "log4j2.xml") Path logPath,
