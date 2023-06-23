@@ -61,7 +61,6 @@ public class SwirldStateFlowTests extends EventFlowTests {
      */
     @ParameterizedTest
     @MethodSource({"preConsParams"})
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("All transactions sent to preHandle")
     void testPreHandle(final Long seed, final int numNodes, final int numTransactions) {
         testPreHandle(
@@ -77,7 +76,6 @@ public class SwirldStateFlowTests extends EventFlowTests {
      */
     @ParameterizedTest
     @MethodSource("postConsHandleParams")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Transactions handled post-consensus")
     void testPostConsensusHandle(final Long seed, final int numNodes, final int numEvents) {
         testPostConsensusHandle(seed, numNodes, numEvents, origSwirldState);
@@ -89,7 +87,6 @@ public class SwirldStateFlowTests extends EventFlowTests {
      */
     @ParameterizedTest
     @MethodSource("postConsHandleParams")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("Next epoch copied to epoch")
     void testPostConsensusHandleEpochUpdate(final Long seed, final int numNodes, final int numEvents) {
         testPostConsensusHandleEpochUpdate(seed, numNodes, numEvents, origSwirldState);
