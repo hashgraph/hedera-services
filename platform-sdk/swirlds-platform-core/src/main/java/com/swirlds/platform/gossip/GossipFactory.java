@@ -89,7 +89,7 @@ public final class GossipFactory {
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
      * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
-     * @param updatePlatformStatus          a method that updates the platform status, when called
+     * @param announceFallenBehind          a method that notifies the platform that the node has fallen behind
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @return the gossip engine
@@ -117,7 +117,7 @@ public final class GossipFactory {
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final EventLinker eventLinker,
-            @NonNull final Runnable updatePlatformStatus,
+            @NonNull final Runnable announceFallenBehind,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
 
@@ -142,7 +142,7 @@ public final class GossipFactory {
         Objects.requireNonNull(eventMapper);
         Objects.requireNonNull(eventIntakeMetrics);
         Objects.requireNonNull(eventLinker);
-        Objects.requireNonNull(updatePlatformStatus);
+        Objects.requireNonNull(announceFallenBehind);
         Objects.requireNonNull(loadReconnectState);
         Objects.requireNonNull(clearAllPipelinesForReconnect);
 
@@ -174,7 +174,7 @@ public final class GossipFactory {
                     eventMapper,
                     eventIntakeMetrics,
                     eventLinker,
-                    updatePlatformStatus,
+                    announceFallenBehind,
                     loadReconnectState,
                     clearAllPipelinesForReconnect);
         } else if (syncConfig.syncAsProtocolEnabled()) {
@@ -197,7 +197,7 @@ public final class GossipFactory {
                         eventObserverDispatcher,
                         eventMapper,
                         eventIntakeMetrics,
-                        updatePlatformStatus,
+                        announceFallenBehind,
                         loadReconnectState,
                         clearAllPipelinesForReconnect);
             } else {
@@ -223,7 +223,7 @@ public final class GossipFactory {
                         eventObserverDispatcher,
                         eventMapper,
                         eventIntakeMetrics,
-                        updatePlatformStatus,
+                        announceFallenBehind,
                         loadReconnectState,
                         clearAllPipelinesForReconnect);
             }
@@ -247,7 +247,7 @@ public final class GossipFactory {
                     eventObserverDispatcher,
                     eventMapper,
                     eventIntakeMetrics,
-                    updatePlatformStatus,
+                    announceFallenBehind,
                     loadReconnectState,
                     clearAllPipelinesForReconnect);
         }
