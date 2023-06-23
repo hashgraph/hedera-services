@@ -290,8 +290,6 @@ public class Browser {
             Settings.populateSettingsCommon();
 
             // Update Settings based on config.txt
-            configurationProperties.maxSyncs().ifPresent(value -> Settings.getInstance()
-                    .setMaxOutgoingSyncs(value));
             configurationProperties.transactionMaxBytes().ifPresent(value -> Settings.getInstance()
                     .setTransactionMaxBytes(value));
 
