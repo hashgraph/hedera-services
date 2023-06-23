@@ -22,7 +22,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.PathsConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.system.NodeId;
@@ -33,6 +32,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -77,16 +77,19 @@ public final class CryptoSetup {
         Objects.requireNonNull(addressBook, "addressBook must not be null");
         Objects.requireNonNull(configuration, "configuration must not be null");
 
+        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
+        final CryptoConfig cryptoConfig = configuration.getConfigData(CryptoConfig.class);
+
         final ExecutorService cryptoThreadPool = Executors.newFixedThreadPool(
-                Settings.getInstance().getNumCryptoThreads(),
+                threadConfig.numCryptoThreads(),
                 new ThreadConfiguration(getStaticThreadManager())
                         .setComponent("browser")
                         .setThreadName("crypto-verify")
                         .setDaemon(false)
                         .buildFactory());
 
-        final Path keysDirPath =
-                ConfigurationHolder.getConfigData(PathsConfig.class).getKeysDirPath();
+        final Path keysDirPath = pathsConfig.getKeysDirPath();
         final Map<NodeId, KeysAndCerts> keysAndCerts;
         try {
             if (Settings.getInstance().isLoadKeysFromPfxFiles()) {
@@ -98,10 +101,7 @@ public final class CryptoSetup {
                     keysAndCerts = CryptoStatic.loadKeysAndCerts(
                             addressBook,
                             keysDirPath,
-                            configuration
-                                    .getConfigData(CryptoConfig.class)
-                                    .keystorePassword()
-                                    .toCharArray());
+                            cryptoConfig.keystorePassword().toCharArray());
                     logger.debug(STARTUP.getMarker(), "Done loading keys");
                 }
             } else {
