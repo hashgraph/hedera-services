@@ -20,37 +20,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestSettings implements SettingsProvider {
     public final AtomicInteger transactionMaxBytes = new AtomicInteger(0);
-    public final AtomicInteger ipTos = new AtomicInteger(-1);
     public final AtomicInteger throttleTransactionQueueSize = new AtomicInteger(100_000);
 
     @Override
     public int getTransactionMaxBytes() {
         return transactionMaxBytes.get();
-    }
-
-    @Override
-    public int getSocketIpTos() {
-        return ipTos.get();
-    }
-
-    @Override
-    public int getTimeoutSyncClientSocket() {
-        return 5_000;
-    }
-
-    @Override
-    public int getTimeoutSyncClientConnect() {
-        return 5_000;
-    }
-
-    @Override
-    public int getTimeoutServerAcceptConnect() {
-        return 0;
-    }
-
-    @Override
-    public boolean isTcpNoDelay() {
-        return true;
     }
 
     @Override
@@ -61,15 +35,5 @@ public class TestSettings implements SettingsProvider {
     @Override
     public int getMaxTransactionBytesPerEvent() {
         return 245_760;
-    }
-
-    @Override
-    public boolean useLoopbackIp() {
-        return false;
-    }
-
-    @Override
-    public int connectionStreamBufferSize() {
-        return 0;
     }
 }

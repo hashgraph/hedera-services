@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.mono.context.domain.security.PermissionedAccountsRange;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import java.util.Set;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
@@ -49,8 +48,9 @@ final class ApiPermissionConfigTest {
             })
     void testHederaFunctionalityUsage(final HederaFunctionality hederaFunctionality) {
         // given
-        final var configuration =
-                new HederaTestConfigBuilder(Set.of("com.hedera.node.config.data")).getOrCreateConfig();
+        final var configuration = HederaTestConfigBuilder.create(false)
+                .withConfigDataType(ApiPermissionConfig.class)
+                .getOrCreateConfig();
         final ApiPermissionConfig config = configuration.getConfigData(ApiPermissionConfig.class);
 
         // when
@@ -80,8 +80,9 @@ final class ApiPermissionConfigTest {
             })
     void testNotSupportedHederaFunctionalityUsage(final HederaFunctionality hederaFunctionality) {
         // given
-        final var configuration =
-                new HederaTestConfigBuilder(Set.of("com.hedera.node.config.data")).getOrCreateConfig();
+        final var configuration = HederaTestConfigBuilder.create(false)
+                .withConfigDataType(ApiPermissionConfig.class)
+                .getOrCreateConfig();
         final ApiPermissionConfig config = configuration.getConfigData(ApiPermissionConfig.class);
 
         // then

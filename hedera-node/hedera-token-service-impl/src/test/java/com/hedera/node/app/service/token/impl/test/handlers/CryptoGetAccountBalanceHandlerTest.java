@@ -240,7 +240,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableStore);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 1000)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
@@ -296,7 +296,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
         when(context.createStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
@@ -380,7 +380,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
         when(context.createStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);

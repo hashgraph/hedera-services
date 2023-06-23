@@ -106,10 +106,16 @@ public class FileServiceUtils {
             throws PreCheckException {
         if (listKeys == null || !listKeys.hasKeys() || listKeys.keys().isEmpty()) {
             // @todo('protobuf change needed') change to immutable file response code
-            if (areKeysRequired) throw new PreCheckException(UNAUTHORIZED);
+            if (areKeysRequired) {
+                throw new PreCheckException(UNAUTHORIZED);
+            }
         }
 
-        if (listKeys != null && listKeys.hasKeys()) for (Key key : listKeys.keys()) context.requireKey(key);
+        if (listKeys != null && listKeys.hasKeys()) {
+            for (final Key key : listKeys.keys()) {
+                context.requireKey(key);
+            }
+        }
     }
 
     /**
@@ -137,7 +143,7 @@ public class FileServiceUtils {
             throw new HandleException(INVALID_FILE_ID);
         }
 
-        var optionalFile = fileStore.get(fileId.fileNum());
+        var optionalFile = fileStore.get(fileId);
 
         if (optionalFile.isEmpty()) {
             throw new HandleException(INVALID_FILE_ID);
