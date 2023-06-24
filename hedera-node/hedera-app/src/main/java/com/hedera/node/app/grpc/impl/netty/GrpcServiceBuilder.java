@@ -33,7 +33,6 @@ import io.grpc.MethodDescriptor;
 import io.grpc.MethodDescriptor.MethodType;
 import io.grpc.ServerCall;
 import io.grpc.ServerCall.Listener;
-import io.grpc.ServerCallHandler;
 import io.grpc.ServerMethodDefinition;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.Status;
@@ -162,6 +161,12 @@ final class GrpcServiceBuilder {
         return this;
     }
 
+    /**
+     * Build a grpc {@link ServerServiceDefinition} for each transaction and query method registered with this builder.
+     *
+     * @param metrics Used for recording metrics for the transaction or query methods
+     * @return A {@link ServerServiceDefinition} that can be registered with a gRPC server
+     */
     @NonNull
     public ServerServiceDefinition build(@NonNull final Metrics metrics) {
         final var builder = ServerServiceDefinition.builder(serviceName);
@@ -178,11 +183,18 @@ final class GrpcServiceBuilder {
         return builder.build();
     }
 
+    /** Utility method for adding a {@link MethodBase} to the {@link ServerServiceDefinition.Builder}. */
     private void addMethod(
             @NonNull final ServerServiceDefinition.Builder builder,
             @NonNull final String serviceName,
             @NonNull final String methodName,
             @NonNull final MethodBase method) {
+
+        requireNonNull(builder);
+        requireNonNull(serviceName);
+        requireNonNull(methodName);
+        requireNonNull(method);
+
         final var methodDescriptor = MethodDescriptor.<BufferedData, BufferedData>newBuilder()
                 .setType(MethodType.UNARY)
                 .setFullMethodName(serviceName + "/" + methodName)
@@ -190,39 +202,38 @@ final class GrpcServiceBuilder {
                 .setResponseMarshaller(MARSHALLER)
                 .build();
 
-        builder.addMethod(ServerMethodDefinition.create(methodDescriptor, new ServerCallHandlerImpl(method)));
+        builder.addMethod(
+                ServerMethodDefinition.create(methodDescriptor, (call, ignored) -> new ListenerImpl(call, method)));
     }
 
-    private static final class ServerCallHandlerImpl implements ServerCallHandler<BufferedData, BufferedData> {
-        private final MethodBase method;
-
-        private ServerCallHandlerImpl(MethodBase method) {
-            this.method = method;
-        }
-
-        @Override
-        public Listener<BufferedData> startCall(ServerCall<BufferedData, BufferedData> call, Metadata headers) {
-            return new ListenerImpl(call, method);
-        }
-    }
-
+    /**
+     * Listens to events coming from the client and invokes the appropriate method on the {@link MethodBase}. Receives
+     * response information via {@link StreamObserver} and passes the response to the client.
+     *
+     * <p>The {@link Listener} interface is used to receive events from the client. Among the possible events are when
+     * the client connection is ready and when a message has arrived. We handle both of these events.
+     *
+     * <p>When a message is sent, we forward it to the {@link MethodBase}. The {@link MethodBase} communicates back by
+     * means of the {@link StreamObserver} interface. There are three cases to handle: a response is ready, an error
+     * occurred, the response is complete.
+     */
     private static final class ListenerImpl extends Listener<BufferedData> implements StreamObserver<BufferedData> {
         private final ServerCall<BufferedData, BufferedData> call;
         private final MethodBase method;
 
-        private ListenerImpl(ServerCall<BufferedData, BufferedData> call, MethodBase method) {
+        private ListenerImpl(
+                @NonNull final ServerCall<BufferedData, BufferedData> call, @NonNull final MethodBase method) {
+            requireNonNull(call);
+            requireNonNull(method);
             this.call = call;
             this.method = method;
         }
 
-        /*
-         *
-         * Implementation of Listener
-         *
-         * These methods are callbacks based on events coming from the CLIENT. When the connection is ready, we have
-         * to indicate that we're expecting a message. Netty will then call `onMessage` to give us the message.
-         *
-         */
+        // ================================================================================================================
+        // Implementation of Listener
+        //
+        // These methods are callbacks based on events coming from the CLIENT. When the connection is ready, we have
+        // to indicate that we're expecting a message. Netty will then call `onMessage` to give us the message.
 
         @Override
         public void onReady() {
@@ -241,14 +252,11 @@ final class GrpcServiceBuilder {
             method.invoke(requestBuffer, this);
         }
 
-        /*
-         *
-         * Implementation of StreamObserver
-         *
-         * The StreamObserver is the callback interface for the SERVER to send messages back to the CLIENT. It will be
-         * called by the MethodBase.
-         *
-         */
+        // ================================================================================================================
+        // Implementation of StreamObserver
+        //
+        // The StreamObserver is the callback interface for the SERVER to send messages back to the CLIENT. It will be
+        // called by the MethodBase.
 
         @Override
         public void onNext(BufferedData responseBuffer) {
