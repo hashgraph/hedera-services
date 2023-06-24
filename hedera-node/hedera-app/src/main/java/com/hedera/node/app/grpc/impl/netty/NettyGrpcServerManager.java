@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.grpc.impl.netty;
 
+import static io.netty.handler.ssl.SupportedCipherSuiteFilter.INSTANCE;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.grpc.GrpcServerManager;
 import com.hedera.node.app.services.ServicesRegistry;
@@ -32,11 +35,7 @@ import io.grpc.ServerServiceDefinition;
 import io.grpc.ServiceDescriptor;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
-import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.handler.ssl.SslContextBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -47,8 +46,8 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.net.ssl.SSLException;
-import static io.netty.handler.ssl.SupportedCipherSuiteFilter.INSTANCE;
-import static java.util.Objects.requireNonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * An implementation of {@link GrpcServerManager} based on Helidon gRPC.
@@ -259,12 +258,13 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                 .maxConcurrentCallsPerConnection(config.prodMaxConcurrentCalls())
                 .flowControlWindow(config.prodFlowControlWindow())
                 .directExecutor();
-//                .channelType(EpollServerSocketChannel.class)
-//                .bossEventLoopGroup(new EpollEventLoopGroup())
-//                .workerEventLoopGroup(new EpollEventLoopGroup());
+        //                .channelType(EpollServerSocketChannel.class)
+        //                .bossEventLoopGroup(new EpollEventLoopGroup())
+        //                .workerEventLoopGroup(new EpollEventLoopGroup());
     }
 
-    private void configureTls(final NettyServerBuilder builder, NettyConfig config) throws SSLException, FileNotFoundException {
+    private void configureTls(final NettyServerBuilder builder, NettyConfig config)
+            throws SSLException, FileNotFoundException {
         final var tlsCrtPath = config.tlsCrtPath();
         final var crt = new File(tlsCrtPath);
         if (!crt.exists()) {
