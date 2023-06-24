@@ -16,22 +16,23 @@
 
 package grpc;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.grpc.impl.netty.NettyGrpcServerManager;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.apache.logging.log4j.LogManager;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 final class NettyManagerTest extends GrpcTestBase {
     private static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
@@ -39,11 +40,7 @@ final class NettyManagerTest extends GrpcTestBase {
     private NettyGrpcServerManager createServerManager(@NonNull final TestSource testConfig) {
         final var config = createConfig(testConfig);
         return new NettyGrpcServerManager(
-                () -> new VersionedConfigImpl(config, 1),
-                Set::of,
-                (req, res) -> {},
-                (req, res) -> {},
-                metrics);
+                () -> new VersionedConfigImpl(config, 1), Set::of, (req, res) -> {}, (req, res) -> {}, metrics);
     }
 
     /**

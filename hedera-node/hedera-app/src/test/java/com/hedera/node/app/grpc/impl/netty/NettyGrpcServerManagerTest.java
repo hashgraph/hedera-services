@@ -66,15 +66,15 @@ final class NettyGrpcServerManagerTest {
     void nullArgsThrow() {
         assertThatThrownBy(() -> new NettyGrpcServerManager(null, services, ingestWorkflow, queryWorkflow, metrics))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new NettyGrpcServerManager(configProvider, null, ingestWorkflow, queryWorkflow, metrics))
+        assertThatThrownBy(
+                        () -> new NettyGrpcServerManager(configProvider, null, ingestWorkflow, queryWorkflow, metrics))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new NettyGrpcServerManager(configProvider, services, null, queryWorkflow, metrics))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new NettyGrpcServerManager(configProvider, services, ingestWorkflow, null, metrics))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new NettyGrpcServerManager(configProvider, services, ingestWorkflow, queryWorkflow, null))
+        assertThatThrownBy(
+                        () -> new NettyGrpcServerManager(configProvider, services, ingestWorkflow, queryWorkflow, null))
                 .isInstanceOf(NullPointerException.class);
     }
 

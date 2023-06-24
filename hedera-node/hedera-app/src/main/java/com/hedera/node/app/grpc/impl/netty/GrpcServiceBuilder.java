@@ -28,9 +28,6 @@ import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.InputStream;
-import java.util.HashSet;
-import java.util.Set;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.MethodDescriptor.MethodType;
@@ -42,6 +39,9 @@ import io.grpc.ServerServiceDefinition;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import java.io.InputStream;
+import java.util.HashSet;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,10 +178,11 @@ final class GrpcServiceBuilder {
         return builder.build();
     }
 
-    private void addMethod(@NonNull final ServerServiceDefinition.Builder builder,
-                           @NonNull final String serviceName,
-                           @NonNull final String methodName,
-                           @NonNull final MethodBase method) {
+    private void addMethod(
+            @NonNull final ServerServiceDefinition.Builder builder,
+            @NonNull final String serviceName,
+            @NonNull final String methodName,
+            @NonNull final MethodBase method) {
         final var methodDescriptor = MethodDescriptor.<BufferedData, BufferedData>newBuilder()
                 .setType(MethodType.UNARY)
                 .setFullMethodName(serviceName + "/" + methodName)
@@ -205,7 +206,7 @@ final class GrpcServiceBuilder {
         }
     }
 
-    private static final class ListenerImpl extends Listener<BufferedData> implements StreamObserver<BufferedData>  {
+    private static final class ListenerImpl extends Listener<BufferedData> implements StreamObserver<BufferedData> {
         private final ServerCall<BufferedData, BufferedData> call;
         private final MethodBase method;
 
@@ -214,14 +215,14 @@ final class GrpcServiceBuilder {
             this.method = method;
         }
 
-        /*-------------------------------------------------------------------------------------------------------------
+        /*
          *
          * Implementation of Listener
          *
          * These methods are callbacks based on events coming from the CLIENT. When the connection is ready, we have
          * to indicate that we're expecting a message. Netty will then call `onMessage` to give us the message.
          *
-         ------------------------------------------------------------------------------------------------------------*/
+         */
 
         @Override
         public void onReady() {
@@ -240,14 +241,14 @@ final class GrpcServiceBuilder {
             method.invoke(requestBuffer, this);
         }
 
-        /*-------------------------------------------------------------------------------------------------------------
+        /*
          *
          * Implementation of StreamObserver
          *
          * The StreamObserver is the callback interface for the SERVER to send messages back to the CLIENT. It will be
          * called by the MethodBase.
          *
-         ------------------------------------------------------------------------------------------------------------*/
+         */
 
         @Override
         public void onNext(BufferedData responseBuffer) {

@@ -47,9 +47,6 @@ import io.grpc.MethodDescriptor.Marshaller;
 import io.grpc.MethodDescriptor.MethodType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.ClientCalls;
-import org.assertj.core.api.Assumptions;
-import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.AfterEach;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,6 +58,9 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import org.assertj.core.api.Assumptions;
+import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.AfterEach;
 
 /**
  * Base class for testing the gRPC handling engine. This implementation is not suitable for general integration testing,
@@ -115,13 +115,19 @@ abstract class GrpcTestBase extends TestBase {
 
     /**
      */
-    protected void registerQuery(@NonNull final String methodName, @NonNull final IngestWorkflow ingestWorkflow, @NonNull final QueryWorkflow queryWorkflow) {
+    protected void registerQuery(
+            @NonNull final String methodName,
+            @NonNull final IngestWorkflow ingestWorkflow,
+            @NonNull final QueryWorkflow queryWorkflow) {
         this.queryMethodName = methodName;
         this.queryWorkflow = queryWorkflow;
         this.ingestWorkflow = ingestWorkflow;
     }
 
-    protected void registerIngest(@NonNull final String methodName, @NonNull final IngestWorkflow ingestWorkflow, @NonNull final QueryWorkflow queryWorkflow) {
+    protected void registerIngest(
+            @NonNull final String methodName,
+            @NonNull final IngestWorkflow ingestWorkflow,
+            @NonNull final QueryWorkflow queryWorkflow) {
         this.ingestMethodName = methodName;
         this.ingestWorkflow = ingestWorkflow;
         this.queryWorkflow = queryWorkflow;
@@ -154,7 +160,8 @@ abstract class GrpcTestBase extends TestBase {
                             set.add(new RpcMethodDefinition<>(queryMethodName, Query.class, Response.class));
                         }
                         if (ingestMethodName != null) {
-                            set.add(new RpcMethodDefinition<>(ingestMethodName, Transaction.class, TransactionResponse.class));
+                            set.add(new RpcMethodDefinition<>(
+                                    ingestMethodName, Transaction.class, TransactionResponse.class));
                         }
                         return set;
                     }
@@ -180,7 +187,7 @@ abstract class GrpcTestBase extends TestBase {
     @AfterEach
     void tearDown() {
         if (this.grpcServer != null) this.grpcServer.stop();
-        grpcServer =  null;
+        grpcServer = null;
         ingestWorkflow = NOOP_INGEST_WORKFLOW;
         queryWorkflow = NOOP_QUERY_WORKFLOW;
         queryMethodName = null;
@@ -198,7 +205,9 @@ abstract class GrpcTestBase extends TestBase {
      * @return The response from the service function.
      */
     protected String send(final String service, final String function, final String payload) {
-        return ClientCalls.blockingUnaryCall(channel, MethodDescriptor.<String, String>newBuilder()
+        return ClientCalls.blockingUnaryCall(
+                channel,
+                MethodDescriptor.<String, String>newBuilder()
                         .setFullMethodName(service + "/" + function)
                         .setRequestMarshaller(new StringMarshaller())
                         .setResponseMarshaller(new StringMarshaller())
