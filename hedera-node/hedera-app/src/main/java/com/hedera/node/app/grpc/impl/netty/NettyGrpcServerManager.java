@@ -35,6 +35,8 @@ import io.grpc.ServerServiceDefinition;
 import io.grpc.ServiceDescriptor;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.handler.ssl.SslContextBuilder;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -139,7 +141,6 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         final var nettyConfig = configProvider.getConfiguration().getConfigData(NettyConfig.class);
         final var startRetries = nettyConfig.startRetries();
         final var startRetryIntervalMs = nettyConfig.startRetryIntervalMs();
-
         final var grpcConfig = configProvider.getConfiguration().getConfigData(GrpcConfig.class);
         final var port = grpcConfig.port();
 
@@ -211,6 +212,9 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                 }
                 logger.info("Still trying to start server... {} tries remaining", remaining);
 
+                // Wait a bit before retrying. In the FUTURE we should consider removing this functionality, it isn't
+                // clear that it is actually helpful, and it complicates the code. But for now we will keep it so as
+                // to remain as compatible as we can with previous non-modular releases.
                 try {
                     Thread.sleep(startRetryIntervalMs);
                 } catch (InterruptedException ie) {
@@ -247,22 +251,43 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
         }
     }
 
-    public NettyServerBuilder builderFor(final int port, NettyConfig config) {
-        return NettyServerBuilder.forPort(port)
-                .keepAliveTime(config.prodKeepAliveTime(), TimeUnit.SECONDS)
-                .permitKeepAliveTime(config.prodKeepAliveTime(), TimeUnit.SECONDS)
-                .keepAliveTimeout(config.prodKeepAliveTimeout(), TimeUnit.SECONDS)
-                .maxConnectionAge(config.prodMaxConnectionAge(), TimeUnit.SECONDS)
-                .maxConnectionAgeGrace(config.prodMaxConnectionAgeGrace(), TimeUnit.SECONDS)
-                .maxConnectionIdle(config.prodMaxConnectionIdle(), TimeUnit.SECONDS)
-                .maxConcurrentCallsPerConnection(config.prodMaxConcurrentCalls())
-                .flowControlWindow(config.prodFlowControlWindow())
-                .directExecutor();
-        //                .channelType(EpollServerSocketChannel.class)
-        //                .bossEventLoopGroup(new EpollEventLoopGroup())
-        //                .workerEventLoopGroup(new EpollEventLoopGroup());
+    /** Utility for setting up various shared configuration settings between both servers */
+    private NettyServerBuilder builderFor(final int port, NettyConfig config) {
+        NettyServerBuilder builder;
+        try {
+            builder = NettyServerBuilder.forPort(port)
+                    .keepAliveTime(config.prodKeepAliveTime(), TimeUnit.SECONDS)
+                    .permitKeepAliveTime(config.prodKeepAliveTime(), TimeUnit.SECONDS)
+                    .keepAliveTimeout(config.prodKeepAliveTimeout(), TimeUnit.SECONDS)
+                    .maxConnectionAge(config.prodMaxConnectionAge(), TimeUnit.SECONDS)
+                    .maxConnectionAgeGrace(config.prodMaxConnectionAgeGrace(), TimeUnit.SECONDS)
+                    .maxConnectionIdle(config.prodMaxConnectionIdle(), TimeUnit.SECONDS)
+                    .maxConcurrentCallsPerConnection(config.prodMaxConcurrentCalls())
+                    .flowControlWindow(config.prodFlowControlWindow())
+                    .directExecutor()
+                    .channelType(EpollServerSocketChannel.class)
+                    .bossEventLoopGroup(new EpollEventLoopGroup())
+                    .workerEventLoopGroup(new EpollEventLoopGroup());
+            logger.info("Using Epoll for gRPC server");
+        } catch (final Throwable ignored) {
+            // If we can't use Epoll, then just use NIO
+            logger.info("Epoll not available, using NIO");
+            builder = NettyServerBuilder.forPort(port)
+                    .keepAliveTime(config.prodKeepAliveTime(), TimeUnit.SECONDS)
+                    .permitKeepAliveTime(config.prodKeepAliveTime(), TimeUnit.SECONDS)
+                    .keepAliveTimeout(config.prodKeepAliveTimeout(), TimeUnit.SECONDS)
+                    .maxConnectionAge(config.prodMaxConnectionAge(), TimeUnit.SECONDS)
+                    .maxConnectionAgeGrace(config.prodMaxConnectionAgeGrace(), TimeUnit.SECONDS)
+                    .maxConnectionIdle(config.prodMaxConnectionIdle(), TimeUnit.SECONDS)
+                    .maxConcurrentCallsPerConnection(config.prodMaxConcurrentCalls())
+                    .flowControlWindow(config.prodFlowControlWindow())
+                    .directExecutor();
+        }
+
+        return builder;
     }
 
+    /** Utility for setting up TLS configuration */
     private void configureTls(final NettyServerBuilder builder, NettyConfig config)
             throws SSLException, FileNotFoundException {
         final var tlsCrtPath = config.tlsCrtPath();

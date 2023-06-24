@@ -148,7 +148,7 @@ class GrpcTransactionTest extends GrpcTestBase {
     // NoopMarshaller to return INVALID_ARGUMENT by throwing a StatusRuntimeException. But the gRPC
     // library we are using DOES NOT special case for StatusRuntimeException thrown in the marshaller,
     // and always returns UNKNOWN to the client. So there is really no other response code possible
-    // for this case. TODO This is no longer true, I CAN return INVALID_ARGUMENT if I wanted to.
+    // for this case. (FUTURE: This is no longer true, I CAN return INVALID_ARGUMENT if I wanted to)
     @Test
     @DisplayName("Sending way too many bytes leads to UNKNOWN")
     void sendTooMuchData() {
