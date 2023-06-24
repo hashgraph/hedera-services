@@ -87,7 +87,7 @@ class FileSystemDeleteTest extends FileTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStoreImpl(writableStates);
-        final var configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        final var configuration = HederaTestConfigBuilder.createConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(configuration);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
     }
@@ -139,7 +139,7 @@ class FileSystemDeleteTest extends FileTestBase {
     void fileIsNotSystemFile() {
         given(handleContext.body()).willReturn(newFileDeleteTxn());
 
-        final var existingFile = writableStore.get(fileId.fileNum());
+        final var existingFile = writableStore.get(fileId);
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
@@ -153,7 +153,7 @@ class FileSystemDeleteTest extends FileTestBase {
     @DisplayName("Fails handle if keys doesn't exist on file system to be deleted")
     void keysDoesntExist() {
         given(handleContext.body()).willReturn(newSystemDeleteTxn());
-        fileSystem = new File(fileSystemfileId.fileNum(), expirationTime, null, Bytes.wrap(contents), memo, false);
+        fileSystem = new File(fileSystemfileId, expirationTime, null, Bytes.wrap(contents), memo, false);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
@@ -170,7 +170,7 @@ class FileSystemDeleteTest extends FileTestBase {
     void handleWorksAsExpectedWhenExpirationTimeIsExpired() {
         given(handleContext.body()).willReturn(newSystemDeleteTxn());
 
-        final var existingFile = writableStore.get(fileId.fileNum());
+        final var existingFile = writableStore.get(fileId);
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
@@ -179,7 +179,7 @@ class FileSystemDeleteTest extends FileTestBase {
         lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() + 100);
         subject.handle(handleContext);
 
-        final var changedFile = writableStore.get(fileSystemfileId.fileNum());
+        final var changedFile = writableStore.get(fileSystemfileId);
 
         assertEquals(changedFile, Optional.empty());
     }
@@ -189,7 +189,7 @@ class FileSystemDeleteTest extends FileTestBase {
     void handleWorksAsExpectedWhenExpirationTimeIsNotExpired() {
         given(handleContext.body()).willReturn(newSystemDeleteTxn());
 
-        final var existingFile = writableStore.get(fileSystemfileId.fileNum());
+        final var existingFile = writableStore.get(fileSystemfileId);
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
@@ -198,7 +198,7 @@ class FileSystemDeleteTest extends FileTestBase {
         lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() - 100);
         subject.handle(handleContext);
 
-        final var changedFile = writableStore.get(fileSystemfileId.fileNum());
+        final var changedFile = writableStore.get(fileSystemfileId);
 
         assertTrue(changedFile.isPresent());
         assertTrue(changedFile.get().deleted());

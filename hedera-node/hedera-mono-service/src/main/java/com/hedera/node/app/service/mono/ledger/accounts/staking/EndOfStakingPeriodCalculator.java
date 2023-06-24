@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
@@ -37,7 +36,10 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -54,6 +56,9 @@ import org.apache.logging.log4j.Logger;
 public class EndOfStakingPeriodCalculator {
 
     private static final Logger log = LogManager.getLogger(EndOfStakingPeriodCalculator.class);
+
+    // The exact choice of precision will not have a large effect on the per-hbar reward rate
+    private static final MathContext MATH_CONTEXT = new MathContext(8, RoundingMode.DOWN);
     public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO = "End of staking period calculation record";
     private static final SideEffectsTracker NO_OTHER_SIDE_EFFECTS = new SideEffectsTracker();
 
@@ -96,8 +101,8 @@ public class EndOfStakingPeriodCalculator {
 
         final var curNetworkCtx = networkCtx.get();
         final var curStakingInfos = stakingInfos.get();
-        final var rewardRate = rewardRateForEndingPeriod();
         final var totalStakedRewardStart = curNetworkCtx.getTotalStakedRewardStart();
+        final var rewardRate = rewardRateForEndingPeriod(totalStakedRewardStart);
         // The tinybars earned per hbar for stakers who were staked to a node whose total
         // stakedRewardStart for the ending period was in the range [minStake, maxStake]
         final var perHbarRate = totalStakedRewardStart < HBARS_TO_TINYBARS
@@ -281,13 +286,36 @@ public class EndOfStakingPeriodCalculator {
         }
     }
 
+    /**
+     * Given the amount that was staked to reward at the start of the period that is now ending, returns
+     * the effective per-hbar reward rate for the period.
+     *
+     * @param stakedToReward the amount of hbars staked to reward at the start of the ending period
+     * @return the effective per-hbar reward rate for the period
+     */
     @VisibleForTesting
-    long rewardRateForEndingPeriod() {
-        return Math.max(
-                0,
-                Math.min(
-                        rewardsBalance() - networkCtx.get().pendingRewards(),
-                        properties.getLongProperty(STAKING_REWARD_RATE)));
+    long rewardRateForEndingPeriod(final long stakedToReward) {
+        // The balance left in 0.0.800 (in tinybars), after paying all rewards earned so far
+        final var unreservedBalance = rewardsBalance() - networkCtx.get().pendingRewards();
+
+        final var thresholdBalance = dynamicProperties.stakingRewardBalanceThreshold();
+        // A number proportional to the unreserved balance, from 0 for empty, up to 1 at the threshold
+        final var balanceRatio = thresholdBalance > 0L
+                ? BigDecimal.valueOf(Math.min(unreservedBalance, thresholdBalance))
+                        .divide(BigDecimal.valueOf(thresholdBalance), MATH_CONTEXT)
+                : BigDecimal.ONE;
+
+        // When 0.0.800 has a high balance, and less than maxStakeRewarded is staked for reward, then
+        // effectiveRewardRate == rewardRate. But as the balance drops or the staking increases, then
+        // it can be the case that effectiveRewardRate < rewardRate
+        return BigDecimal.valueOf(dynamicProperties.stakingRewardRate())
+                .multiply(balanceRatio.multiply(BigDecimal.valueOf(2).subtract(balanceRatio)))
+                .multiply(
+                        dynamicProperties.maxStakeRewarded() >= stakedToReward
+                                ? BigDecimal.ONE
+                                : BigDecimal.valueOf(dynamicProperties.maxStakeRewarded())
+                                        .divide(BigDecimal.valueOf(stakedToReward), MATH_CONTEXT))
+                .longValue();
     }
 
     @VisibleForTesting

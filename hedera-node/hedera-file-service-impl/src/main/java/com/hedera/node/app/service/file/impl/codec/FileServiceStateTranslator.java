@@ -63,11 +63,17 @@ public class FileServiceStateTranslator {
         requireNonNull(metadata);
         requireNonNull(fileID);
         final var fileBuilder = new File.Builder();
-        fileBuilder.fileNumber(fileID.getFileNum());
+        fileBuilder.fileId(new FileID.Builder()
+                .fileNum(fileID.getFileNum())
+                .realmNum(fileID.getRealmNum())
+                .shardNum(fileID.getShardNum()));
         fileBuilder.expirationTime(metadata.getExpiry());
-        if (metadata.getWacl() != null)
+        if (metadata.getWacl() != null) {
             fileBuilder.keys(PbjConverter.asPbjKey(metadata.getWacl()).keyList());
-        if (data != null) fileBuilder.contents(Bytes.wrap(data));
+        }
+        if (data != null) {
+            fileBuilder.contents(Bytes.wrap(data));
+        }
         fileBuilder.memo(metadata.getMemo());
         fileBuilder.deleted(metadata.isDeleted());
 

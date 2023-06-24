@@ -61,20 +61,10 @@ public final class Uninterruptable {
      */
     public static void retryIfInterrupted(@NonNull final InterruptableRunnable action) {
         Objects.requireNonNull(action, "action");
-        boolean finished = false;
-        boolean interrupted = false;
-        while (!finished) {
-            try {
-                action.run();
-                finished = true;
-            } catch (final InterruptedException e) {
-                interrupted = true;
-            }
-        }
-
-        if (interrupted) {
-            Thread.currentThread().interrupt();
-        }
+        retryIfInterrupted(() -> {
+            action.run();
+            return null;
+        });
     }
 
     /**
@@ -143,11 +133,12 @@ public final class Uninterruptable {
      */
     public static void abortAndLogIfInterrupted(
             @NonNull final InterruptableRunnable action, @NonNull final String errorMessage) {
-        Objects.requireNonNull(action, "action");
+        Objects.requireNonNull(action, "action must not be null");
+        Objects.requireNonNull(errorMessage, "errorMessage must not be null");
         try {
             action.run();
         } catch (final InterruptedException e) {
-            logger.error(EXCEPTION.getMarker(), errorMessage);
+            logger.error(EXCEPTION.getMarker(), errorMessage, e);
             Thread.currentThread().interrupt();
         }
     }
@@ -170,14 +161,13 @@ public final class Uninterruptable {
             @NonNull final CheckedConsumer<T, InterruptedException> consumer,
             @Nullable final T object,
             @NonNull final String errorMessage) {
-
-        Objects.requireNonNull(consumer, "consumer");
-        Objects.requireNonNull(errorMessage, "errorMessage");
+        Objects.requireNonNull(consumer, "consumer must not be null");
+        Objects.requireNonNull(errorMessage, "errorMessage must not be null");
 
         try {
             consumer.accept(object);
         } catch (final InterruptedException e) {
-            logger.error(EXCEPTION.getMarker(), errorMessage);
+            logger.error(EXCEPTION.getMarker(), errorMessage, e);
             Thread.currentThread().interrupt();
         }
     }
@@ -199,13 +189,15 @@ public final class Uninterruptable {
      */
     public static void abortAndThrowIfInterrupted(
             @NonNull final InterruptableRunnable action, @NonNull final String errorMessage) {
-        Objects.requireNonNull(action, "action");
+        Objects.requireNonNull(action, "action must not be null");
+        Objects.requireNonNull(errorMessage, "errorMessage must not be null");
+
         try {
             action.run();
         } catch (final InterruptedException e) {
-            logger.error(EXCEPTION.getMarker(), errorMessage);
+            logger.error(EXCEPTION.getMarker(), errorMessage, e);
             Thread.currentThread().interrupt();
-            throw new IllegalStateException(errorMessage);
+            throw new IllegalStateException(errorMessage, e);
         }
     }
 
@@ -228,15 +220,15 @@ public final class Uninterruptable {
             @Nullable final T object,
             @NonNull final String errorMessage) {
 
-        Objects.requireNonNull(consumer, "consumer");
-        Objects.requireNonNull(errorMessage, "errorMessage");
+        Objects.requireNonNull(consumer, "consumer must not be null");
+        Objects.requireNonNull(errorMessage, "errorMessage must not be null");
 
         try {
             consumer.accept(object);
         } catch (final InterruptedException e) {
-            logger.error(EXCEPTION.getMarker(), errorMessage);
+            logger.error(EXCEPTION.getMarker(), errorMessage, e);
             Thread.currentThread().interrupt();
-            throw new IllegalStateException(errorMessage);
+            throw new IllegalStateException(errorMessage, e);
         }
     }
 
@@ -246,6 +238,7 @@ public final class Uninterruptable {
      * @param duration the amount of time to sleep
      */
     public static void tryToSleep(@NonNull final Duration duration) {
+        Objects.requireNonNull(duration, "duration must not be null");
         abortIfInterrupted(() -> MILLISECONDS.sleep(duration.toMillis()));
     }
 }

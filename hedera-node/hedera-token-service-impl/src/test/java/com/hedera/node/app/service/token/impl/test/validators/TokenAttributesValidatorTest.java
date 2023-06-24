@@ -51,7 +51,7 @@ class TokenAttributesValidatorTest {
     @BeforeEach
     void setUp() {
         subject = new TokenAttributesValidator();
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxTokenNameUtf8Bytes", "10")
                 .withValue("tokens.maxSymbolUtf8Bytes", "10")
                 .getOrCreateConfig();
@@ -97,7 +97,7 @@ class TokenAttributesValidatorTest {
 
     @Test
     void failsForZeroLengthName() {
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxTokenNameUtf8Bytes", "10")
                 .getOrCreateConfig();
         final var tokensConfig = configuration.getConfigData(TokensConfig.class);
@@ -125,7 +125,7 @@ class TokenAttributesValidatorTest {
 
     @Test
     void validatesKeys() {
-        assertThatThrownBy(() -> subject.checkKeys(
+        assertThatThrownBy(() -> subject.validateTokenKeys(
                         true,
                         Key.DEFAULT,
                         true,
@@ -142,7 +142,7 @@ class TokenAttributesValidatorTest {
                         A_COMPLEX_KEY))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_ADMIN_KEY));
-        assertThatThrownBy(() -> subject.checkKeys(
+        assertThatThrownBy(() -> subject.validateTokenKeys(
                         true,
                         A_COMPLEX_KEY,
                         true,
@@ -159,7 +159,7 @@ class TokenAttributesValidatorTest {
                         A_COMPLEX_KEY))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_KYC_KEY));
-        assertThatThrownBy(() -> subject.checkKeys(
+        assertThatThrownBy(() -> subject.validateTokenKeys(
                         true,
                         A_COMPLEX_KEY,
                         true,
@@ -176,7 +176,7 @@ class TokenAttributesValidatorTest {
                         A_COMPLEX_KEY))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_WIPE_KEY));
-        assertThatThrownBy(() -> subject.checkKeys(
+        assertThatThrownBy(() -> subject.validateTokenKeys(
                         true,
                         A_COMPLEX_KEY,
                         true,
@@ -193,7 +193,7 @@ class TokenAttributesValidatorTest {
                         A_COMPLEX_KEY))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_SUPPLY_KEY));
-        assertThatThrownBy(() -> subject.checkKeys(
+        assertThatThrownBy(() -> subject.validateTokenKeys(
                         true,
                         A_COMPLEX_KEY,
                         true,
@@ -210,7 +210,7 @@ class TokenAttributesValidatorTest {
                         A_COMPLEX_KEY))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_FREEZE_KEY));
-        assertThatThrownBy(() -> subject.checkKeys(
+        assertThatThrownBy(() -> subject.validateTokenKeys(
                         true,
                         A_COMPLEX_KEY,
                         true,
@@ -227,7 +227,7 @@ class TokenAttributesValidatorTest {
                         A_COMPLEX_KEY))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_CUSTOM_FEE_SCHEDULE_KEY));
-        assertThatThrownBy(() -> subject.checkKeys(
+        assertThatThrownBy(() -> subject.validateTokenKeys(
                         true,
                         A_COMPLEX_KEY,
                         true,
@@ -249,7 +249,7 @@ class TokenAttributesValidatorTest {
     @Test
     void validatesKeysWithNulls() {
         assertThatNoException()
-                .isThrownBy(() -> subject.checkKeys(
+                .isThrownBy(() -> subject.validateTokenKeys(
                         false,
                         Key.DEFAULT,
                         true,
@@ -265,7 +265,7 @@ class TokenAttributesValidatorTest {
                         true,
                         A_COMPLEX_KEY));
         assertThatNoException()
-                .isThrownBy(() -> subject.checkKeys(
+                .isThrownBy(() -> subject.validateTokenKeys(
                         true,
                         A_COMPLEX_KEY,
                         false,
@@ -281,7 +281,7 @@ class TokenAttributesValidatorTest {
                         true,
                         A_COMPLEX_KEY));
         assertThatNoException()
-                .isThrownBy(() -> subject.checkKeys(
+                .isThrownBy(() -> subject.validateTokenKeys(
                         true,
                         A_COMPLEX_KEY,
                         true,
@@ -297,7 +297,7 @@ class TokenAttributesValidatorTest {
                         true,
                         A_COMPLEX_KEY));
         assertThatNoException()
-                .isThrownBy(() -> subject.checkKeys(
+                .isThrownBy(() -> subject.validateTokenKeys(
                         true,
                         A_COMPLEX_KEY,
                         true,
@@ -313,7 +313,7 @@ class TokenAttributesValidatorTest {
                         true,
                         A_COMPLEX_KEY));
         assertThatNoException()
-                .isThrownBy(() -> subject.checkKeys(
+                .isThrownBy(() -> subject.validateTokenKeys(
                         true,
                         A_COMPLEX_KEY,
                         true,
@@ -329,7 +329,7 @@ class TokenAttributesValidatorTest {
                         true,
                         A_COMPLEX_KEY));
         assertThatNoException()
-                .isThrownBy(() -> subject.checkKeys(
+                .isThrownBy(() -> subject.validateTokenKeys(
                         true,
                         A_COMPLEX_KEY,
                         true,
@@ -345,7 +345,7 @@ class TokenAttributesValidatorTest {
                         true,
                         A_COMPLEX_KEY));
         assertThatNoException()
-                .isThrownBy(() -> subject.checkKeys(
+                .isThrownBy(() -> subject.validateTokenKeys(
                         true,
                         A_COMPLEX_KEY,
                         true,

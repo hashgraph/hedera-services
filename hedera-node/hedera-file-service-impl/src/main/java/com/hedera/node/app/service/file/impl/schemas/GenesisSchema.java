@@ -42,6 +42,7 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -78,10 +79,11 @@ public class GenesisSchema extends Schema {
         logger.debug("Migrating genesis state");
         final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
         final var filesConfig = ctx.configuration().getConfigData(FilesConfig.class);
+        final var hederaConfig = ctx.configuration().getConfigData(HederaConfig.class);
         final WritableKVState<FileID, File> files = ctx.newStates().get(BLOBS_KEY);
         createGenesisAddressBook(bootstrapConfig, filesConfig, files);
         createGenesisNodeDetails(bootstrapConfig, filesConfig, files);
-        createGenesisFeeSchedule(bootstrapConfig, filesConfig, files);
+        createGenesisFeeSchedule(bootstrapConfig, hederaConfig, filesConfig, files);
         createGenesisExchangeRate(bootstrapConfig, filesConfig, files);
         createGenesisNetworkProperties(bootstrapConfig, filesConfig, files);
         createGenesisHapiPermissions(bootstrapConfig, filesConfig, files);
@@ -116,6 +118,7 @@ public class GenesisSchema extends Schema {
 
     private void createGenesisFeeSchedule(
             @NonNull final BootstrapConfig bootstrapConfig,
+            @NonNull final HederaConfig hederaConfig,
             @NonNull final FilesConfig filesConfig,
             @NonNull final WritableKVState<FileID, File> files) {
         logger.debug("Creating genesis fee schedule file");
@@ -124,14 +127,18 @@ public class GenesisSchema extends Schema {
             final var feeScheduleJsonBytes = requireNonNull(in).readAllBytes();
             final var feeSchedule = parseFeeSchedules(feeScheduleJsonBytes);
             final var fileNum = filesConfig.feeSchedules();
-            final var fileId = FileID.newBuilder().fileNum(fileNum).build();
+            final var fileId = FileID.newBuilder()
+                    .fileNum(fileNum)
+                    .shardNum(hederaConfig.shard())
+                    .realmNum(hederaConfig.realm())
+                    .build(); // default to shard=0, realm=0
             final var masterKey =
                     Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
             files.put(
                     fileId,
                     File.newBuilder()
                             .contents(CurrentAndNextFeeSchedule.PROTOBUF.toBytes(feeSchedule))
-                            .fileNumber(fileNum)
+                            .fileId(fileId)
                             .keys(KeyList.newBuilder().keys(masterKey))
                             .expirationTime(bootstrapConfig.systemEntityExpiry())
                             .build());
@@ -241,14 +248,14 @@ public class GenesisSchema extends Schema {
                 .build();
 
         final var fileNum = filesConfig.exchangeRates();
-        final var fileId = FileID.newBuilder().fileNum(fileNum).build();
+        final var fileId = FileID.newBuilder().fileNum(fileNum).build(); // default to shard=0, realm=0
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
         files.put(
                 fileId,
                 File.newBuilder()
                         .contents(ExchangeRateSet.PROTOBUF.toBytes(exchangeRateSet))
-                        .fileNumber(fileNum)
+                        .fileId(fileId)
                         .keys(KeyList.newBuilder().keys(masterKey))
                         .expirationTime(bootstrapConfig.systemEntityExpiry())
                         .build());

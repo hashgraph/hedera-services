@@ -1,4 +1,4 @@
-module com.hedera.services.cli {
+module com.hedera.node.services.cli {
     exports com.hedera.services.cli;
     exports com.hedera.services.cli.sign;
 
