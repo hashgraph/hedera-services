@@ -21,6 +21,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -146,6 +147,11 @@ public class MonoHandleContext implements HandleContext {
     @Override
     @NonNull
     public <C> C writableStore(@NonNull Class<C> storeInterface) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public FeeCalculator feeCalculator() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 

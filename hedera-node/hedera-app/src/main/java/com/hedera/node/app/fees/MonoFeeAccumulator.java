@@ -17,17 +17,23 @@
 package com.hedera.node.app.fees;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -62,13 +68,18 @@ public class MonoFeeAccumulator implements FeeAccumulator {
     @Override
     @NonNull
     public FeeObject computePayment(
-            @NonNull final ReadableStoreFactory readableStoreFactory,
-            @NonNull final HederaFunctionality functionality,
             @NonNull final Query query,
-            @NonNull final Timestamp now) {
+            @NonNull final Instant now,
+            @NonNull final ReadableStoreFactory readableStoreFactory) {
+        final HederaFunctionality functionality;
+        try {
+            functionality = HapiUtils.functionOf(query);
+        } catch (UnknownHederaFunctionality e) {
+            throw new IllegalStateException("Attempt to calculate fee for invalid query", e);
+        }
         final var monoFunctionality = PbjConverter.fromPbj(functionality);
         final var monoQuery = PbjConverter.fromPbj(query);
-        final var monoNow = PbjConverter.fromPbj(now);
+        final var monoNow = PbjConverter.fromPbj(HapiUtils.asTimestamp(now));
         final var usagePrices = resourceCosts.defaultPricesGiven(monoFunctionality, monoNow);
         // Special case here because when running with workflows enabled, the underlying
         // states will have PBJ Topic's as keys, not MerkleTopic's; so the mono-service
@@ -79,5 +90,18 @@ public class MonoFeeAccumulator implements FeeAccumulator {
             return feeCalculator.computeFromQueryResourceUsage(usage, usagePrices, monoNow);
         }
         return feeCalculator.computePayment(monoQuery, usagePrices, stateView.get(), monoNow, new HashMap<>());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public FeeObject computePayment(
+            @NonNull final Transaction transaction, @NonNull final Key payerKey, @NonNull final Instant now) {
+        final var accessor = SignedTxnAccessor.uncheckedFrom(transaction);
+        final var monoPayerKey =
+                PbjConverter.fromPbjKey(payerKey).orElseThrow(() -> new IllegalArgumentException("Invalid payer key"));
+        return feeCalculator.computeFee(accessor, (JKey) monoPayerKey, stateView.get(), now);
     }
 }

@@ -22,10 +22,15 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.FeeAccumulator;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -59,8 +64,10 @@ public class HandleContextImpl implements HandleContext {
     private final TransactionDispatcher dispatcher;
     private final ServiceScopeLookup serviceScopeLookup;
     private final WritableStoreFactory writableStoreFactory;
+    private final FeeAccumulator feeAccumulator;
 
     private ReadableStoreFactory readableStoreFactory;
+    private FeeCalculator feeCalculator;
 
     /**
      * Constructs a {@link HandleContextImpl}.
@@ -74,6 +81,7 @@ public class HandleContextImpl implements HandleContext {
      * @param checker The {@link TransactionChecker} used to check dispatched transaction
      * @param dispatcher The {@link TransactionDispatcher} used to dispatch child transactions
      * @param serviceScopeLookup The {@link ServiceScopeLookup} used to look up the scope of a service
+     * @param feeAccumulator The {@link FeeAccumulator} used to calculate fees
      */
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,
@@ -84,7 +92,8 @@ public class HandleContextImpl implements HandleContext {
             @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final TransactionChecker checker,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final ServiceScopeLookup serviceScopeLookup) {
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final FeeAccumulator feeAccumulator) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.category = requireNonNull(category, "category must not be null");
         this.recordBuilder = requireNonNull(recordBuilder, "recordBuilder must not be null");
@@ -94,6 +103,7 @@ public class HandleContextImpl implements HandleContext {
         this.checker = requireNonNull(checker, "checker must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
+        this.feeAccumulator = requireNonNull(feeAccumulator, "feeAccumulator must not be null");
 
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
         this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
@@ -167,6 +177,26 @@ public class HandleContextImpl implements HandleContext {
     public <C> C writableStore(@NonNull final Class<C> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
         return writableStoreFactory.getStore(storeInterface);
+    }
+
+    @Override
+    public FeeCalculator feeCalculator() {
+        if (feeCalculator == null) {
+            feeCalculator = new FeeCalculator() {
+                @NonNull
+                @Override
+                public FeeObject computePayment(@NonNull Query query) {
+                    return feeAccumulator.computePayment(query, consensusNow(), readableStoreFactory);
+                }
+
+                @NonNull
+                @Override
+                public FeeObject computePayment(@NonNull Transaction transaction, @NonNull Key payerKey) {
+                    return feeAccumulator.computePayment(transaction, payerKey, consensusNow());
+                }
+            };
+        }
+        return feeCalculator;
     }
 
     @Override
@@ -271,7 +301,8 @@ public class HandleContextImpl implements HandleContext {
                 recordListBuilder,
                 checker,
                 dispatcher,
-                serviceScopeLookup);
+                serviceScopeLookup,
+                feeAccumulator);
 
         try {
             dispatcher.dispatchHandle(childContext);
