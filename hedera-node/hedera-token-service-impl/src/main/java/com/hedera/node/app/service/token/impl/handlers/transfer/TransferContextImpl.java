@@ -26,7 +26,6 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -88,9 +87,7 @@ public class TransferContextImpl implements TransferContext {
     }
 
     @Override
-    public void chargeExtraFeeToHapiPayer(final long amount) {
-
-    }
+    public void chargeExtraFeeToHapiPayer(final long amount) {}
 
     @Override
     public void chargeCustomFeeTo(final AccountID payer, final long amount, final TokenID denomination) {}

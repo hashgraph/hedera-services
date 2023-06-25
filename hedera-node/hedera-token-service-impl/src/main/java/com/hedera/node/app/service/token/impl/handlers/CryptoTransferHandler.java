@@ -102,11 +102,10 @@ public class CryptoTransferHandler implements TransactionHandler {
         // This step populates resolved aliases and number of auto creations in the transferContext,
         // which is used by subsequent steps and throttling
         ensureExistenceOfAliasesOrCreate(op, transferContext);
-        if(transferContext.numOfLazyCreations() > 0) {
+        if (transferContext.numOfLazyCreations() > 0) {
             final var config = context.configuration().getConfigData(LazyCreationConfig.class);
             validateTrue(config.enabled(), NOT_SUPPORTED);
         }
-
 
         final var steps = decomposeIntoSteps(op);
         for (final var step : steps) {
@@ -116,8 +115,7 @@ public class CryptoTransferHandler implements TransactionHandler {
     }
 
     private void ensureExistenceOfAliasesOrCreate(
-            @NonNull final CryptoTransferTransactionBody op,
-            @NonNull final TransferContextImpl transferContext) {
+            @NonNull final CryptoTransferTransactionBody op, @NonNull final TransferContextImpl transferContext) {
         final var ensureAliasExistence = new EnsureAliasesStep(op);
         ensureAliasExistence.doIn(transferContext);
     }
@@ -146,14 +144,13 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var chargeCustomFees = new ChargeCustomFeeStep(op);
         final var associateTokenRecepients = new AssociateTokenRecepientsStep(op);
         final var assessHbarTransfers = new ZeroSumHbarChangesStep(op);
-        final var assessFungibleTokenTransfers = new ZeroSumFungibleTransfersStep(op );
+        final var assessFungibleTokenTransfers = new ZeroSumFungibleTransfersStep(op);
         final var changeNftOwners = new ChangeNFTOwnersStep(op);
 
         steps.add(assessHbarTransfers);
         steps.add(chargeCustomFees);
         steps.add(associateTokenRecepients);
         steps.add(assessFungibleTokenTransfers);
-
 
         return steps;
     }

@@ -45,20 +45,16 @@ import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.UnaryOperator;
-
 import javax.inject.Inject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class AutoAccountCreationStep {
     private static final Logger log = LogManager.getLogger(AutoAccountCreationStep.class);
@@ -71,8 +67,7 @@ public class AutoAccountCreationStep {
 
     @Inject
     public AutoAccountCreationStep(
-            @NonNull final WritableAccountStore accountStore,
-            @NonNull final HandleContext handleContext) {
+            @NonNull final WritableAccountStore accountStore, @NonNull final HandleContext handleContext) {
         this.handleContext = handleContext;
         this.accountStore = accountStore;
     }
@@ -117,7 +112,7 @@ public class AutoAccountCreationStep {
         if (isAliasEVMAddress) {
             fee += getLazyCreationFinalizationFee();
         }
-        //TODO: Check if payer has enough balance to pay for the fee
+        // TODO: Check if payer has enough balance to pay for the fee
 
         final var childRecord = handleContext.dispatchRemovableChildTransaction(
                 syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class);
@@ -145,7 +140,7 @@ public class AutoAccountCreationStep {
         final var payerAccount = accountStore.get(topLevelPayer);
         validateTrue(payerAccount != null, PAYER_ACCOUNT_NOT_FOUND);
         final var txn = Transaction.newBuilder().body(syntheticCreation.build()).build();
-        final var fees =  handleContext.feeCalculator().computePayment(txn, payerAccount.key());
+        final var fees = handleContext.feeCalculator().computePayment(txn, payerAccount.key());
         return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 

@@ -57,7 +57,6 @@ public interface TransferContext {
      */
     Map<Bytes, AccountID> resolutions();
 
-
     // Throw if the fee cannot be charged for whatever reason
     void chargeExtraFeeToHapiPayer(long amount);
 

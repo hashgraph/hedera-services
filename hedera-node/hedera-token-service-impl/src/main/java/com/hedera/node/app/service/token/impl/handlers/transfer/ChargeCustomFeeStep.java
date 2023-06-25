@@ -5,17 +5,26 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
+
+import static com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeResult.ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED;
+import static com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeResult.ASSESSMENT_FINISHED;
+import static com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeResult.FRACTIONAL_FEE_ASSESSMENT_PENDING;
+import static com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeResult.ROYALTY_FEE_ASSESSMENT_PENDING;
+import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
+import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -29,26 +38,17 @@ import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeResult.ASSESSMENT_FAILED_WITH_TOO_MANY_ADJUSTMENTS_REQUIRED;
-import static com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeResult.ASSESSMENT_FINISHED;
-import static com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeResult.FRACTIONAL_FEE_ASSESSMENT_PENDING;
-import static com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeResult.ROYALTY_FEE_ASSESSMENT_PENDING;
-import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
-import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
-public class ChargeCustomFeeStep implements TransferStep{
+public class ChargeCustomFeeStep implements TransferStep {
     private final CryptoTransferTransactionBody op;
+
     public ChargeCustomFeeStep(final CryptoTransferTransactionBody op) {
         this.op = op;
     }
+
     @Override
     public Set<Key> authorizingKeysIn(final TransferContext transferContext) {
         return Set.of();
