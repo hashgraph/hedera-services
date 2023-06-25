@@ -16,10 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -30,31 +28,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class ZeroSumHbarChangesStep implements TransferStep {
+public class ApproveHbarDebitStep implements TransferStep {
     final CryptoTransferTransactionBody op;
 
-    public ZeroSumHbarChangesStep(final CryptoTransferTransactionBody op) {
+    public ApproveHbarDebitStep(final CryptoTransferTransactionBody op) {
         this.op = op;
     }
 
     @Override
     public Set<Key> authorizingKeysIn(final TransferContext transferContext) {
-        return Set.of();
+        return null;
     }
 
     @Override
     public void doIn(final TransferContext transferContext) {
         final var accountStore = transferContext.getHandleContext().writableStore(WritableAccountStore.class);
-        final Map<AccountID, Long> netHbarTransfers = new HashMap<>();
         final Map<AccountID, Long> allowanceTransfers = new HashMap<>();
         for (var aa : op.transfers().accountAmounts()) {
-            if (!netHbarTransfers.containsKey(aa.accountID())) {
-                netHbarTransfers.put(aa.accountID(), aa.amount());
-            } else {
-                var existingChange = netHbarTransfers.get(aa.accountID());
-                netHbarTransfers.put(aa.accountID(), existingChange + aa.amount());
-            }
-
             if (aa.isApproval() && aa.amount() < 0) {
                 if (!allowanceTransfers.containsKey(aa.accountID())) {
                     allowanceTransfers.put(aa.accountID(), aa.amount());
@@ -63,16 +53,6 @@ public class ZeroSumHbarChangesStep implements TransferStep {
                     allowanceTransfers.put(aa.accountID(), existingChange + aa.amount());
                 }
             }
-        }
-
-        for (final var accountId : netHbarTransfers.keySet()) {
-            final var account = getIfUsable(
-                    accountId, accountStore, transferContext.getHandleContext().expiryValidator(), INVALID_ACCOUNT_ID);
-            final var currentBalance = account.tinybarBalance();
-            final var newBalance = currentBalance + netHbarTransfers.get(account);
-            validateTrue(newBalance >= 0, INSUFFICIENT_ACCOUNT_BALANCE);
-            final var copy = account.copyBuilder();
-            accountStore.put(copy.tinybarBalance(newBalance).build());
         }
 
         for (final var accountId : allowanceTransfers.keySet()) {

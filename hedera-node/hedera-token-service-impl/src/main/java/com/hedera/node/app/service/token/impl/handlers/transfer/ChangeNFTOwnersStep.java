@@ -33,7 +33,6 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
-import java.util.LinkedHashMap;
 import java.util.Set;
 
 public class ChangeNFTOwnersStep extends BaseTokenHandler implements TransferStep {
@@ -50,7 +49,6 @@ public class ChangeNFTOwnersStep extends BaseTokenHandler implements TransferSte
 
     @Override
     public void doIn(final TransferContext transferContext) {
-        final var ownershipChanges = new LinkedHashMap<>();
         final var handleContext = transferContext.getHandleContext();
         final var nftStore = handleContext.writableStore(WritableNftStore.class);
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
@@ -97,6 +95,7 @@ public class ChangeNFTOwnersStep extends BaseTokenHandler implements TransferSte
                         accountStore,
                         tokenRelStore,
                         nftStore);
+                if (oc.isApproval()) {}
             }
         }
     }

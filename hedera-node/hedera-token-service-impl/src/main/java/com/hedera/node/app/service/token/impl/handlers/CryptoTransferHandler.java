@@ -39,6 +39,9 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
+import com.hedera.node.app.service.token.impl.handlers.transfer.ApproveFungibleTokenDebitStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.ApproveHbarDebitStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.ApproveNFTOwnersStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ChangeNFTOwnersStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ChargeCustomFeeStep;
@@ -143,14 +146,27 @@ public class CryptoTransferHandler implements TransactionHandler {
         final List<TransferStep> steps = new ArrayList<>();
         final var chargeCustomFees = new ChargeCustomFeeStep(op);
         final var associateTokenRecepients = new AssociateTokenRecepientsStep(op);
-        final var assessHbarTransfers = new ZeroSumHbarChangesStep(op);
-        final var assessFungibleTokenTransfers = new ZeroSumFungibleTransfersStep(op);
-        final var changeNftOwners = new ChangeNFTOwnersStep(op);
 
-        steps.add(assessHbarTransfers);
+        final var assessHbarTransfers = new ZeroSumHbarChangesStep(op);
+        final var approveHbarDebitStep = new ApproveHbarDebitStep(op);
+
+        final var assessFungibleTokenTransfers = new ZeroSumFungibleTransfersStep(op);
+        final var approveTokenTransfers = new ApproveFungibleTokenDebitStep(op);
+
+        final var changeNftOwners = new ChangeNFTOwnersStep(op);
+        final var approveNFTTransfers = new ApproveNFTOwnersStep(op);
+
         steps.add(chargeCustomFees);
         steps.add(associateTokenRecepients);
+
+        steps.add(assessHbarTransfers);
+        steps.add(approveHbarDebitStep);
+
         steps.add(assessFungibleTokenTransfers);
+        steps.add(approveTokenTransfers);
+
+        steps.add(changeNftOwners);
+        steps.add(approveNFTTransfers);
 
         return steps;
     }

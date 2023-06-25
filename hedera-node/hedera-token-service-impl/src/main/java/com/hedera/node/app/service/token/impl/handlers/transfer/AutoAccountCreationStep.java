@@ -74,6 +74,9 @@ public class AutoAccountCreationStep {
 
     public long create(@NonNull final Bytes alias, final boolean isByTokenTransfer) {
         final var accountsConfig = handleContext.configuration().getConfigData(AccountsConfig.class);
+        final var autoCreationConfig = handleContext.configuration().getConfigData(AutoCreationConfig.class);
+        validateTrue(autoCreationConfig.enabled(), NOT_SUPPORTED);
+
         validateTrue(
                 accountStore.sizeOfAccountState() + 1 <= accountsConfig.maxNumber(),
                 ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);

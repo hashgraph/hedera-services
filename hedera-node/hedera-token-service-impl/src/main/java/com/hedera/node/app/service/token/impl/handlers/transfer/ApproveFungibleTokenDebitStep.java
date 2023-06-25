@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
@@ -33,15 +32,15 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements TransferStep {
+public class ApproveFungibleTokenDebitStep extends BaseTokenHandler implements TransferStep {
     final CryptoTransferTransactionBody op;
 
-    public ZeroSumFungibleTransfersStep(final CryptoTransferTransactionBody op) {
+    public ApproveFungibleTokenDebitStep(final CryptoTransferTransactionBody op) {
         this.op = op;
     }
 
@@ -56,7 +55,6 @@ public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements Tr
         final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
-        final Map<EntityNumPair, Long> aggregatedFungibleTokenChanges = new LinkedHashMap<>();
         final Map<EntityNumPair, Long> allowanceTransfers = new HashMap<>();
         for (var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.token();
@@ -75,37 +73,41 @@ public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements Tr
 
                 final var amount = aa.amount();
                 final var pair = EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum());
-                if (!aggregatedFungibleTokenChanges.containsKey(pair)) {
-                    aggregatedFungibleTokenChanges.put(pair, amount);
-                } else {
-                    var existingChange = aggregatedFungibleTokenChanges.get(pair);
-                    aggregatedFungibleTokenChanges.put(pair, existingChange + amount);
-                }
-
                 if (aa.isApproval() && aa.amount() < 0) {
                     if (!allowanceTransfers.containsKey(pair)) {
-                        allowanceTransfers.put(pair, aa.amount());
+                        allowanceTransfers.put(pair, amount);
                     } else {
                         var existingChange = allowanceTransfers.get(pair);
-                        allowanceTransfers.put(pair, existingChange + aa.amount());
+                        allowanceTransfers.put(pair, existingChange + amount);
                     }
                 }
             }
         }
-        for (final var atPair : aggregatedFungibleTokenChanges.keySet()) {
-            final var rel = getIfUsable(
-                    asAccount(atPair.getHiOrderAsLong()), asToken(atPair.getLowOrderAsLong()), tokenRelStore);
-            final var account = accountStore.get(asAccount(atPair.getHiOrderAsLong()));
-            final var amount = aggregatedFungibleTokenChanges.get(atPair);
-            adjustBalance(rel, account, amount, tokenRelStore, accountStore);
-        }
 
         for (final var atPair : allowanceTransfers.keySet()) {
-            final var rel = getIfUsable(
-                    asAccount(atPair.getHiOrderAsLong()), asToken(atPair.getLowOrderAsLong()), tokenRelStore);
-            final var account = accountStore.get(asAccount(atPair.getHiOrderAsLong()));
-            final var amount = allowanceTransfers.get(atPair);
-            adjustAllowance(rel, account, amount, tokenRelStore, accountStore);
+            final var accountId = asAccount(atPair.getHiOrderAsLong());
+            final var tokenId = asToken(atPair.getLowOrderAsLong());
+
+            final var account = getIfUsable(
+                    accountId, accountStore, transferContext.getHandleContext().expiryValidator(), INVALID_ACCOUNT_ID);
+            final var accountCopy = account.copyBuilder();
+
+            final var tokenAllowances = account.tokenAllowancesOrElse(Collections.emptyList());
+            for (int i = 0; i < tokenAllowances.size(); i++) {
+                final var allowance = tokenAllowances.get(i);
+                final var allowanceCopy = allowance.copyBuilder();
+                if (allowance.spenderNum() == accountId.accountNum() && allowance.tokenNum() == tokenId.tokenNum()) {
+                    final var newAllowance = allowance.amount() + allowanceTransfers.get(account);
+                    allowanceCopy.amount(newAllowance);
+                    if (newAllowance != 0) {
+                        tokenAllowances.set(i, allowanceCopy.build());
+                    } else {
+                        tokenAllowances.remove(i);
+                    }
+                }
+            }
+            accountCopy.tokenAllowances(tokenAllowances);
+            accountStore.put(accountCopy.build());
         }
     }
 }

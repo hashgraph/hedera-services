@@ -42,7 +42,7 @@ public class AssociateTokenRecepientsStep extends BaseTokenHandler implements Tr
 
     @Override
     public Set<Key> authorizingKeysIn(final TransferContext transferContext) {
-        return null;
+        return Set.of();
     }
 
     @Override
