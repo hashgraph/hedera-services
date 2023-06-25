@@ -39,9 +39,14 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.ChangeNFTOwnersStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.ChargeCustomFeeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.ZeroSumFungibleTransfersStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.ZeroSumHbarChangesStep;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -140,7 +145,18 @@ public class CryptoTransferHandler implements TransactionHandler {
     private List<TransferStep> decomposeIntoSteps(
             final CryptoTransferTransactionBody op, final TransferContextImpl transferContext) {
         final List<TransferStep> steps = new ArrayList<>();
-        final var chargeCustomFees = new ChargeCustomFeesStep(op);
+        final var assessHbarTransfers = new ZeroSumHbarChangesStep(op);
+        final var chargeCustomFees = new ChargeCustomFeeStep(op);
+        final var associateTokenRecepients = new AssociateTokenRecepientsStep(op);
+        final var assessFungibleTokenTransfers = new ZeroSumFungibleTransfersStep(op);
+        final var changeNftOwners = new ChangeNFTOwnersStep(op);
+
+        steps.add(assessHbarTransfers);
+        steps.add(chargeCustomFees);
+        steps.add(associateTokenRecepients);
+        steps.add(assessFungibleTokenTransfers);
+
+
         return steps;
     }
 

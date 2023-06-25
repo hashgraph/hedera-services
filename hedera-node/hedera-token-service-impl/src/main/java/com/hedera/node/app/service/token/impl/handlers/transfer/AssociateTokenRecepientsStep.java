@@ -22,9 +22,9 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 
 import java.util.Set;
 
-public class ChangeNFTOwnersStep implements TransferStep{
+public class AssociateTokenRecepientsStep implements TransferStep{
     private final CryptoTransferTransactionBody op;
-    public ChangeNFTOwnersStep(final CryptoTransferTransactionBody op) {
+    public AssociateTokenRecepientsStep(final CryptoTransferTransactionBody op) {
         this.op = op;
     }
 
