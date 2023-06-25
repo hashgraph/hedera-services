@@ -17,25 +17,30 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.node.app.service.mono.ledger.BalanceChange;
-import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 
-import java.util.ArrayList;
+import static java.util.Collections.emptyList;
+
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
+
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.hedera.node.app.service.mono.ledger.BalanceChange.changingFtUnits;
-import static com.hedera.node.app.service.mono.ledger.BalanceChange.changingNftOwnership;
-import static java.util.Collections.emptyList;
-
-public class ZeroSumFungibleTransfersStep implements TransferStep{
+public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements TransferStep{
     final CryptoTransferTransactionBody op;
     public ZeroSumFungibleTransfersStep(final CryptoTransferTransactionBody op) {
         this.op = op;
@@ -47,40 +52,41 @@ public class ZeroSumFungibleTransfersStep implements TransferStep{
 
     @Override
     public void doIn(final TransferContext transferContext) {
-        final var Map<EntityNumPair, Long> aggregatedFungibleTokenChanges = new LinkedHashMap<>();
+        final var handleContext = transferContext.getHandleContext();
+        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
+        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
+        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
+        final Map<EntityNumPair, Long> aggregatedFungibleTokenChanges = new LinkedHashMap<>();
         for (var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.token();
-            boolean decimalsSet = false;
-            for (var aa : xfers.transfersOrElse(emptyList())) {
-                var currChange = changingFtUnits(tokenId, grpcTokenId, aa, payerID);
-                // set only for the first balance change of the token with expectedDecimals
-                if (xfers.hasExpectedDecimals() && !decimalsSet) {
-                    currChange.setExpectedDecimals(xfers.getExpectedDecimals().getValue());
-                    decimalsSet = true;
-                }
-
-                var tokenAndAccountId =
-                        new ImpliedTransfersMarshal.TokenAndAccountID(EntityNum.fromLong(tokenId.num()), currChange.accountId());
-
-                if (!aggregatedFungibleTokenChanges.containsKey(tokenAndAccountId)) {
-                    aggregatedFungibleTokenChanges.put(tokenAndAccountId, currChange);
-                } else {
-                    var existingChange = aggregatedFungibleTokenChanges.get(tokenAndAccountId);
-                    existingChange.aggregateUnits(currChange.getAggregatedUnits());
-                    existingChange.addAllowanceUnits(currChange.getAllowanceUnits());
-                }
+            final var token = getIfUsable(tokenId, tokenStore);
+            validateTrue(token.tokenType().equals(TokenType.FUNGIBLE_COMMON), ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
+            
+            if (xfers.hasExpectedDecimals()) {
+                validateTrue(token.decimals() == xfers.expectedDecimals().intValue(), UNEXPECTED_TOKEN_DECIMALS);
             }
-            changes.addAll(aggregatedFungibleTokenChanges.values());
 
-            for (var oc : xfers.getNftTransfersList()) {
-                if (ownershipChanges == null) {
-                    ownershipChanges = new ArrayList<>();
+            for (var aa : xfers.transfersOrElse(emptyList())) {
+                final var accountId = aa.accountID();
+                getIfUsable(accountId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
+
+                final var amount = aa.amount();
+                final var pair = EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum());
+                if (!aggregatedFungibleTokenChanges.containsKey(pair)) {
+                    aggregatedFungibleTokenChanges.put(pair, amount);
+                } else {
+                    var existingChange = aggregatedFungibleTokenChanges.get(pair);
+                    aggregatedFungibleTokenChanges.put(pair, existingChange + amount);
+                    // TODO: allowance units ?
                 }
-                ownershipChanges.add(changingNftOwnership(tokenId, grpcTokenId, oc, payerID));
             }
         }
-        if (ownershipChanges != null) {
-            changes.addAll(ownershipChanges);
+        for(final var atPair : aggregatedFungibleTokenChanges.keySet()) {
+            final var rel = getIfUsable(asAccount(atPair.getHiOrderAsLong()),
+                    asToken(atPair.getLowOrderAsLong()), tokenRelStore);
+            final var account = accountStore.get(asAccount(atPair.getHiOrderAsLong()));
+            final var amount = aggregatedFungibleTokenChanges.get(atPair);
+            adjustBalance(rel, account, amount, tokenRelStore, accountStore);
         }
     }
 }

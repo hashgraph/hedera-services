@@ -108,7 +108,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         }
 
 
-        final var steps = decomposeIntoSteps(op, transferContext);
+        final var steps = decomposeIntoSteps(op);
         for (final var step : steps) {
             // Apply all changes to the handleContext's States
             step.doIn(transferContext);
@@ -139,16 +139,14 @@ public class CryptoTransferHandler implements TransactionHandler {
      *        'c' = updates an existing BalanceChange
      *        'o' = causes a side effect not represented as BalanceChange
      * @param op The crypto transfer transaction body
-     * @param transferContext The transfer context
      * @return A list of steps to execute
      */
-    private List<TransferStep> decomposeIntoSteps(
-            final CryptoTransferTransactionBody op, final TransferContextImpl transferContext) {
+    private List<TransferStep> decomposeIntoSteps(final CryptoTransferTransactionBody op) {
         final List<TransferStep> steps = new ArrayList<>();
-        final var assessHbarTransfers = new ZeroSumHbarChangesStep(op);
         final var chargeCustomFees = new ChargeCustomFeeStep(op);
         final var associateTokenRecepients = new AssociateTokenRecepientsStep(op);
-        final var assessFungibleTokenTransfers = new ZeroSumFungibleTransfersStep(op);
+        final var assessHbarTransfers = new ZeroSumHbarChangesStep(op);
+        final var assessFungibleTokenTransfers = new ZeroSumFungibleTransfersStep(op );
         final var changeNftOwners = new ChangeNFTOwnersStep(op);
 
         steps.add(assessHbarTransfers);

@@ -350,6 +350,48 @@ public class BaseTokenHandler {
         tokenRelStore.put(newTokenRel);
     }
 
+    /**
+     * Adjust fungible balances for the given token relationship and account by the given adjustment.
+     * NOTE: This updates account's numOfPositiveBalances and puts to modifications on state.
+     * @param tokenRel token relationship
+     * @param account account to be adjusted
+     * @param adjustment adjustment to be made
+     * @param tokenRelStore token relationship store
+     * @param accountStore account store
+     */
+    protected void adjustBalance(
+            @NonNull final TokenRelation tokenRel,
+            @NonNull final Account account,
+            final long adjustment,
+            @NonNull final WritableTokenRelationStore tokenRelStore,
+            @NonNull final WritableAccountStore accountStore) {
+        requireNonNull(tokenRel);
+        requireNonNull(account);
+        requireNonNull(tokenRelStore);
+        requireNonNull(accountStore);
+
+        final var originalBalance = tokenRel.balance();
+        final var newBalance = originalBalance + adjustment;
+        validateTrue(newBalance >= 0, INSUFFICIENT_TOKEN_BALANCE);
+
+        final var copyRel = tokenRel.copyBuilder();
+        tokenRelStore.put(copyRel.balance(newBalance).build());
+
+        var numPositiveBalances = account.numberPositiveBalances();
+        // If the original balance is zero, then the receiving account's numPositiveBalances has to
+        // be increased
+        // and if the newBalance is zero, then the sending account's numPositiveBalances has to be
+        // decreased
+        if (newBalance == 0 && adjustment < 0) {
+            numPositiveBalances--;
+        } else if (originalBalance == 0 && adjustment > 0) {
+            numPositiveBalances++;
+        }
+        final var copyAccount = account.copyBuilder();
+        accountStore.put(copyAccount.numberPositiveBalances(numPositiveBalances).build());
+        // TODO: Need to track units change in record in finalize method for this
+    }
+
     /* ------------------------- Helper functions ------------------------- */
 
     /**

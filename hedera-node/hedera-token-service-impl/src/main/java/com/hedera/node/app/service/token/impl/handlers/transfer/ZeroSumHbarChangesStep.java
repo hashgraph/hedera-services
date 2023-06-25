@@ -34,19 +34,17 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 public class ZeroSumHbarChangesStep implements TransferStep{
     final CryptoTransferTransactionBody op;
-    final WritableAccountStore accountStore;
-    public ZeroSumHbarChangesStep(final CryptoTransferTransactionBody op,
-                                  WritableAccountStore accountStore) {
+    public ZeroSumHbarChangesStep(final CryptoTransferTransactionBody op) {
         this.op = op;
-        this.accountStore = accountStore;
     }
     @Override
     public Set<Key> authorizingKeysIn(final TransferContext transferContext) {
-        return null;
+        return Set.of();
     }
 
     @Override
     public void doIn(final TransferContext transferContext) {
+        final var accountStore = transferContext.getHandleContext().writableStore(WritableAccountStore.class);
         final Map<AccountID, Long> netHbarTransfers = new HashMap<>();
         for (var aa : op.transfers().accountAmounts()) {
             if (!netHbarTransfers.containsKey(aa.accountID())) {
