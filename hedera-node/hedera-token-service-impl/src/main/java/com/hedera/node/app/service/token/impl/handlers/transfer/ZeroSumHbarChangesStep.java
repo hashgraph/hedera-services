@@ -19,12 +19,18 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 public class ZeroSumHbarChangesStep implements TransferStep{
     final CryptoTransferTransactionBody op;
@@ -53,17 +59,14 @@ public class ZeroSumHbarChangesStep implements TransferStep{
         }
 
         for(final var accountId : netHbarTransfers.keySet()) {
-            final var account = accountStore.get(accountId);
+            final var account = getIfUsable(accountId, accountStore,
+                    transferContext.getHandleContext().expiryValidator(),
+                    INVALID_ACCOUNT_ID);
             final var currentBalance = account.tinybarBalance();
             final var newBalance = currentBalance + netHbarTransfers.get(account);
-
-            account.adjustBalance(account, netHbarTransfers.get(account));
-            final var change = netHbarTransfers.get(account);
-            if(change != 0) {
-                transferContext.netTransfers().put(account, change);
-            }
+            validateTrue(newBalance >= 0, INSUFFICIENT_ACCOUNT_BALANCE);
+            final var copy = account.copyBuilder();
+            accountStore.put(copy.tinybarBalance(newBalance).build());
         }
-
-
     }
 }

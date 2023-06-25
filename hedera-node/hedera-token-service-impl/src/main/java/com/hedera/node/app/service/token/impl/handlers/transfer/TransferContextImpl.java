@@ -29,6 +29,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * The context of a token transfer. This is used to pass information between the steps of the transfer.
+ */
 public class TransferContextImpl implements TransferContext {
     private WritableAccountStore accountStore;
     private WritableTokenStore tokenStore;
@@ -74,12 +77,19 @@ public class TransferContextImpl implements TransferContext {
     public void debitHbarViaApproval(final AccountID owner, final long amount) {}
 
     @Override
+    public HandleContext getHandleContext() {
+        return context;
+    }
+
+    @Override
     public int numOfAutoCreations() {
         return numAutoCreations;
     }
 
     @Override
-    public void chargeExtraFeeToHapiPayer(final long amount) {}
+    public void chargeExtraFeeToHapiPayer(final long amount) {
+
+    }
 
     @Override
     public void chargeCustomFeeTo(final AccountID payer, final long amount, final TokenID denomination) {}

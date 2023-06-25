@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.LAZY_MEMO;
@@ -27,16 +28,15 @@ import static com.hedera.node.app.spi.key.KeyUtils.ECDSA_SECP256K1_COMPRESSED_KE
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
-import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
@@ -45,26 +45,23 @@ import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.UnaryOperator;
+
 import javax.inject.Inject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class AutoAccountCreationStep {
     private static final Logger log = LogManager.getLogger(AutoAccountCreationStep.class);
-    private FeeCalculator feeCalculator;
-
-    @Inject
-    AutoAccountCreationStep(@NonNull final FeeCalculator feeCalculator) {
-        this.feeCalculator = feeCalculator;
-    }
-
     private WritableAccountStore accountStore;
     private HandleContext handleContext;
     // checks tokenAliasMap if the change consists an alias that is already used in previous
@@ -72,13 +69,15 @@ public class AutoAccountCreationStep {
     // maxAutoAssociations needed on auto created account
     protected final Map<Bytes, Set<TokenID>> tokenAliasMap = new HashMap<>();
 
+    @Inject
     public AutoAccountCreationStep(
-            @NonNull final WritableAccountStore accountStore, @NonNull final HandleContext handleContext) {
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final HandleContext handleContext) {
         this.handleContext = handleContext;
         this.accountStore = accountStore;
     }
 
-    public AccountID create(@NonNull final Bytes alias, final boolean isByTokenTransfer) {
+    public long create(@NonNull final Bytes alias, final boolean isByTokenTransfer) {
         final var accountsConfig = handleContext.configuration().getConfigData(AccountsConfig.class);
         validateTrue(
                 accountStore.sizeOfAccountState() + 1 <= accountsConfig.maxNumber(),
@@ -114,13 +113,14 @@ public class AutoAccountCreationStep {
             memo = AUTO_MEMO;
         }
 
-        final var childRecord = handleContext.dispatchRemovableChildTransaction(
-                syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class);
-
         var fee = autoCreationFeeFor(syntheticCreation);
         if (isAliasEVMAddress) {
             fee += getLazyCreationFinalizationFee();
         }
+        //TODO: Check if payer has enough balance to pay for the fee
+
+        final var childRecord = handleContext.dispatchRemovableChildTransaction(
+                syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class);
 
         if (!isAliasEVMAddress) {
             final var key = asKeyFromAlias(alias);
@@ -131,7 +131,7 @@ public class AutoAccountCreationStep {
         }
         // TODO: Not sure if fee should be set here
         //        childRecord.transactionFee(fee);
-        return null;
+        return fee;
     }
 
     private long getLazyCreationFinalizationFee() {
@@ -141,9 +141,12 @@ public class AutoAccountCreationStep {
     }
 
     private long autoCreationFeeFor(final TransactionBody.Builder syntheticCreation) {
-        // TODO: Not sure how to use feeCalculator here. Need to be done for auto-creation
-        // to work correctly
-        return 100L;
+        final var topLevelPayer = handleContext.body().transactionIDOrThrow().accountIDOrThrow();
+        final var payerAccount = accountStore.get(topLevelPayer);
+        validateTrue(payerAccount != null, PAYER_ACCOUNT_NOT_FOUND);
+        final var txn = Transaction.newBuilder().body(syntheticCreation.build()).build();
+        final var fees =  handleContext.feeCalculator().computePayment(txn, payerAccount.key());
+        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 
     public TransactionBody.Builder createHollowAccount(final Bytes alias, final long balance) {

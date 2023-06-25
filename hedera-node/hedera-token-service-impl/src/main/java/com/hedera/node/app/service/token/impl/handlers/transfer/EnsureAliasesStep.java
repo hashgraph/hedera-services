@@ -37,8 +37,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * This step ensures that all aliases are resolved to their canonical forms. The resolved forms are
- * stored in TransferContext and then used in the rest of the transfer logic.
+ * This is step1 in CryptoTransfer logic. This ensures that all aliases are resolved to their canonical forms.
+ * The resolved forms are stored in TransferContext and then used in the rest of the transfer logic.
  */
 public class EnsureAliasesStep implements TransferStep {
     final CryptoTransferTransactionBody op;
