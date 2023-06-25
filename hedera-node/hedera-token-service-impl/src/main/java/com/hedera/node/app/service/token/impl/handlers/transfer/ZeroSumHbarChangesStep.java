@@ -25,7 +25,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -46,22 +45,12 @@ public class ZeroSumHbarChangesStep implements TransferStep {
     public void doIn(final TransferContext transferContext) {
         final var accountStore = transferContext.getHandleContext().writableStore(WritableAccountStore.class);
         final Map<AccountID, Long> netHbarTransfers = new HashMap<>();
-        final Map<AccountID, Long> allowanceTransfers = new HashMap<>();
         for (var aa : op.transfers().accountAmounts()) {
             if (!netHbarTransfers.containsKey(aa.accountID())) {
                 netHbarTransfers.put(aa.accountID(), aa.amount());
             } else {
                 var existingChange = netHbarTransfers.get(aa.accountID());
                 netHbarTransfers.put(aa.accountID(), existingChange + aa.amount());
-            }
-
-            if (aa.isApproval() && aa.amount() < 0) {
-                if (!allowanceTransfers.containsKey(aa.accountID())) {
-                    allowanceTransfers.put(aa.accountID(), aa.amount());
-                } else {
-                    var existingChange = allowanceTransfers.get(aa.accountID());
-                    allowanceTransfers.put(aa.accountID(), existingChange + aa.amount());
-                }
             }
         }
 
@@ -73,29 +62,6 @@ public class ZeroSumHbarChangesStep implements TransferStep {
             validateTrue(newBalance >= 0, INSUFFICIENT_ACCOUNT_BALANCE);
             final var copy = account.copyBuilder();
             accountStore.put(copy.tinybarBalance(newBalance).build());
-        }
-
-        for (final var accountId : allowanceTransfers.keySet()) {
-            final var account = getIfUsable(
-                    accountId, accountStore, transferContext.getHandleContext().expiryValidator(), INVALID_ACCOUNT_ID);
-            final var accountCopy = account.copyBuilder();
-
-            final var cryptoAllowances = account.cryptoAllowancesOrElse(Collections.emptyList());
-            for (int i = 0; i < cryptoAllowances.size(); i++) {
-                final var allowance = cryptoAllowances.get(i);
-                final var allowanceCopy = allowance.copyBuilder();
-                if (allowance.spenderNum() == accountId.accountNum()) {
-                    final var newAllowance = allowance.amount() + allowanceTransfers.get(account);
-                    allowanceCopy.amount(newAllowance);
-                    if (newAllowance != 0) {
-                        cryptoAllowances.set(i, allowanceCopy.build());
-                    } else {
-                        cryptoAllowances.remove(i);
-                    }
-                }
-            }
-            accountCopy.cryptoAllowances(cryptoAllowances);
-            accountStore.put(accountCopy.build());
         }
     }
 }

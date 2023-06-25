@@ -33,7 +33,6 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -57,7 +56,6 @@ public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements Tr
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
         final Map<EntityNumPair, Long> aggregatedFungibleTokenChanges = new LinkedHashMap<>();
-        final Map<EntityNumPair, Long> allowanceTransfers = new HashMap<>();
         for (var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.token();
             final var token = getIfUsable(tokenId, tokenStore);
@@ -81,15 +79,6 @@ public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements Tr
                     var existingChange = aggregatedFungibleTokenChanges.get(pair);
                     aggregatedFungibleTokenChanges.put(pair, existingChange + amount);
                 }
-
-                if (aa.isApproval() && aa.amount() < 0) {
-                    if (!allowanceTransfers.containsKey(pair)) {
-                        allowanceTransfers.put(pair, aa.amount());
-                    } else {
-                        var existingChange = allowanceTransfers.get(pair);
-                        allowanceTransfers.put(pair, existingChange + aa.amount());
-                    }
-                }
             }
         }
         for (final var atPair : aggregatedFungibleTokenChanges.keySet()) {
@@ -98,14 +87,6 @@ public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements Tr
             final var account = accountStore.get(asAccount(atPair.getHiOrderAsLong()));
             final var amount = aggregatedFungibleTokenChanges.get(atPair);
             adjustBalance(rel, account, amount, tokenRelStore, accountStore);
-        }
-
-        for (final var atPair : allowanceTransfers.keySet()) {
-            final var rel = getIfUsable(
-                    asAccount(atPair.getHiOrderAsLong()), asToken(atPair.getLowOrderAsLong()), tokenRelStore);
-            final var account = accountStore.get(asAccount(atPair.getHiOrderAsLong()));
-            final var amount = allowanceTransfers.get(atPair);
-            adjustAllowance(rel, account, amount, tokenRelStore, accountStore);
         }
     }
 }
