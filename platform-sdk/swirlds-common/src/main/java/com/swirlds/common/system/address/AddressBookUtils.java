@@ -30,12 +30,20 @@ import java.util.Objects;
 /**
  * A utility class for AddressBook functionality.
  * <p>
- * Format for the config.txt address book: keywork "address" followed by a comma, followed by the node ID, followed by a
- * comma, followed by the nickname, followed by a comma, followed by the self name, followed by a comma, followed by the
- * weight, followed by a comma, followed by the internal IP address, followed by a comma, followed by the internal port,
- * followed by a comma, followed by the external IP address, followed by a comma, followed by the external port,
- * followed by a comma, followed by the memo.  The memo is optional.  Each address line is terminated by a newline ("\n"
- * or "\r\n") or end of file.
+ * Each line in the config.txt address book contains the following comma separated elements: config.txt address book: keywork "address" followed by a comma, followed by the node ID, followed by a
+ * <ul>
+ *     <li>the keyword "address"</li>
+ *     <li>node id</li>
+ *     <li>nickname</li>
+ *     <li>self name</li>
+ *     <li>weight</li>
+ *     <li>internal IP address</li>
+ *     <li>internal port</li>
+ *     <li>external IP address</li>
+ *     <li>external port</li>
+ *     <li>memo field (optional)</li>
+ * </ul>
+ * Example: `address, 22, node22, node22, 1, 10.10.11.12, 5060, 212.25.36.123, 5060, memo for node 22`
  */
 public class AddressBookUtils {
 
