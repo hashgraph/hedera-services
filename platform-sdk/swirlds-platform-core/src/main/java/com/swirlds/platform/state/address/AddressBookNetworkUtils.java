@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.state.address;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.network.Network;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,19 +42,17 @@ public final class AddressBookNetworkUtils {
      *
      * @param address the address to check
      * @return true if the address is local to the machine, false otherwise
+     * @throws IllegalStateException if the locality of the address cannot be determined.
      */
     public static boolean isLocal(@NonNull final Address address) {
         Objects.requireNonNull(address, "The address must not be null.");
         try {
             return Network.isOwn(InetAddress.getByAddress(address.getAddressInternalIpv4()));
-        } catch (final Exception e) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "Error while checking if address {} for node {} is local",
-                    address.getAddressInternalIpv4(),
-                    address.getNodeId(),
+        } catch (final SocketException | UnknownHostException e) {
+            throw new IllegalStateException(
+                    "Not able to determine locality of address [%s] for node [%s]"
+                            .formatted(address.getAddressInternalIpv4(), address.getNodeId()),
                     e);
-            return false;
         }
     }
 
@@ -66,7 +64,8 @@ public final class AddressBookNetworkUtils {
      * @param addressBook the address book to check
      * @return the number of local addresses
      */
-    public static int getLocalAddressCount(final AddressBook addressBook) {
+    public static int getLocalAddressCount(@NonNull final AddressBook addressBook) {
+        Objects.requireNonNull(addressBook, "The addressBook must not be null.");
         int count = 0;
         for (final Address address : addressBook) {
             if (isLocal(address)) {

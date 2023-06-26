@@ -34,8 +34,8 @@ import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -159,7 +159,7 @@ public class OutboundConnectionCreator {
     private byte[] getConnectAddressIpv4(final Address from, final Address to) {
         final boolean fromIsLocal = AddressBookNetworkUtils.isLocal(from);
         final boolean toIsLocal = AddressBookNetworkUtils.isLocal(to);
-        if (fromIsLocal && toIsLocal && settings.useLoopbackIp()) {
+        if (fromIsLocal && toIsLocal && socketConfig.useLoopbackIp()) {
             return LOCALHOST;
         } else if (to.isLocalTo(from)) {
             return to.getAddressInternalIpv4();
