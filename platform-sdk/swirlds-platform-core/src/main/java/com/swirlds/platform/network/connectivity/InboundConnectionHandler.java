@@ -20,13 +20,13 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
 import static com.swirlds.logging.LogMarker.SYNC;
 
+import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.ByteConstants;
@@ -34,6 +34,7 @@ import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.SocketConnection;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Objects;
@@ -50,23 +51,23 @@ public class InboundConnectionHandler {
     private final NodeId selfId;
     private final AddressBook addressBook;
     private final InterruptableConsumer<Connection> newConnectionConsumer;
-    private final SettingsProvider settings;
+    private final SocketConfig socketConfig;
     private final boolean doVersionCheck;
     private final SoftwareVersion softwareVersion;
 
     public InboundConnectionHandler(
-            final ConnectionTracker connectionTracker,
-            final NodeId selfId,
-            final AddressBook addressBook,
-            final InterruptableConsumer<Connection> newConnectionConsumer,
-            final SettingsProvider settings,
+            @NonNull final ConnectionTracker connectionTracker,
+            @NonNull final NodeId selfId,
+            @NonNull final AddressBook addressBook,
+            @NonNull final InterruptableConsumer<Connection> newConnectionConsumer,
+            @NonNull final SocketConfig socketConfig,
             final boolean doVersionCheck,
-            final SoftwareVersion softwareVersion) {
-        this.connectionTracker = connectionTracker;
-        this.selfId = selfId;
-        this.addressBook = addressBook;
-        this.newConnectionConsumer = newConnectionConsumer;
-        this.settings = settings;
+            @NonNull final SoftwareVersion softwareVersion) {
+        this.connectionTracker = Objects.requireNonNull(connectionTracker);
+        this.selfId = Objects.requireNonNull(selfId);
+        this.addressBook = Objects.requireNonNull(addressBook);
+        this.newConnectionConsumer = Objects.requireNonNull(newConnectionConsumer);
+        this.socketConfig = Objects.requireNonNull(socketConfig);
         this.doVersionCheck = doVersionCheck;
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
     }
@@ -83,8 +84,8 @@ public class InboundConnectionHandler {
         long acceptTime = 0;
         try {
             acceptTime = System.currentTimeMillis();
-            clientSocket.setTcpNoDelay(settings.isTcpNoDelay());
-            clientSocket.setSoTimeout(settings.getTimeoutSyncClientSocket());
+            clientSocket.setTcpNoDelay(socketConfig.tcpNoDelay());
+            clientSocket.setSoTimeout(socketConfig.timeoutSyncClientSocket());
 
             dis = new SerializableDataInputStream(clientSocket.getInputStream());
             dos = new SerializableDataOutputStream(clientSocket.getOutputStream());
@@ -109,10 +110,10 @@ public class InboundConnectionHandler {
             dos.writeInt(ByteConstants.COMM_CONNECT); // send an ACK for creating connection
             dos.flush();
 
-            final SyncInputStream sis = SyncInputStream.createSyncInputStream(
-                    clientSocket.getInputStream(), settings.connectionStreamBufferSize());
-            final SyncOutputStream sos = SyncOutputStream.createSyncOutputStream(
-                    clientSocket.getOutputStream(), settings.connectionStreamBufferSize());
+            final SyncInputStream sis =
+                    SyncInputStream.createSyncInputStream(clientSocket.getInputStream(), socketConfig.bufferSize());
+            final SyncOutputStream sos =
+                    SyncOutputStream.createSyncOutputStream(clientSocket.getOutputStream(), socketConfig.bufferSize());
 
             final SocketConnection sc =
                     SocketConnection.create(selfId, otherId, connectionTracker, false, clientSocket, sis, sos);

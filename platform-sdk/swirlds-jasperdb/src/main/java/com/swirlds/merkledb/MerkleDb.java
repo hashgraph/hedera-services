@@ -209,13 +209,21 @@ public final class MerkleDb {
         this.storageDir = storageDir;
         this.tableConfigs = loadMetadata();
         try {
-            Files.createDirectories(getSharedDir());
-            Files.createDirectories(getTablesDir());
+            final Path sharedDir = getSharedDir();
+            if (!Files.exists(sharedDir)) {
+                Files.createDirectories(sharedDir);
+            }
+            final Path tablesDir = getTablesDir();
+            if (!Files.exists(tablesDir)) {
+                Files.createDirectories(tablesDir);
+            }
         } catch (IOException z) {
             throw new UncheckedIOException(z);
         }
         // If this is a new database, create the metadata file
-        storeMetadata();
+        if (!Files.exists(storageDir.resolve(METADATA_FILENAME))) {
+            storeMetadata();
+        }
         logger.info(MERKLE_DB.getMarker(), "New MerkleDb instance is created, storageDir={}", storageDir);
     }
 
@@ -535,7 +543,13 @@ public final class MerkleDb {
         final Path defaultInstancePath = (target != null) ? target : getDefaultPath();
         if (!Files.exists(defaultInstancePath.resolve(METADATA_FILENAME))) {
             Files.createDirectories(defaultInstancePath);
-            hardLinkTree(source.resolve(METADATA_FILENAME), defaultInstancePath.resolve(METADATA_FILENAME));
+            // For all data files, it's enough to create hard-links from the source dir to the
+            // target dir. However, hard-linking the metadata file wouldn't work. The target
+            // MerkleDb instance is mutable, e.g. new tables can be created in it and stored
+            // in DB metadata. With hard links, changing target metadata would also change the
+            // source metadata, which is strictly prohibited as existing saved states must
+            // never be changed. So just copy the metadata file
+            Files.copy(source.resolve(METADATA_FILENAME), defaultInstancePath.resolve(METADATA_FILENAME));
             final Path sharedDirPath = source.resolve(SHARED_DIRNAME);
             // No shared data yet, so the folder may be empty or even may not exist
             if (Files.exists(sharedDirPath)) {

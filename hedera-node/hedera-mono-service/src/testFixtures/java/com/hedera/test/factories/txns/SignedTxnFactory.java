@@ -23,6 +23,7 @@ import static java.util.Collections.EMPTY_LIST;
 import static java.util.stream.Collectors.toList;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
@@ -34,6 +35,9 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -78,7 +82,8 @@ public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
 
     protected abstract void customizeTxn(TransactionBody.Builder txn);
 
-    public Transaction get() throws Throwable {
+    public Transaction get()
+            throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException, InvalidKeyException {
         final Transaction provisional = signed(signableTxn(customFee.orElse(0L)));
         return customFee.isPresent() ? provisional : signed(signableTxn(feeFor(provisional, payerKt.numLeaves())));
     }
@@ -91,7 +96,8 @@ public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
                 .setBodyBytes(ByteString.copyFrom(txn.build().toByteArray()));
     }
 
-    private Transaction signed(final Transaction.Builder txnWithSigs) throws Throwable {
+    private Transaction signed(final Transaction.Builder txnWithSigs)
+            throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException, InvalidKeyException {
         final List<KeyTree> signers = allKts();
         return sigFactory.signWithSigMap(txnWithSigs, signers, keyFactory);
     }

@@ -24,7 +24,12 @@ import static org.mockito.ArgumentMatchers.anyString;
 
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -376,11 +381,17 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             assertThat(state.get(C_KEY)).isEqualTo(CHERRY);
             assertThat(state.readKeys()).isEmpty();
 
+            // The original value should still not exist
+            assertThat(state.getOriginalValue(C_KEY)).isNull();
+
             // Commit should cause the value to be added
             state.commit();
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(C_KEY, CHERRY);
             Mockito.verify(state, Mockito.never()).removeFromDataSource(Mockito.anyString());
+
+            // After a commit, the original value should have been added
+            assertThat(state.getOriginalValue(C_KEY)).isEqualTo(CHERRY);
         }
 
         /**
@@ -399,11 +410,17 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             assertThat(state.modifiedKeys()).hasSize(1);
             assertThat(state.modifiedKeys()).contains(A_KEY);
 
+            // The original value should not have changed
+            assertThat(state.getOriginalValue(A_KEY)).isEqualTo(APPLE);
+
             // Commit should cause the value to be updated
             state.commit();
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(Mockito.anyString(), Mockito.anyString());
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(A_KEY, ACAI);
             Mockito.verify(state, Mockito.never()).removeFromDataSource(Mockito.anyString());
+
+            // After a commit, the original value should have changed
+            assertThat(state.getOriginalValue(A_KEY)).isEqualTo(ACAI);
         }
 
         /**
@@ -442,11 +459,17 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             assertThat(state.readKeys()).isEmpty();
             assertThat(state.modifiedKeys()).contains(B_KEY);
 
+            // The original value should not have changed
+            assertThat(state.getOriginalValue(B_KEY)).isEqualTo(BANANA);
+
             // Commit should cause the value to be updated to the latest value
             state.commit();
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(B_KEY, BLUEBERRY);
             Mockito.verify(state, Mockito.never()).removeFromDataSource(anyString());
+
+            // After a commit, the original value should have changed to the latest value
+            assertThat(state.getOriginalValue(B_KEY)).isEqualTo(BLUEBERRY);
         }
 
         /**
@@ -465,11 +488,17 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             assertThat(state.readKeys()).isEmpty();
             assertThat(state.modifiedKeys()).contains(B_KEY);
 
+            // The original value should not have changed
+            assertThat(state.getOriginalValue(B_KEY)).isEqualTo(BANANA);
+
             // Commit should cause the value to be updated to the latest value
             state.commit();
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(B_KEY, BLACKBERRY);
             Mockito.verify(state, Mockito.never()).removeFromDataSource(anyString());
+
+            // After a commit, the original value should have changed
+            assertThat(state.getOriginalValue(B_KEY)).isEqualTo(BLACKBERRY);
         }
     }
 
@@ -501,12 +530,18 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             assertThat(state.modifiedKeys()).hasSize(1);
             assertThat(state.modifiedKeys()).contains(C_KEY);
 
+            // The original value should not exist
+            assertThat(state.getOriginalValue(C_KEY)).isNull();
+
             // Commit should cause the value to be removed (even though it doesn't actually exist in
             // the backend)
             state.commit();
             Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(C_KEY);
+
+            // After a commit, the original value should still not exist
+            assertThat(state.getOriginalValue(C_KEY)).isNull();
         }
 
         /**
@@ -531,11 +566,17 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             assertThat(state.modifiedKeys()).hasSize(1);
             assertThat(state.modifiedKeys()).contains(A_KEY);
 
+            // The original value should not have changed
+            assertThat(state.getOriginalValue(A_KEY)).isEqualTo(APPLE);
+
             // Commit should cause the value to be removed
             state.commit();
             Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
+
+            // After a commit, the original value should have been removed
+            assertThat(state.getOriginalValue(A_KEY)).isNull();
         }
 
         /**
@@ -561,11 +602,17 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
                 assertThat(state.modifiedKeys()).contains(B_KEY);
             }
 
+            // The original value should not have changed
+            assertThat(state.getOriginalValue(B_KEY)).isEqualTo(BANANA);
+
             // Commit should cause the value to be removed
             state.commit();
             Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(B_KEY);
+
+            // After a commit, the original value should have been removed
+            assertThat(state.getOriginalValue(B_KEY)).isNull();
         }
 
         /**
@@ -711,11 +758,17 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             assertThat(state.modifiedKeys()).hasSize(1);
             assertThat(state.modifiedKeys()).contains(A_KEY);
 
+            // The original value should not have changed
+            assertThat(state.getOriginalValue(A_KEY)).isEqualTo(APPLE);
+
             // Commit should cause the value to be removed but not "put"
             state.commit();
             Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
+
+            // After a commit, the original value should have been removed
+            assertThat(state.getOriginalValue(A_KEY)).isNull();
         }
     }
 
@@ -837,9 +890,25 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
         assertThat(state.modifiedKeys()).contains(E_KEY);
         assertThat(state.modifiedKeys()).contains(F_KEY);
 
+        // The original values should not have changed
+        assertThat(state.getOriginalValue(A_KEY)).isEqualTo(APPLE);
+        assertThat(state.getOriginalValue(B_KEY)).isEqualTo(BANANA);
+        assertThat(state.getOriginalValue(C_KEY)).isNull();
+        assertThat(state.getOriginalValue(D_KEY)).isNull();
+        assertThat(state.getOriginalValue(E_KEY)).isNull();
+        assertThat(state.getOriginalValue(F_KEY)).isNull();
+
         state.reset();
         assertThat(state.readKeys()).isEmpty();
         assertThat(state.modifiedKeys()).isEmpty();
+
+        // After a reset, the original value should not have changed
+        assertThat(state.getOriginalValue(A_KEY)).isEqualTo(APPLE);
+        assertThat(state.getOriginalValue(B_KEY)).isEqualTo(BANANA);
+        assertThat(state.getOriginalValue(C_KEY)).isNull();
+        assertThat(state.getOriginalValue(D_KEY)).isNull();
+        assertThat(state.getOriginalValue(E_KEY)).isNull();
+        assertThat(state.getOriginalValue(F_KEY)).isNull();
     }
 
     /**

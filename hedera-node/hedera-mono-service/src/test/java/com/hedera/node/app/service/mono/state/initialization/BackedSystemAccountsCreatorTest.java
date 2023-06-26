@@ -53,10 +53,10 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
-import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,7 +87,7 @@ class BackedSystemAccountsCreatorTest {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    void setup() throws DecoderException, NegativeAccountBalanceException, IllegalArgumentException {
+    void setup() throws InvalidKeyException, NegativeAccountBalanceException, IllegalArgumentException {
         genesisKey = JKey.mapKey(Key.newBuilder()
                 .setKeyList(KeyList.newBuilder().addKeys(MiscUtils.asKeyUnchecked(pretendKey)))
                 .build());

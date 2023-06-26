@@ -21,6 +21,9 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.state.Startable;
+import com.swirlds.common.config.BasicConfig;
+import com.swirlds.common.config.EventConfig;
+import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -36,7 +39,6 @@ import com.swirlds.platform.FreezeManager;
 import com.swirlds.platform.PlatformConstructor;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.StartUpEventFrozenManager;
-import com.swirlds.platform.StaticSettingsProvider;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventMapper;
@@ -152,27 +154,25 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         criticalQuorum = buildCriticalQuorum();
         eventObserverDispatcher.addObserver(criticalQuorum);
 
-        topology = new StaticTopology(
-                addressBook, selfId, settings.getNumConnections(), unidirectionalConnectionsEnabled());
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+        final CryptoConfig cryptoConfig = platformContext.getConfiguration().getConfigData(CryptoConfig.class);
+        final SocketConfig socketConfig = platformContext.getConfiguration().getConfigData(SocketConfig.class);
 
-        final SocketFactory socketFactory = PlatformConstructor.socketFactory(
-                crypto.getKeysAndCerts(), platformContext.getConfiguration().getConfigData(CryptoConfig.class));
+        topology = new StaticTopology(
+                addressBook, selfId, basicConfig.numConnections(), unidirectionalConnectionsEnabled());
+
+        final SocketFactory socketFactory =
+                PlatformConstructor.socketFactory(crypto.getKeysAndCerts(), cryptoConfig, socketConfig);
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
-                selfId,
-                StaticSettingsProvider.getSingleton(),
-                this,
-                socketFactory,
-                addressBook,
-                shouldDoVersionCheck(),
-                appVersion);
+                selfId, socketConfig, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
                 this,
                 selfId,
                 addressBook,
                 connectionManagers::newConnection,
-                StaticSettingsProvider.getSingleton(),
+                socketConfig,
                 shouldDoVersionCheck(),
                 appVersion);
         // allow other members to create connections to me
@@ -202,7 +202,8 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                         List.of(swirldStateManager.getTransactionPool(), startUpEventFrozenManager, freezeManager)),
                 criticalQuorum,
                 addressBook,
-                fallenBehindManager);
+                fallenBehindManager,
+                platformContext.getConfiguration().getConfigData(EventConfig.class));
 
         eventTaskCreator = new EventTaskCreator(
                 eventMapper,
@@ -210,7 +211,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 selfId,
                 eventIntakeMetrics,
                 intakeQueue,
-                StaticSettingsProvider.getSingleton(),
+                platformContext.getConfiguration().getConfigData(EventConfig.class),
                 syncManager,
                 ThreadLocalRandom::current);
 

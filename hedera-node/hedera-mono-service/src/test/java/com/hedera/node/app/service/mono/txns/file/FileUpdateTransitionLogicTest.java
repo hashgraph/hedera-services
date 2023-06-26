@@ -67,10 +67,10 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.EnumSet;
-import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -425,7 +425,7 @@ class FileUpdateTransitionLogicTest {
     void transitionCatchesBadlyEncodedKey() {
         givenTxnCtxUpdating(EnumSet.of(UpdateTarget.KEY));
         // and:
-        willThrow(new IllegalArgumentException(new DecoderException()))
+        willThrow(new IllegalArgumentException(new InvalidKeyException()))
                 .given(hfs)
                 .setattr(argThat(nonSysFileTarget::equals), any());
 

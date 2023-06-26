@@ -18,35 +18,32 @@ package com.hedera.node.app.service.token.impl.test.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
-import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.*;
+import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.aggregateApproveNftAllowances;
+import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.getEffectiveOwner;
+import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.isValidOwner;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.NftAllowance;
-import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.AllowanceValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     private AllowanceValidator subject;
-
-    @Mock
-    private ConfigProvider configProvider;
 
     @BeforeEach
     public void setUp() {
@@ -59,7 +56,7 @@ class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableAccountStore = new ReadableAccountStoreImpl(readableStates);
 
-        subject = new AllowanceValidator(configProvider);
+        subject = new AllowanceValidator();
     }
 
     @Test
@@ -82,21 +79,6 @@ class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
         list.add(Nftid);
         list.add(Nftid2);
         assertThat(aggregateApproveNftAllowances(list)).isEqualTo(4);
-    }
-
-    @Test
-    void checksFlagIfEnabled() {
-        final var trueConfig = new HederaTestConfigBuilder()
-                .withValue("hedera.allowances.isEnabled", true)
-                .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(trueConfig, 1));
-        assertThat(subject.isEnabled()).isTrue();
-
-        final var falseConfig = new HederaTestConfigBuilder()
-                .withValue("hedera.allowances.isEnabled", false)
-                .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(falseConfig, 1));
-        assertThat(subject.isEnabled()).isFalse();
     }
 
     @Test

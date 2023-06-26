@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.context.PlatformContext;
@@ -28,6 +27,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -107,9 +107,9 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
             @NonNull final ThreadManager threadManager,
             @NonNull final PreconsensusEventWriter writer) {
 
-        throwArgNull(platformContext, "platformContext");
-        throwArgNull(threadManager, "threadManager");
-        this.writer = throwArgNull(writer, "writer");
+        Objects.requireNonNull(platformContext, "platformContext must not be null");
+        Objects.requireNonNull(threadManager, "threadManager must not be null");
+        this.writer = Objects.requireNonNull(writer, "writer must not be null");
 
         final PreconsensusEventStreamConfig config =
                 platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);

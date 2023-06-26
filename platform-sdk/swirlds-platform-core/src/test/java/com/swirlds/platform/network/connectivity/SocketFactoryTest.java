@@ -18,12 +18,14 @@ package com.swirlds.platform.network.connectivity;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
+import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.TestSettings;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -39,12 +41,17 @@ class SocketFactoryTest {
     private static final byte[] BYTES_IP = {127, 0, 0, 1};
     private static final String STRING_IP = "127.0.0.1";
     private static final int PORT = 30_000;
-    private static final TestSettings NO_IP_TOS = new TestSettings();
-    private static final TestSettings IP_TOS = new TestSettings();
+    private static final SocketConfig NO_IP_TOS;
+    private static final SocketConfig IP_TOS;
 
     static {
-        NO_IP_TOS.ipTos.set(-1);
-        IP_TOS.ipTos.set(100);
+        final Configuration configurationNoIpTos =
+                new TestConfigBuilder().withValue("socket.ipTos", "-1").getOrCreateConfig();
+        NO_IP_TOS = configurationNoIpTos.getConfigData(SocketConfig.class);
+
+        final Configuration configurationIpTos =
+                new TestConfigBuilder().withValue("socket.ipTos", "100").getOrCreateConfig();
+        IP_TOS = configurationIpTos.getConfigData(SocketConfig.class);
     }
 
     /**

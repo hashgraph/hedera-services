@@ -20,8 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.config.api.Configuration;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class ConfigDataSupportTest {
@@ -29,7 +27,7 @@ class ConfigDataSupportTest {
     @Test
     void testConfig() {
         // given
-        HederaTestConfigBuilder builder = new HederaTestConfigBuilder(Set.of("com.hedera.node.config.data"));
+        var builder = HederaTestConfigBuilder.create(false).withConfigDataType(ApiPermissionConfig.class);
 
         // then
         assertThatNoException().isThrownBy(() -> builder.getOrCreateConfig());
@@ -38,8 +36,9 @@ class ConfigDataSupportTest {
     @Test
     void testConfigRecordsAvailable() {
         // given
-        HederaTestConfigBuilder builder = new HederaTestConfigBuilder(Set.of("com.hedera.node.config.data"));
-        Configuration config = builder.getOrCreateConfig();
+        var config = HederaTestConfigBuilder.create(false)
+                .withConfigDataType(ApiPermissionConfig.class)
+                .getOrCreateConfig();
 
         // when
         ApiPermissionConfig configData = config.getConfigData(ApiPermissionConfig.class);

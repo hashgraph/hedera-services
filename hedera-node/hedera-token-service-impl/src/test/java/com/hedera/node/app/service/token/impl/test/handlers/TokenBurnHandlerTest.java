@@ -31,7 +31,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_FOR_TOKEN_WITHOUT_SUPPLY;
@@ -44,7 +43,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -57,18 +55,18 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
 import com.hedera.hapi.node.token.TokenBurnTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
+import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
-import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -76,12 +74,11 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.VersionedConfiguration;
-import com.hedera.node.config.data.TokensConfig;
-import java.util.HashMap;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.config.api.Configuration;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -89,15 +86,40 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenBurnHandlerTest extends ParityTestBase {
-    private static final AccountID ACCOUNT_1339 = IdConvenienceUtils.fromAccountNum(1339);
-    private static final TokenID TOKEN_123 = IdConvenienceUtils.fromTokenNum(123);
-
-    private ConfigProvider configProvider = mock(ConfigProvider.class);
-    private TokenSupplyChangeOpsValidator validator = new TokenSupplyChangeOpsValidator(configProvider);
+    private static final AccountID ACCOUNT_1339 = BaseCryptoHandler.asAccount(1339);
+    private static final TokenID TOKEN_123 = BaseTokenHandler.asToken(123);
+    private TokenSupplyChangeOpsValidator validator = new TokenSupplyChangeOpsValidator();
     private final TokenBurnHandler subject = new TokenBurnHandler(validator);
+    private Configuration configuration;
+
+    @BeforeEach
+    public void setUp() {
+        super.setUp();
+        configuration = HederaTestConfigBuilder.create()
+                .withValue("tokens.nfts.areEnabled", true)
+                .withValue("tokens.nfts.maxBatchSizeBurn", 100)
+                .getOrCreateConfig();
+    }
 
     @Nested
     class PureChecks {
+        @SuppressWarnings("DataFlowIssue")
+        @Test
+        void nullArgsThrows() {
+            assertThatThrownBy(() -> subject.pureChecks(null)).isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        void noBurnTxnPresent() {
+            final var nonBurnTxnBody = TokenAssociateTransactionBody.newBuilder();
+            final var txn = TransactionBody.newBuilder()
+                    .transactionID(
+                            TransactionID.newBuilder().accountID(ACCOUNT_1339).build())
+                    .tokenAssociate(nonBurnTxnBody)
+                    .build();
+            Assertions.assertThatThrownBy(() -> subject.pureChecks(txn)).isInstanceOf(NullPointerException.class);
+        }
+
         @Test
         void noTokenPresent() {
             final var txn = newBurnTxn(null, 1);
@@ -117,6 +139,14 @@ class TokenBurnHandlerTest extends ParityTestBase {
         @Test
         void nonPositiveFungibleAmountGiven() {
             final var txn = newBurnTxn(TOKEN_123, -1);
+            Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(INVALID_TOKEN_BURN_AMOUNT));
+        }
+
+        @Test
+        void emptyNftSerialNumbers() {
+            final var txn = newBurnTxn(TOKEN_123, 0);
             Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INVALID_TOKEN_BURN_AMOUNT));
@@ -188,7 +218,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void invalidFungibleAmount() {
-            mockConfig();
+
             final var txn = newBurnTxn(TOKEN_123, -1);
             final var context = mockContext(txn);
 
@@ -199,9 +229,9 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void tokenIdNotFound() {
-            mockConfig();
+
             writableTokenStore = newWritableStoreWithTokens();
-            final var txn = newBurnTxn(IdConvenienceUtils.fromTokenNum(999), 1);
+            final var txn = newBurnTxn(BaseTokenHandler.asToken(999), 1);
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
@@ -211,7 +241,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void tokenIsDeleted() {
-            mockConfig();
+
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
                     .tokenNumber(TOKEN_123.tokenNum())
                     .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -230,7 +260,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void tokenIsPaused() {
-            mockConfig();
+
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
                     .tokenNumber(TOKEN_123.tokenNum())
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -248,7 +278,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void tokenDoesntHaveSupplyKey() {
-            mockConfig();
+
             final var totalFungibleSupply = 5;
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
                     .tokenNumber(TOKEN_123.tokenNum())
@@ -272,7 +302,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void tokenTreasuryRelDoesntExist() {
-            mockConfig();
+
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
                     .tokenNumber(TOKEN_123.tokenNum())
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -290,8 +320,24 @@ class TokenBurnHandlerTest extends ParityTestBase {
         }
 
         @Test
+        void fungibleAmountExceedsBatchSize() {
+            configuration = HederaTestConfigBuilder.create()
+                    .withValue("tokens.nfts.areEnabled", true)
+                    .withValue("tokens.nfts.maxBatchSizeBurn", 1)
+                    .getOrCreateConfig();
+            validator = new TokenSupplyChangeOpsValidator();
+
+            final var txn = newBurnTxn(TOKEN_123, 2);
+            final var context = mockContext(txn);
+
+            Assertions.assertThatThrownBy(() -> subject.handle(context))
+                    .isInstanceOf(HandleException.class)
+                    .has(responseCode(BATCH_SIZE_LIMIT_EXCEEDED));
+        }
+
+        @Test
         void fungibleTokenTreasuryAccountDoesntExist() {
-            mockConfig();
+
             // Intentionally has no treasury account:
             writableAccountStore = newWritableStoreWithAccounts();
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
@@ -316,7 +362,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void fungibleAmountExceedsSupply() {
-            mockConfig();
+
             final var totalFungibleSupply = 5;
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
                     .tokenNumber(TOKEN_123.tokenNum())
@@ -340,7 +386,6 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void fungibleAmountExceedsBalance() {
-            mockConfig();
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
                     .tokenNumber(TOKEN_123.tokenNum())
                     .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -366,7 +411,6 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void fungibleAmountBurnedWithLeftoverTreasuryBalance() {
-            mockConfig();
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
                     .accountNumber(ACCOUNT_1339.accountNumOrThrow())
                     .numberTreasuryTitles(1)
@@ -402,7 +446,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void fungibleAmountBurnedWithZeroTreasuryBalance() {
-            mockConfig();
+
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
                     .accountNumber(ACCOUNT_1339.accountNumOrThrow())
                     .numberTreasuryTitles(1)
@@ -440,8 +484,11 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftsGivenButNotEnabled() {
-            mockConfig(100, false, 100);
-            validator = new TokenSupplyChangeOpsValidator(configProvider);
+            configuration = HederaTestConfigBuilder.create()
+                    .withValue("tokens.nfts.areEnabled", false)
+                    .withValue("tokens.nfts.maxBatchSizeBurn", 100)
+                    .getOrCreateConfig();
+            validator = new TokenSupplyChangeOpsValidator();
 
             final var txn = newBurnTxn(TOKEN_123, 0, 1L);
             final var context = mockContext(txn);
@@ -453,8 +500,11 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftSerialCountExceedsBatchSize() {
-            mockConfig(1, true, 100);
-            validator = new TokenSupplyChangeOpsValidator(configProvider);
+            configuration = HederaTestConfigBuilder.create()
+                    .withValue("tokens.nfts.areEnabled", true)
+                    .withValue("tokens.nfts.maxBatchSizeBurn", 1)
+                    .getOrCreateConfig();
+            validator = new TokenSupplyChangeOpsValidator();
 
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
             final var context = mockContext(txn);
@@ -466,7 +516,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void invalidNftSerial() {
-            mockConfig();
+
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
                     .tokenNumber(TOKEN_123.tokenNum())
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -489,7 +539,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftSerialNotFound() {
-            mockConfig();
+
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
                     .tokenNumber(TOKEN_123.tokenNum())
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -515,7 +565,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftSerialNumsEmpty() {
-            mockConfig();
+
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
                     .tokenNumber(TOKEN_123.tokenNum())
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -538,7 +588,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftNotOwnedByTreasury() {
-            mockConfig();
+
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
                     .tokenNumber(TOKEN_123.tokenNum())
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -570,7 +620,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftTreasuryAccountDoesntExist() {
-            mockConfig();
+
             // Intentionally has no treasury account:
             writableAccountStore = newWritableStoreWithAccounts();
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
@@ -602,7 +652,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void numNftSerialsExceedsNftSupply() {
-            mockConfig();
+
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
                     .accountNumber(ACCOUNT_1339.accountNumOrThrow())
                     .numberTreasuryTitles(1)
@@ -645,7 +695,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftSerialsBurnedWithLeftoverTreasuryBalance() {
-            mockConfig();
+
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
                     .accountNumber(ACCOUNT_1339.accountNumOrThrow())
                     .numberTreasuryTitles(1)
@@ -705,7 +755,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftSerialsBurnedWithNoLeftoverTreasuryBalance() {
-            mockConfig();
+
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
                     .accountNumber(ACCOUNT_1339.accountNumOrThrow())
                     .numberTreasuryTitles(1)
@@ -767,7 +817,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
         @Test
         void duplicateNftSerials() {
             // This is a success case, and should be identical to the case without no duplicates above
-            mockConfig();
+
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
                     .accountNumber(ACCOUNT_1339.accountNumOrThrow())
                     .numberTreasuryTitles(1)
@@ -833,44 +883,9 @@ class TokenBurnHandlerTest extends ParityTestBase {
             given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
             given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
             given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+            given(context.configuration()).willReturn(configuration);
 
             return context;
-        }
-
-        private void mockConfig() {
-            mockConfig(100, true, 100);
-        }
-
-        private void mockConfig(final int maxBatchSize, final boolean nftsEnabled, final int maxMetadataBytes) {
-            final var mockTokensConfig = mock(TokensConfig.class);
-            lenient().when(mockTokensConfig.nftsMaxBatchSizeBurn()).thenReturn(maxBatchSize);
-            lenient().when(mockTokensConfig.nftsAreEnabled()).thenReturn(nftsEnabled);
-            lenient().when(mockTokensConfig.nftsMaxMetadataBytes()).thenReturn(maxMetadataBytes);
-
-            final var mockConfig = mock(VersionedConfiguration.class);
-            lenient().when(mockConfig.getConfigData(TokensConfig.class)).thenReturn(mockTokensConfig);
-
-            given(configProvider.getConfiguration()).willReturn(mockConfig);
-        }
-
-        protected WritableTokenRelationStore newWritableStoreWithTokenRels(final TokenRelation... tokenRels) {
-            final var backingMap = new HashMap<EntityNumPair, TokenRelation>();
-            for (final TokenRelation tokenRel : tokenRels) {
-                backingMap.put(EntityNumPair.fromLongs(tokenRel.accountNumber(), tokenRel.tokenNumber()), tokenRel);
-            }
-
-            final var wrappingState = new MapWritableKVState<>(ACCOUNTS_KEY, backingMap);
-            return new WritableTokenRelationStore(
-                    new MapWritableStates(Map.of(TokenServiceImpl.TOKEN_RELS_KEY, wrappingState)));
-        }
-
-        private WritableNftStore newWritableStoreWithNfts(Nft... nfts) {
-            final var nftStateBuilder = MapWritableKVState.<UniqueTokenId, Nft>builder(TokenServiceImpl.NFTS_KEY);
-            for (final Nft nft : nfts) {
-                nftStateBuilder.value(nft.id(), nft);
-            }
-            return new WritableNftStore(
-                    new MapWritableStates(Map.of(TokenServiceImpl.NFTS_KEY, nftStateBuilder.build())));
         }
     }
 

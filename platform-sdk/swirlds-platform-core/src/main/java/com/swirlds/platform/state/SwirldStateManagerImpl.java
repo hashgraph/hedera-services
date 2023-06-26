@@ -19,12 +19,12 @@ package com.swirlds.platform.state;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
@@ -132,7 +132,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
 
         this.transactionPool = new EventTransactionPool(platformContext.getMetrics(), settings, inFreeze);
         this.transactionHandler = new TransactionHandler(selfId, stats);
-        this.uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, OSTime.getInstance());
+        this.uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, Time.getCurrent());
         initialState(state);
     }
 

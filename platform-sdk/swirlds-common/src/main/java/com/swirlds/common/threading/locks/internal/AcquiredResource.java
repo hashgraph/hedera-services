@@ -18,6 +18,8 @@ package com.swirlds.common.threading.locks.internal;
 
 import com.swirlds.common.AutoCloseableNonThrowing;
 import com.swirlds.common.threading.locks.locked.MaybeLockedResource;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * An instance which is returned by the {@link ResourceLock} when the lock is acquired. Provides access to the locked
@@ -26,11 +28,11 @@ import com.swirlds.common.threading.locks.locked.MaybeLockedResource;
  * @param <T>
  * 		the type of resource
  */
-public class AcquiredResource<T> implements MaybeLockedResource<T> {
+public final class AcquiredResource<T> implements MaybeLockedResource<T> {
     private final AutoCloseableNonThrowing unlock;
     private T resource;
 
-    public AcquiredResource(final AutoCloseableNonThrowing unlock, final T resource) {
+    public AcquiredResource(@NonNull final AutoCloseableNonThrowing unlock, @Nullable final T resource) {
         this.unlock = unlock;
         this.resource = resource;
     }
@@ -39,6 +41,7 @@ public class AcquiredResource<T> implements MaybeLockedResource<T> {
      * {@inheritDoc}
      */
     @Override
+    @Nullable
     public T getResource() {
         return resource;
     }
@@ -47,7 +50,7 @@ public class AcquiredResource<T> implements MaybeLockedResource<T> {
      * {@inheritDoc}
      */
     @Override
-    public void setResource(final T resource) {
+    public void setResource(@Nullable final T resource) {
         this.resource = resource;
     }
 
