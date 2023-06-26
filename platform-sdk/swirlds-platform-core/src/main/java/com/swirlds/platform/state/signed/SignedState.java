@@ -198,6 +198,15 @@ public class SignedState implements SignedStateInfo {
     }
 
     /**
+     * Check if this state is the genesis state.
+     *
+     * @return true if this is the genesis state
+     */
+    public boolean isGenesisState() {
+        return state.getPlatformState().getPlatformData().getRound() == 0; // TODO this should be a constant somewhere
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
