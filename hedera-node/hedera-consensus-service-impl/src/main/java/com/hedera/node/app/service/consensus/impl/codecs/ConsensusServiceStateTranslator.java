@@ -65,7 +65,9 @@ public class ConsensusServiceStateTranslator {
         topicBuilder.runningHash(Bytes.wrap(monoTopic.getRunningHash()));
         topicBuilder.sequenceNumber(monoTopic.getSequenceNumber());
         topicBuilder.deleted(monoTopic.isDeleted());
-        topicBuilder.topicNumber(monoTopic.getAutoRenewAccountId().num());
+        topicBuilder.id(TopicID.newBuilder()
+                .topicNum(monoTopic.getAutoRenewAccountId().num())
+                .build());
 
         return topicBuilder.build();
     }
@@ -118,7 +120,7 @@ public class ConsensusServiceStateTranslator {
         @Override
         public void accept(EntityNum entityNum, com.hedera.node.app.service.mono.state.merkle.MerkleTopic merkleTopic) {
             final var pbjTopic = stateToPbj(merkleTopic);
-            appTopics.put(new TopicID(0, 0, pbjTopic.topicNumber()), pbjTopic);
+            appTopics.put(pbjTopic.id(), pbjTopic);
         }
     }
 }

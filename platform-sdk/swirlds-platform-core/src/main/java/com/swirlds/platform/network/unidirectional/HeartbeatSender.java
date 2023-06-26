@@ -16,17 +16,21 @@
 
 package com.swirlds.platform.network.unidirectional;
 
+import com.swirlds.common.config.BasicConfig;
+import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.locks.locked.LockedResource;
-import com.swirlds.platform.SettingsProvider;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.NetworkMetrics;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.NetworkUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * Periodically send a heartbeat through the connection to keep it alive and measure response time
@@ -36,17 +40,17 @@ public class HeartbeatSender implements InterruptableRunnable {
     private final NodeId otherId;
     private final SharedConnectionLocks sharedConnectionLocks;
     private final NetworkMetrics stats;
-    private final SettingsProvider settings;
+    private final Configuration configuration;
 
     public HeartbeatSender(
-            final NodeId otherId,
-            final SharedConnectionLocks sharedConnectionLocks,
-            final NetworkMetrics stats,
-            final SettingsProvider settings) {
-        this.otherId = otherId;
-        this.sharedConnectionLocks = sharedConnectionLocks;
-        this.stats = stats;
-        this.settings = settings;
+            @NonNull final NodeId otherId,
+            @NonNull final SharedConnectionLocks sharedConnectionLocks,
+            @NonNull final NetworkMetrics stats,
+            @NonNull final Configuration configuration) {
+        this.otherId = Objects.requireNonNull(otherId);
+        this.sharedConnectionLocks = Objects.requireNonNull(sharedConnectionLocks);
+        this.stats = Objects.requireNonNull(stats);
+        this.configuration = Objects.requireNonNull(configuration);
     }
 
     /**
@@ -63,8 +67,8 @@ public class HeartbeatSender implements InterruptableRunnable {
         } catch (final RuntimeException | IOException | NetworkProtocolException e) {
             NetworkUtils.handleNetworkException(e, conn);
         }
-
-        Thread.sleep(settings.sleepHeartbeatMillis()); // Slow down heartbeats to match the configured interval
+        final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
+        Thread.sleep(basicConfig.sleepHeartbeat()); // Slow down heartbeats to match the configured interval
     }
 
     /**
@@ -74,11 +78,15 @@ public class HeartbeatSender implements InterruptableRunnable {
      * @param conn
      * 		the connection (which must already be connected)
      */
-    void doHeartbeat(final Connection conn) throws IOException, NetworkProtocolException {
+    void doHeartbeat(@NonNull final Connection conn) throws IOException, NetworkProtocolException {
+        Objects.requireNonNull(conn);
+
         final long startTime = System.nanoTime();
+        final SocketConfig socketConfig = configuration.getConfigData(SocketConfig.class);
+
         conn.getDos().write(UnidirectionalProtocols.HEARTBEAT.getInitialByte());
         conn.getDos().flush();
-        conn.setTimeout(settings.getTimeoutSyncClientSocket());
+        conn.setTimeout(socketConfig.timeoutSyncClientSocket());
         final byte b = conn.getDis().readByte();
         if (b != ByteConstants.HEARTBEAT_ACK) {
             throw new NetworkProtocolException(
