@@ -28,7 +28,6 @@ import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.signed.SignedState;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -1203,7 +1202,7 @@ public class ConsensusImpl implements Consensus {
      * 		the index of the member ID of the creator
      * @return witness created by the member at index m in the parent round of x that x strongly sees, or null if none
      */
-    private EventImpl stronglySeeP(@NonNull final EventImpl x, final int m) {
+    private EventImpl stronglySeeP(final EventImpl x, final int m) {
         long t = System.nanoTime(); // Used to update statistic for dot product time
         EventImpl result; // the witness to return (possibly null)
 
