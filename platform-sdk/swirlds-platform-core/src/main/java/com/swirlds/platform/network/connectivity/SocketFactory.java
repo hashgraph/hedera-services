@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.network.connectivity;
 
-import com.swirlds.platform.SettingsProvider;
+import com.swirlds.common.config.SocketConfig;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -39,8 +39,8 @@ public interface SocketFactory {
      *
      * @param serverSocket
      * 		the socket to configure and bind
-     * @param settings
-     * 		the settings for configuration
+     * @param socketConfig
+     * 		the configuration for the socket
      * @param ipAddress
      * 		the IP address to bind
      * @param port
@@ -49,11 +49,11 @@ public interface SocketFactory {
      * 		if the bind is unsuccessful
      */
     static void configureAndBind(
-            final ServerSocket serverSocket, final SettingsProvider settings, final byte[] ipAddress, final int port)
+            final ServerSocket serverSocket, final SocketConfig socketConfig, final byte[] ipAddress, final int port)
             throws IOException {
-        if (isIpTopInRange(settings.getSocketIpTos())) {
+        if (isIpTopInRange(socketConfig.ipTos())) {
             // set the IP_TOS option
-            serverSocket.setOption(java.net.StandardSocketOptions.IP_TOS, settings.getSocketIpTos());
+            serverSocket.setOption(java.net.StandardSocketOptions.IP_TOS, socketConfig.ipTos());
         }
         InetSocketAddress endpoint = new InetSocketAddress(InetAddress.getByAddress(ipAddress), port);
         serverSocket.bind(endpoint); // try to grab a port on this computer
@@ -61,7 +61,7 @@ public interface SocketFactory {
         // do NOT do clientSocket.setSendBufferSize or clientSocket.setReceiveBufferSize
         // because it causes a major bug in certain situations
 
-        serverSocket.setSoTimeout(settings.getTimeoutServerAcceptConnect());
+        serverSocket.setSoTimeout(socketConfig.timeoutServerAcceptConnect());
     }
 
     /**
@@ -69,8 +69,8 @@ public interface SocketFactory {
      *
      * @param clientSocket
      * 		the socket to configure and connect
-     * @param settings
-     * 		the settings for configuration
+     * @param socketConfig
+     * 		the configuration for the socket
      * @param ipAddress
      * 		the IP address to connect to
      * @param port
@@ -79,18 +79,18 @@ public interface SocketFactory {
      * 		if the connections fails
      */
     static void configureAndConnect(
-            final Socket clientSocket, final SettingsProvider settings, final String ipAddress, final int port)
+            final Socket clientSocket, final SocketConfig socketConfig, final String ipAddress, final int port)
             throws IOException {
-        if (isIpTopInRange(settings.getSocketIpTos())) {
+        if (isIpTopInRange(socketConfig.ipTos())) {
             // set the IP_TOS option
-            clientSocket.setOption(java.net.StandardSocketOptions.IP_TOS, settings.getSocketIpTos());
+            clientSocket.setOption(java.net.StandardSocketOptions.IP_TOS, socketConfig.ipTos());
         }
 
-        clientSocket.setSoTimeout(settings.getTimeoutSyncClientSocket());
-        clientSocket.setTcpNoDelay(settings.isTcpNoDelay());
+        clientSocket.setSoTimeout(socketConfig.timeoutSyncClientSocket());
+        clientSocket.setTcpNoDelay(socketConfig.tcpNoDelay());
         // do NOT do clientSocket.setSendBufferSize or clientSocket.setReceiveBufferSize
         // because it causes a major bug in certain situations
-        clientSocket.connect(new InetSocketAddress(ipAddress, port), settings.getTimeoutSyncClientConnect());
+        clientSocket.connect(new InetSocketAddress(ipAddress, port), socketConfig.timeoutSyncClientConnect());
     }
 
     /**

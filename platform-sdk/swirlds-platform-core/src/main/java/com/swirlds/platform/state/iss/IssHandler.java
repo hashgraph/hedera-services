@@ -16,13 +16,11 @@
 
 package com.swirlds.platform.state.iss;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
-
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.state.notifications.IssNotification;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.state.output.IssConsumer;
@@ -75,16 +73,17 @@ public class IssHandler {
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
             @NonNull final IssConsumer issConsumer) {
 
-        this.issConsumer = throwArgNull(issConsumer, "issConsumer");
-        this.haltRequestedConsumer = throwArgNull(haltRequestedConsumer, "haltRequestedConsumer");
-        this.fatalErrorConsumer = throwArgNull(fatalErrorConsumer, "fatalErrorConsumer");
+        this.issConsumer = Objects.requireNonNull(issConsumer, "issConsumer must not be null");
+        this.haltRequestedConsumer =
+                Objects.requireNonNull(haltRequestedConsumer, "haltRequestedConsumer must not be null");
+        this.fatalErrorConsumer = Objects.requireNonNull(fatalErrorConsumer, "fatalErrorConsumer must not be null");
         this.stateDumpRequestedDispatcher =
                 dispatchBuilder.getDispatcher(this, StateDumpRequestedTrigger.class)::dispatch;
 
-        this.stateConfig = throwArgNull(stateConfig, "stateConfig");
+        this.stateConfig = Objects.requireNonNull(stateConfig, "stateConfig must not be null");
         this.issDumpRateLimiter = new RateLimiter(time, Duration.ofSeconds(stateConfig.secondsBetweenISSDumps()));
 
-        this.selfId = throwArgNull(selfId, "selfId");
+        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
     }
 
     /**

@@ -29,7 +29,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -86,7 +85,7 @@ public class TokenDeleteHandler implements TransactionHandler {
         tokenStore.put(updatedToken);
 
         // Update the token treasury account's treasury titles count
-        final var account = accountStore.get(IdConvenienceUtils.fromAccountNum(token.treasuryAccountNumber()));
+        final var account = accountStore.get(BaseCryptoHandler.asAccount(token.treasuryAccountNumber()));
         final var updatedAccount = account.copyBuilder()
                 .numberTreasuryTitles(account.numberTreasuryTitles() - 1)
                 .build();

@@ -19,6 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.function.CheckedConsumer;
+import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.metrics.Metrics;
@@ -89,12 +90,19 @@ public final class PlatformConstructor {
         return StaticSettingsProvider.getSingleton();
     }
 
-    public static SocketFactory socketFactory(final KeysAndCerts keysAndCerts, final CryptoConfig cryptoConfig) {
-        if (!Settings.getInstance().isUseTLS()) {
-            return new TcpFactory(PlatformConstructor.settingsProvider());
+    public static SocketFactory socketFactory(
+            @NonNull final KeysAndCerts keysAndCerts,
+            @NonNull final CryptoConfig cryptoConfig,
+            @NonNull final SocketConfig socketConfig) {
+        Objects.requireNonNull(keysAndCerts);
+        Objects.requireNonNull(cryptoConfig);
+        Objects.requireNonNull(socketConfig);
+
+        if (!socketConfig.useTLS()) {
+            return new TcpFactory(socketConfig);
         }
         try {
-            return new TlsFactory(keysAndCerts, PlatformConstructor.settingsProvider(), cryptoConfig);
+            return new TlsFactory(keysAndCerts, socketConfig, cryptoConfig);
         } catch (final NoSuchAlgorithmException
                 | UnrecoverableKeyException
                 | KeyStoreException
@@ -194,7 +202,6 @@ public final class PlatformConstructor {
      *
      * @param threadManager               responsible for creating and managing threads
      * @param selfId                      this node's id
-     * @param settingsProvider            a static settings provider
      * @param swirldStateManager          the instance of {@link SwirldStateManager}
      * @param consensusHandlingMetrics    the class that records stats relating to {@link SwirldStateManager}
      * @param eventStreamManager          the instance that streams consensus events to disk
@@ -209,7 +216,6 @@ public final class PlatformConstructor {
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final NodeId selfId,
-            @NonNull final SettingsProvider settingsProvider,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final ConsensusHandlingMetrics consensusHandlingMetrics,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
@@ -223,7 +229,6 @@ public final class PlatformConstructor {
                 platformContext,
                 threadManager,
                 selfId,
-                settingsProvider,
                 swirldStateManager,
                 consensusHandlingMetrics,
                 eventStreamManager,

@@ -16,11 +16,6 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.node.app.spi.fixtures.Scenarios.ALICE;
-import static com.hedera.node.app.spi.fixtures.Scenarios.BOB;
-import static com.hedera.node.app.spi.fixtures.Scenarios.CAROL;
-import static com.hedera.node.app.spi.fixtures.Scenarios.ERIN;
-import static com.hedera.node.app.spi.fixtures.Scenarios.NODE_1;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -161,7 +156,7 @@ class HandleWorkflowTest extends AppTestBase {
 
         when(serviceLookup.getServiceName(any())).thenReturn(TokenService.NAME);
 
-        final var config = new VersionedConfigImpl(new HederaTestConfigBuilder().getOrCreateConfig(), CONFIG_VERSION);
+        final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(config);
 
         doAnswer(invocation -> {

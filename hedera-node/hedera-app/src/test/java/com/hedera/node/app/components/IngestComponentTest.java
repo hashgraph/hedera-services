@@ -35,6 +35,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gui.SwirldsGui;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,7 +54,7 @@ class IngestComponentTest {
 
     @BeforeEach
     void setUp() {
-        final Configuration configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        final Configuration configuration = HederaTestConfigBuilder.createConfig();
         final PlatformContext platformContext = mock(PlatformContext.class);
         when(platformContext.getConfiguration()).thenReturn(configuration);
         when(platform.getContext()).thenReturn(platformContext);
@@ -75,6 +76,7 @@ class IngestComponentTest {
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
                 .genesisUsage(false)
+                .servicesRegistry(Set::of)
                 .build();
     }
 

@@ -17,6 +17,8 @@
 package com.swirlds.common.threading.locks;
 
 import com.swirlds.common.threading.locks.locked.Locked;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * <p>
@@ -50,7 +52,7 @@ public interface IndexLock {
      * @param object
      * 		the object to lock, can be null
      */
-    void lock(final Object object);
+    void lock(@Nullable final Object object);
 
     /**
      * Unlock on a given index value.
@@ -67,7 +69,7 @@ public interface IndexLock {
      * @param object
      * 		the object to unlock, can be null
      */
-    void unlock(final Object object);
+    void unlock(@Nullable final Object object);
 
     /**
      * Acquire a lock and return an autocloseable object that will release the lock.
@@ -76,6 +78,7 @@ public interface IndexLock {
      * 		the index to lock
      * @return an object that will unlock the lock once it is closed
      */
+    @NonNull
     Locked autoLock(final long index);
 
     /**
@@ -86,7 +89,8 @@ public interface IndexLock {
      * 		the object to lock, can be null
      * @return an object that will unlock the lock once it is closed
      */
-    Locked autoLock(final Object object);
+    @NonNull
+    Locked autoLock(@Nullable final Object object);
 
     /**
      * Lock every index. This is expensive, use with caution.
@@ -104,5 +108,6 @@ public interface IndexLock {
      *
      * @return an object that will unlock the lock once it is closed
      */
+    @NonNull
     Locked autoFullLock();
 }

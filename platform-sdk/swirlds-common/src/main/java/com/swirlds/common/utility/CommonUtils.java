@@ -239,7 +239,7 @@ public class CommonUtils {
      *
      * @param arg     the argument checked
      * @param argName the name of the argument
-     * @deprecated use {@link com.swirlds.base.ArgumentUtils#throwArgNull(Object, String)} instead
+     * @deprecated use {@link java.util.Objects#requireNonNull(Object, String)} instead
      */
     @Deprecated(forRemoval = true)
     public static <T> T throwArgNull(final T arg, final String argName) {

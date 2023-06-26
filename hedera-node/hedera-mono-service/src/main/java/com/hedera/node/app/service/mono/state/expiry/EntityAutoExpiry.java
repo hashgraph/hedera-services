@@ -56,12 +56,6 @@ public class EntityAutoExpiry {
 
     /** This class manages the system tasks that do a little bit of background work as each
      * consensus transaction is incorporated into the hashgraph.
-     *
-     * Currently, the name of this class is not accurate:  It is no longer dealing only with
-     * auto-expiration entities.  It controls the progress of all "system tasks" (via the
-     * {@link SystemTaskManager}) and one of those system tasks is to perform traceability migration
-     * of contracts that were created prior to the availability of contract sidecars
-     * ({@link com.hedera.node.app.service.mono.state.tasks.TraceabilityExportTask}.
      */
     @Inject
     public EntityAutoExpiry(

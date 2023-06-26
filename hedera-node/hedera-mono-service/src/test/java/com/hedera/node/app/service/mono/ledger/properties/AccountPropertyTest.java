@@ -69,6 +69,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
@@ -108,7 +109,7 @@ class AccountPropertyTest {
 
     @Test
     @SuppressWarnings("java:S5961")
-    void gettersAndSettersWork() throws Exception {
+    void gettersAndSettersWork() throws NegativeAccountBalanceException, InvalidKeyException {
         final boolean origIsDeleted = false;
         final boolean origIsReceiverSigReq = false;
         final boolean origIsContract = false;

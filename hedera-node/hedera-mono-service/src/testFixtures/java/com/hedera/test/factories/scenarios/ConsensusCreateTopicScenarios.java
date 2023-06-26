@@ -24,12 +24,12 @@ import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum ConsensusCreateTopicScenarios implements TxnHandlingScenario {
     CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn() throws Exception {
             return PlatformTxnAccessor.from(newSignedConsensusCreateTopic().get());
         }
     },
     CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn() throws Exception {
             return PlatformTxnAccessor.from(newSignedConsensusCreateTopic()
                     .adminKey(SIMPLE_TOPIC_ADMIN_KEY)
                     .nonPayerKts(SIMPLE_TOPIC_ADMIN_KEY)
@@ -37,7 +37,7 @@ public enum ConsensusCreateTopicScenarios implements TxnHandlingScenario {
         }
     },
     CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn() throws Exception {
             return PlatformTxnAccessor.from(newSignedConsensusCreateTopic()
                     .adminKey(SIMPLE_TOPIC_ADMIN_KEY)
                     .autoRenewAccountId(MISC_ACCOUNT_ID)
@@ -47,7 +47,7 @@ public enum ConsensusCreateTopicScenarios implements TxnHandlingScenario {
     },
 
     CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn() throws Exception {
             return PlatformTxnAccessor.from(newSignedConsensusCreateTopic()
                     .adminKey(SIMPLE_TOPIC_ADMIN_KEY)
                     .autoRenewAccountId(DEFAULT_PAYER_ID)
@@ -56,7 +56,7 @@ public enum ConsensusCreateTopicScenarios implements TxnHandlingScenario {
         }
     },
     CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn() throws Exception {
             return PlatformTxnAccessor.from(newSignedConsensusCreateTopic()
                     .autoRenewAccountId(MISSING_ACCOUNT_ID)
                     .get());

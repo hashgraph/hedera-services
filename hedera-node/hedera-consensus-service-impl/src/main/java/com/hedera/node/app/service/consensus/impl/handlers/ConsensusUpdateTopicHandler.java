@@ -106,8 +106,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
         final var topicUpdate = handleContext.body().consensusUpdateTopic();
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
-        final var maybeTopic = requireNonNull(topicStore)
-                .get(topicUpdate.topicIDOrElse(TopicID.DEFAULT).topicNum());
+        final var maybeTopic = requireNonNull(topicStore).get(topicUpdate.topicIDOrElse(TopicID.DEFAULT));
         validateTrue(maybeTopic.isPresent(), INVALID_TOPIC_ID);
         final var topic = maybeTopic.get();
         validateFalse(topic.deleted(), INVALID_TOPIC_ID);
@@ -119,7 +118,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         // Now we apply the mutations to a builder
         final var builder = new Topic.Builder();
         // But first copy over the immutable topic attributes to the builder
-        builder.topicNumber(topic.topicNumber());
+        builder.id(topic.id());
         builder.sequenceNumber(topic.sequenceNumber());
         builder.runningHash(topic.runningHash());
         builder.deleted(topic.deleted());
