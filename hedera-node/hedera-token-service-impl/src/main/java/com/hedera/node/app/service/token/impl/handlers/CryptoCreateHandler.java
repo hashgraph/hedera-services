@@ -36,7 +36,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
@@ -117,23 +116,9 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         // FUTURE: Use the config and check if accounts can be created.
         //  Currently, this check is being done in `finishCryptoCreate` before `commit`
 
-        // validate payer account exists and has enough balance
-        final var payer = accountStore.getForModify(
-                txnBody.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
-
-        validateTrue(payer != null, INVALID_PAYER_ACCOUNT_ID);
-        final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
-        validatePayer(payer, newPayerBalance);
-
         // validate fields in the transaction body that involves checking with
         // dynamic properties or state
         validateSemantics(handleContext, accountStore, op);
-
-        // Change payer's balance to reflect the deduction of the initial balance for the new
-        // account
-        final var modifiedPayer =
-                payer.copyBuilder().tinybarBalance(newPayerBalance).build();
-        accountStore.put(modifiedPayer);
 
         // Build the new account to be persisted based on the transaction body
         final var accountCreated = buildAccount(op, handleContext);
@@ -180,7 +165,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
      */
     private void validateSemantics(
             @NonNull final HandleContext context,
-            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final WritableAccountStore accountStore,
             @NonNull final CryptoCreateTransactionBody op) {
 
         final var cryptoCreateWithAliasConfig =
@@ -188,6 +173,14 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+
+        // validate payer account exists and has enough balance
+        final var payer = accountStore.getForModify(
+                context.body().transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
+
+        validateTrue(payer != null, INVALID_PAYER_ACCOUNT_ID);
+        final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
+        validatePayer(payer, newPayerBalance);
 
         context.attributeValidator().validateMemo(op.memo());
         cryptoCreateValidator.validateKeyAliasAndEvmAddressCombinations(
@@ -210,6 +203,12 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 accountStore,
                 context,
                 nodeInfo);
+
+        // Change payer's balance to reflect the deduction of the initial balance for the new
+        // account
+        final var modifiedPayer =
+                payer.copyBuilder().tinybarBalance(newPayerBalance).build();
+        accountStore.put(modifiedPayer);
     }
 
     /**

@@ -389,6 +389,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void handleFailsWhenPayerHasInsufficientBalance() {
         txn = new CryptoCreateBuilder().withInitialBalance(payerBalance + 1L).build();
         given(handleContext.body()).willReturn(txn);
+        setupConfig();
 
         // newly created account and payer account are not modified. Validate payers balance
         assertFalse(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
@@ -409,6 +410,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @DisplayName("handle fails when payer account is deleted")
     void handleFailsWhenPayerIsDeleted() {
         changeAccountToDeleted();
+        setupConfig();
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ACCOUNT_DELETED, msg.getStatus());
@@ -426,6 +428,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .withPayer(AccountID.newBuilder().accountNum(600L).build())
                 .build();
         given(handleContext.body()).willReturn(txn);
+        setupConfig();
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_PAYER_ACCOUNT_ID, msg.getStatus());

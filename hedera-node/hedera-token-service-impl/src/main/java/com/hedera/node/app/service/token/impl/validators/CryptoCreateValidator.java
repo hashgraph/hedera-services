@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -65,8 +64,8 @@ public class CryptoCreateValidator {
         if (op.hasKey() && op.alias().equals(Bytes.EMPTY)) {
             attributeValidator.validateKey(op.keyOrThrow());
         } else if (!op.hasKey() && !op.alias().equals(Bytes.EMPTY)) {
-            validateTrue(config.enabled(), NOT_SUPPORTED);
-            validateFalse(config.enabled(), INVALID_ALIAS_KEY);
+            final var responseCode = config.enabled() ? INVALID_ALIAS_KEY : NOT_SUPPORTED;
+            throw new HandleException(responseCode);
         } else if (op.hasKey() && !op.alias().equals(Bytes.EMPTY)) {
             validateKeyAndAliasProvidedCase(op, attributeValidator, config, readableAccountStore);
         } else {
