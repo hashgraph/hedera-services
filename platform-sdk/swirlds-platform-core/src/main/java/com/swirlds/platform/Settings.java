@@ -25,14 +25,9 @@ import static com.swirlds.platform.SettingConstants.LOAD_KEYS_FROM_PFX_FILES_DEF
 import static com.swirlds.platform.SettingConstants.MAX_ADDRESS_SIZE_ALLOWED_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.NUM_CRYPTO_THREADS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.STATS_BUFFER_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.STATS_RECENT_SECONDS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.THREAD_DUMP_LOG_DIR_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.THREAD_DUMP_PERIOD_MS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.THREAD_PRIORITY_NON_SYNC_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.THREAD_PRIORITY_SYNC_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.THROTTLE_TRANSACTION_QUEUE_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.TRANSACTION_MAX_BYTES_DEFAULT_VALUES;
 import static com.swirlds.platform.SettingConstants.VERBOSE_STATISTICS_DEFAULT_VALUE;
@@ -103,12 +98,8 @@ public class Settings {
 
     ///////////////////////////////////////////
     // settings from settings.txt file
-    /** priority for threads that don't sync (all but SyncCaller, SyncListener,SyncServer */
-    private final int threadPriorityNonSync = THREAD_PRIORITY_NON_SYNC_DEFAULT_VALUE;
     /** verify event signatures (rather than just trusting they are correct)? */
     private boolean verifyEventSigs = VERIFY_EVENT_SIGS_DEFAULT_VALUE;
-    /** number of threads used to verify signatures and generate keys, in parallel */
-    private int numCryptoThreads = NUM_CRYPTO_THREADS_DEFAULT_VALUE;
     /** show the user all statistics, including those with category "internal"? */
     private boolean showInternalStats = SHOW_INTERNAL_STATS_DEFAULT_VALUE;
     /** show expand statistics values, inlcude mean, min, max, stdDev */
@@ -124,8 +115,6 @@ public class Settings {
     private int statsBufferSize = STATS_BUFFER_SIZE_DEFAULT_VALUE;
     /** number of seconds covered by "recent" history (in StatsBuffer etc.) */
     private double statsRecentSeconds = STATS_RECENT_SECONDS_DEFAULT_VALUE;
-    /** priority for threads that sync (in SyncCaller, SyncListener, SyncServer) */
-    private int threadPrioritySync = THREAD_PRIORITY_SYNC_DEFAULT_VALUE; // Thread.MAX_PRIORITY;
     /** maximum number of bytes allowed in a transaction */
     private int transactionMaxBytes = TRANSACTION_MAX_BYTES_DEFAULT_VALUES;
     /** the maximum number of address allowed in a address book, the same as the maximum allowed network size */
@@ -146,16 +135,6 @@ public class Settings {
     private int maxTransactionBytesPerEvent = MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE;
     /** the maximum number of transactions that a single event may contain */
     private int maxTransactionCountPerEvent = MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE;
-
-    ///////////////////////////////////////////
-    // Setting for thread dump
-    /** period of generating thread dump file in the unit of milliseconds */
-    private long threadDumpPeriodMs = THREAD_DUMP_PERIOD_MS_DEFAULT_VALUE;
-
-    ///////////////////////////////////////////
-    // Setting for JVMPauseDetectorThread
-    /** thread dump files will be generated in this directory */
-    private String threadDumpLogDir = THREAD_DUMP_LOG_DIR_DEFAULT_VALUE;
 
     private Settings() {}
 
@@ -460,10 +439,6 @@ public class Settings {
         return verifyEventSigs;
     }
 
-    public int getNumCryptoThreads() {
-        return numCryptoThreads;
-    }
-
     public boolean isShowInternalStats() {
         return showInternalStats;
     }
@@ -478,14 +453,6 @@ public class Settings {
 
     public int getDeadlockCheckPeriod() {
         return deadlockCheckPeriod;
-    }
-
-    public int getThreadPrioritySync() {
-        return threadPrioritySync;
-    }
-
-    public int getThreadPriorityNonSync() {
-        return threadPriorityNonSync;
     }
 
     public int getTransactionMaxBytes() {
@@ -510,13 +477,5 @@ public class Settings {
 
     public int getMaxTransactionCountPerEvent() {
         return maxTransactionCountPerEvent;
-    }
-
-    public long getThreadDumpPeriodMs() {
-        return threadDumpPeriodMs;
-    }
-
-    public String getThreadDumpLogDir() {
-        return threadDumpLogDir;
     }
 }
