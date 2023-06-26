@@ -61,10 +61,7 @@ class ConfigExportTest {
 
         // Verify properties in file are listed
         assertContains(regexForLine("verifyEventSigs", "false", true), lines);
-        assertContains(regexForLine("doUpnp", "false", true), lines);
         assertContains(regexForLine("showInternalStats", "true", true), lines);
-        assertContains(regexForLine("useLoopbackIp", "false", true), lines);
-        assertContains(regexForLine("maxOutgoingSyncs", "1", true), lines);
         assertContains(regexForLine("state.saveStatePeriod", "0", true), lines);
         assertContains(regexForLine("loadKeysFromPfxFiles", "false", true), lines);
         assertContains(regexForLine("madeUpSetting", "0", false), lines);

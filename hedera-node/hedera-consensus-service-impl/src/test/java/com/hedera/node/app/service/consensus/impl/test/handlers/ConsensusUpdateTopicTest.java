@@ -186,7 +186,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var newTopic = writableTopicState.get(topicEntityNum);
+        final var newTopic = writableTopicState.get(topicId);
         assertEquals(anotherKey, newTopic.adminKey());
     }
 
@@ -206,7 +206,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         assertFailsWith(BAD_ENCODING, () -> subject.handle(handleContext));
 
-        final var newTopic = writableTopicState.get(topicEntityNum);
+        final var newTopic = writableTopicState.get(topicId);
         assertNotNull(newTopic.adminKey());
     }
 
@@ -226,7 +226,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var newTopic = writableTopicState.get(topicEntityNum);
+        final var newTopic = writableTopicState.get(topicId);
         assertNull(newTopic.adminKey());
     }
 
@@ -246,7 +246,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         assertFailsWith(BAD_ENCODING, () -> subject.handle(handleContext));
 
-        final var newTopic = writableTopicState.get(topicEntityNum);
+        final var newTopic = writableTopicState.get(topicId);
         assertNotNull(newTopic.adminKey());
     }
 
@@ -279,7 +279,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var newTopic = writableTopicState.get(topicEntityNum);
+        final var newTopic = writableTopicState.get(topicId);
         assertEquals(anotherKey, newTopic.submitKey());
     }
 
@@ -314,7 +314,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         subject.handle(handleContext);
 
-        final var newTopic = writableTopicState.get(topicEntityNum);
+        final var newTopic = writableTopicState.get(topicId);
         assertEquals(newMemo, newTopic.memo());
     }
 
@@ -356,7 +356,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var newTopic = writableTopicState.get(topicEntityNum);
+        final var newTopic = writableTopicState.get(topicId);
         assertEquals(123L, newTopic.expiry());
     }
 
@@ -398,7 +398,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var newTopic = writableTopicState.get(topicEntityNum);
+        final var newTopic = writableTopicState.get(topicId);
         assertEquals(123L, newTopic.autoRenewPeriod());
     }
 
@@ -439,7 +439,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var newTopic = writableTopicState.get(topicEntityNum);
+        final var newTopic = writableTopicState.get(topicId);
         assertEquals(666L, newTopic.autoRenewAccountNumber());
     }
 
@@ -457,7 +457,7 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var newTopic = writableTopicState.get(topicEntityNum);
+        final var newTopic = writableTopicState.get(topicId);
         assertEquals(topic, newTopic);
     }
 

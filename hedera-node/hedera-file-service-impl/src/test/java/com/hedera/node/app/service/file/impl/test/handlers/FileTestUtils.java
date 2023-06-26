@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.file.impl.test.handlers;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_FILE;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
@@ -25,6 +24,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.state.token.Account;
@@ -81,6 +81,7 @@ public final class FileTestUtils {
     }
 
     static FileMetadata newFileMeta(KeyList keys) {
-        return new FileMetadata(MISC_FILE.getFileNum(), null, keys, null, null, false);
+        final FileID fileId = FileID.newBuilder().fileNum(2337).build();
+        return new FileMetadata(fileId, null, keys, null, null, false);
     }
 }

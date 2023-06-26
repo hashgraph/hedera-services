@@ -74,7 +74,7 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
 
         var topicId = op.topicIDOrElse(TopicID.DEFAULT);
 
-        var optionalTopic = topicStore.get(topicId.topicNum());
+        var optionalTopic = topicStore.get(topicId);
 
         /* If the topic doesn't exist, return INVALID_TOPIC_ID */
         if (optionalTopic.isEmpty()) {
@@ -89,7 +89,7 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
 
         /* Copy all the fields from existing topic and change deleted flag */
         final var topicBuilder = new Topic.Builder()
-                .topicNumber(topic.topicNumber())
+                .id(topic.id())
                 .adminKey(topic.adminKey())
                 .submitKey(topic.submitKey())
                 .autoRenewAccountNumber(topic.autoRenewAccountNumber())

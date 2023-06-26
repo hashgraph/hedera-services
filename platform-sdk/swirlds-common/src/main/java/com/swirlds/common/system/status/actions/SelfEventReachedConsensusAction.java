@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec;
+package com.swirlds.common.system.status.actions;
 
-public interface ServiceComponent {}
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+
+/**
+ * An action that is triggered when the platform observes a self event reaching consensus.
+ *
+ * @param instant the instant when this action was triggered
+ */
+public record SelfEventReachedConsensusAction(@NonNull Instant instant) implements PlatformStatusAction {}

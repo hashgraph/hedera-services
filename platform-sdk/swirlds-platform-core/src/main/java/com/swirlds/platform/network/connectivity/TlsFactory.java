@@ -16,11 +16,12 @@
 
 package com.swirlds.platform.network.connectivity;
 
+import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.crypto.config.CryptoConfig;
-import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -32,6 +33,7 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.util.Objects;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
@@ -44,7 +46,7 @@ import javax.net.ssl.TrustManagerFactory;
  * used to create and receive TLS connections, based on the given trustStore
  */
 public class TlsFactory implements SocketFactory {
-    private final SettingsProvider settings;
+    private final SocketConfig socketConfig;
     private final SSLServerSocketFactory sslServerSocketFactory;
     private final SSLSocketFactory sslSocketFactory;
 
@@ -55,10 +57,16 @@ public class TlsFactory implements SocketFactory {
      * KeyManagerFactory, TrustManagerFactory, SSLContext, SSLServerSocketFactory, and SSLSocketFactory, so
      * that it can later create the TLS sockets.
      */
-    public TlsFactory(final KeysAndCerts keysAndCerts, final SettingsProvider settings, final CryptoConfig cryptoConfig)
+    public TlsFactory(
+            @NonNull final KeysAndCerts keysAndCerts,
+            @NonNull final SocketConfig socketConfig,
+            @NonNull final CryptoConfig cryptoConfig)
             throws NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, KeyManagementException,
                     CertificateException, IOException {
-        this.settings = settings;
+        Objects.requireNonNull(keysAndCerts);
+        Objects.requireNonNull(cryptoConfig);
+        this.socketConfig = Objects.requireNonNull(socketConfig);
+
         final char[] password = cryptoConfig.keystorePassword().toCharArray();
         /* nondeterministic CSPRNG */
         final SecureRandom nonDetRandom = CryptoStatic.getNonDetRandom();
@@ -90,7 +98,7 @@ public class TlsFactory implements SocketFactory {
         serverSocket.setEnabledCipherSuites(new String[] {CryptoConstants.TLS_SUITE});
         serverSocket.setWantClientAuth(true);
         serverSocket.setNeedClientAuth(true);
-        SocketFactory.configureAndBind(serverSocket, settings, ipAddress, port);
+        SocketFactory.configureAndBind(serverSocket, socketConfig, ipAddress, port);
         return serverSocket;
     }
 
@@ -101,7 +109,7 @@ public class TlsFactory implements SocketFactory {
         clientSocket.setEnabledCipherSuites(new String[] {CryptoConstants.TLS_SUITE});
         clientSocket.setWantClientAuth(true);
         clientSocket.setNeedClientAuth(true);
-        SocketFactory.configureAndConnect(clientSocket, settings, ipAddress, port);
+        SocketFactory.configureAndConnect(clientSocket, socketConfig, ipAddress, port);
         clientSocket.startHandshake();
         return clientSocket;
     }

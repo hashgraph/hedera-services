@@ -48,7 +48,7 @@ final class HelidonGrpcServerManagerTest {
 
     @BeforeEach
     void setUp(@Mock @NonNull final Metrics metrics) {
-        final var config = new HederaTestConfigBuilder(false)
+        final var config = HederaTestConfigBuilder.create(false)
                 .withConfigDataType(GrpcConfig.class)
                 .withConfigDataType(NettyConfig.class)
                 .getOrCreateConfig();

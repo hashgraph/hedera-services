@@ -40,6 +40,7 @@ import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.OSHealthCheckConfig;
 import com.swirlds.common.config.PathsConfig;
+import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.export.ConfigExport;
@@ -241,7 +242,8 @@ public class Browser {
                 .withConfigDataType(UptimeConfig.class)
                 .withConfigDataType(RecycleBinConfig.class)
                 .withConfigDataType(EventConfig.class)
-                .withConfigDataType(PathsConfig.class);
+                .withConfigDataType(PathsConfig.class)
+                .withConfigDataType(SocketConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
@@ -249,7 +251,7 @@ public class Browser {
         }
 
         this.configuration = configurationBuilder.build();
-        PlatformConfigUtils.logNotKnownConfigProperties(configuration);
+        PlatformConfigUtils.checkConfiguration(configuration);
 
         // Set the configuration on all SwirldMain instances.
         appMains.values().forEach(swirldMain -> swirldMain.setConfiguration(configuration));
@@ -288,14 +290,8 @@ public class Browser {
             Settings.populateSettingsCommon();
 
             // Update Settings based on config.txt
-            configurationProperties.tls().ifPresent(tls -> Settings.getInstance()
-                    .setUseTLS(tls));
-            configurationProperties.maxSyncs().ifPresent(value -> Settings.getInstance()
-                    .setMaxOutgoingSyncs(value));
             configurationProperties.transactionMaxBytes().ifPresent(value -> Settings.getInstance()
                     .setTransactionMaxBytes(value));
-            configurationProperties.ipTos().ifPresent(ipTos -> Settings.getInstance()
-                    .setSocketIpTos(ipTos));
 
             // Write the settingsUsed.txt file
             writeSettingsUsed(configuration);
@@ -337,7 +333,8 @@ public class Browser {
                         () -> (Arrays.toString(Network.getOwnAddresses2())));
 
                 // port forwarding
-                if (Settings.getInstance().isDoUpnp()) {
+                final SocketConfig socketConfig = configuration.getConfigData(SocketConfig.class);
+                if (socketConfig.doUpnp()) {
                     final List<PortMapping> portsToBeMapped = new LinkedList<>();
                     synchronized (getPlatforms()) {
                         for (final Platform p : getPlatforms()) {
@@ -566,13 +563,14 @@ public class Browser {
 
     /**
      * Instantiate and start the JVMPauseDetectorThread, if enabled via the
-     * {@link Settings#getJVMPauseDetectorSleepMs()} setting.
+     * {@link BasicConfig#jvmPauseDetectorSleepMs()} setting.
      */
-    private void startJVMPauseDetectorThread() {
-        if (Settings.getInstance().getJVMPauseDetectorSleepMs() > 0) {
+    private void startJVMPauseDetectorThread(@NonNull final Configuration configuration) {
+        final BasicConfig basicConfig = Objects.requireNonNull(configuration).getConfigData(BasicConfig.class);
+        if (basicConfig.jvmPauseDetectorSleepMs() > 0) {
             final JVMPauseDetectorThread jvmPauseDetectorThread = new JVMPauseDetectorThread(
                     (pauseTimeMs, allocTimeMs) -> {
-                        if (pauseTimeMs > Settings.getInstance().getJVMPauseReportMs()) {
+                        if (pauseTimeMs > basicConfig.jvmPauseReportMs()) {
                             logger.warn(
                                     EXCEPTION.getMarker(),
                                     "jvmPauseDetectorThread detected JVM paused for {} ms, allocation pause {} ms",
@@ -580,7 +578,7 @@ public class Browser {
                                     allocTimeMs);
                         }
                     },
-                    Settings.getInstance().getJVMPauseDetectorSleepMs());
+                    basicConfig.jvmPauseDetectorSleepMs());
             jvmPauseDetectorThread.start();
             logger.debug(STARTUP.getMarker(), "jvmPauseDetectorThread started");
         }
@@ -657,8 +655,10 @@ public class Browser {
 
                 // We can't send a "real" dispatch, since the dispatcher will not have been started by the
                 // time this class is used.
-                final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
-                        shutdown::shutdown, Settings.getInstance().getEmergencyRecoveryFileLoadDir());
+                final BasicConfig basicConfig =
+                        platformContext.getConfiguration().getConfigData(BasicConfig.class);
+                final EmergencyRecoveryManager emergencyRecoveryManager =
+                        new EmergencyRecoveryManager(shutdown::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
 
                 final ReservedSignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
                         platformContext,
@@ -864,7 +864,7 @@ public class Browser {
         startThreadDumpGenerator();
 
         // Initialize JVMPauseDetectorThread, if enabled via settings
-        startJVMPauseDetectorThread();
+        startJVMPauseDetectorThread(configuration);
 
         logger.info(STARTUP.getMarker(), "Starting metrics");
         metricsProvider.start();
