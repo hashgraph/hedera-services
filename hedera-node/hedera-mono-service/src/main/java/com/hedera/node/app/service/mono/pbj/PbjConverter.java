@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.pbj;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.Utils.asHederaKeyUnchecked;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
@@ -1272,6 +1273,31 @@ public final class PbjConverter {
             Key.PROTOBUF.write(pbjKey, dos);
             final var grpcKey = com.hederahashgraph.api.proto.java.Key.parseFrom(baos.toByteArray());
             return asHederaKey(grpcKey);
+        } catch (final IOException e) {
+            // Should be impossible, so just propagate an exception
+            throw new IllegalStateException("Invalid conversion from PBJ for Key", e);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Tries to convert a PBJ {@link Key} to a {@link JKey} unchecked (the only {@link HederaKey} implementation);
+     * returns an empty optional if the conversion succeeds, but the resulting {@link JKey} is not valid.
+     *
+     * @param pbjKey the PBJ {@link Key} to convert
+     * @return the converted {@link JKey} if valid, or an empty optional if invalid
+     * @throws IllegalStateException if the conversion fails
+     */
+    public static @NonNull Optional<HederaKey> fromPbjKeyUnchecked(@Nullable final Key pbjKey) {
+        if (pbjKey == null) {
+            return Optional.empty();
+        }
+        try (final var baos = new ByteArrayOutputStream();
+                final var dos = new WritableStreamingData(baos)) {
+            Key.PROTOBUF.write(pbjKey, dos);
+            final var grpcKey = com.hederahashgraph.api.proto.java.Key.parseFrom(baos.toByteArray());
+            return asHederaKeyUnchecked(grpcKey);
         } catch (final IOException e) {
             // Should be impossible, so just propagate an exception
             throw new IllegalStateException("Invalid conversion from PBJ for Key", e);
