@@ -89,24 +89,24 @@ public final class CryptoSetup {
                         .setDaemon(false)
                         .buildFactory());
 
-        final Path keysDirPath = pathsConfig.getKeysDirPath();
         final Map<NodeId, KeysAndCerts> keysAndCerts;
         try {
             if (Settings.getInstance().isLoadKeysFromPfxFiles()) {
-                try (final Stream<Path> list = Files.list(keysDirPath)) {
+                try (final Stream<Path> list = Files.list(pathsConfig.getKeysDirPath())) {
                     CommonUtils.tellUserConsole("Reading crypto keys from the files here:   "
                             + list.filter(path -> path.getFileName().endsWith("pfx"))
                                     .toList());
                     logger.debug(STARTUP.getMarker(), "About start loading keys");
                     keysAndCerts = CryptoStatic.loadKeysAndCerts(
                             addressBook,
-                            keysDirPath,
+                            pathsConfig.getKeysDirPath(),
                             cryptoConfig.keystorePassword().toCharArray());
                     logger.debug(STARTUP.getMarker(), "Done loading keys");
                 }
             } else {
                 // if there are no keys on the disk, then create our own keys
-                CommonUtils.tellUserConsole("Creating keys, because there are no files in " + keysDirPath);
+                CommonUtils.tellUserConsole(
+                        "Creating keys, because there are no files in " + pathsConfig.getKeysDirPath());
                 logger.debug(STARTUP.getMarker(), "About to start creating generating keys");
                 keysAndCerts = CryptoStatic.generateKeysAndCerts(addressBook, cryptoThreadPool);
                 logger.debug(STARTUP.getMarker(), "Done generating keys");
