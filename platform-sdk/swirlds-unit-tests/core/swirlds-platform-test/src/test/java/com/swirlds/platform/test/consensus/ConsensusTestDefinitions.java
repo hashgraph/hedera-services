@@ -1185,7 +1185,6 @@ public final class ConsensusTestDefinitions {
         // This will not work if there are any forks in the state events
         // -----------------------------------
         final Map<NodeId, Long> lastGenInState = getLastGenerationInState(signedState.getEvents(), numberOfNodes);
-        emitter.reset();
         final StandardEventEmitter restartEmitter = emitter.cleanCopy();
         for (int i = 0; i < numEventsBeforeRestart; i++) {
             final EventImpl event = restartEmitter.emitEvent();
