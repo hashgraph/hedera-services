@@ -133,9 +133,10 @@ public class RecordListBuilder {
             throw new IndexOutOfBoundsException("No more child slots available");
         }
 
-        final var consensusNow =
-                recordBuilders.get(childCount - 1).consensusNow().plusNanos(1L);
+        final var previousRecord = recordBuilders.get(childCount - 1);
+        final var consensusNow = previousRecord.consensusNow().plusNanos(1L);
         final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
+        recordBuilder.parentConsensusTimestamp(previousRecord.parentConsensusTimestamp());
 
         recordBuilders.add(recordBuilder);
         return recordBuilder;

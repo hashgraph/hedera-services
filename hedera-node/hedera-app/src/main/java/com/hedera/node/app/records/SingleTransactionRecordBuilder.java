@@ -65,7 +65,7 @@ import java.util.List;
 /**
  * A custom builder for SingleTransactionRecord.
  */
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public class SingleTransactionRecordBuilder
         implements ConsensusCreateTopicRecordBuilder,
                 ConsensusSubmitMessageRecordBuilder,
@@ -87,7 +87,7 @@ public class SingleTransactionRecordBuilder
     private ScheduleID scheduleRef;
     private List<AssessedCustomFee> assessedCustomFees;
     private List<TokenAssociation> automaticTokenAssociations;
-    private Timestamp parentConsensusTimestamp;
+    private Instant parentConsensusTimestamp;
     private Bytes alias;
     private Bytes ethereumHash;
     private List<AccountAmount> paidStakingRewards;
@@ -115,6 +115,7 @@ public class SingleTransactionRecordBuilder
 
     public SingleTransactionRecordBuilder(@NonNull final Instant consensusNow) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
+        this.parentConsensusTimestamp = consensusNow;
     }
 
     @SuppressWarnings("DataFlowIssue")
@@ -181,7 +182,7 @@ public class SingleTransactionRecordBuilder
                                 scheduleRef,
                                 assessedCustomFees,
                                 automaticTokenAssociations,
-                                parentConsensusTimestamp,
+                                HapiUtils.asTimestamp(parentConsensusTimestamp),
                                 alias,
                                 ethereumHash,
                                 paidStakingRewards,
@@ -191,6 +192,7 @@ public class SingleTransactionRecordBuilder
     }
     // ------------------------------------------------------------------------------------------------------------------------
     // base transaction data
+    @NonNull
     public SingleTransactionRecordBuilder transaction(Transaction transaction, Bytes transactionBytes) {
         this.transaction = transaction;
         this.transactionBytes = transactionBytes;
@@ -205,62 +207,80 @@ public class SingleTransactionRecordBuilder
         return consensusNow;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder transactionFee(long transactionFee) {
         this.transactionFee = transactionFee;
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder contractCallResult(ContractFunctionResult contractCallResult) {
         this.contractCallResult = contractCallResult;
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder contractCreateResult(ContractFunctionResult contractCreateResult) {
         this.contractCreateResult = contractCreateResult;
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder transferList(TransferList transferList) {
         this.transferList = transferList;
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder tokenTransferLists(List<TokenTransferList> tokenTransferLists) {
         this.tokenTransferLists = tokenTransferLists;
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder scheduleRef(ScheduleID scheduleRef) {
         this.scheduleRef = scheduleRef;
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder assessedCustomFees(List<AssessedCustomFee> assessedCustomFees) {
         this.assessedCustomFees = assessedCustomFees;
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder automaticTokenAssociations(
             List<TokenAssociation> automaticTokenAssociations) {
         this.automaticTokenAssociations = automaticTokenAssociations;
         return this;
     }
 
-    public SingleTransactionRecordBuilder parentConsensusTimestamp(Timestamp parentConsensusTimestamp) {
-        this.parentConsensusTimestamp = parentConsensusTimestamp;
+    @NonNull
+    public SingleTransactionRecordBuilder parentConsensusTimestamp(@NonNull Instant parentConsensusTimestamp) {
+        this.parentConsensusTimestamp =
+                requireNonNull(parentConsensusTimestamp, "parentConsensusTimestamp must not be null");
         return this;
     }
 
+    @NonNull
+    public Instant parentConsensusTimestamp() {
+        return parentConsensusTimestamp;
+    }
+
+    @NonNull
     public SingleTransactionRecordBuilder alias(Bytes alias) {
         this.alias = alias;
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder ethereumHash(Bytes ethereumHash) {
         this.ethereumHash = ethereumHash;
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder paidStakingRewards(List<AccountAmount> paidStakingRewards) {
         this.paidStakingRewards = paidStakingRewards;
         return this;
@@ -279,15 +299,12 @@ public class SingleTransactionRecordBuilder
         return this;
     }
 
-    /**
-     * @deprecated this method is only used temporarily during the migration
-     */
-    @Deprecated(forRemoval = true)
     @Nullable
     public OneOf<TransactionRecord.EntropyOneOfType> entropy() {
         return entropy;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder evmAddress(Bytes evmAddress) {
         this.evmAddress = evmAddress;
         return this;
@@ -296,50 +313,46 @@ public class SingleTransactionRecordBuilder
     // ------------------------------------------------------------------------------------------------------------------------
     // fields needed for TransactionReceipt
 
-    public SingleTransactionRecordBuilder status(ResponseCodeEnum status) {
-        this.status = status;
+    @NonNull
+    public SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status) {
+        this.status = requireNonNull(status, "status must not be null");
         return this;
     }
 
-    @Nullable
+    @NonNull
     public ResponseCodeEnum status() {
         return status;
     }
 
     @NonNull
     public SingleTransactionRecordBuilder accountID(@NonNull final AccountID accountID) {
-        this.accountID = accountID;
+        this.accountID = requireNonNull(accountID, "accountID must not be null");
         return this;
     }
 
-    /**
-     * @deprecated this method is only used temporarily during the migration
-     */
-    @Deprecated(forRemoval = true)
     @Nullable
     public AccountID accountID() {
         return accountID;
     }
 
-    /**
-     * @deprecated this method is only used temporarily during the migration
-     */
-    @Deprecated(forRemoval = true)
     @Nullable
     public TokenID tokenID() {
         return tokenID;
     }
 
-    public SingleTransactionRecordBuilder fileID(FileID fileID) {
-        this.fileID = fileID;
+    @NonNull
+    public SingleTransactionRecordBuilder fileID(@NonNull FileID fileID) {
+        this.fileID = requireNonNull(fileID, "fileID must not be null");
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder contractID(ContractID contractID) {
         this.contractID = contractID;
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder exchangeRate(ExchangeRateSet exchangeRate) {
         this.exchangeRate = exchangeRate;
         return this;
@@ -347,14 +360,10 @@ public class SingleTransactionRecordBuilder
 
     @NonNull
     public SingleTransactionRecordBuilder topicID(@NonNull final TopicID topicID) {
-        this.topicID = topicID;
+        this.topicID = requireNonNull(topicID, "topicID must not be null");
         return this;
     }
 
-    /**
-     * @deprecated this method is only used temporarily during the migration
-     */
-    @Deprecated(forRemoval = true)
     @Nullable
     public TopicID topicID() {
         return topicID;
@@ -366,24 +375,16 @@ public class SingleTransactionRecordBuilder
         return this;
     }
 
-    /**
-     * @deprecated this method is only used temporarily during the migration
-     */
-    @Deprecated(forRemoval = true)
     public long topicSequenceNumber() {
         return topicSequenceNumber;
     }
 
     @NonNull
     public SingleTransactionRecordBuilder topicRunningHash(@NonNull final Bytes topicRunningHash) {
-        this.topicRunningHash = topicRunningHash;
+        this.topicRunningHash = requireNonNull(topicRunningHash, "topicRunningHash must not be null");
         return this;
     }
 
-    /**
-     * @deprecated this method is only used temporarily during the migration
-     */
-    @Deprecated(forRemoval = true)
     @Nullable
     public Bytes topicRunningHash() {
         return topicRunningHash;
@@ -395,35 +396,36 @@ public class SingleTransactionRecordBuilder
         return this;
     }
 
-    public SingleTransactionRecordBuilder tokenID(TokenID tokenID) {
-        this.tokenID = tokenID;
+    @NonNull
+    public SingleTransactionRecordBuilder tokenID(@NonNull TokenID tokenID) {
+        this.tokenID = requireNonNull(tokenID, "tokenID must not be null");
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder newTotalSupply(long newTotalSupply) {
         this.newTotalSupply = newTotalSupply;
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder scheduleID(ScheduleID scheduleID) {
         this.scheduleID = scheduleID;
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder scheduledTransactionID(TransactionID scheduledTransactionID) {
         this.scheduledTransactionID = scheduledTransactionID;
         return this;
     }
 
-    public SingleTransactionRecordBuilder serialNumbers(List<Long> serialNumbers) {
-        this.serialNumbers = serialNumbers;
+    @NonNull
+    public SingleTransactionRecordBuilder serialNumbers(@NonNull List<Long> serialNumbers) {
+        this.serialNumbers = requireNonNull(serialNumbers, "serialNumbers must not be null");
         return this;
     }
 
-    /**
-     * @deprecated this method is only used temporarily during the migration
-     */
-    @Deprecated(forRemoval = true)
     @Nullable
     public List<Long> serialNumbers() {
         return serialNumbers;
@@ -431,17 +433,20 @@ public class SingleTransactionRecordBuilder
 
     // ------------------------------------------------------------------------------------------------------------------------
     // Sidecar data, booleans are the migration flag
+    @NonNull
     public SingleTransactionRecordBuilder addContractStateChanges(
             ContractStateChanges contractStateChanges, boolean isMigration) {
         this.contractStateChanges.add(new AbstractMap.SimpleEntry<>(contractStateChanges, isMigration));
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder addContractAction(ContractActions contractAction, boolean isMigration) {
         contractActions.add(new AbstractMap.SimpleEntry<>(contractAction, isMigration));
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilder addContractBytecode(ContractBytecode contractBytecode, boolean isMigration) {
         contractBytecodes.add(new AbstractMap.SimpleEntry<>(contractBytecode, isMigration));
         return this;
