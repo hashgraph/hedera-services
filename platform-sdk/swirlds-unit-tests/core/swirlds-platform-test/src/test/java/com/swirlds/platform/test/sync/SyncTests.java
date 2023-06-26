@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.test.threading.ReplaceSyncPhaseParallelExecutor;
 import com.swirlds.common.test.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
@@ -219,8 +218,6 @@ public class SyncTests {
         new TestConfigBuilder().getOrCreateConfig();
 
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-        SettingsCommon.maxTransactionCountPerEvent = 1000;
-        SettingsCommon.transactionMaxBytes = 10000;
 
         if (platformLoggingEnabled) {
             loadLog4jContext();
@@ -232,11 +229,11 @@ public class SyncTests {
      */
     @ParameterizedTest
     @MethodSource({
-        "simpleGraphBreakingSeed",
-        "simpleFourNodeGraphParams",
-        "fourNodeGraphParams",
-        "tenNodeGraphParams",
-        "edgeCaseGraphParams"
+            "simpleGraphBreakingSeed",
+            "simpleFourNodeGraphParams",
+            "fourNodeGraphParams",
+            "tenNodeGraphParams",
+            "edgeCaseGraphParams"
     })
     void simpleGraph(final SyncTestParams params) throws Exception {
         final SyncTestExecutor executor = new SyncTestExecutor(params);
@@ -743,11 +740,11 @@ public class SyncTests {
      */
     @ParameterizedTest
     @MethodSource({
-        "tipsChangeBreakingSeed",
-        "simpleFourNodeGraphParams",
-        "fourNodeGraphParams",
-        "tenNodeGraphParams",
-        "edgeCaseGraphParams"
+            "tipsChangeBreakingSeed",
+            "simpleFourNodeGraphParams",
+            "fourNodeGraphParams",
+            "tenNodeGraphParams",
+            "edgeCaseGraphParams"
     })
     void tipsChangeAfterPhase1(final SyncTestParams params) throws Exception {
         final SyncTestExecutor executor = new SyncTestExecutor(params);
@@ -780,11 +777,11 @@ public class SyncTests {
      */
     @ParameterizedTest
     @MethodSource({
-        "tipsChangeBreakingSeed",
-        "simpleFourNodeGraphParams",
-        "fourNodeGraphParams",
-        "tenNodeGraphParams",
-        "edgeCaseGraphParams"
+            "tipsChangeBreakingSeed",
+            "simpleFourNodeGraphParams",
+            "fourNodeGraphParams",
+            "tenNodeGraphParams",
+            "edgeCaseGraphParams"
     })
     void tipsChangeAfterPhase2(final SyncTestParams params) throws Exception {
         final SyncTestExecutor executor = new SyncTestExecutor(params);

@@ -23,7 +23,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.utility.CommonUtils;
@@ -58,20 +57,16 @@ class UserEventParserTest {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.common");
         registry.registerConstructables("com.swirlds.common.system.transaction");
-        SettingsCommon.maxTransactionCountPerEvent = 245760;
-        SettingsCommon.maxTransactionBytesPerEvent = 245760;
-        SettingsCommon.transactionMaxBytes = 6144;
-        SettingsCommon.maxAddressSizeAllowed = MAX_ADDRESSBOOK_SIZE;
     }
 
     @ParameterizedTest
     @ValueSource(
             strings = {
-                // Event file version 5 with new Transaction class
-                "src/test/resources/eventFiles/v5withTransactionV1/2021-04-18T04_27_00.004964000Z.evts",
-                "src/test/resources/eventFiles/v5withTransactionV1/2021-04-18T04_26_00.021395000Z.evts",
-                "src/test/resources/eventFiles/v5withTransactionV1/2021-04-18T04_25_00.051650000Z.evts",
-                "src/test/resources/eventFiles/v5withTransactionV1/2021-04-18T04_24_00.033462000Z.evts",
+                    // Event file version 5 with new Transaction class
+                    "src/test/resources/eventFiles/v5withTransactionV1/2021-04-18T04_27_00.004964000Z.evts",
+                    "src/test/resources/eventFiles/v5withTransactionV1/2021-04-18T04_26_00.021395000Z.evts",
+                    "src/test/resources/eventFiles/v5withTransactionV1/2021-04-18T04_25_00.051650000Z.evts",
+                    "src/test/resources/eventFiles/v5withTransactionV1/2021-04-18T04_24_00.033462000Z.evts",
             })
     void parseEventFileTest(String fileName) {
         // parse event file and does not skip transactions

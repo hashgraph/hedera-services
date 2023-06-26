@@ -29,7 +29,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SignatureType;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.stream.StreamType;
 import com.swirlds.common.stream.internal.InvalidStreamFileException;
@@ -161,9 +160,9 @@ public class FileSignTool {
             sig.update(data);
             return sig.verify(signature);
         } catch (final NoSuchAlgorithmException
-                | NoSuchProviderException
-                | InvalidKeyException
-                | SignatureException e) {
+                       | NoSuchProviderException
+                       | InvalidKeyException
+                       | SignatureException e) {
             logger.error(
                     FILE_SIGN.getMarker(),
                     "Failed to verify Signature: {}, PublicKey: {}, File: {}",
@@ -193,10 +192,10 @@ public class FileSignTool {
                     keyStore.getKey(alias, password.toCharArray()));
             logger.info(FILE_SIGN.getMarker(), "keypair has loaded successfully from file {}", keyFileName);
         } catch (final NoSuchAlgorithmException
-                | KeyStoreException
-                | UnrecoverableKeyException
-                | IOException
-                | CertificateException e) {
+                       | KeyStoreException
+                       | UnrecoverableKeyException
+                       | IOException
+                       | CertificateException e) {
             logger.error(FILE_SIGN.getMarker(), "loadPfxKey :: ERROR ", e);
         }
         return sigKeyPair;
@@ -292,11 +291,11 @@ public class FileSignTool {
                 signSingleFileOldVersion(sigKeyPair, streamFile, destSigFilePath);
             }
         } catch (final NoSuchAlgorithmException
-                | NoSuchProviderException
-                | InvalidKeyException
-                | SignatureException
-                | InvalidStreamFileException
-                | IOException e) {
+                       | NoSuchProviderException
+                       | InvalidKeyException
+                       | SignatureException
+                       | InvalidStreamFileException
+                       | IOException e) {
             logger.error(FILE_SIGN.getMarker(), "Failed to sign file {} ", streamFile.getName(), e);
         }
         logger.info(FILE_SIGN.getMarker(), "Finish generating signature file {}", destSigFilePath);
@@ -318,7 +317,7 @@ public class FileSignTool {
     public static void signSingleFileOldVersion(
             final KeyPair sigKeyPair, final File streamFile, final String destSigFilePath)
             throws IOException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException,
-                    SignatureException {
+            SignatureException {
         final byte[] fileHash = computeEntireHash(streamFile).getValue();
         final byte[] signature = sign(fileHash, sigKeyPair);
         generateSigFileOldVersion(destSigFilePath, signature, fileHash);
@@ -350,15 +349,6 @@ public class FileSignTool {
             // so that we can register for parsing RecordStreamObject
             registry.registerConstructables("com.hedera.services.stream");
         }
-
-        // set the settings so that when deserialization we would not have transactionMaxBytes be 0
-        // Todo: should remove these later when we refactor the Settings implementation
-        SettingsCommon.maxTransactionCountPerEvent = 245760;
-        SettingsCommon.maxTransactionBytesPerEvent = 245760;
-        SettingsCommon.transactionMaxBytes = 6144;
-        // set a relatively large value since the signing tool could not tell the address book size
-        // or the number of nodes in the work
-        SettingsCommon.maxAddressSizeAllowed = 1024;
     }
 
     public static void main(final String[] args) {

@@ -32,6 +32,7 @@ import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -453,9 +454,9 @@ public class SwirldsPlatform implements Platform, Startable {
             final State stateToLoad;
             if (signedStateFromDisk != null) {
                 logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                                signedStateFromDisk.getRound(),
-                                signedStateFromDisk.getConsensusTimestamp(),
-                                startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                        signedStateFromDisk.getRound(),
+                        signedStateFromDisk.getConsensusTimestamp(),
+                        startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                         .toString());
 
                 stateToLoad = loadedState.initialState;
@@ -471,7 +472,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 // this should be impossible
                 throw new IllegalStateException("stateToLoad is null");
             }
-
+            final TransactionConfig transactionConfig = platformContext.getConfiguration()
+                    .getConfigData(TransactionConfig.class);
             swirldStateManager = PlatformConstructor.swirldStateManager(
                     platformContext,
                     initialAddressBook,
@@ -479,7 +481,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     preConsensusSystemTransactionManager,
                     postConsensusSystemTransactionManager,
                     metrics,
-                    PlatformConstructor.settingsProvider(),
+                    transactionConfig,
                     freezeManager::isFreezeStarted,
                     stateToLoad);
 
@@ -559,7 +561,7 @@ public class SwirldsPlatform implements Platform, Startable {
             validators.add(new AncientValidator(consensusRef::get));
             validators.add(new EventDeduplication(isDuplicateChecks, eventIntakeMetrics));
             validators.add(StaticValidators::isParentDataValid);
-            validators.add(new TransactionSizeValidator(settings.getMaxTransactionBytesPerEvent()));
+            validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
             if (settings.isVerifyEventSigs()) {
                 validators.add(new SignatureValidator(initialAddressBook));
             }
@@ -593,7 +595,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
             transactionSubmitter = new SwirldTransactionSubmitter(
                     currentPlatformStatus::get,
-                    PlatformConstructor.settingsProvider(),
+                    transactionConfig,
                     swirldStateManager::submitTransaction,
                     new TransactionMetrics(metrics));
 
@@ -690,7 +692,8 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param signedStateFromDisk the initial signed state loaded from disk
      * @param initialState        the initial {@link State} object. This is a fast copy of the state loaded from disk
      */
-    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {}
+    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {
+    }
 
     /**
      * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
@@ -1130,7 +1133,7 @@ public class SwirldsPlatform implements Platform, Startable {
         final PlatformStatus oldStatus = currentPlatformStatus.getAndSet(newStatus);
         if (oldStatus != newStatus) {
             logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                            "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
+                    "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
                     .toString());
 
             notificationEngine.dispatch(

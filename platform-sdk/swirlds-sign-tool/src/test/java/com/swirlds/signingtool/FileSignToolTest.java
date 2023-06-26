@@ -41,8 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.stream.StreamType;
 import com.swirlds.common.stream.internal.StreamValidationResult;
@@ -57,7 +55,6 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -77,12 +74,7 @@ class FileSignToolTest {
     private static final String SIG_VALID_MSG = "the signature bytes should be valid";
 
     private static final KeyPair KEY_PAIR = loadPfxKey(KEY_PATH, PASSWORD, ALIAS);
-    private static final int MAX_ADDRESSBOOK_SIZE = 2048;
 
-    @BeforeAll
-    public static void setup() throws ConstructableRegistryException {
-        SettingsCommon.maxAddressSizeAllowed = MAX_ADDRESSBOOK_SIZE;
-    }
 
     @Test
     void loadJsonTest() throws IOException {
@@ -168,7 +160,7 @@ class FileSignToolTest {
     void mainSignSingleFileTest() throws IOException {
         setProperties();
         System.setProperty(FILE_NAME_PROPERTY, EVTS_FILE_PATH);
-        FileSignTool.main(new String[] {});
+        FileSignTool.main(new String[]{});
         // generated signature file should match expected, then delete the sig file
         compareSigWithExpectedThenDelete();
         clearProperties();
@@ -179,7 +171,7 @@ class FileSignToolTest {
     void mainSignDirTest() throws IOException {
         setProperties();
         System.setProperty(DIR_PROPERTY, JSON_DIR_PATH);
-        FileSignTool.main(new String[] {});
+        FileSignTool.main(new String[]{});
         final File sigFileForJson = new File(buildDestSigFilePath(new File(DIR_PATH), new File(JSON_FILE_PATH)));
         // the file should not exist, because when `-Ddir` is set, the tool only signs .rcd/.evts/.csv files
         assertTrue(

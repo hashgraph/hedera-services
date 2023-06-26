@@ -28,6 +28,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -45,7 +46,6 @@ import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
@@ -104,7 +104,6 @@ class EventFlowTests {
     protected static final NodeId selfId = new NodeId(0L);
     private static final int THROTTLE_TRANSACTION_QUEUE_SIZE = 100_000;
 
-    private final SettingsProvider settingsProvider = mock(SettingsProvider.class);
     protected AddressBook addressBook;
     private BlockingQueue<ReservedSignedState> signedStateTracker;
     protected SystemTransactionTracker systemTransactionTracker;
@@ -570,9 +569,13 @@ class EventFlowTests {
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
                 .setSequentialIds(true)
                 .build();
-        when(settingsProvider.getTransactionMaxBytes()).thenReturn(TX_MAX_BYTES);
-        when(settingsProvider.getThrottleTransactionQueueSize()).thenReturn(THROTTLE_TRANSACTION_QUEUE_SIZE);
-        when(settingsProvider.getMaxTransactionBytesPerEvent()).thenReturn(2048);
+
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("transaction.transactionMaxBytes", TX_MAX_BYTES)
+                .withValue("transaction.throttleTransactionQueueSize", THROTTLE_TRANSACTION_QUEUE_SIZE)
+                .withValue("transaction.maxTransactionBytesPerEvent", 2048)
+                .getOrCreateConfig();
+        final TransactionConfig transactionConfig = configuration.getConfigData(TransactionConfig.class);
 
         final ConsensusHandlingMetrics consStats = mock(ConsensusHandlingMetrics.class);
         when(consStats.getConsCycleStat()).thenReturn(mock(CycleTimingStat.class));
@@ -585,14 +588,14 @@ class EventFlowTests {
 
         // Set up the running hash calculator, required if signed states are created
         doAnswer((Answer<Void>) invocation -> {
-                    final Object[] args = invocation.getArguments();
-                    final List<EventImpl> events = (List<EventImpl>) args[0];
+            final Object[] args = invocation.getArguments();
+            final List<EventImpl> events = (List<EventImpl>) args[0];
 
-                    // calculates and updates runningHash
-                    events.forEach(runningHashCalculator::calculateRunningHash);
+            // calculates and updates runningHash
+            events.forEach(runningHashCalculator::calculateRunningHash);
 
-                    return null;
-                })
+            return null;
+        })
                 .when(eventStreamManager)
                 .addEvents(anyList());
 
@@ -619,7 +622,7 @@ class EventFlowTests {
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
-                settingsProvider,
+                transactionConfig,
                 () -> false,
                 state);
 
@@ -644,9 +647,12 @@ class EventFlowTests {
                 consStats,
                 eventStreamManager,
                 signedStateTracker,
-                e -> {},
-                () -> {},
-                (round) -> {},
+                e -> {
+                },
+                () -> {
+                },
+                (round) -> {
+                },
                 SoftwareVersion.NO_VERSION);
     }
 
