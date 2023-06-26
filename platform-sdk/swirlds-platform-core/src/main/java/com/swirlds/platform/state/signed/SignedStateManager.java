@@ -140,7 +140,7 @@ public class SignedStateManager implements SignedStateFinder {
                 Objects.requireNonNull(stateLacksSignaturesConsumer, "stateLacksSignaturesConsumer");
 
         this.savedSignatures =
-                new StandardSequenceSet<>(0, stateConfig.maxAgeOfFutureStateSignatures(), false, SavedSignature::round);
+                new StandardSequenceSet<>(0, stateConfig.maxAgeOfFutureStateSignatures(), SavedSignature::round);
     }
 
     /**

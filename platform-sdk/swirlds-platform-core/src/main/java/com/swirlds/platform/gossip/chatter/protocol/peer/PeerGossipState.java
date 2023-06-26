@@ -41,7 +41,7 @@ public class PeerGossipState implements Shiftable {
      */
     public PeerGossipState(final int futureGenerationLimit) {
         events = new StandardSequenceMap<>(
-                GraphGenerations.FIRST_GENERATION, futureGenerationLimit, false, EventDescriptor::getGeneration);
+                GraphGenerations.FIRST_GENERATION, futureGenerationLimit, EventDescriptor::getGeneration);
         maxReceivedDescriptorGeneration = GraphGenerations.FIRST_GENERATION;
     }
 

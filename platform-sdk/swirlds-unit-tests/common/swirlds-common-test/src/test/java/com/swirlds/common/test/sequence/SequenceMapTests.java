@@ -1109,7 +1109,7 @@ public class SequenceMapTests {
         final int capacity = 5;
 
         final SequenceMap<SequenceMapKey, Integer> map =
-                new ConcurrentSequenceMap<>(lowerBound.get(), capacity, false, SequenceMapKey::sequence);
+                new ConcurrentSequenceMap<>(lowerBound.get(), capacity, SequenceMapKey::sequence);
 
         final AtomicBoolean error = new AtomicBoolean();
 

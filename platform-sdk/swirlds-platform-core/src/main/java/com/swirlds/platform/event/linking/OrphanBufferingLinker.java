@@ -59,8 +59,8 @@ public class OrphanBufferingLinker extends AbstractEventLinker {
         this.parentFinder = parentFinder;
         this.eventOutput = new ArrayDeque<>();
         this.newlyLinkedEvents = new ArrayDeque<>();
-        this.orphanMap = new StandardSequenceMap<>(0, futureGenerationLimit, false, EventDescriptor::getGeneration);
-        this.missingParents = new StandardSequenceMap<>(0, futureGenerationLimit, false, ParentDescriptor::generation);
+        this.orphanMap = new StandardSequenceMap<>(0, futureGenerationLimit, EventDescriptor::getGeneration);
+        this.missingParents = new StandardSequenceMap<>(0, futureGenerationLimit, ParentDescriptor::generation);
     }
 
     private static void parentNoLongerMissing(final ChildEvent child, final Hash parentHash, final EventImpl parent) {

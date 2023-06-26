@@ -65,15 +65,16 @@ public class TipsetMetrics {
 
             final SpeedometerMetric.Config parentConfig = new SpeedometerMetric.Config(
                             "platform", "tipsetParent" + nodeId.id())
-                    .withDescription("Cycled when this node has used an event from the target node as a "
+                    .withDescription("Cycled when an event from that node is used as a "
                             + "parent because it optimized the tipset score.");
             final SpeedometerMetric parentMetric = metrics.getOrCreate(parentConfig);
             tipsetParentMetrics.put(nodeId, parentMetric);
 
             final SpeedometerMetric.Config pityParentConfig = new SpeedometerMetric.Config(
                             "platform", "pityParent" + nodeId.id())
-                    .withDescription("Cycled when this node has used an event from the target node as a "
-                            + "parent without consideration of tipset score optimization.");
+                    .withDescription("Cycled when an event from that node is used as a "
+                            + "parent without consideration of tipset score optimization "
+                            + "(i.e. taking 'pity' on a node that isn't getting its events chosen as parents).");
             final SpeedometerMetric pityParentMetric = metrics.getOrCreate(pityParentConfig);
             pityParentMetrics.put(nodeId, pityParentMetric);
         }

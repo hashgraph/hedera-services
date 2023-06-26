@@ -31,6 +31,24 @@ import java.util.function.ToLongFunction;
 public class StandardSequenceSet<T> extends AbstractSequenceSet<T> {
 
     /**
+     * Create a new lock free {@link SequenceSet} that does not permit expansion.
+     *
+     * @param lowestAllowedSequenceNumber the initial lowest permitted sequence in the set
+     * @param sequenceNumberCapacity      the number of sequence numbers permitted to exist in this data structure. E.g.
+     *                                    if the lowest allowed sequence number is 100 and the capacity is 10, then
+     *                                    values with a sequence number between 100 and 109 (inclusive) will be allowed,
+     *                                    and any value with a sequence number outside that range will be rejected.
+     * @param getSequenceNumberFromEntry  given an entry, extract the sequence number
+     */
+    public StandardSequenceSet(
+            final long lowestAllowedSequenceNumber,
+            final int sequenceNumberCapacity,
+            @NonNull final ToLongFunction<T> getSequenceNumberFromEntry) {
+
+        super(lowestAllowedSequenceNumber, sequenceNumberCapacity, false, getSequenceNumberFromEntry);
+    }
+
+    /**
      * Create a new lock free {@link SequenceSet}.
      *
      * @param lowestAllowedSequenceNumber the initial lowest permitted sequence in the set

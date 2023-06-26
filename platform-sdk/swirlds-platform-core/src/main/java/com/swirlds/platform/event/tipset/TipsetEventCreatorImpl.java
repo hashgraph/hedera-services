@@ -281,7 +281,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     }
 
     /**
-     * Given an other parent, build the next self event.
+     * Given an other parent, build the next self event and process it.
      *
      * @param otherParent the other parent, or null if there is no other parent
      * @return the new event
@@ -311,7 +311,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     }
 
     /**
-     * Given the parents, build the event object.
+     * Given the parents, assemble the event object.
      *
      * @param otherParent the other parent
      * @return the event

@@ -49,6 +49,24 @@ public class ConcurrentSequenceMap<K, V> extends AbstractSequenceMap<K, V> {
     private final Lock windowLock = new ReentrantLock();
 
     /**
+     * Construct a thread safe {@link SequenceMap} that does not permit expansion.
+     *
+     * @param firstSequenceNumberInWindow the lowest allowed sequence number
+     * @param sequenceNumberCapacity      the number of sequence numbers permitted to exist in this data structure. E.g.
+     *                                    if the lowest allowed sequence number is 100 and the capacity is 10, then
+     *                                    values with a sequence number between 100 and 109 (inclusive) will be allowed,
+     *                                    and any value with a sequence number outside that range will be rejected.
+     * @param getSequenceNumberFromKey    a method that extracts the sequence number from a key
+     */
+    public ConcurrentSequenceMap(
+            final long firstSequenceNumberInWindow,
+            final int sequenceNumberCapacity,
+            @NonNull final ToLongFunction<K> getSequenceNumberFromKey) {
+
+        this(firstSequenceNumberInWindow, sequenceNumberCapacity, false, getSequenceNumberFromKey);
+    }
+
+    /**
      * Construct a thread safe {@link SequenceMap}.
      *
      * @param firstSequenceNumberInWindow the lowest allowed sequence number
