@@ -89,8 +89,7 @@ class CustomGasChargingTest {
         given(sender.getBalance()).willReturn(Wei.of(transaction.upfrontCostGiven(NETWORK_GAS_PRICE) - 1));
         assertFailsWith(
                 INSUFFICIENT_PAYER_BALANCE,
-                () -> subject.chargeForGas(
-                        sender, relayer, wellKnownContextWith(blocks), worldUpdater, transaction));
+                () -> subject.chargeForGas(sender, relayer, wellKnownContextWith(blocks), worldUpdater, transaction));
     }
 
     @Test
@@ -112,8 +111,7 @@ class CustomGasChargingTest {
         final var transaction = wellKnownRelayedHapiCallWithUserGasPriceAndMaxAllowance(0, insufficientMaxAllowance);
         assertFailsWith(
                 INSUFFICIENT_TX_FEE,
-                () -> subject.chargeForGas(
-                        sender, relayer, wellKnownContextWith(blocks), worldUpdater, transaction));
+                () -> subject.chargeForGas(sender, relayer, wellKnownContextWith(blocks), worldUpdater, transaction));
     }
 
     @Test
@@ -123,8 +121,7 @@ class CustomGasChargingTest {
         given(relayer.getBalance()).willReturn(Wei.of(transaction.gasCostGiven(NETWORK_GAS_PRICE) - 1));
         assertFailsWith(
                 INSUFFICIENT_PAYER_BALANCE,
-                () -> subject.chargeForGas(
-                        sender, relayer, wellKnownContextWith(blocks), worldUpdater, transaction));
+                () -> subject.chargeForGas(sender, relayer, wellKnownContextWith(blocks), worldUpdater, transaction));
     }
 
     @Test
@@ -161,8 +158,7 @@ class CustomGasChargingTest {
         given(sender.getBalance()).willReturn(Wei.of(transaction.offeredGasCost() - 1));
         assertFailsWith(
                 INSUFFICIENT_PAYER_BALANCE,
-                () -> subject.chargeForGas(
-                        sender, relayer, wellKnownContextWith(blocks), worldUpdater, transaction));
+                () -> subject.chargeForGas(sender, relayer, wellKnownContextWith(blocks), worldUpdater, transaction));
     }
 
     @Test
@@ -174,8 +170,7 @@ class CustomGasChargingTest {
         given(relayer.getBalance()).willReturn(Wei.ZERO);
         assertFailsWith(
                 INSUFFICIENT_PAYER_BALANCE,
-                () -> subject.chargeForGas(
-                        sender, relayer, wellKnownContextWith(blocks), worldUpdater, transaction));
+                () -> subject.chargeForGas(sender, relayer, wellKnownContextWith(blocks), worldUpdater, transaction));
     }
 
     @Test
@@ -184,8 +179,7 @@ class CustomGasChargingTest {
         final var transaction = wellKnownRelayedHapiCallWithUserGasPriceAndMaxAllowance(NETWORK_GAS_PRICE / 2, 0);
         assertFailsWith(
                 INSUFFICIENT_TX_FEE,
-                () -> subject.chargeForGas(
-                        sender, relayer, wellKnownContextWith(blocks), worldUpdater, transaction));
+                () -> subject.chargeForGas(sender, relayer, wellKnownContextWith(blocks), worldUpdater, transaction));
     }
 
     @Test

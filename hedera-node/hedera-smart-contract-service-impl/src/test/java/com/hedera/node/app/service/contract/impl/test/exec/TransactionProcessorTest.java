@@ -32,7 +32,6 @@ import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,6 +65,7 @@ class TransactionProcessorTest {
 
     @Mock
     private HederaEvmAccount calledAccount;
+
     @Mock
     private CustomGasCharging gasCharging;
 

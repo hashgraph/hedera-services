@@ -76,7 +76,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     @BeforeEach
     void setUp() {
         networkGetAccountDetailsHandler = new NetworkGetAccountDetailsHandler();
-        final var configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        final var configuration = HederaTestConfigBuilder.createConfig();
         lenient().when(context.configuration()).thenReturn(configuration);
     }
 

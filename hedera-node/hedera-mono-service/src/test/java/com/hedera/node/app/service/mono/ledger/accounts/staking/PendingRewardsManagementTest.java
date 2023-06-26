@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -94,7 +93,8 @@ class PendingRewardsManagementTest {
         given800Balance(1_000_000_000_000L);
         given(dynamicProperties.maxDailyStakeRewardThPerH()).willReturn(lastPeriodRewardRate);
         given(networkCtx.getTotalStakedRewardStart()).willReturn(totalStakedRewardStart);
-        given(properties.getLongProperty(STAKING_REWARD_RATE)).willReturn(rewardRate);
+        given(dynamicProperties.stakingRewardRate()).willReturn(rewardRate);
+        given(dynamicProperties.maxStakeRewarded()).willReturn(Long.MAX_VALUE);
         given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
         given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
         given(info.getStake()).willReturn(125_000L * HBARS_TO_TINYBARS);
@@ -118,7 +118,7 @@ class PendingRewardsManagementTest {
         given800Balance(123);
         given(networkCtx.pendingRewards()).willReturn(124L);
 
-        Assertions.assertEquals(0, subject.rewardRateForEndingPeriod());
+        Assertions.assertEquals(0, subject.rewardRateForEndingPeriod(1234));
     }
 
     private void given800Balance(final long balance) {

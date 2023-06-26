@@ -70,9 +70,7 @@ public class TransactionProcessor {
     }
 
     private record InitialCall(
-            @NonNull HederaEvmAccount sender,
-            @Nullable HederaEvmAccount relayer,
-            @NonNull Address toAddress) {}
+            @NonNull HederaEvmAccount sender, @Nullable HederaEvmAccount relayer, @NonNull Address toAddress) {}
 
     private InitialCall computeInitialCall(
             @NonNull final HederaEvmTransaction transaction,
