@@ -70,6 +70,8 @@ public enum PlatformStatus implements UniqueId {
     RECONNECT_COMPLETE(10),
     /**
      * The platform has encountered a failure, and is unable to continue. The platform is idle.
+     * <p>
+     * NOTE: this status is currently unused, but will be used in the future
      */
     CATASTROPHIC_FAILURE(11);
 
