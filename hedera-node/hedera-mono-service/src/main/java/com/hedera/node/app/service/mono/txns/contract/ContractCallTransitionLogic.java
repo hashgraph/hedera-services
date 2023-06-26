@@ -206,7 +206,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             final var createdNonces = worldState.getContractNonces();
             result.setContractNonces(createdNonces);
         }
-        log.info("--------------------------");
         if (worldLedgers.accounts() != null && worldLedgers.accounts().size() > 0) {
             worldLedgers.accounts().idSet().forEach(id -> {
                 final var account = worldLedgers.accounts().getRef(id);
