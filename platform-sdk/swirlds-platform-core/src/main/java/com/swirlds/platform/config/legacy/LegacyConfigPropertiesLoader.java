@@ -20,7 +20,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.internal.ConfigurationException;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.Settings;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -78,7 +77,7 @@ public final class LegacyConfigPropertiesLoader {
             while (scanner.hasNextLine()) {
                 final String line = readNextLine(scanner);
                 if (!line.isEmpty()) {
-                    final String[] lineParameters = Settings.splitLine(line);
+                    final String[] lineParameters = splitLine(line);
                     final int len = Math.max(10, lineParameters.length);
                     // pars is the comma-separated parameters, trimmed, lower-cased, then padded with "" to have
                     // at least 10 parameters
@@ -164,5 +163,20 @@ public final class LegacyConfigPropertiesLoader {
 
     private static void onError(String message) {
         CommonUtils.tellUserConsolePopup("Error", message);
+    }
+
+    /**
+     * Split the given string on its commas, and trim each result
+     *
+     * @param line the string of comma-separated values to split
+     * @return the array of trimmed elements.
+     */
+    private static String[] splitLine(final String line) {
+        final String[] elms = line.split(",");
+        for (int i = 0; i < elms.length; i++) {
+            elms[i] = elms[i].trim();
+        }
+
+        return elms;
     }
 }

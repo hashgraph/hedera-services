@@ -454,9 +454,9 @@ public class SwirldsPlatform implements Platform, Startable {
             final State stateToLoad;
             if (signedStateFromDisk != null) {
                 logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                                signedStateFromDisk.getRound(),
-                                signedStateFromDisk.getConsensusTimestamp(),
-                                startUpEventFrozenManager.getStartUpEventFrozenEndTime())
+                        signedStateFromDisk.getRound(),
+                        signedStateFromDisk.getConsensusTimestamp(),
+                        startUpEventFrozenManager.getStartUpEventFrozenEndTime())
                         .toString());
 
                 stateToLoad = loadedState.initialState;
@@ -553,7 +553,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     shadowGraph);
 
             final EventCreator eventCreator = buildEventCreator(eventIntake);
-            final Settings settings = Settings.getInstance();
+            final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
             final List<GossipEventValidator> validators = new ArrayList<>();
             // it is very important to discard ancient events, otherwise the deduplication will not work, since it
@@ -562,7 +562,7 @@ public class SwirldsPlatform implements Platform, Startable {
             validators.add(new EventDeduplication(isDuplicateChecks, eventIntakeMetrics));
             validators.add(StaticValidators::isParentDataValid);
             validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
-            if (settings.isVerifyEventSigs()) {
+            if (basicConfig.verifyEventSigs()) {
                 validators.add(new SignatureValidator(initialAddressBook));
             }
             final GossipEventValidators eventValidators = new GossipEventValidators(validators);
@@ -692,7 +692,8 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param signedStateFromDisk the initial signed state loaded from disk
      * @param initialState        the initial {@link State} object. This is a fast copy of the state loaded from disk
      */
-    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {}
+    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {
+    }
 
     /**
      * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
@@ -1132,7 +1133,7 @@ public class SwirldsPlatform implements Platform, Startable {
         final PlatformStatus oldStatus = currentPlatformStatus.getAndSet(newStatus);
         if (oldStatus != newStatus) {
             logger.info(PLATFORM_STATUS.getMarker(), () -> new PlatformStatusPayload(
-                            "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
+                    "Platform status changed.", oldStatus == null ? "" : oldStatus.name(), newStatus.name())
                     .toString());
 
             notificationEngine.dispatch(

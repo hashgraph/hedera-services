@@ -20,9 +20,15 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.reflection.ConfigReflectionUtils;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.ConfigMapping;
+import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -36,6 +42,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class PlatformConfigUtils {
     private static final Logger logger = LogManager.getLogger(PlatformConfigUtils.class);
+    public static final String SETTING_USED_FILENAME = "settingsUsed.txt";
 
     private PlatformConfigUtils() {
         // Utility class
@@ -77,8 +84,8 @@ public class PlatformConfigUtils {
 
         configNames.stream().filter(mappings::containsKey).forEach(name -> {
             final String message = ("Configuration property '%s' was renamed to '%s'. "
-                            + "This build is currently backwards compatible with the old name, but this may not be true in "
-                            + "a future release, so it is important to switch to the new name.")
+                    + "This build is currently backwards compatible with the old name, but this may not be true in "
+                    + "a future release, so it is important to switch to the new name.")
                     .formatted(name, mappings.get(name));
 
             logger.warn(STARTUP.getMarker(), message);
@@ -101,5 +108,57 @@ public class PlatformConfigUtils {
                                     propertyNamePrefix, component));
                 })
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * Write all the settings to the file settingsUsed.txt, some of which might have been changed by settings.txt.
+     *
+     * @param directory the directory to write to
+     */
+    public static void writeSettingsUsed(final Path directory) {
+        final Configuration configuration = ConfigurationHolder.getInstance().get();
+        writeSettingsUsed(directory, configuration);
+    }
+
+    /**
+     * Write all the settings to the file settingsUsed.txt, some of which might have been changed by settings.txt.
+     *
+     * @param directory the directory to write to
+     */
+    public static void writeSettingsUsed(final Path directory, final Configuration configuration) {
+
+        try (final BufferedWriter writer =
+                Files.newBufferedWriter(directory.resolve(SETTING_USED_FILENAME))) {
+            final StringBuilder stringBuilder = new StringBuilder();
+            generateSettingsUsed(stringBuilder, configuration);
+            writer.write(stringBuilder.toString());
+
+            writer.flush();
+        } catch (final IOException e) {
+            logger.error(EXCEPTION.getMarker(), "Error in writing to settingsUsed.txt", e);
+        }
+    }
+
+    /**
+     * Generate the settings used, some of which might have been changed by settings.txt.
+     *
+     * @param stringBuilder the string builder to write to
+     * @param configuration the configuration to use
+     */
+    public static void generateSettingsUsed(final StringBuilder stringBuilder, final Configuration configuration) {
+        stringBuilder.append(PlatformVersion.locateOrDefault().license());
+        stringBuilder.append(System.lineSeparator());
+        stringBuilder.append(System.lineSeparator());
+
+        stringBuilder.append(
+                "The following are all the settings, as modified by settings.txt, but not reflecting any changes "
+                        + "made by config.txt.");
+        stringBuilder.append(System.lineSeparator());
+        stringBuilder.append(System.lineSeparator());
+
+        final Set<String> propertyNames = configuration.getPropertyNames().collect(Collectors.toSet());
+        for (final String propertyName : propertyNames) {
+            stringBuilder.append(String.format("%15s = %s%n", propertyName, configuration.getValue(propertyName)));
+        }
     }
 }
