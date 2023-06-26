@@ -35,6 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -174,6 +175,12 @@ class HederaWorldStateTest {
     void getsProvisionalContractCreations() {
         var provisionalContractCreations = subject.getCreatedContractIds();
         assertEquals(0, provisionalContractCreations.size());
+    }
+
+    @Test
+    void getsContractNonces() {
+        var contractNonces = subject.getContractNonces();
+        assertEquals(0, contractNonces.size());
     }
 
     @Test
@@ -806,6 +813,46 @@ class HederaWorldStateTest {
         // then:
         subject.clearProvisionalContractCreations();
         assertEquals(0, subject.getCreatedContractIds().size());
+    }
+
+    @Test
+    void persistCreatedContractNonces() {
+        givenNonNullWorldLedgers();
+        final var newAddress = contract.asEvmAddress();
+        given(dynamicProperties.isContractsNoncesExternalizationEnabled()).willReturn(true);
+        given(worldLedgers.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(newAddress)).willReturn(newAddress);
+        given(worldLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
+        given(accounts.contains(any())).willReturn(true);
+        given(accounts.get(any(), eq(AccountProperty.ETHEREUM_NONCE))).willReturn(1L);
+        given(recordsHistorian.hasThrottleCapacityForChildTransactions()).willReturn(true);
+
+        final var actualSubject = subject.updater();
+        actualSubject.createAccount(newAddress, 1, Wei.of(balance));
+        // NEWLY CREATED CONTRACT NONCES
+        given(entityAccess.isExtant(contract.asEvmAddress())).willReturn(false);
+
+        actualSubject.commit();
+        final var result = subject.getContractNonces();
+
+        verify(entityAccess, atLeast(2)).isExtant(contract.asEvmAddress());
+        assertEquals(1L, result.get(contract.asGrpcContract()).longValue());
+
+        subject.clearContractNonces();
+        assertEquals(0, subject.getContractNonces().size());
+
+        // UPDATE CONTRACT NONCES
+        given(entityAccess.isExtant(contract.asEvmAddress())).willReturn(true);
+
+        actualSubject.commit();
+        final var updateResult = subject.getContractNonces();
+
+        verify(entityAccess, atLeast(2)).isExtant(contract.asEvmAddress());
+        assertEquals(1L, updateResult.get(contract.asGrpcContract()).longValue());
+
+        subject.clearContractNonces();
+        assertEquals(0, subject.getContractNonces().size());
     }
 
     private void givenNonNullWorldLedgers() {
