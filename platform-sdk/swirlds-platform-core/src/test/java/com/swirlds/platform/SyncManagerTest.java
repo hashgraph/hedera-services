@@ -32,6 +32,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.config.EventConfig;
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -88,7 +89,9 @@ public class SyncManagerTest {
             startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
             final Random random = getRandomPrintSeed();
             hashgraph = new DummyHashgraph(random, 0);
-            eventTransactionPool = spy(new EventTransactionPool(new NoOpMetrics(), null, null));
+            final TransactionConfig transactionConfig =
+                    new TestConfigBuilder().getOrCreateConfig().getConfigData(TransactionConfig.class);
+            eventTransactionPool = spy(new EventTransactionPool(new NoOpMetrics(), transactionConfig, null));
 
             this.swirldStateManager = swirldStateManager;
 
