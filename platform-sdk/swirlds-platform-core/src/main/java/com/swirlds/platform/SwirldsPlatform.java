@@ -672,6 +672,8 @@ public class SwirldsPlatform implements Platform, Startable {
         return swirldStateManager.submitTransaction(systemTransaction, priority);
     }
 
+    // TODO javadoc
+    // TODO can this become a static method elsewhere?
     @NonNull
     private State initializeAndCopyState(@NonNull final SignedState signedState) {
 
