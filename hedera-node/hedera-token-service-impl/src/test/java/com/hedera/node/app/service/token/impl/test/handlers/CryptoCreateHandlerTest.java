@@ -461,7 +461,6 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertTrue(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
         assertTrue(writableStore.modifiedAccountsInState().contains(accountID(id.accountNum())));
         assertEquals(
-                //                Bytes.wrap("alias"),
                 Bytes.wrap(evmAddress),
                 writableStore
                         .get(AccountID.newBuilder().accountNum(1000L).build())

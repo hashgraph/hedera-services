@@ -55,6 +55,7 @@ public class CryptoCreateValidator {
      * @param attributeValidator   AttributeValidator
      * @param config    CryptoCreateWithAliasConfig
      * @param readableAccountStore    ReadableAccountStore
+     * @throws HandleException if the inputs are not invalid
      */
     public void validateKeyAliasAndEvmAddressCombinations(
             @NonNull final CryptoCreateTransactionBody op,
