@@ -17,7 +17,6 @@
 package com.swirlds.platform.event;
 
 import com.swirlds.base.function.BooleanFunction;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
@@ -57,6 +56,7 @@ public class EventCreatorThread implements Clearable {
      */
     public EventCreatorThread(
             final ThreadManager threadManager,
+            final ThreadConfig threadConfig,
             final NodeId selfId,
             final int attemptedChatterEventPerSecond,
             final AddressBook addressBook,
@@ -77,10 +77,7 @@ public class EventCreatorThread implements Clearable {
                 .setMaximumRate(attemptedChatterEventPerSecond)
                 .setComponent("Chatter")
                 .setThreadName("EventGenerator")
-                .setLogAfterPauseDuration(ConfigurationHolder.getInstance()
-                        .get()
-                        .getConfigData(ThreadConfig.class)
-                        .logStackTracePauseDuration())
+                .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
                 .setWork(this::createEvent)
                 .build();
     }
