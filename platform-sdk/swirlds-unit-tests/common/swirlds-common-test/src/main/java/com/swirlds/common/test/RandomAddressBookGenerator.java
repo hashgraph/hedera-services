@@ -168,7 +168,6 @@ public class RandomAddressBookGenerator {
         final String nickname = RandomUtils.randomString(random, 10);
         final String selfName = RandomUtils.randomString(random, 10);
 
-        final boolean ownHost = false;
         final int maxPort = 65535;
         final int minPort = 2000;
         final byte[] addressInternalIpv4;
@@ -199,7 +198,6 @@ public class RandomAddressBookGenerator {
                 nickname,
                 selfName,
                 weight,
-                ownHost,
                 addressInternalIpv4,
                 portInternalIpv4,
                 addressExternalIpv4,

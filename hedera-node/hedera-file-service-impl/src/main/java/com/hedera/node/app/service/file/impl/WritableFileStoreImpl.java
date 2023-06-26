@@ -55,17 +55,17 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
      * @param file - the file to be mapped onto a new {@link MerkleTopic} and persisted.
      */
     public void put(@NonNull final File file) {
-        filesState.put(asFileId(requireNonNull(file).fileNumber()), file);
+        filesState.put(requireNonNull(file).fileId(), file);
     }
 
     /**
      * Returns the {@link File} with the given number. If no such file exists, returns {@code
      * Optional.empty()}
      *
-     * @param fileNum - the number of the file to be retrieved.
+     * @param fileId - the id of the file to be retrieved.
      */
-    public @NonNull Optional<File> get(final long fileNum) {
-        final var file = filesState.get(asFileId(fileNum));
+    public @NonNull Optional<File> get(final FileID fileId) {
+        final var file = filesState.get(fileId);
         return Optional.ofNullable(file);
     }
 
@@ -73,10 +73,10 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
      * Returns the {@link File} with the given number using {@link WritableKVState}. If no such file
      * exists, returns {@code Optional.empty()}
      *
-     * @param fileNum - the number of the file to be retrieved.
+     * @param fileId - the id of the file to be retrieved.
      */
-    public @NonNull Optional<File> getForModify(final long fileNum) {
-        final var file = filesState.getForModify(asFileId(fileNum));
+    public @NonNull Optional<File> getForModify(final FileID fileId) {
+        final var file = filesState.getForModify(fileId);
         return Optional.ofNullable(file);
     }
 
@@ -101,14 +101,9 @@ public class WritableFileStoreImpl extends ReadableFileStoreImpl {
     /**
      * remove the file from the state.
      *
-     * @param fileNum - the number of the file to be removed from state.
+     * @param fileId - the id of the file to be removed from state.
      */
-    public void removeFile(final long fileNum) {
-        filesState.remove(asFileId(fileNum));
-    }
-
-    // In the future we need to add shard/realm into this method, based on the shard/realm config values
-    private FileID asFileId(final long fileNum) {
-        return FileID.newBuilder().fileNum(fileNum).build();
+    public void removeFile(final FileID fileId) {
+        filesState.remove(fileId);
     }
 }

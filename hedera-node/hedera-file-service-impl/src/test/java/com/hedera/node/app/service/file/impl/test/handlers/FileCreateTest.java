@@ -37,7 +37,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.RealmID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ShardID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
@@ -109,6 +111,8 @@ class FileCreateTest extends FileTestBase {
         }
         createFileBuilder.memo("memo");
         createFileBuilder.contents(Bytes.wrap(contents));
+        createFileBuilder.shardID(ShardID.DEFAULT);
+        createFileBuilder.realmID(RealmID.DEFAULT);
 
         if (expirationTime > 0) {
             createFileBuilder.expirationTime(
@@ -207,7 +211,8 @@ class FileCreateTest extends FileTestBase {
 
         subject.handle(handleContext);
 
-        final var createdFile = fileStore.get(1_234L);
+        final FileID createdFileId = FileID.newBuilder().fileNum(1_234L).build();
+        final var createdFile = fileStore.get(createdFileId);
         assertTrue(createdFile.isPresent());
 
         final var actualFile = createdFile.get();
@@ -215,10 +220,10 @@ class FileCreateTest extends FileTestBase {
         assertEquals(keys, actualFile.keys());
         assertEquals(1_234_567L, actualFile.expirationTime());
         assertEquals(contentsBytes, actualFile.contents());
-        assertEquals(fileId.fileNum(), actualFile.fileNumber());
+        assertEquals(fileId, actualFile.fileId());
         assertFalse(actualFile.deleted());
         verify(recordBuilder).fileID(FileID.newBuilder().fileNum(1_234L).build());
-        assertTrue(fileStore.get(1234L).isPresent());
+        assertTrue(fileStore.get(createdFileId).isPresent());
     }
 
     @Test
@@ -237,7 +242,8 @@ class FileCreateTest extends FileTestBase {
 
         subject.handle(handleContext);
 
-        final var createdFile = fileStore.get(1_234L);
+        final FileID createdFileId = FileID.newBuilder().fileNum(1_234L).build();
+        final var createdFile = fileStore.get(createdFileId);
         assertTrue(createdFile.isPresent());
 
         final var actualFile = createdFile.get();
@@ -245,10 +251,10 @@ class FileCreateTest extends FileTestBase {
         assertEquals(keys, actualFile.keys());
         assertEquals(1_234_567L, actualFile.expirationTime());
         assertEquals(contentsBytes, actualFile.contents());
-        assertEquals(fileId.fileNum(), actualFile.fileNumber());
+        assertEquals(fileId, actualFile.fileId());
         assertFalse(actualFile.deleted());
         verify(recordBuilder).fileID(FileID.newBuilder().fileNum(1_234L).build());
-        assertTrue(fileStore.get(1234L).isPresent());
+        assertTrue(fileStore.get(createdFileId).isPresent());
     }
 
     @Test
@@ -284,7 +290,7 @@ class FileCreateTest extends FileTestBase {
                 .validateMemo(txBody.fileCreate().memo());
 
         assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertTrue(fileStore.get(1234L).isEmpty());
+        assertTrue(fileStore.get(FileID.newBuilder().fileNum(1234L).build()).isEmpty());
     }
 
     @Test

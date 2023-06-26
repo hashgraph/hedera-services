@@ -27,7 +27,6 @@ import com.swirlds.base.state.Startable;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
@@ -190,16 +189,15 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         eventsAndGenerations = new SignedStateEventsAndGenerations(consensusConfig);
         final ConsensusQueue queue = new ConsensusQueue(consensusHandlingMetrics, eventConfig.maxEventQueueForCons());
+        final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
+
         queueThread = new QueueThreadConfiguration<ConsensusRound>(threadManager)
                 .setNodeId(selfId)
                 .setHandler(this::applyConsensusRoundToState)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("thread-cons")
                 .setStopBehavior(swirldStateManager.getStopBehavior())
-                .setLogAfterPauseDuration(ConfigurationHolder.getInstance()
-                        .get()
-                        .getConfigData(ThreadConfig.class)
-                        .logStackTracePauseDuration())
+                .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
                 .setMetricsConfiguration(
                         new QueueThreadMetricsConfiguration(platformContext.getMetrics()).enableBusyTimeMetric())
                 .setQueue(queue)

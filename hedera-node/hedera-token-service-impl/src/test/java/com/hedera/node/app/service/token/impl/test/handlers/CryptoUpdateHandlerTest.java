@@ -129,7 +129,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         updateWritableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
         updateReadableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
 
-        configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        configuration = HederaTestConfigBuilder.createConfig();
         given(compositeProps.getLongProperty(ENTITIES_MAX_LIFETIME)).willReturn(72000L);
         attributeValidator = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
         expiryValidator = new StandardizedExpiryValidator(
@@ -328,7 +328,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withStakedAccountId(3).build();
         givenTxnWith(txn);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("staking.isEnabled", false)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
@@ -343,7 +343,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withDeclineReward(false).build();
         givenTxnWith(txn);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("staking.isEnabled", false)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
@@ -470,7 +470,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withMaxAutoAssociations(12).build();
         givenTxnWith(txn);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("entities.limitTokenAssociations", true)
                 .withValue("tokens.maxPerAccount", 11)
                 .getOrCreateConfig();
@@ -488,7 +488,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withMaxAutoAssociations(12).build();
         givenTxnWith(txn);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("ledger.maxAutoAssociations", 11)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
@@ -566,7 +566,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
                 .build();
         givenTxnWith(txn);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("ledger.maxMemoUtf8Bytes", 2)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);

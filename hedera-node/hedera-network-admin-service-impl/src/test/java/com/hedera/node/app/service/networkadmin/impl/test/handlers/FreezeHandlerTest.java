@@ -86,7 +86,7 @@ class FreezeHandlerTest {
 
     @BeforeEach
     void setUp() {
-        Configuration config = new HederaTestConfigBuilder().getOrCreateConfig();
+        Configuration config = HederaTestConfigBuilder.createConfig();
         given(preHandleContext.configuration()).willReturn(config);
 
         given(accountStore.getAccountById(nonAdminAccount)).willReturn(account);
