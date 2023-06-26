@@ -85,7 +85,7 @@ public class SavedStateLoader {
             @Nullable final SavedStateInfo[] savedStateFiles,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final Supplier<EmergencySignedStateValidator> emergencyStateValidator,
-            final EmergencyRecoveryManager emergencyRecoveryManager) {
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
         Objects.requireNonNull(shutdownRequestedTrigger, "shutdownRequestedTrigger");
         Objects.requireNonNull(addressBook, "addressBook");
         Objects.requireNonNull(currentSoftwareVersion, "currentSoftwareVersion");
