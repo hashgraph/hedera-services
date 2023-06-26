@@ -34,6 +34,7 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
+import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.event.EventCreatorThread;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.ChatterEventCreator;
@@ -98,13 +99,19 @@ public class SimulatedEventCreationNode implements GossipMessageHandler {
         Objects.requireNonNull(random, "the random is null");
         Objects.requireNonNull(addressBook, "the address book is null");
         Objects.requireNonNull(consumers, "the consumers is null");
+
         this.time = Objects.requireNonNull(time, "the time is null");
         this.nodeId = Objects.requireNonNull(nodeId, "the node ID is null");
         this.eventByHash = Objects.requireNonNull(eventByHash, "the event by hash function is null");
-        this.config = Objects.requireNonNull(config);
+        this.config = Objects.requireNonNull(config, "the node config is null");
 
-        final ChatterConfig chatterConfig =
-                new TestConfigBuilder().getOrCreateConfig().getConfigData(ChatterConfig.class);
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("event.creation.useTipsetAlgorithm", "false")
+                .getOrCreateConfig();
+
+        final ChatterConfig chatterConfig = configuration.getConfigData(ChatterConfig.class);
+        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
+
         criticalQuorum = new CriticalQuorumImpl(
                 new NoOpMetrics(), new NodeId(0), addressBook, false, chatterConfig.criticalQuorumSoftening());
 
@@ -120,10 +127,6 @@ public class SimulatedEventCreationNode implements GossipMessageHandler {
                     invocation.getArgument(0, SerializableHashable.class).setHash(hash);
                     return hash;
                 });
-
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("event.creation.useTipsetAlgorithm", "false")
-                .getOrCreateConfig();
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)
@@ -149,6 +152,7 @@ public class SimulatedEventCreationNode implements GossipMessageHandler {
 
         creatorThread = new EventCreatorThread(
                 getStaticThreadManager(),
+                threadConfig,
                 nodeId,
                 1, // not used since the thread does not run
                 addressBook,
