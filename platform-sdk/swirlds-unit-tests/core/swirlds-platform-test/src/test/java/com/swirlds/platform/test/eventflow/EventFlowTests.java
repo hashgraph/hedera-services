@@ -51,6 +51,7 @@ import com.swirlds.platform.components.transaction.system.PostConsensusSystemTra
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManagerFactory;
+import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -627,9 +628,16 @@ class EventFlowTests {
         ConfigurationHolder.getInstance().setConfiguration(config);
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withConfiguration(config).build();
+        final ThreadConfig threadConfig = config.getConfigData(ThreadConfig.class);
 
         preConsensusEventHandler = new PreConsensusEventHandler(
-                new NoOpMetrics(), getStaticThreadManager(), selfId, swirldStateManager, consensusMetrics);
+                new NoOpMetrics(),
+                getStaticThreadManager(),
+                selfId,
+                swirldStateManager,
+                consensusMetrics,
+                threadConfig);
+
         consensusEventHandler = new ConsensusRoundHandler(
                 platformContext,
                 getStaticThreadManager(),
