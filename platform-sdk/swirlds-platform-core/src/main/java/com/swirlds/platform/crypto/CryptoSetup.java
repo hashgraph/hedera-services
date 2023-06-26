@@ -22,7 +22,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.PathsConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.system.NodeId;
@@ -33,6 +32,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.Settings;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -77,36 +77,36 @@ public final class CryptoSetup {
         Objects.requireNonNull(addressBook, "addressBook must not be null");
         Objects.requireNonNull(configuration, "configuration must not be null");
 
+        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
+        final CryptoConfig cryptoConfig = configuration.getConfigData(CryptoConfig.class);
+
         final ExecutorService cryptoThreadPool = Executors.newFixedThreadPool(
-                Settings.getInstance().getNumCryptoThreads(),
+                threadConfig.numCryptoThreads(),
                 new ThreadConfiguration(getStaticThreadManager())
                         .setComponent("browser")
                         .setThreadName("crypto-verify")
                         .setDaemon(false)
                         .buildFactory());
 
-        final Path keysDirPath =
-                ConfigurationHolder.getConfigData(PathsConfig.class).getKeysDirPath();
         final Map<NodeId, KeysAndCerts> keysAndCerts;
         try {
             if (Settings.getInstance().isLoadKeysFromPfxFiles()) {
-                try (final Stream<Path> list = Files.list(keysDirPath)) {
+                try (final Stream<Path> list = Files.list(pathsConfig.getKeysDirPath())) {
                     CommonUtils.tellUserConsole("Reading crypto keys from the files here:   "
                             + list.filter(path -> path.getFileName().endsWith("pfx"))
                                     .toList());
                     logger.debug(STARTUP.getMarker(), "About start loading keys");
                     keysAndCerts = CryptoStatic.loadKeysAndCerts(
                             addressBook,
-                            keysDirPath,
-                            configuration
-                                    .getConfigData(CryptoConfig.class)
-                                    .keystorePassword()
-                                    .toCharArray());
+                            pathsConfig.getKeysDirPath(),
+                            cryptoConfig.keystorePassword().toCharArray());
                     logger.debug(STARTUP.getMarker(), "Done loading keys");
                 }
             } else {
                 // if there are no keys on the disk, then create our own keys
-                CommonUtils.tellUserConsole("Creating keys, because there are no files in " + keysDirPath);
+                CommonUtils.tellUserConsole(
+                        "Creating keys, because there are no files in " + pathsConfig.getKeysDirPath());
                 logger.debug(STARTUP.getMarker(), "About to start creating generating keys");
                 keysAndCerts = CryptoStatic.generateKeysAndCerts(addressBook, cryptoThreadPool);
                 logger.debug(STARTUP.getMarker(), "Done generating keys");
