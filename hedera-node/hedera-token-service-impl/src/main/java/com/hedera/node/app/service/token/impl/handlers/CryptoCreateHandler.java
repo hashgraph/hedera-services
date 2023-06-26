@@ -118,7 +118,8 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
 
         // validate fields in the transaction body that involves checking with
         // dynamic properties or state
-        validateSemantics(handleContext, accountStore, op);
+        final var modifiedPayer = validateSemantics(handleContext, accountStore, op);
+        accountStore.put(modifiedPayer);
 
         // Build the new account to be persisted based on the transaction body
         final var accountCreated = buildAccount(op, handleContext);
@@ -162,12 +163,12 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
      * @param context handle context
      * @param accountStore account store
      * @param op crypto create transaction body
+     * @return modified payer account
      */
-    private void validateSemantics(
+    private Account validateSemantics(
             @NonNull final HandleContext context,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final CryptoCreateTransactionBody op) {
-
         final var cryptoCreateWithAliasConfig =
                 context.configuration().getConfigData(CryptoCreateWithAliasConfig.class);
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
@@ -206,9 +207,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
 
         // Change payer's balance to reflect the deduction of the initial balance for the new
         // account
-        final var modifiedPayer =
-                payer.copyBuilder().tinybarBalance(newPayerBalance).build();
-        accountStore.put(modifiedPayer);
+        return payer.copyBuilder().tinybarBalance(newPayerBalance).build();
     }
 
     /**
