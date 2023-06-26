@@ -96,7 +96,7 @@ class ShadowGraphTest {
 
     private void initShadowGraph(final Random random, final int numEvents, final int numNodes) {
         addressBook = new RandomAddressBookGenerator(random).setSize(numNodes).build();
-        EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
+        final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
 
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
@@ -731,7 +731,7 @@ class ShadowGraphTest {
         Random random = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
                 new RandomAddressBookGenerator(random).setSize(4).build();
-        EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
+        final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
 
@@ -758,7 +758,7 @@ class ShadowGraphTest {
         Random random = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
                 new RandomAddressBookGenerator(random).setSize(4).build();
-        EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
+        final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
 
@@ -783,7 +783,7 @@ class ShadowGraphTest {
         Random random = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
                 new RandomAddressBookGenerator(random).setSize(4).build();
-        EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
+        final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
 
@@ -812,7 +812,7 @@ class ShadowGraphTest {
         final Random random = RandomUtils.getRandomPrintSeed();
         final AddressBook addressBook =
                 new RandomAddressBookGenerator(random).setSize(numNodes).build();
-        EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
+        final EventEmitterFactory factory = new EventEmitterFactory(random, addressBook);
         emitter = factory.newStandardEmitter();
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
         for (int i = 0; i < numEvents; i++) {

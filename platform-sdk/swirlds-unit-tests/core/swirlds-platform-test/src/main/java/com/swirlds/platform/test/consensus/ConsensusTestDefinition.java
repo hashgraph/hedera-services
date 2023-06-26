@@ -28,6 +28,7 @@ import com.swirlds.platform.test.event.generator.GraphGenerator;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.event.source.EventSource;
 import com.swirlds.platform.test.event.source.WeightedGraphGenerator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -187,6 +188,7 @@ public class ConsensusTestDefinition {
      * Returns the address book generated from the graph.  Must be called after {@link #setSeed(long)}.
      * @return the address book generated from the graph
      */
+    @NonNull
     public AddressBook getAddressBook() {
         return addressBook;
     }

@@ -564,7 +564,6 @@ class EventFlowTests {
             final SwirldState swirldState,
             final State initialState,
             final Configuration config) {
-        // TODO: Decide if these properties should change, remove weight distribution strategy.
         addressBook = new RandomAddressBookGenerator(random)
                 .setSize(numNodes)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
@@ -677,7 +676,9 @@ class EventFlowTests {
         return state;
     }
 
-    protected EventFlowWrapper createEventFlowWrapper(final Random random, final AddressBook addressBook) {
+    protected EventFlowWrapper createEventFlowWrapper(
+            @NonNull final Random random, @NonNull final AddressBook addressBook) {
+        // arguments are checked for null in the constructor.
         return new EventFlowWrapper(
                 random, addressBook, preConsensusEventHandler, consensusEventHandler, swirldStateManager);
     }

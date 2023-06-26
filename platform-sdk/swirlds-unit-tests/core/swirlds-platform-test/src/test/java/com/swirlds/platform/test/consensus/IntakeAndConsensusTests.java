@@ -33,8 +33,10 @@ import com.swirlds.platform.test.graph.OtherParentMatrixFactory;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -202,7 +204,9 @@ class IntakeAndConsensusTests {
         }
 
         @Override
-        public EventSource<?> getSource(final NodeId nodeID) {
+        @Nullable
+        public EventSource<?> getSource(@NonNull final NodeId nodeID) {
+            Objects.requireNonNull(nodeID);
             return generator.getSource(nodeID);
         }
 
@@ -233,6 +237,7 @@ class IntakeAndConsensusTests {
 
         @Override
         public long getMaxGeneration(@NonNull final NodeId creatorId) {
+            Objects.requireNonNull(creatorId);
             return generator.getMaxGeneration(creatorId);
         }
 

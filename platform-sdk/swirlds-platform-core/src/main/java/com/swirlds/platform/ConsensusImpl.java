@@ -535,7 +535,7 @@ public class ConsensusImpl implements Consensus {
                 long noWeight = 0; // total weight of all members voting yes
                 for (EventImpl w : stronglySeen) {
                     final NodeId id = w.getCreatorId();
-                    long weight = addressBook.getAddress(id).getWeight();
+                    final long weight = addressBook.getAddress(id).getWeight();
                     final int nodeIndex = addressBook.getIndexOfNodeId(id);
                     if (election.prevRound.vote[nodeIndex]) {
                         yesWeight += weight;
@@ -1144,8 +1144,8 @@ public class ConsensusImpl implements Consensus {
         sp = x.getSelfParent();
 
         for (int mm = 0; mm < numMembers; mm++) {
-            final int IdxCreatorIdIndex = addressBook.getIndexOfNodeId(x.getCreatorId());
-            if (IdxCreatorIdIndex == mm) {
+            final int xCreatorIdIndex = addressBook.getIndexOfNodeId(x.getCreatorId());
+            if (xCreatorIdIndex == mm) {
                 x.setLastSee(mm, x);
             } else if (sp == null && op == null) {
                 x.setLastSee(mm, null);
@@ -1188,7 +1188,7 @@ public class ConsensusImpl implements Consensus {
         return firstSee(lastSee(x, m2), m);
     }
 
-    /** TODO: update comment
+    /**
      * The witness created by m in the parent round of x that x strongly sees (function from SWIRLDS-TR-2020-01).
      * This result is memoized.
      *
@@ -1368,7 +1368,7 @@ public class ConsensusImpl implements Consensus {
         int numStronglySeen = 0;
         for (int m = 0; m < numMembers; m++) {
             if (stronglySeeP(x, m) != null) {
-                NodeId nodeId = addressBook.getNodeId(m);
+                final NodeId nodeId = addressBook.getNodeId(m);
                 weight += addressBook.getAddress(nodeId).getWeight();
                 numStronglySeen++;
             }
