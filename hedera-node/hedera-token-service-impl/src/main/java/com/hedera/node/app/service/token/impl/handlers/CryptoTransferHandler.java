@@ -100,7 +100,8 @@ public class CryptoTransferHandler implements TransactionHandler {
         long netBalance = 0;
         for (final AccountAmount acctAmount : acctAmounts) {
             validateTruePreCheck(acctAmount.hasAccountID(), INVALID_ACCOUNT_ID);
-            uniqueAcctIds.add(acctAmount.accountIDOrThrow());
+            final var acctId = validateAccountID(acctAmount.accountIDOrThrow());
+            uniqueAcctIds.add(acctId);
             netBalance += acctAmount.amount();
         }
         validateTruePreCheck(netBalance == 0, INVALID_ACCOUNT_AMOUNTS);

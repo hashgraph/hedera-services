@@ -88,13 +88,13 @@ class CryptoTransferHandlerTest {
     }
 
     @Test
-    void pureChecksHbarTransfersHasAccountIdWithAliasAndNumber() {
+    void pureChecksHbarTransfersHasAccountIdWithEmptyAliasAndNumber() {
         final var txn = newCryptoTransfer(
                 AccountAmount.newBuilder().accountID(ACCOUNT_3333).amount(-1).build(),
                 AccountAmount.newBuilder()
                         .accountID(AccountID.newBuilder()
                                 .accountNum(5555)
-                                .alias(Bytes.wrap("non-empty string"))
+                                .alias(Bytes.wrap(""))
                                 .build())
                         .amount(1)
                         .build());
