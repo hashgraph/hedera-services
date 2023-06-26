@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import com.hedera.services.bdd.junit.AccountAliasesValidator;
 import com.hedera.services.bdd.junit.BalanceReconciliationValidator;
 import com.hedera.services.bdd.junit.ExpiryRecordsValidator;
 import com.hedera.services.bdd.junit.TokenReconciliationValidator;
@@ -31,8 +32,8 @@ import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.TestMethodOrder;
 
 /**
- * We first run sequentially a minimal set of {@link com.hedera.services.bdd.spec.HapiSpec}'s that
- * have "leaky" side effects like disabling a feature flag or setting restrictive throttles.
+ * We first run sequentially a minimal set of {@link com.hedera.services.bdd.spec.HapiSpec}'s that have "leaky" side
+ * effects like disabling a feature flag or setting restrictive throttles.
  *
  * <p>These specs end by:
  *
@@ -93,6 +94,7 @@ class AllIntegrationTests extends IntegrationTestBase {
                 new BlockNoValidator(),
                 new ExpiryRecordsValidator(),
                 new TokenReconciliationValidator(),
-                new TransactionBodyValidator()));
+                new TransactionBodyValidator(),
+                new AccountAliasesValidator()));
     }
 }

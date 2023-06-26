@@ -80,6 +80,9 @@ dependencies {
         implementation(gav("org.opentest4j"))
         implementation(gav("tuweni.units"))
 
+        implementation(project(":services-cli"))
+        implementation(project(":app-service-mono"))
+
         itestImplementation(project(path))
         itestImplementation(project(":hapi"))
         itestImplementation(gav("org.apache.commons.lang3"))
