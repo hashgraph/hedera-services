@@ -37,7 +37,7 @@ class BasicConfigTest {
     void propertiesHasNoPrefix() {
         // given
         final Configuration configuration =
-                new TestConfigBuilder().withValue("numCryptoThreads", "42").getOrCreateConfig();
+                new TestConfigBuilder().withValue(BasicConfigConstants.NUM_CRYPTO_THREADS, "42").getOrCreateConfig();
         final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
 
         // then

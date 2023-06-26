@@ -21,7 +21,13 @@ plugins {
   id("org.gradle.java-test-fixtures")
 }
 
+repositories {
+  mavenLocal()
+}
+
 dependencies {
+  annotationProcessor(project(":swirlds-config-processor"))
+
   // Individual Dependencies
   api(project(":swirlds-base"))
   api(project(":swirlds-logging"))

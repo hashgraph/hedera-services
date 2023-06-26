@@ -47,5 +47,14 @@ extraJavaModuleInfo {
     automaticModule("com.google.auto.value:auto-value-annotations", "auto.value.annotations")
     automaticModule("com.google.truth:truth", "truth")
     automaticModule("org.awaitility:awaitility", "awaitility")
+
+    automaticModule("com.google.auto.service:auto-service", "com.google.auto.service")
+    automaticModule("com.google.auto.service:auto-service-annotations", "com.google.auto.service.annotations")
+    automaticModule("com.google.auto:auto-common", "com.google.auto.common")
+    automaticModule("com.google.j2objc:j2objc-annotations", "com.google.j2objc")
+
+    automaticModule("org.jboss.forge.roaster:roaster-api", "org.jboss.forge.roaster.api")
+    automaticModule("org.jboss.forge.roaster:roaster-jdt", "org.jboss.forge.roaster.jdt")
+
 }
 
