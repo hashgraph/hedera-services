@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.DefaultPlatformContext;
@@ -93,14 +92,6 @@ class AsyncPreconsensusEventWriterTests {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
-
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("transaction.maxTransactionBytesPerEvent", Integer.MAX_VALUE)
-                .withValue("transaction.maxTransactionCountPerEvent", Integer.MAX_VALUE)
-                .withValue("transaction.transactionMaxBytes", 245760)
-                .withValue("transaction.maxAddressSizeAllowed", Integer.MAX_VALUE)
-                .getOrCreateConfig();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
     }
 
     @BeforeEach
@@ -249,6 +240,10 @@ class AsyncPreconsensusEventWriterTests {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("event.preconsensus.databaseDirectory", testDirectory)
                 .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
+                .withValue("transaction.maxTransactionBytesPerEvent", Integer.MAX_VALUE)
+                .withValue("transaction.maxTransactionCountPerEvent", Integer.MAX_VALUE)
+                .withValue("transaction.transactionMaxBytes", 245760)
+                .withValue("transaction.maxAddressSizeAllowed", Integer.MAX_VALUE)
                 .getOrCreateConfig();
 
         final Metrics metrics = new NoOpMetrics();
