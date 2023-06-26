@@ -69,6 +69,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
@@ -243,7 +244,8 @@ public class Browser {
                 .withConfigDataType(RecycleBinConfig.class)
                 .withConfigDataType(EventConfig.class)
                 .withConfigDataType(PathsConfig.class)
-                .withConfigDataType(SocketConfig.class);
+                .withConfigDataType(SocketConfig.class)
+                .withConfigDataType(PlatformStatusConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {

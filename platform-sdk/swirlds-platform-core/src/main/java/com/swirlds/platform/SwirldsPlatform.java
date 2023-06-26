@@ -350,7 +350,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         this.eventMapper = new EventMapper(platformContext.getMetrics(), selfId);
 
-        platformStatusStateMachine = buildPlatformStatusStateMachine(time);
+        platformStatusStateMachine = components.add(buildPlatformStatusStateMachine(time));
 
         this.metrics = platformContext.getMetrics();
 
