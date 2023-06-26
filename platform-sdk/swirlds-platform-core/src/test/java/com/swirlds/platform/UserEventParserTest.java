@@ -62,11 +62,11 @@ class UserEventParserTest {
     @ParameterizedTest
     @ValueSource(
             strings = {
-                    // Event file version 5 with new Transaction class
-                    "src/test/resources/eventFiles/v5withTransactionV1/2021-04-18T04_27_00.004964000Z.evts",
-                    "src/test/resources/eventFiles/v5withTransactionV1/2021-04-18T04_26_00.021395000Z.evts",
-                    "src/test/resources/eventFiles/v5withTransactionV1/2021-04-18T04_25_00.051650000Z.evts",
-                    "src/test/resources/eventFiles/v5withTransactionV1/2021-04-18T04_24_00.033462000Z.evts",
+                // Event file version 5 with new Transaction class
+                "src/test/resources/eventFiles/v5withTransactionV1/2021-04-18T04_27_00.004964000Z.evts",
+                "src/test/resources/eventFiles/v5withTransactionV1/2021-04-18T04_26_00.021395000Z.evts",
+                "src/test/resources/eventFiles/v5withTransactionV1/2021-04-18T04_25_00.051650000Z.evts",
+                "src/test/resources/eventFiles/v5withTransactionV1/2021-04-18T04_24_00.033462000Z.evts",
             })
     void parseEventFileTest(String fileName) {
         // parse event file and does not skip transactions

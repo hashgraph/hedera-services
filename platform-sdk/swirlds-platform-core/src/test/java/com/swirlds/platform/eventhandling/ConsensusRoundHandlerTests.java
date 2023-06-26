@@ -98,10 +98,10 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
         // sleep for a little while to pretend to handle an event
         doAnswer((e) -> {
-            Thread.sleep(sleepMillisPerRound);
-            numEventsHandled.incrementAndGet();
-            return null;
-        })
+                    Thread.sleep(sleepMillisPerRound);
+                    numEventsHandled.incrementAndGet();
+                    return null;
+                })
                 .when(swirldStateManager)
                 .handleConsensusRound(any(ConsensusRound.class));
 
@@ -124,12 +124,9 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 consensusHandlingMetrics,
                 eventStreamManager,
                 stateHashSignQueue,
-                e -> {
-                },
-                () -> {
-                },
-                (round) -> {
-                },
+                e -> {},
+                () -> {},
+                (round) -> {},
                 new BasicSoftwareVersion(1));
 
         final int numRounds = 500;
@@ -221,12 +218,9 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 consensusHandlingMetrics,
                 eventStreamManager,
                 stateHashSignQueue,
-                e -> {
-                },
-                () -> {
-                },
-                (round) -> {
-                },
+                e -> {},
+                () -> {},
+                (round) -> {},
                 new BasicSoftwareVersion(1));
         consensusRoundHandler.start();
     }

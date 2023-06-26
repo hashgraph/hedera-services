@@ -75,7 +75,6 @@ class FileSignToolTest {
 
     private static final KeyPair KEY_PAIR = loadPfxKey(KEY_PATH, PASSWORD, ALIAS);
 
-
     @Test
     void loadJsonTest() throws IOException {
         final StreamType loadedStreamType = FileSignTool.loadStreamTypeFromJson(JSON_FILE_PATH);
@@ -160,7 +159,7 @@ class FileSignToolTest {
     void mainSignSingleFileTest() throws IOException {
         setProperties();
         System.setProperty(FILE_NAME_PROPERTY, EVTS_FILE_PATH);
-        FileSignTool.main(new String[]{});
+        FileSignTool.main(new String[] {});
         // generated signature file should match expected, then delete the sig file
         compareSigWithExpectedThenDelete();
         clearProperties();
@@ -171,7 +170,7 @@ class FileSignToolTest {
     void mainSignDirTest() throws IOException {
         setProperties();
         System.setProperty(DIR_PROPERTY, JSON_DIR_PATH);
-        FileSignTool.main(new String[]{});
+        FileSignTool.main(new String[] {});
         final File sigFileForJson = new File(buildDestSigFilePath(new File(DIR_PATH), new File(JSON_FILE_PATH)));
         // the file should not exist, because when `-Ddir` is set, the tool only signs .rcd/.evts/.csv files
         assertTrue(

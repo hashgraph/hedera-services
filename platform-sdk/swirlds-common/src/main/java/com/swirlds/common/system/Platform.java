@@ -38,5 +38,4 @@ public interface Platform extends PlatformIdentity, StateAccessor, Signer, Trans
      * @return a notification engine
      */
     NotificationEngine getNotificationEngine();
-
 }

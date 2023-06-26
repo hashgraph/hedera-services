@@ -101,11 +101,11 @@ public final class PlatformConstructor {
         try {
             return new TlsFactory(keysAndCerts, socketConfig, cryptoConfig);
         } catch (final NoSuchAlgorithmException
-                       | UnrecoverableKeyException
-                       | KeyStoreException
-                       | KeyManagementException
-                       | CertificateException
-                       | IOException e) {
+                | UnrecoverableKeyException
+                | KeyStoreException
+                | KeyManagementException
+                | CertificateException
+                | IOException e) {
             throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
         }
     }

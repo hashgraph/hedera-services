@@ -88,7 +88,7 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
                         .withDescription("transEvent queue size")
                         .withUnit("count"));
         metrics.getOrCreate(new FunctionGauge.Config<>(
-                INFO_CATEGORY, "priorityTransEvent", Integer.class, this::getPriorityTransEventSize)
+                        INFO_CATEGORY, "priorityTransEvent", Integer.class, this::getPriorityTransEventSize)
                 .withDescription("priorityTransEvent queue size")
                 .withUnit("count"));
     }
@@ -207,8 +207,7 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
         // Always submit system transactions. If it's not a system transaction, then only submit it if we
         // don't violate queue size capacity restrictions.
         if (!transaction.isSystem()
-                && (transEvent.size() + priorityTransEvent.size())
-                > transactionConfig.throttleTransactionQueueSize()) {
+                && (transEvent.size() + priorityTransEvent.size()) > transactionConfig.throttleTransactionQueueSize()) {
             return false;
         }
 

@@ -229,11 +229,11 @@ public class SyncTests {
      */
     @ParameterizedTest
     @MethodSource({
-            "simpleGraphBreakingSeed",
-            "simpleFourNodeGraphParams",
-            "fourNodeGraphParams",
-            "tenNodeGraphParams",
-            "edgeCaseGraphParams"
+        "simpleGraphBreakingSeed",
+        "simpleFourNodeGraphParams",
+        "fourNodeGraphParams",
+        "tenNodeGraphParams",
+        "edgeCaseGraphParams"
     })
     void simpleGraph(final SyncTestParams params) throws Exception {
         final SyncTestExecutor executor = new SyncTestExecutor(params);
@@ -740,11 +740,11 @@ public class SyncTests {
      */
     @ParameterizedTest
     @MethodSource({
-            "tipsChangeBreakingSeed",
-            "simpleFourNodeGraphParams",
-            "fourNodeGraphParams",
-            "tenNodeGraphParams",
-            "edgeCaseGraphParams"
+        "tipsChangeBreakingSeed",
+        "simpleFourNodeGraphParams",
+        "fourNodeGraphParams",
+        "tenNodeGraphParams",
+        "edgeCaseGraphParams"
     })
     void tipsChangeAfterPhase1(final SyncTestParams params) throws Exception {
         final SyncTestExecutor executor = new SyncTestExecutor(params);
@@ -777,11 +777,11 @@ public class SyncTests {
      */
     @ParameterizedTest
     @MethodSource({
-            "tipsChangeBreakingSeed",
-            "simpleFourNodeGraphParams",
-            "fourNodeGraphParams",
-            "tenNodeGraphParams",
-            "edgeCaseGraphParams"
+        "tipsChangeBreakingSeed",
+        "simpleFourNodeGraphParams",
+        "fourNodeGraphParams",
+        "tenNodeGraphParams",
+        "edgeCaseGraphParams"
     })
     void tipsChangeAfterPhase2(final SyncTestParams params) throws Exception {
         final SyncTestExecutor executor = new SyncTestExecutor(params);

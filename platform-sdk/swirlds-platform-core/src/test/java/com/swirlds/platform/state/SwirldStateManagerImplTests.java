@@ -47,10 +47,11 @@ public class SwirldStateManagerImplTests {
         final AddressBook addressBook = new RandomAddressBookGenerator().build();
         when(platform.getAddressBook()).thenReturn(addressBook);
         initialState = newState();
-        final PlatformContext platformContext = TestPlatformContextBuilder.create().build();
-        final TransactionConfig transactionConfig = platformContext.getConfiguration()
-                .getConfigData(TransactionConfig.class);
-        
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+        final TransactionConfig transactionConfig =
+                platformContext.getConfiguration().getConfigData(TransactionConfig.class);
+
         swirldStateManagerImpl = new SwirldStateManagerImpl(
                 platformContext,
                 addressBook,

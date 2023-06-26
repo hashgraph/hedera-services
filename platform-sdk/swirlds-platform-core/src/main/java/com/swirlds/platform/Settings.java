@@ -254,9 +254,7 @@ public class Settings {
             }
         }
         scanner.close();
-
     }
-
 
     /**
      * handle a single line from the settings.txt file. The line is split by commas, so none of the individual strings
@@ -375,13 +373,13 @@ public class Settings {
                         final Field[] subFields = f.getType().getDeclaredFields();
                         for (final Field subField : subFields) {
                             final Object subFieldValue = subField.get(f.get(this));
-                            list.add(new String[]{
-                                    f.getName() + "." + subField.getName(),
-                                    subFieldValue == null ? "null" : subFieldValue.toString()
+                            list.add(new String[] {
+                                f.getName() + "." + subField.getName(),
+                                subFieldValue == null ? "null" : subFieldValue.toString()
                             });
                         }
                     } else {
-                        list.add(new String[]{f.getName(), f.get(this).toString()});
+                        list.add(new String[] {f.getName(), f.get(this).toString()});
                     }
                 } catch (final IllegalArgumentException | IllegalAccessException e) {
                     logger.error(EXCEPTION.getMarker(), "error while reading settings.txt", e);
@@ -410,5 +408,4 @@ public class Settings {
     public boolean isLoadKeysFromPfxFiles() {
         return loadKeysFromPfxFiles;
     }
-
 }

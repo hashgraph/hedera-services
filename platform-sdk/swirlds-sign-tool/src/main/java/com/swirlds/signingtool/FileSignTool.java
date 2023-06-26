@@ -160,9 +160,9 @@ public class FileSignTool {
             sig.update(data);
             return sig.verify(signature);
         } catch (final NoSuchAlgorithmException
-                       | NoSuchProviderException
-                       | InvalidKeyException
-                       | SignatureException e) {
+                | NoSuchProviderException
+                | InvalidKeyException
+                | SignatureException e) {
             logger.error(
                     FILE_SIGN.getMarker(),
                     "Failed to verify Signature: {}, PublicKey: {}, File: {}",
@@ -192,10 +192,10 @@ public class FileSignTool {
                     keyStore.getKey(alias, password.toCharArray()));
             logger.info(FILE_SIGN.getMarker(), "keypair has loaded successfully from file {}", keyFileName);
         } catch (final NoSuchAlgorithmException
-                       | KeyStoreException
-                       | UnrecoverableKeyException
-                       | IOException
-                       | CertificateException e) {
+                | KeyStoreException
+                | UnrecoverableKeyException
+                | IOException
+                | CertificateException e) {
             logger.error(FILE_SIGN.getMarker(), "loadPfxKey :: ERROR ", e);
         }
         return sigKeyPair;
@@ -291,11 +291,11 @@ public class FileSignTool {
                 signSingleFileOldVersion(sigKeyPair, streamFile, destSigFilePath);
             }
         } catch (final NoSuchAlgorithmException
-                       | NoSuchProviderException
-                       | InvalidKeyException
-                       | SignatureException
-                       | InvalidStreamFileException
-                       | IOException e) {
+                | NoSuchProviderException
+                | InvalidKeyException
+                | SignatureException
+                | InvalidStreamFileException
+                | IOException e) {
             logger.error(FILE_SIGN.getMarker(), "Failed to sign file {} ", streamFile.getName(), e);
         }
         logger.info(FILE_SIGN.getMarker(), "Finish generating signature file {}", destSigFilePath);
@@ -317,7 +317,7 @@ public class FileSignTool {
     public static void signSingleFileOldVersion(
             final KeyPair sigKeyPair, final File streamFile, final String destSigFilePath)
             throws IOException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException,
-            SignatureException {
+                    SignatureException {
         final byte[] fileHash = computeEntireHash(streamFile).getValue();
         final byte[] signature = sign(fileHash, sigKeyPair);
         generateSigFileOldVersion(destSigFilePath, signature, fileHash);

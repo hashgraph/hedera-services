@@ -52,7 +52,6 @@ import org.junit.jupiter.api.Test;
 @DisplayName("EventStreamRoundIterator Test")
 class EventStreamRoundIteratorTest {
 
-
     public static void assertEventsAreEqual(final EventImpl expected, final EventImpl actual) {
         assertEquals(expected.getBaseEvent(), actual.getBaseEvent());
         assertEquals(expected.getConsensusData(), actual.getConsensusData());
