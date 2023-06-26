@@ -32,7 +32,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.notification.NotificationEngine;
+import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.common.system.status.PlatformStatusStateMachine;
+import com.swirlds.common.system.status.SyncPlatformStatusStateMachine;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.components.EventTaskDispatcher;
@@ -47,6 +50,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -61,13 +65,11 @@ import org.junit.jupiter.api.Test;
 class PreconsensusEventReplayWorkflowTests {
 
     private enum TestPhase {
-        SET_STARTUP_STATUS,
         REPLAY_EVENTS,
         FLUSH_INTAKE_QUEUE,
         FLUSH_CONSENSUS_ROUND_HANDLER,
         FLUSH_STATE_HASH_SIGN_QUEUE,
         BEGIN_STREAMING_NEW_EVENTS,
-        SET_FINISH_STATUS,
         TEST_FINISHED
     }
 
@@ -76,7 +78,7 @@ class PreconsensusEventReplayWorkflowTests {
     void testBasicReplayWorkflow() throws InterruptedException {
         final Random random = getRandomPrintSeed();
 
-        final AtomicReference<TestPhase> phase = new AtomicReference<>(TestPhase.SET_STARTUP_STATUS);
+        final AtomicReference<TestPhase> phase = new AtomicReference<>(TestPhase.REPLAY_EVENTS);
         final long minimumGenerationNonAncient = random.nextLong(1, 1000);
 
         final List<EventImpl> events = new ArrayList<>();
@@ -151,7 +153,7 @@ class PreconsensusEventReplayWorkflowTests {
         final PreconsensusEventWriter preconsensusEventWriter = mock(PreconsensusEventWriter.class);
         doAnswer(invocation -> {
                     assertEquals(TestPhase.BEGIN_STREAMING_NEW_EVENTS, phase.get());
-                    phase.set(TestPhase.SET_FINISH_STATUS);
+                    phase.set(TestPhase.TEST_FINISHED);
                     return null;
                 })
                 .when(preconsensusEventWriter)
@@ -166,6 +168,11 @@ class PreconsensusEventReplayWorkflowTests {
         when(latestImmutableState.get()).thenReturn(signedState);
         when(stateManagementComponent.getLatestImmutableState(any())).thenReturn(latestImmutableState);
 
+        final PlatformStatusStateMachine platformStatusStateMachine = new SyncPlatformStatusStateMachine(
+                Time.getCurrent(),
+                new TestConfigBuilder().getOrCreateConfig().getConfigData(PlatformStatusConfig.class),
+                mock(NotificationEngine.class));
+
         replayPreconsensusEvents(
                 TestPlatformContextBuilder.create().build(),
                 AdHocThreadManager.getStaticThreadManager(),
@@ -177,7 +184,7 @@ class PreconsensusEventReplayWorkflowTests {
                 consensusRoundHandler,
                 stateHashSignQueue,
                 stateManagementComponent,
-                mock(PlatformStatusStateMachine.class),
+                platformStatusStateMachine,
                 minimumGenerationNonAncient);
 
         assertEquals(TestPhase.TEST_FINISHED, phase.get());
