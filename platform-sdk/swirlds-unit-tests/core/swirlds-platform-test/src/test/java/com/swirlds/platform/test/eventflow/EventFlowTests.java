@@ -20,6 +20,7 @@ import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -258,6 +259,8 @@ class EventFlowTests {
         // Extract the transactions from other events
         final HashSet<Transaction> otherConsensusTransactions =
                 extractTransactions((id) -> !Objects.equals(id, selfId), consensusRounds);
+
+        assertDoesNotThrow(wrapper::waitUntilAllRoundsAreHandled);
 
         final TransactionTracker consensusState =
                 (TransactionTracker) swirldStateManager.getConsensusState().getSwirldState();
@@ -598,7 +601,7 @@ class EventFlowTests {
         final State state = getInitialState(swirldState, initialState, addressBook);
 
         systemTransactionTracker = new SystemTransactionTracker();
-        signedStateTracker = new ArrayBlockingQueue<>(100);
+        signedStateTracker = new ArrayBlockingQueue<>(1000);
 
         final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
                 new PreConsensusSystemTransactionManagerFactory()
@@ -714,7 +717,7 @@ class EventFlowTests {
         assertEventuallyEquals(
                 expected.size(),
                 actual::size,
-                Duration.ofSeconds(4),
+                Duration.ofSeconds(2),
                 String.format(
                         "%s contains a different number of transactions. Expected: %s, actual: %s",
                         desc, expected.size(), actual.size()));
