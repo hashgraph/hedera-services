@@ -95,7 +95,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var op = txn.cryptoTransfer();
         validateTruePreCheck(op != null, INVALID_TRANSACTION_BODY);
 
-        final var acctAmounts = op.transfers().accountAmounts();
+        final var acctAmounts = op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
         final var uniqueAcctIds = new HashSet<AccountID>();
         long netBalance = 0;
         for (final AccountAmount acctAmount : acctAmounts) {
@@ -106,14 +106,14 @@ public class CryptoTransferHandler implements TransactionHandler {
         validateTruePreCheck(netBalance == 0, INVALID_ACCOUNT_AMOUNTS);
         validateFalsePreCheck(uniqueAcctIds.size() < acctAmounts.size(), ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
-        final var tokenTransfers = op.tokenTransfers();
+        final var tokenTransfers = op.tokenTransfersOrElse(emptyList());
         for (final TokenTransferList tokenTransfer : tokenTransfers) {
             final var tokenID = tokenTransfer.token();
             validateTruePreCheck(tokenID != null && !tokenID.equals(TokenID.DEFAULT), INVALID_TOKEN_ID);
 
             // Validate the fungible transfers
             final var uniqueTokenAcctIds = new HashSet<AccountID>();
-            final var fungibleTransfers = tokenTransfer.transfers();
+            final var fungibleTransfers = tokenTransfer.transfersOrElse(emptyList());
             long netTokenBalance = 0;
             boolean nonZeroFungibleValueFound = false;
             for (final AccountAmount acctAmount : fungibleTransfers) {
@@ -129,15 +129,16 @@ public class CryptoTransferHandler implements TransactionHandler {
             validateTruePreCheck(netTokenBalance == 0, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
             // Validate the nft transfers
+            final var nftTransfers = tokenTransfer.nftTransfersOrElse(emptyList());
             final var nftIds = new HashSet<Long>();
-            for (final NftTransfer nftTransfer : tokenTransfer.nftTransfers()) {
+            for (final NftTransfer nftTransfer : nftTransfers) {
                 validateTruePreCheck(nftTransfer.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
                 validateTruePreCheck(nftTransfer.hasSenderAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
                 validateTruePreCheck(nftTransfer.hasReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
 
                 nftIds.add(nftTransfer.serialNumber());
             }
-            validateFalsePreCheck(nftIds.size() < tokenTransfer.nftTransfers().size(), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+            validateFalsePreCheck(nftIds.size() < nftTransfers.size(), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
 
             // Verify that one and only one of the two types of transfers (fungible or non-fungible) is present
             validateFalsePreCheck(!nonZeroFungibleValueFound && nftIds.isEmpty(), EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
