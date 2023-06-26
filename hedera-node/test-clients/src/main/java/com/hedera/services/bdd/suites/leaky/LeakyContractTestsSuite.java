@@ -227,23 +227,23 @@ import org.junit.jupiter.api.Assertions;
 
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class LeakyContractTestsSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(LeakyContractTestsSuite.class);
     public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1 = "contracts.maxRefundPercentOfGasLimit";
     public static final String CREATE_TX = "createTX";
     public static final String CREATE_TX_REC = "createTXRec";
+    public static final String FALSE = "false";
+    public static final int GAS_TO_OFFER = 1_000_000;
+    private static final Logger log = LogManager.getLogger(LeakyContractTestsSuite.class);
+    private static final String PAYER = "payer";
+    private static final String CONTRACTS_NONCES_EXTERNALIZATION_ENABLED = "contracts.nonces.externalization.enabled";
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
     private static final String CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY = "contracts.allowAutoAssociations";
-    public static final String FALSE = "false";
     private static final String TRANSFER_CONTRACT = "NonDelegateCryptoTransfer";
     private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
     private static final String CRYPTO_TRANSFER = "CryptoTransfer";
     private static final String TOKEN_TRANSFER_CONTRACT = "TokenTransferContract";
     private static final String TRANSFER_TOKEN_PUBLIC = "transferTokenPublic";
     private static final String HEDERA_ALLOWANCES_IS_ENABLED = "hedera.allowances.isEnabled";
-    private static final String PAYER = "payer";
-    private static final String CONTRACTS_NONCES_EXTERNALIZATION_ENABLED = "contracts.nonces.externalization.enabled";
-    public static final int GAS_TO_OFFER = 1_000_000;
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -286,7 +286,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 transferDontWorkWithoutTopLevelSignatures(),
                 transferErc20TokenFromContractWithApproval(),
                 transferErc20TokenFromErc721TokenFails(),
-                contractCreateNoncesExternalizationHappyPath());
+                contractCreateNoncesExternalizationHappyPath(),
+                contractCreateFollowedByContractCallNoncesExternalization());
     }
 
     private HapiSpec transferErc20TokenFromErc721TokenFails() {
@@ -2135,17 +2136,68 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
                     // Asserts nonce of parent contract
                     HapiGetTxnRecord opAssertParent = getTxnRecord(contractCreateTxn)
-                            .hasPriority(recordWith().contractWithIdHasContractNonces(parentContractId, 4L));
+                            .hasPriority(recordWith()
+                                    .contractCreateResult(resultWith().contractWithNonce(parentContractId, 4L)));
                     allRunFor(spec, opAssertParent);
 
                     // Asserts nonces of all newly deployed contracts through the constructor
                     for (final var contractNonceInfo : childContracts) {
                         HapiGetTxnRecord op = getTxnRecord(contractCreateTxn)
                                 .hasPriority(recordWith()
-                                        .contractWithIdHasContractNonces(contractNonceInfo.getContractId(), 1L));
+                                        .contractCreateResult(
+                                                resultWith().contractWithNonce(contractNonceInfo.getContractId(), 1L)));
                         allRunFor(spec, op);
                     }
                 }));
+    }
+
+    private HapiSpec contractCreateFollowedByContractCallNoncesExternalization() {
+        final var contract = "NoncesExternalization";
+        final var payer = "payer";
+        final var deployParentContract = "deployParentContract";
+
+        final var deployContractTxn = "deployContractTxn";
+
+        return onlyPropertyPreservingHapiSpec("contractCreateFollowedByContractCallNoncesExternalization")
+                .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
+                .given(
+                        overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
+                        cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(contract, deployParentContract)
+                                .payingWith(payer)
+                                .via(deployContractTxn)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS))))
+                .then(
+                        withOpContext((spec, opLog) -> {
+                            HapiGetTxnRecord op = getTxnRecord(deployContractTxn)
+                                    .logged()
+                                    .hasPriority(recordWith()
+                                            .contractCallResult(resultWith()
+                                                    .contractWithNonce(
+                                                            spec.registry().getContractId(contract), 5L)));
+                            allRunFor(spec, op);
+                        }),
+                        contractCall(contract, "deployChildFromParentContract", BigInteger.ZERO)
+                                .gas(GAS_TO_OFFER)
+                                .via("committedInnerCreation"),
+                        contractCall(contract, "deployChildAndRevertFromParentContract", BigInteger.ONE)
+                                .gas(GAS_TO_OFFER)
+                                .via("revertedInnerCreation"),
+                        getTxnRecord("committedInnerCreation")
+                                .andAllChildRecords()
+                                .logged(),
+                        // TODO - this record should not have any contract_nonces entries, but it has two,
+                        // corresponding to the child contract and the creating parent contract (which
+                        // actually didn't change due to the revert); compare with the nonces logged at
+                        // end of ContractCallTransitionLogic on this branch
+                        getTxnRecord("revertedInnerCreation")
+                                .andAllChildRecords()
+                                .logged());
     }
 
     @Override

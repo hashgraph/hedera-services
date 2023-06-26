@@ -12,6 +12,10 @@ contract ParentContract {
         return address(new ChildContract());
     }
 
+    function deployChildContractAndRevert() external {
+        ChildContract tmp = new ChildContract();
+        revert();
+    }
 }
 
 contract NoncesExternalization {
@@ -39,6 +43,11 @@ contract NoncesExternalization {
         ParentContract parentContract = ParentContract(deployedParentContracts[_index]);
         address childContract = address(parentContract.deployChildContract());
         deployedChildContracts.push(childContract);
+    }
+
+    function deployChildAndRevertFromParentContract(uint256 _index) external {
+        ParentContract parentContract = ParentContract(deployedParentContracts[_index]);
+        try parentContract.deployChildContractAndRevert() {} catch {}
     }
 
     /**

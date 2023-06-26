@@ -120,7 +120,6 @@ public abstract class AbstractEvmRecordingCreateOperation extends AbstractOperat
                 frame.getWorldUpdater().getAccount(address).getMutable();
 
         account.incrementNonce();
-        createOperationExternalizer.updateParentContractNonce(address, account.getNonce());
 
         final Wei value = Wei.wrap(frame.getStackItem(0));
         final long inputOffset = clampedToLong(frame.getStackItem(1));

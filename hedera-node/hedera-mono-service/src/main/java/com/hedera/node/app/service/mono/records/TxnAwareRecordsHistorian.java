@@ -25,7 +25,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECO
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -41,9 +40,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import javax.inject.Inject;
@@ -65,8 +62,6 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
     private final List<RecordStreamObject> followingChildStreamObjs = new ArrayList<>();
     private final List<InProgressChildRecord> precedingChildRecords = new ArrayList<>();
     private final List<InProgressChildRecord> followingChildRecords = new ArrayList<>();
-    private Map<ContractID, Long> contractNonces = new HashMap<>();
-    private final GlobalDynamicProperties dynamicProperties;
 
     private int nextNonce = USER_TRANSACTION_NONCE + 1;
     private int nextSourceId = 1;
@@ -79,12 +74,10 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
             RecordCache recordCache,
             TransactionContext txnCtx,
             ConsensusTimeTracker consensusTimeTracker,
-            final GlobalDynamicProperties dynamicProperties,
             @HandleThrottle final FunctionalityThrottling handleThrottling) {
         this.txnCtx = txnCtx;
         this.recordCache = recordCache;
         this.consensusTimeTracker = consensusTimeTracker;
-        this.dynamicProperties = dynamicProperties;
         this.handleThrottling = handleThrottling;
     }
 
@@ -143,15 +136,6 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
         final var topLevelRecord = topLevel.setNumChildRecords(numChildren).build();
         topLevelStreamObj =
                 new RecordStreamObject(topLevelRecord, accessor.getSignedTxnWrapper(), consensusNow, sidecars);
-
-        // feature flag if contracts nonces externalization is enabled
-        if (dynamicProperties.isContractsNoncesExternalizationEnabled()) {
-            if (accessor.getFunction().equals(HederaFunctionality.ContractCreate)) {
-                topLevelRecord.getContractCreateResult().setContractNonces(contractNonces);
-            } else if (accessor.getFunction().equals(HederaFunctionality.ContractCall)) {
-                topLevelRecord.getContractCallResult().setContractNonces(contractNonces);
-            }
-        }
 
         final var effPayer = txnCtx.effectivePayer();
         final var submittingMember = txnCtx.submittingSwirldsMember();
@@ -253,7 +237,6 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
         precedingChildStreamObjs.clear();
         followingChildRecords.clear();
         followingChildStreamObjs.clear();
-        contractNonces.clear();
 
         topLevelStreamObj = null;
         nextNonce = USER_TRANSACTION_NONCE + 1;
@@ -364,11 +347,6 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
             followingChildRecords.forEach(rec -> rec.recordBuilder().revert());
             throw new ResourceLimitException(MAX_CHILD_RECORDS_EXCEEDED);
         }
-    }
-
-    @Override
-    public void updateContractNonces(ContractID contractId, Long contractNonce) {
-        contractNonces.put(contractId, contractNonce);
     }
 
     @VisibleForTesting

@@ -37,6 +37,4 @@ public interface CreateOperationExternalizer {
      * @return should it fail
      */
     boolean shouldFailBasedOnLazyCreation(MessageFrame frame, Address contractAddress);
-
-    void updateParentContractNonce(Address accountAddress, Long nonce);
 }

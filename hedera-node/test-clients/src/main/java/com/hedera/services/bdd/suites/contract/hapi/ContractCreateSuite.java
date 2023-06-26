@@ -93,11 +93,10 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
 
 public class ContractCreateSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
-
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
     public static final String PARENT_INFO = "parentInfo";
     private static final String PAYER = "payer";
+    private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
 
     public static void main(String... args) {
         new ContractCreateSuite().runSuiteAsync();

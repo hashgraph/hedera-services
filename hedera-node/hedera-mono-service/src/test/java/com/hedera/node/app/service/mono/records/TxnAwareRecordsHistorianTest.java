@@ -20,8 +20,6 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.TxnUtils.assertExhaustsResourceLimit;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
@@ -46,7 +44,6 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
@@ -81,9 +78,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -124,31 +119,6 @@ class TxnAwareRecordsHistorianTest {
             .setReceipt(TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build());
     private final ExpirableTxnRecord.Builder jFinalRecord = finalRecord;
     private final ExpirableTxnRecord payerRecord = finalRecord.build();
-    private static final Map<ContractID, Long> expectedContractNonces = new HashMap<>() {
-        {
-            put(
-                    ContractID.newBuilder()
-                            .setShardNum(1L)
-                            .setRealmNum(2L)
-                            .setContractNum(3L)
-                            .build(),
-                    1L);
-            put(
-                    ContractID.newBuilder()
-                            .setShardNum(4L)
-                            .setRealmNum(5L)
-                            .setContractNum(6L)
-                            .build(),
-                    2L);
-            put(
-                    ContractID.newBuilder()
-                            .setShardNum(7L)
-                            .setRealmNum(8L)
-                            .setContractNum(9L)
-                            .build(),
-                    3L);
-        }
-    };
 
     {
         payerRecord.setExpiry(payerExpiry);
@@ -178,15 +148,11 @@ class TxnAwareRecordsHistorianTest {
     @Mock
     private FunctionalityThrottling handleThrottling;
 
-    @Mock
-    private GlobalDynamicProperties dynamicProperties;
-
     private TxnAwareRecordsHistorian subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TxnAwareRecordsHistorian(
-                recordCache, txnCtx, consensusTimeTracker, dynamicProperties, handleThrottling);
+        subject = new TxnAwareRecordsHistorian(recordCache, txnCtx, consensusTimeTracker, handleThrottling);
         subject.setCreator(creator);
     }
 
@@ -609,85 +575,6 @@ class TxnAwareRecordsHistorianTest {
         verify(consensusTimeTracker).isAllowableFollowingOffset(2);
         verify(consensusTimeTracker).isAllowablePrecedingOffset(2);
         verify(mockRecordBuilder, times(4)).revert();
-    }
-
-    @Test
-    void constructsTopLevelAsExpectedWithContractsNoncesFromCreate() {
-        constructsTopLevelAsExpectedWithContractsNoncesTemplate(ContractCreate);
-    }
-
-    @Test
-    void constructsTopLevelAsExpectedWithContractsNoncesFromCall() {
-        constructsTopLevelAsExpectedWithContractsNoncesTemplate(ContractCall);
-    }
-
-    void constructsTopLevelAsExpectedWithContractsNoncesTemplate(HederaFunctionality funcName) {
-        givenTopLevelContext();
-        given(dynamicProperties.isContractsNoncesExternalizationEnabled()).willReturn(true);
-
-        final var topLevelRecord = contractCreateAndCallResult();
-
-        subject.updateContractNonces(
-                ContractID.newBuilder()
-                        .setShardNum(1L)
-                        .setRealmNum(2L)
-                        .setContractNum(3L)
-                        .build(),
-                1L);
-        subject.updateContractNonces(
-                ContractID.newBuilder()
-                        .setShardNum(4L)
-                        .setRealmNum(5L)
-                        .setContractNum(6L)
-                        .build(),
-                2L);
-        subject.updateContractNonces(
-                ContractID.newBuilder()
-                        .setShardNum(7L)
-                        .setRealmNum(8L)
-                        .setContractNum(9L)
-                        .build(),
-                3L);
-
-        given(txnCtx.recordSoFar()).willReturn(topLevelRecord);
-        given(creator.saveExpiringRecord(effPayer, topLevelRecord.build(), nows, submittingMember))
-                .willReturn(topLevelRecord.build());
-
-        final var mockTxn = Transaction.getDefaultInstance();
-        given(accessor.getSignedTxnWrapper()).willReturn(mockTxn);
-
-        if (funcName.equals(ContractCreate)) {
-            given(accessor.getFunction()).willReturn(ContractCreate);
-        } else if (funcName.equals(ContractCall)) {
-            given(accessor.getFunction()).willReturn(ContractCall);
-        }
-
-        final var builtFinal = topLevelRecord.build();
-
-        subject.saveExpirableTransactionRecords();
-
-        verify(txnCtx).recordSoFar();
-        verify(recordCache)
-                .setPostConsensus(
-                        txnIdA, ResponseCodeEnum.valueOf(builtFinal.getReceipt().getStatus()), topLevelRecord.build());
-        verify(creator).saveExpiringRecord(effPayer, builtFinal, nows, submittingMember);
-        verify(consensusTimeTracker).setActualFollowingRecordsCount(0L);
-        // and:
-        final var topLevelRso = subject.getTopLevelRecord();
-        final var topLevel = topLevelRso.getExpirableTransactionRecord();
-        assertEquals(builtFinal, topLevel);
-        assertSame(mockTxn, topLevelRso.getTransaction());
-        assertEquals(topLevelNow, topLevelRso.getTimestamp());
-
-        if (funcName.equals(ContractCreate)) {
-            assertEquals(
-                    expectedContractNonces,
-                    topLevelRecord.getContractCreateResult().getContractNonces());
-        } else if (funcName.equals(ContractCall)) {
-            assertEquals(
-                    expectedContractNonces,
-                    topLevelRecord.getContractCallResult().getContractNonces());
-        }
     }
 
     private void givenTopLevelContext() {
