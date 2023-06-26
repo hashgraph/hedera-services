@@ -42,19 +42,17 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        processingEnv.getMessager().printMessage(Kind.WARNING, "TADA");
+        processingEnv.getMessager().printMessage(Kind.NOTE, "Config Data Annotation Processor started...");
 
         for (TypeElement annotation : annotations) {
             Set<? extends Element> annotatedElements = roundEnv.getElementsAnnotatedWith(annotation);
             annotatedElements.forEach(element -> {
-
                 if (element.getKind() == ElementKind.RECORD) {
                     TypeElement typeElement = (TypeElement) element;
                     String simpleClassName = typeElement.getSimpleName().toString();
                     String fileName = simpleClassName + ".java";
                     String packageName = typeElement.getQualifiedName().toString().replace("." + simpleClassName, "");
-                    System.out.println("handling: " + fileName + " in " + packageName);
-
+                    processingEnv.getMessager().printMessage(Kind.NOTE, "handling: " + fileName + " in " + packageName);
                     try {
                         FileObject recordSource = processingEnv.getFiler()
                                 .getResource(StandardLocation.SOURCE_PATH, packageName, fileName);
@@ -65,10 +63,8 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
                         JavaFileObject constantsSourceFile = processingEnv.getFiler()
                                 .createSourceFile(packageName + "." + simpleClassName + "Constants", typeElement);
                         new ConstantClassFactory().doWork(recordDefinition, constantsSourceFile);
-
-                        //new BufferedReader(resource.openReader(true)).lines().forEach(System.out::println);
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        throw new RuntimeException("Error while handling " + element, e);
                     }
                 }
             });

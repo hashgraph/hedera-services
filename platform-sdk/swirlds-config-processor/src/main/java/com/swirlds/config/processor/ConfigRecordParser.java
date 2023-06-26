@@ -20,6 +20,8 @@ package com.swirlds.config.processor;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -29,58 +31,86 @@ import javax.tools.FileObject;
 import org.jboss.forge.roaster.Roaster;
 import org.jboss.forge.roaster.model.Annotation;
 import org.jboss.forge.roaster.model.JavaRecord;
+import org.jboss.forge.roaster.model.JavaRecordComponent;
 import org.jboss.forge.roaster.model.JavaType;
 
 public class ConfigRecordParser {
 
-    public static ConfigDataRecordDefinition parse(final FileObject javaSourceFile) throws IOException {
-        JavaType<?> type = Roaster.parse(javaSourceFile.openInputStream());
+    public static final String JAVADOC_PARAM = "@param";
+    public static final String VALUE_FIELD_NAME = "value";
+    public static final String DEFAULT_VALUE_FIELD_NAME = "defaultValue";
 
-        Annotation<?> annotation = type.getAnnotation(ConfigData.class);
-        String configDataValue = annotation.getStringValue("value");
-
+    private static Map<String, String> getJavaDocParams(JavaType<?> type) {
         Map<String, String> paramDoc = new HashMap<>();
-        type.getJavaDoc().getTags("@param").forEach(tag -> {
+        type.getJavaDoc().getTags(JAVADOC_PARAM).forEach(tag -> {
             paramDoc.put(tag.getName(), tag.getValue());
         });
+        return Collections.unmodifiableMap(paramDoc);
+    }
 
-        JavaRecord<?> record = (JavaRecord<?>) type;
-        Set<ConfigDataPropertyDefinition> propertyDefinitions = record.getRecordComponents().stream()
-                .map(javaRecordComponent -> {
-                    String name = javaRecordComponent.getName();
-                    String propertyDefaultValue = null;
-                    String propertyDescription = paramDoc.get(name);
-                    Annotation configPropertyAnnotation = javaRecordComponent.getAnnotation(ConfigProperty.class);
-                    if (configPropertyAnnotation != null) {
-                        String annotationValue = configPropertyAnnotation.getStringValue("value");
-                        if (annotationValue != null) {
-                            name = annotationValue;
-                        }
-                        String annotationDefaultValue = configPropertyAnnotation.getStringValue("defaultValue");
-                        if (annotationDefaultValue != null && !Objects.equals(annotationDefaultValue,
-                                ConfigProperty.NULL_DEFAULT_VALUE)) {
-                            propertyDefaultValue = annotationDefaultValue;
-                        }
-                    }
-                    String propertyName = name;
-                    if (configDataValue != null) {
-                        propertyName = configDataValue + "." + name;
-                    }
-                    String propertyType = javaRecordComponent.getType().getQualifiedName();
+    public static ConfigDataRecordDefinition parse(final FileObject javaSourceFile) throws IOException {
+        try (InputStream inputStream = javaSourceFile.openInputStream()) {
+            JavaType<?> type = Roaster.parse(inputStream);
+            Annotation<?> annotation = type.getAnnotation(ConfigData.class);
+            String configDataValue = annotation.getStringValue(VALUE_FIELD_NAME);
 
-                    return new ConfigDataPropertyDefinition(
-                            propertyName,
-                            propertyType,
-                            propertyDefaultValue,
-                            propertyDescription
-                    );
-                }).collect(Collectors.toSet());
+            Map<String, String> paramDoc = getJavaDocParams(type);
 
-        return new ConfigDataRecordDefinition(
-                type.getQualifiedName(),
-                configDataValue,
-                propertyDefinitions
+            JavaRecord<?> record = (JavaRecord<?>) type;
+            Set<ConfigDataPropertyDefinition> propertyDefinitions = record.getRecordComponents().stream()
+                    .map(javaRecordComponent -> getConfigDataPropertyDefinition(configDataValue, paramDoc,
+                            javaRecordComponent))
+                    .collect(Collectors.toSet());
+
+            return new ConfigDataRecordDefinition(
+                    type.getQualifiedName(),
+                    configDataValue,
+                    propertyDefinitions
+            );
+        }
+    }
+
+    private static String getDefaultValue(JavaRecordComponent javaRecordComponent) {
+        Annotation configPropertyAnnotation = javaRecordComponent.getAnnotation(ConfigProperty.class);
+        if (configPropertyAnnotation != null) {
+            String annotationDefaultValue = configPropertyAnnotation.getStringValue(
+                    DEFAULT_VALUE_FIELD_NAME);
+            if (annotationDefaultValue != null && !Objects.equals(annotationDefaultValue,
+                    ConfigProperty.NULL_DEFAULT_VALUE)) {
+                return annotationDefaultValue;
+            }
+        }
+        return null;
+    }
+
+    private static String getName(String configDataValue, JavaRecordComponent javaRecordComponent) {
+        String name = javaRecordComponent.getName();
+        Annotation configPropertyAnnotation = javaRecordComponent.getAnnotation(ConfigProperty.class);
+        if (configPropertyAnnotation != null) {
+            String annotationValue = configPropertyAnnotation.getStringValue(VALUE_FIELD_NAME);
+            if (annotationValue != null) {
+                name = annotationValue;
+            }
+        }
+        String propertyName = name;
+        if (configDataValue != null) {
+            propertyName = configDataValue + "." + name;
+        }
+        return propertyName;
+    }
+    
+    private static ConfigDataPropertyDefinition getConfigDataPropertyDefinition(String configDataValue,
+            Map<String, String> paramDoc, JavaRecordComponent javaRecordComponent) {
+        final String propertyName = getName(configDataValue, javaRecordComponent);
+        final String propertyDefaultValue = getDefaultValue(javaRecordComponent);
+        final String propertyDescription = paramDoc.get(javaRecordComponent.getName());
+        final String propertyType = javaRecordComponent.getType().getQualifiedName();
+
+        return new ConfigDataPropertyDefinition(
+                propertyName,
+                propertyType,
+                propertyDefaultValue,
+                propertyDescription
         );
-
     }
 }

@@ -24,22 +24,25 @@ import org.jboss.forge.roaster.model.source.JavaClassSource;
 
 public class ConstantClassFactory {
 
+    public static final String JAVA_LANG_STRING = "java.lang.String";
+    public static final String CONSTANTS_CLASS_SUFFIX = "Constants";
+
     public void doWork(ConfigDataRecordDefinition configDataRecordDefinition, JavaFileObject constantsSourceFile)
             throws IOException {
 
-        JavaClassSource javaClassSource = Roaster.create(JavaClassSource.class);
-        int split = configDataRecordDefinition.className().lastIndexOf(".");
+        final JavaClassSource javaClassSource = Roaster.create(JavaClassSource.class);
+        final int split = configDataRecordDefinition.className().lastIndexOf(".");
         javaClassSource.setPackage(configDataRecordDefinition.className().substring(0, split))
                 .setName(configDataRecordDefinition.className()
-                        .substring(split + 1, configDataRecordDefinition.className().length()) + "Constants")
+                        .substring(split + 1, configDataRecordDefinition.className().length()) + CONSTANTS_CLASS_SUFFIX)
                 .setFinal(true);
 
         configDataRecordDefinition.propertyDefinitions().forEach(propertyDefinition -> {
-            String name = toConstantName(
+            final String name = toConstantName(
                     propertyDefinition.name().replace(configDataRecordDefinition.configDataName() + ".", ""));
             javaClassSource.addField()
                     .setName(name)
-                    .setType("java.lang.String")
+                    .setType(JAVA_LANG_STRING)
                     .setLiteralInitializer("\"" + propertyDefinition.name() + "\"")
                     .setPublic()
                     .setStatic(true);
@@ -48,10 +51,10 @@ public class ConstantClassFactory {
         constantsSourceFile.openWriter().append(javaClassSource.toString()).close();
     }
 
-    public static String toConstantName(String propertyName) {
-        StringBuilder builder = new StringBuilder();
+    public static String toConstantName(final String propertyName) {
+        final StringBuilder builder = new StringBuilder();
         for (int i = 0; i < propertyName.length(); i++) {
-            char character = propertyName.charAt(i);
+            final char character = propertyName.charAt(i);
             if (Character.isUpperCase(character)) {
                 builder.append("_");
                 builder.append(character);
