@@ -58,8 +58,6 @@ import java.time.Duration;
  * 		when its queue is empty and the two are equal, but never twice within this many milliseconds
  * @param statsSkipSeconds
  * 		number of seconds that the "all" history window skips at the start
- * @param maxAddressSizeAllowed
- * 		the maximum number of address allowed in a address book, the same as the maximum allowed network size
  * @param freezeSecondsAfterStartup
  * 		do not create events for this many seconds after the platform has started (0 or less to not freeze at startup)
  * @param loadKeysFromPfxFiles
