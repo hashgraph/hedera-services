@@ -58,6 +58,11 @@ class ProxyEvmAccountTest {
     }
 
     @Test
+    void notTokenFacade() {
+        assertFalse(subject.isTokenFacade());
+    }
+
+    @Test
     void accountHashNotSupported() {
         assertThrows(UnsupportedOperationException.class, subject::getAddressHash);
     }
@@ -138,6 +143,12 @@ class ProxyEvmAccountTest {
     @Test
     void doesNotSupportDirectBalanceMutation() {
         assertThrows(UnsupportedOperationException.class, () -> subject.setBalance(Wei.of(123)));
+    }
+
+    @Test
+    void delegatesCheckingContract() {
+        given(hederaState.isContract(ACCOUNT_NUM)).willReturn(true);
+        assertTrue(subject.isContract());
     }
 
     @Test

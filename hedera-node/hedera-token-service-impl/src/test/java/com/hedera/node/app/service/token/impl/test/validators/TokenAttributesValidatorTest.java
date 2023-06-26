@@ -51,7 +51,7 @@ class TokenAttributesValidatorTest {
     @BeforeEach
     void setUp() {
         subject = new TokenAttributesValidator();
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxTokenNameUtf8Bytes", "10")
                 .withValue("tokens.maxSymbolUtf8Bytes", "10")
                 .getOrCreateConfig();
@@ -97,7 +97,7 @@ class TokenAttributesValidatorTest {
 
     @Test
     void failsForZeroLengthName() {
-        final var configuration = new HederaTestConfigBuilder()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxTokenNameUtf8Bytes", "10")
                 .getOrCreateConfig();
         final var tokensConfig = configuration.getConfigData(TokensConfig.class);

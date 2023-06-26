@@ -110,15 +110,19 @@ public class FileCreateHandler implements TransactionHandler {
             builder.memo(fileCreateTransactionBody.memo());
 
             builder.keys(fileCreateTransactionBody.keys());
-            builder.fileNumber(handleContext.newEntityNum());
+            final var fileId = FileID.newBuilder()
+                    .fileNum(handleContext.newEntityNum())
+                    .shardNum(fileCreateTransactionBody.shardIDOrThrow().shardNum())
+                    .realmNum(fileCreateTransactionBody.realmIDOrThrow().realmNum())
+                    .build();
+            builder.fileId(fileId);
             validateContent(PbjConverter.asBytes(fileCreateTransactionBody.contents()), fileServiceConfig);
             builder.contents(fileCreateTransactionBody.contents());
 
             final var file = builder.build();
             fileStore.put(file);
 
-            final var fileID = FileID.newBuilder().fileNum(file.fileNumber()).build();
-            handleContext.recordBuilder(CreateFileRecordBuilder.class).fileID(fileID);
+            handleContext.recordBuilder(CreateFileRecordBuilder.class).fileID(fileId);
         } catch (final HandleException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {
                 // Since for some reason CreateTransactionBody does not have an expiration time,

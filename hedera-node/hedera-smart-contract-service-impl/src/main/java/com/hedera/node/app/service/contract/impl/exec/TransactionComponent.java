@@ -25,8 +25,8 @@ import dagger.Subcomponent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
-@TransactionScope
 @Subcomponent
+@TransactionScope
 public interface TransactionComponent {
     @Subcomponent.Factory
     interface Factory {

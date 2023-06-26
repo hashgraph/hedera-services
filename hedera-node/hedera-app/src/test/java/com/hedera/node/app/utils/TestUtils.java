@@ -46,7 +46,7 @@ public class TestUtils {
 
     public static Metrics metrics() {
         final MetricsConfig metricsConfig =
-                new HederaTestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
+                HederaTestConfigBuilder.createConfig().getConfigData(MetricsConfig.class);
 
         return new DefaultMetrics(
                 new NodeId(DEFAULT_NODE_ID),

@@ -88,11 +88,11 @@ public class FileSystemDeleteHandler implements TransactionHandler {
                 .seconds();
         // If the file is already expired, remove it from state completely otherwise change the deleted flag to be true.
         if (newExpiry <= handleContext.consensusNow().getEpochSecond()) {
-            fileStore.removeFile(fileId.fileNum());
+            fileStore.removeFile(fileId);
         } else {
             /* Get all the fields from existing file and change deleted flag */
             final var fileBuilder = new File.Builder()
-                    .fileNumber(file.fileNumber())
+                    .fileId(file.fileId())
                     .expirationTime(newExpiry)
                     .keys(file.keys())
                     .contents(file.contents())

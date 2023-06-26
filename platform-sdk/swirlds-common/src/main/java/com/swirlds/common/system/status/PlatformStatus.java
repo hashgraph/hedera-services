@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.system.platformstatus;
+package com.swirlds.common.system.status;
 
 import com.swirlds.common.UniqueId;
 
@@ -23,7 +23,6 @@ import com.swirlds.common.UniqueId;
  * <p>
  * NOTE: not all of these statuses can currently be reached. The status state machine is still under development. In
  * such cases, the documentation will indicate that the status is "not in use"
- *
  */
 public enum PlatformStatus implements UniqueId {
     /**
@@ -39,18 +38,21 @@ public enum PlatformStatus implements UniqueId {
      * <p>
      * NOTE: This is still in use, but will be retired once the status state machine is complete.
      */
+    @Deprecated(forRemoval = true)
     DISCONNECTED(3),
     /**
      * The Platform does not have the latest state, and needs to reconnect. The platform is not gossiping.
      */
     BEHIND(4),
     /**
-     * A freeze timestamp has been crossed, and the platform is in the process of freezing. The platform is gossiping
-     * and creating events, but not accepting app transactions.
+     * A freeze timestamp has been crossed, and the platform is in the process of freezing. The platform is gossiping.
+     * It is permitted to create events, but will not produce any additional events after creating one with its self
+     * signature for the freeze state.
      */
     FREEZING(5),
     /**
-     * The platform has been frozen, and is idle.
+     * The platform has completed the freeze. It is still gossipping, so that signatures on the freeze state can be
+     * distributed to laggards.
      */
     FREEZE_COMPLETE(6),
     /**
