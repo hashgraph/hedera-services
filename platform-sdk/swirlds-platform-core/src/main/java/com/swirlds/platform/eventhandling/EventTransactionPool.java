@@ -78,7 +78,7 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
      */
     public EventTransactionPool(
             @NonNull final Metrics metrics,
-            @NonNull TransactionConfig transactionConfig,
+            @NonNull final TransactionConfig transactionConfig,
             @Nullable final BooleanSupplier inFreeze) {
         this.transactionConfig = Objects.requireNonNull(transactionConfig);
         this.inFreeze = inFreeze;
