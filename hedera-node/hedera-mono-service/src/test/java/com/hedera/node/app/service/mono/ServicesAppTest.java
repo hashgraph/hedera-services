@@ -133,7 +133,7 @@ class ServicesAppTest {
                 .platform(platform)
                 .consoleCreator((ignore, visible) -> null)
                 .crypto(cryptography)
-                .selfId(selfId)
+                .selfId(new NodeId(selfId))
                 .build();
 
         // Make sure the MutableStateChildren has the needed children to instantiate EntityMapWarmer

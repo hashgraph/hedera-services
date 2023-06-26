@@ -112,7 +112,8 @@ class GrpcStarterTest {
     void startsIfBlessedOnDevProfileOnlyOneNodeListening() {
         withPorts();
 
-        given(addressBook.getAddress(nodeId.getIdAsInt())).willReturn(nodeAddress);
+        given(addressBook.getNodeId(0)).willReturn(new NodeId(123L));
+        given(addressBook.getAddress(nodeId)).willReturn(nodeAddress);
         given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
         given(nodeLocalProperties.devOnlyDefaultNodeListens()).willReturn(true);
         given(nodeAddress.getMemo()).willReturn("0.0.3");
@@ -129,7 +130,7 @@ class GrpcStarterTest {
     void doesntStartIfNotBlessedOnDevProfileOnlyOneNodeListening() {
         withPorts();
 
-        given(addressBook.getAddress(nodeId.getIdAsInt())).willReturn(nodeAddress);
+        given(addressBook.getAddress(nodeId)).willReturn(nodeAddress);
         given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
         given(nodeLocalProperties.devOnlyDefaultNodeListens()).willReturn(true);
         given(nodeAddress.getMemo()).willReturn("0.0.4");
@@ -149,7 +150,7 @@ class GrpcStarterTest {
         given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
         given(nodeAddress.getMemo()).willReturn("0.0.3");
         given(nodeLocalProperties.devListeningAccount()).willReturn("0.0.3");
-        given(addressBook.getAddress(nodeId.getIdAsInt())).willReturn(nodeAddress);
+        given(addressBook.getAddress(nodeId)).willReturn(nodeAddress);
 
         // when:
         subject.startIfAppropriate();
@@ -162,7 +163,7 @@ class GrpcStarterTest {
     void startsIfUnblessedOnDevProfileAllNodesListening() {
         withPorts();
 
-        given(addressBook.getAddress(nodeId.getIdAsInt())).willReturn(nodeAddress);
+        given(addressBook.getAddress(nodeId)).willReturn(nodeAddress);
         given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
         given(nodeAddress.getMemo()).willReturn("0.0.4");
         given(nodeAddress.getPortExternalIpv4()).willReturn(50666);

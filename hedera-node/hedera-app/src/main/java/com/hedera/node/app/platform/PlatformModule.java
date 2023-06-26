@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.platform;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import dagger.Module;
 import dagger.Provides;
@@ -26,7 +27,7 @@ import javax.inject.Singleton;
 public interface PlatformModule {
     @Provides
     @Singleton
-    static long selfId(@NonNull final Platform platform) {
-        return platform.getSelfId().getIdAsInt();
+    static NodeId selfId(@NonNull final Platform platform) {
+        return platform.getSelfId();
     }
 }
