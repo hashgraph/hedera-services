@@ -115,8 +115,7 @@ public class SeededPropertySource {
         // call nextStateChanges(), even though state changes are not part of EvmFnResult anymore,
         // in order to advance SEEDED_RANDOM and get correct values for subsequent fields
         nextStateChanges(2, 5);
-        final var createdContractNonces = nextContractNonces(2);
-        return new EvmFnResult(
+        final var evmResult = new EvmFnResult(
                 contractId,
                 result,
                 error,
@@ -124,12 +123,14 @@ public class SeededPropertySource {
                 gasUsed,
                 logs,
                 createdContractIds,
-                createdContractNonces,
+                List.of(),
                 evmAddress,
                 nextUnsignedLong(),
                 nextUnsignedLong(),
                 nextBytes(128),
                 nextEntityId());
+        evmResult.setContractNonces(nextContractNonces(2));
+        return evmResult;
     }
 
     public MerkleTopic nextTopic() {
