@@ -25,6 +25,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.event.tipset.Tipset;
+import com.swirlds.platform.event.tipset.TipsetAdvancementWeight;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -151,7 +152,9 @@ class TipsetTests {
                 expectedAdvancementCount++;
             }
         }
-        assertEquals(expectedAdvancementCount, initialTipset.getTipAdvancementWeight(selfId, comparisonTipset));
+        assertEquals(
+                TipsetAdvancementWeight.of(expectedAdvancementCount, 0),
+                initialTipset.getTipAdvancementWeight(selfId, comparisonTipset));
     }
 
     @Test
@@ -206,6 +209,8 @@ class TipsetTests {
             }
         }
 
-        assertEquals(expectedAdvancementCount, initialTipset.getTipAdvancementWeight(selfId, comparisonTipset));
+        assertEquals(
+                TipsetAdvancementWeight.of(expectedAdvancementCount, 0),
+                initialTipset.getTipAdvancementWeight(selfId, comparisonTipset));
     }
 }
