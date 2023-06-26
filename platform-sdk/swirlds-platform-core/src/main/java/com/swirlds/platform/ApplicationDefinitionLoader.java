@@ -18,6 +18,8 @@ package com.swirlds.platform;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.common.config.PathsConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.internal.ConfigurationException;
 import com.swirlds.common.system.NodeId;
@@ -52,14 +54,14 @@ public final class ApplicationDefinitionLoader {
     private ApplicationDefinitionLoader() {}
 
     /**
-     * Parses the configuration file specified by the {@link Settings#getConfigPath()} setting, configures all
+     * Parses the configuration file specified by the {@link PathsConfig#getConfigPath()} setting, configures all
      * appropriate system settings, and returns a generic {@link ApplicationDefinition}.
      *
      * @param localNodesToStart
      * 		the {@link Set} of local nodes to be started, if specified
      * @return an {@link ApplicationDefinition} specifying the application to be loaded and all related configuration
      * @throws ConfigurationException
-     * 		if the configuration file specified by {@link Settings#getConfigPath()} does not exist
+     * 		if the configuration file specified by {@link PathsConfig#getConfigPath()} does not exist
      */
     public static ApplicationDefinition load(
             @NonNull final LegacyConfigProperties configurationProperties, @NonNull final Set<NodeId> localNodesToStart)
@@ -90,7 +92,9 @@ public final class ApplicationDefinitionLoader {
         // the line is: app, jarFilename, optionalParameters
         final String appJarFilename = appConfig.jarName();
         // this is a real .jar file, so load from data/apps/
-        Path appJarPath = Settings.getInstance().getAppsDirPath().resolve(appJarFilename);
+        Path appJarPath = ConfigurationHolder.getConfigData(PathsConfig.class)
+                .getAppsDirPath()
+                .resolve(appJarFilename);
         String mainClassname = "";
         try (final JarFile jarFile = new JarFile(appJarPath.toFile())) {
             final Manifest manifest = jarFile.getManifest();

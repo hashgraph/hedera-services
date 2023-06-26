@@ -21,11 +21,11 @@ import static com.swirlds.logging.LogMarker.NETWORK;
 import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
 import static com.swirlds.logging.LogMarker.TCP_CONNECT_EXCEPTIONS;
 
+import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.ByteConstants;
@@ -34,6 +34,7 @@ import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import java.io.IOException;
 import java.net.ConnectException;
@@ -51,7 +52,7 @@ public class OutboundConnectionCreator {
     private static final Logger logger = LogManager.getLogger(OutboundConnectionCreator.class);
     private static final byte[] LOCALHOST = new byte[] {127, 0, 0, 1};
     private final NodeId selfId;
-    private final SettingsProvider settings;
+    private final SocketConfig socketConfig;
     private final ConnectionTracker connectionTracker;
     private final SocketFactory socketFactory;
     private final AddressBook addressBook;
@@ -59,18 +60,18 @@ public class OutboundConnectionCreator {
     private final SoftwareVersion softwareVersion;
 
     public OutboundConnectionCreator(
-            final NodeId selfId,
-            final SettingsProvider settings,
-            final ConnectionTracker connectionTracker,
-            final SocketFactory socketFactory,
-            final AddressBook addressBook,
+            @NonNull final NodeId selfId,
+            @NonNull final SocketConfig socketConfig,
+            @NonNull final ConnectionTracker connectionTracker,
+            @NonNull final SocketFactory socketFactory,
+            @NonNull final AddressBook addressBook,
             final boolean doVersionCheck,
-            final SoftwareVersion softwareVersion) {
-        this.selfId = selfId;
-        this.settings = settings;
-        this.connectionTracker = connectionTracker;
-        this.socketFactory = socketFactory;
-        this.addressBook = addressBook;
+            @NonNull final SoftwareVersion softwareVersion) {
+        this.selfId = Objects.requireNonNull(selfId);
+        this.socketConfig = Objects.requireNonNull(socketConfig);
+        this.connectionTracker = Objects.requireNonNull(connectionTracker);
+        this.socketFactory = Objects.requireNonNull(socketFactory);
+        this.addressBook = Objects.requireNonNull(addressBook);
         this.doVersionCheck = doVersionCheck;
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
     }
@@ -96,10 +97,8 @@ public class OutboundConnectionCreator {
         try {
             clientSocket = socketFactory.createClientSocket(ipAddress, port);
 
-            dos = SyncOutputStream.createSyncOutputStream(
-                    clientSocket.getOutputStream(), settings.connectionStreamBufferSize());
-            dis = SyncInputStream.createSyncInputStream(
-                    clientSocket.getInputStream(), settings.connectionStreamBufferSize());
+            dos = SyncOutputStream.createSyncOutputStream(clientSocket.getOutputStream(), socketConfig.bufferSize());
+            dis = SyncInputStream.createSyncInputStream(clientSocket.getInputStream(), socketConfig.bufferSize());
 
             if (doVersionCheck) {
                 dos.writeSerializable(softwareVersion, true);

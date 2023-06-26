@@ -54,7 +54,6 @@ import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
-import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
@@ -64,6 +63,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -116,7 +116,6 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     private final long updateAccountNum = 32132L;
     private final AccountID updateAccountId =
             AccountID.newBuilder().accountNum(updateAccountNum).build();
-    private final Key opKey = B_COMPLEX_KEY;
 
     private Account updateAccount;
     private Configuration configuration;
@@ -130,13 +129,13 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         updateWritableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
         updateReadableAccountStore(Map.of(updateAccountId.accountNum(), updateAccount, accountNum, account));
 
-        configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        configuration = HederaTestConfigBuilder.createConfig();
         given(compositeProps.getLongProperty(ENTITIES_MAX_LIFETIME)).willReturn(72000L);
         attributeValidator = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
         expiryValidator = new StandardizedExpiryValidator(
                 System.out::println, attributeValidator, consensusSecondNow, hederaNumbers, configProvider);
-        stakingValidator = new StakingValidator(nodeInfo, configProvider);
-        subject = new CryptoUpdateHandler(waivers, stakingValidator);
+        stakingValidator = new StakingValidator();
+        subject = new CryptoUpdateHandler(waivers, stakingValidator, nodeInfo);
     }
 
     @Test
@@ -329,11 +328,10 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withStakedAccountId(3).build();
         givenTxnWith(txn);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("staking.isEnabled", false)
                 .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
-
+        given(handleContext.configuration()).willReturn(config);
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(STAKING_NOT_ENABLED));
@@ -345,10 +343,10 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withDeclineReward(false).build();
         givenTxnWith(txn);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("staking.isEnabled", false)
                 .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
+        given(handleContext.configuration()).willReturn(config);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -472,7 +470,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withMaxAutoAssociations(12).build();
         givenTxnWith(txn);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("entities.limitTokenAssociations", true)
                 .withValue("tokens.maxPerAccount", 11)
                 .getOrCreateConfig();
@@ -490,7 +488,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withMaxAutoAssociations(12).build();
         givenTxnWith(txn);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("ledger.maxAutoAssociations", 11)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
@@ -568,7 +566,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
                 .build();
         givenTxnWith(txn);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("ledger.maxMemoUtf8Bytes", 2)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);

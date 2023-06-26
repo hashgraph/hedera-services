@@ -67,6 +67,7 @@ public class TokenGetNftInfosHandler extends FreeQueryHandler {
 
     @Override
     public Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
+        // this code never runs, since validate fails every time
         requireNonNull(context);
         requireNonNull(header);
         throw new UnsupportedOperationException(NOT_SUPPORTED.toString());

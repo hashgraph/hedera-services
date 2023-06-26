@@ -37,7 +37,7 @@ final class ConstraintValidator implements ConfigValidator {
     private final Queue<ConfigPropertyConstraintData> constraintData;
 
     ConstraintValidator(@NonNull final ConverterService converterService) {
-        this.converterService = ArgumentUtils.throwArgNull(converterService, "converterService");
+        this.converterService = Objects.requireNonNull(converterService, "converterService must not be null");
         this.constraintData = new ConcurrentLinkedQueue<>();
     }
 
@@ -45,7 +45,7 @@ final class ConstraintValidator implements ConfigValidator {
     @NonNull
     @Override
     public Stream<ConfigViolation> validate(@NonNull final Configuration configuration) {
-        ArgumentUtils.throwArgNull(configuration, "configuration");
+        Objects.requireNonNull(configuration, "configuration must not be null");
         return constraintData.stream()
                 .map(d -> {
                     final PropertyMetadata<?> propertyMetadata =
@@ -61,8 +61,8 @@ final class ConstraintValidator implements ConfigValidator {
             @NonNull final Class<T> valueType,
             @NonNull final Configuration configuration) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
-        ArgumentUtils.throwArgNull(valueType, "valueType");
-        ArgumentUtils.throwArgNull(configuration, "configuration");
+        Objects.requireNonNull(valueType, "valueType must not be null");
+        Objects.requireNonNull(configuration, "configuration must not be null");
         if (configuration.exists(propertyName)) {
             final ConfigConverter<T> converter = converterService.getConverterForType(valueType);
             return new PropertyMetadataImpl<>(
@@ -78,8 +78,8 @@ final class ConstraintValidator implements ConfigValidator {
             @NonNull final Class<T> valueType,
             @NonNull final ConfigPropertyConstraint<T> validator) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
-        ArgumentUtils.throwArgNull(valueType, "valueType");
-        ArgumentUtils.throwArgNull(validator, "validator");
+        Objects.requireNonNull(valueType, "valueType must not be null");
+        Objects.requireNonNull(validator, "validator must not be null");
         constraintData.add(new ConfigPropertyConstraintData<>(propertyName, valueType, validator));
     }
 

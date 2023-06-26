@@ -119,10 +119,10 @@ public class TokenCreateValidator {
         }
 
         context.attributeValidator().validateMemo(op.memo());
-        tokenAttributesValidator.validateTokenSymbol(op.symbol());
-        tokenAttributesValidator.validateTokenName(op.name());
+        tokenAttributesValidator.validateTokenSymbol(op.symbol(), config);
+        tokenAttributesValidator.validateTokenName(op.name(), config);
 
-        tokenAttributesValidator.checkKeys(
+        tokenAttributesValidator.validateTokenKeys(
                 op.hasAdminKey(), op.adminKey(),
                 op.hasKycKey(), op.kycKey(),
                 op.hasWipeKey(), op.wipeKey(),

@@ -16,7 +16,6 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.common.threading.locks.locked.Locked;
@@ -27,6 +26,7 @@ import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -113,7 +113,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     }
 
     private void addConfigSource(@NonNull final ConfigSource configSource) {
-        ArgumentUtils.throwArgNull(configSource, "configSource");
+        Objects.requireNonNull(configSource, "configSource must not be null");
         if (initialized.get()) {
             throw new IllegalStateException("ConfigSource can not be added to initialized config");
         }
@@ -135,7 +135,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     }
 
     private void addConverter(@NonNull final ConfigConverter<?> converter) {
-        ArgumentUtils.throwArgNull(converter, "converter");
+        Objects.requireNonNull(converter, "converter must not be null");
         if (initialized.get()) {
             throw new IllegalStateException("Converters can not be added to initialized config");
         }
@@ -157,7 +157,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     }
 
     private void addValidator(@NonNull final ConfigValidator validator) {
-        ArgumentUtils.throwArgNull(validator, "validator");
+        Objects.requireNonNull(validator, "validator must not be null");
         if (initialized.get()) {
             throw new IllegalStateException("ConfigValidator can not be added to initialized config");
         }
@@ -179,7 +179,7 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     }
 
     private <T extends Record> void addConfigDataType(@NonNull final Class<T> type) {
-        ArgumentUtils.throwArgNull(type, "type");
+        Objects.requireNonNull(type, "type must not be null");
         if (initialized.get()) {
             throw new IllegalStateException("ConfigDataType can not be added to initialized config");
         }

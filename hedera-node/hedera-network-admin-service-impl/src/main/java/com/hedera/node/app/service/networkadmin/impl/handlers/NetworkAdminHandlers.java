@@ -42,6 +42,8 @@ public class NetworkAdminHandlers {
 
     private final NetworkTransactionGetRecordHandler networkTransactionGetRecordHandler;
 
+    private final NetworkTransactionGetFastRecordHandler networkTransactionGetFastRecordHandler;
+
     private final NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler;
 
     /**
@@ -56,6 +58,7 @@ public class NetworkAdminHandlers {
             @NonNull final NetworkGetVersionInfoHandler networkGetVersionInfoHandler,
             @NonNull final NetworkTransactionGetReceiptHandler networkTransactionGetReceiptHandler,
             @NonNull final NetworkTransactionGetRecordHandler networkTransactionGetRecordHandler,
+            @NonNull final NetworkTransactionGetFastRecordHandler networkTransactionGetFastRecordHandler,
             @NonNull final NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler) {
         this.freezeHandler = requireNonNull(freezeHandler, "freezeHandler must not be null");
         this.networkGetAccountDetailsHandler =
@@ -69,6 +72,8 @@ public class NetworkAdminHandlers {
                 networkTransactionGetReceiptHandler, "networkTransactionGetReceiptHandler must not be null");
         this.networkTransactionGetRecordHandler = requireNonNull(
                 networkTransactionGetRecordHandler, "networkTransactionGetRecordHandler must not be null");
+        this.networkTransactionGetFastRecordHandler = requireNonNull(
+                networkTransactionGetFastRecordHandler, "networkTransactionGetFastRecordHandler must not be null");
         this.networkUncheckedSubmitHandler =
                 requireNonNull(networkUncheckedSubmitHandler, "networkUncheckedSubmitHandler must not be null");
     }
@@ -108,5 +113,9 @@ public class NetworkAdminHandlers {
 
     public NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler() {
         return networkUncheckedSubmitHandler;
+    }
+
+    public NetworkTransactionGetFastRecordHandler networkTransactionGetFastRecordHandler() {
+        return networkTransactionGetFastRecordHandler;
     }
 }

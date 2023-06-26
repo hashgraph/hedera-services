@@ -67,7 +67,6 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
@@ -272,7 +271,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     @BeforeEach
     public void setUp() {
-        configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        configuration = HederaTestConfigBuilder.createConfig();
         versionedConfig = new VersionedConfigImpl(configuration, 1);
         givenValidAccounts();
         givenValidTokens();
@@ -529,7 +528,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     protected Token givenValidFungibleToken() {
-        return givenValidFungibleToken(autoRenewId.accountNum());
+        return givenValidFungibleToken(spenderId.accountNum());
     }
 
     protected Token givenValidFungibleToken(long autoRenewAccountNumber) {
@@ -556,7 +555,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 supplyKey,
                 feeScheduleKey,
                 pauseKey,
-                0,
+                2,
                 deleted,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.FINITE,
@@ -607,7 +606,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 2,
                 0,
                 1000L,
-                2,
+                0,
                 72000,
                 0,
                 Collections.emptyList(),
@@ -624,7 +623,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .accountNumber(accountNum)
                 .balance(1000L)
                 .frozen(false)
-                .kycGranted(false)
+                .kycGranted(true)
                 .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(2L)
@@ -636,9 +635,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         return TokenRelation.newBuilder()
                 .tokenNumber(nonFungibleTokenNum.longValue())
                 .accountNumber(accountNum)
-                .balance(1000L)
+                .balance(1)
                 .frozen(false)
-                .kycGranted(false)
+                .kycGranted(true)
                 .deleted(false)
                 .automaticAssociation(true)
                 .nextToken(2L)
@@ -677,9 +676,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .build();
     }
 
-    protected void givenStoresAndConfig(final ConfigProvider configProvider, final HandleContext handleContext) {
-        configuration = new HederaTestConfigBuilder().getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
+    protected void givenStoresAndConfig(final HandleContext handleContext) {
+        configuration = HederaTestConfigBuilder.createConfig();
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);

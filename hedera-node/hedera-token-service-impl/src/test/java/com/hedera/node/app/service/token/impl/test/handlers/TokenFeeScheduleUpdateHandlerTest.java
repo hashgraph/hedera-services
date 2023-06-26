@@ -71,7 +71,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         validator = new CustomFeesValidator();
         subject = new TokenFeeScheduleUpdateHandler(validator);
         givenTxn();
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxCustomFeesAllowed", 1000)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
@@ -162,7 +162,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("fee schedule update fails if custom fees list is too long")
     void failsIfTooManyCustomFees() {
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxCustomFeesAllowed", 1)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);

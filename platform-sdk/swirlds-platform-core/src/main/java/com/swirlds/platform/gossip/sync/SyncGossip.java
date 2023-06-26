@@ -232,10 +232,10 @@ public class SyncGossip extends AbstractGossip {
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
                             syncConfig.syncSleepAfterFailedNegotiation(),
                             List.of(
-                                    new VersionCompareHandshake(appVersion, !settings.isGossipWithDifferentVersions()),
+                                    new VersionCompareHandshake(appVersion, !basicConfig.gossipWithDifferentVersions()),
                                     new VersionCompareHandshake(
                                             PlatformVersion.locateOrDefault(),
-                                            !settings.isGossipWithDifferentVersions())),
+                                            !basicConfig.gossipWithDifferentVersions())),
                             new NegotiationProtocols(List.of(
                                     new HeartbeatProtocol(
                                             otherId,

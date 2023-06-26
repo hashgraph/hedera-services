@@ -38,7 +38,6 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.ConfigProvider;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,9 +48,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock(strictness = LENIENT)
-    private ConfigProvider configProvider;
-
-    @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
     private CryptoDeleteAllowanceHandler subject;
@@ -59,13 +55,12 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        final var deleteAllowanceValidator = new DeleteAllowanceValidator(configProvider);
+        final var deleteAllowanceValidator = new DeleteAllowanceValidator();
         subject = new CryptoDeleteAllowanceHandler(deleteAllowanceValidator);
         refreshWritableStores();
-        givenStoresAndConfig(configProvider, handleContext);
+        givenStoresAndConfig(handleContext);
 
         given(handleContext.configuration()).willReturn(configuration);
-        given(configProvider.getConfiguration()).willReturn(versionedConfig);
     }
 
     @Test

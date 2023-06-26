@@ -50,6 +50,7 @@ import com.swirlds.platform.components.transaction.system.PostConsensusSystemTra
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManagerFactory;
+import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -96,9 +97,6 @@ import org.mockito.stubbing.Answer;
  * Tests the flow of events through the system and their interaction with {@link SwirldState}.
  */
 class EventFlowTests {
-
-    /** Delay in milliseconds between shuffles. */
-    private static final long SHUFFLE_DELAY_MS = 600;
 
     /** The maximum allowed bytes per transaction */
     private static final Integer TX_MAX_BYTES = 10;
@@ -573,7 +571,6 @@ class EventFlowTests {
                 .setSequentialIds(true)
                 .build();
         when(settingsProvider.getTransactionMaxBytes()).thenReturn(TX_MAX_BYTES);
-        when(settingsProvider.getDelayShuffle()).thenReturn(SHUFFLE_DELAY_MS);
         when(settingsProvider.getThrottleTransactionQueueSize()).thenReturn(THROTTLE_TRANSACTION_QUEUE_SIZE);
         when(settingsProvider.getMaxTransactionBytesPerEvent()).thenReturn(2048);
 
@@ -629,9 +626,16 @@ class EventFlowTests {
         ConfigurationHolder.getInstance().setConfiguration(config);
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withConfiguration(config).build();
+        final ThreadConfig threadConfig = config.getConfigData(ThreadConfig.class);
 
         preConsensusEventHandler = new PreConsensusEventHandler(
-                new NoOpMetrics(), getStaticThreadManager(), selfId, swirldStateManager, consensusMetrics);
+                new NoOpMetrics(),
+                getStaticThreadManager(),
+                selfId,
+                swirldStateManager,
+                consensusMetrics,
+                threadConfig);
+
         consensusEventHandler = new ConsensusRoundHandler(
                 platformContext,
                 getStaticThreadManager(),
