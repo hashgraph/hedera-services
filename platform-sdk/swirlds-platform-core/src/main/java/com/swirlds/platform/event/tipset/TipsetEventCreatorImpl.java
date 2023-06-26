@@ -55,7 +55,6 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     private final Time time;
     private final Random random;
     private final Signer signer;
-    private final AddressBook addressBook;
     private final NodeId selfId;
     private final TipsetTracker tipsetTracker;
     private final TipsetScoreCalculator tipsetScoreCalculator;
@@ -112,10 +111,11 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         this.time = Objects.requireNonNull(time);
         this.random = Objects.requireNonNull(random);
         this.signer = Objects.requireNonNull(signer);
-        this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
         this.transactionSupplier = Objects.requireNonNull(transactionSupplier);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
+
+        Objects.requireNonNull(addressBook);
 
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);

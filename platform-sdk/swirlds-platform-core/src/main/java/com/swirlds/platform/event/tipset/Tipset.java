@@ -62,13 +62,10 @@ public class Tipset {
     /**
      * <p>
      * Merge a list of tipsets together.
-     * </p>
      *
      * <p>
-     * The resulting tipset will contain the union of the node IDs of all source tipsets. The generation for each node
-     * ID will be equal to the maximum generation found for that node ID from all source tipsets. If a tipset does not
-     * contain a generation for a node ID, the generation for that node ID is considered to be -1.
-     * </p>
+     * The generation for each node ID will be equal to the maximum generation found for that node ID from all source
+     * tipsets.
      *
      * @param tipsets the tipsets to merge, must be non-empty, tipsets must be constructed from the same address book or
      *                else this method has undefined behavior

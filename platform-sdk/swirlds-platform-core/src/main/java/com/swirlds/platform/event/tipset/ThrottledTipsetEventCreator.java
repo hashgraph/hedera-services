@@ -71,13 +71,10 @@ public class ThrottledTipsetEventCreator implements TipsetEventCreator {
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final TipsetEventCreator baseCreator) {
 
-        eventIntakeThrottle = platformContext
-                .getConfiguration()
-                .getConfigData(EventCreationConfig.class)
-                .eventIntakeThrottle();
-
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
+
+        eventIntakeThrottle = eventCreationConfig.eventIntakeThrottle();
 
         final double maxCreationRate = eventCreationConfig.maxCreationRate();
         if (maxCreationRate > 0) {
