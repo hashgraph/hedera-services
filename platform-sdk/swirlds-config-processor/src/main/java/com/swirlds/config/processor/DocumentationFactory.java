@@ -17,70 +17,12 @@
 
 package com.swirlds.config.processor;
 
-import com.swirlds.config.api.ConfigData;
-import com.swirlds.config.api.ConfigProperty;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-import javax.tools.FileObject;
-import org.jboss.forge.roaster.Roaster;
-import org.jboss.forge.roaster.model.Annotation;
-import org.jboss.forge.roaster.model.JavaRecord;
-import org.jboss.forge.roaster.model.JavaType;
 
 public class DocumentationFactory {
 
-    public void doWork(final FileObject javaSourceFile) throws IOException {
-        JavaType<?> type = Roaster.parse(javaSourceFile.openInputStream());
-
-        Annotation<?> annotation = type.getAnnotation(ConfigData.class);
-        String configDataValue = annotation.getStringValue("value");
-
-        Map<String, String> paramDoc = new HashMap<>();
-        type.getJavaDoc().getTags("@param").forEach(tag -> {
-            paramDoc.put(tag.getName(), tag.getValue());
-        });
-
-        JavaRecord<?> record = (JavaRecord<?>) type;
-        Set<ConfigDataPropertyDefinition> propertyDefinitions = record.getRecordComponents().stream()
-                .map(javaRecordComponent -> {
-                    String name = javaRecordComponent.getName();
-                    String propertyDefaultValue = null;
-                    String propertyDescription = paramDoc.get(name);
-                    Annotation configPropertyAnnotation = javaRecordComponent.getAnnotation(ConfigProperty.class);
-                    if (configPropertyAnnotation != null) {
-                        String annotationValue = configPropertyAnnotation.getStringValue("value");
-                        if (annotationValue != null) {
-                            name = annotationValue;
-                        }
-                        String annotationDefaultValue = configPropertyAnnotation.getStringValue("defaultValue");
-                        if (annotationDefaultValue != null && !Objects.equals(annotationDefaultValue,
-                                ConfigProperty.NULL_DEFAULT_VALUE)) {
-                            propertyDefaultValue = annotationDefaultValue;
-                        }
-                    }
-                    String propertyName = name;
-                    if (configDataValue != null) {
-                        propertyName = configDataValue + "." + name;
-                    }
-                    String propertyType = javaRecordComponent.getType().getQualifiedName();
-
-                    return new ConfigDataPropertyDefinition(
-                            propertyName,
-                            propertyType,
-                            propertyDefaultValue,
-                            propertyDescription
-                    );
-                }).collect(Collectors.toSet());
-
-        ConfigDataRecordDefinition configDataRecordDefinition = new ConfigDataRecordDefinition(
-                type.getQualifiedName(),
-                configDataValue,
-                propertyDefinitions
-        );
+    public static void doWork(ConfigDataRecordDefinition configDataRecordDefinition)
+            throws IOException {
 
         System.out.println("Result for config data record '" + configDataRecordDefinition.className() + "':");
         configDataRecordDefinition.propertyDefinitions().forEach(propertyDefinition -> {

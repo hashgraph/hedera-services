@@ -56,14 +56,15 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
                     System.out.println("handling: " + fileName + " in " + packageName);
 
                     try {
-                        FileObject resource = processingEnv.getFiler()
+                        FileObject recordSource = processingEnv.getFiler()
                                 .getResource(StandardLocation.SOURCE_PATH, packageName, fileName);
-                        Path.of(resource.toUri()).normalize().toAbsolutePath();
-                        new DocumentationFactory().doWork(resource);
+                        Path.of(recordSource.toUri()).normalize().toAbsolutePath();
+                        ConfigDataRecordDefinition recordDefinition = ConfigRecordParser.parse(recordSource);
+                        DocumentationFactory.doWork(recordDefinition);
 
                         JavaFileObject constantsSourceFile = processingEnv.getFiler()
                                 .createSourceFile(packageName + "." + simpleClassName + "Constants", typeElement);
-                        new ConstantClassFactory().doWork(resource, constantsSourceFile);
+                        new ConstantClassFactory().doWork(recordDefinition, constantsSourceFile);
 
                         //new BufferedReader(resource.openReader(true)).lines().forEach(System.out::println);
                     } catch (IOException e) {
