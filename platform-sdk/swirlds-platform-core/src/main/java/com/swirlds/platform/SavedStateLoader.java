@@ -37,6 +37,7 @@ import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.system.SystemExitCode;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -78,13 +79,13 @@ public class SavedStateLoader {
      * @param emergencyRecoveryManager the emergency recovery manager
      */
     public SavedStateLoader(
-            final PlatformContext platformContext,
-            final ShutdownRequestedTrigger shutdownRequestedTrigger,
-            final AddressBook addressBook,
-            final SavedStateInfo[] savedStateFiles,
-            final SoftwareVersion currentSoftwareVersion,
-            final Supplier<EmergencySignedStateValidator> emergencyStateValidator,
-            final EmergencyRecoveryManager emergencyRecoveryManager) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ShutdownRequestedTrigger shutdownRequestedTrigger,
+            @NonNull final AddressBook addressBook,
+            @Nullable final SavedStateInfo[] savedStateFiles,
+            @NonNull final SoftwareVersion currentSoftwareVersion,
+            @NonNull final Supplier<EmergencySignedStateValidator> emergencyStateValidator,
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
         Objects.requireNonNull(shutdownRequestedTrigger, "shutdownRequestedTrigger");
         Objects.requireNonNull(addressBook, "addressBook");
         Objects.requireNonNull(currentSoftwareVersion, "currentSoftwareVersion");
@@ -117,12 +118,15 @@ public class SavedStateLoader {
      * Stores a signed state read from disk along with its original hash and it's recalculated hash. These hashes could
      * be different if a migration was performed.
      */
-    private record SignedStateWithHashes(ReservedSignedState signedState, Hash oldHash, Hash newHash) {
+    private record SignedStateWithHashes(
+            @NonNull ReservedSignedState signedState, @NonNull Hash oldHash, @NonNull Hash newHash) {
+
         /**
          * Returns the version of the software that wrote the signed state to disk
          *
          * @return the software version
          */
+        @NonNull
         public SoftwareVersion getVersion() {
             return signedState
                     .get()
