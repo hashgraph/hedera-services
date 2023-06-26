@@ -35,11 +35,11 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for {@link AddressBookNetworkUtils}
  */
-public class AddressBookNetworkUtilsTests {
+class AddressBookNetworkUtilsTests {
 
     @Test
     @DisplayName("Determine If Local Node")
-    public void determineLocalNodeAddress() throws UnknownHostException, SocketException {
+    void determineLocalNodeAddress() throws UnknownHostException, SocketException {
         final AddressBook addressBook =
                 new RandomAddressBookGenerator().setSize(2).build();
         final Address address = addressBook.getAddress(addressBook.getNodeId(0));

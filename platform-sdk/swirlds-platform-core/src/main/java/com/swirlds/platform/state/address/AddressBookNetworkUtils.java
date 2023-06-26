@@ -24,16 +24,11 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * {@link AddressBook AddressBook} utility methods.
  */
 public final class AddressBookNetworkUtils {
-
-    /** For logging info, warn, and error. */
-    private static final Logger logger = LogManager.getLogger(AddressBookNetworkUtils.class);
 
     private AddressBookNetworkUtils() {}
 
