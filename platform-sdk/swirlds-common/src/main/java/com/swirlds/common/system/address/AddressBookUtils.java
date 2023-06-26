@@ -30,7 +30,7 @@ import java.util.Objects;
 /**
  * A utility class for AddressBook functionality.
  * <p>
- * Each line in the config.txt address book contains the following comma separated elements: config.txt address book: keywork "address" followed by a comma, followed by the node ID, followed by a
+ * Each line in the config.txt address book contains the following comma separated elements:
  * <ul>
  *     <li>the keyword "address"</li>
  *     <li>node id</li>
