@@ -39,6 +39,16 @@ public interface ReadableAccountStore {
     Account getAccountById(@NonNull final AccountID accountID);
 
     /**
+     * Fetches an {@link Account} object from state with the given alias. If the account could not be
+     * fetched because the given account doesn't exist, returns {@code null}.
+     *
+     * @param alias alias
+     * @return AccountID object if successfully fetched or {@code null} if the account doesn't exist
+     */
+    @Nullable
+    AccountID getAccountIDByAlias(@NonNull final String alias);
+
+    /**
      * Fetches an {@link Account} object from state with the given {@link ContractID}. If the contract account could not
      * be fetched because the given contract doesn't exist, returns {@code null}.
      *

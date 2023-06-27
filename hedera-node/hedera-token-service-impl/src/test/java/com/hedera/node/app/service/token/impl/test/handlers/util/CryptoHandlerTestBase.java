@@ -100,7 +100,7 @@ public class CryptoHandlerTestBase {
             .tokenId(token)
             .owner(owner)
             .build();
-    protected static final long defaultAutoRenewPeriod = 720000L;
+    protected static final long defaultAutoRenewPeriod = 7200000L;
     protected static final long payerBalance = 10_000L;
     protected MapReadableKVState<String, EntityNumValue> readableAliases;
 
