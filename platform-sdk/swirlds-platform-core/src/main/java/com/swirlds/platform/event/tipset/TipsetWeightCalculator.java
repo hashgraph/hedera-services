@@ -244,19 +244,19 @@ public class TipsetWeightCalculator {
      * @return the bully score with respect to this node
      */
     public int getBullyScoreForNode(@NonNull final NodeId nodeId) {
-        int bullyScore = 0;
-        final long latestGeneration = tipsetTracker.getLatestGenerationForNode(nodeId);
-
-        if (latestSelfEventTipset.getTipGenerationForNode(nodeId) == latestGeneration) {
-            // Our latest event has their latest event as an ancestor.
+        if (latestSelfEventTipset == null) {
+            // We can't be a bully if we haven't created any events yet.
             return 0;
         }
+
+        int bullyScore = 0;
+        final long latestGeneration = tipsetTracker.getLatestGenerationForNode(nodeId);
 
         // Iterate backwards in time until we find an event from the node being added to our ancestry, or if
         // we find that there are no eligible nodes to be added to our ancestry.
         final Iterator<Tipset> iterator = snapshotHistory.descendingIterator();
 
-        Tipset previousTipset = iterator.next();
+        Tipset previousTipset = latestSelfEventTipset;
 
         while (iterator.hasNext()) {
             final Tipset currentTipset = previousTipset;

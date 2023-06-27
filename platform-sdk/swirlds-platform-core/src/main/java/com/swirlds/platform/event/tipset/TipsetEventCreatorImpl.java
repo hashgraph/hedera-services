@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.tipset;
 
+import static com.swirlds.common.system.NodeId.UNDEFINED_NODE_ID;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.EventConstants.CREATOR_ID_UNDEFINED;
 import static com.swirlds.platform.event.EventConstants.GENERATION_UNDEFINED;
@@ -150,6 +151,15 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
                 lastSelfEvent = buildDescriptor(event);
                 lastSelfEventCreationTime = event.getHashedData().getTimeCreated();
                 lastSelfEventTransactionCount = event.getTransactions() == null ? 0 : event.getTransactions().length;
+
+                if (event.getBaseEventUnhashedData().getOtherId() != UNDEFINED_NODE_ID) {
+                    final EventDescriptor parentDescriptor = new EventDescriptor(
+                            event.getBaseEventHashedData().getOtherParentHash(),
+                            event.getBaseEventUnhashedData().getOtherId(),
+                            event.getBaseEventHashedData().getOtherParentGen());
+
+                    childlessOtherEventTracker.registerSelfEvent(List.of(parentDescriptor));
+                }
             } else {
                 // We already ingested this self event (when it was created),
                 return;
@@ -247,8 +257,14 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         for (final EventDescriptor possibleNerd : possibleOtherParents) {
             final int bullyScore = tipsetWeightCalculator.getBullyScoreForNode(possibleNerd.getCreator());
 
+            final List<EventDescriptor> theoreticalParents = new ArrayList<>(2);
+            theoreticalParents.add(possibleNerd);
+            if (lastSelfEvent != null) {
+                theoreticalParents.add(lastSelfEvent);
+            }
+
             final TipsetAdvancementWeight advancementWeight =
-                    tipsetWeightCalculator.getTheoreticalAdvancementWeight(List.of(possibleNerd));
+                    tipsetWeightCalculator.getTheoreticalAdvancementWeight(theoreticalParents);
 
             if (bullyScore > 1) {
                 if (advancementWeight.isNonZero()) {
@@ -317,6 +333,10 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         final double weightRatio = advancementWeight.advancementWeight()
                 / (double) tipsetWeightCalculator.getMaximumPossibleAdvancementWeight();
         tipsetMetrics.getTipsetAdvancementMetric().update(weightRatio);
+
+        if (otherParent != null) {
+            childlessOtherEventTracker.registerSelfEvent(List.of(otherParent));
+        }
 
         lastSelfEvent = descriptor;
         lastSelfEventCreationTime = event.getHashedData().getTimeCreated();
