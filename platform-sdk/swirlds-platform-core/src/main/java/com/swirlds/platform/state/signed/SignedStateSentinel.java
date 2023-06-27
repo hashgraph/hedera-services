@@ -30,9 +30,7 @@ import com.swirlds.common.utility.CompareTo;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.throttle.RateLimiter;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
-import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -58,16 +56,13 @@ public class SignedStateSentinel implements Startable, Stoppable {
      * @param time            provides the wall clock time
      */
     public SignedStateSentinel(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final ThreadManager threadManager,
-            @NonNull final Time time) {
-        this.time = Objects.requireNonNull(time);
+            final PlatformContext platformContext, final ThreadManager threadManager, final Time time) {
+        this.time = time;
         maxSignedStateAge = platformContext
                 .getConfiguration()
                 .getConfigData(StateConfig.class)
                 .suspiciousSignedStateAge();
 
-        Objects.requireNonNull(threadManager);
         thread = new StoppableThreadConfiguration<>(threadManager)
                 .setComponent("platform")
                 .setThreadName("signed-state-sentinel")
