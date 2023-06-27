@@ -50,6 +50,17 @@ public class Utils {
         }
     }
 
+    // This method shouldn't be here. It needs to find a new home.
+    public static Optional<HederaKey> asHederaKeyUnchecked(final Key key) {
+        try {
+            // Need to move JKey after refactoring, adding equals & hashcode into this package
+            final var fcKey = mapKey(key);
+            return Optional.of(fcKey);
+        } catch (InvalidKeyException ignore) {
+            return Optional.empty();
+        }
+    }
+
     public static Optional<HederaKey> asHederaKey(@Nullable final com.hedera.hapi.node.base.Key key) {
         if (key == null) {
             return Optional.empty();
