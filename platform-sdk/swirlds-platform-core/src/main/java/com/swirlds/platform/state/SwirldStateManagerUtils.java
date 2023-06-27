@@ -18,8 +18,11 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
 
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * A utility class with useful methods for implementations of {@link SwirldStateManager}.
@@ -38,11 +41,18 @@ public final class SwirldStateManagerUtils {
      * 		object to record stats in
      * @return the newly created state copy
      */
-    public static State fastCopy(final State state, final SwirldStateMetrics stats) {
+    public static State fastCopy(
+            @NonNull final State state,
+            @NonNull final SwirldStateMetrics stats,
+            @NonNull final SoftwareVersion softwareVersion) {
+
+        Objects.requireNonNull(softwareVersion);
+
         final long copyStart = System.nanoTime();
 
         // Create a fast copy
         final State copy = state.copy();
+        state.getPlatformState().getPlatformData().setCreationSoftwareVersion(softwareVersion);
 
         // Increment the reference count because this reference becomes the new value
         copy.reserve();

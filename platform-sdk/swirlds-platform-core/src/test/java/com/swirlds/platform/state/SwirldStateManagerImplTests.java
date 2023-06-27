@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -55,7 +56,8 @@ public class SwirldStateManagerImplTests {
                 mock(SwirldStateMetrics.class),
                 mock(SettingsProvider.class),
                 () -> false,
-                initialState);
+                initialState,
+                new BasicSoftwareVersion(1));
     }
 
     @Test

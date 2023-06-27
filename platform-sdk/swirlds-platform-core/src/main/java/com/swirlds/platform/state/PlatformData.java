@@ -133,6 +133,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
             this.minGenInfo = new ArrayList<>(that.minGenInfo);
         }
         this.lastTransactionTimestamp = that.lastTransactionTimestamp;
+        this.creationSoftwareVersion = that.creationSoftwareVersion;
         this.epochHash = that.epochHash;
         this.nextEpochHash = that.nextEpochHash;
         this.roundsNonAncient = that.roundsNonAncient;

@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
@@ -45,7 +46,7 @@ public class SwirldStateManagerUtilsTests {
     @Test
     void testFastCopyIsMutable() {
         state.reserve();
-        final State result = SwirldStateManagerUtils.fastCopy(state, stats);
+        final State result = SwirldStateManagerUtils.fastCopy(state, stats, new BasicSoftwareVersion(1));
         assertFalse(result.isImmutable(), "The copy state should be mutable.");
         assertEquals(
                 1,

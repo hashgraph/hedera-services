@@ -419,7 +419,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 metrics,
                 PlatformConstructor.settingsProvider(),
                 freezeManager::isFreezeStarted,
-                mutableStateCopy);
+                mutableStateCopy,
+                appVersion);
 
         stateHashSignQueue = components.add(PlatformConstructor.stateHashSignQueue(
                 threadManager, selfId, stateManagementComponent::newSignedStateFromTransactions, metrics));
@@ -596,7 +597,6 @@ public class SwirldsPlatform implements Platform, Startable {
             // We don't want to invoke these callbacks until after we are starting up.
             components.add((Startable) () -> {
                 final long round = initialState.getRound();
-                ;
                 final Hash hash = initialState.getState().getHash();
 
                 // If we loaded from disk then call the appropriate dispatch.
@@ -681,8 +681,6 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final State initialState = signedState.getState();
         final Hash initialHash = initialState.getSwirldState().getHash();
-
-        // TODO will this enable a reconnecting node to get a state with the wrong version? Will it copy that forward?
 
         initialState.getSwirldState().init(this, initialState.getSwirldDualState(), trigger, previousSoftwareVersion);
 

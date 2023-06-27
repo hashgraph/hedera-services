@@ -162,6 +162,7 @@ public final class PlatformConstructor {
      * @param metrics                               reference to the metrics-system
      * @param settings                              static settings provider
      * @param initialState                          the initial state
+     * @param softwareVersion                       the software version
      * @return the newly constructed instance of {@link SwirldStateManager}
      */
     static SwirldStateManager swirldStateManager(
@@ -173,7 +174,8 @@ public final class PlatformConstructor {
             @NonNull final Metrics metrics,
             @NonNull final SettingsProvider settings,
             @NonNull final BooleanSupplier inFreezeChecker,
-            @NonNull final State initialState) {
+            @NonNull final State initialState,
+            @NonNull final SoftwareVersion softwareVersion) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(addressBook);
@@ -184,6 +186,7 @@ public final class PlatformConstructor {
         Objects.requireNonNull(settings);
         Objects.requireNonNull(inFreezeChecker);
         Objects.requireNonNull(initialState);
+        Objects.requireNonNull(softwareVersion);
 
         return new SwirldStateManagerImpl(
                 platformContext,
@@ -194,7 +197,8 @@ public final class PlatformConstructor {
                 new SwirldStateMetrics(metrics),
                 settings,
                 inFreezeChecker,
-                initialState);
+                initialState,
+                softwareVersion);
     }
 
     /**

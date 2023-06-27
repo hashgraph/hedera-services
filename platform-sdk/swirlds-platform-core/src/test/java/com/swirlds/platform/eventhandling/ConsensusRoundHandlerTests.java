@@ -206,7 +206,8 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 mock(SwirldStateMetrics.class),
                 settingsProvider,
                 () -> false,
-                state);
+                state,
+                new BasicSoftwareVersion(1));
 
         consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
