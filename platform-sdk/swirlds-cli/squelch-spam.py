@@ -17,7 +17,7 @@
 # DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
 #
 
-# This program reads from standard in repeats to standard out, spammy log lines.
+# This program reads from standard in repeats to standard out, removing spammy log lines.
 # An example of this log is shown below. It is a known issue without a fix. It is harmless, but annoying.
 
 # 2023-06-27 11:22:58.383 java[64808:1357823] Bad JNI lookup accessibilityHitTest
