@@ -51,7 +51,7 @@ public class ChildlessEventTracker {
      * Register a self event. Removes parents but does not add the event to the set of childless events.
      * @param parents the parents of the self event
      */
-    public void registerSelfEvent(@NonNull final List<EventDescriptor> parents) {
+    public void registerSelfEventParents(@NonNull final List<EventDescriptor> parents) {
         for (final EventDescriptor parent : parents) {
             childlessEvents.remove(parent);
         }

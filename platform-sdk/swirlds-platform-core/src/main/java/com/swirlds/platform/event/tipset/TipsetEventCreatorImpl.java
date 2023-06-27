@@ -158,7 +158,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
                             event.getBaseEventUnhashedData().getOtherId(),
                             event.getBaseEventHashedData().getOtherParentGen());
 
-                    childlessOtherEventTracker.registerSelfEvent(List.of(parentDescriptor));
+                    childlessOtherEventTracker.registerSelfEventParents(List.of(parentDescriptor));
                 }
             } else {
                 // We already ingested this self event (when it was created),
@@ -335,7 +335,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         tipsetMetrics.getTipsetAdvancementMetric().update(weightRatio);
 
         if (otherParent != null) {
-            childlessOtherEventTracker.registerSelfEvent(List.of(otherParent));
+            childlessOtherEventTracker.registerSelfEventParents(List.of(otherParent));
         }
 
         lastSelfEvent = descriptor;
