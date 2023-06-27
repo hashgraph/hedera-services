@@ -20,9 +20,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -31,7 +31,6 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import java.util.Set;
 
 public class AssociateTokenRecepientsStep extends BaseTokenHandler implements TransferStep {
     private final CryptoTransferTransactionBody op;
@@ -41,26 +40,21 @@ public class AssociateTokenRecepientsStep extends BaseTokenHandler implements Tr
     }
 
     @Override
-    public Set<Key> authorizingKeysIn(final TransferContext transferContext) {
-        return Set.of();
-    }
-
-    @Override
     public void doIn(final TransferContext transferContext) {
         final var handleContext = transferContext.getHandleContext();
         final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
 
-        for (var xfers : op.tokenTransfers()) {
+        for (var xfers : op.tokenTransfersOrElse(emptyList())) {
             final var tokenId = xfers.token();
             final var token = getIfUsable(tokenId, tokenStore);
-            for (final var aa : xfers.transfers()) {
+            for (final var aa : xfers.transfersOrElse(emptyList())) {
                 final var accountId = aa.accountID();
                 validateAndAutoAssociate(accountId, tokenId, token, accountStore, tokenRelStore, handleContext);
             }
 
-            for (final var aa : xfers.nftTransfers()) {
+            for (final var aa : xfers.nftTransfersOrElse(emptyList())) {
                 final var receiverId = aa.receiverAccountID();
                 final var senderId = aa.senderAccountID();
                 validateAndAutoAssociate(senderId, tokenId, token, accountStore, tokenRelStore, handleContext);

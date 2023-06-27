@@ -16,12 +16,10 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import java.util.Collections;
-import java.util.Set;
 
 public class ApproveNFTOwnersStep extends BaseTokenHandler implements TransferStep {
     private final CryptoTransferTransactionBody op;
@@ -31,17 +29,12 @@ public class ApproveNFTOwnersStep extends BaseTokenHandler implements TransferSt
     }
 
     @Override
-    public Set<Key> authorizingKeysIn(final TransferContext transferContext) {
-        return null;
-    }
-
-    @Override
     public void doIn(final TransferContext transferContext) {
         final var handleContext = transferContext.getHandleContext();
         final var nftStore = handleContext.writableStore(WritableNftStore.class);
-        for (var xfers : op.tokenTransfersOrElse(Collections.emptyList())) {
-            final var tokenId = xfers.token();
-            for (var oc : xfers.nftTransfersOrElse(Collections.emptyList())) {
+        for (var tokenTransfer : op.tokenTransfersOrElse(Collections.emptyList())) {
+            final var tokenId = tokenTransfer.token();
+            for (var oc : tokenTransfer.nftTransfersOrElse(Collections.emptyList())) {
                 final var serial = oc.serialNumber();
                 if (oc.isApproval()) {
                     final var nft = nftStore.get(tokenId, serial);

@@ -23,7 +23,6 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -33,18 +32,12 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
-import java.util.Set;
 
 public class ChangeNFTOwnersStep extends BaseTokenHandler implements TransferStep {
     private final CryptoTransferTransactionBody op;
 
     public ChangeNFTOwnersStep(final CryptoTransferTransactionBody op) {
         this.op = op;
-    }
-
-    @Override
-    public Set<Key> authorizingKeysIn(final TransferContext transferContext) {
-        return null;
     }
 
     @Override

@@ -127,8 +127,7 @@ public class AutoAccountCreationStep {
                 childRecord.evmAddress(Bytes.wrap(evmAddress));
             }
         }
-        // TODO: Not sure if fee should be set here
-        //        childRecord.transactionFee(fee);
+        // TODO: Not sure if fee should be set here childRecord.transactionFee(fee);
         return fee;
     }
 

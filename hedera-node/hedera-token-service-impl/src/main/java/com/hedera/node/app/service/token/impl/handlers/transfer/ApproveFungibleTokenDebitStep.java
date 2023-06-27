@@ -24,18 +24,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static java.util.Collections.emptyList;
 
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class ApproveFungibleTokenDebitStep extends BaseTokenHandler implements TransferStep {
     final CryptoTransferTransactionBody op;
@@ -45,15 +42,9 @@ public class ApproveFungibleTokenDebitStep extends BaseTokenHandler implements T
     }
 
     @Override
-    public Set<Key> authorizingKeysIn(final TransferContext transferContext) {
-        return null;
-    }
-
-    @Override
     public void doIn(final TransferContext transferContext) {
         final var handleContext = transferContext.getHandleContext();
         final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
-        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
         final Map<EntityNumPair, Long> allowanceTransfers = new HashMap<>();
         for (var xfers : op.tokenTransfers()) {

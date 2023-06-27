@@ -25,7 +25,6 @@ import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
@@ -34,27 +33,21 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
- * This is step1 in CryptoTransfer logic. This ensures that all aliases are resolved to their canonical forms.
+ * This is the first step in CryptoTransfer logic. This ensures that all aliases are resolved to their canonical forms.
  * The resolved forms are stored in TransferContext and then used in the rest of the transfer logic.
  */
 public class EnsureAliasesStep implements TransferStep {
     final CryptoTransferTransactionBody op;
 
-    /* ---- temporary token transfer resolutions map containing the token transfers to alias, is needed to check if
-    an alias is repeated. It is allowed to be repeated in multiple token transfer lists, but not in a single
-    token transfer list ---- */
+    // Temporary token transfer resolutions map containing the token transfers to alias, is needed to check if
+    // an alias is repeated. It is allowed to be repeated in multiple token transfer lists, but not in a single
+    // token transfer list
     private final Map<Bytes, AccountID> tokenTransferResolutions = new HashMap<>();
 
     public EnsureAliasesStep(final CryptoTransferTransactionBody op) {
         this.op = op;
-    }
-
-    @Override
-    public Set<Key> authorizingKeysIn(final TransferContext transferContext) {
-        return Set.of();
     }
 
     @Override
@@ -68,6 +61,13 @@ public class EnsureAliasesStep implements TransferStep {
         resolveTokenAdjusts(tokenTransfers, transferContext);
     }
 
+    /**
+     * Resolve token adjusts and add all alias resolutions to resolutions map in TransferContext.
+     * If an accountID is an alias and is repeated within the same token transfer list, INVALID_ALIAS_KEY
+     * is returned. If it is present in multiple transfer lists and is in resolutions map, it will be returned.
+     * @param tokenTransfers the token transfers to resolve
+     * @param transferContext the transfer context
+     */
     private void resolveTokenAdjusts(
             final List<TokenTransferList> tokenTransfers, final TransferContext transferContext) {
         for (final var tt : tokenTransfers) {
@@ -82,38 +82,6 @@ public class EnsureAliasesStep implements TransferStep {
 
             for (final var nftAdjust : tt.nftTransfersOrElse(emptyList())) {
                 resolveForNft(nftAdjust, transferContext);
-            }
-        }
-    }
-
-    /**
-     * Resolve hbar adjusts and add all alias resolutions to resolutions map in TransferContext.
-     * If the accountID is an alias and is already in the resolutions map, it will be returned.
-     * If the accountID is an alias and is not in the resolutions map, it will be autoCreated and
-     * will be added to resolutions map.
-     * @param hbarTransfers the hbar transfers to resolve
-     * @param transferContext the transfer context
-     */
-    private void resolveHbarAdjusts(final List<AccountAmount> hbarTransfers, final TransferContext transferContext) {
-        for (final var aa : hbarTransfers) {
-            resolveForHbar(aa, transferContext);
-        }
-    }
-
-    private void resolveForHbar(final AccountAmount adjust, TransferContext transferContext) {
-        final var accountId = adjust.accountIDOrThrow();
-        if (isAlias(accountId)) {
-            final var account = transferContext.getFromAlias(accountId);
-            if (adjust.amount() > 0) {
-                if (account == null) {
-                    final var isInResolutions = transferContext.resolutions().containsKey(accountId.alias());
-                    validateTrue(!isInResolutions, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
-                    transferContext.createFromAlias(accountId.alias(), false);
-                } else {
-                    validateTrue(account != null, INVALID_ACCOUNT_ID);
-                }
-            } else {
-                validateTrue(account != null, INVALID_ACCOUNT_ID);
             }
         }
     }
@@ -136,6 +104,48 @@ public class EnsureAliasesStep implements TransferStep {
         return account;
     }
 
+    /**
+     * Resolve hbar adjusts and add all alias resolutions to resolutions map in TransferContext.
+     * If the accountID is an alias and is already in the resolutions map, it will be returned.
+     * If the accountID is an alias and is not in the resolutions map, it will be autoCreated and
+     * will be added to resolutions map.
+     * @param hbarTransfers the hbar transfers to resolve
+     * @param transferContext the transfer context
+     */
+    private void resolveHbarAdjusts(final List<AccountAmount> hbarTransfers, final TransferContext transferContext) {
+        for (final var aa : hbarTransfers) {
+            resolveForHbar(aa, transferContext);
+        }
+    }
+
+    /**
+     * Resolve all hbar adjusts and add all alias resolutions to resolutions map in TransferContext.
+     * @param adjust the hbar transfer to resolve
+     * @param transferContext the transfer context
+     */
+    private void resolveForHbar(final AccountAmount adjust, TransferContext transferContext) {
+        final var accountId = adjust.accountIDOrThrow();
+        if (isAlias(accountId)) {
+            final var account = transferContext.getFromAlias(accountId);
+            if (adjust.amount() > 0) {
+                if (account == null) {
+                    final var isInResolutions = transferContext.resolutions().containsKey(accountId.alias());
+                    validateTrue(!isInResolutions, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
+                    transferContext.createFromAlias(accountId.alias(), false);
+                } else {
+                    validateTrue(account != null, INVALID_ACCOUNT_ID);
+                }
+            } else {
+                validateTrue(account != null, INVALID_ACCOUNT_ID);
+            }
+        }
+    }
+
+    /**
+     * Resolve NFT adjusts and add all alias resolutions to resolutions map in TransferContext.
+     * @param nftAdjust the NFT transfer to resolve
+     * @param transferContext the transfer context
+     */
     private void resolveForNft(final NftTransfer nftAdjust, TransferContext transferContext) {
         final var receiverId = nftAdjust.receiverAccountIDOrThrow();
         final var senderId = nftAdjust.senderAccountIDOrThrow();

@@ -42,9 +42,9 @@ import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ApproveFungibleTokenDebitStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ApproveHbarDebitStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ApproveNFTOwnersStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AssessCustomFeesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ChangeNFTOwnersStep;
-import com.hedera.node.app.service.token.impl.handlers.transfer.ChargeCustomFeeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferStep;
@@ -144,27 +144,31 @@ public class CryptoTransferHandler implements TransactionHandler {
      */
     private List<TransferStep> decomposeIntoSteps(final CryptoTransferTransactionBody op) {
         final List<TransferStep> steps = new ArrayList<>();
-        final var chargeCustomFees = new ChargeCustomFeeStep(op);
+        // Step 1: assess custom fees and will be charged in next steps
+        final var assessCustomFees = new AssessCustomFeesStep(op);
+        // Step 2: associate any token recipients that are not already associated and have
+        // auto association slots open
         final var associateTokenRecepients = new AssociateTokenRecepientsStep(op);
-
+        // Step 3: Charge hbar transfers
         final var assessHbarTransfers = new ZeroSumHbarChangesStep(op);
+        // Step 4: Charge token transfers with an approval. Modify the allowances map on account
         final var approveHbarDebitStep = new ApproveHbarDebitStep(op);
-
+        // Step 5: Charge token transfers
         final var assessFungibleTokenTransfers = new ZeroSumFungibleTransfersStep(op);
+        // Step 6: Charge token transfers with an approval. Modify the allowances map on account
         final var approveTokenTransfers = new ApproveFungibleTokenDebitStep(op);
-
+        // Step 7: Change NFT owners
         final var changeNftOwners = new ChangeNFTOwnersStep(op);
+        // Step 8: Charge NFT transfers with an approval. Modify the spender on NFT
         final var approveNFTTransfers = new ApproveNFTOwnersStep(op);
+        // Step 9: TODO Pay staking rewards
 
-        steps.add(chargeCustomFees);
+        steps.add(assessCustomFees);
         steps.add(associateTokenRecepients);
-
         steps.add(assessHbarTransfers);
         steps.add(approveHbarDebitStep);
-
         steps.add(assessFungibleTokenTransfers);
         steps.add(approveTokenTransfers);
-
         steps.add(changeNftOwners);
         steps.add(approveNFTTransfers);
 

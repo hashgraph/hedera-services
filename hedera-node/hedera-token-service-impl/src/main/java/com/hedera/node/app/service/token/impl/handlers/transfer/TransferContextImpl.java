@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.service.token.impl.handlers.transfer.Utils.isSerializedProtoKey;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -74,9 +73,6 @@ public class TransferContextImpl implements TransferContext {
     }
 
     @Override
-    public void debitHbarViaApproval(final AccountID owner, final long amount) {}
-
-    @Override
     public HandleContext getHandleContext() {
         return context;
     }
@@ -87,10 +83,9 @@ public class TransferContextImpl implements TransferContext {
     }
 
     @Override
-    public void chargeExtraFeeToHapiPayer(final long amount) {}
-
-    @Override
-    public void chargeCustomFeeTo(final AccountID payer, final long amount, final TokenID denomination) {}
+    public void chargeExtraFeeToHapiPayer(final long amount) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
 
     public Map<Bytes, AccountID> resolutions() {
         return resolutions;

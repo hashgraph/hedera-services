@@ -29,7 +29,10 @@ public interface TransferStep {
      * @return the set of keys that are authorized to perform this step
      * @throws com.hedera.node.app.spi.workflows.PreCheckException if the step fails
      */
-    Set<Key> authorizingKeysIn(TransferContext transferContext);
+    // TODO: all the logic in prehandle can be moved into appropriate steps
+    default Set<Key> authorizingKeysIn(TransferContext transferContext) {
+        return Set.of();
+    }
 
     /**
      * Perform the step and commit changes to the modifications in state.

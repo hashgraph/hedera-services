@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Map;
@@ -59,11 +58,6 @@ public interface TransferContext {
 
     // Throw if the fee cannot be charged for whatever reason
     void chargeExtraFeeToHapiPayer(long amount);
-
-    void chargeCustomFeeTo(AccountID payer, long amount, TokenID denomination);
-
-    // Debit an account based on the HAPI payer having an approved allowance from the given owner
-    default void debitHbarViaApproval(AccountID owner, long amount) {}
 
     HandleContext getHandleContext();
 }

@@ -20,13 +20,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class ApproveHbarDebitStep implements TransferStep {
     final CryptoTransferTransactionBody op;
@@ -36,15 +35,10 @@ public class ApproveHbarDebitStep implements TransferStep {
     }
 
     @Override
-    public Set<Key> authorizingKeysIn(final TransferContext transferContext) {
-        return null;
-    }
-
-    @Override
     public void doIn(final TransferContext transferContext) {
         final var accountStore = transferContext.getHandleContext().writableStore(WritableAccountStore.class);
         final Map<AccountID, Long> allowanceTransfers = new HashMap<>();
-        for (var aa : op.transfers().accountAmounts()) {
+        for (var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(Collections.emptyList())) {
             if (aa.isApproval() && aa.amount() < 0) {
                 if (!allowanceTransfers.containsKey(aa.accountID())) {
                     allowanceTransfers.put(aa.accountID(), aa.amount());
