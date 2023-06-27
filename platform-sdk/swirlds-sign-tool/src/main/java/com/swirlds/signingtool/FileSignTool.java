@@ -29,7 +29,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SignatureType;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.stream.StreamType;
 import com.swirlds.common.stream.internal.InvalidStreamFileException;
@@ -350,15 +349,6 @@ public class FileSignTool {
             // so that we can register for parsing RecordStreamObject
             registry.registerConstructables("com.hedera.services.stream");
         }
-
-        // set the settings so that when deserialization we would not have transactionMaxBytes be 0
-        // Todo: should remove these later when we refactor the Settings implementation
-        SettingsCommon.maxTransactionCountPerEvent = 245760;
-        SettingsCommon.maxTransactionBytesPerEvent = 245760;
-        SettingsCommon.transactionMaxBytes = 6144;
-        // set a relatively large value since the signing tool could not tell the address book size
-        // or the number of nodes in the work
-        SettingsCommon.maxAddressSizeAllowed = 1024;
     }
 
     public static void main(final String[] args) {

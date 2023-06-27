@@ -16,7 +16,7 @@
 
 package com.swirlds.common.test;
 
-import static com.swirlds.common.system.address.AddressBookUtils.parseAddressBookConfigText;
+import static com.swirlds.common.system.address.AddressBookUtils.parseAddressBookText;
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -469,14 +469,7 @@ class AddressBookTests {
         addressBook.add(addressBook.getAddress(secondNode).copySetMemo("has a memo"));
 
         final String addressBookText = addressBook.toConfigText();
-        final Map<Long, NodeId> posToId = new HashMap<>();
-        long pos = 0;
-        for (final Address address : addressBook) {
-            posToId.put(pos, address.getNodeId());
-            pos++;
-        }
-        final AddressBook parsedAddressBook =
-                parseAddressBookConfigText(addressBookText, posToId::get, ip -> false, id -> "");
+        final AddressBook parsedAddressBook = parseAddressBookText(addressBookText);
         // Equality done on toConfigText() strings since the randomly generated address book has public key data.
         assertEquals(addressBookText, parsedAddressBook.toConfigText(), "The AddressBooks are not equal.");
         assertTrue(parsedAddressBook.getAddress(firstNode).getMemo().isEmpty(), "memo is empty");
@@ -485,8 +478,6 @@ class AddressBookTests {
         for (int i = 0; i < addressBook.getSize(); i++) {
             final Address address = addressBook.getAddress(addressBook.getNodeId(i));
             final Address parsedAddress = parsedAddressBook.getAddress(parsedAddressBook.getNodeId(i));
-            assert address != null;
-            assert parsedAddress != null;
             assertEquals(address.getNodeId(), parsedAddress.getNodeId(), "node id matches");
             // these are the 8 fields of the config.txt address book.
             assertEquals(address.getSelfName(), parsedAddress.getSelfName(), "self name matches");
@@ -507,29 +498,28 @@ class AddressBookTests {
     void parseExceptionTestsInParsingAddressBookConfigText() {
         // not enough parts to make an address line
         validateParseException("address", 1);
-        validateParseException("address, nickname", 2);
-        validateParseException("address, nickname, selfname", 3);
-        validateParseException("address, nickname, selfname, 10", 4);
-        validateParseException("address, nickname, selfname, 10, 192.168.0.1", 5);
-        validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000", 6);
-        validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8", 7);
+        validateParseException("address, 0", 2);
+        validateParseException("address, 1, nickname", 3);
+        validateParseException("address, 2, nickname, selfname", 4);
+        validateParseException("address, 3, nickname, selfname, 10", 5);
+        validateParseException("address, 4, nickname, selfname, 10, 192.168.0.1", 6);
+        validateParseException("address, 5, nickname, selfname, 10, 192.168.0.1, 5000", 7);
+        validateParseException("address, 6, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8", 8);
 
         // Too many parts
-        validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000, memo, extra", 10);
+        validateParseException("address, 7, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000, memo, extra", 11);
 
         // bad parsing of parts.
-        validateParseException("not an address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000", 0);
-        validateParseException("address, nickname, selfname, not a weight, 192.168.0.1, 5000, 8.8.8.8, 5000", 3);
-        validateParseException("address, nickname, selfname, 10, 192.168.0.1, not a port, 8.8.8.8, 5000", 5);
-        validateParseException("address, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, not a port", 7);
+        validateParseException("not an address, 8, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, 5000", 0);
+        validateParseException("address, 9, nickname, selfname, not a weight, 192.168.0.1, 5000, 8.8.8.8, 5000", 4);
+        validateParseException("address, 10, nickname, selfname, 10, 192.168.0.1, not a port, 8.8.8.8, 5000", 6);
+        validateParseException("address, 11, nickname, selfname, 10, 192.168.0.1, 5000, 8.8.8.8, not a port", 8);
     }
 
     private void validateParseException(final String addressBook, final int part) {
-        assertThrows(
-                ParseException.class,
-                () -> parseAddressBookConfigText(addressBook, NodeId::new, ip -> false, id -> ""));
+        assertThrows(ParseException.class, () -> parseAddressBookText(addressBook));
         try {
-            parseAddressBookConfigText(addressBook, NodeId::new, ip -> false, id -> "");
+            parseAddressBookText(addressBook);
         } catch (final ParseException e) {
             assertEquals(part, e.getErrorOffset(), "The part number is wrong in the exception: " + e.getMessage());
         }

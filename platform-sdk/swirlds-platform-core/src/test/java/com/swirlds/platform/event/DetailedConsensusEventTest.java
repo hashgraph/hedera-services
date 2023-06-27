@@ -22,7 +22,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
@@ -40,10 +39,6 @@ public class DetailedConsensusEventTest {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.common");
         registry.registerConstructables("com.swirlds.common.events");
-        SettingsCommon.maxTransactionCountPerEvent = 245760;
-        SettingsCommon.maxTransactionBytesPerEvent = 245760;
-        SettingsCommon.transactionMaxBytes = 6144;
-        SettingsCommon.maxAddressSizeAllowed = 384;
     }
 
     @Test

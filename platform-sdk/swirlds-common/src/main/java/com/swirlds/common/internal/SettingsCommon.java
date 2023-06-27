@@ -21,23 +21,6 @@ package com.swirlds.common.internal;
  */
 @Deprecated
 public class SettingsCommon {
-
-    // used by Transaction
-    /**
-     * the maximum number of bytes that a single event may contain not including the event headers
-     * if a single transaction exceeds this limit then the event will contain the single transaction only
-     */
-    public static int maxTransactionBytesPerEvent = Integer.MAX_VALUE;
-
-    /** the maximum number of transactions that a single event may contain */
-    public static int maxTransactionCountPerEvent = Integer.MAX_VALUE;
-
-    // used by Transaction, Platform
-    /** maximum number of bytes allowed in a transaction */
-    public static int transactionMaxBytes = Integer.MAX_VALUE;
-    /** the maximum number of address allowed in a address book, the same as the maximum allowed network size */
-    public static int maxAddressSizeAllowed = Integer.MAX_VALUE;
-
     // used by AbstractStatistics
     public static boolean showInternalStats;
     public static boolean verboseStatistics;
