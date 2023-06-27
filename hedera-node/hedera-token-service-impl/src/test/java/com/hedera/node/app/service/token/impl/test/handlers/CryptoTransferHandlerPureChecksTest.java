@@ -26,36 +26,20 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.base.TransferList;
-import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class CryptoTransferHandlerTest {
-    private static final AccountID ACCOUNT_3333 = asAccount(3333);
-    private static final AccountID ACCOUNT_4444 = asAccount(4444);
-    private static final TokenID TOKEN_2468 = asToken(2468);
-
-    private CryptoTransferHandler subject;
-
-    @BeforeEach
-    void doSetup() {
-        subject = new CryptoTransferHandler();
-    }
+class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase {
 
     @SuppressWarnings("DataFlowIssue")
     @Test
@@ -79,8 +63,8 @@ class CryptoTransferHandlerTest {
     @Test
     void pureChecksHbarTransfersHasNullAccountId() {
         final var txn = newCryptoTransfer(
-                AccountAmount.newBuilder().accountID(ACCOUNT_3333).amount(-1).build(),
-                AccountAmount.newBuilder().accountID((AccountID) null).amount(1).build());
+                ACCT_3333_MINUS_10,
+                ACCT_4444_PLUS_10.copyBuilder().accountID((AccountID) null).build());
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
@@ -90,13 +74,13 @@ class CryptoTransferHandlerTest {
     @Test
     void pureChecksHbarTransfersHasAccountIdWithEmptyAliasAndNumber() {
         final var txn = newCryptoTransfer(
-                AccountAmount.newBuilder().accountID(ACCOUNT_3333).amount(-1).build(),
+                ACCT_3333_MINUS_10,
                 AccountAmount.newBuilder()
                         .accountID(AccountID.newBuilder()
                                 .accountNum(5555)
                                 .alias(Bytes.wrap(""))
                                 .build())
-                        .amount(1)
+                        .amount(10)
                         .build());
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
@@ -107,8 +91,8 @@ class CryptoTransferHandlerTest {
     @Test
     void pureChecksHbarTransfersHasAccountIdWithIllegalNumber() {
         final var txn = newCryptoTransfer(
-                AccountAmount.newBuilder().accountID(ACCOUNT_3333).amount(-1).build(),
-                AccountAmount.newBuilder().accountID(asAccount(0)).amount(1).build());
+                ACCT_3333_MINUS_10,
+                ACCT_4444_PLUS_10.copyBuilder().accountID(asAccount(0)).build());
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
@@ -118,10 +102,10 @@ class CryptoTransferHandlerTest {
     @Test
     void pureChecksHbarTransfersHasAccountIdWithIllegalAlias() {
         final var txn = newCryptoTransfer(
-                AccountAmount.newBuilder().accountID(ACCOUNT_3333).amount(-1).build(),
+                ACCT_4444_MINUS_5,
                 AccountAmount.newBuilder()
                         .accountID(AccountID.newBuilder().alias(Bytes.wrap("")).build())
-                        .amount(1)
+                        .amount(5)
                         .build());
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
@@ -131,10 +115,9 @@ class CryptoTransferHandlerTest {
 
     @Test
     void pureChecksHbarTransfersHasNonZeroHbarAdjustments() {
-        // A net transfer balance of (-1 + 2) = 1 should cause the pure checks to fail
+        // A net non-zero transfer balance of (-10 + 11) = 1 should cause the pure checks to fail
         final var txn = newCryptoTransfer(
-                AccountAmount.newBuilder().accountID(ACCOUNT_3333).amount(-1).build(),
-                AccountAmount.newBuilder().accountID(ACCOUNT_4444).amount(2).build());
+                ACCT_3333_MINUS_10, ACCT_4444_PLUS_10.copyBuilder().amount(11).build());
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_ACCOUNT_AMOUNTS));
@@ -143,8 +126,7 @@ class CryptoTransferHandlerTest {
     @Test
     void pureChecksHbarTransfersHasRepeatedAccountId() {
         final var txn = newCryptoTransfer(
-                AccountAmount.newBuilder().accountID(ACCOUNT_3333).amount(-1).build(),
-                AccountAmount.newBuilder().accountID(ACCOUNT_3333).amount(1).build());
+                ACCT_3333_MINUS_10, ACCT_3333_MINUS_10.copyBuilder().amount(10).build());
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));
@@ -153,9 +135,7 @@ class CryptoTransferHandlerTest {
     @Test
     void pureChecksHasValidHbarTransfers() {
         // Note: this test only checks for valid hbar transfers (WITHOUT any token transfers)
-        final var txn = newCryptoTransfer(
-                AccountAmount.newBuilder().accountID(ACCOUNT_3333).amount(-1).build(),
-                AccountAmount.newBuilder().accountID(ACCOUNT_4444).amount(1).build());
+        final var txn = newCryptoTransfer(ACCT_4444_MINUS_5, ACCT_3333_PLUS_5);
         Assertions.assertThatCode(() -> subject.pureChecks(txn)).doesNotThrowAnyException();
     }
 
@@ -164,15 +144,7 @@ class CryptoTransferHandlerTest {
         final var txn = newCryptoTransfer(TokenTransferList.newBuilder()
                 .token((TokenID) null)
                 // These are TOKEN fungible amount transfers, not HBAR amount transfers
-                .transfers(
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_3333)
-                                .amount(-2)
-                                .build(),
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_4444)
-                                .amount(2)
-                                .build())
+                .transfers(ACCT_4444_MINUS_5, ACCT_3333_PLUS_5)
                 .build());
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
@@ -185,13 +157,10 @@ class CryptoTransferHandlerTest {
                 .token(TOKEN_2468)
                 // These are TOKEN fungible amount transfers, not HBAR amount transfers
                 .transfers(
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_3333)
-                                .amount(-2)
-                                .build(),
-                        AccountAmount.newBuilder()
+                        ACCT_3333_MINUS_10,
+                        ACCT_4444_PLUS_10
+                                .copyBuilder()
                                 .accountID((AccountID) null)
-                                .amount(2)
                                 .build())
                 .build());
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
@@ -205,14 +174,8 @@ class CryptoTransferHandlerTest {
                 .token(TOKEN_2468)
                 // These are TOKEN amount transfers, not HBAR amount transfers
                 .transfers(
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_3333)
-                                .amount(-2)
-                                .build(),
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_3333)
-                                .amount(2)
-                                .build())
+                        ACCT_4444_MINUS_5,
+                        ACCT_4444_MINUS_5.copyBuilder().amount(5).build())
                 .build());
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
@@ -225,14 +188,8 @@ class CryptoTransferHandlerTest {
                 .token(TOKEN_2468)
                 // These are TOKEN amount transfers, not HBAR amount transfers
                 .transfers(
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_3333)
-                                .amount(-1)
-                                .build(),
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_4444)
-                                .amount(2)
-                                .build())
+                        ACCT_3333_MINUS_10,
+                        ACCT_4444_PLUS_10.copyBuilder().amount(5).build())
                 .build());
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
@@ -244,15 +201,7 @@ class CryptoTransferHandlerTest {
         // Note: this test only checks for valid fungible token transfers (WITHOUT any hbar or nft transfers)
         final var txn = newCryptoTransfer(TokenTransferList.newBuilder()
                 .token(TOKEN_2468)
-                .transfers(
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_3333)
-                                .amount(-2)
-                                .build(),
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_4444)
-                                .amount(2)
-                                .build())
+                .transfers(ACCT_4444_MINUS_5, ACCT_3333_PLUS_5)
                 .build());
         Assertions.assertThatCode(() -> subject.pureChecks(txn)).doesNotThrowAnyException();
     }
@@ -262,11 +211,7 @@ class CryptoTransferHandlerTest {
         final var txn = newCryptoTransfer(TokenTransferList.newBuilder()
                 .token((TokenID) null)
                 // These are nft transfers, not hbar or fungible token transfers
-                .nftTransfers(NftTransfer.newBuilder()
-                        .serialNumber(1)
-                        .senderAccountID(ACCOUNT_3333)
-                        .receiverAccountID(ACCOUNT_4444)
-                        .build())
+                .nftTransfers(SERIAL_1_FROM_3333_TO_4444)
                 .build());
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
@@ -278,11 +223,8 @@ class CryptoTransferHandlerTest {
         final var txn = newCryptoTransfer(TokenTransferList.newBuilder()
                 .token(TOKEN_2468)
                 // These are nft transfers, not hbar or fungible token transfers
-                .nftTransfers(NftTransfer.newBuilder()
-                        .serialNumber(0)
-                        .senderAccountID(ACCOUNT_3333)
-                        .receiverAccountID(ACCOUNT_4444)
-                        .build())
+                .nftTransfers(
+                        SERIAL_1_FROM_3333_TO_4444.copyBuilder().serialNumber(0).build())
                 .build());
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
@@ -294,10 +236,9 @@ class CryptoTransferHandlerTest {
         final var txn = newCryptoTransfer(TokenTransferList.newBuilder()
                 .token(TOKEN_2468)
                 // These are nft transfers, not hbar or fungible token transfers
-                .nftTransfers(NftTransfer.newBuilder()
-                        .serialNumber(1)
+                .nftTransfers(SERIAL_2_FROM_4444_TO_3333
+                        .copyBuilder()
                         .senderAccountID((AccountID) null)
-                        .receiverAccountID(ACCOUNT_4444)
                         .build())
                 .build());
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
@@ -309,10 +250,8 @@ class CryptoTransferHandlerTest {
     void pureChecksNonFungibleTokenTransfersHasMissingReceiverId() {
         final var txn = newCryptoTransfer(TokenTransferList.newBuilder()
                 .token(TOKEN_2468)
-                // These are nft transfers, not hbar or fungible token transfers
-                .nftTransfers(NftTransfer.newBuilder()
-                        .serialNumber(1)
-                        .senderAccountID(ACCOUNT_3333)
+                .nftTransfers(SERIAL_1_FROM_3333_TO_4444
+                        .copyBuilder()
                         .receiverAccountID((AccountID) null)
                         .build())
                 .build());
@@ -325,23 +264,7 @@ class CryptoTransferHandlerTest {
     void pureChecksNonFungibleTokenTransfersHasRepeatedNftId() {
         final var txn = newCryptoTransfer(TokenTransferList.newBuilder()
                 .token(TOKEN_2468)
-                // These are nft transfers, not hbar or fungible token transfers
-                .nftTransfers(
-                        NftTransfer.newBuilder()
-                                .serialNumber(1)
-                                .senderAccountID(ACCOUNT_3333)
-                                .receiverAccountID(ACCOUNT_4444)
-                                .build(),
-                        NftTransfer.newBuilder()
-                                .serialNumber(2)
-                                .senderAccountID(ACCOUNT_3333)
-                                .receiverAccountID(ACCOUNT_4444)
-                                .build(),
-                        NftTransfer.newBuilder()
-                                .serialNumber(1)
-                                .senderAccountID(ACCOUNT_3333)
-                                .receiverAccountID(ACCOUNT_4444)
-                                .build())
+                .nftTransfers(SERIAL_1_FROM_3333_TO_4444, SERIAL_2_FROM_4444_TO_3333, SERIAL_1_FROM_3333_TO_4444)
                 .build());
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
@@ -354,23 +277,10 @@ class CryptoTransferHandlerTest {
         // transfers)
         final var txn = newCryptoTransfer(TokenTransferList.newBuilder()
                 .token(TOKEN_2468)
-                // These are nft transfers, not hbar or fungible token transfers
                 .nftTransfers(
-                        NftTransfer.newBuilder()
-                                .serialNumber(1)
-                                .senderAccountID(ACCOUNT_3333)
-                                .receiverAccountID(ACCOUNT_4444)
-                                .build(),
-                        NftTransfer.newBuilder()
-                                .serialNumber(2)
-                                .senderAccountID(ACCOUNT_4444)
-                                .receiverAccountID(ACCOUNT_3333)
-                                .build(),
-                        NftTransfer.newBuilder()
-                                .serialNumber(3)
-                                .senderAccountID(ACCOUNT_3333)
-                                .receiverAccountID(ACCOUNT_4444)
-                                .build())
+                        SERIAL_1_FROM_3333_TO_4444,
+                        SERIAL_2_FROM_4444_TO_3333,
+                        SERIAL_1_FROM_3333_TO_4444.copyBuilder().serialNumber(3).build())
                 .build());
         Assertions.assertThatCode(() -> subject.pureChecks(txn)).doesNotThrowAnyException();
     }
@@ -381,11 +291,8 @@ class CryptoTransferHandlerTest {
         // balance not equal to zero
         final var txn = newCryptoTransfer(TokenTransferList.newBuilder()
                 .token(TOKEN_2468)
-                .transfers(AccountAmount.newBuilder()
-                        .accountID(ACCOUNT_3333)
-                        .amount(0)
-                        .build())
-                // Intentionally empty (will result in a count of zero nft transfers)
+                .transfers(ACCT_3333_PLUS_5.copyBuilder().amount(0).build())
+                // nftTransfers is intentionally empty (will result in a count of zero nft transfers)
                 .nftTransfers()
                 .build());
 
@@ -400,20 +307,8 @@ class CryptoTransferHandlerTest {
         // transfer, but not both
         final var txn = newCryptoTransfer(TokenTransferList.newBuilder()
                 .token(TOKEN_2468)
-                .transfers(
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_3333)
-                                .amount(-1)
-                                .build(),
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_4444)
-                                .amount(1)
-                                .build())
-                .nftTransfers(NftTransfer.newBuilder()
-                        .serialNumber(1)
-                        .senderAccountID(ACCOUNT_3333)
-                        .receiverAccountID(ACCOUNT_4444)
-                        .build())
+                .transfers(ACCT_3333_MINUS_10, ACCT_4444_PLUS_10)
+                .nftTransfers(SERIAL_1_FROM_3333_TO_4444)
                 .build());
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
@@ -434,77 +329,24 @@ class CryptoTransferHandlerTest {
         // together
         final var token9753 = asToken(9753);
         final var txn = newCryptoTransfer(
-                List.of(
-                        // Valid hbar transfers
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_4444)
-                                .amount(-5)
-                                .build(),
-                        AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_3333)
-                                .amount(5)
-                                .build()),
+                // Valid hbar transfers
+                List.of(ACCT_3333_MINUS_10, ACCT_4444_PLUS_10),
                 List.of(
                         // Valid fungible token transfers
                         TokenTransferList.newBuilder()
                                 .token(TOKEN_2468)
-                                .transfers(
-                                        AccountAmount.newBuilder()
-                                                .accountID(ACCOUNT_3333)
-                                                .amount(-10)
-                                                .build(),
-                                        AccountAmount.newBuilder()
-                                                .accountID(ACCOUNT_4444)
-                                                .amount(10)
-                                                .build())
+                                .transfers(ACCT_4444_MINUS_5, ACCT_3333_PLUS_5)
                                 .build(),
                         TokenTransferList.newBuilder()
                                 .token(token9753)
-                                .transfers(
-                                        AccountAmount.newBuilder()
-                                                .accountID(ACCOUNT_4444)
-                                                .amount(-1000)
-                                                .build(),
-                                        AccountAmount.newBuilder()
-                                                .accountID(ACCOUNT_3333)
-                                                .amount(1000)
-                                                .build())
+                                .transfers(ACCT_4444_MINUS_5, ACCT_3333_PLUS_5)
                                 .build(),
                         // Valid nft token transfers
                         TokenTransferList.newBuilder()
                                 .token(token9753)
-                                .nftTransfers(
-                                        NftTransfer.newBuilder()
-                                                .serialNumber(1)
-                                                .senderAccountID(ACCOUNT_4444)
-                                                .receiverAccountID(ACCOUNT_3333)
-                                                .build(),
-                                        NftTransfer.newBuilder()
-                                                .serialNumber(2)
-                                                .senderAccountID(ACCOUNT_3333)
-                                                .receiverAccountID(ACCOUNT_4444)
-                                                .build())
+                                .nftTransfers(SERIAL_1_FROM_3333_TO_4444, SERIAL_2_FROM_4444_TO_3333)
                                 .build()));
 
         Assertions.assertThatCode(() -> subject.pureChecks(txn)).doesNotThrowAnyException();
-    }
-
-    private TransactionBody newCryptoTransfer(AccountAmount... acctAmounts) {
-        return newCryptoTransfer(Arrays.stream(acctAmounts).toList(), List.of());
-    }
-
-    private TransactionBody newCryptoTransfer(TokenTransferList... tokenTransferLists) {
-        return newCryptoTransfer(List.of(), Arrays.stream(tokenTransferLists).toList());
-    }
-
-    // Note: `tokenTransferLists` can include both fungible and non-fungible token transfers
-    private TransactionBody newCryptoTransfer(
-            List<AccountAmount> acctAmounts, List<TokenTransferList> tokenTransferLists) {
-        return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
-                .cryptoTransfer(CryptoTransferTransactionBody.newBuilder()
-                        .transfers(TransferList.newBuilder().accountAmounts(acctAmounts))
-                        .tokenTransfers(tokenTransferLists))
-                .build();
     }
 }
