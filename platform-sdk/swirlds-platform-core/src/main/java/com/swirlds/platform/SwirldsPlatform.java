@@ -424,14 +424,14 @@ public class SwirldsPlatform implements Platform, Startable {
 
         startedFromGenesis = initialState.isGenesisState();
         if (startedFromGenesis) {
+            diskStateHash = null;
+            diskStateRound = -1;
+            initialMinimumGenerationNonAncient = 0;
+        } else {
             diskStateHash = initialState.getState().getHash();
             diskStateRound = initialState.getRound();
             initialMinimumGenerationNonAncient =
                     initialState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient();
-        } else {
-            diskStateHash = null;
-            diskStateRound = -1;
-            initialMinimumGenerationNonAncient = 0;
         }
 
         if (!initialState.isGenesisState()) {
