@@ -50,6 +50,7 @@ public class PlatformConfigUtils {
         Objects.requireNonNull(configuration, "configuration should not be null");
         final Set<String> configNames = getConfigNames(configuration);
         logNotKnownConfigProperties(configuration, configNames);
+        logAppliedMappedProperties(configNames);
     }
 
     /**
@@ -71,7 +72,7 @@ public class PlatformConfigUtils {
     /**
      * Logs all applied mapped properties. And suggests to change the new property name.
      */
-    static void logAppliedMappedProperties(@NonNull final Set<String> configNames) {
+    private static void logAppliedMappedProperties(@NonNull final Set<String> configNames) {
         final Map<String, String> mappings = ConfigMappings.MAPPINGS.stream()
                 .collect(Collectors.toMap(ConfigMapping::originalName, ConfigMapping::mappedName));
 
