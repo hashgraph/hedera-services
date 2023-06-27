@@ -31,7 +31,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ContractNonceInfoTest {
+class ContractNonceInfoTest {
     private static final long shard = 1L;
     private static final long realm = 2L;
     private static final long num = 3L;
@@ -123,6 +123,6 @@ public class ContractNonceInfoTest {
         assertEquals(subject, subject2);
         assertEquals(subject.hashCode(), subject2.hashCode());
         assertNotEquals(subject, subject3);
-        assertNotEquals(subject, null);
+        assertNotEquals(null, subject);
     }
 }
