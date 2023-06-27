@@ -20,6 +20,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl.isMirror;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -81,7 +83,8 @@ public class CryptoCreateValidator {
             @NonNull final ReadableAccountStore readableAccountStore) {
         validateTrue(config.enabled(), NOT_SUPPORTED);
         attributeValidator.validateKey(op.keyOrThrow());
-        validateTrue(op.alias().toByteArray().length == EVM_ADDRESS_SIZE, INVALID_ALIAS_KEY);
+        validateTrue(op.alias().length() == EVM_ADDRESS_SIZE, INVALID_ALIAS_KEY);
+        validateFalse(isMirror(op.alias()), INVALID_ALIAS_KEY);
         validateTrue(readableAccountStore.getAccountIDByAlias(op.alias().toString()) == null, ALIAS_ALREADY_ASSIGNED);
     }
 

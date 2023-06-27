@@ -25,8 +25,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -118,7 +118,13 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
 
         // validate fields in the transaction body that involves checking with
         // dynamic properties or state
-        final var modifiedPayer = validateSemantics(handleContext, accountStore, op);
+        final var payer = validateSemantics(handleContext, accountStore, op);
+
+        final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
+        // Change payer's balance to reflect the deduction of the initial balance for the new
+        // account
+        final var modifiedPayer =
+                payer.copyBuilder().tinybarBalance(newPayerBalance).build();
         accountStore.put(modifiedPayer);
 
         // Build the new account to be persisted based on the transaction body
@@ -163,7 +169,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
      * @param context handle context
      * @param accountStore account store
      * @param op crypto create transaction body
-     * @return modified payer account
+     * @return the payer account if validated successfully
      */
     private Account validateSemantics(
             @NonNull final HandleContext context,
@@ -179,7 +185,13 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var payer = accountStore.getForModify(
                 context.body().transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
 
-        validateTrue(payer != null, INVALID_PAYER_ACCOUNT_ID);
+        validateFalse(payer == null, INVALID_PAYER_ACCOUNT_ID);
+        getIfUsable(
+                asAccount(requireNonNull(payer).accountNumber()),
+                accountStore,
+                context.expiryValidator(),
+                INVALID_PAYER_ACCOUNT_ID);
+
         final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
         validatePayer(payer, newPayerBalance);
 
@@ -205,9 +217,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 context,
                 nodeInfo);
 
-        // Change payer's balance to reflect the deduction of the initial balance for the new
-        // account
-        return payer.copyBuilder().tinybarBalance(newPayerBalance).build();
+        return payer;
     }
 
     /**

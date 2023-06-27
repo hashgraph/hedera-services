@@ -63,7 +63,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
         this.aliases = states.get("ALIASES");
     }
 
-    protected static boolean isMirror(final Bytes bytes) {
+    public static boolean isMirror(final Bytes bytes) {
         return bytes.matchesPrefix(MIRROR_PREFIX);
     }
 

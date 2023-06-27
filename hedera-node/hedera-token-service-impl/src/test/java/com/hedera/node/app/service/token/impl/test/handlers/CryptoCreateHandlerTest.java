@@ -36,6 +36,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.never;
@@ -45,6 +48,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -61,6 +65,7 @@ import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -99,6 +104,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Mock
     private NodeInfo nodeInfo;
+
+    @Mock(strictness = LENIENT)
+    private ExpiryValidator expiryValidator;
 
     private CryptoCreateHandler subject;
 
@@ -244,6 +252,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.consensusNow()).willReturn(consensusInstant);
         given(handleContext.newEntityNum()).willReturn(1000L);
         setupConfig();
+        setupExpiryValidator();
 
         // newly created account and payer account are not modified. Validate payers balance
         assertFalse(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
@@ -311,6 +320,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.consensusNow()).willReturn(consensusInstant);
         given(handleContext.newEntityNum()).willReturn(1000L);
         setupConfig();
+        setupExpiryValidator();
 
         // newly created account and payer account are not modified. Validate payers balance
         assertFalse(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
@@ -390,6 +400,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         txn = new CryptoCreateBuilder().withInitialBalance(payerBalance + 1L).build();
         given(handleContext.body()).willReturn(txn);
         setupConfig();
+        setupExpiryValidator();
 
         // newly created account and payer account are not modified. Validate payers balance
         assertFalse(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
@@ -411,7 +422,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void handleFailsWhenPayerIsDeleted() {
         changeAccountToDeleted();
         setupConfig();
-
+        setupExpiryValidator();
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ACCOUNT_DELETED, msg.getStatus());
 
@@ -452,6 +463,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.newEntityNum()).willReturn(1000L);
 
         setupConfig();
+        setupExpiryValidator();
 
         // newly created account and payer account are not modified. Validate payers balance
         assertFalse(writableStore.modifiedAccountsInState().contains(accountID(1000L)));
@@ -479,7 +491,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
         given(dynamicProperties.maxMemoUtf8Bytes()).willReturn(2);
         setupConfig();
-
+        setupExpiryValidator();
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(MEMO_TOO_LONG, msg.getStatus());
     }
@@ -489,6 +501,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         txn = new CryptoCreateBuilder().withStakedAccountId(3).withKey(null).build();
         given(handleContext.body()).willReturn(txn);
         setupConfig();
+        setupExpiryValidator();
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(KEY_REQUIRED, msg.getStatus());
@@ -503,6 +516,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(handleContext.body()).willReturn(txn);
         setupConfig();
+        setupExpiryValidator();
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_ALIAS_KEY, msg.getStatus());
@@ -520,6 +534,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .withValue("cryptoCreateWithAlias.enabled", false)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
+        setupExpiryValidator();
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(NOT_SUPPORTED, msg.getStatus());
@@ -537,6 +552,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .withValue("cryptoCreateWithAlias.enabled", true)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
+        setupExpiryValidator();
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_ALIAS_KEY, msg.getStatus());
@@ -550,6 +566,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(handleContext.body()).willReturn(txn);
         setupConfig();
+        setupExpiryValidator();
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_ALIAS_KEY, msg.getStatus());
@@ -563,6 +580,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(handleContext.body()).willReturn(txn);
         setupConfig();
+        setupExpiryValidator();
         final var writableAliases = emptyWritableAliasStateBuilder()
                 .value(Bytes.wrap(evmAddress).toString(), new EntityNumValue(accountNum))
                 .build();
@@ -580,7 +598,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
         given(dynamicProperties.maxAutoRenewDuration()).willReturn(1000L);
         setupConfig();
-
+        setupExpiryValidator();
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, msg.getStatus());
     }
@@ -593,6 +611,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(handleContext.body()).willReturn(txn);
         setupConfig();
+        setupExpiryValidator();
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, msg.getStatus());
@@ -613,6 +632,12 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .withValue("tokens.maxPerAccount", 1000)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
+    }
+
+    private void setupExpiryValidator() {
+        given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
+                .willReturn(ResponseCodeEnum.OK);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
     }
 
     /**
