@@ -404,6 +404,7 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
                 && this.numPositiveBalances == that.numPositiveBalances
                 && this.headTokenId == that.headTokenId
                 && this.numTreasuryTitles == that.numTreasuryTitles
+                // Note that we this is temporary solution till we have an AccountId in place
                 && Optional.ofNullable(this.autoRenewAccount).stream()
                         .mapToLong(EntityId::num)
                         .findAny()
