@@ -69,7 +69,7 @@ public class GrpcStarter {
                     }
                 } else {
                     final var staticBook = addressBook.get();
-                    final var nodeAddress = staticBook.getAddress(nodeId.getIdAsInt());
+                    final var nodeAddress = staticBook.getAddress(nodeId);
                     int portOffset = thisNodeIsDefaultListener() ? 0 : nodeAddress.getPortExternalIpv4() % PORT_MODULUS;
                     grpc.start(port + portOffset, tlsPort + portOffset, this::logInfoWithConsoleEcho);
                 }
@@ -91,7 +91,6 @@ public class GrpcStarter {
     private boolean thisNodeIsDefaultListener() {
         final var blessedNodeAccount = nodeLocalProperties.devListeningAccount();
         final var staticBook = addressBook.get();
-        return blessedNodeAccount.equals(
-                staticBook.getAddress(nodeId.getIdAsInt()).getMemo());
+        return blessedNodeAccount.equals(staticBook.getAddress(nodeId).getMemo());
     }
 }

@@ -29,6 +29,7 @@ import com.hedera.node.app.grpc.GrpcInjectionModule;
 import com.hedera.node.app.grpc.GrpcServerManager;
 import com.hedera.node.app.info.InfoInjectionModule;
 import com.hedera.node.app.metrics.MetricsInjectionModule;
+import com.hedera.node.app.platform.PlatformModule;
 import com.hedera.node.app.service.mono.LegacyMonoInjectionModule;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
@@ -75,7 +76,8 @@ import javax.inject.Singleton;
             InfoInjectionModule.class,
             ThrottleInjectionModule.class,
             SolvencyInjectionModule.class,
-            ConfigModule.class
+            ConfigModule.class,
+            PlatformModule.class
         })
 public interface HederaInjectionComponent extends ServicesApp {
     /* Needed by ServicesState */
