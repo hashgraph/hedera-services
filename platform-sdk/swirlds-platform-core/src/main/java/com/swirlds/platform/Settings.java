@@ -19,17 +19,11 @@ package com.swirlds.platform;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.settings.ParsingUtils.parseDuration;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.SettingConstants.DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.LOAD_KEYS_FROM_PFX_FILES_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.MAX_ADDRESS_SIZE_ALLOWED_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.STATS_BUFFER_SIZE_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.STATS_RECENT_SECONDS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.THROTTLE_TRANSACTION_QUEUE_SIZE_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.TRANSACTION_MAX_BYTES_DEFAULT_VALUES;
 import static com.swirlds.platform.SettingConstants.VERBOSE_STATISTICS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.VERIFY_EVENT_SIGS_DEFAULT_VALUE;
 
@@ -104,21 +98,12 @@ public class Settings {
     private boolean showInternalStats = SHOW_INTERNAL_STATS_DEFAULT_VALUE;
     /** show expand statistics values, inlcude mean, min, max, stdDev */
     private boolean verboseStatistics = VERBOSE_STATISTICS_DEFAULT_VALUE;
-    /**
-     * Stop accepting new non-system transactions into the 4 transaction queues if any of them have more than this
-     * many.
-     */
-    private int throttleTransactionQueueSize = THROTTLE_TRANSACTION_QUEUE_SIZE_DEFAULT_VALUE;
     /** check for deadlocks every this many milliseconds (-1 for never) */
     private int deadlockCheckPeriod = DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
     /** number of bins to store for the history (in StatsBuffer etc.) */
     private int statsBufferSize = STATS_BUFFER_SIZE_DEFAULT_VALUE;
     /** number of seconds covered by "recent" history (in StatsBuffer etc.) */
     private double statsRecentSeconds = STATS_RECENT_SECONDS_DEFAULT_VALUE;
-    /** maximum number of bytes allowed in a transaction */
-    private int transactionMaxBytes = TRANSACTION_MAX_BYTES_DEFAULT_VALUES;
-    /** the maximum number of address allowed in a address book, the same as the maximum allowed network size */
-    private int maxAddressSizeAllowed = MAX_ADDRESS_SIZE_ALLOWED_DEFAULT_VALUE;
 
     /**
      * When enabled, the platform will try to load node keys from .pfx files located in
@@ -128,13 +113,6 @@ public class Settings {
      * If disabled, the platform will generate keys deterministically.
      */
     private boolean loadKeysFromPfxFiles = LOAD_KEYS_FROM_PFX_FILES_DEFAULT_VALUE;
-    /**
-     * the maximum number of bytes that a single event may contain not including the event headers if a single
-     * transaction exceeds this limit then the event will contain the single transaction only
-     */
-    private int maxTransactionBytesPerEvent = MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE;
-    /** the maximum number of transactions that a single event may contain */
-    private int maxTransactionCountPerEvent = MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE;
 
     private Settings() {}
 
@@ -148,10 +126,6 @@ public class Settings {
     }
 
     public static void populateSettingsCommon() {
-        SettingsCommon.maxTransactionCountPerEvent = getInstance().getMaxTransactionCountPerEvent();
-        SettingsCommon.maxTransactionBytesPerEvent = getInstance().getMaxTransactionBytesPerEvent();
-        SettingsCommon.maxAddressSizeAllowed = getInstance().getMaxAddressSizeAllowed();
-        SettingsCommon.transactionMaxBytes = getInstance().getTransactionMaxBytes();
         SettingsCommon.showInternalStats = getInstance().isShowInternalStats();
         SettingsCommon.verboseStatistics = getInstance().isVerboseStatistics();
     }
@@ -280,26 +254,6 @@ public class Settings {
             }
         }
         scanner.close();
-
-        validateSettings();
-    }
-
-    /**
-     * validate the settings read in from the settings.txt file
-     */
-    private void validateSettings() {
-        // if the settings allow a transaction larger than the maximum event size
-        if (maxTransactionBytesPerEvent < transactionMaxBytes) {
-            logger.error(
-                    STARTUP.getMarker(),
-                    "Settings Mismatch: transactionMaxBytes ({}) is larger than "
-                            + "maxTransactionBytesPerEvent ({}), truncating transactionMaxBytes to {}.",
-                    transactionMaxBytes,
-                    maxTransactionBytesPerEvent,
-                    maxTransactionBytesPerEvent);
-
-            transactionMaxBytes = maxTransactionBytesPerEvent;
-        }
     }
 
     /**
@@ -447,35 +401,11 @@ public class Settings {
         return verboseStatistics;
     }
 
-    public int getThrottleTransactionQueueSize() {
-        return throttleTransactionQueueSize;
-    }
-
     public int getDeadlockCheckPeriod() {
         return deadlockCheckPeriod;
     }
 
-    public int getTransactionMaxBytes() {
-        return transactionMaxBytes;
-    }
-
-    public void setTransactionMaxBytes(final int transactionMaxBytes) {
-        this.transactionMaxBytes = transactionMaxBytes;
-    }
-
-    public int getMaxAddressSizeAllowed() {
-        return maxAddressSizeAllowed;
-    }
-
     public boolean isLoadKeysFromPfxFiles() {
         return loadKeysFromPfxFiles;
-    }
-
-    public int getMaxTransactionBytesPerEvent() {
-        return maxTransactionBytesPerEvent;
-    }
-
-    public int getMaxTransactionCountPerEvent() {
-        return maxTransactionCountPerEvent;
     }
 }

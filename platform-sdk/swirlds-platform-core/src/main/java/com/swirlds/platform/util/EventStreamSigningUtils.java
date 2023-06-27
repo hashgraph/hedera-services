@@ -60,12 +60,6 @@ public class EventStreamSigningUtils {
      */
     public static void initializeSystem() {
         BootstrapUtils.setupConstructableRegistry();
-
-        // we don't want deserialization to fail based on any of these settings
-        SettingsCommon.maxTransactionCountPerEvent = Integer.MAX_VALUE;
-        SettingsCommon.maxTransactionBytesPerEvent = Integer.MAX_VALUE;
-        SettingsCommon.transactionMaxBytes = Integer.MAX_VALUE;
-        SettingsCommon.maxAddressSizeAllowed = Integer.MAX_VALUE;
     }
 
     /**

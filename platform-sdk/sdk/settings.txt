@@ -14,8 +14,10 @@
 chatter.useChatter,               false
 doUpnp,                           false
 maxOutgoingSyncs,                 1
-sync.syncAsProtocolEnabled,       false
+sync.syncAsProtocolEnabled,       true
+sync.syncProtocolPermitCount,     17
 useLoopbackIp,                    false
+freezeSecondsAfterStartup,        0
 
                                           #############################
                                           # Preconsensus Event Stream #

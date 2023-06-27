@@ -19,7 +19,7 @@ package com.hedera.node.app.info;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.info.CurrentPlatformStatus;
-import com.swirlds.common.system.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
