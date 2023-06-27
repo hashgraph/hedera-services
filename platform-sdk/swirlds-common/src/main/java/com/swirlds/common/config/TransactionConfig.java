@@ -16,9 +16,12 @@
 
 package com.swirlds.common.config;
 
+import com.swirlds.common.config.validators.DefaultConfigViolation;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import com.swirlds.config.api.validation.annotation.Max;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.validation.ConfigViolation;
+import com.swirlds.config.api.validation.annotation.ConstraintMethod;
 
 /**
  * Configuration regarding transactions
@@ -28,8 +31,8 @@ import com.swirlds.config.api.validation.annotation.Max;
  * @param maxAddressSizeAllowed
  * 		the maximum number of address allowed in a address book, the same as the maximum allowed network size
  * @param maxTransactionBytesPerEvent
- * 		the maximum number of bytes that a single event may contain not including the event headers if a single
- * 		transaction exceeds this limit then the event will contain the single transaction only
+ *      the maximum number of bytes that a single event may contain, not including the event headers. if a single
+ *      transaction exceeds this limit, then the event will contain the single transaction only
  * @param maxTransactionCountPerEvent
  * 		the maximum number of transactions that a single event may contain
  * @param throttleTransactionQueueSize
@@ -38,8 +41,24 @@ import com.swirlds.config.api.validation.annotation.Max;
  */
 @ConfigData("transaction")
 public record TransactionConfig(
-        @Max(245760) @ConfigProperty(defaultValue = "6144") int transactionMaxBytes,
+        @ConstraintMethod("validateTransactionBytes") @ConfigProperty(defaultValue = "6144") int transactionMaxBytes,
         @ConfigProperty(defaultValue = "1024") int maxAddressSizeAllowed,
         @ConfigProperty(defaultValue = "245760") int maxTransactionBytesPerEvent,
         @ConfigProperty(defaultValue = "245760") int maxTransactionCountPerEvent,
-        @ConfigProperty(defaultValue = "100000") int throttleTransactionQueueSize) {}
+        @ConfigProperty(defaultValue = "100000") int throttleTransactionQueueSize) {
+    public ConfigViolation validateTransactionBytes(final Configuration configuration) {
+        final TransactionConfig transactionConfig = configuration.getConfigData(TransactionConfig.class);
+        final int transactionMaxBytes = transactionConfig.transactionMaxBytes();
+        final int maxTransactionBytesPerEvent = transactionConfig.maxTransactionBytesPerEvent();
+        if (maxTransactionBytesPerEvent < transactionMaxBytes) {
+            return new DefaultConfigViolation(
+                    "transactionMaxBytes",
+                    transactionMaxBytes + "",
+                    true,
+                    "Cannot configure transactionMaxBytes to " + transactionMaxBytes + ", it must be < "
+                            + maxTransactionBytesPerEvent);
+        }
+
+        return null;
+    }
+}

@@ -242,7 +242,7 @@ class AsyncPreconsensusEventWriterTests {
                 .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
                 .withValue("transaction.maxTransactionBytesPerEvent", Integer.MAX_VALUE)
                 .withValue("transaction.maxTransactionCountPerEvent", Integer.MAX_VALUE)
-                .withValue("transaction.transactionMaxBytes", 245760)
+                .withValue("transaction.transactionMaxBytes", Integer.MAX_VALUE)
                 .withValue("transaction.maxAddressSizeAllowed", Integer.MAX_VALUE)
                 .getOrCreateConfig();
 
