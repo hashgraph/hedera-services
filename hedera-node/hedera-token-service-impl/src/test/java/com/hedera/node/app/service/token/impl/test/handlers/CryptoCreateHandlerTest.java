@@ -440,6 +440,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(handleContext.body()).willReturn(txn);
         setupConfig();
+        setupExpiryValidator();
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_PAYER_ACCOUNT_ID, msg.getStatus());

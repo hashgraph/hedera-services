@@ -182,12 +182,8 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
 
         // validate payer account exists and has enough balance
-        final var payer = accountStore.getForModify(
-                context.body().transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
-
-        validateFalse(payer == null, INVALID_PAYER_ACCOUNT_ID);
-        getIfUsable(
-                asAccount(requireNonNull(payer).accountNumber()),
+        final var payer = getIfUsable(
+                context.body().transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
                 accountStore,
                 context.expiryValidator(),
                 INVALID_PAYER_ACCOUNT_ID);
