@@ -20,6 +20,7 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.common.config.SocketConfig;
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.metrics.Metrics;
@@ -85,10 +86,6 @@ public final class PlatformConstructor {
      */
     public static ParallelExecutor parallelExecutor(final ThreadManager threadManager) {
         return new CachedPoolParallelExecutor(threadManager, "node-sync");
-    }
-
-    public static SettingsProvider settingsProvider() {
-        return StaticSettingsProvider.getSingleton();
     }
 
     public static SocketFactory socketFactory(
@@ -162,7 +159,7 @@ public final class PlatformConstructor {
      * @param postConsensusSystemTransactionManager the manager which handles system transactions post-consensus
      * @param metrics                               reference to the metrics-system
      * @param platformStatusStateMachine            the platform status state machine
-     * @param settings                              static settings provider
+     * @param transactionConfig                     the transaction configuration
      * @param initialState                          the initial state
      * @return the newly constructed instance of {@link SwirldStateManager}
      */
@@ -174,7 +171,7 @@ public final class PlatformConstructor {
             @NonNull final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
             @NonNull final Metrics metrics,
             @NonNull final PlatformStatusStateMachine platformStatusStateMachine,
-            @NonNull final SettingsProvider settings,
+            @NonNull final TransactionConfig transactionConfig,
             @NonNull final BooleanSupplier inFreezeChecker,
             @NonNull final State initialState) {
 
@@ -185,7 +182,7 @@ public final class PlatformConstructor {
         Objects.requireNonNull(postConsensusSystemTransactionManager);
         Objects.requireNonNull(metrics);
         Objects.requireNonNull(platformStatusStateMachine);
-        Objects.requireNonNull(settings);
+        Objects.requireNonNull(transactionConfig);
         Objects.requireNonNull(inFreezeChecker);
         Objects.requireNonNull(initialState);
 
@@ -197,7 +194,7 @@ public final class PlatformConstructor {
                 postConsensusSystemTransactionManager,
                 new SwirldStateMetrics(metrics),
                 platformStatusStateMachine,
-                settings,
+                transactionConfig,
                 inFreezeChecker,
                 initialState);
     }

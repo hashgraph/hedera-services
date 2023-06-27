@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.exports;
 
-import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
+import static com.swirlds.common.system.status.PlatformStatus.FREEZE_COMPLETE;
 
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
