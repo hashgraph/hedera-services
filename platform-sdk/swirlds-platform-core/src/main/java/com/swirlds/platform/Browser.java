@@ -693,7 +693,6 @@ public class Browser {
                     }
 
                     // Initialize the address book from the configuration and platform saved state.
-                    // TODO make this a static method
                     final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
                             appVersion, softwareUpgrade, initialState.get(), addressBook.copy(), platformContext);
 
@@ -744,8 +743,6 @@ public class Browser {
 
         return Collections.unmodifiableList(platforms);
     }
-
-    // TODO extract
 
     /**
      * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
@@ -819,17 +816,12 @@ public class Browser {
         // Not strictly necessary to close a null reservation, but it's nice to be consistent.
         loadedState.close();
 
-        final State genesisState = buildGenesisState(
-                platformContext,
-                configAddressBook,
-                appMain.getSoftwareVersion(),
-                appMain::newState); // TODO don't pass in lambda
+        final State genesisState =
+                buildGenesisState(platformContext, configAddressBook, appMain.getSoftwareVersion(), appMain.newState());
 
         final SignedState signedState = new SignedState(platformContext, genesisState, "genesis state");
         return signedState.reserve("genesis state");
     }
-
-    // TODO extract this method
 
     /**
      * Load the signed state from the disk if it is present.

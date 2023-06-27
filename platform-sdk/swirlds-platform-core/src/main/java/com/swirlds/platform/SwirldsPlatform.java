@@ -198,22 +198,10 @@ public class SwirldsPlatform implements Platform, Startable {
     /** the object that contains all key pairs and CSPRNG state for this member */
     private final Crypto crypto;
     /**
-     * True if this node started from genesis.
-     */
-    private final boolean startedFromGenesis; // TODO is there a way to make this go away?
-    /**
-     * If a state was loaded from disk, this will have the round of that state.
-     */
-    private final long diskStateRound;
-    /**
      * If a state was loaded from disk, this is the minimum generation non-ancient for that round. If starting from a
      * genesis state, this is 0.
      */
     private final long initialMinimumGenerationNonAncient;
-    /**
-     * If a state was loaded from disk, this will have the hash of that state.
-     */
-    private final Hash diskStateHash;
 
     private final StateManagementComponent stateManagementComponent;
     private final EventTaskDispatcher eventTaskDispatcher;
@@ -421,22 +409,6 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventConfig.eventStreamQueueCapacity(),
                 this::isLastEventBeforeRestart);
 
-        startedFromGenesis = initialState.isGenesisState();
-        if (startedFromGenesis) {
-            diskStateHash = null;
-            diskStateRound = -1;
-            initialMinimumGenerationNonAncient = 0;
-        } else {
-            diskStateHash = initialState.getState().getHash();
-            diskStateRound = initialState.getRound();
-            initialMinimumGenerationNonAncient =
-                    initialState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient();
-        }
-
-        if (!initialState.isGenesisState()) {
-            stateManagementComponent.stateToLoad(initialState, SourceOfSignedState.DISK);
-        }
-
         final State mutableStateCopy = initializeAndCopyState(initialState);
         swirldStateManager = PlatformConstructor.swirldStateManager(
                 platformContext,
@@ -467,11 +439,6 @@ public class SwirldsPlatform implements Platform, Startable {
                 freezeManager::freezeStarted,
                 stateManagementComponent::roundAppliedToState,
                 appVersion));
-
-        // TODO gather all of these methods that care about genesis vs non-genesis into a single place
-        if (!initialState.isGenesisState()) {
-            consensusRoundHandler.loadDataFromSignedState(initialState, false);
-        }
 
         final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
@@ -578,6 +545,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 swirldStateManager::submitTransaction,
                 new TransactionMetrics(metrics));
 
+        final boolean startedFromGenesis = initialState.isGenesisState();
+
         gossip = GossipFactory.buildGossip(
                 platformContext,
                 threadManager,
@@ -605,16 +574,40 @@ public class SwirldsPlatform implements Platform, Startable {
                 this::loadReconnectState,
                 this::clearAllPipelines);
 
-        if (initialState.isGenesisState()) {
+        if (startedFromGenesis) {
+            initialMinimumGenerationNonAncient = 0;
+
             consensusRef.set(new ConsensusImpl(
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     consensusMetrics,
                     consensusRoundHandler::addMinGenInfo,
                     getAddressBook()));
         } else {
+            initialMinimumGenerationNonAncient =
+                    initialState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient();
+
+            stateManagementComponent.stateToLoad(initialState, SourceOfSignedState.DISK);
+            consensusRoundHandler.loadDataFromSignedState(initialState, false);
+
             loadStateIntoConsensusAndEventMapper(initialState);
             loadStateIntoEventCreator(initialState);
             eventLinker.loadFromSignedState(initialState);
+
+            // We don't want to invoke these callbacks until after we are starting up.
+            components.add((Startable) () -> {
+                final long round = initialState.getRound();
+                ;
+                final Hash hash = initialState.getState().getHash();
+
+                // If we loaded from disk then call the appropriate dispatch.
+                // It is important that this is sent after the ConsensusHashManager
+                // is initialized.
+                diskStateLoadedDispatcher.dispatch(round, hash);
+
+                // Let the app know that a state was loaded.
+                notificationEngine.dispatch(
+                        StateLoadedFromDiskCompleteListener.class, new StateLoadedFromDiskNotification());
+            });
         }
 
         clearAllPipelines = new LoggingClearables(
@@ -665,8 +658,12 @@ public class SwirldsPlatform implements Platform, Startable {
         return swirldStateManager.submitTransaction(systemTransaction, priority);
     }
 
-    // TODO javadoc
-    // TODO can this become a static method elsewhere?
+    /**
+     * Initialize the state, then make a fast copy of it. The original becomes immutable.
+     *
+     * @param signedState the state to initialize and copy
+     * @return a mutable copy of the state
+     */
     @NonNull
     private State initializeAndCopyState(@NonNull final SignedState signedState) {
 
@@ -685,12 +682,12 @@ public class SwirldsPlatform implements Platform, Startable {
         final State initialState = signedState.getState();
         final Hash initialHash = initialState.getSwirldState().getHash();
 
+        // TODO will this enable a reconnecting node to get a state with the wrong version? Will it copy that forward?
+
         initialState.getSwirldState().init(this, initialState.getSwirldDualState(), trigger, previousSoftwareVersion);
-        initialState.markAsInitialized(); // TODO do we need this nay more?
 
         final Hash currentHash = initialState.getSwirldState().getHash();
 
-        // TODO is there a less kludgy way to do this?
         // If the current hash is null, we must hash the state
         // It's also possible that the application modified the state and hashed itself in init(), if so we need to
         // rehash the state as a whole.
@@ -822,7 +819,6 @@ public class SwirldsPlatform implements Platform, Startable {
                                 + reconnectHash + ", new hash is "
                                 + signedState.getState().getHash());
             }
-            signedState.getState().markAsInitialized();
 
             swirldStateManager.loadFromSignedState(signedState);
 
@@ -989,8 +985,6 @@ public class SwirldsPlatform implements Platform, Startable {
     public void start() {
         components.start();
 
-        sendStartupNotifications();
-
         metrics.start();
 
         if (tipsetEventCreator != null) {
@@ -1007,21 +1001,6 @@ public class SwirldsPlatform implements Platform, Startable {
         // in case of a single node network, the platform status update will not be triggered by connections, so it
         // needs to be triggered now
         checkPlatformStatus();
-    }
-
-    /**
-     * Send notifications that can only be sent after components have been started.
-     */
-    private void sendStartupNotifications() {
-        if (!startedFromGenesis) {
-            // If we loaded from disk then call the appropriate dispatch. This dispatch
-            // must wait until after components have been started.
-            diskStateLoadedDispatcher.dispatch(diskStateRound, diskStateHash);
-
-            // Let the app know that a state was loaded.
-            notificationEngine.dispatch(
-                    StateLoadedFromDiskCompleteListener.class, new StateLoadedFromDiskNotification());
-        }
     }
 
     /**

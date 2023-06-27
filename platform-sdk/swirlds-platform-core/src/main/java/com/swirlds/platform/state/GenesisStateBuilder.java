@@ -25,7 +25,6 @@ import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * Responsible for building the genesis state.
@@ -80,22 +79,22 @@ public final class GenesisStateBuilder {
     /**
      * Build and initialize a genesis state.
      *
-     * @param platformContext           the platform context
-     * @param addressBook               the current address book
-     * @param appVersion                the software version of the app
-     * @param genesisSwirldStateBuilder builds the genesis application state
+     * @param platformContext the platform context
+     * @param addressBook     the current address book
+     * @param appVersion      the software version of the app
+     * @param swirldState     the application's genesis state
      * @return a genesis state
      */
     public static State buildGenesisState(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final Supplier<SwirldState> genesisSwirldStateBuilder) {
+            @NonNull final SwirldState swirldState) {
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final State state = new State();
         state.setPlatformState(buildGenesisPlatformState(addressBook, appVersion));
-        state.setSwirldState(genesisSwirldStateBuilder.get());
+        state.setSwirldState(swirldState);
         state.setDualState(buildGenesisDualState(basicConfig));
 
         return state;
