@@ -287,7 +287,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 transferErc20TokenFromContractWithApproval(),
                 transferErc20TokenFromErc721TokenFails(),
                 contractCreateNoncesExternalizationHappyPath(),
-                contractCreateFollowedByContractCallNoncesExternalization());
+                contractCreateFollowedByContractCallNoncesExternalization(),
+                shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled());
     }
 
     private HapiSpec transferErc20TokenFromErc721TokenFails() {
@@ -2198,6 +2199,30 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         getTxnRecord("revertedInnerCreation")
                                 .andAllChildRecords()
                                 .logged());
+    }
+
+    private HapiSpec shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled() {
+        final var contract = "NoncesExternalization";
+        final var payer = "payer";
+
+        return onlyPropertyPreservingHapiSpec("contractCreateFollowedByContractCallNoncesExternalization")
+                .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
+                .given(
+                        overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "false"),
+                        cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract).logged().via("txn"),
+                        withOpContext((spec, opLog) -> {
+                            HapiGetTxnRecord op = getTxnRecord("txn")
+                                    .logged()
+                                    .hasPriority(recordWith()
+                                            .contractCreateResult(resultWith()
+                                                    .contractWithNonce(
+                                                            spec.registry().getContractId(contract), null)));
+                            allRunFor(spec, op);
+                        }))
+                .when()
+                .then();
     }
 
     @Override
