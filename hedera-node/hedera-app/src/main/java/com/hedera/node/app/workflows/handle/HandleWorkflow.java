@@ -235,7 +235,7 @@ public class HandleWorkflow {
         // Therefore, we simply rerun pre-handle.
         final var storeFactory = new ReadableStoreFactory(state);
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
-        final var creator = nodeInfo.accountOf(platformEvent.getCreatorId());
+        final var creator = nodeInfo.accountOf(platformEvent.getCreatorId().id());
         final var result = preHandleWorkflow.preHandleTransaction(creator, storeFactory, accountStore, platformTxn);
 
         // If pre-handle was successful, we return the result. Otherwise, we charge the node or throw an exception.
