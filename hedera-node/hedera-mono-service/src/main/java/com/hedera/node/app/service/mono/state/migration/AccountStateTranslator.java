@@ -43,9 +43,17 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+/**
+ * Translates between the legacy {@link com.hedera.node.app.service.mono.state.merkle.MerkleAccount} and the new {@link com.hedera.hapi.node.state.token.Account} both ways.
+ */
 public class AccountStateTranslator {
 
     @NonNull
+    /**
+     * Translates a {@link com.hedera.node.app.service.mono.state.merkle.MerkleAccount} to a {@link com.hedera.hapi.node.state.token.Account}.
+     * @param account the {@link com.hedera.node.app.service.mono.state.merkle.MerkleAccount} to translate
+     * @return the translated {@link com.hedera.hapi.node.state.token.Account}
+     */
     public static Account accountFromMerkle(
             @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleAccount account) {
 
@@ -153,6 +161,12 @@ public class AccountStateTranslator {
     }
 
     @NonNull
+    /***
+     * Converts a {@link com.hedera.services.store.models.Account} to a {@link com.hedera.node.app.service.mono.state.merkle.MerkleAccount}
+     * @param accountID the {@link com.hedera.hapi.node.base.AccountID} of the account to convert
+     * @param readableAccountStore the {@link com.hedera.node.app.service.token.ReadableAccountStore} to use to retrieve the account
+     * @return the {@link com.hedera.node.app.service.mono.state.merkle.MerkleAccount} corresponding to the accountID
+     */
     public static com.hedera.node.app.service.mono.state.merkle.MerkleAccount merkleAccountFromAccount(
             @NonNull AccountID accountID, @NonNull ReadableAccountStore readableAccountStore) {
         requireNonNull(accountID);
@@ -165,6 +179,11 @@ public class AccountStateTranslator {
     }
 
     @NonNull
+    /***
+     * Converts a {@link com.hedera.hapi.node.state.token.Account} to a {@link com.hedera.node.app.service.mono.state.merkle.MerkleAccount}
+     * @param account the {@link com.hedera.hapi.node.state.token.Account} to convert
+     * @return the {@link com.hedera.node.app.service.mono.state.merkle.MerkleAccount} corresponding to the account
+     */
     public static com.hedera.node.app.service.mono.state.merkle.MerkleAccount merkleAccountFromAccount(
             @NonNull Account account) {
         requireNonNull(account);
