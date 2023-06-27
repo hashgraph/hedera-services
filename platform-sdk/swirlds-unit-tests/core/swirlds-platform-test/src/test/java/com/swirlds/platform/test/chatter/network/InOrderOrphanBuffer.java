@@ -19,6 +19,7 @@ package com.swirlds.platform.test.chatter.network;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.test.chatter.network.framework.AbstractSimulatedEventPipeline;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -27,7 +28,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * Mimics an orphan buffer using {@link CountingChatterEvent}. It buffers the events and only allows an event to emitted

@@ -36,6 +36,7 @@ import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A utility for generating random signed states.

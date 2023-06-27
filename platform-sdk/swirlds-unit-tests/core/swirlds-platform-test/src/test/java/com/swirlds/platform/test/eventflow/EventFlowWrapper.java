@@ -36,6 +36,7 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.test.consensus.ConsensusUtils;
 import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,7 +47,6 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * Provides methods to feeding inputs to the various classes used to route events through the system in support of unit

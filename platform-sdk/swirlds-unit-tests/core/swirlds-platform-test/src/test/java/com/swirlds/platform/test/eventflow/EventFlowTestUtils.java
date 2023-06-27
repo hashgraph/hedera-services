@@ -22,11 +22,11 @@ import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.source.EventSource;
 import com.swirlds.platform.test.event.source.StandardEventSource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Supplier;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * Utility functions for {@link EventFlowTests}

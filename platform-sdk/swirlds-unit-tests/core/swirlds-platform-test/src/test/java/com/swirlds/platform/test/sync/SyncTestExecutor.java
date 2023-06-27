@@ -30,6 +30,7 @@ import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.ShuffledEventEmitter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
@@ -40,7 +41,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * This class executes a single sync between two {@link SyncNode} instances. It defines the high level structure and

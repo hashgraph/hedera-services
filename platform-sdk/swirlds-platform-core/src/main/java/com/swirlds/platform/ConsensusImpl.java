@@ -1451,12 +1451,12 @@ public class ConsensusImpl implements Consensus {
     }
 
     /**
-     * The first witness in round r that is a self-ancestor of x, where r is the round of the last event by m that is
-     * seen by x (function from SWIRLDS-TR-2020-01). This result is not memoized.
+     * The first witness in round r that is a self-ancestor of x, where r is the round of the last event by the member
+     * at index m that is seen by x (function from SWIRLDS-TR-2020-01). This result is not memoized.
      *
      * @param x the event being queried
      * @param m the index of the member ID of the creator
-     * @return firstSelfWitnessS(lastSee(x, m)), which is the first witness in round r that is a self-ancestor of x,
+     * @return firstSelfWitnessS(lastSee ( x, m)), which is the first witness in round r that is a self-ancestor of x,
      * where r is the round of the last event by the member at index m that is seen by x, or null if none
      */
     private EventImpl firstSee(EventImpl x, int m) {
