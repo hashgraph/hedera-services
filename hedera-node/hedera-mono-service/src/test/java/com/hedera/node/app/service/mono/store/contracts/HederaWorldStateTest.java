@@ -862,6 +862,50 @@ class HederaWorldStateTest {
         assertEquals(0, subject.getContractNonces().size());
     }
 
+    @Test
+    void updaterCommitShouldNotTrackContractNoncesWhenAccountIsNotSmartContract() {
+        givenNonNullWorldLedgers();
+        final var newAddress = contract.asEvmAddress();
+        given(dynamicProperties.isContractsNoncesExternalizationEnabled()).willReturn(true);
+        given(worldLedgers.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(newAddress)).willReturn(newAddress);
+        given(worldLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(false);
+        given(accounts.contains(any())).willReturn(true);
+        given(recordsHistorian.hasThrottleCapacityForChildTransactions()).willReturn(true);
+
+        final var actualSubject = subject.updater();
+        actualSubject.createAccount(newAddress, 1, Wei.of(balance));
+
+        actualSubject.commit();
+        final var result = subject.getContractNonces();
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void updaterCommitShouldNotTrackWhenNonceIsNotUpdated() {
+        givenNonNullWorldLedgers();
+        final var newAddress = contract.asEvmAddress();
+        given(dynamicProperties.isContractsNoncesExternalizationEnabled()).willReturn(true);
+        given(worldLedgers.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(newAddress)).willReturn(newAddress);
+        given(worldLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
+        given(accounts.contains(any())).willReturn(true);
+        given(recordsHistorian.hasThrottleCapacityForChildTransactions()).willReturn(true);
+        given(accounts.get(any(), eq(AccountProperty.ETHEREUM_NONCE))).willReturn(1L);
+        given(entityAccess.getNonce(contract.asEvmAddress())).willReturn(1L);
+        given(entityAccess.isExtant(contract.asEvmAddress())).willReturn(true);
+
+        final var actualSubject = subject.updater();
+        actualSubject.createAccount(newAddress, 1, Wei.of(balance));
+
+        actualSubject.commit();
+
+        final var result = subject.getContractNonces();
+        assertEquals(0, result.size());
+    }
+
     private void givenNonNullWorldLedgers() {
         given(worldLedgers.wrapped()).willReturn(worldLedgers);
         given(entityAccess.worldLedgers()).willReturn(worldLedgers);

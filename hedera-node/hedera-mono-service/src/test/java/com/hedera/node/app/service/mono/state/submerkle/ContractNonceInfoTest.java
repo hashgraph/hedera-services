@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.submerkle.ContractNonceInfo.MISSING_CONTRACT_NONCE_INFO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
@@ -117,8 +118,11 @@ public class ContractNonceInfoTest {
     void hashCodeAndEqualsWork() {
         final var subject = new ContractNonceInfo(contractId, nonce);
         final var subject2 = new ContractNonceInfo(contractId, nonce);
+        final var subject3 = new EntityId(shard, realm, num);
 
         assertEquals(subject, subject2);
         assertEquals(subject.hashCode(), subject2.hashCode());
+        assertNotEquals(subject, subject3);
+        assertNotEquals(subject, null);
     }
 }
