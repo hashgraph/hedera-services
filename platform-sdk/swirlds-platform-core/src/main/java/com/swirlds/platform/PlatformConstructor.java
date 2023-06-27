@@ -238,8 +238,8 @@ public final class PlatformConstructor {
                 eventStreamManager,
                 stateHashSignQueue,
                 waitForEventDurability,
-                platformStatusStateMachine,
                 enterFreezePeriod,
+                platformStatusStateMachine,
                 roundAppliedToStateConsumer,
                 softwareVersion);
     }

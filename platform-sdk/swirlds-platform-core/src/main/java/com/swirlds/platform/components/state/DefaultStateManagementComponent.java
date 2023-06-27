@@ -35,11 +35,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.payloads.InsufficientSignaturesPayload;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
-import com.swirlds.platform.components.state.output.IssConsumer;
-import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
-import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
-import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
-import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
+import com.swirlds.platform.components.state.output.*;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionTypedHandler;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionTypedHandler;
 import com.swirlds.platform.crypto.PlatformSigner;
@@ -55,16 +51,7 @@ import com.swirlds.platform.state.SignatureTransmitter;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.IssHandler;
-import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.state.signed.SignedStateFileManager;
-import com.swirlds.platform.state.signed.SignedStateGarbageCollector;
-import com.swirlds.platform.state.signed.SignedStateHasher;
-import com.swirlds.platform.state.signed.SignedStateInfo;
-import com.swirlds.platform.state.signed.SignedStateManager;
-import com.swirlds.platform.state.signed.SignedStateMetrics;
-import com.swirlds.platform.state.signed.SignedStateSentinel;
-import com.swirlds.platform.state.signed.SourceOfSignedState;
+import com.swirlds.platform.state.signed.*;
 import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -201,8 +188,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         Objects.requireNonNull(platformStatusStateMachine);
 
         this.signer = signer;
-        this.signatureTransmitter = new SignatureTransmitter(
-                prioritySystemTransactionSubmitter, platformStatusStateMachine::getCurrentStatus);
+        this.signatureTransmitter =
+                new SignatureTransmitter(prioritySystemTransactionSubmitter, platformStatusStateMachine);
         this.signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
         this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);

@@ -164,8 +164,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      * @param stateHashSignQueue         the queue thread that handles hashing and collecting signatures of new
      *                                   self-signed states
      * @param waitForEventDurability     a method that blocks until an event becomes durable.
-     * @param platformStatusStateMachine the state machine that manages the platform status
      * @param enterFreezePeriod          puts the system in a freeze state when executed
+     * @param platformStatusStateMachine the state machine that manages the platform status
      * @param softwareVersion            the current version of the software
      */
     public ConsensusRoundHandler(
@@ -177,8 +177,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             @NonNull final EventStreamManager<EventImpl> eventStreamManager,
             @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
             @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
-            @NonNull final PlatformStatusStateMachine platformStatusStateMachine,
             @NonNull final Runnable enterFreezePeriod,
+            @NonNull final PlatformStatusStateMachine platformStatusStateMachine,
             @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
 
