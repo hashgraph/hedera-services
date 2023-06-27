@@ -203,8 +203,10 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                 sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
             }
 
-            final var createdNonces = worldState.getContractNonces();
-            result.setContractNonces(createdNonces);
+            if (properties.isContractsNoncesExternalizationEnabled()) {
+                final var createdNonces = worldState.getContractNonces();
+                result.setContractNonces(createdNonces);
+            }
         }
         recordService.externaliseEvmCallTransaction(result);
     }

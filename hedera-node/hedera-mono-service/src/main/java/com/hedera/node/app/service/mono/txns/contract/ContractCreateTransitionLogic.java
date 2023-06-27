@@ -229,8 +229,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         final var createdContracts = worldState.getCreatedContractIds();
         result.setCreatedContracts(createdContracts);
 
-        final var createdNonces = worldState.getContractNonces();
-        result.setContractNonces(createdNonces);
+        if (properties.isContractsNoncesExternalizationEnabled()) {
+            final var createdNonces = worldState.getContractNonces();
+            result.setContractNonces(createdNonces);
+        }
 
         if (!result.isSuccessful()) {
             worldState.reclaimContractId();

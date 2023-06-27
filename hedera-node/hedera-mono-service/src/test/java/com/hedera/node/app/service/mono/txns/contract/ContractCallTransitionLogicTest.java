@@ -179,6 +179,7 @@ class ContractCallTransitionLogicTest {
     void verifyExternaliseContractResultCall() {
         // setup:
         givenValidTxnCtx();
+        given(properties.isContractsNoncesExternalizationEnabled()).willReturn(true);
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         given(txnCtx.accessor()).willReturn(accessor);
@@ -220,6 +221,7 @@ class ContractCallTransitionLogicTest {
         InOrder inOrder = Mockito.inOrder(worldState);
         // setup:
         givenValidTxnCtx();
+        given(properties.isContractsNoncesExternalizationEnabled()).willReturn(true);
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         // and:
@@ -572,6 +574,7 @@ class ContractCallTransitionLogicTest {
     void verifyAccountStoreNotQueriedForTokenAddress() {
         // setup:
         givenValidTxnCtx();
+        given(properties.isContractsNoncesExternalizationEnabled()).willReturn(true);
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         given(txnCtx.accessor()).willReturn(accessor);
@@ -620,6 +623,7 @@ class ContractCallTransitionLogicTest {
                         .setFunctionParameters(functionParams)
                         .setContractID(target));
         contractCallTxn = op.build();
+        given(properties.isContractsNoncesExternalizationEnabled()).willReturn(true);
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
