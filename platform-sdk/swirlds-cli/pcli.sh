@@ -66,7 +66,7 @@ SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit ; pwd -P )"
 MAIN_CLASS_NAME='com.swirlds.cli.PlatformCli'
 
 PYTHON_INSTALLED=true
-python3 --version >/dev/null 2>&1 || COLOR=false
+python3 --version >/dev/null 2>&1 || PYTHON_INSTALLED=false
 
 COLOR=false
 COLOR_LOGS_PATH="${SCRIPT_PATH}/color-logs.py"
@@ -170,17 +170,20 @@ if [[ "$JVM_CLASSPATH" = '' ]]; then
   exit 1
 fi
 
+run () {
+  java "${JVM_ARGS[@]}" -cp "${JVM_CLASSPATH}" $MAIN_CLASS_NAME "${PROGRAM_ARGS[@]}"
+}
+
 if [[ "$COLOR" = true ]]; then
-  if [[ "$SQUELCH_SPAM" ]]; then
-    java "${JVM_ARGS[@]}" -cp "${JVM_CLASSPATH}" $MAIN_CLASS_NAME "${PROGRAM_ARGS[@]}" 2>&1 | $SQUELCH_SPAM_PATH | $COLOR_LOGS_PATH
+  if [[ "$SQUELCH_SPAM" = true ]]; then
+    run 2>&1 | $SQUELCH_SPAM_PATH | $COLOR_LOGS_PATH
   else
-    java "${JVM_ARGS[@]}" -cp "${JVM_CLASSPATH}" $MAIN_CLASS_NAME "${PROGRAM_ARGS[@]}" | $COLOR_LOGS_PATH
+    run | $COLOR_LOGS_PATH
   fi
 else
-  if [[ "$SQUELCH_SPAM" ]]; then
-    java "${JVM_ARGS[@]}" -cp "${JVM_CLASSPATH}" $MAIN_CLASS_NAME "${PROGRAM_ARGS[@]}" 2>&1 | $SQUELCH_SPAM_PATH
+  if [[ "$SQUELCH_SPAM" = true ]]; then
+    run 2>&1 | $SQUELCH_SPAM_PATH
   else
-    java "${JVM_ARGS[@]}" -cp "${JVM_CLASSPATH}" $MAIN_CLASS_NAME "${PROGRAM_ARGS[@]}"
+    run
   fi
 fi
-
