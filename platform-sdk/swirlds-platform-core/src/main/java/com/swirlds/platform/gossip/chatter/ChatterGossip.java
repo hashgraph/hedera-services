@@ -30,6 +30,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
@@ -135,7 +136,7 @@ public class ChatterGossip extends AbstractGossip {
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
      * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
-     * @param announceFallenBehind          a method which announces that this node has fallen behind
+     * @param platformStatusStateMachine    the state machine that manages platform status
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
@@ -162,7 +163,7 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final EventLinker eventLinker,
-            @NonNull final Runnable announceFallenBehind,
+            @NonNull final PlatformStatusStateMachine platformStatusStateMachine,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
         super(
@@ -180,7 +181,7 @@ public class ChatterGossip extends AbstractGossip {
                 eventMapper,
                 eventIntakeMetrics,
                 eventObserverDispatcher,
-                announceFallenBehind,
+                platformStatusStateMachine,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
 
@@ -379,7 +380,7 @@ public class ChatterGossip extends AbstractGossip {
                 addressBook,
                 selfId,
                 topology.getConnectionGraph(),
-                announceFallenBehind,
+                platformStatusStateMachine,
                 () -> getReconnectController().start(),
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }

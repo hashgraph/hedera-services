@@ -60,7 +60,6 @@ import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.common.system.status.SyncPlatformStatusStateMachine;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
-import com.swirlds.common.system.status.actions.FallenBehindAction;
 import com.swirlds.common.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.common.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -634,7 +633,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     eventMapper,
                     eventIntakeMetrics,
                     eventLinker,
-                    this::announceFallenBehind,
+                    platformStatusStateMachine,
                     this::loadReconnectState,
                     this::clearAllPipelines);
 
@@ -662,13 +661,6 @@ public class SwirldsPlatform implements Platform, Startable {
         GuiPlatformAccessor.getInstance().setShadowGraph(selfId, shadowGraph);
         GuiPlatformAccessor.getInstance().setStateManagementComponent(selfId, stateManagementComponent);
         GuiPlatformAccessor.getInstance().setConsensusReference(selfId, consensusRef);
-    }
-
-    /**
-     * Notifies the platform status machine that the node has fallen behind.
-     */
-    private void announceFallenBehind() {
-        platformStatusStateMachine.processStatusAction(new FallenBehindAction());
     }
 
     /**

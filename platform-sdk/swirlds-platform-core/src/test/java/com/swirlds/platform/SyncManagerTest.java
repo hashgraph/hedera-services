@@ -16,20 +16,11 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.system.EventCreationRuleResponse.CREATE;
-import static com.swirlds.common.system.EventCreationRuleResponse.DONT_CREATE;
-import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
+import static com.swirlds.common.system.EventCreationRuleResponse.*;
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -38,6 +29,7 @@ import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEvent;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
@@ -133,7 +125,12 @@ public class SyncManagerTest {
                     criticalQuorum,
                     hashgraph.getAddressBook(),
                     new FallenBehindManagerImpl(
-                            addressBook, selfId, connectionGraph, () -> {}, () -> {}, reconnectConfig),
+                            addressBook,
+                            selfId,
+                            connectionGraph,
+                            mock(PlatformStatusStateMachine.class),
+                            () -> {},
+                            reconnectConfig),
                     eventConfig);
         }
     }

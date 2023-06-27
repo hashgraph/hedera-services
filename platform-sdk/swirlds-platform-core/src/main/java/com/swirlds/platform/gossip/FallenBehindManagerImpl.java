@@ -21,6 +21,8 @@ import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
+import com.swirlds.common.system.status.actions.FallenBehindAction;
 import com.swirlds.platform.network.RandomGraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -48,9 +50,9 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
     private final Set<NodeId> notYetReportFallenBehind;
 
     /**
-     * A runnable which announces to the platform that this node has fallen behind
+     * The state machine that manages platform status
      */
-    private final Runnable announceFallenBehind;
+    private final PlatformStatusStateMachine platformStatusStateMachine;
 
     /** Called when the status becomes fallen behind */
     private final Runnable fallenBehindCallback;
@@ -63,7 +65,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final RandomGraph connectionGraph,
-            @NonNull final Runnable announceFallenBehind,
+            @NonNull final PlatformStatusStateMachine platformStatusStateMachine,
             @NonNull final Runnable fallenBehindCallback,
             @NonNull final ReconnectConfig config) {
         Objects.requireNonNull(addressBook, "addressBook");
@@ -79,7 +81,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
         for (final int neighbor : neighbors) {
             allNeighbors.add(addressBook.getNodeId(neighbor));
         }
-        this.announceFallenBehind = Objects.requireNonNull(announceFallenBehind);
+        this.platformStatusStateMachine = Objects.requireNonNull(platformStatusStateMachine);
         this.fallenBehindCallback =
                 Objects.requireNonNull(fallenBehindCallback, "fallenBehindCallback must not be null");
         this.config = Objects.requireNonNull(config, "config must not be null");
@@ -98,7 +100,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
             notYetReportFallenBehind.remove(id);
             numReportFallenBehind++;
             if (!previouslyFallenBehind && hasFallenBehind()) {
-                announceFallenBehind.run();
+                platformStatusStateMachine.processStatusAction(new FallenBehindAction());
                 fallenBehindCallback.run();
             }
         }

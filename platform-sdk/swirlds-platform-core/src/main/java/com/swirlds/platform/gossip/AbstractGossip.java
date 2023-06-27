@@ -31,6 +31,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -104,9 +105,9 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected final ReconnectMetrics reconnectMetrics;
 
     /**
-     * A runnable that announces to the platform that this node has fallen behind.
+     * The state machine that manages platform status
      */
-    protected final Runnable announceFallenBehind;
+    protected final PlatformStatusStateMachine platformStatusStateMachine;
 
     protected final List<Startable> thingsToStart = new ArrayList<>();
 
@@ -130,7 +131,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
-     * @param announceFallenBehind          a method which announces that this node has fallen behind
+     * @param platformStatusStateMachine    the state machine that manages platform status
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
@@ -149,14 +150,14 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
-            @NonNull final Runnable announceFallenBehind,
+            @NonNull final PlatformStatusStateMachine platformStatusStateMachine,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
-        this.announceFallenBehind = Objects.requireNonNull(announceFallenBehind);
+        this.platformStatusStateMachine = Objects.requireNonNull(platformStatusStateMachine);
 
         threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         criticalQuorum = buildCriticalQuorum();

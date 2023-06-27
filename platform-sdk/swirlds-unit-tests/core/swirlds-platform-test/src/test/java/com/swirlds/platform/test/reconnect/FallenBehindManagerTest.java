@@ -17,10 +17,12 @@
 package com.swirlds.platform.test.reconnect;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.PlatformStatusStateMachine;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
@@ -46,13 +48,12 @@ class FallenBehindManagerTest {
             addressBook,
             selfId,
             graph,
-            platformNotification::incrementAndGet,
+            mock(PlatformStatusStateMachine.class),
             fallenBehindNotification::incrementAndGet,
             config);
 
     @Test
     void test() {
-
         assertFallenBehind(false, 0, "default should be none report fallen behind");
 
         // node 1 reports fallen behind
