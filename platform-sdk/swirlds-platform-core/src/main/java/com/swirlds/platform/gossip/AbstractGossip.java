@@ -44,6 +44,7 @@ import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.EventTaskCreator;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
@@ -84,6 +85,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     private static final Logger logger = LogManager.getLogger(AbstractGossip.class);
 
     private LifecyclePhase lifecyclePhase = LifecyclePhase.NOT_STARTED;
+    private final ThreadConfig threadConfig;
 
     protected final PlatformContext platformContext;
     protected final AddressBook addressBook;
@@ -151,6 +153,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         this.selfId = Objects.requireNonNull(selfId);
         this.updatePlatformStatus = Objects.requireNonNull(updatePlatformStatus);
 
+        threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         criticalQuorum = buildCriticalQuorum();
         eventObserverDispatcher.addObserver(criticalQuorum);
 
@@ -184,7 +187,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 socketFactory,
                 inboundConnectionHandler::handle);
         thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
-                .setPriority(settings.getThreadPrioritySync())
+                .setPriority(threadConfig.threadPrioritySync())
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("connectionServer")
