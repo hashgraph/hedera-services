@@ -64,7 +64,7 @@ public class MonoServicesMain implements SwirldMain {
     @Override
     public void init(final Platform ignore, final NodeId nodeId) {
         try {
-            app = APPS.get(nodeId.getIdAsInt());
+            app = APPS.get(nodeId);
             initApp();
         } catch (final IllegalArgumentException iae) {
             log.error("No app present for {}", nodeId, iae);

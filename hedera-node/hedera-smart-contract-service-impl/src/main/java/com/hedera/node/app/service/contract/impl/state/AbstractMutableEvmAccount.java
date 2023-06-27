@@ -42,7 +42,7 @@ import org.hyperledger.besu.evm.account.MutableAccount;
  *     <li>{@link MutableAccount#getUpdatedStorage()} - The {@link EvmFrameState} manages transaction boundaries.</li>
  *  </ul>
  */
-public abstract class AbstractMutableEvmAccount implements MutableAccount, EvmAccount {
+public abstract class AbstractMutableEvmAccount implements MutableAccount, EvmAccount, HederaEvmAccount {
     /**
      * Unlike in Besu, we don't store the address hash in state (c.f. {@link Account#getAddressHash()} javadoc);
      * and also don't support {@link org.hyperledger.besu.evm.worldstate.WorldState#streamAccounts(Bytes32, int)}. So
@@ -69,7 +69,7 @@ public abstract class AbstractMutableEvmAccount implements MutableAccount, EvmAc
     /**
      * Besu uses this method to do zero-sum balance changes, but since the {@link ContractService} neither
      * owns account state nor is aware of receiver signature requirements, it's more sensible to require
-     * message call processors to use {@link Dispatch#transferValue(long, long, long, VerificationStrategy)}.
+     * message call processors to use {@link Dispatch#transferWithReceiverSigCheck(long, long, long, VerificationStrategy)}.
      *
      * @param value the amount to set
      * @throws UnsupportedOperationException always

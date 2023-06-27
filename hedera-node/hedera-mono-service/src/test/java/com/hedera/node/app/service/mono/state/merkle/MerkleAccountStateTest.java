@@ -426,13 +426,6 @@ class MerkleAccountStateTest {
     }
 
     @Test
-    void equalsWorksForProxy() {
-        final var otherSubject = subject.copy();
-        otherSubject.setProxy(otherProxy);
-        assertNotEquals(subject, otherSubject);
-    }
-
-    @Test
     void equalsWorksForAlias() {
         final var otherSubject = subject.copy();
         otherSubject.setAlias(otherAlias);

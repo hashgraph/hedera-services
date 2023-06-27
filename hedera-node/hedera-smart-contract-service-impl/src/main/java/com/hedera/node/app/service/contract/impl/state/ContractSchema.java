@@ -1,0 +1,58 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.service.contract.impl.state;
+
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.contract.Bytecode;
+import com.hedera.hapi.node.state.contract.SlotKey;
+import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.StateDefinition;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
+
+/**
+ * Defines the schema for the contract service's state.
+ */
+public class ContractSchema extends Schema {
+    public static final String STORAGE_KEY = "STORAGE";
+    public static final String BYTECODE_KEY = "BYTECODE";
+    private static final int MAX_BYTECODES = 50_000_000;
+    private static final int MAX_STORAGE_ENTRIES = 500_000_000;
+    private static final SemanticVersion CURRENT_VERSION =
+            SemanticVersion.newBuilder().minor(40).build();
+
+    public ContractSchema() {
+        super(CURRENT_VERSION);
+    }
+
+    @NonNull
+    @Override
+    @SuppressWarnings("rawtypes")
+    public Set<StateDefinition> statesToCreate() {
+        return Set.of(storageDef(), bytecodeDef());
+    }
+
+    private @NonNull StateDefinition<SlotKey, SlotValue> storageDef() {
+        return StateDefinition.onDisk(STORAGE_KEY, SlotKey.PROTOBUF, SlotValue.PROTOBUF, MAX_STORAGE_ENTRIES);
+    }
+
+    private @NonNull StateDefinition<EntityNumber, Bytecode> bytecodeDef() {
+        return StateDefinition.onDisk(BYTECODE_KEY, EntityNumber.PROTOBUF, Bytecode.PROTOBUF, MAX_BYTECODES);
+    }
+}

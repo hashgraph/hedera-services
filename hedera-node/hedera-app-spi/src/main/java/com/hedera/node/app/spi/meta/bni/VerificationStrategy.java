@@ -34,7 +34,7 @@ import java.util.List;
  *
  * <p>Because it possible for the {@code tokenTransfer()} system contract to need to amend
  * its dispatched transaction based on the results of signature verifications, the strategy
- * also has the option to return an amended transaction body when an .
+ * also has the option to return an amended transaction body when this occurs.
  */
 public interface VerificationStrategy {
     enum Decision {
@@ -74,6 +74,8 @@ public interface VerificationStrategy {
      * @return an amended CryptoTransfer, or null if no amendment is necessary
      */
     @Nullable
-    CryptoTransferTransactionBody maybeAmendTransfer(
-            @NonNull CryptoTransferTransactionBody transfer, List<Long> invalidSignerNumbers);
+    default CryptoTransferTransactionBody maybeAmendTransfer(
+            @NonNull CryptoTransferTransactionBody transfer, List<Long> invalidSignerNumbers) {
+        throw new UnsupportedOperationException("Default verification strategy does not amend transfers");
+    }
 }
