@@ -47,9 +47,9 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.tipset.ChildlessEventTracker;
 import com.swirlds.platform.event.tipset.TipsetEventCreator;
 import com.swirlds.platform.event.tipset.TipsetEventCreatorImpl;
-import com.swirlds.platform.event.tipset.TipsetScoreCalculator;
 import com.swirlds.platform.event.tipset.TipsetTracker;
 import com.swirlds.platform.event.tipset.TipsetUtils;
+import com.swirlds.platform.event.tipset.TipsetWeightCalculator;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
@@ -73,13 +73,13 @@ class TipsetEventCreatorImplTests {
      * @param nodeId                the node ID of the simulated node
      * @param tipsetTracker         tracks tipsets of events
      * @param tipsetEventCreator    the event creator for the simulated node
-     * @param tipsetScoreCalculator used to sanity check event creation logic
+     * @param tipsetWeightCalculator used to sanity check event creation logic
      */
     private record SimulatedNode(
             @NonNull NodeId nodeId,
             @NonNull TipsetTracker tipsetTracker,
             @NonNull TipsetEventCreator tipsetEventCreator,
-            @NonNull TipsetScoreCalculator tipsetScoreCalculator) {}
+            @NonNull TipsetWeightCalculator tipsetWeightCalculator) {}
 
     /**
      * Build an event creator for a node.
@@ -126,12 +126,12 @@ class TipsetEventCreatorImplTests {
             final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
 
             final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
-            final TipsetScoreCalculator tipsetScoreCalculator = new TipsetScoreCalculator(
+            final TipsetWeightCalculator tipsetWeightCalculator = new TipsetWeightCalculator(
                     platformContext, addressBook, address.getNodeId(), tipsetTracker, childlessEventTracker);
 
             eventCreators.put(
                     address.getNodeId(),
-                    new SimulatedNode(address.getNodeId(), tipsetTracker, eventCreator, tipsetScoreCalculator));
+                    new SimulatedNode(address.getNodeId(), tipsetTracker, eventCreator, tipsetWeightCalculator));
         }
 
         return eventCreators;
@@ -192,11 +192,11 @@ class TipsetEventCreatorImplTests {
         if (selfParent != null) {
             // Except for a genesis event, all other new events must have a positive advancement score.
             assertTrue(simulatedNode
-                    .tipsetScoreCalculator
-                    .addEventAndGetAdvancementScore(descriptor)
+                    .tipsetWeightCalculator
+                    .addEventAndGetAdvancementWeight(descriptor)
                     .isNonZero());
         } else {
-            simulatedNode.tipsetScoreCalculator.addEventAndGetAdvancementScore(descriptor);
+            simulatedNode.tipsetWeightCalculator.addEventAndGetAdvancementWeight(descriptor);
         }
 
         // We should see the expected transactions

@@ -36,8 +36,8 @@ import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.tipset.ChildlessEventTracker;
 import com.swirlds.platform.event.tipset.Tipset;
 import com.swirlds.platform.event.tipset.TipsetAdvancementWeight;
-import com.swirlds.platform.event.tipset.TipsetScoreCalculator;
 import com.swirlds.platform.event.tipset.TipsetTracker;
+import com.swirlds.platform.event.tipset.TipsetWeightCalculator;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,8 +49,8 @@ import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("TipsetScoreCalculator Tests")
-class TipsetScoreCalculatorTests {
+@DisplayName("TipsetWeightCalculator Tests")
+class TipsetWeightCalculatorTests {
 
     @Test
     @DisplayName("Basic Behavior Test")
@@ -77,8 +77,8 @@ class TipsetScoreCalculatorTests {
 
         final TipsetTracker builder = new TipsetTracker(addressBook);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
-        final TipsetScoreCalculator calculator =
-                new TipsetScoreCalculator(platformContext, addressBook, selfId, builder, childlessEventTracker);
+        final TipsetWeightCalculator calculator =
+                new TipsetWeightCalculator(platformContext, addressBook, selfId, builder, childlessEventTracker);
 
         List<EventDescriptor> previousParents = List.of();
         TipsetAdvancementWeight runningAdvancementScore = ZERO_ADVANCEMENT_WEIGHT;
@@ -152,7 +152,7 @@ class TipsetScoreCalculatorTests {
 
             // For events created by "this" node, check that the calculator is updated correctly.
             final TipsetAdvancementWeight advancementScoreChange =
-                    calculator.addEventAndGetAdvancementScore(fingerprint);
+                    calculator.addEventAndGetAdvancementWeight(fingerprint);
 
             assertEquals(expectedAdvancementScoreChange, advancementScoreChange);
 
@@ -207,8 +207,8 @@ class TipsetScoreCalculatorTests {
 
         final TipsetTracker tracker = new TipsetTracker(addressBook);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
-        final TipsetScoreCalculator calculator =
-                new TipsetScoreCalculator(platformContext, addressBook, nodeA, tracker, childlessEventTracker);
+        final TipsetWeightCalculator calculator =
+                new TipsetWeightCalculator(platformContext, addressBook, nodeA, tracker, childlessEventTracker);
 
         final Tipset snapshot1 = calculator.getSnapshot();
 
@@ -226,8 +226,8 @@ class TipsetScoreCalculatorTests {
         tracker.addEvent(eventD1, List.of());
         childlessEventTracker.addEvent(eventD1, List.of());
 
-        assertEquals(ZERO_ADVANCEMENT_WEIGHT, calculator.getTheoreticalAdvancementScore(List.of()));
-        assertEquals(ZERO_ADVANCEMENT_WEIGHT, calculator.addEventAndGetAdvancementScore(eventA1));
+        assertEquals(ZERO_ADVANCEMENT_WEIGHT, calculator.getTheoreticalAdvancementWeight(List.of()));
+        assertEquals(ZERO_ADVANCEMENT_WEIGHT, calculator.addEventAndGetAdvancementWeight(eventA1));
         assertSame(snapshot1, calculator.getSnapshot());
 
         // Each node creates another event. All nodes use all available other parents except the event from D.
@@ -246,8 +246,8 @@ class TipsetScoreCalculatorTests {
 
         assertEquals(
                 TipsetAdvancementWeight.of(2, 0),
-                calculator.getTheoreticalAdvancementScore(List.of(eventA1, eventB1, eventC1)));
-        assertEquals(TipsetAdvancementWeight.of(2, 0), calculator.addEventAndGetAdvancementScore(eventA2));
+                calculator.getTheoreticalAdvancementWeight(List.of(eventA1, eventB1, eventC1)));
+        assertEquals(TipsetAdvancementWeight.of(2, 0), calculator.addEventAndGetAdvancementWeight(eventA2));
 
         // This should have been enough to advance the snapshot window by 1.
         final Tipset snapshot2 = calculator.getSnapshot();
@@ -276,8 +276,8 @@ class TipsetScoreCalculatorTests {
 
         assertEquals(
                 TipsetAdvancementWeight.of(2, 0),
-                calculator.getTheoreticalAdvancementScore(List.of(eventA2, eventB2, eventC2)));
-        assertEquals(TipsetAdvancementWeight.of(2, 0), calculator.addEventAndGetAdvancementScore(eventA3));
+                calculator.getTheoreticalAdvancementWeight(List.of(eventA2, eventB2, eventC2)));
+        assertEquals(TipsetAdvancementWeight.of(2, 0), calculator.addEventAndGetAdvancementWeight(eventA3));
 
         final Tipset snapshot3 = calculator.getSnapshot();
         assertNotSame(snapshot2, snapshot3);
@@ -305,8 +305,8 @@ class TipsetScoreCalculatorTests {
 
         assertEquals(
                 TipsetAdvancementWeight.of(2, 0),
-                calculator.getTheoreticalAdvancementScore(List.of(eventA3, eventB3, eventD3)));
-        assertEquals(TipsetAdvancementWeight.of(2, 0), calculator.addEventAndGetAdvancementScore(eventA4));
+                calculator.getTheoreticalAdvancementWeight(List.of(eventA3, eventB3, eventD3)));
+        assertEquals(TipsetAdvancementWeight.of(2, 0), calculator.addEventAndGetAdvancementWeight(eventA4));
 
         final Tipset snapshot4 = calculator.getSnapshot();
         assertNotSame(snapshot3, snapshot4);
@@ -331,8 +331,8 @@ class TipsetScoreCalculatorTests {
 
         assertEquals(
                 TipsetAdvancementWeight.of(3, 0),
-                calculator.getTheoreticalAdvancementScore(List.of(eventA4, eventB4, eventC4, eventD4)));
-        assertEquals(TipsetAdvancementWeight.of(3, 0), calculator.addEventAndGetAdvancementScore(eventA5));
+                calculator.getTheoreticalAdvancementWeight(List.of(eventA4, eventB4, eventC4, eventD4)));
+        assertEquals(TipsetAdvancementWeight.of(3, 0), calculator.addEventAndGetAdvancementWeight(eventA5));
 
         final Tipset snapshot5 = calculator.getSnapshot();
         assertNotSame(snapshot4, snapshot5);
@@ -357,8 +357,8 @@ class TipsetScoreCalculatorTests {
 
         assertEquals(
                 TipsetAdvancementWeight.of(2, 0),
-                calculator.getTheoreticalAdvancementScore(List.of(eventA5, eventB5, eventC5)));
-        assertEquals(TipsetAdvancementWeight.of(2, 0), calculator.addEventAndGetAdvancementScore(eventA6));
+                calculator.getTheoreticalAdvancementWeight(List.of(eventA5, eventB5, eventC5)));
+        assertEquals(TipsetAdvancementWeight.of(2, 0), calculator.addEventAndGetAdvancementWeight(eventA6));
 
         final Tipset snapshot6 = calculator.getSnapshot();
         assertNotSame(snapshot5, snapshot6);
@@ -382,8 +382,8 @@ class TipsetScoreCalculatorTests {
 
         assertEquals(
                 TipsetAdvancementWeight.of(2, 0),
-                calculator.getTheoreticalAdvancementScore(List.of(eventA6, eventB6, eventC6)));
-        assertEquals(TipsetAdvancementWeight.of(2, 0), calculator.addEventAndGetAdvancementScore(eventA7));
+                calculator.getTheoreticalAdvancementWeight(List.of(eventA6, eventB6, eventC6)));
+        assertEquals(TipsetAdvancementWeight.of(2, 0), calculator.addEventAndGetAdvancementWeight(eventA7));
 
         final Tipset snapshot7 = calculator.getSnapshot();
         assertNotSame(snapshot6, snapshot7);
@@ -421,8 +421,8 @@ class TipsetScoreCalculatorTests {
 
         final TipsetTracker builder = new TipsetTracker(addressBook);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
-        final TipsetScoreCalculator calculator =
-                new TipsetScoreCalculator(platformContext, addressBook, nodeA, builder, childlessEventTracker);
+        final TipsetWeightCalculator calculator =
+                new TipsetWeightCalculator(platformContext, addressBook, nodeA, builder, childlessEventTracker);
 
         final Tipset snapshot1 = calculator.getSnapshot();
 
@@ -436,14 +436,14 @@ class TipsetScoreCalculatorTests {
         final EventDescriptor eventD1 = new EventDescriptor(randomHash(random), nodeD, 1);
         builder.addEvent(eventD1, List.of());
 
-        assertEquals(ZERO_ADVANCEMENT_WEIGHT, calculator.getTheoreticalAdvancementScore(List.of()));
-        assertEquals(ZERO_ADVANCEMENT_WEIGHT, calculator.addEventAndGetAdvancementScore(eventA1));
+        assertEquals(ZERO_ADVANCEMENT_WEIGHT, calculator.getTheoreticalAdvancementWeight(List.of()));
+        assertEquals(ZERO_ADVANCEMENT_WEIGHT, calculator.addEventAndGetAdvancementWeight(eventA1));
         assertSame(snapshot1, calculator.getSnapshot());
 
         // Create a node "on top of" B1.
         final EventDescriptor eventA2 = new EventDescriptor(randomHash(random), nodeA, 2);
         builder.addEvent(eventA2, List.of(eventA1, eventB1));
-        final TipsetAdvancementWeight advancement1 = calculator.addEventAndGetAdvancementScore(eventA2);
+        final TipsetAdvancementWeight advancement1 = calculator.addEventAndGetAdvancementWeight(eventA2);
         assertEquals(TipsetAdvancementWeight.of(1, 0), advancement1);
 
         // Snapshot should not have advanced.
@@ -454,7 +454,7 @@ class TipsetScoreCalculatorTests {
         // advance. Build on top of node D.
         final EventDescriptor eventA3 = new EventDescriptor(randomHash(random), nodeA, 3);
         builder.addEvent(eventA3, List.of(eventA2, eventD1));
-        final TipsetAdvancementWeight advancement2 = calculator.addEventAndGetAdvancementScore(eventA3);
+        final TipsetAdvancementWeight advancement2 = calculator.addEventAndGetAdvancementWeight(eventA3);
         assertEquals(TipsetAdvancementWeight.of(0, 1), advancement2);
 
         // Snapshot should not have advanced.
@@ -463,7 +463,7 @@ class TipsetScoreCalculatorTests {
         // Now, build on top of C. This should push us into the next snapshot.
         final EventDescriptor eventA4 = new EventDescriptor(randomHash(random), nodeA, 4);
         builder.addEvent(eventA4, List.of(eventA3, eventC1));
-        final TipsetAdvancementWeight advancement3 = calculator.addEventAndGetAdvancementScore(eventA4);
+        final TipsetAdvancementWeight advancement3 = calculator.addEventAndGetAdvancementWeight(eventA4);
         assertEquals(TipsetAdvancementWeight.of(1, 0), advancement3);
 
         final Tipset snapshot2 = calculator.getSnapshot();

@@ -39,7 +39,7 @@ class TipsetTests {
 
     private static void validateTipset(final Tipset tipset, final Map<NodeId, Long> expectedTipGenerations) {
         for (final NodeId nodeId : expectedTipGenerations.keySet()) {
-            assertEquals(expectedTipGenerations.get(nodeId), tipset.getTipGenerationForNodeId(nodeId));
+            assertEquals(expectedTipGenerations.get(nodeId), tipset.getTipGenerationForNode(nodeId));
         }
     }
 
@@ -128,8 +128,8 @@ class TipsetTests {
         for (int creator = 0; creator < 100; creator++) {
             final NodeId creatorId = addressBook.getNodeId(creator);
             assertEquals(
-                    initialTipset.getTipGenerationForNodeId(creatorId),
-                    comparisonTipset.getTipGenerationForNodeId(creatorId));
+                    initialTipset.getTipGenerationForNode(creatorId),
+                    comparisonTipset.getTipGenerationForNode(creatorId));
         }
 
         // Cause the comparison tipset to advance in a random way
@@ -148,7 +148,7 @@ class TipsetTests {
                 // Self advancements are not counted
                 continue;
             }
-            if (initialTipset.getTipGenerationForNodeId(nodeId) < comparisonTipset.getTipGenerationForNodeId(nodeId)) {
+            if (initialTipset.getTipGenerationForNode(nodeId) < comparisonTipset.getTipGenerationForNode(nodeId)) {
                 expectedAdvancementCount++;
             }
         }
@@ -186,8 +186,8 @@ class TipsetTests {
         for (int creator = 0; creator < 100; creator++) {
             final NodeId creatorId = addressBook.getNodeId(creator);
             assertEquals(
-                    initialTipset.getTipGenerationForNodeId(creatorId),
-                    comparisonTipset.getTipGenerationForNodeId(creatorId));
+                    initialTipset.getTipGenerationForNode(creatorId),
+                    comparisonTipset.getTipGenerationForNode(creatorId));
         }
 
         // Cause the comparison tipset to advance in a random way
@@ -204,7 +204,7 @@ class TipsetTests {
                 // Self advancements are not counted
                 continue;
             }
-            if (initialTipset.getTipGenerationForNodeId(nodeId) < comparisonTipset.getTipGenerationForNodeId(nodeId)) {
+            if (initialTipset.getTipGenerationForNode(nodeId) < comparisonTipset.getTipGenerationForNode(nodeId)) {
                 expectedAdvancementCount += weights.get(nodeId);
             }
         }

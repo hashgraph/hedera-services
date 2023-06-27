@@ -21,17 +21,17 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Stores a weighed tipset advancement score.
  * <p>
- * If zero stake nodes were not a thing, we could use a long as a tipset advancement score. Or, if it was ok to ignore
- * zero stake nodes, we could do the same as well. But since we don't want to allow zero sake nodes to get stale events,
- * we need to have a mechanism for separately tracking when zero stake nodes have advanced.
+ * If zero weight nodes were not a thing, we could use a long as a tipset advancement score. Or, if it was ok to ignore
+ * zero weight nodes, we could do the same as well. But since we don't want to allow zero sake nodes to get stale
+ * events, we need to have a mechanism for separately tracking when zero weight nodes have advanced.
  *
- * @param advancementWeight          the advancement weight provided by nodes with non-zero stake. Contributes to
+ * @param advancementWeight          the advancement weight provided by nodes with non-zero weight. Contributes to
  *                                   meeting the threshold required to advance the current snapshot.
- * @param zeroStakeAdvancementWeight the advancement weight provided by nodes with zero stake, this is incremented by
- *                                   one for each zero stake node that advances. Does not contribute to meeting the
- *                                   threshold required to advance the current snapshot.
+ * @param zeroWeightAdvancementCount the advancement provided by nodes with zero weight, this is incremented by one for
+ *                                   each zero weight node that advances. Does not contribute to meeting the threshold
+ *                                   required to advance the current snapshot.
  */
-public record TipsetAdvancementWeight(long advancementWeight, long zeroStakeAdvancementWeight) {
+public record TipsetAdvancementWeight(long advancementWeight, long zeroWeightAdvancementCount) {
 
     /**
      * Zero advancement weight. For convenience.
@@ -41,12 +41,12 @@ public record TipsetAdvancementWeight(long advancementWeight, long zeroStakeAdva
     /**
      * Create a new instance of a tipset advancement score
      *
-     * @param advancementWeight          the advancement weight provided by nodes with non-zero stake
-     * @param zeroStakeAdvancementWeight the advancement weight provided by nodes with zero stake
+     * @param advancementWeight          the advancement weight provided by nodes with non-zero weight
+     * @param zeroWeightAdvancementCount the number of advancing zero weight nodes
      * @return a new instance of a tipset advancement score
      */
-    public static TipsetAdvancementWeight of(final long advancementWeight, final long zeroStakeAdvancementWeight) {
-        return new TipsetAdvancementWeight(advancementWeight, zeroStakeAdvancementWeight);
+    public static TipsetAdvancementWeight of(final long advancementWeight, final long zeroWeightAdvancementCount) {
+        return new TipsetAdvancementWeight(advancementWeight, zeroWeightAdvancementCount);
     }
 
     /**
@@ -59,7 +59,7 @@ public record TipsetAdvancementWeight(long advancementWeight, long zeroStakeAdva
     public TipsetAdvancementWeight minus(@NonNull final TipsetAdvancementWeight that) {
         return new TipsetAdvancementWeight(
                 advancementWeight - that.advancementWeight,
-                zeroStakeAdvancementWeight - that.zeroStakeAdvancementWeight);
+                zeroWeightAdvancementCount - that.zeroWeightAdvancementCount);
     }
 
     /**
@@ -72,12 +72,12 @@ public record TipsetAdvancementWeight(long advancementWeight, long zeroStakeAdva
     public TipsetAdvancementWeight plus(@NonNull final TipsetAdvancementWeight that) {
         return new TipsetAdvancementWeight(
                 advancementWeight + that.advancementWeight,
-                zeroStakeAdvancementWeight + that.zeroStakeAdvancementWeight);
+                zeroWeightAdvancementCount + that.zeroWeightAdvancementCount);
     }
 
     /**
      * Check if this weight is greater than the given weight. First {@link #advancementWeight()} is compared. If that is
-     * equal, then {@link #zeroStakeAdvancementWeight()} breaks the tie.
+     * equal, then {@link #zeroWeightAdvancementCount()} breaks the tie.
      *
      * @param that the weight to compare to
      * @return true if this weight is greater than the given weight
@@ -85,13 +85,13 @@ public record TipsetAdvancementWeight(long advancementWeight, long zeroStakeAdva
     public boolean isGreaterThan(@NonNull final TipsetAdvancementWeight that) {
         return advancementWeight > that.advancementWeight
                 || (advancementWeight == that.advancementWeight
-                        && zeroStakeAdvancementWeight > that.zeroStakeAdvancementWeight);
+                        && zeroWeightAdvancementCount > that.zeroWeightAdvancementCount);
     }
 
     /**
      * Check if this weight is zero.
      */
     public boolean isNonZero() {
-        return advancementWeight != 0 || zeroStakeAdvancementWeight != 0;
+        return advancementWeight != 0 || zeroWeightAdvancementCount != 0;
     }
 }

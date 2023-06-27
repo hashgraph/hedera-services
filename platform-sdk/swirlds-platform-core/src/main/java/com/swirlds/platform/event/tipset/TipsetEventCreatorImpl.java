@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.event.tipset;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.EventConstants.CREATOR_ID_UNDEFINED;
 import static com.swirlds.platform.event.EventConstants.GENERATION_UNDEFINED;
 import static com.swirlds.platform.event.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
@@ -45,11 +46,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Responsible for creating new events using the tipset algorithm.
  */
 public class TipsetEventCreatorImpl implements TipsetEventCreator {
+
+    private static final Logger logger = LogManager.getLogger(TipsetEventCreatorImpl.class);
 
     private final Cryptography cryptography;
     private final Time time;
@@ -57,7 +62,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     private final Signer signer;
     private final NodeId selfId;
     private final TipsetTracker tipsetTracker;
-    private final TipsetScoreCalculator tipsetScoreCalculator;
+    private final TipsetWeightCalculator tipsetWeightCalculator;
     private final ChildlessEventTracker childlessOtherEventTracker;
     private final TransactionSupplier transactionSupplier;
     private final SoftwareVersion softwareVersion;
@@ -125,7 +130,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         tipsetMetrics = new TipsetMetrics(platformContext, addressBook);
         tipsetTracker = new TipsetTracker(addressBook);
         childlessOtherEventTracker = new ChildlessEventTracker();
-        tipsetScoreCalculator = new TipsetScoreCalculator(
+        tipsetWeightCalculator = new TipsetWeightCalculator(
                 platformContext, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
     }
 
@@ -176,7 +181,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     @Override
     @Nullable
     public GossipEvent maybeCreateEvent() {
-        final long bullyScore = tipsetScoreCalculator.getMaxBullyScore();
+        final long bullyScore = tipsetWeightCalculator.getMaxBullyScore();
         tipsetMetrics.getBullyScoreMetric().update(bullyScore);
 
         // Never bother with anti-bullying techniques if we have a bully score of 1. We are pretty much guaranteed
@@ -186,28 +191,28 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         if (beNiceToNerdChance > 0 && random.nextDouble() < beNiceToNerdChance) {
             return createEventToReduceBullyScore();
         } else {
-            return createEventByOptimizingTipsetScore();
+            return createEventByOptimizingAdvancementWeight();
         }
     }
 
     /**
-     * Create an event using the other parent with the best tipset score.
+     * Create an event using the other parent with the best tipset advancement weight.
      *
      * @return the new event, or null if it is not legal to create a new event
      */
     @Nullable
-    private GossipEvent createEventByOptimizingTipsetScore() {
+    private GossipEvent createEventByOptimizingAdvancementWeight() {
         final List<EventDescriptor> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
         Collections.shuffle(possibleOtherParents, random);
 
         EventDescriptor bestOtherParent = null;
-        TipsetAdvancementWeight bestScore = ZERO_ADVANCEMENT_WEIGHT;
+        TipsetAdvancementWeight bestAdvancementWeight = ZERO_ADVANCEMENT_WEIGHT;
         for (final EventDescriptor otherParent : possibleOtherParents) {
-            final TipsetAdvancementWeight parentScore =
-                    tipsetScoreCalculator.getTheoreticalAdvancementScore(List.of(otherParent));
-            if (parentScore.isGreaterThan(bestScore)) {
+            final TipsetAdvancementWeight advancementWeight =
+                    tipsetWeightCalculator.getTheoreticalAdvancementWeight(List.of(otherParent));
+            if (advancementWeight.isGreaterThan(bestAdvancementWeight)) {
                 bestOtherParent = otherParent;
-                bestScore = parentScore;
+                bestAdvancementWeight = advancementWeight;
             }
         }
 
@@ -239,21 +244,28 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         // First, figure out who is a nerd and sum up all bully scores.
         int bullyScoreSum = 0;
         final List<Integer> bullyScores = new ArrayList<>(possibleOtherParents.size());
-        for (final EventDescriptor nerd : possibleOtherParents) {
-            final int bullyScore = tipsetScoreCalculator.getBullyScoreForNode(nerd.getCreator());
+        for (final EventDescriptor possibleNerd : possibleOtherParents) {
+            final int bullyScore = tipsetWeightCalculator.getBullyScoreForNode(possibleNerd.getCreator());
 
-            final TipsetAdvancementWeight tipsetScore =
-                    tipsetScoreCalculator.getTheoreticalAdvancementScore(List.of(nerd));
+            final TipsetAdvancementWeight advancementWeight =
+                    tipsetWeightCalculator.getTheoreticalAdvancementWeight(List.of(possibleNerd));
 
-            if (bullyScore > 1 && tipsetScore.isNonZero()) {
-                // Note: if bully score is greater than 1, it is mathematically not possible
-                // for the advancement score to be zero. But in the interest in extreme caution,
-                // we check anyway, since it is very important never to create events with
-                // an advancement score of zero.
-
-                nerds.add(nerd);
-                bullyScores.add(bullyScore);
-                bullyScoreSum += bullyScore;
+            if (bullyScore > 1) {
+                if (advancementWeight.isNonZero()) {
+                    nerds.add(possibleNerd);
+                    bullyScores.add(bullyScore);
+                    bullyScoreSum += bullyScore;
+                } else {
+                    // Note: if bully score is greater than 1, it is mathematically not possible
+                    // for the advancement score to be zero. But in the interest in extreme caution,
+                    // we check anyway, since it is very important never to create events with
+                    // an advancement score of zero.
+                    logger.error(
+                            EXCEPTION.getMarker(),
+                            "bully score is {} but advancement score is zero for {}",
+                            bullyScore,
+                            possibleNerd);
+                }
             }
         }
 
@@ -261,6 +273,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
             // Note: this should be impossible, since we will not enter this method in the first
             // place if there are no nerds. But better to be safe than sorry, and returning null
             // is an acceptable way of saying "I can't create an event right now".
+            logger.error(EXCEPTION.getMarker(), "failed to locate eligible nerd to use as a parent");
             return null;
         }
 
@@ -299,9 +312,11 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
 
         final EventDescriptor descriptor = buildDescriptor(event);
         tipsetTracker.addEvent(descriptor, parentDescriptors);
-        final TipsetAdvancementWeight score = tipsetScoreCalculator.addEventAndGetAdvancementScore(descriptor);
-        final double scoreRatio = score.advancementWeight() / (double) tipsetScoreCalculator.getMaximumPossibleScore();
-        tipsetMetrics.getTipsetScoreMetric().update(scoreRatio);
+        final TipsetAdvancementWeight advancementWeight =
+                tipsetWeightCalculator.addEventAndGetAdvancementWeight(descriptor);
+        final double weightRatio = advancementWeight.advancementWeight()
+                / (double) tipsetWeightCalculator.getMaximumPossibleAdvancementWeight();
+        tipsetMetrics.getTipsetAdvancementMetric().update(weightRatio);
 
         lastSelfEvent = descriptor;
         lastSelfEventCreationTime = event.getHashedData().getTimeCreated();

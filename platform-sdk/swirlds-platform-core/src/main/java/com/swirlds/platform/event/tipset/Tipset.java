@@ -92,17 +92,6 @@ public class Tipset {
     }
 
     /**
-     * Get the tip generation for a given node ID.
-     *
-     * @param nodeId the node ID in question
-     * @return the tip generation for the node ID
-     */
-    public long getTipGenerationForNodeId(@NonNull final NodeId nodeId) {
-        final int index = addressBook.getIndexOfNodeId(nodeId);
-        return tips[index];
-    }
-
-    /**
      * Get the tip generation for a given node
      *
      * @param nodeId the node in question
@@ -142,22 +131,22 @@ public class Tipset {
      *
      * <p>
      * A tip advancement is defined as an increase in the tip generation for a node ID. The exception to this rule is
-     * that an increase in generation for the target node ID is never counted as a tip advancement. The tip advancement
-     * count is defined as the sum of all tip advancements after being appropriately weighted.
+     * that an increase in generation for the self ID is never counted as a tip advancement. The tip advancement
+     * weight is defined as the sum of all remaining tip advancements after being appropriately weighted.
      * </p>
      *
      * <p>
      * Advancements of non-zero stake nodes are tracked via {@link TipsetAdvancementWeight#advancementWeight()}, while
-     * advancements of zero stake nodes are tracked via {@link TipsetAdvancementWeight#zeroStakeAdvancementWeight()}.
+     * advancements of zero stake nodes are tracked via {@link TipsetAdvancementWeight#zeroWeightAdvancementCount()}.
      *
-     * @param selfId compute the advancement count relative to this node ID
+     * @param selfId compute the advancement weight relative to this node ID
      * @param that   the tipset to compare to
      * @return the tipset advancement weight
      */
     @NonNull
     public TipsetAdvancementWeight getTipAdvancementWeight(@NonNull final NodeId selfId, @NonNull final Tipset that) {
-        long nonzeroCount = 0;
-        long zeroCount = 0;
+        long nonZeroWeight = 0;
+        long zeroWeightCount = 0;
 
         final int selfIndex = addressBook.getIndexOfNodeId(selfId);
         for (int index = 0; index < tips.length; index++) {
@@ -171,14 +160,14 @@ public class Tipset {
                 final Address address = addressBook.getAddress(nodeId);
 
                 if (address.getWeight() == 0) {
-                    zeroCount += 1;
+                    zeroWeightCount += 1;
                 } else {
-                    nonzeroCount += address.getWeight();
+                    nonZeroWeight += address.getWeight();
                 }
             }
         }
 
-        return TipsetAdvancementWeight.of(nonzeroCount, zeroCount);
+        return TipsetAdvancementWeight.of(nonZeroWeight, zeroWeightCount);
     }
 
     /**

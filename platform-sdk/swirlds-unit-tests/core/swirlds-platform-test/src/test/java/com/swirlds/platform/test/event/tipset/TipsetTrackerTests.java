@@ -50,8 +50,8 @@ class TipsetTrackerTests {
 
         for (final Address address : addressBook) {
             assertEquals(
-                    expected.getTipGenerationForNodeId(address.getNodeId()),
-                    actual.getTipGenerationForNodeId(address.getNodeId()));
+                    expected.getTipGenerationForNode(address.getNodeId()),
+                    actual.getTipGenerationForNode(address.getNodeId()));
         }
     }
 
