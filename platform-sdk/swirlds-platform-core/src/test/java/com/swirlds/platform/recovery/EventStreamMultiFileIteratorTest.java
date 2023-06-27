@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
@@ -62,10 +61,6 @@ class EventStreamMultiFileIteratorTest {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-        SettingsCommon.maxTransactionBytesPerEvent = Integer.MAX_VALUE;
-        SettingsCommon.maxTransactionCountPerEvent = Integer.MAX_VALUE;
-        SettingsCommon.transactionMaxBytes = Integer.MAX_VALUE;
-        SettingsCommon.maxAddressSizeAllowed = Integer.MAX_VALUE;
     }
 
     public static void assertEventsAreEqual(final EventImpl expected, final EventImpl actual) {
