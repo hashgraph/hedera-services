@@ -251,7 +251,7 @@ public class Browser {
         }
 
         this.configuration = configurationBuilder.build();
-        PlatformConfigUtils.checkConfiguration(configuration);
+        PlatformConfigUtils.logNotKnownConfigProperties(configuration);
 
         // Set the configuration on all SwirldMain instances.
         appMains.values().forEach(swirldMain -> swirldMain.setConfiguration(configuration));

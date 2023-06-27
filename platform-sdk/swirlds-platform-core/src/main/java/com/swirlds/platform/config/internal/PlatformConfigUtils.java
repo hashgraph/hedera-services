@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.config.internal;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.reflection.ConfigReflectionUtils;
@@ -24,7 +23,6 @@ import com.swirlds.common.config.sources.ConfigMapping;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -42,58 +40,14 @@ public class PlatformConfigUtils {
     }
 
     /**
-     * Checks the given configuration for not known configuration and mapped properties.
+     * Logs all configuration properties that are not known by any configuration data type.
      *
      * @param configuration the configuration to check
      */
-    public static void checkConfiguration(@NonNull final Configuration configuration) {
-        Objects.requireNonNull(configuration, "configuration should not be null");
-        final Set<String> configNames = getConfigNames(configuration);
-        logNotKnownConfigProperties(configuration, configNames);
-        logAppliedMappedProperties(configNames);
-    }
+    public static void logNotKnownConfigProperties(@NonNull final Configuration configuration) {
+        Objects.requireNonNull(configuration, "configuration must not be null");
 
-    /**
-     * Logs all configuration properties that are not known by any configuration data type.
-     */
-    private static void logNotKnownConfigProperties(
-            @NonNull final Configuration configuration, @NonNull final Set<String> configNames) {
-        ConfigMappings.MAPPINGS.stream().map(ConfigMapping::originalName).forEach(configNames::add);
-        configuration
-                .getPropertyNames()
-                .filter(name -> !configNames.contains(name))
-                .forEach(name -> {
-                    final String message =
-                            "Configuration property '%s' is not used by any configuration data type".formatted(name);
-                    logger.error(EXCEPTION.getMarker(), message);
-                });
-    }
-
-    /**
-     * Logs all applied mapped properties. And suggests to change the new property name.
-     */
-    private static void logAppliedMappedProperties(@NonNull final Set<String> configNames) {
-        final Map<String, String> mappings = ConfigMappings.MAPPINGS.stream()
-                .collect(Collectors.toMap(ConfigMapping::originalName, ConfigMapping::mappedName));
-
-        configNames.stream().filter(mappings::containsKey).forEach(name -> {
-            final String message = ("Configuration property '%s' was renamed to '%s'. "
-                            + "This build is currently backwards compatible with the old name, but this may not be true in "
-                            + "a future release, so it is important to switch to the new name.")
-                    .formatted(name, mappings.get(name));
-
-            logger.warn(STARTUP.getMarker(), message);
-        });
-    }
-
-    /**
-     * Collects all configuration property names from all sources.
-     *
-     * @return the set of all configuration property names
-     */
-    @NonNull
-    private static Set<String> getConfigNames(@NonNull final Configuration configuration) {
-        return configuration.getConfigDataTypes().stream()
+        final Set<String> configNames = configuration.getConfigDataTypes().stream()
                 .flatMap(configDataType -> {
                     final String propertyNamePrefix =
                             ConfigReflectionUtils.getNamePrefixForConfigDataRecord(configDataType);
@@ -102,5 +56,14 @@ public class PlatformConfigUtils {
                                     propertyNamePrefix, component));
                 })
                 .collect(Collectors.toSet());
+        ConfigMappings.MAPPINGS.stream().map(ConfigMapping::originalName).forEach(configNames::add);
+        configuration
+                .getPropertyNames()
+                .filter(name -> !configNames.contains(name))
+                .forEach(name -> {
+                    final String message =
+                            "Configuration property '%s' is not used by any configuration data type".formatted(name);
+                    logger.warn(STARTUP.getMarker(), message);
+                });
     }
 }
