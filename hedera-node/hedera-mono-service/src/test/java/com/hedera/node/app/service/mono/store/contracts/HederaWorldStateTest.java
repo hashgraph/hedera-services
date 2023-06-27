@@ -69,8 +69,10 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -781,6 +783,11 @@ class HederaWorldStateTest {
         final var creations = new ArrayList<ContractID>();
         assertDoesNotThrow(() -> actualSubject.trackIfNewlyCreated(missingId, entityAccess, creations));
         assertTrue(creations.isEmpty());
+
+        final var createdContractNonces =
+                new TreeMap<ContractID, Long>(Comparator.comparingLong(ContractID::getContractNum));
+        assertDoesNotThrow(() -> actualSubject.trackContractNonces(missingId, entityAccess, createdContractNonces));
+        assertTrue(createdContractNonces.isEmpty());
     }
 
     @Test
