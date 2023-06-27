@@ -31,6 +31,8 @@ import java.time.Duration;
  *      the name of the file that contains the list of config files used to create this config
  * @param verifyEventSigs
  * 		verify event signatures (rather than just trusting they are correct)?
+ * @param numCryptoThreads
+ * 		number of threads used to verify signatures and generate keys, in parallel
  * @param showInternalStats
  * 		show the user all statistics, including those with category "internal"?
  * @param verboseStatistics
@@ -61,6 +63,10 @@ import java.time.Duration;
  * 		when its queue is empty and the two are equal, but never twice within this many milliseconds
  * @param statsSkipSeconds
  * 		number of seconds that the "all" history window skips at the start
+ * @param threadPrioritySync
+ * 		priority for threads that sync (in SyncCaller, SyncListener, SyncServer)
+ * @param threadPriorityNonSync
+ * 		priority for threads that don't sync (all but SyncCaller, SyncListener,SyncServer)
  * @param maxAddressSizeAllowed
  * 		the maximum number of address allowed in a address book, the same as the maximum allowed network size
  * @param freezeSecondsAfterStartup
@@ -98,6 +104,10 @@ import java.time.Duration;
  * 		period of generating eventStream file
  * @param eventsLogDir
  * 		eventStream files will be generated in this directory
+ * @param threadDumpPeriodMs
+ * 		period of generating thread dump file in the unit of milliseconds
+ * @param threadDumpLogDir
+ * 		thread dump files will be generated in this directory
  * @param jvmPauseDetectorSleepMs
  * 		period of JVMPauseDetectorThread sleeping in the unit of milliseconds
  * @param jvmPauseReportMs
@@ -142,6 +152,7 @@ import java.time.Duration;
 public record BasicConfig(
         @ConfigProperty(defaultValue = "configsUsed.txt") String configsUsedFilename,
         @ConfigProperty(defaultValue = "true") boolean verifyEventSigs,
+        @ConfigProperty(defaultValue = "32") int numCryptoThreads,
         @ConfigProperty(defaultValue = "false") boolean showInternalStats,
         @ConfigProperty(defaultValue = "false") boolean verboseStatistics,
         @ConfigProperty(defaultValue = "10000") int maxEventQueueForCons,
@@ -155,6 +166,8 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "500") int sleepHeartbeat,
         @ConfigProperty(defaultValue = "200") long delayShuffle,
         @ConfigProperty(defaultValue = "60") double statsSkipSeconds,
+        @ConfigProperty(defaultValue = "5") int threadPrioritySync,
+        @ConfigProperty(defaultValue = "5") int threadPriorityNonSync,
         @ConfigProperty(defaultValue = "1024") int maxAddressSizeAllowed,
         @ConfigProperty(defaultValue = "10") int freezeSecondsAfterStartup,
         @ConfigProperty(defaultValue = "true") boolean loadKeysFromPfxFiles,
@@ -167,6 +180,8 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "500") int eventStreamQueueCapacity,
         @ConfigProperty(defaultValue = "60") long eventsLogPeriod,
         @ConfigProperty(defaultValue = "./eventstreams") String eventsLogDir,
+        @ConfigProperty(defaultValue = "0") long threadDumpPeriodMs,
+        @ConfigProperty(defaultValue = "data/threadDump") String threadDumpLogDir,
         @ConfigProperty(defaultValue = "1000") int jvmPauseDetectorSleepMs,
         @ConfigProperty(defaultValue = "1000") int jvmPauseReportMs,
         @ConfigProperty(defaultValue = "false") boolean enableStateRecovery,

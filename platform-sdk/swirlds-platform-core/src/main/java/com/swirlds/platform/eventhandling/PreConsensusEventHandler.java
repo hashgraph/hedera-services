@@ -23,6 +23,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.Startable;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.PlatformStatNames;
@@ -71,8 +72,6 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
     private final SwirldStateManager swirldStateManager;
 
     /**
-     * @param metrics
-     *      metrics system
      * @param threadManager
      * 		responsible for managing thread lifecycles
      * @param selfId
@@ -81,20 +80,13 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
      * 		manages states
      * @param consensusMetrics
      * 		metrics relating to consensus
-     * @param threadConfig
-     *      configuration for the thread system
      */
     public PreConsensusEventHandler(
             @NonNull final Metrics metrics,
             @NonNull final ThreadManager threadManager,
             @NonNull final NodeId selfId,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final ConsensusMetrics consensusMetrics,
-            @NonNull final ThreadConfig threadConfig) {
-        Objects.requireNonNull(metrics);
-        Objects.requireNonNull(threadManager);
-        Objects.requireNonNull(threadConfig);
-
+            @NonNull final ConsensusMetrics consensusMetrics) {
         this.selfId = Objects.requireNonNull(selfId);
         this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
         this.consensusMetrics = Objects.requireNonNull(consensusMetrics);
@@ -108,7 +100,10 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
                 .setThreadName("thread-curr")
                 .setStopBehavior(swirldStateManager.getStopBehavior())
                 .setHandler(swirldStateManager::handlePreConsensusEvent)
-                .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
+                .setLogAfterPauseDuration(ConfigurationHolder.getInstance()
+                        .get()
+                        .getConfigData(ThreadConfig.class)
+                        .logStackTracePauseDuration())
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
                 .build();
 

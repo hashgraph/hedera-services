@@ -486,9 +486,8 @@ public class SwirldsPlatform implements Platform, Startable {
             // SwirldStateManager will get a copy of the state loaded, that copy will become stateCons.
             // The original state will be saved in the SignedStateMgr and will be deleted when it becomes old
 
-            final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
-            preConsensusEventHandler = components.add(new PreConsensusEventHandler(
-                    metrics, threadManager, selfId, swirldStateManager, consensusMetrics, threadConfig));
+            preConsensusEventHandler = components.add(
+                    new PreConsensusEventHandler(metrics, threadManager, selfId, swirldStateManager, consensusMetrics));
             consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
                     platformContext,
                     threadManager,
@@ -585,7 +584,10 @@ public class SwirldsPlatform implements Platform, Startable {
                     // until after all things have been constructed).
                     .setHandler(e -> getGossip().getEventIntakeLambda().accept(e))
                     .setCapacity(eventConfig.eventIntakeQueueSize())
-                    .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
+                    .setLogAfterPauseDuration(platformContext
+                            .getConfiguration()
+                            .getConfigData(ThreadConfig.class)
+                            .logStackTracePauseDuration())
                     .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
                             .enableMaxSizeMetric()
                             .enableBusyTimeMetric())

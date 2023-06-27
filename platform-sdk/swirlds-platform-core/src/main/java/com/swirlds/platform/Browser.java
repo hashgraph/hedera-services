@@ -550,15 +550,14 @@ public class Browser {
      * setting.
      */
     private void startThreadDumpGenerator() {
-        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
-
-        if (threadConfig.threadDumpPeriodMs() > 0) {
-            final Path dir = getAbsolutePath(threadConfig.threadDumpLogDir());
+        if (Settings.getInstance().getThreadDumpPeriodMs() > 0) {
+            final Path dir = getAbsolutePath(Settings.getInstance().getThreadDumpLogDir());
             if (!Files.exists(dir)) {
                 rethrowIO(() -> Files.createDirectories(dir));
             }
             logger.info(STARTUP.getMarker(), "Starting thread dump generator and save to directory {}", dir);
-            ThreadDumpGenerator.generateThreadDumpAtIntervals(dir, threadConfig.threadDumpPeriodMs());
+            ThreadDumpGenerator.generateThreadDumpAtIntervals(
+                    dir, Settings.getInstance().getThreadDumpPeriodMs());
         }
     }
 

@@ -78,13 +78,7 @@ public final class ConfigMappings {
             new ConfigMapping("sync.maxOutgoingSyncs", "maxOutgoingSyncs"),
             new ConfigMapping("sync.maxIncomingSyncsInc", "maxIncomingSyncsInc"),
             new ConfigMapping("sync.callerSkipsBeforeSleep", "callerSkipsBeforeSleep"),
-            new ConfigMapping("sync.sleepCallerSkips", "sleepCallerSkips"),
-            new ConfigMapping("jvmPauseDetectorSleepMs", "jVMPauseDetectorSleepMs"),
-            new ConfigMapping("jvmPauseReportMs", "jVMPauseReportMs"),
-            new ConfigMapping("threadPrioritySync", "thread.threadPrioritySync"),
-            new ConfigMapping("threadPriorityNonSync", "thread.threadPriorityNonSync"),
-            new ConfigMapping("threadDumpPeriodMs", "thread.threadDumpPeriodMs"),
-            new ConfigMapping("threadDumpLogDir", "thread.threadDumpLogDir"));
+            new ConfigMapping("sync.sleepCallerSkips", "sleepCallerSkips"));
 
     /**
      * Add all known aliases to the provided config source

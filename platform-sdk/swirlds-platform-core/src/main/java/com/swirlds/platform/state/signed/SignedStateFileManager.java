@@ -27,6 +27,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSigne
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
@@ -36,7 +37,6 @@ import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
-import com.swirlds.platform.config.ThreadConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -136,12 +136,12 @@ public class SignedStateFileManager implements Startable {
         this.minimumGenerationNonAncientConsumer = Objects.requireNonNull(
                 minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer must not be null");
 
-        final ThreadConfig threadConfig = context.getConfiguration().getConfigData(ThreadConfig.class);
+        final BasicConfig basicConfig = context.getConfiguration().getConfigData(BasicConfig.class);
 
         this.taskQueue = new QueueThreadConfiguration<Runnable>(threadManager)
                 .setCapacity(stateConfig.stateSavingQueueSize())
                 .setMaxBufferSize(1)
-                .setPriority(threadConfig.threadPriorityNonSync())
+                .setPriority(basicConfig.threadPriorityNonSync())
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("signed-state-file-manager")
