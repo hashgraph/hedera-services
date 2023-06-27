@@ -202,9 +202,8 @@ public class AccountStateTranslator {
         merkleAccount.setHeadNftSerialNum(account.headNftSerialNumber());
         merkleAccount.setBalanceUnchecked(account.tinybarBalance());
         merkleAccount.setReceiverSigRequired(account.receiverSigRequired());
-        merkleAccount.setAccountKey((JKey)
-                PbjConverter.fromPbjKeyUnchecked(account.keyOrElse((Key.DEFAULT)))
-                        .orElse(null));
+        merkleAccount.setAccountKey((JKey) PbjConverter.fromPbjKeyUnchecked(account.keyOrElse((Key.DEFAULT)))
+                .orElse(null));
         merkleAccount.setAutoRenewSecs(account.autoRenewSecs());
         merkleAccount.setDeleted(account.deleted());
         merkleAccount.setExpiry(account.expiry());
