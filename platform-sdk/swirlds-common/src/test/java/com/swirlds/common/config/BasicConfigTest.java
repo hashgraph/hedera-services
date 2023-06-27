@@ -36,11 +36,12 @@ class BasicConfigTest {
     @Test
     void propertiesHasNoPrefix() {
         // given
-        final Configuration configuration =
-                new TestConfigBuilder().withValue(BasicConfigConstants.NUM_CRYPTO_THREADS, "42").getOrCreateConfig();
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("jvmPauseDetectorSleepMs", "42")
+                .getOrCreateConfig();
         final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
 
         // then
-        Assertions.assertEquals(42, basicConfig.numCryptoThreads());
+        Assertions.assertEquals(42, basicConfig.jvmPauseDetectorSleepMs());
     }
 }

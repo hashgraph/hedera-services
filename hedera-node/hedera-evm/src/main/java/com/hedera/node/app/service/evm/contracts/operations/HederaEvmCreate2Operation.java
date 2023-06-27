@@ -78,7 +78,7 @@ public class HederaEvmCreate2Operation extends AbstractEvmRecordingCreateOperati
         return alias;
     }
 
-    private static Bytes32 keccak256(final Bytes input) {
+    public static Bytes32 keccak256(final Bytes input) {
         return Bytes32.wrap(keccak256DigestOf(input.toArrayUnsafe()));
     }
 

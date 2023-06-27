@@ -28,7 +28,7 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHie
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setInsets;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
-import static com.swirlds.platform.state.address.AddressBookUtils.getOwnHostCount;
+import static com.swirlds.platform.state.address.AddressBookNetworkUtils.getLocalAddressCount;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
@@ -42,6 +42,7 @@ import com.swirlds.common.config.OSHealthCheckConfig;
 import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.export.ConfigExport;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -106,6 +107,7 @@ import com.swirlds.platform.portforwarding.PortMapping;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.address.AddressBookInitializer;
+import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
@@ -243,7 +245,8 @@ public class Browser {
                 .withConfigDataType(RecycleBinConfig.class)
                 .withConfigDataType(EventConfig.class)
                 .withConfigDataType(PathsConfig.class)
-                .withConfigDataType(SocketConfig.class);
+                .withConfigDataType(SocketConfig.class)
+                .withConfigDataType(TransactionConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
@@ -251,7 +254,7 @@ public class Browser {
         }
 
         this.configuration = configurationBuilder.build();
-        PlatformConfigUtils.logNotKnownConfigProperties(configuration);
+        PlatformConfigUtils.checkConfiguration(configuration);
 
         // Set the configuration on all SwirldMain instances.
         appMains.values().forEach(swirldMain -> swirldMain.setConfiguration(configuration));
@@ -288,12 +291,6 @@ public class Browser {
 
             // Provide swirlds.common the settings it needs via the SettingsCommon class
             Settings.populateSettingsCommon();
-
-            // Update Settings based on config.txt
-            configurationProperties.maxSyncs().ifPresent(value -> Settings.getInstance()
-                    .setMaxOutgoingSyncs(value));
-            configurationProperties.transactionMaxBytes().ifPresent(value -> Settings.getInstance()
-                    .setTransactionMaxBytes(value));
 
             // Write the settingsUsed.txt file
             writeSettingsUsed(configuration);
@@ -410,7 +407,7 @@ public class Browser {
             final Map<NodeId, SwirldMain> appMains = new HashMap<>();
             final AddressBook addressBook = appDefinition.getAddressBook();
             for (final Address address : addressBook) {
-                if (localNodesToStart.contains(address.getNodeId()) || address.isOwnHost()) {
+                if (localNodesToStart.contains(address.getNodeId()) || AddressBookNetworkUtils.isLocal(address)) {
                     appMains.put(address.getNodeId(), buildAppMain(appDefinition, appLoader));
                 }
             }
@@ -552,14 +549,15 @@ public class Browser {
      * setting.
      */
     private void startThreadDumpGenerator() {
-        if (Settings.getInstance().getThreadDumpPeriodMs() > 0) {
-            final Path dir = getAbsolutePath(Settings.getInstance().getThreadDumpLogDir());
+        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
+
+        if (threadConfig.threadDumpPeriodMs() > 0) {
+            final Path dir = getAbsolutePath(threadConfig.threadDumpLogDir());
             if (!Files.exists(dir)) {
                 rethrowIO(() -> Files.createDirectories(dir));
             }
             logger.info(STARTUP.getMarker(), "Starting thread dump generator and save to directory {}", dir);
-            ThreadDumpGenerator.generateThreadDumpAtIntervals(
-                    dir, Settings.getInstance().getThreadDumpPeriodMs());
+            ThreadDumpGenerator.generateThreadDumpAtIntervals(dir, threadConfig.threadDumpPeriodMs());
         }
     }
 
@@ -626,8 +624,9 @@ public class Browser {
 
         int ownHostIndex = 0;
 
-        for (final Address address : addressBook) {
-            final NodeId nodeId = address.getNodeId();
+        for (int nodeIndex = 0; nodeIndex < addressBook.getSize(); nodeIndex++) {
+            final NodeId nodeId = addressBook.getNodeId(nodeIndex);
+            final Address address = addressBook.getAddress(nodeId);
             final int instanceNumber = addressBook.getIndexOfNodeId(nodeId);
 
             if (appMains.containsKey(nodeId)) {
@@ -807,7 +806,7 @@ public class Browser {
             SignedStateFileUtils.cleanStateDirectory(mainClassName);
         }
 
-        final int ownHostCount = Math.min(getOwnHostCount(addressBook), appMains.size());
+        final int ownHostCount = Math.min(getLocalAddressCount(addressBook), appMains.size());
         logger.info(STARTUP.getMarker(), "there are {} nodes with local IP addresses", ownHostCount);
 
         // if the local machine did not match any address in the address book then we should log an error and exit

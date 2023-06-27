@@ -23,7 +23,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.contract.impl.state.ContractSchema;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
@@ -54,9 +54,9 @@ class EvmFrameStateTest {
 
     @Test
     void constructsDispatchingEvmFrameStateFromScope() {
-        given(writableStates.<SlotKey, SlotValue>get(ContractServiceImpl.STORAGE_KEY))
+        given(writableStates.<SlotKey, SlotValue>get(ContractSchema.STORAGE_KEY))
                 .willReturn(storage);
-        given(writableStates.<EntityNumber, Bytecode>get(ContractServiceImpl.BYTECODE_KEY))
+        given(writableStates.<EntityNumber, Bytecode>get(ContractSchema.BYTECODE_KEY))
                 .willReturn(bytecode);
         given(scope.writableContractState()).willReturn(writableStates);
         given(scope.dispatch()).willReturn(dispatch);

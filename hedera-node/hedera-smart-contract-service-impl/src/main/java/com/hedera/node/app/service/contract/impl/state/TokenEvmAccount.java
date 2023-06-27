@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.state;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -110,5 +111,18 @@ public class TokenEvmAccount extends AbstractMutableEvmAccount {
     @Override
     public void setStorageValue(@NonNull final UInt256 key, @NonNull final UInt256 value) {
         throw new UnsupportedOperationException("setStorageValue");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isTokenFacade() {
+        return true;
+    }
+
+    @Override
+    public AccountID hederaId() {
+        throw new IllegalStateException("Token facade has no usable Hedera id");
     }
 }

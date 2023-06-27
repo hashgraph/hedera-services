@@ -16,10 +16,10 @@
 
 package com.swirlds.common.internal;
 
-import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
-import java.util.List;
+import java.util.Objects;
 
 /**
  * Temporary internal only class to facilitate an incremental refactor of the {@code com.swirlds.platform.Browser} class.
@@ -38,18 +38,18 @@ public class ApplicationDefinition {
     private byte[] swirldId;
 
     public ApplicationDefinition(
-            final String swirldName,
-            final String[] appParameters,
-            final String appJarFileName,
-            final String mainClassName,
-            final Path appJarPath,
-            final List<Address> bookData) {
-        this.swirldName = swirldName;
-        this.appParameters = appParameters;
-        this.appJarFileName = appJarFileName;
-        this.mainClassName = mainClassName;
-        this.appJarPath = appJarPath;
-        this.addressBook = new AddressBook(bookData);
+            @NonNull final String swirldName,
+            @NonNull final String[] appParameters,
+            @NonNull final String appJarFileName,
+            @NonNull final String mainClassName,
+            @NonNull final Path appJarPath,
+            @NonNull final AddressBook addressBook) {
+        this.swirldName = Objects.requireNonNull(swirldName, "swirldName must not be null");
+        this.appParameters = Objects.requireNonNull(appParameters, "appParameters must not be null");
+        this.appJarFileName = Objects.requireNonNull(appJarFileName, "appJarFileName must not be null");
+        this.mainClassName = Objects.requireNonNull(mainClassName, "mainClassName must not be null");
+        this.appJarPath = Objects.requireNonNull(appJarPath, "appJarPath must not be null");
+        this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
     }
 
     public String getSwirldName() {
