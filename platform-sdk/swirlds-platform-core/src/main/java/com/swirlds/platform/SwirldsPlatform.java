@@ -606,7 +606,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     .build());
 
             transactionSubmitter = new SwirldTransactionSubmitter(
-                    platformStatusStateMachine::getCurrentStatus,
+                    platformStatusStateMachine,
                     PlatformConstructor.settingsProvider(),
                     swirldStateManager::submitTransaction,
                     new TransactionMetrics(metrics));

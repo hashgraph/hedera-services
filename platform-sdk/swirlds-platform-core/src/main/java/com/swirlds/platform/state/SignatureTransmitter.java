@@ -21,12 +21,12 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatusGetter;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,20 +38,20 @@ public final class SignatureTransmitter {
     private static final Logger logger = LogManager.getLogger(SignatureTransmitter.class);
 
     private final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter;
-    private final Supplier<PlatformStatus> getPlatformStatus;
+    private final PlatformStatusGetter platformStatusGetter;
 
     /**
      * Create a new SignatureTransmitter.
      *
      * @param prioritySystemTransactionSubmitter used to submit system transactions at high priority
-     * @param getPlatformStatus                  provides the current platform status
+     * @param platformStatusGetter               provides the current platform status
      */
     public SignatureTransmitter(
             @NonNull final PrioritySystemTransactionSubmitter prioritySystemTransactionSubmitter,
-            @NonNull final Supplier<PlatformStatus> getPlatformStatus) {
+            @NonNull final PlatformStatusGetter platformStatusGetter) {
 
         this.prioritySystemTransactionSubmitter = Objects.requireNonNull(prioritySystemTransactionSubmitter);
-        this.getPlatformStatus = Objects.requireNonNull(getPlatformStatus);
+        this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
     }
 
     /**
@@ -67,7 +67,7 @@ public final class SignatureTransmitter {
         Objects.requireNonNull(signature);
         Objects.requireNonNull(stateHash);
 
-        final PlatformStatus platformStatus = getPlatformStatus.get();
+        final PlatformStatus platformStatus = platformStatusGetter.getCurrentStatus();
         if (platformStatus != PlatformStatus.ACTIVE && platformStatus != PlatformStatus.FREEZING) {
             // Only send transactions if the platform is in ACTIVE or FREEZING state.
             return;

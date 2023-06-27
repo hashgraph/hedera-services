@@ -16,28 +16,18 @@
 
 package com.swirlds.common.system.status;
 
-import com.swirlds.base.state.Startable;
-import com.swirlds.base.state.Stoppable;
-import com.swirlds.common.system.status.actions.PlatformStatusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Interface for a platform status state machine that processes {@link PlatformStatusAction}s
+ * Functional interface for accessing the current platform status
  */
-public interface PlatformStatusStateMachine extends PlatformStatusGetter, Startable, Stoppable {
+@FunctionalInterface
+public interface PlatformStatusGetter {
     /**
-     * Process a platform status action.
-     * <p>
-     * Repeated calls of this method cause the platform state machine to be traversed
+     * Get the current status
      *
-     * @param action the action to process
+     * @return the current status
      */
-    void processStatusAction(@NonNull final PlatformStatusAction action);
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     @NonNull
     PlatformStatus getCurrentStatus();
 }
