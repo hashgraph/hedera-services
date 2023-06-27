@@ -111,12 +111,4 @@ public class TokenEvmAccount extends AbstractMutableEvmAccount {
     public void setStorageValue(@NonNull final UInt256 key, @NonNull final UInt256 value) {
         throw new UnsupportedOperationException("setStorageValue");
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isTokenFacade() {
-        return true;
-    }
 }

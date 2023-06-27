@@ -16,12 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
-import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.meta.bni.Scope;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -33,8 +35,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 /**
@@ -49,7 +49,7 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
  * <p><i>Note:</i> The {@code sbhRefund} field in the {@code mono-service} {@link WorldUpdater}
  * hierarchy is---as best I can tell---now always zero. So it does not appear here.
  */
-public class ProxyWorldUpdater implements HederaWorldUpdater {
+public class ProxyWorldUpdater implements WorldUpdater {
     private static final String CANNOT_CREATE = "Cannot create ";
 
     /**
@@ -104,111 +104,6 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         this.evmFrameState = evmFrameStateFactory.createIn(scope);
     }
 
-    @Nullable
-    @Override
-    public HederaEvmAccount getHederaAccount(@NonNull AccountID accountId) {
-        final Address address;
-        if (accountId.hasAlias()) {
-            address = pbjToBesuAddress(accountId.aliasOrThrow());
-        } else {
-            try {
-                address = evmFrameState.getAddress(accountId.accountNumOrElse(0L));
-            } catch (IllegalArgumentException ignore) {
-                return null;
-            }
-        }
-        return address == null ? null : (HederaEvmAccount) get(address);
-    }
-
-    @Nullable
-    @Override
-    public HederaEvmAccount getHederaAccount(@NonNull ContractID contractId) {
-        final Address address;
-        if (contractId.hasEvmAddress()) {
-            address = pbjToBesuAddress(contractId.evmAddressOrThrow());
-        } else {
-            try {
-                address = evmFrameState.getAddress(contractId.contractNumOrElse(0L));
-            } catch (IllegalArgumentException ignore) {
-                return null;
-            }
-        }
-        return address == null ? null : (HederaEvmAccount) get(address);
-    }
-
-    @Override
-    public void collectFee(@NonNull final Address payer, final long amount) {
-        throw new AssertionError("Not implemented");
-    }
-
-    @Override
-    public void refundFee(@NonNull final Address payer, final long amount) {
-        throw new AssertionError("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Optional<ExceptionalHaltReason> tryTransferFromContract(
-            @NonNull final Address sendingContract,
-            @NonNull final Address recipient,
-            final long amount,
-            final boolean delegateCall) {
-        return evmFrameState.tryTransferFromContract(sendingContract, recipient, amount, delegateCall);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Optional<ExceptionalHaltReason> tryLazyCreation(
-            @NonNull final Address recipient, @NonNull final MessageFrame frame) {
-        throw new AssertionError("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isHollowAccount(@NonNull final Address address) {
-        return evmFrameState.isHollowAccount(address);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Address setupCreate(@NonNull final Address receiver) {
-        setupPendingCreation(receiver, null);
-        return requireNonNull(pendingCreation).address();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setupCreate2(@NonNull final Address receiver, @NonNull final Address alias) {
-        setupPendingCreation(receiver, alias);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void finalizeHollowAccount(@NonNull final Address alias) {
-        evmFrameState.finalizeHollowAccount(alias);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Optional<ExceptionalHaltReason> tryTrackingDeletion(
-            @NonNull final Address deleted, @NonNull final Address beneficiary) {
-        throw new AssertionError("Not implemented");
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -223,6 +118,35 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public EvmAccount getAccount(@NonNull final Address address) {
         return evmFrameState.getMutableAccount(address);
+    }
+
+    /**
+     * Given the possibly zero address of the recipient of a {@code CONTRACT_CREATION} message,
+     * sets up the {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete
+     * the creation of the new account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)};
+     * returns the "long-zero" address to be assigned to the new account.
+     *
+     * @param origin the address of the recipient of a {@code CONTRACT_CREATION} message, zero if a top-level message
+     * @return the "long-zero" address to be assigned to the new account
+     */
+    public Address setupCreate(@NonNull final Address origin) {
+        setupPendingCreation(origin, null);
+        return requireNonNull(pendingCreation).address();
+    }
+
+    /**
+     * Given the possibly zero address of the recipient of a {@code CONTRACT_CREATION} message,
+     * and the EIP-1014 address computed by an in-progress {@code CREATE2} operation, sets up the
+     * {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete the creation of
+     * the new account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
+     *
+     * <p>Does not return anything, as the {@code CREATE2} address is already known.
+     *
+     * @param origin the address of the recipient of a {@code CONTRACT_CREATION} message, zero if a top-level message
+     * @param alias the EIP-1014 address computed by an in-progress {@code CREATE2} operation
+     */
+    public void setupCreate2(@NonNull final Address origin, @NonNull final Address alias) {
+        setupPendingCreation(origin, alias);
     }
 
     /**
@@ -294,9 +218,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * Returns the accounts that have been touched (i.e., created or maybe mutated but <i>not</i> deleted)
      * within the scope of this updater.
      *
-     * <p>TODO - we may not need this; only used in Besu by
-     * {@code AbstractMessageProcessor.clearAccumulatedStateBesidesGasAndOutput()}, which seems to just deal
-     * with side-effects of an Ethereum consensus bug.
+     * <p>We may not need this; only used in Besu by
+     * {@code AbstractMessageProcessor.clearAccumulatedStateBesidesGasAndOutput()}, which seems to be in
+     * response to unwinding side-effects of an Ethereum consensus bug.
+     *
+     * <p>TODO - revisit whether this is needed.
      *
      * @return the accounts that have been touched
      */
@@ -338,13 +264,13 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         return pendingNumber;
     }
 
-    private void setupPendingCreation(@NonNull final Address receiver, @Nullable final Address alias) {
+    private void setupPendingCreation(@NonNull final Address origin, @Nullable final Address alias) {
         final var number = scope.dispatch().peekNextEntityNumber();
-        final long parentNumber = Address.ZERO.equals(requireNonNull(receiver))
+        final long parentNumber = Address.ZERO.equals(requireNonNull(origin))
                 ? scope.payerAccountNumber()
-                : maybeMissingNumberOf(receiver, scope.dispatch());
+                : maybeMissingNumberOf(origin, scope.dispatch());
         if (parentNumber == MISSING_ENTITY_NUMBER) {
-            throw new IllegalStateException("Claimed receiver " + receiver + " has no Hedera account number");
+            throw new IllegalStateException("Claimed origin " + origin + " has no Hedera account number");
         }
         pendingCreation = new PendingCreation(alias == null ? asLongZeroAddress(number) : alias, number, parentNumber);
     }

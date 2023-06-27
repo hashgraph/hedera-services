@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.hevm;
+package com.hedera.node.app.service.contract.impl.exec;
 
-public record HederaEvmContext(long gasPrice, boolean staticCall, HederaEvmBlocks blocks) {}
+public interface ServiceComponent {}

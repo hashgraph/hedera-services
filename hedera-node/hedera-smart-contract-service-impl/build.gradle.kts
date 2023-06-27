@@ -28,10 +28,6 @@ dependencies {
     }
 }
 
-val generatedSources = file("build/generated/sources/annotationProcessor/java/main")
-
-java.sourceSets["main"].java.srcDir(generatedSources)
-
 // TODO module-info.java in 'test'
 // https://github.com/autonomousapps/dependency-analysis-android-gradle-plugin/issues/900
 dependencyAnalysis.issues {

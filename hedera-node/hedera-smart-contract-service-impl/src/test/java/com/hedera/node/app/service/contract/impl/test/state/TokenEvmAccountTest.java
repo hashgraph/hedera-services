@@ -17,7 +17,10 @@
 package com.hedera.node.app.service.contract.impl.test.state;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
@@ -49,11 +52,6 @@ class TokenEvmAccountTest {
     @BeforeEach
     void setUp() {
         subject = new TokenEvmAccount(TOKEN_ADDRESS, state);
-    }
-
-    @Test
-    void tokenFacade() {
-        assertTrue(subject.isTokenFacade());
     }
 
     @Test
