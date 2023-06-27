@@ -154,8 +154,8 @@ dependencyResolutionManagement {
             bundle("logging-api", listOf("log4j-api", "slf4j-api"))
             bundle("logging-impl", listOf("log4j-core", "slf4j-nop"))
             bundle(
-                    "jackson",
-                    listOf("jackson-databind", "jackson-datatype-jsr310", "jackson-dataformat-yaml")
+                "jackson",
+                listOf("jackson-databind", "jackson-datatype-jsr310", "jackson-dataformat-yaml")
             )
             bundle("networking", listOf("portmapper"))
             bundle("javafx", listOf("javafx-base"))
@@ -232,22 +232,30 @@ dependencyResolutionManagement {
                 .versionRef("classgraph-version")
             library("jna", "net.java.dev.jna", "jna").versionRef("jna-version")
             library("resource-loader", "com.goterl", "resource-loader")
-                    .versionRef("resource-loader-version")
+                .versionRef("resource-loader-version")
             library("protobuf", "com.google.protobuf", "protobuf-java")
-                    .versionRef("protobuf-version")
+                .versionRef("protobuf-version")
             library("prometheus-httpserver", "io.prometheus", "simpleclient_httpserver")
-                    .versionRef("prometheus-client")
+                .versionRef("prometheus-client")
             // PicoCLI Bundle
             library("picocli", "info.picocli", "picocli").versionRef("picocli-version")
 
             library("spotbugs-annotations", "com.github.spotbugs", "spotbugs-annotations")
-                    .versionRef("spotbugs-version")
+                .versionRef("spotbugs-version")
 
-            library("auto-service-processor", "com.google.auto.service", "auto-service").versionRef("auto-service-version")
-            library("auto-service-annotations", "com.google.auto.service", "auto-service-annotations").versionRef("auto-service-version")
+            library("auto-service-processor", "com.google.auto.service", "auto-service")
+                .versionRef("auto-service-version")
+            library(
+                    "auto-service-annotations",
+                    "com.google.auto.service",
+                    "auto-service-annotations"
+                )
+                .versionRef("auto-service-version")
 
-            library("roaster-api", "org.jboss.forge.roaster", "roaster-api").versionRef("roaster-version")
-            library("roaster-jdt", "org.jboss.forge.roaster", "roaster-jdt").versionRef("roaster-version")
+            library("roaster-api", "org.jboss.forge.roaster", "roaster-api")
+                .versionRef("roaster-version")
+            library("roaster-jdt", "org.jboss.forge.roaster", "roaster-jdt")
+                .versionRef("roaster-version")
         }
 
         create("testLibs") {

@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.swirlds.config.processor;
@@ -48,7 +47,8 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
         Objects.requireNonNull(roundEnv, "roundEnv must not be null");
 
         log("Config Data Annotation Processor started...");
-        annotations.stream().flatMap(annotation -> roundEnv.getElementsAnnotatedWith(annotation).stream())
+        annotations.stream()
+                .flatMap(annotation -> roundEnv.getElementsAnnotatedWith(annotation).stream())
                 .filter(element -> element.getKind() == ElementKind.RECORD)
                 .filter(element -> element instanceof TypeElement typeElement)
                 .map(typeElement -> (TypeElement) typeElement)
@@ -59,8 +59,7 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
     private void handleTypeElement(@NonNull final TypeElement typeElement) {
         final String simpleClassName = typeElement.getSimpleName().toString();
         final String fileName = simpleClassName + ConfigProcessorConstants.JAVA_FILE_EXTENSION;
-        final String packageName = typeElement.getQualifiedName().toString()
-                .replace("." + simpleClassName, "");
+        final String packageName = typeElement.getQualifiedName().toString().replace("." + simpleClassName, "");
         log("handling: " + fileName + " in " + packageName);
         try {
             final FileObject recordSource = getSource(fileName, packageName);
@@ -75,8 +74,8 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
     }
 
     @NonNull
-    private JavaFileObject getConstantSourceFile(@NonNull String packageName, @NonNull String simpleClassName,
-            @NonNull TypeElement originatingElement)
+    private JavaFileObject getConstantSourceFile(
+            @NonNull String packageName, @NonNull String simpleClassName, @NonNull TypeElement originatingElement)
             throws IOException {
         Objects.requireNonNull(packageName, "packageName must not be null");
         Objects.requireNonNull(simpleClassName, "simpleClassName must not be null");
@@ -91,8 +90,7 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
         Objects.requireNonNull(fileName, "fileName must not be null");
         Objects.requireNonNull(packageName, "packageName must not be null");
 
-        return processingEnv.getFiler()
-                .getResource(StandardLocation.SOURCE_PATH, packageName, fileName);
+        return processingEnv.getFiler().getResource(StandardLocation.SOURCE_PATH, packageName, fileName);
     }
 
     protected void log(@NonNull String message) {

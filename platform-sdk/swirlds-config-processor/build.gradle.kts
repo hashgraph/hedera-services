@@ -15,17 +15,17 @@
  */
 
 plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.library")
-  id("com.swirlds.platform.maven-publish")
+    id("com.swirlds.platform.conventions")
+    id("com.swirlds.platform.library")
+    id("com.swirlds.platform.maven-publish")
 }
 
 dependencies {
-  annotationProcessor(libs.auto.service.processor)
+    annotationProcessor(libs.auto.service.processor)
 
-  implementation(project(":swirlds-config-api"))
-  implementation(libs.roaster.api)
-  runtimeOnly(libs.roaster.jdt)
-  compileOnly(libs.auto.service.annotations)
-  compileOnly(libs.spotbugs.annotations)
+    implementation(project(":swirlds-config-api"))
+    implementation(libs.roaster.api)
+    runtimeOnly(libs.roaster.jdt)
+    compileOnly(libs.auto.service.annotations)
+    compileOnly(libs.spotbugs.annotations)
 }

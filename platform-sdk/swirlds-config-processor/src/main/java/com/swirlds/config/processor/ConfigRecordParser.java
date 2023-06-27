@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.swirlds.config.processor;
@@ -38,15 +37,15 @@ import org.jboss.forge.roaster.model.JavaType;
 
 public class ConfigRecordParser {
 
-    private ConfigRecordParser() {
-    }
+    private ConfigRecordParser() {}
 
     @NonNull
     private static Map<String, String> getJavaDocParams(@NonNull final JavaType<?> type) {
         Objects.requireNonNull(type, "type must not be null");
         final Map<String, String> paramDoc = new HashMap<>();
         type.getJavaDoc().getTags(ConfigProcessorConstants.JAVADOC_PARAM).forEach(tag -> {
-            paramDoc.put(tag.getName(), tag.getValue());
+            int split = tag.getValue().indexOf(" ");
+            paramDoc.put(tag.getValue().substring(0, split), tag.getValue().substring(split + 1));
         });
         return Collections.unmodifiableMap(paramDoc);
     }
@@ -60,17 +59,13 @@ public class ConfigRecordParser {
             final Map<String, String> paramDoc = getJavaDocParams(type);
             if (type instanceof JavaRecord<?> record) {
                 final Set<ConfigDataPropertyDefinition> propertyDefinitions = record.getRecordComponents().stream()
-                        .map(javaRecordComponent -> getConfigDataPropertyDefinition(configDataValue, paramDoc,
-                                javaRecordComponent))
+                        .map(javaRecordComponent ->
+                                getConfigDataPropertyDefinition(configDataValue, paramDoc, javaRecordComponent))
                         .collect(Collectors.toSet());
                 final String qualifiedName = type.getQualifiedName().toString();
                 final int split = qualifiedName.lastIndexOf(".");
                 return new ConfigDataRecordDefinition(
-                        type.getPackage(),
-                        qualifiedName.substring(split + 1),
-                        configDataValue,
-                        propertyDefinitions
-                );
+                        type.getPackage(), qualifiedName.substring(split + 1), configDataValue, propertyDefinitions);
             } else {
                 throw new IllegalArgumentException(
                         "ConfigData annotation must be on a record! Type " + type + " is not a record!");
@@ -82,10 +77,10 @@ public class ConfigRecordParser {
     private static String getDefaultValue(@NonNull final JavaRecordComponent javaRecordComponent) {
         final Annotation configPropertyAnnotation = javaRecordComponent.getAnnotation(ConfigProperty.class);
         if (configPropertyAnnotation != null) {
-            final String annotationDefaultValue = configPropertyAnnotation.getStringValue(
-                    ConfigProcessorConstants.DEFAULT_VALUE_FIELD_NAME);
-            if (annotationDefaultValue != null && !Objects.equals(annotationDefaultValue,
-                    ConfigProperty.NULL_DEFAULT_VALUE)) {
+            final String annotationDefaultValue =
+                    configPropertyAnnotation.getStringValue(ConfigProcessorConstants.DEFAULT_VALUE_FIELD_NAME);
+            if (annotationDefaultValue != null
+                    && !Objects.equals(annotationDefaultValue, ConfigProperty.NULL_DEFAULT_VALUE)) {
                 return annotationDefaultValue;
             }
         }
@@ -93,13 +88,13 @@ public class ConfigRecordParser {
     }
 
     @NonNull
-    private static String getName(@Nullable final String configDataValue,
-            @NonNull final JavaRecordComponent javaRecordComponent) {
+    private static String getName(
+            @Nullable final String configDataValue, @NonNull final JavaRecordComponent javaRecordComponent) {
         String name = javaRecordComponent.getName();
         final Annotation configPropertyAnnotation = javaRecordComponent.getAnnotation(ConfigProperty.class);
         if (configPropertyAnnotation != null) {
-            final String annotationValue = configPropertyAnnotation.getStringValue(
-                    ConfigProcessorConstants.VALUE_FIELD_NAME);
+            final String annotationValue =
+                    configPropertyAnnotation.getStringValue(ConfigProcessorConstants.VALUE_FIELD_NAME);
             if (annotationValue != null) {
                 name = annotationValue;
             }
@@ -111,8 +106,10 @@ public class ConfigRecordParser {
     }
 
     @NonNull
-    private static ConfigDataPropertyDefinition getConfigDataPropertyDefinition(@Nullable final String configDataValue,
-            final @NonNull Map<String, String> paramDoc, @NonNull final JavaRecordComponent javaRecordComponent) {
+    private static ConfigDataPropertyDefinition getConfigDataPropertyDefinition(
+            @Nullable final String configDataValue,
+            final @NonNull Map<String, String> paramDoc,
+            @NonNull final JavaRecordComponent javaRecordComponent) {
         Objects.requireNonNull(paramDoc, "paramDoc must not be null");
         Objects.requireNonNull(javaRecordComponent, "javaRecordComponent must not be null");
 
@@ -121,11 +118,6 @@ public class ConfigRecordParser {
         final String propertyDescription = paramDoc.get(javaRecordComponent.getName());
         final String propertyType = javaRecordComponent.getType().getQualifiedName();
 
-        return new ConfigDataPropertyDefinition(
-                propertyName,
-                propertyType,
-                propertyDefaultValue,
-                propertyDescription
-        );
+        return new ConfigDataPropertyDefinition(propertyName, propertyType, propertyDefaultValue, propertyDescription);
     }
 }
