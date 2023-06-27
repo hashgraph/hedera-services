@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -115,7 +116,8 @@ public class PlatformConfigUtils {
      *
      * @param directory the directory to write to
      */
-    public static void writeSettingsUsed(final Path directory) {
+    public static void writeSettingsUsed(@NonNull final Path directory) {
+        Objects.requireNonNull(directory, "directory should not be null");
         final Configuration configuration = ConfigurationHolder.getInstance().get();
         writeSettingsUsed(directory, configuration);
     }
@@ -125,7 +127,9 @@ public class PlatformConfigUtils {
      *
      * @param directory the directory to write to
      */
-    public static void writeSettingsUsed(final Path directory, final Configuration configuration) {
+    public static void writeSettingsUsed(@NonNull final Path directory, @NonNull final Configuration configuration) {
+        Objects.requireNonNull(directory, "directory should not be null");
+        Objects.requireNonNull(configuration, "configuration should not be null");
 
         try (final BufferedWriter writer = Files.newBufferedWriter(directory.resolve(SETTING_USED_FILENAME))) {
             final StringBuilder stringBuilder = new StringBuilder();
@@ -144,7 +148,11 @@ public class PlatformConfigUtils {
      * @param stringBuilder the string builder to write to
      * @param configuration the configuration to use
      */
-    public static void generateSettingsUsed(final StringBuilder stringBuilder, final Configuration configuration) {
+    public static void generateSettingsUsed(
+            @NonNull final StringBuilder stringBuilder, @NonNull final Configuration configuration) {
+        Objects.requireNonNull(stringBuilder, "stringBuilder should not be null");
+        Objects.requireNonNull(configuration, "configuration should not be null");
+
         stringBuilder.append(PlatformVersion.locateOrDefault().license());
         stringBuilder.append(System.lineSeparator());
         stringBuilder.append(System.lineSeparator());
@@ -155,7 +163,8 @@ public class PlatformConfigUtils {
         stringBuilder.append(System.lineSeparator());
         stringBuilder.append(System.lineSeparator());
 
-        final Set<String> propertyNames = configuration.getPropertyNames().collect(Collectors.toSet());
+        final Set<String> propertyNames =
+                configuration.getPropertyNames().collect(Collectors.toCollection(TreeSet::new));
         for (final String propertyName : propertyNames) {
             stringBuilder.append(String.format("%15s = %s%n", propertyName, configuration.getValue(propertyName)));
         }

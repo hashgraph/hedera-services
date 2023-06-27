@@ -190,12 +190,16 @@ public class LegacyCsvWriter {
         }
     }
 
-    private boolean showAllEntries(final Metric metric) {
+    private boolean showAllEntries(@NonNull final Metric metric) {
+        Objects.requireNonNull(metric, "metric is null");
         return basicConfig.verboseStatistics() && !metric.getCategory().contains(EXCLUDE_CATEGORY);
     }
 
     // Add two rows, one with all categories, the other with all names
-    private void addHeaderRows(final ContentBuilder builder, final List<Metric> metrics) {
+    private void addHeaderRows(@NonNull final ContentBuilder builder, @NonNull final List<Metric> metrics) {
+        Objects.requireNonNull(builder, "builder is null");
+        Objects.requireNonNull(metrics, "metrics is null");
+
         final List<String> categories = new ArrayList<>();
         final List<String> names = new ArrayList<>();
         for (final Metric metric : metrics) {
@@ -319,7 +323,8 @@ public class LegacyCsvWriter {
     }
 
     // Returns false, if a Metric is internal and internal metrics should not be written
-    private boolean shouldWrite(final Metric metric) {
+    private boolean shouldWrite(@NonNull final Metric metric) {
+        Objects.requireNonNull(metric, "metric is null");
         return basicConfig.showInternalStats() || !metric.getCategory().equals(Metrics.INTERNAL_CATEGORY);
     }
 

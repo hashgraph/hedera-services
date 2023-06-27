@@ -23,6 +23,7 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookUtils;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -32,6 +33,7 @@ import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Scanner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -172,7 +174,10 @@ public final class LegacyConfigPropertiesLoader {
      * @param line the string of comma-separated values to split
      * @return the array of trimmed elements.
      */
-    private static String[] splitLine(final String line) {
+    @NonNull
+    private static String[] splitLine(@NonNull final String line) {
+        Objects.requireNonNull(line);
+
         final String[] elms = line.split(",");
         for (int i = 0; i < elms.length; i++) {
             elms[i] = elms[i].trim();
