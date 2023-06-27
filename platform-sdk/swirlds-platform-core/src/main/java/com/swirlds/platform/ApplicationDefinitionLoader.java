@@ -23,12 +23,19 @@ import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.internal.ConfigurationException;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.address.Address;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.config.legacy.AddressConfig;
 import com.swirlds.platform.config.legacy.JarAppConfig;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
+import com.swirlds.platform.network.Network;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.UncheckedIOException;
+import java.net.SocketException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.jar.Attributes;
@@ -71,7 +78,10 @@ public final class ApplicationDefinitionLoader {
 
         final String swirldName = configurationProperties.swirldName().orElse("");
 
-        final AddressBook addressBook = configurationProperties.getAddressBook();
+        final List<Address> bookData = Collections.synchronizedList(new ArrayList<>());
+        configurationProperties
+                .getAddressConfigs()
+                .forEach(addressConfig -> handleAddressConfig(localNodesToStart, bookData, addressConfig));
 
         final AppStartParams appStartParams = configurationProperties
                 .appConfig()
@@ -84,7 +94,7 @@ public final class ApplicationDefinitionLoader {
                 appStartParams.appJarFilename(),
                 appStartParams.mainClassname(),
                 appStartParams.appJarPath(),
-                addressBook);
+                bookData);
     }
 
     private static AppStartParams convertToStartParams(final JarAppConfig appConfig) {
@@ -105,5 +115,50 @@ public final class ApplicationDefinitionLoader {
             logger.error(EXCEPTION.getMarker(), "Couldn't find Main-Class name in jar file {}", appJarPath, e);
         }
         return new AppStartParams(appParameters, appJarFilename, mainClassname, appJarPath);
+    }
+
+    private static void handleAddressConfig(
+            @NonNull final Set<NodeId> localNodesToStart,
+            @NonNull final List<Address> bookData,
+            @NonNull final AddressConfig addressConfig) {
+        Objects.requireNonNull(localNodesToStart, "localNodesToStart must not be null");
+        Objects.requireNonNull(bookData, "bookData must not be null");
+        Objects.requireNonNull(addressConfig, "addressConfig must not be null");
+        // FUTURE WORK: This correlation between NodeId and position in bookData will change when the addressBook
+        // text format is updated to include node id and the position becomes arbitrary.
+        final NodeId nodeId = new NodeId(bookData.size());
+        // The set localNodesToStart contains the nodes set by the command line to start, if
+        // none are passed, then IP addresses will be compared to determine which node to
+        // start. If some are passed, then the IP addresses will be ignored. This must be
+        // considered for ownHost
+        final boolean isOwnHost;
+        try {
+            isOwnHost = (localNodesToStart.isEmpty() && Network.isOwn(addressConfig.internalInetAddressName()))
+                    || localNodesToStart.contains(nodeId);
+        } catch (SocketException e) {
+            throw new UncheckedIOException(e);
+        }
+        bookData.add(new Address(
+                nodeId, // Id
+                addressConfig.nickname(), // nickname
+                addressConfig.selfName(), // selfName
+                addressConfig.weight(), // weight
+                isOwnHost, // ownHost
+                addressConfig.internalInetAddressName().getAddress(), // addressInternalIpv4
+                addressConfig.internalPort(), // portInternalIpv4
+                addressConfig.externalInetAddressName().getAddress(), // addressExternalIpv4
+                addressConfig.externalPort(), // portExternalIpv4
+                addressConfig.memo() // memo, optional
+                ));
+        /**
+         * the Id parameter above is the member ID, and in the current software, it is equal
+         * to the position of the address in the list of addresses in the address book, and
+         * is also equal to the comm ID. The comm ID is currently set to the position of the
+         * address in the config.txt file: the first one has comm ID 0, the next has comm ID
+         * 1, and so on. In future versions of the software, each member ID can be any long,
+         * and they may not be contiguous numbers. But the comm IDs must always be the
+         * numbers from 0 to N-1 for N members. The comm IDs can then be used with the
+         * RandomGraph to select which members to connect to.
+         */
     }
 }

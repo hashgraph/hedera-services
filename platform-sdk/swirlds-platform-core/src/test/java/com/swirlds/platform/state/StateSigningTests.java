@@ -499,7 +499,7 @@ class StateSigningTests {
             newAddressBook.add(address.copySetWeight(0));
             final Address newAddress = newAddressBook.getAddress(newAddressBook.getNodeId(i));
             Assertions.assertNotNull(newAddress);
-            assertTrue(address.equalsWithoutWeight(newAddress));
+            assertTrue(address.equalsWithoutWeightAndOwnHost(newAddress));
             i++;
         }
 

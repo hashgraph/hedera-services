@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.config.legacy;
 
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -48,29 +48,14 @@ public class LegacyConfigProperties {
 
     private JarAppConfig appConfig = null;
 
-    private AddressBook addressBook = null;
+    private final List<AddressConfig> addressConfigs = new ArrayList<>();
 
-    /**
-     * Set the address book.
-     *
-     * @param addressBook the address book
-     */
-    public void setAddressBook(@NonNull final AddressBook addressBook) {
-        Objects.requireNonNull(addressBook, "addressBook");
-        this.addressBook = addressBook.copy();
+    public void addAddressConfig(final AddressConfig addressConfig) {
+        addressConfigs.add(addressConfig);
     }
 
-    /**
-     * Get the address book. If no address book is set, an empty address book is returned.
-     *
-     * @return the address book
-     */
-    @NonNull
-    public AddressBook getAddressBook() {
-        if (addressBook == null) {
-            return new AddressBook();
-        }
-        return addressBook.copy();
+    public List<AddressConfig> getAddressConfigs() {
+        return Collections.unmodifiableList(addressConfigs);
     }
 
     public void setAppConfig(final JarAppConfig appConfig) {

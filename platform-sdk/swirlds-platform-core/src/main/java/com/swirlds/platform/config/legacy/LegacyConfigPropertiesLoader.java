@@ -19,18 +19,15 @@ package com.swirlds.platform.config.legacy;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.internal.ConfigurationException;
-import com.swirlds.common.system.address.Address;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.address.AddressBookUtils;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.Settings;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Scanner;
@@ -78,7 +75,6 @@ public final class LegacyConfigPropertiesLoader {
         final LegacyConfigProperties configurationProperties = new LegacyConfigProperties();
 
         try (final Scanner scanner = new Scanner(configPath, StandardCharsets.UTF_8)) {
-            final AddressBook addressBook = new AddressBook();
             while (scanner.hasNextLine()) {
                 final String line = readNextLine(scanner);
                 if (!line.isEmpty()) {
@@ -104,12 +100,18 @@ public final class LegacyConfigPropertiesLoader {
                             configurationProperties.setAppConfig(appConfig);
                         }
                         case ADDRESS_PROPERTY_NAME -> {
-                            try {
-                                final Address address = AddressBookUtils.parseAddressText(line);
-                                if (address != null) {
-                                    addressBook.add(address);
-                                }
-                            } catch (final ParseException ex) {
+                            if (lineParameters.length >= 8) {
+                                final AddressConfig addressConfig = new AddressConfig(
+                                        parsOriginalCase[1],
+                                        parsOriginalCase[2],
+                                        Long.parseLong(pars[3]),
+                                        InetAddress.getByName(pars[4]),
+                                        Integer.parseInt(pars[5]),
+                                        InetAddress.getByName(pars[6]),
+                                        Integer.parseInt(pars[7]),
+                                        parsOriginalCase[8]);
+                                configurationProperties.addAddressConfig(addressConfig);
+                            } else {
                                 onError(ERROR_ADDRESS_NOT_ENOUGH_PARAMETERS);
                             }
                         }
@@ -119,9 +121,6 @@ public final class LegacyConfigPropertiesLoader {
                         default -> onError(ERROR_PROPERTY_NOT_KNOWN.formatted(pars[0]));
                     }
                 }
-            }
-            if (addressBook.getSize() > 0) {
-                configurationProperties.setAddressBook(addressBook);
             }
             return configurationProperties;
         } catch (final FileNotFoundException ex) {

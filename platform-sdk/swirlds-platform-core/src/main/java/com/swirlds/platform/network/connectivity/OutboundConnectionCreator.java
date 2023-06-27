@@ -34,7 +34,6 @@ import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkUtils;
 import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
-import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.ConnectException;
@@ -157,9 +156,7 @@ public class OutboundConnectionCreator {
      * @return the IP address to connect to
      */
     private byte[] getConnectAddressIpv4(final Address from, final Address to) {
-        final boolean fromIsLocal = AddressBookNetworkUtils.isLocal(from);
-        final boolean toIsLocal = AddressBookNetworkUtils.isLocal(to);
-        if (fromIsLocal && toIsLocal && socketConfig.useLoopbackIp()) {
+        if (from.isOwnHost() && to.isOwnHost() && socketConfig.useLoopbackIp()) {
             return LOCALHOST;
         } else if (to.isLocalTo(from)) {
             return to.getAddressInternalIpv4();

@@ -118,14 +118,15 @@ class TopologyTest {
     void testFullyConnectedUnidirectionalTopology(final int numNodes, final int numNeighbors, final long ignoredSeed) {
         final AddressBook addressBook =
                 new RandomAddressBookGenerator().setSize(numNodes).build();
+        final NodeId outOfBoundsId = addressBook.getNextNodeId();
+
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
-            final NodeId outOfBoundsId = addressBook.getNextNodeId();
             final NodeId thisNodeId = addressBook.getNodeId(thisNode);
             final NetworkTopology topology = new StaticTopology(addressBook, thisNodeId, numNeighbors);
             final List<NodeId> neighbors = topology.getNeighbors();
             final List<NodeId> expected = IntStream.range(0, numNodes)
                     .mapToObj(addressBook::getNodeId)
-                    .filter(nodeId -> !Objects.equals(thisNodeId, nodeId))
+                    .filter(node -> !Objects.equals(thisNodeId, node))
                     .toList();
             assertEquals(expected, neighbors, "all should be neighbors except me");
             for (final NodeId neighbor : neighbors) {
