@@ -220,8 +220,6 @@ public class SyncTests {
         new TestConfigBuilder().getOrCreateConfig();
 
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-        SettingsCommon.maxTransactionCountPerEvent = 1000;
-        SettingsCommon.transactionMaxBytes = 10000;
 
         if (platformLoggingEnabled) {
             loadLog4jContext();
@@ -835,7 +833,7 @@ public class SyncTests {
         // Set the generation to expire such that half the listener's graph, and therefore some events that need
         // to be sent to the caller, will be expired
         executor.setCustomPreSyncConfiguration(
-                (c, l) -> genToExpire.set(l.getEmitter().getGraphGenerator().getMaxGeneration(creatorId) / 2));
+                (c, l) -> genToExpire.set(l.getEmitter().getGraphGenerator().getMaxGeneration(0) / 2));
 
         // Expire events from the listener's graph after the supplied phase
         final Runnable expireEvents =

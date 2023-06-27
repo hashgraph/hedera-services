@@ -18,8 +18,8 @@ package com.hedera.node.app.workflows.handle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -54,6 +54,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.internal.EventImpl;
@@ -336,6 +337,7 @@ class HandleWorkflowTest extends AppTestBase {
         void testPreHandleNotExecuted() {
             // given
             when(platformTxn.getMetadata()).thenReturn(null);
+            given(event.getCreatorId()).willReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
@@ -373,6 +375,7 @@ class HandleWorkflowTest extends AppTestBase {
         void testPreHandleFailure() {
             // given
             when(platformTxn.getMetadata()).thenReturn(PRE_HANDLE_FAILURE_RESULT);
+            given(event.getCreatorId()).willReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
@@ -386,6 +389,7 @@ class HandleWorkflowTest extends AppTestBase {
         void testUnknownFailure() {
             // given
             when(platformTxn.getMetadata()).thenReturn(PreHandleResult.unknownFailure());
+            given(event.getCreatorId()).willReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
@@ -399,6 +403,7 @@ class HandleWorkflowTest extends AppTestBase {
         void testPreHandleSuccess() {
             // given
             when(platformTxn.getMetadata()).thenReturn(null);
+            given(event.getCreatorId()).willReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
