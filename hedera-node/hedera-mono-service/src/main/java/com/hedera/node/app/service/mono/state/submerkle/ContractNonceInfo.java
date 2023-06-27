@@ -24,12 +24,14 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
+import java.util.Objects;
 
 public class ContractNonceInfo implements SelfSerializable {
 
     static final int MERKLE_VERSION = 1;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x18ec32eaf9371551L;
+    public static final ContractNonceInfo MISSING_CONTRACT_NONCE_INFO = new ContractNonceInfo(null, 0);
 
     private EntityId contractId;
     private long nonce;
@@ -79,6 +81,13 @@ public class ContractNonceInfo implements SelfSerializable {
         return nonce;
     }
 
+    public static ContractNonceInfo fromGrpcEntityIdAndNonce(final EntityId contractId, final long nonce) {
+        if (contractId == null) {
+            return MISSING_CONTRACT_NONCE_INFO;
+        }
+        return new ContractNonceInfo(contractId, nonce);
+    }
+
     public com.hederahashgraph.api.proto.java.ContractNonceInfo toGrpc() {
         final var grpc = com.hederahashgraph.api.proto.java.ContractNonceInfo.newBuilder();
         if (contractId != null) {
@@ -98,5 +107,10 @@ public class ContractNonceInfo implements SelfSerializable {
         }
         final ContractNonceInfo that = (ContractNonceInfo) o;
         return contractId.equals(that.contractId) && nonce == that.nonce;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(contractId, nonce);
     }
 }
