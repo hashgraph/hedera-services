@@ -97,10 +97,6 @@ public class EventFlowWrapper {
         return selfTransactions;
     }
 
-    public void waitUntilAllRoundsAreHandled() throws InterruptedException {
-        consensusRoundHandler.waitUntilNotBusy();
-    }
-
     public HashSet<ConsensusTransactionImpl> applyPreConsensusEvents(
             final int numTransactions, final EventEmitter<?> eventEmitter) {
         return applyPreConsensusEvents(numTransactions, (indexedEvent) -> true, eventEmitter);
