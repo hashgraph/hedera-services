@@ -74,11 +74,7 @@ public final class ConfigMappings {
             new ConfigMapping("socket.doUpnp", "doUpnp"),
             new ConfigMapping("socket.useLoopbackIp", "useLoopbackIp"),
             new ConfigMapping("socket.tcpNoDelay", "tcpNoDelay"),
-            new ConfigMapping("socket.deadlockCheckPeriod", "deadlockCheckPeriod"),
-            new ConfigMapping("sync.maxOutgoingSyncs", "maxOutgoingSyncs"),
-            new ConfigMapping("sync.maxIncomingSyncsInc", "maxIncomingSyncsInc"),
-            new ConfigMapping("sync.callerSkipsBeforeSleep", "callerSkipsBeforeSleep"),
-            new ConfigMapping("sync.sleepCallerSkips", "sleepCallerSkips"));
+            new ConfigMapping("socket.deadlockCheckPeriod", "deadlockCheckPeriod"));
 
     /**
      * Add all known aliases to the provided config source

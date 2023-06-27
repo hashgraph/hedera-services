@@ -29,10 +29,10 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
 import com.swirlds.common.threading.locks.locked.MaybeLockedResource;
 import com.swirlds.logging.payloads.ReconnectPeerInfoPayload;
+import com.swirlds.platform.Settings;
 import com.swirlds.platform.components.EventTaskCreator;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.shadowgraph.SimultaneousSyncThrottle;
-import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.NetworkUtils;
@@ -71,7 +71,6 @@ public class SyncCaller implements Runnable {
     private final EventTaskCreator eventTaskCreator;
     private final Runnable updatePlatformStatus;
     private ShadowGraphSynchronizer syncShadowgraphSynchronizer;
-    private final SyncConfig syncConfig;
 
     private static final SpeedometerMetric.Config SLEEP_1_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
                     INTERNAL_CATEGORY, "sleep1/sec")
@@ -109,8 +108,6 @@ public class SyncCaller implements Runnable {
             @NonNull final EventTaskCreator eventTaskCreator,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final ShadowGraphSynchronizer syncShadowgraphSynchronizer) {
-        Objects.requireNonNull(platformContext);
-
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
         this.callerNumber = callerNumber;
@@ -124,7 +121,6 @@ public class SyncCaller implements Runnable {
         this.syncShadowgraphSynchronizer = Objects.requireNonNull(syncShadowgraphSynchronizer);
 
         sleep1perSecond = platformContext.getMetrics().getOrCreate(SLEEP_1_PER_SECOND_CONFIG);
-        syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
     }
 
     /**
@@ -141,11 +137,11 @@ public class SyncCaller implements Runnable {
                     failedAttempts = 0;
                 } else {
                     failedAttempts++;
-                    if (failedAttempts >= syncConfig.callerSkipsBeforeSleep()) {
+                    if (failedAttempts >= Settings.getInstance().getCallerSkipsBeforeSleep()) {
                         failedAttempts = 0;
                         try {
                             // Necessary to slow down the attempts after N failures
-                            Thread.sleep(syncConfig.sleepCallerSkips());
+                            Thread.sleep(Settings.getInstance().getSleepCallerSkips());
                             sleep1perSecond.cycle();
                         } catch (final InterruptedException ex) {
                             Thread.currentThread().interrupt();

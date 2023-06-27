@@ -16,13 +16,17 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.platform.SettingConstants.CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.LOAD_KEYS_FROM_PFX_FILES_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_ADDRESS_SIZE_ALLOWED_DEFAULT_VALUE;
+import static com.swirlds.platform.SettingConstants.MAX_INCOMING_SYNCS_INC_DEFAULT_VALUE;
+import static com.swirlds.platform.SettingConstants.MAX_OUTGOING_SYNCS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.NUM_CRYPTO_THREADS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
+import static com.swirlds.platform.SettingConstants.SLEEP_CALLER_SKIPS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.THREAD_DUMP_LOG_DIR_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.THREAD_DUMP_PERIOD_MS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.THREAD_PRIORITY_NON_SYNC_DEFAULT_VALUE;
@@ -141,10 +145,14 @@ class SettingsTest {
         Assertions.assertEquals(VERBOSE_STATISTICS_DEFAULT_VALUE, settings.isVerboseStatistics());
         Assertions.assertEquals(
                 THROTTLE_TRANSACTION_QUEUE_SIZE_DEFAULT_VALUE, settings.getThrottleTransactionQueueSize());
+        Assertions.assertEquals(MAX_OUTGOING_SYNCS_DEFAULT_VALUE, settings.getMaxOutgoingSyncs());
+        Assertions.assertEquals(MAX_INCOMING_SYNCS_INC_DEFAULT_VALUE, settings.getMaxIncomingSyncsInc());
         Assertions.assertEquals(
                 Integer.parseInt(ConsensusConfig.COIN_FREQ_DEFAULT_VALUE),
                 configuration.getConfigData(ConsensusConfig.class).coinFreq());
         Assertions.assertEquals(DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE, settings.getDeadlockCheckPeriod());
+        Assertions.assertEquals(CALLER_SKIPS_BEFORE_SLEEP_DEFAULT_VALUE, settings.getCallerSkipsBeforeSleep());
+        Assertions.assertEquals(SLEEP_CALLER_SKIPS_DEFAULT_VALUE, settings.getSleepCallerSkips());
         Assertions.assertEquals(THREAD_PRIORITY_SYNC_DEFAULT_VALUE, settings.getThreadPrioritySync());
         Assertions.assertEquals(THREAD_PRIORITY_NON_SYNC_DEFAULT_VALUE, settings.getThreadPriorityNonSync());
         Assertions.assertEquals(TRANSACTION_MAX_BYTES_DEFAULT_VALUES, settings.getTransactionMaxBytes());
@@ -184,7 +192,11 @@ class SettingsTest {
         Assertions.assertTrue(settings.isShowInternalStats());
         Assertions.assertTrue(settings.isVerboseStatistics());
         Assertions.assertEquals(200000, settings.getThrottleTransactionQueueSize());
+        Assertions.assertEquals(3, settings.getMaxOutgoingSyncs());
+        Assertions.assertEquals(2, settings.getMaxIncomingSyncsInc());
         Assertions.assertEquals(2000, settings.getDeadlockCheckPeriod());
+        Assertions.assertEquals(50, settings.getCallerSkipsBeforeSleep());
+        Assertions.assertEquals(100, settings.getSleepCallerSkips());
         Assertions.assertEquals(10, settings.getThreadPrioritySync());
         Assertions.assertEquals(7000, settings.getTransactionMaxBytes());
         Assertions.assertEquals(2048, settings.getMaxAddressSizeAllowed());
