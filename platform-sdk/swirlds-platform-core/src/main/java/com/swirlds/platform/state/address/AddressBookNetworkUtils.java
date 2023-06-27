@@ -16,24 +16,40 @@
 
 package com.swirlds.platform.state.address;
 
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.network.Network;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.InetAddress;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.Objects;
 
 /**
  * {@link AddressBook AddressBook} utility methods.
  */
-public final class AddressBookUtils {
+public final class AddressBookNetworkUtils {
 
-    /** For logging info, warn, and error. */
-    private static final Logger logger = LogManager.getLogger(AddressBookUtils.class);
+    private AddressBookNetworkUtils() {}
 
-    private AddressBookUtils() {}
+    /**
+     * Check if the address is local to the machine.
+     *
+     * @param address the address to check
+     * @return true if the address is local to the machine, false otherwise
+     * @throws IllegalStateException if the locality of the address cannot be determined.
+     */
+    public static boolean isLocal(@NonNull final Address address) {
+        Objects.requireNonNull(address, "The address must not be null.");
+        try {
+            return Network.isOwn(InetAddress.getByAddress(address.getAddressInternalIpv4()));
+        } catch (final SocketException | UnknownHostException e) {
+            throw new IllegalStateException(
+                    "Not able to determine locality of address [%s] for node [%s]"
+                            .formatted(address.getAddressInternalIpv4(), address.getNodeId()),
+                    e);
+        }
+    }
 
     /**
      * Get the number of addresses currently in the address book that are running on this computer. When the browser is
@@ -43,21 +59,12 @@ public final class AddressBookUtils {
      * @param addressBook the address book to check
      * @return the number of local addresses
      */
-    public static int getOwnHostCount(final AddressBook addressBook) {
+    public static int getLocalAddressCount(@NonNull final AddressBook addressBook) {
+        Objects.requireNonNull(addressBook, "The addressBook must not be null.");
         int count = 0;
         for (final Address address : addressBook) {
-            try {
-                if (Network.isOwn(InetAddress.getByAddress(address.getAddressInternalIpv4()))) {
-                    count++;
-                }
-            } catch (final Exception e) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "Error while checking if address {} for node {} is local",
-                        address.getAddressInternalIpv4(),
-                        address.getNodeId(),
-                        e);
-                throw new IllegalStateException("Error while checking if ip of address was local", e);
+            if (isLocal(address)) {
+                count++;
             }
         }
         return count;

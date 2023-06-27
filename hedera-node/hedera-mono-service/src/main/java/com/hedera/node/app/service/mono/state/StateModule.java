@@ -236,12 +236,6 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static NodeId provideNodeId(final Platform platform) {
-        return platform.getSelfId();
-    }
-
-    @Provides
-    @Singleton
     static StateView provideCurrentView(
             final ScheduleStore scheduleStore, final MutableStateChildren workingState, final NetworkInfo networkInfo) {
         return new StateView(scheduleStore, workingState, networkInfo);

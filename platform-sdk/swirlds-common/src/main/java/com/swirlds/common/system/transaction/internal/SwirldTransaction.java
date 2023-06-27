@@ -19,9 +19,10 @@ package com.swirlds.common.system.transaction.internal;
 import static com.swirlds.common.io.streams.AugmentedDataOutputStream.getArraySerializedLength;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.common.config.TransactionConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
@@ -97,7 +98,8 @@ public class SwirldTransaction extends ConsensusTransactionImpl implements Compa
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        this.contents = in.readByteArray(SettingsCommon.transactionMaxBytes);
+        final TransactionConfig transactionConfig = ConfigurationHolder.getConfigData(TransactionConfig.class);
+        this.contents = in.readByteArray(transactionConfig.transactionMaxBytes());
     }
 
     /**

@@ -32,6 +32,7 @@ import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -471,7 +472,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 // this should be impossible
                 throw new IllegalStateException("stateToLoad is null");
             }
-
+            final TransactionConfig transactionConfig =
+                    platformContext.getConfiguration().getConfigData(TransactionConfig.class);
             swirldStateManager = PlatformConstructor.swirldStateManager(
                     platformContext,
                     initialAddressBook,
@@ -479,15 +481,16 @@ public class SwirldsPlatform implements Platform, Startable {
                     preConsensusSystemTransactionManager,
                     postConsensusSystemTransactionManager,
                     metrics,
-                    PlatformConstructor.settingsProvider(),
+                    transactionConfig,
                     freezeManager::isFreezeStarted,
                     stateToLoad);
 
             // SwirldStateManager will get a copy of the state loaded, that copy will become stateCons.
             // The original state will be saved in the SignedStateMgr and will be deleted when it becomes old
 
-            preConsensusEventHandler = components.add(
-                    new PreConsensusEventHandler(metrics, threadManager, selfId, swirldStateManager, consensusMetrics));
+            final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
+            preConsensusEventHandler = components.add(new PreConsensusEventHandler(
+                    metrics, threadManager, selfId, swirldStateManager, consensusMetrics, threadConfig));
             consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
                     platformContext,
                     threadManager,
@@ -558,7 +561,7 @@ public class SwirldsPlatform implements Platform, Startable {
             validators.add(new AncientValidator(consensusRef::get));
             validators.add(new EventDeduplication(isDuplicateChecks, eventIntakeMetrics));
             validators.add(StaticValidators::isParentDataValid);
-            validators.add(new TransactionSizeValidator(settings.getMaxTransactionBytesPerEvent()));
+            validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
             if (settings.isVerifyEventSigs()) {
                 validators.add(new SignatureValidator(initialAddressBook));
             }
@@ -584,10 +587,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     // until after all things have been constructed).
                     .setHandler(e -> getGossip().getEventIntakeLambda().accept(e))
                     .setCapacity(eventConfig.eventIntakeQueueSize())
-                    .setLogAfterPauseDuration(platformContext
-                            .getConfiguration()
-                            .getConfigData(ThreadConfig.class)
-                            .logStackTracePauseDuration())
+                    .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
                     .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
                             .enableMaxSizeMetric()
                             .enableBusyTimeMetric())
@@ -595,7 +595,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
             transactionSubmitter = new SwirldTransactionSubmitter(
                     currentPlatformStatus::get,
-                    PlatformConstructor.settingsProvider(),
+                    transactionConfig,
                     swirldStateManager::submitTransaction,
                     new TransactionMetrics(metrics));
 

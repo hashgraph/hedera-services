@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,21 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.internal;
+package com.swirlds.logging.payloads;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * @deprecated this is not a good access pattern, don't add to this mess by increasing the places where its used
+ * This payload is used to signal that a state written to disk did not collect sufficient signatures to be considered
+ * complete.
  */
-@Deprecated
-public class SettingsCommon {
-    // used by AbstractStatistics
-    public static boolean showInternalStats;
-    public static boolean verboseStatistics;
+public class InsufficientSignaturesPayload extends AbstractLogPayload {
+
+    /**
+     * Constructor
+     * @param message a human-readable message
+     */
+    public InsufficientSignaturesPayload(@NonNull final String message) {
+        super(message);
+    }
 }
