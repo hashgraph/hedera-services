@@ -408,7 +408,6 @@ public class SwirldsPlatform implements Platform, Startable {
         } else {
             eventStreamManagerName = String.valueOf(selfId);
         }
-        logger.info(STARTUP.getMarker(), "initialize eventStreamManager");
 
         final EventStreamManager<EventImpl> eventStreamManager = new EventStreamManager<>(
                 platformContext,
@@ -439,12 +438,6 @@ public class SwirldsPlatform implements Platform, Startable {
         }
 
         final State mutableStateCopy = initializeAndCopyState(initialState);
-
-        // TODO can this be moved somewhere else in the startup sequence?
-        stateHashSignQueue = PlatformConstructor.stateHashSignQueue(
-                threadManager, selfId, stateManagementComponent::newSignedStateFromTransactions, metrics);
-        stateHashSignQueue.start(); // TODO why do we start this here?
-
         swirldStateManager = PlatformConstructor.swirldStateManager(
                 platformContext,
                 initialAddressBook,
@@ -456,8 +449,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 freezeManager::isFreezeStarted,
                 mutableStateCopy);
 
-        // SwirldStateManager will get a copy of the state loaded, that copy will become stateCons.
-        // The original state will be saved in the SignedStateMgr and will be deleted when it becomes old
+        stateHashSignQueue = components.add(PlatformConstructor.stateHashSignQueue(
+                threadManager, selfId, stateManagementComponent::newSignedStateFromTransactions, metrics));
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         final PreConsensusEventHandler preConsensusEventHandler = components.add(new PreConsensusEventHandler(
