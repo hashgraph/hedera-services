@@ -39,6 +39,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.notification.NotificationEngine;
@@ -703,6 +704,15 @@ public class SwirldsPlatform implements Platform, Startable {
                     },
                     "interrupted while attempting to hash the state");
         }
+
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        logger.info(
+                STARTUP.getMarker(),
+                "The platform is using the following initial state:\n{}\n{}",
+                signedState.getState().getPlatformState().getInfoString(),
+                new MerkleTreeVisualizer(signedState.getState())
+                        .setDepth(stateConfig.debugHashDepth())
+                        .render());
     }
 
     /**
