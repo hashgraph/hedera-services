@@ -7,4 +7,6 @@ module com.swirlds.config.processor {
     requires java.compiler;
     requires com.swirlds.config;
     requires org.jboss.forge.roaster.api;
+    requires static com.github.spotbugs.annotations;
+
 }

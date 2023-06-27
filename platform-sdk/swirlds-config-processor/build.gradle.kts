@@ -27,4 +27,5 @@ dependencies {
   implementation(libs.roaster.api)
   runtimeOnly(libs.roaster.jdt)
   compileOnly(libs.auto.service.annotations)
+  compileOnly(libs.spotbugs.annotations)
 }

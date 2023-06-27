@@ -17,20 +17,21 @@
 
 package com.swirlds.config.processor;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.Objects;
 
 public class DocumentationFactory {
 
-    public static void doWork(ConfigDataRecordDefinition configDataRecordDefinition)
+    public static void doWork(@NonNull final ConfigDataRecordDefinition configDataRecordDefinition)
             throws IOException {
+        Objects.requireNonNull(configDataRecordDefinition, "configDataRecordDefinition must not be null");
 
-        System.out.println("Result for config data record '" + configDataRecordDefinition.className() + "':");
+        System.out.println("Result for config data record '" + configDataRecordDefinition.simpleClassName() + "':");
         configDataRecordDefinition.propertyDefinitions().forEach(propertyDefinition -> {
             System.out.println("  " + propertyDefinition.name() + " (" + propertyDefinition.type() + "):");
             System.out.println("    default value: " + propertyDefinition.defaultValue());
             System.out.println("    description: " + propertyDefinition.description());
         });
-
-
     }
 }

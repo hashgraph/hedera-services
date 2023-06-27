@@ -17,8 +17,16 @@
 
 package com.swirlds.config.processor;
 
-import java.util.Set;
+public class ConfigProcessorConstants {
 
-public record ConfigDataRecordDefinition(String packageName, String simpleClassName, String configDataName,
-                                         Set<ConfigDataPropertyDefinition> propertyDefinitions) {
+    public static final String JAVA_FILE_EXTENSION = ".java";
+    public static final String JAVADOC_PARAM = "@param";
+    public static final String VALUE_FIELD_NAME = "value";
+    public static final String DEFAULT_VALUE_FIELD_NAME = "defaultValue";
+    public static final String JAVA_LANG_STRING = "java.lang.String";
+    public static final String CONSTANTS_CLASS_SUFFIX = "Constants";
+    public static final String CONFIG_DATA_ANNOTATION = "com.swirlds.config.api.ConfigData";
+
+    private ConfigProcessorConstants() {
+    }
 }
