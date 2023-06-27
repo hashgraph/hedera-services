@@ -236,6 +236,7 @@ public class HandleWorkflow {
         final var storeFactory = new ReadableStoreFactory(state);
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
         final var creator = nodeInfo.accountOf(platformEvent.getCreatorId());
+        System.out.println(creator);
         final var result = preHandleWorkflow.preHandleTransaction(creator, storeFactory, accountStore, platformTxn);
 
         // If pre-handle was successful, we return the result. Otherwise, we charge the node or throw an exception.

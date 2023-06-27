@@ -17,21 +17,11 @@
 package com.hedera.node.app.service.contract.impl.hevm;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Code;
-import org.hyperledger.besu.evm.frame.BlockValues;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.tracing.OperationTracer;
 
-public record HederaEvmContext(long gasPrice, boolean staticCall, HederaEvmCode code, HederaEvmBlocks blocks) {
-    public Code load(@NonNull final Address contract) {
-        return code.load(Objects.requireNonNull(contract));
-    }
+public interface HederaTracer extends OperationTracer {
+    void initProcess(@NonNull MessageFrame frame);
 
-    public Code loadIfPresent(@NonNull final Address contract) {
-        return code.loadIfPresent(Objects.requireNonNull(contract));
-    }
-
-    public BlockValues blockValuesOf(final long gasLimit) {
-        return blocks.blockValuesOf(gasLimit);
-    }
+    void finalizeProcess(@NonNull MessageFrame frame);
 }

@@ -16,14 +16,23 @@
 
 package com.hedera.node.app.service.contract.impl.test.utils;
 
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.log.Log;
+import org.hyperledger.besu.evm.log.LogsBloomFilter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -71,5 +80,39 @@ class ConversionUtilsTest {
         final var address = Address.fromHexString("0x010000000000000000");
         final var actual = ConversionUtils.maybeMissingNumberOf(address, dispatch);
         assertEquals(0x1234L, actual);
+    }
+
+    @Test
+    void convertsFromBesuLogAsExpected() {
+        final var expectedBloom = Bytes.wrap(bloomFor(BESU_LOG));
+        final var expected = ContractLoginfo.newBuilder()
+                .contractID(ContractID.newBuilder().contractNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
+                .bloom(tuweniToPbjBytes(expectedBloom))
+                .data(CALL_DATA)
+                .topic(List.of(TOPIC))
+                .build();
+
+        final var actual = pbjLogFrom(BESU_LOG);
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void convertsFromBesuLogsAsExpected() {
+        final var expectedBloom = Bytes.wrap(bloomFor(BESU_LOG));
+        final var expected = ContractLoginfo.newBuilder()
+                .contractID(ContractID.newBuilder().contractNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS)))
+                .bloom(tuweniToPbjBytes(expectedBloom))
+                .data(CALL_DATA)
+                .topic(List.of(TOPIC))
+                .build();
+
+        final var actual = pbjLogsFrom(List.of(BESU_LOG));
+
+        assertEquals(List.of(expected), actual);
+    }
+
+    private byte[] bloomFor(@NonNull final Log log) {
+        return LogsBloomFilter.builder().insertLog(log).build().toArray();
     }
 }

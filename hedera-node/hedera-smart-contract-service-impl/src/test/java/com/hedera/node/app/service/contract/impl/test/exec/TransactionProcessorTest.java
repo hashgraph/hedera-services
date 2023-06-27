@@ -25,7 +25,10 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmCode;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
@@ -43,10 +46,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TransactionProcessorTest {
     @Mock
+    private FrameBuilder frameBuilder;
+
+    @Mock
+    private FrameProcessor frameProcessor;
+
+    @Mock
     private CustomMessageCallProcessor messageCallProcessor;
 
     @Mock
     private ContractCreationProcessor contractCreationProcessor;
+
+    @Mock
+    private HederaEvmCode code;
 
     @Mock
     private HederaEvmBlocks blocks;
@@ -73,7 +85,8 @@ class TransactionProcessorTest {
 
     @BeforeEach
     void setUp() {
-        subject = new TransactionProcessor(gasCharging, messageCallProcessor, contractCreationProcessor);
+        subject = new TransactionProcessor(
+                frameBuilder, frameProcessor, gasCharging, messageCallProcessor, contractCreationProcessor);
     }
 
     @Test
@@ -88,14 +101,20 @@ class TransactionProcessorTest {
         assertAbortsWith(wellKnownRelayedHapiCall(0), INVALID_CONTRACT_ID);
     }
 
+    @Test
+    void requiresEthTxToHaveNonNullRelayer() {
+        givenSenderAccount();
+        assertAbortsWith(wellKnownRelayedHapiCall(0), INVALID_ACCOUNT_ID);
+    }
+
     private void assertAbortsWith(@NonNull final ResponseCodeEnum reason) {
         assertAbortsWith(wellKnownHapiCall(), reason);
     }
 
     private void assertAbortsWith(
             @NonNull final HederaEvmTransaction transaction, @NonNull final ResponseCodeEnum reason) {
-        final var result =
-                subject.processTransaction(transaction, worldUpdater, wellKnownContextWith(blocks), tracer, config);
+        final var result = subject.processTransaction(
+                transaction, worldUpdater, wellKnownContextWith(code, blocks), tracer, config);
         assertEquals(reason, result.abortReason());
     }
 

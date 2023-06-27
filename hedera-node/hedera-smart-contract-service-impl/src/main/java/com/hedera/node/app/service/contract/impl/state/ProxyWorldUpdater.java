@@ -120,6 +120,18 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         return address == null ? null : (HederaEvmAccount) get(address);
     }
 
+    @Override
+    public ContractID getHederaContractId(@NonNull final Address address) {
+        if (pendingCreation != null && pendingCreation.address().equals(requireNonNull(address))) {
+            return ContractID.newBuilder().contractNum(pendingCreation.number()).build();
+        }
+        final HederaEvmAccount account = (HederaEvmAccount) get(address);
+        if (account == null) {
+            throw new IllegalArgumentException("No contract pending or extant at " + address);
+        }
+        return account.hederaContractId();
+    }
+
     @Nullable
     @Override
     public HederaEvmAccount getHederaAccount(@NonNull ContractID contractId) {
@@ -188,7 +200,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public void setupCreate2(@NonNull final Address receiver, @NonNull final Address alias) {
+    public void setupAliasedCreate(@NonNull final Address receiver, @NonNull final Address alias) {
         setupPendingCreation(receiver, alias);
     }
 

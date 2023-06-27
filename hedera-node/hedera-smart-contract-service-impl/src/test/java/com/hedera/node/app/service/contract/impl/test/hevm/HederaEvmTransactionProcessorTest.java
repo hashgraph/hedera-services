@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmCode;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.swirlds.config.api.Configuration;
@@ -36,6 +37,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaEvmTransactionProcessorTest {
+    @Mock
+    private HederaEvmCode code;
+
     @Mock
     private HederaEvmBlocks blocks;
 
@@ -70,7 +74,7 @@ class HederaEvmTransactionProcessorTest {
     @Test
     void calls030AsExpected() {
         final var transaction = wellKnownHapiCall();
-        final var context = wellKnownContextWith(blocks, false);
+        final var context = wellKnownContextWith(code, blocks, false);
 
         subject.process(transaction, worldUpdater, context, VERSION_030, tracer, config);
 
@@ -80,7 +84,7 @@ class HederaEvmTransactionProcessorTest {
     @Test
     void calls034AsExpected() {
         final var transaction = wellKnownHapiCall();
-        final var context = wellKnownContextWith(blocks, false);
+        final var context = wellKnownContextWith(code, blocks, false);
 
         subject.process(transaction, worldUpdater, context, VERSION_034, tracer, config);
 
@@ -90,7 +94,7 @@ class HederaEvmTransactionProcessorTest {
     @Test
     void calls038AsExpected() {
         final var transaction = wellKnownHapiCall();
-        final var context = wellKnownContextWith(blocks, false);
+        final var context = wellKnownContextWith(code, blocks, false);
 
         subject.process(transaction, worldUpdater, context, VERSION_038, tracer, config);
 

@@ -19,16 +19,18 @@ package com.hedera.node.app.service.contract.impl.exec;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.*;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
@@ -39,19 +41,23 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
  * {@code ContractCallLocal}) can reduce to a single code path.
  */
 public class TransactionProcessor {
-    public static final String CONFIG_CONTEXT_VARIABLE = "contractsConfig";
-
+    private final FrameBuilder frameBuilder;
+    private final FrameProcessor frameProcessor;
     private final CustomGasCharging gasCharging;
     private final CustomMessageCallProcessor messageCallProcessor;
     private final ContractCreationProcessor contractCreationProcessor;
 
     public TransactionProcessor(
+            @NonNull final FrameBuilder frameBuilder,
+            @NonNull final FrameProcessor frameProcessor,
             @NonNull final CustomGasCharging gasCharging,
             @NonNull final CustomMessageCallProcessor messageCallProcessor,
             @NonNull final ContractCreationProcessor contractCreationProcessor) {
-        this.gasCharging = Objects.requireNonNull(gasCharging);
-        this.messageCallProcessor = Objects.requireNonNull(messageCallProcessor);
-        this.contractCreationProcessor = Objects.requireNonNull(contractCreationProcessor);
+        this.frameBuilder = requireNonNull(frameBuilder);
+        this.frameProcessor = requireNonNull(frameProcessor);
+        this.gasCharging = requireNonNull(gasCharging);
+        this.messageCallProcessor = requireNonNull(messageCallProcessor);
+        this.contractCreationProcessor = requireNonNull(contractCreationProcessor);
     }
 
     public HederaEvmTransactionResult processTransaction(
@@ -80,6 +86,11 @@ public class TransactionProcessor {
 
         final var sender = worldUpdater.getHederaAccount(transaction.senderId());
         validateTrue(sender != null, INVALID_ACCOUNT_ID);
+        HederaEvmAccount relayer = null;
+        if (transaction.isEthereumTransaction()) {
+            relayer = worldUpdater.getHederaAccount(requireNonNull(transaction.relayerId()));
+            validateTrue(relayer != null, INVALID_ACCOUNT_ID);
+        }
         if (transaction.isCreate()) {
             throw new AssertionError("Not implemented");
         } else {
