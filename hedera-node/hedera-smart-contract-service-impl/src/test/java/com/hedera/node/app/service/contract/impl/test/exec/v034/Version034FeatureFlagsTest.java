@@ -38,14 +38,14 @@ class Version034FeatureFlagsTest {
 
     @Test
     void implicitCreationEnabledIfLazyAndAutoCreationBothEnabled() {
-        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
+        final var config = new HederaTestConfigBuilder().getOrCreateConfig();
         given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);
         assertTrue(subject.isImplicitCreationEnabled(frame));
     }
 
     @Test
     void implicitCreationNotEnabledIfLazyCreationNotEnabled() {
-        final var config = HederaTestConfigBuilder.create()
+        final var config = new HederaTestConfigBuilder()
                 .withValue("lazyCreation.enabled", false)
                 .getOrCreateConfig();
         given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);
@@ -54,7 +54,7 @@ class Version034FeatureFlagsTest {
 
     @Test
     void implicitCreationNotEnabledIfAutoCreationNotEnabled() {
-        final var config = HederaTestConfigBuilder.create()
+        final var config = new HederaTestConfigBuilder()
                 .withValue("autoCreation.enabled", false)
                 .getOrCreateConfig();
         given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);

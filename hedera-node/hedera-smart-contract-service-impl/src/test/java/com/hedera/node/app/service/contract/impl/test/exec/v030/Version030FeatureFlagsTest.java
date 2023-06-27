@@ -37,14 +37,14 @@ class Version030FeatureFlagsTest {
 
     @Test
     void everythingIsDisabled() {
-        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
+        final var config = new HederaTestConfigBuilder().getOrCreateConfig();
         given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);
         assertFalse(subject.isImplicitCreationEnabled(frame));
     }
 
     @Test
     void create2FeatureFlagWorks() {
-        final var config = HederaTestConfigBuilder.create()
+        final var config = new HederaTestConfigBuilder()
                 .withValue("contracts.allowCreate2", false)
                 .getOrCreateConfig();
         given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);
