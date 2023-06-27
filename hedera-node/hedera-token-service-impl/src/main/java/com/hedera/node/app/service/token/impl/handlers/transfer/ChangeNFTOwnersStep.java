@@ -88,7 +88,11 @@ public class ChangeNFTOwnersStep extends BaseTokenHandler implements TransferSte
                         accountStore,
                         tokenRelStore,
                         nftStore);
-                if (oc.isApproval()) {}
+                if (oc.isApproval()) {
+                    final var uniqueToken = nftStore.get(tokenId, serial);
+                    final var copy = uniqueToken.copyBuilder();
+                    nftStore.put(copy.spenderNumber(0).build());
+                }
             }
         }
     }

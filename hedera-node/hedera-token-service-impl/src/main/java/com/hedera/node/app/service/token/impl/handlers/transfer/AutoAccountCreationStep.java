@@ -72,7 +72,12 @@ public class AutoAccountCreationStep {
         this.accountStore = accountStore;
     }
 
-    public long create(@NonNull final Bytes alias, final boolean isByTokenTransfer) {
+    /**
+     * Creates an account for the given alias.
+     * @param alias the alias to create the account for
+     * @param isByTokenTransfer whether the account is being created by a token transfer
+     */
+    public void create(@NonNull final Bytes alias, final boolean isByTokenTransfer) {
         final var accountsConfig = handleContext.configuration().getConfigData(AccountsConfig.class);
         final var autoCreationConfig = handleContext.configuration().getConfigData(AutoCreationConfig.class);
         validateTrue(autoCreationConfig.enabled(), NOT_SUPPORTED);
@@ -128,15 +133,23 @@ public class AutoAccountCreationStep {
             }
         }
         // TODO: Not sure if fee should be set here childRecord.transactionFee(fee);
-        return fee;
     }
 
+    /**
+     * Get fees for finalization of lazy creation.
+     * @return fee for finalization of lazy creation
+     */
     private long getLazyCreationFinalizationFee() {
         final var updateTxnBody = CryptoUpdateTransactionBody.newBuilder()
                 .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
         return autoCreationFeeFor(TransactionBody.newBuilder().cryptoUpdateAccount(updateTxnBody));
     }
 
+    /**
+     * Get fees for auto creation.
+     * @param syntheticCreation transaction body for auto creation
+     * @return fee for auto creation
+     */
     private long autoCreationFeeFor(final TransactionBody.Builder syntheticCreation) {
         final var topLevelPayer = handleContext.body().transactionIDOrThrow().accountIDOrThrow();
         final var payerAccount = accountStore.get(topLevelPayer);
@@ -146,18 +159,37 @@ public class AutoAccountCreationStep {
         return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 
+    /**
+     * Create a transaction body for new hollow-account with the given alias.
+     * @param alias alias of the account
+     * @param balance initial balance of the account
+     * @return transaction body for new hollow-account
+     */
     public TransactionBody.Builder createHollowAccount(final Bytes alias, final long balance) {
         final var baseBuilder = createAccountBase(balance);
         baseBuilder.key(IMMUTABILITY_SENTINEL_KEY).alias(alias).memo(LAZY_MEMO);
         return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
     }
 
+    /**
+     * Create a transaction body for new account with the given balance and other common fields.
+     * @param balance initial balance of the account
+     * @return transaction body for new account
+     */
     private CryptoCreateTransactionBody.Builder createAccountBase(final long balance) {
         return CryptoCreateTransactionBody.newBuilder()
                 .initialBalance(balance)
                 .autoRenewPeriod(Duration.newBuilder().seconds(THREE_MONTHS_IN_SECONDS));
     }
 
+    /**
+     * Create a transaction body for new account with the given alias, key, balance and maxAutoAssociations.
+     * @param alias alias of the account
+     * @param key key of the account
+     * @param balance initial balance of the account
+     * @param maxAutoAssociations maxAutoAssociations of the account
+     * @return transaction body for new account
+     */
     private TransactionBody.Builder createAccount(
             final Bytes alias, final Key key, final long balance, final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(balance);
@@ -169,15 +201,17 @@ public class AutoAccountCreationStep {
         return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
     }
 
-    public static boolean isRecoveredEvmAddress(final Bytes address) {
-        return address != null && address.length() == EVM_ADDRESS_LEN;
-    }
-
+    /**
+     * Try to recover EVM address from the given key.
+     * @param key key to recover EVM address from
+     * @param addressRecovery function to recover EVM address from the given key
+     * @return recovered EVM address if successful, otherwise null
+     */
     @Nullable
-    public static byte[] tryAddressRecovery(@Nullable final Key key, final UnaryOperator<byte[]> addressRecovery) {
+    private byte[] tryAddressRecovery(@Nullable final Key key, final UnaryOperator<byte[]> addressRecovery) {
         if (key != null && key.hasEcdsaSecp256k1()) {
             // Only compressed keys are stored at the moment
-            final var keyBytes = key.ecdsaSecp256k1();
+            final var keyBytes = key.ecdsaSecp256k1OrThrow();
             if (keyBytes.length() == ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
                 final var keyBytesArray = keyBytes.toByteArray();
                 final var evmAddress = addressRecovery.apply(keyBytesArray);
@@ -191,5 +225,14 @@ public class AutoAccountCreationStep {
             }
         }
         return null;
+    }
+
+    /**
+     * Check if the given address is of a valid EVM address length.
+     * @param address address to check
+     * @return true if the given address is a valid EVM address length, false otherwise
+     */
+    private boolean isRecoveredEvmAddress(final Bytes address) {
+        return address != null && address.length() == EVM_ADDRESS_LEN;
     }
 }

@@ -32,6 +32,10 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.spi.workflows.HandleContext;
 
+/**
+ * Associates the token with the sender and receiver accounts if they are not already associated.
+ * They are auto-associated only if there are open auto-associations available on the account.
+ */
 public class AssociateTokenRecepientsStep extends BaseTokenHandler implements TransferStep {
     private final CryptoTransferTransactionBody op;
 
@@ -49,6 +53,7 @@ public class AssociateTokenRecepientsStep extends BaseTokenHandler implements Tr
         for (var xfers : op.tokenTransfersOrElse(emptyList())) {
             final var tokenId = xfers.token();
             final var token = getIfUsable(tokenId, tokenStore);
+
             for (final var aa : xfers.transfersOrElse(emptyList())) {
                 final var accountId = aa.accountID();
                 validateAndAutoAssociate(accountId, tokenId, token, accountStore, tokenRelStore, handleContext);
@@ -63,6 +68,16 @@ public class AssociateTokenRecepientsStep extends BaseTokenHandler implements Tr
         }
     }
 
+    /**
+     * Associates the token with the account if it is not already associated. It is auto-associated only if there are
+     * open auto-associations available on the account.
+     * @param accountId The account to associate the token with
+     * @param tokenId The tokenID of the token to associate with the account
+     * @param token The token to associate with the account
+     * @param accountStore The account store
+     * @param tokenRelStore The token relation store
+     * @param handleContext The context
+     */
     private void validateAndAutoAssociate(
             final AccountID accountId,
             final TokenID tokenId,

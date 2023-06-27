@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.token.impl.handlers.transfer.Utils.isS
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.HashMap;
@@ -33,7 +32,6 @@ import java.util.Map;
  */
 public class TransferContextImpl implements TransferContext {
     private WritableAccountStore accountStore;
-    private WritableTokenStore tokenStore;
     private AutoAccountCreationStep autoAccountCreator;
     private HandleContext context;
     private int numAutoCreations;
@@ -41,11 +39,9 @@ public class TransferContextImpl implements TransferContext {
     private Map<Bytes, AccountID> resolutions = new HashMap<>();
 
     public TransferContextImpl(final HandleContext context) {
-        this.accountStore = context.writableStore(WritableAccountStore.class);
-        this.tokenStore = context.writableStore(WritableTokenStore.class);
         this.context = context;
+        this.accountStore = context.writableStore(WritableAccountStore.class);
         accountStore = context.writableStore(WritableAccountStore.class);
-        tokenStore = context.writableStore(WritableTokenStore.class);
         this.autoAccountCreator = new AutoAccountCreationStep(accountStore, context);
     }
 

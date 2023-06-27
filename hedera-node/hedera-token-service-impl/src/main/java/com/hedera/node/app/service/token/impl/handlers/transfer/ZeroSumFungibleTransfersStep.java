@@ -25,7 +25,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static java.util.Collections.emptyList;
 
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
@@ -33,9 +32,9 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
-import java.util.LinkedHashMap;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements TransferStep {
     final CryptoTransferTransactionBody op;
@@ -45,17 +44,15 @@ public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements Tr
     }
 
     @Override
-    public Set<Key> authorizingKeysIn(final TransferContext transferContext) {
-        return null;
-    }
-
-    @Override
     public void doIn(final TransferContext transferContext) {
         final var handleContext = transferContext.getHandleContext();
         final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
-        final Map<EntityNumPair, Long> aggregatedFungibleTokenChanges = new LinkedHashMap<>();
+        final Map<EntityNumPair, Long> aggregatedFungibleTokenChanges = new HashMap<>();
+        final Map<EntityNumPair, Long> allowanceTransfers = new HashMap<>();
+        // Look at all fungible token transfers and put into agrragatedFungibleTokenChanges map.
+        // Also, put any transfers happening with allowances in allowanceTransfers map.
         for (var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.token();
             final var token = getIfUsable(tokenId, tokenStore);
@@ -79,14 +76,52 @@ public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements Tr
                     var existingChange = aggregatedFungibleTokenChanges.get(pair);
                     aggregatedFungibleTokenChanges.put(pair, existingChange + amount);
                 }
+                // If the transfer is happening with an allowance, add it to the allowanceTransfers map.
+                if (aa.isApproval() && aa.amount() < 0) {
+                    if (!allowanceTransfers.containsKey(pair)) {
+                        allowanceTransfers.put(pair, amount);
+                    } else {
+                        var existingChange = allowanceTransfers.get(pair);
+                        allowanceTransfers.put(pair, existingChange + amount);
+                    }
+                }
             }
         }
+
+        // Look at all the aggregatedFungibleTokenChanges and adjust the balances in the tokenRelStore.
         for (final var atPair : aggregatedFungibleTokenChanges.keySet()) {
             final var rel = getIfUsable(
                     asAccount(atPair.getHiOrderAsLong()), asToken(atPair.getLowOrderAsLong()), tokenRelStore);
             final var account = accountStore.get(asAccount(atPair.getHiOrderAsLong()));
             final var amount = aggregatedFungibleTokenChanges.get(atPair);
             adjustBalance(rel, account, amount, tokenRelStore, accountStore);
+        }
+
+        // Look at all the allowanceTransfers and adjust the allowances in the accountStore.
+        for (final var atPair : allowanceTransfers.keySet()) {
+            final var accountId = asAccount(atPair.getHiOrderAsLong());
+            final var tokenId = asToken(atPair.getLowOrderAsLong());
+
+            final var account = getIfUsable(
+                    accountId, accountStore, transferContext.getHandleContext().expiryValidator(), INVALID_ACCOUNT_ID);
+            final var accountCopy = account.copyBuilder();
+
+            final var tokenAllowances = account.tokenAllowancesOrElse(Collections.emptyList());
+            for (int i = 0; i < tokenAllowances.size(); i++) {
+                final var allowance = tokenAllowances.get(i);
+                final var allowanceCopy = allowance.copyBuilder();
+                if (allowance.spenderNum() == accountId.accountNum() && allowance.tokenNum() == tokenId.tokenNum()) {
+                    final var newAllowance = allowance.amount() + allowanceTransfers.get(account);
+                    allowanceCopy.amount(newAllowance);
+                    if (newAllowance != 0) {
+                        tokenAllowances.set(i, allowanceCopy.build());
+                    } else {
+                        tokenAllowances.remove(i);
+                    }
+                }
+            }
+            accountCopy.tokenAllowances(tokenAllowances);
+            accountStore.put(accountCopy.build());
         }
     }
 }
