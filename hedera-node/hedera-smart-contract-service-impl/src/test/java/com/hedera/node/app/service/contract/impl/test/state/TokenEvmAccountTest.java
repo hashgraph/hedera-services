@@ -57,6 +57,11 @@ class TokenEvmAccountTest {
     }
 
     @Test
+    void doesntSupportGettingId() {
+        assertThrows(IllegalStateException.class, subject::hederaId);
+    }
+
+    @Test
     void usesGivenAddress() {
         assertSame(TOKEN_ADDRESS, subject.getAddress());
     }
