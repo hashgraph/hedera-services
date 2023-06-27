@@ -51,7 +51,7 @@ public class EventStreamSigningUtils {
     private static final int SUPPORTED_STREAM_FILE_VERSION = 5;
 
     /**
-     * Sets up the constructable registry, and configures {@link SettingsCommon}
+     * Sets up the constructable registry
      * <p>
      * Should be called before using stream utilities
      * <p>
