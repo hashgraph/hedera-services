@@ -137,12 +137,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     }
 
     @Override
-    public void collectFee(@NonNull final Address payer, final long amount) {
+    public void collectFee(@NonNull final AccountID payerId, final long amount) {
         throw new AssertionError("Not implemented");
     }
 
     @Override
-    public void refundFee(@NonNull final Address payer, final long amount) {
+    public void refundFee(@NonNull final AccountID payerId, final long amount) {
         throw new AssertionError("Not implemented");
     }
 

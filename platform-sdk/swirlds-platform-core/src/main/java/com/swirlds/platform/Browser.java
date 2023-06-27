@@ -42,6 +42,7 @@ import com.swirlds.common.config.OSHealthCheckConfig;
 import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.export.ConfigExport;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -244,7 +245,8 @@ public class Browser {
                 .withConfigDataType(RecycleBinConfig.class)
                 .withConfigDataType(EventConfig.class)
                 .withConfigDataType(PathsConfig.class)
-                .withConfigDataType(SocketConfig.class);
+                .withConfigDataType(SocketConfig.class)
+                .withConfigDataType(TransactionConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
@@ -289,10 +291,6 @@ public class Browser {
 
             // Provide swirlds.common the settings it needs via the SettingsCommon class
             Settings.populateSettingsCommon();
-
-            // Update Settings based on config.txt
-            configurationProperties.transactionMaxBytes().ifPresent(value -> Settings.getInstance()
-                    .setTransactionMaxBytes(value));
 
             // Write the settingsUsed.txt file
             writeSettingsUsed(configuration);

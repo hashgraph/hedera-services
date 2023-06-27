@@ -18,12 +18,7 @@ package com.swirlds.platform;
 
 import static com.swirlds.platform.SettingConstants.DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.LOAD_KEYS_FROM_PFX_FILES_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.MAX_ADDRESS_SIZE_ALLOWED_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.SHOW_INTERNAL_STATS_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.THROTTLE_TRANSACTION_QUEUE_SIZE_DEFAULT_VALUE;
-import static com.swirlds.platform.SettingConstants.TRANSACTION_MAX_BYTES_DEFAULT_VALUES;
 import static com.swirlds.platform.SettingConstants.VERBOSE_STATISTICS_DEFAULT_VALUE;
 import static com.swirlds.platform.SettingConstants.VERIFY_EVENT_SIGS_DEFAULT_VALUE;
 
@@ -134,18 +129,10 @@ class SettingsTest {
         Assertions.assertEquals(SHOW_INTERNAL_STATS_DEFAULT_VALUE, settings.isShowInternalStats());
         Assertions.assertEquals(VERBOSE_STATISTICS_DEFAULT_VALUE, settings.isVerboseStatistics());
         Assertions.assertEquals(
-                THROTTLE_TRANSACTION_QUEUE_SIZE_DEFAULT_VALUE, settings.getThrottleTransactionQueueSize());
-        Assertions.assertEquals(
                 Integer.parseInt(ConsensusConfig.COIN_FREQ_DEFAULT_VALUE),
                 configuration.getConfigData(ConsensusConfig.class).coinFreq());
         Assertions.assertEquals(DEADLOCK_CHECK_PERIOD_DEFAULT_VALUE, settings.getDeadlockCheckPeriod());
-        Assertions.assertEquals(TRANSACTION_MAX_BYTES_DEFAULT_VALUES, settings.getTransactionMaxBytes());
-        Assertions.assertEquals(MAX_ADDRESS_SIZE_ALLOWED_DEFAULT_VALUE, settings.getMaxAddressSizeAllowed());
         Assertions.assertEquals(LOAD_KEYS_FROM_PFX_FILES_DEFAULT_VALUE, settings.isLoadKeysFromPfxFiles());
-        Assertions.assertEquals(
-                MAX_TRANSACTION_BYTES_PER_EVENT_DEFAULT_VALUE, settings.getMaxTransactionBytesPerEvent());
-        Assertions.assertEquals(
-                MAX_TRANSACTION_COUNT_PER_EVENT_DEFAULT_VALUE, settings.getMaxTransactionCountPerEvent());
     }
 
     @Test
@@ -169,13 +156,8 @@ class SettingsTest {
         Assertions.assertFalse(settings.isVerifyEventSigs());
         Assertions.assertTrue(settings.isShowInternalStats());
         Assertions.assertTrue(settings.isVerboseStatistics());
-        Assertions.assertEquals(200000, settings.getThrottleTransactionQueueSize());
         Assertions.assertEquals(2000, settings.getDeadlockCheckPeriod());
-        Assertions.assertEquals(7000, settings.getTransactionMaxBytes());
-        Assertions.assertEquals(2048, settings.getMaxAddressSizeAllowed());
         Assertions.assertFalse(settings.isLoadKeysFromPfxFiles());
-        Assertions.assertEquals(300000, settings.getMaxTransactionBytesPerEvent());
-        Assertions.assertEquals(300000, settings.getMaxTransactionCountPerEvent());
     }
 
     /**
