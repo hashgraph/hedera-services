@@ -223,8 +223,10 @@ public class AccountStateTranslator {
         merkleAccount.setHeadNftId(account.headNftId());
         merkleAccount.setHeadNftSerialNum(account.headNftSerialNumber());
         if (account.firstContractStorageKey() != null)
-            merkleAccount.setFirstUint256StorageKey(
-                    new ContractKey(0, account.firstContractStorageKey().toByteArray()).getKey());
+            merkleAccount.setFirstUint256StorageKey(new ContractKey(
+                            account.accountNumber(),
+                            account.firstContractStorageKey().toByteArray())
+                    .getKey());
         return merkleAccount;
     }
 
