@@ -37,13 +37,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.cache.EntityMapWarmer;
@@ -440,8 +436,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         ServicesState.setAppBuilder(() -> appBuilder);
 
         given(addressBook.getSize()).willReturn(3);
-        given(addressBook.getAddress(anyLong())).willReturn(address);
-        given(address.getMemo()).willReturn(bookMemo);
         given(appBuilder.bootstrapProps(any())).willReturn(appBuilder);
         given(appBuilder.crypto(any())).willReturn(appBuilder);
         given(appBuilder.staticAccountMemo(bookMemo)).willReturn(appBuilder);
@@ -461,6 +455,14 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.workingState()).willReturn(workingState);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
+        doAnswer(invocation -> {
+                    var id = invocation.getArgument(0, Integer.class);
+                    return new NodeId(id);
+                })
+                .when(addressBook)
+                .getNodeId(anyInt());
+        given(addressBook.getAddress(selfId)).willReturn(address);
+        given(address.getMemo()).willReturn(bookMemo);
 
         // when:
         subject = tracked(new ServicesState());
@@ -536,6 +538,12 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.workingState()).willReturn(workingState);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
+        doAnswer(invocation -> {
+                    var id = invocation.getArgument(0, Integer.class);
+                    return new NodeId(id);
+                })
+                .when(addressBook)
+                .getNodeId(anyInt());
 
         // when:
         subject.init(platform, dualState, InitTrigger.GENESIS, null);
@@ -977,7 +985,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         try (ReservedSignedState state = loadSignedState(relocatedSignedState.toString())) {
             final var mockPlatform = createMockPlatformWithCrypto();
             given(addressBook.getAddress(new NodeId(0L))).willReturn(address);
-            given(address.getMemo()).willReturn("0.0.3");
             given(mockPlatform.getAddressBook()).willReturn(addressBook);
             ServicesState swirldState = (ServicesState) state.get().getSwirldState();
             swirldState.init(mockPlatform, new DualStateImpl(), RESTART, forHapiAndHedera("0.30.0", "0.30.5"));

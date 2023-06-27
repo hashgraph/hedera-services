@@ -403,7 +403,9 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
         final var currentBook = bookSupplier.get();
         IntStream.range(0, currentBook.getSize())
                 .mapToObj(currentBook::getNodeId)
+                .peek(nodeId -> System.out.println("SEE NODE " + nodeId))
                 .map(currentBook::getAddress)
+                .peek(address -> System.out.println("SEE ADDRESS " + address))
                 .map(address -> basicBioEntryFrom(address).build())
                 .forEach(basics::addNodeAddress);
         return basics.build().toByteArray();

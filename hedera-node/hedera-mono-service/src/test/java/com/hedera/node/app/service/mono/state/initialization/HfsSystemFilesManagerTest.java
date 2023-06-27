@@ -177,6 +177,7 @@ class HfsSystemFilesManagerTest {
         final var aIpv4 = new byte[] {(byte) 1, (byte) 2, (byte) 3, (byte) 4};
         final var memoA = "A new memo that is not the node account ID.";
         given(addressA.getMemo()).willReturn(memoA);
+        given(addressA.getNodeId()).willReturn(new NodeId(0));
         given(addressA.getAddressExternalIpv4()).willReturn(aIpv4);
         given(addressA.getSigPublicKey()).willReturn(keyA);
 
@@ -186,6 +187,7 @@ class HfsSystemFilesManagerTest {
         final var bIpv4 = new byte[] {(byte) 2, (byte) 3, (byte) 4, (byte) 5};
         final var memoB = "0.0.3";
         given(addressB.getMemo()).willReturn(memoB);
+        given(addressB.getNodeId()).willReturn(new NodeId(1));
         given(addressB.getAddressExternalIpv4()).willReturn(bIpv4);
         given(addressB.getSigPublicKey()).willReturn(keyB);
 

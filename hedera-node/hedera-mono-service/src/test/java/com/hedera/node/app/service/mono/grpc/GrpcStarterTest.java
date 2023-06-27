@@ -112,7 +112,6 @@ class GrpcStarterTest {
     void startsIfBlessedOnDevProfileOnlyOneNodeListening() {
         withPorts();
 
-        given(addressBook.getNodeId(0)).willReturn(new NodeId(123L));
         given(addressBook.getAddress(nodeId)).willReturn(nodeAddress);
         given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
         given(nodeLocalProperties.devOnlyDefaultNodeListens()).willReturn(true);
