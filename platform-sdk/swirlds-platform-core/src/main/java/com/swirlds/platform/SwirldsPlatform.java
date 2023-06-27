@@ -391,7 +391,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final Address address = getSelfAddress();
         final String eventStreamManagerName;
-        if (address.getMemo() != null && !address.getMemo().isEmpty()) {
+        if (!address.getMemo().isEmpty()) {
             eventStreamManagerName = address.getMemo();
         } else {
             eventStreamManagerName = String.valueOf(selfId);
@@ -409,7 +409,9 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventConfig.eventStreamQueueCapacity(),
                 this::isLastEventBeforeRestart);
 
-        final State mutableStateCopy = initializeAndCopyState(initialState);
+        initializeState(initialState);
+
+        // This object makes a copy of the state. After this point, initialState becomes immutable.
         swirldStateManager = PlatformConstructor.swirldStateManager(
                 platformContext,
                 initialAddressBook,
@@ -419,7 +421,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 metrics,
                 PlatformConstructor.settingsProvider(),
                 freezeManager::isFreezeStarted,
-                mutableStateCopy,
+                initialState.getState(),
                 appVersion);
 
         stateHashSignQueue = components.add(PlatformConstructor.stateHashSignQueue(
@@ -659,13 +661,11 @@ public class SwirldsPlatform implements Platform, Startable {
     }
 
     /**
-     * Initialize the state, then make a fast copy of it. The original becomes immutable.
+     * Initialize the state.
      *
-     * @param signedState the state to initialize and copy
-     * @return a mutable copy of the state
+     * @param signedState the state to initialize
      */
-    @NonNull
-    private State initializeAndCopyState(@NonNull final SignedState signedState) {
+    private void initializeState(@NonNull final SignedState signedState) {
 
         final SoftwareVersion previousSoftwareVersion;
         final InitTrigger trigger;
@@ -703,11 +703,6 @@ public class SwirldsPlatform implements Platform, Startable {
                     },
                     "interrupted while attempting to hash the state");
         }
-
-        final State stateCopy = initialState.copy();
-        stateCopy.getPlatformState().getPlatformData().setCreationSoftwareVersion(appVersion);
-
-        return stateCopy;
     }
 
     /**
