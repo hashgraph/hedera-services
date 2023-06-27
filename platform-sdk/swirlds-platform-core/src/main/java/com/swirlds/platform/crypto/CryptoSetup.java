@@ -96,7 +96,7 @@ public final class CryptoSetup {
                 try (final Stream<Path> list = Files.list(pathsConfig.getKeysDirPath())) {
                     CommonUtils.tellUserConsole("Reading crypto keys from the files here:   "
                             + list.filter(path -> path.getFileName().endsWith("pfx"))
-                            .toList());
+                                    .toList());
                     logger.debug(STARTUP.getMarker(), "About start loading keys");
                     keysAndCerts = CryptoStatic.loadKeysAndCerts(
                             addressBook,
@@ -113,12 +113,12 @@ public final class CryptoSetup {
                 logger.debug(STARTUP.getMarker(), "Done generating keys");
             }
         } catch (final InterruptedException
-                       | ExecutionException
-                       | KeyStoreException
-                       | KeyLoadingException
-                       | UnrecoverableKeyException
-                       | NoSuchAlgorithmException
-                       | IOException e) {
+                | ExecutionException
+                | KeyStoreException
+                | KeyLoadingException
+                | UnrecoverableKeyException
+                | NoSuchAlgorithmException
+                | IOException e) {
             logger.error(EXCEPTION.getMarker(), "Exception while loading/generating keys", e);
             if (Utilities.isRootCauseSuppliedType(e, NoSuchAlgorithmException.class)
                     || Utilities.isRootCauseSuppliedType(e, NoSuchProviderException.class)) {
@@ -130,9 +130,7 @@ public final class CryptoSetup {
             throw new CryptographyException(e); // will never reach this line due to exit above
         }
 
-        final String msg = basicConfig.loadKeysFromPfxFiles()
-                ? "Certificate loaded: {}"
-                : "Certificate generated: {}";
+        final String msg = basicConfig.loadKeysFromPfxFiles() ? "Certificate loaded: {}" : "Certificate generated: {}";
 
         final Map<NodeId, Crypto> cryptoMap = new HashMap<>();
 

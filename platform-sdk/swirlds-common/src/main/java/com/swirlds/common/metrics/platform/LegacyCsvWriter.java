@@ -106,16 +106,15 @@ public class LegacyCsvWriter {
      * @param configuration
      *		the configuration
      */
-    public LegacyCsvWriter(@NonNull final NodeId selfId,
-            @NonNull final Path folderPath,
-            @NonNull final Configuration configuration) {
+    public LegacyCsvWriter(
+            @NonNull final NodeId selfId, @NonNull final Path folderPath, @NonNull final Configuration configuration) {
         Objects.requireNonNull(folderPath, "folderPath is null");
         Objects.requireNonNull(configuration, "configuration is null");
 
         this.selfId = Objects.requireNonNull(selfId, "selfId is null");
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
         basicConfig = configuration.getConfigData(BasicConfig.class);
-        
+
         final String fileName = String.format("%s%d.csv", metricsConfig.csvFileName(), selfId.id());
         this.csvFilePath = folderPath.resolve(fileName);
     }

@@ -147,7 +147,6 @@ public final class SignedStateFileWriter {
         writeSettingsUsed(directory);
     }
 
-
     /**
      * Write the state's address book in human-readable form.
      *
@@ -209,7 +208,7 @@ public final class SignedStateFileWriter {
     private static void writeEmergencyRecoveryFile(final Path savedStateDirectory, final SignedState signedState)
             throws IOException {
         new EmergencyRecoveryFile(
-                signedState.getRound(), signedState.getState().getHash(), signedState.getConsensusTimestamp())
+                        signedState.getRound(), signedState.getState().getHash(), signedState.getConsensusTimestamp())
                 .write(savedStateDirectory);
     }
 }

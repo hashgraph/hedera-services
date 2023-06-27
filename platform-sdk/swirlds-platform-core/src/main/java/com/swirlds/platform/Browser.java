@@ -337,7 +337,7 @@ public class Browser {
                                     address.getPortInternalIpv4(),
                                     address.getPortExternalIpv4(), // internal port
                                     PortForwarder.Protocol.TCP // transport protocol
-                            );
+                                    );
                             portsToBeMapped.add(pm);
                         }
                     }
@@ -427,8 +427,8 @@ public class Browser {
         ConfigExport.addConfigContents(configuration, settingsUsedBuilder);
 
         // Write the settingsUsed.txt file
-        final Path settingsUsedPath = pathsConfig.getSettingsUsedDir()
-                .resolve(PlatformConfigUtils.SETTING_USED_FILENAME);
+        final Path settingsUsedPath =
+                pathsConfig.getSettingsUsedDir().resolve(PlatformConfigUtils.SETTING_USED_FILENAME);
         try (final OutputStream outputStream = new FileOutputStream(settingsUsedPath.toFile())) {
             outputStream.write(settingsUsedBuilder.toString().getBytes(StandardCharsets.UTF_8));
         } catch (final IOException | RuntimeException e) {

@@ -84,8 +84,8 @@ public class PlatformConfigUtils {
 
         configNames.stream().filter(mappings::containsKey).forEach(name -> {
             final String message = ("Configuration property '%s' was renamed to '%s'. "
-                    + "This build is currently backwards compatible with the old name, but this may not be true in "
-                    + "a future release, so it is important to switch to the new name.")
+                            + "This build is currently backwards compatible with the old name, but this may not be true in "
+                            + "a future release, so it is important to switch to the new name.")
                     .formatted(name, mappings.get(name));
 
             logger.warn(STARTUP.getMarker(), message);
@@ -127,8 +127,7 @@ public class PlatformConfigUtils {
      */
     public static void writeSettingsUsed(final Path directory, final Configuration configuration) {
 
-        try (final BufferedWriter writer =
-                Files.newBufferedWriter(directory.resolve(SETTING_USED_FILENAME))) {
+        try (final BufferedWriter writer = Files.newBufferedWriter(directory.resolve(SETTING_USED_FILENAME))) {
             final StringBuilder stringBuilder = new StringBuilder();
             generateSettingsUsed(stringBuilder, configuration);
             writer.write(stringBuilder.toString());

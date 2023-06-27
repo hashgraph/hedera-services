@@ -375,9 +375,8 @@ class LegacyCsvWriterTest {
 
     @Test
     void testWriteWithInternalNotIgnored() throws IOException {
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("showInternalStats", "true")
-                .getOrCreateConfig();
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("showInternalStats", "true").getOrCreateConfig();
         // given
         final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
@@ -473,9 +472,8 @@ class LegacyCsvWriterTest {
     @Test
     void testWriteWithSecondaryValuesIncluded() throws IOException {
         // given
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("verboseStatistics", "true")
-                .getOrCreateConfig();
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("verboseStatistics", "true").getOrCreateConfig();
         final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createListWithSecondaryValues();
@@ -641,9 +639,8 @@ class LegacyCsvWriterTest {
     @Test
     void testChangedEntriesWithComplexMetricsAndSecondaryValues() throws IOException {
         // given
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("verboseStatistics", "true")
-                .getOrCreateConfig();
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("verboseStatistics", "true").getOrCreateConfig();
         final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createComplexList();
@@ -695,15 +692,15 @@ class LegacyCsvWriterTest {
                 metrics.getOrCreate(
                         new DoubleGauge.Config(Metrics.PLATFORM_CATEGORY, "DoubleGauge").withFormat(FORMAT_3_1)),
                 metrics.getOrCreate(new FunctionGauge.Config<>(
-                        Metrics.PLATFORM_CATEGORY, "FunctionGauge", String.class, () -> "Hello FunctionGauge")
+                                Metrics.PLATFORM_CATEGORY, "FunctionGauge", String.class, () -> "Hello FunctionGauge")
                         .withFormat("%s")),
                 metrics.getOrCreate(new IntegerAccumulator.Config(Metrics.PLATFORM_CATEGORY, "IntegerAccumulator")),
                 metrics.getOrCreate(new IntegerGauge.Config(Metrics.PLATFORM_CATEGORY, "IntegerGauge")),
                 metrics.getOrCreate(new IntegerPairAccumulator.Config<>(
-                        Metrics.PLATFORM_CATEGORY,
-                        "IntegerPairAccumulator",
-                        Double.class,
-                        IntegerPairAccumulator.AVERAGE)
+                                Metrics.PLATFORM_CATEGORY,
+                                "IntegerPairAccumulator",
+                                Double.class,
+                                IntegerPairAccumulator.AVERAGE)
                         .withFormat(FORMAT_3_1)),
                 metrics.getOrCreate(new LongAccumulator.Config(Metrics.PLATFORM_CATEGORY, "LongAccumulator")),
                 metrics.getOrCreate(new LongGauge.Config(Metrics.PLATFORM_CATEGORY, "LongGauge")),
@@ -712,7 +709,7 @@ class LegacyCsvWriterTest {
                 metrics.getOrCreate(new SpeedometerMetric.Config(Metrics.PLATFORM_CATEGORY, "SpeedometerMetric")
                         .withFormat(FORMAT_3_1)),
                 metrics.getOrCreate(new StatEntry.Config(
-                        Metrics.PLATFORM_CATEGORY, "StatEntry", String.class, () -> "Hello StatEntry")
+                                Metrics.PLATFORM_CATEGORY, "StatEntry", String.class, () -> "Hello StatEntry")
                         .withFormat("%s")));
     }
 
