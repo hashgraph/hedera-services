@@ -5,23 +5,18 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
+/**
+ * Annotation processor for the config api that creates documentation and constants classes for all config data
+ * records.
+ */
 package com.swirlds.config.processor;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-
-public record ConfigDataPropertyDefinition(
-        @NonNull String fieldName,
-        @NonNull String name,
-        @NonNull String type,
-        @Nullable String defaultValue,
-        @Nullable String description) {}

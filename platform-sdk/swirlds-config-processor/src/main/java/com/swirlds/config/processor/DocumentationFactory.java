@@ -17,19 +17,35 @@
 package com.swirlds.config.processor;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Objects;
 
 public class DocumentationFactory {
 
-    public static void doWork(@NonNull final ConfigDataRecordDefinition configDataRecordDefinition) throws IOException {
+    public static void doWork(
+            @NonNull final ConfigDataRecordDefinition configDataRecordDefinition,
+            @NonNull final Path configDocumentationFile)
+            throws IOException {
         Objects.requireNonNull(configDataRecordDefinition, "configDataRecordDefinition must not be null");
+        Objects.requireNonNull(configDocumentationFile, "configDocumentationFile must not be null");
 
+        try (FileWriter writer = new FileWriter(configDocumentationFile.toString(), true)) {
+            configDataRecordDefinition.propertyDefinitions().forEach(propertyDefinition -> {
+                try {
+                    writer.write("## " + propertyDefinition.name() + "\n\n");
+                    writer.write("**type:** " + propertyDefinition.type() + "\n\n");
+                    writer.write("**default value:** " + propertyDefinition.defaultValue() + "\n\n");
+                    writer.write("**description:** " + propertyDefinition.description() + "\n\n");
+                    writer.write("\n");
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         System.out.println("Result for config data record '" + configDataRecordDefinition.simpleClassName() + "':");
-        configDataRecordDefinition.propertyDefinitions().forEach(propertyDefinition -> {
-            System.out.println("  " + propertyDefinition.name() + " (" + propertyDefinition.type() + "):");
-            System.out.println("    default value: " + propertyDefinition.defaultValue());
-            System.out.println("    description: " + propertyDefinition.description());
-        });
     }
 }

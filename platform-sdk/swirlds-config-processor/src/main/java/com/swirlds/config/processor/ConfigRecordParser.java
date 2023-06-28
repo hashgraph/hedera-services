@@ -45,7 +45,9 @@ public class ConfigRecordParser {
         final Map<String, String> paramDoc = new HashMap<>();
         type.getJavaDoc().getTags(ConfigProcessorConstants.JAVADOC_PARAM).forEach(tag -> {
             int split = tag.getValue().indexOf(" ");
-            paramDoc.put(tag.getValue().substring(0, split), tag.getValue().substring(split + 1));
+            paramDoc.put(
+                    tag.getValue().substring(0, split).trim(),
+                    tag.getValue().substring(split + 1).trim());
         });
         return Collections.unmodifiableMap(paramDoc);
     }

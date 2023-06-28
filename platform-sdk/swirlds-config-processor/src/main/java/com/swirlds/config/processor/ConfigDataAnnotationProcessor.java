@@ -21,6 +21,8 @@ import static com.swirlds.config.processor.ConfigProcessorConstants.CONSTANTS_CL
 import com.google.auto.service.AutoService;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
@@ -46,17 +48,28 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
         Objects.requireNonNull(roundEnv, "annotations must not be null");
         Objects.requireNonNull(roundEnv, "roundEnv must not be null");
 
+        if (annotations.isEmpty()) {
+            return false;
+        }
+        String executionPath = System.getProperty("user.dir");
+        Path configDocumentationFile = Paths.get(executionPath, "build/docs/config.md");
+        if (configDocumentationFile.toFile().exists()) {
+            configDocumentationFile.toFile().delete();
+        }
+        configDocumentationFile.toFile().getParentFile().mkdirs();
+
         log("Config Data Annotation Processor started...");
         annotations.stream()
                 .flatMap(annotation -> roundEnv.getElementsAnnotatedWith(annotation).stream())
                 .filter(element -> element.getKind() == ElementKind.RECORD)
                 .filter(element -> element instanceof TypeElement typeElement)
                 .map(typeElement -> (TypeElement) typeElement)
-                .forEach(typeElement -> handleTypeElement(typeElement));
+                .forEach(typeElement -> handleTypeElement(typeElement, configDocumentationFile));
         return true;
     }
 
-    private void handleTypeElement(@NonNull final TypeElement typeElement) {
+    private void handleTypeElement(
+            @NonNull final TypeElement typeElement, @NonNull final Path configDocumentationFile) {
         final String simpleClassName = typeElement.getSimpleName().toString();
         final String fileName = simpleClassName + ConfigProcessorConstants.JAVA_FILE_EXTENSION;
         final String packageName = typeElement.getQualifiedName().toString().replace("." + simpleClassName, "");
@@ -66,8 +79,10 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
             final ConfigDataRecordDefinition recordDefinition = ConfigRecordParser.parse(recordSource);
             final JavaFileObject constantsSourceFile = getConstantSourceFile(packageName, simpleClassName, typeElement);
 
-            DocumentationFactory.doWork(recordDefinition);
             ConstantClassFactory.doWork(recordDefinition, constantsSourceFile);
+
+            DocumentationFactory.doWork(recordDefinition, configDocumentationFile);
+
         } catch (final IOException e) {
             throw new RuntimeException("Error while handling " + typeElement, e);
         }

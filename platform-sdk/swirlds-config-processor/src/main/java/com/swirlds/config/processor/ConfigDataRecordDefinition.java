@@ -16,10 +16,11 @@
 
 package com.swirlds.config.processor;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 public record ConfigDataRecordDefinition(
-        String packageName,
-        String simpleClassName,
-        String configDataName,
-        Set<ConfigDataPropertyDefinition> propertyDefinitions) {}
+        @NonNull String packageName,
+        @NonNull String simpleClassName,
+        @NonNull String configDataName,
+        @NonNull Set<ConfigDataPropertyDefinition> propertyDefinitions) {}
