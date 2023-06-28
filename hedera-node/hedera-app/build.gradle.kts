@@ -163,14 +163,14 @@ tasks.clean { dependsOn(cleanRun) }
 tasks.register("showHapiVersion") { doLast { println(libs.versions.hapi.proto.get()) } }
 
 var updateDockerEnvTask =
-        tasks.register<Exec>("updateDockerEnv") {
-            description =
-                    "Creates the .env file in the docker folder that contains environment variables for docker"
-            group = "docker"
+    tasks.register<Exec>("updateDockerEnv") {
+        description =
+            "Creates the .env file in the docker folder that contains environment variables for docker"
+        group = "docker"
 
-            workingDir("${rootProject.projectDir}/hedera-node/docker")
-            commandLine("./update-env.sh", project.version)
-        }
+        workingDir("${rootProject.projectDir}/hedera-node/docker")
+        commandLine("./update-env.sh", project.version)
+    }
 
 tasks.register<Exec>("createDockerImage") {
     description = "Creates the docker image of the services based on the current version"
