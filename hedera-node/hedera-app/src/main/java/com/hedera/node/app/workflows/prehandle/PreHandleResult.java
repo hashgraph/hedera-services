@@ -17,7 +17,7 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
-import static com.hedera.node.app.spi.signatures.SignatureVerification.failedVerification;
+import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.failedVerification;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 

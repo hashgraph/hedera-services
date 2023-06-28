@@ -26,6 +26,7 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.VerificationAssistant;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -140,6 +141,12 @@ public class MonoHandleContext implements HandleContext {
     @Override
     @NonNull
     public SignatureVerification verificationFor(@NonNull Key key) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @NonNull
+    @Override
+    public SignatureVerification verificationFor(@NonNull Key key, @NonNull VerificationAssistant callback) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 

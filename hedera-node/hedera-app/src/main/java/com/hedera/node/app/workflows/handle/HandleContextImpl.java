@@ -33,6 +33,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.VerificationAssistant;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -164,6 +165,14 @@ public class HandleContextImpl implements HandleContext {
     public SignatureVerification verificationFor(@NonNull final Key key) {
         requireNonNull(key, "key must not be null");
         return verifier.verificationFor(key);
+    }
+
+    @NonNull
+    @Override
+    public SignatureVerification verificationFor(@NonNull Key key, @NonNull VerificationAssistant callback) {
+        requireNonNull(key, "key must not be null");
+        requireNonNull(callback, "callback must not be null");
+        return verifier.verificationFor(key, callback);
     }
 
     @Override

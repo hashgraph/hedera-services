@@ -16,7 +16,8 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.node.app.spi.signatures.SignatureVerification.failedVerification;
+import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.failedVerification;
+import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.passedVerification;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -25,9 +26,11 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.workflows.VerificationAssistant;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -80,6 +83,55 @@ public class HandleContextVerifier {
         requireNonNull(key, "key must not be null");
         // FUTURE: Cache the results of this method, if it is usually called several times
         return resolveFuture(verificationFutureFor(key), () -> failedVerification(key));
+    }
+
+    /**
+     * Gets the {@link SignatureVerification} for the given key. If this key was not provided during pre-handle, then
+     * there will be no corresponding {@link SignatureVerification}. If the key was provided during pre-handle, then the
+     * corresponding {@link SignatureVerification} will be returned with the result of that verification operation.
+     * Additionally, the VerificationAssistant provided may modify the result for "primitive", "Contract ID", or
+     * "Delegatable Contract ID" keys, and will be called to observe and reply for each such key as it is processed.
+     *
+     * @param key the key to get the verification for
+     * @param callback a VerificationAssistant callback function that will observe each "primitive", "Contract ID", or
+     * "Delegatable Contract ID" key and return a boolean indicating if the given key should be considered valid.
+     * @return the verification for the given key, or {@code null} if no such key was provided during pre-handle
+     */
+    @NonNull
+    public SignatureVerification verificationFor(
+            @NonNull final Key key, @NonNull final VerificationAssistant callback) {
+        return switch (key.key().kind()) {
+            case ED25519, ECDSA_SECP256K1 -> {
+                final var result = resolveFuture(keyVerifications.get(key), () -> failedVerification(key));
+                yield callback.test(key, result) ? passedVerification(key) : failedVerification(key);
+            }
+            case KEY_LIST -> {
+                final var keys = key.keyListOrThrow().keysOrElse(emptyList());
+                var failed = false;
+                for (final var childKey : keys) {
+                    failed |= verificationFor(childKey, callback).failed();
+                }
+                yield failed ? failedVerification(key) : passedVerification(key);
+            }
+            case THRESHOLD_KEY -> {
+                final var thresholdKey = key.thresholdKeyOrThrow();
+                final var keyList = thresholdKey.keysOrElse(KeyList.DEFAULT);
+                final var keys = keyList.keysOrElse(emptyList());
+                final var threshold = thresholdKey.threshold();
+                final var clampedThreshold = Math.min(Math.max(1, threshold), keys.size());
+                var passed = 0;
+                for (final var childKey : keys) {
+                    if (verificationFor(childKey, callback).passed()) {
+                        passed++;
+                    }
+                }
+                yield passed >= clampedThreshold ? passedVerification(key) : failedVerification(key);
+            }
+            case CONTRACT_ID, DELEGATABLE_CONTRACT_ID, ECDSA_384, RSA_3072, UNSET -> {
+                final var failure = failedVerification(key);
+                yield callback.test(key, failure) ? passedVerification(key) : failure;
+            }
+        };
     }
 
     /**
@@ -164,8 +216,9 @@ public class HandleContextVerifier {
 
     @NonNull
     private SignatureVerification resolveFuture(
-            @NonNull final Future<SignatureVerification> future,
+            @Nullable final Future<SignatureVerification> future,
             @NonNull final Supplier<SignatureVerification> fallback) {
+        if (future == null) return fallback.get();
         try {
             return future.get(timeout, TimeUnit.MILLISECONDS);
         } catch (final InterruptedException e) {

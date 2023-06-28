@@ -143,6 +143,25 @@ public interface HandleContext {
     SignatureVerification verificationFor(@NonNull Key key);
 
     /**
+     * Gets the {@link SignatureVerification} for the given key. If this key was not provided during pre-handle, then
+     * there will be no corresponding {@link SignatureVerification}. If the key was provided during pre-handle, then the
+     * corresponding {@link SignatureVerification} will be returned with the result of that verification operation.
+     * Additionally, the VerificationAssistant provided may modify the result for "primitive", "Contract ID", or
+     * "Delegatable Contract ID" keys, and will be called to observe and reply for each such key as it is processed.
+     *
+     * <p>The signatures of required keys are guaranteed to be verified. Optional signatures may still be in the
+     * process of being verified (and therefore may time out). The timeout can be configured via the configuration
+     * {@code hedera.workflow.verificationTimeoutMS}
+     *
+     * @param key the key to get the verification for
+     * @param callback a VerificationAssistant callback function that will observe each "primitive", "Contract ID", or
+     * "Delegatable Contract ID" key and return a boolean indicating if the given key should be considered valid.
+     * @return the verification for the given key
+     */
+    @NonNull
+    SignatureVerification verificationFor(@NonNull Key key, @NonNull VerificationAssistant callback);
+
+    /**
      * Gets the {@link SignatureVerification} for the given hollow account.
      *
      * <p>The signatures of required accounts are guaranteed to be verified. Optional accounts may still be in the
