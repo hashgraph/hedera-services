@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -108,6 +109,20 @@ public interface HandleContext {
      */
     @NonNull
     ExpiryValidator expiryValidator();
+
+    /**
+     * Returns all (required and optional) keys of a nested transaction.
+     *
+     * @param nestedTxn the {@link TransactionBody} which keys are needed
+     * @param payerForNested the payer for the nested transaction
+     * @return the set of keys
+     * @throws PreCheckException If there is a problem with the nested transaction
+     */
+    @NonNull
+    default TransactionKeys allKeysForTransaction(@NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested)
+            throws PreCheckException {
+        throw new UnsupportedOperationException("Not implemented");
+    }
 
     /**
      * Gets the {@link SignatureVerification} for the given key. If this key was not provided during pre-handle, then
