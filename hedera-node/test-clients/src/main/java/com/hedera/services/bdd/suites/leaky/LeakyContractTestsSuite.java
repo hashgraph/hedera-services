@@ -219,6 +219,7 @@ import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
@@ -2155,9 +2156,17 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private HapiSpec contractCreateFollowedByContractCallNoncesExternalization() {
         final var contract = "NoncesExternalization";
         final var payer = "payer";
-        final var deployParentContract = "deployParentContract";
 
-        final var deployContractTxn = "deployContractTxn";
+        /* SMART CONTRACT FUNCTION NAMES */
+        final var deployParentContractFn = "deployParentContract";
+        final var deployChildFromParentContractFn = "deployChildFromParentContract";
+        final var deployChildAndRevertFromParentContractFn = "deployChildAndRevertFromParentContract";
+
+        /* VIA TRANSACTION NAMES */
+        final var contractCreateTx = "contractCreateTx";
+        final var deployContractTx = "deployContractTx";
+        final var committedInnerCreationTx = "committedInnerCreationTx";
+        final var revertedInnerCreationTx = "revertedInnerCreationTx";
 
         return onlyPropertyPreservingHapiSpec("contractCreateFollowedByContractCallNoncesExternalization")
                 .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
@@ -2165,47 +2174,91 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
                         cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
-                        contractCreate(contract))
+                        contractCreate(contract).via(contractCreateTx))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
-                        contractCall(contract, deployParentContract)
+                        contractCall(contract, deployParentContractFn)
                                 .payingWith(payer)
-                                .via(deployContractTxn)
+                                .via(deployContractTx)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))))
-                .then(
-                        withOpContext((spec, opLog) -> {
-                            HapiGetTxnRecord op = getTxnRecord(deployContractTxn)
-                                    .logged()
-                                    .hasPriority(recordWith()
-                                            .contractCallResult(resultWith()
-                                                    .contractWithNonce(
-                                                            spec.registry().getContractId(contract), 5L)));
-                            allRunFor(spec, op);
-                        }),
-                        contractCall(contract, "deployChildFromParentContract", BigInteger.ZERO)
-                                .gas(GAS_TO_OFFER)
-                                .via("committedInnerCreation"),
-                        contractCall(contract, "deployChildAndRevertFromParentContract", BigInteger.ONE)
-                                .gas(GAS_TO_OFFER)
-                                .via("revertedInnerCreation"),
-                        getTxnRecord("committedInnerCreation")
-                                .andAllChildRecords()
-                                .logged(),
-                        // TODO - this record should not have any contract_nonces entries, but it has two,
-                        // corresponding to the child contract and the creating parent contract (which
-                        // actually didn't change due to the revert); compare with the nonces logged at
-                        // end of ContractCallTransitionLogic on this branch
-                        getTxnRecord("revertedInnerCreation")
-                                .andAllChildRecords()
-                                .logged());
+                .then(withOpContext((spec, opLog) -> {
+                    /** 1. Retrieves sorted list of all contracts deployed in the constructor (parent contracts) */
+                    final var opCreateTxRecord = getTxnRecord(contractCreateTx);
+                    allRunFor(spec, opCreateTxRecord);
+
+                    final var parentContractsList = opCreateTxRecord
+                            .getResponse()
+                            .getTransactionGetRecord()
+                            .getTransactionRecord()
+                            .getContractCreateResult()
+                            .getContractNoncesList()
+                            .stream()
+                            .filter(contractNonceInfo -> !contractNonceInfo
+                                    .getContractId()
+                                    .equals(spec.registry().getContractId(contract)))
+                            .collect(Collectors.toList());
+
+                    /** 2. Asserts main contract (NoncesExternalization) nonce is 5 */
+                    final var opAssertMain = getTxnRecord(deployContractTx)
+                            .logged()
+                            .hasPriority(recordWith()
+                                    .contractCallResult(resultWith()
+                                            .contractWithNonce(spec.registry().getContractId(contract), 5L)));
+                    allRunFor(spec, opAssertMain);
+
+                    /**
+                     * 3. Deploys child from the first parent contract deployed in the constructor (index 0).
+                     * Asserts parent's nonce is 2.
+                     */
+                    final var deployChild = contractCall(contract, deployChildFromParentContractFn, BigInteger.ZERO)
+                            .gas(GAS_TO_OFFER)
+                            .via(committedInnerCreationTx);
+                    HapiGetTxnRecord deployChildTxnRecord = getTxnRecord(committedInnerCreationTx);
+                    allRunFor(spec, deployChild, deployChildTxnRecord);
+
+                    /* Retrieves contractId of the first deployed contract in the constructor - index 0 */
+                    final var firstParentContractId = parentContractsList.get(0).getContractId();
+                    spec.registry().saveContractId("firstParentContractId", firstParentContractId);
+
+                    HapiGetTxnRecord opFirstParentNonce = getTxnRecord(committedInnerCreationTx)
+                            .andAllChildRecords()
+                            .logged()
+                            .hasPriority(recordWith()
+                                    .contractCallResult(resultWith()
+                                            .contractWithNonce(
+                                                    spec.registry().getContractId("firstParentContractId"), 2L)));
+                    allRunFor(spec, opFirstParentNonce);
+
+                    /** 4. Tries to deploy child from parent and reverts. Asserts contract_nonces entries are null. */
+                    final var deployChildAndRevert = contractCall(
+                                    contract, deployChildAndRevertFromParentContractFn, BigInteger.ONE)
+                            .gas(GAS_TO_OFFER)
+                            .via(revertedInnerCreationTx);
+                    final var deployChildAndRevertTxnRecord = getTxnRecord(revertedInnerCreationTx);
+                    allRunFor(spec, deployChildAndRevert, deployChildAndRevertTxnRecord);
+
+                    /* Retrieves contractId of the second deployed contract in the constructor - index 1 */
+                    final var secondParentContractId =
+                            parentContractsList.get(1).getContractId();
+                    spec.registry().saveContractId("secondParentContractId", secondParentContractId);
+
+                    HapiGetTxnRecord opSecondParentNonce = getTxnRecord(revertedInnerCreationTx)
+                            .andAllChildRecords()
+                            .logged()
+                            .hasPriority(recordWith()
+                                    .contractCallResult(resultWith()
+                                            .contractWithNonce(
+                                                    spec.registry().getContractId("secondParentContractId"), null)));
+                    allRunFor(spec, opSecondParentNonce);
+                }));
     }
 
     private HapiSpec shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled() {
         final var contract = "NoncesExternalization";
         final var payer = "payer";
 
-        return onlyPropertyPreservingHapiSpec("contractCreateFollowedByContractCallNoncesExternalization")
+        return onlyPropertyPreservingHapiSpec("shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled")
                 .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
                 .given(
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "false"),
