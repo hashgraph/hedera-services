@@ -33,7 +33,7 @@ import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreateOpe
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomContractCreationProcessor;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
-import com.hedera.node.app.service.contract.impl.exec.utils.FrameProcessor;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.v034.Version034FeatureFlags;
 import dagger.Binds;
 import dagger.Module;
@@ -72,12 +72,12 @@ public interface V038Module {
     @ServicesV038
     static TransactionProcessor provideTransactionProcessor(
             @NonNull final FrameBuilder frameBuilder,
-            @NonNull final FrameProcessor frameProcessor,
+            @NonNull final FrameRunner frameRunner,
             @ServicesV038 @NonNull final CustomMessageCallProcessor messageCallProcessor,
             @ServicesV038 @NonNull final ContractCreationProcessor contractCreationProcessor,
             @NonNull final CustomGasCharging gasCharging) {
         return new TransactionProcessor(
-                frameBuilder, frameProcessor, gasCharging, messageCallProcessor, contractCreationProcessor);
+                frameBuilder, frameRunner, gasCharging, messageCallProcessor, contractCreationProcessor);
     }
 
     @Provides

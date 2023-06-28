@@ -26,7 +26,7 @@ import static org.mockito.Mockito.doAnswer;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
-import com.hedera.node.app.service.contract.impl.exec.utils.FrameProcessor;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaTracer;
@@ -47,7 +47,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class FrameProcessorTest {
+class FrameRunnerTest {
     @Mock
     private MessageFrame frame;
 
@@ -69,11 +69,11 @@ class FrameProcessorTest {
     @Mock
     private CustomGasCalculator gasCalculator;
 
-    private FrameProcessor subject;
+    private FrameRunner subject;
 
     @BeforeEach
     void setUp() {
-        subject = new FrameProcessor(gasCalculator);
+        subject = new FrameRunner(gasCalculator);
     }
 
     @Test
@@ -84,7 +84,8 @@ class FrameProcessorTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(CALLED_CONTRACT_ID);
 
-        final var result = subject.process(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
+        final var result =
+                subject.runToCompletion(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
         inOrder.verify(tracer).initProcess(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -106,7 +107,8 @@ class FrameProcessorTest {
 
         givenBaseSuccessWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
 
-        final var result = subject.process(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
+        final var result =
+                subject.runToCompletion(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
         inOrder.verify(tracer).initProcess(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -124,7 +126,8 @@ class FrameProcessorTest {
         givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frame.getRevertReason()).willReturn(Optional.of(SOME_REVERT_REASON));
 
-        final var result = subject.process(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
+        final var result =
+                subject.runToCompletion(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
         inOrder.verify(tracer).initProcess(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -143,7 +146,8 @@ class FrameProcessorTest {
         givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(TOO_MANY_CHILD_RECORDS));
 
-        final var result = subject.process(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
+        final var result =
+                subject.runToCompletion(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
         inOrder.verify(tracer).initProcess(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);

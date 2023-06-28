@@ -36,6 +36,15 @@ import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * Infrastructure component that builds the initial {@link MessageFrame} instance for a transaction.
+ * This includes tasks like,
+ * <ol>
+ *     <li>Putting the {@link Configuration} in the frame context variables.</li>
+ *     <li>Setting the gas price and block values from the {@link HederaEvmContext}.</li>
+ *     <li>Setting input data and code based on the message call type.</li>
+ * </ol>
+ */
 @Singleton
 public class FrameBuilder {
     private static final int MAX_STACK_SIZE = 1024;
@@ -45,6 +54,18 @@ public class FrameBuilder {
         // Dagger2
     }
 
+    /**
+     * Builds the initial {@link MessageFrame} instance for a transaction.
+     *
+     * @param transaction the transaction
+     * @param worldUpdater the world updater for the transaction
+     * @param context the Hedera EVM context (gas price, block values, etc.)
+     * @param config the active Hedera configuration
+     * @param from the sender of the transaction
+     * @param to the recipient of the transaction
+     * @param intrinsicGas the intrinsic gas cost, needed to calculate remaining gas
+     * @return the initial frame
+     */
     @SuppressWarnings("java:S107")
     public MessageFrame buildInitialFrameWith(
             @NonNull final HederaEvmTransaction transaction,

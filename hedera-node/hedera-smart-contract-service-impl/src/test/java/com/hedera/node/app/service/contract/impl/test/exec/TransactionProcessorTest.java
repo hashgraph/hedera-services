@@ -28,7 +28,7 @@ import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
-import com.hedera.node.app.service.contract.impl.exec.utils.FrameProcessor;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameRunner;
 import com.hedera.node.app.service.contract.impl.hevm.*;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.swirlds.config.api.Configuration;
@@ -51,7 +51,7 @@ class TransactionProcessorTest {
     private FrameBuilder frameBuilder;
 
     @Mock
-    private FrameProcessor frameProcessor;
+    private FrameRunner frameRunner;
 
     @Mock
     private CustomMessageCallProcessor messageCallProcessor;
@@ -91,7 +91,7 @@ class TransactionProcessorTest {
     @BeforeEach
     void setUp() {
         subject = new TransactionProcessor(
-                frameBuilder, frameProcessor, gasCharging, messageCallProcessor, contractCreationProcessor);
+                frameBuilder, frameRunner, gasCharging, messageCallProcessor, contractCreationProcessor);
     }
 
     @Test
@@ -142,7 +142,7 @@ class TransactionProcessorTest {
     @Test
     @SuppressWarnings("unchecked")
     void ethCallHappyPathAsExpected() {
-        final var inOrder = inOrder(frameBuilder, frameProcessor, gasCharging, messageCallProcessor, senderAccount);
+        final var inOrder = inOrder(frameBuilder, frameRunner, gasCharging, messageCallProcessor, senderAccount);
 
         givenSenderAccount();
         givenRelayerAccount();
@@ -164,7 +164,7 @@ class TransactionProcessorTest {
                         eq(NON_SYSTEM_LONG_ZERO_ADDRESS),
                         eq(CHARGING_RESULT.intrinsicGas())))
                 .willReturn(initialFrame);
-        given(frameProcessor.process(
+        given(frameRunner.runToCompletion(
                         eq(transaction.gasLimit()), eq(initialFrame), eq(tracer), any(), eq(contractCreationProcessor)))
                 .willReturn(SUCCESS_RESULT);
 
@@ -181,8 +181,9 @@ class TransactionProcessorTest {
                         eq(EIP_1014_ADDRESS),
                         eq(NON_SYSTEM_LONG_ZERO_ADDRESS),
                         eq(CHARGING_RESULT.intrinsicGas()));
-        inOrder.verify(frameProcessor)
-                .process(transaction.gasLimit(), initialFrame, tracer, messageCallProcessor, contractCreationProcessor);
+        inOrder.verify(frameRunner)
+                .runToCompletion(
+                        transaction.gasLimit(), initialFrame, tracer, messageCallProcessor, contractCreationProcessor);
         assertSame(SUCCESS_RESULT, result);
     }
 

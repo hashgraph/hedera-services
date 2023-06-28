@@ -25,7 +25,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
-import com.hedera.node.app.service.contract.impl.exec.utils.FrameProcessor;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameRunner;
 import com.hedera.node.app.service.contract.impl.hevm.*;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -42,19 +42,19 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
  */
 public class TransactionProcessor {
     private final FrameBuilder frameBuilder;
-    private final FrameProcessor frameProcessor;
+    private final FrameRunner frameRunner;
     private final CustomGasCharging gasCharging;
     private final CustomMessageCallProcessor messageCall;
     private final ContractCreationProcessor contractCreation;
 
     public TransactionProcessor(
             @NonNull final FrameBuilder frameBuilder,
-            @NonNull final FrameProcessor frameProcessor,
+            @NonNull final FrameRunner frameRunner,
             @NonNull final CustomGasCharging gasCharging,
             @NonNull final CustomMessageCallProcessor messageCall,
             @NonNull final ContractCreationProcessor contractCreation) {
         this.frameBuilder = requireNonNull(frameBuilder);
-        this.frameProcessor = requireNonNull(frameProcessor);
+        this.frameRunner = requireNonNull(frameRunner);
         this.gasCharging = requireNonNull(gasCharging);
         this.messageCall = requireNonNull(messageCall);
         this.contractCreation = requireNonNull(contractCreation);
@@ -87,7 +87,8 @@ public class TransactionProcessor {
                     parties.toAddress(),
                     gasCharges.intrinsicGas());
             // Return the result of running the frame to completion
-            return frameProcessor.process(transaction.gasLimit(), initialFrame, tracer, messageCall, contractCreation);
+            return frameRunner.runToCompletion(
+                    transaction.gasLimit(), initialFrame, tracer, messageCall, contractCreation);
         } catch (final HandleException failure) {
             return HederaEvmTransactionResult.abortFor(failure.getStatus());
         }
