@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -33,7 +34,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
-import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
  * Modeled after the Besu {@code MainnetTransactionProcessor}, so that all four HAPI
@@ -44,44 +44,60 @@ public class TransactionProcessor {
     private final FrameBuilder frameBuilder;
     private final FrameProcessor frameProcessor;
     private final CustomGasCharging gasCharging;
-    private final CustomMessageCallProcessor messageCallProcessor;
-    private final ContractCreationProcessor contractCreationProcessor;
+    private final CustomMessageCallProcessor messageCall;
+    private final ContractCreationProcessor contractCreation;
 
     public TransactionProcessor(
             @NonNull final FrameBuilder frameBuilder,
             @NonNull final FrameProcessor frameProcessor,
             @NonNull final CustomGasCharging gasCharging,
-            @NonNull final CustomMessageCallProcessor messageCallProcessor,
-            @NonNull final ContractCreationProcessor contractCreationProcessor) {
+            @NonNull final CustomMessageCallProcessor messageCall,
+            @NonNull final ContractCreationProcessor contractCreation) {
         this.frameBuilder = requireNonNull(frameBuilder);
         this.frameProcessor = requireNonNull(frameProcessor);
         this.gasCharging = requireNonNull(gasCharging);
-        this.messageCallProcessor = requireNonNull(messageCallProcessor);
-        this.contractCreationProcessor = requireNonNull(contractCreationProcessor);
+        this.messageCall = requireNonNull(messageCall);
+        this.contractCreation = requireNonNull(contractCreation);
     }
 
     public HederaEvmTransactionResult processTransaction(
             @NonNull final HederaEvmTransaction transaction,
-            @NonNull final HederaWorldUpdater worldUpdater,
+            @NonNull final HederaWorldUpdater updater,
             @NonNull final HederaEvmContext context,
-            @NonNull final OperationTracer tracer,
+            @NonNull final HederaTracer tracer,
             @NonNull final Configuration config) {
         try {
-            final var initialCall = computeInitialCall(transaction, worldUpdater, context, config);
-            // TODO - use CustomGasCharging when finished
+            // Compute the sender, relayer, and to address (will throw if invalid)
+            final var parties = computeInvolvedParties(transaction, updater, config);
+            if (transaction.isEthereumTransaction()) {
+                parties.sender().incrementNonce();
+            }
+
+            // Charge gas and return intrinsic gas and relayer allowance used (will throw on failure)
+            final var gasCharges =
+                    gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
+
+            // Build the initial frame for the transaction and return the result of processing it
+            final var initialFrame = frameBuilder.buildInitialFrameWith(
+                    transaction,
+                    updater,
+                    context,
+                    config,
+                    parties.sender().getAddress(),
+                    parties.toAddress(),
+                    gasCharges.intrinsicGas());
+            return frameProcessor.process(transaction.gasLimit(), initialFrame, tracer, messageCall, contractCreation);
         } catch (final HandleException failure) {
             return HederaEvmTransactionResult.abortFor(failure.getStatus());
         }
-        throw new AssertionError("Not implemented");
     }
 
-    private record InitialCall(
+    private record InvolvedParties(
             @NonNull HederaEvmAccount sender, @Nullable HederaEvmAccount relayer, @NonNull Address toAddress) {}
 
-    private InitialCall computeInitialCall(
+    private InvolvedParties computeInvolvedParties(
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final HederaWorldUpdater worldUpdater,
-            @NonNull final HederaEvmContext context,
             @NonNull final Configuration config) {
 
         final var sender = worldUpdater.getHederaAccount(transaction.senderId());
@@ -97,19 +113,20 @@ public class TransactionProcessor {
             final var to = worldUpdater.getHederaAccount(transaction.contractIdOrThrow());
             if (maybeLazyCreate(transaction, to, config)) {
                 validateTrue(transaction.hasValue(), INVALID_CONTRACT_ID);
-                final var evmAddress = transaction.contractIdOrThrow().evmAddressOrThrow();
-                return new InitialCall(sender, null, pbjToBesuAddress(evmAddress));
+                final var alias = transaction.contractIdOrThrow().evmAddressOrThrow();
+                validateTrue(isEvmAddress(alias), INVALID_CONTRACT_ID);
+                return new InvolvedParties(sender, relayer, pbjToBesuAddress(alias));
+            } else {
+                validateTrue(to != null, INVALID_CONTRACT_ID);
+                return new InvolvedParties(sender, relayer, requireNonNull(to).getAddress());
             }
         }
-        throw new AssertionError("Not implemented");
     }
 
     private boolean maybeLazyCreate(
             @NonNull final HederaEvmTransaction transaction,
             @Nullable final HederaEvmAccount to,
             @NonNull final Configuration config) {
-        return to == null
-                && transaction.isEthereumTransaction()
-                && messageCallProcessor.isImplicitCreationEnabled(config);
+        return to == null && transaction.isEthereumTransaction() && messageCall.isImplicitCreationEnabled(config);
     }
 }

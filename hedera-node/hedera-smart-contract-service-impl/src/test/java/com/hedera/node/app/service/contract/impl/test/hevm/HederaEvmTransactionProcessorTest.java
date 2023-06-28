@@ -22,13 +22,9 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKno
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmCode;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionProcessor;
-import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.hevm.*;
 import com.swirlds.config.api.Configuration;
 import java.util.Map;
-import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,7 +43,7 @@ class HederaEvmTransactionProcessorTest {
     private HederaWorldUpdater worldUpdater;
 
     @Mock
-    private OperationTracer tracer;
+    private HederaTracer tracer;
 
     @Mock
     private Configuration config;

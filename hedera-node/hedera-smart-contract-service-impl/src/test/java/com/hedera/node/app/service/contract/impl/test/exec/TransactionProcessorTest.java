@@ -19,7 +19,9 @@ package com.hedera.node.app.service.contract.impl.test.exec;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
@@ -27,16 +29,13 @@ import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameProcessor;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmCode;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
-import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.hevm.*;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
-import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +44,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionProcessorTest {
+    @Mock
+    private MessageFrame initialFrame;
+
     @Mock
     private FrameBuilder frameBuilder;
 
@@ -67,7 +69,7 @@ class TransactionProcessorTest {
     private HederaWorldUpdater worldUpdater;
 
     @Mock
-    private OperationTracer tracer;
+    private HederaTracer tracer;
 
     @Mock
     private Configuration config;
@@ -76,7 +78,10 @@ class TransactionProcessorTest {
     private HederaEvmAccount senderAccount;
 
     @Mock
-    private HederaEvmAccount calledAccount;
+    private HederaEvmAccount relayerAccount;
+
+    @Mock
+    private HederaEvmAccount receiverAccount;
 
     @Mock
     private CustomGasCharging gasCharging;
@@ -97,14 +102,88 @@ class TransactionProcessorTest {
     @Test
     void lazyCreationAttemptWithNoValueFailsFast() {
         givenSenderAccount();
+        givenRelayerAccount();
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
         assertAbortsWith(wellKnownRelayedHapiCall(0), INVALID_CONTRACT_ID);
+    }
+
+    @Test
+    void lazyCreationAttemptWithInvalidAddress() {
+        givenSenderAccount();
+        givenRelayerAccount();
+        final var invalidCreation = new HederaEvmTransaction(
+                SENDER_ID,
+                RELAYER_ID,
+                INVALID_CONTRACT_ADDRESS,
+                NONCE,
+                CALL_DATA,
+                MAINNET_CHAIN_ID,
+                VALUE,
+                GAS_LIMIT,
+                USER_OFFERED_GAS_PRICE,
+                MAX_GAS_ALLOWANCE);
+        given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
+        assertAbortsWith(invalidCreation, INVALID_CONTRACT_ID);
     }
 
     @Test
     void requiresEthTxToHaveNonNullRelayer() {
         givenSenderAccount();
         assertAbortsWith(wellKnownRelayedHapiCall(0), INVALID_ACCOUNT_ID);
+    }
+
+    @Test
+    void nonLazyCreateCandidateMustHaveReceiver() {
+        givenSenderAccount();
+        givenRelayerAccount();
+        assertAbortsWith(wellKnownRelayedHapiCall(0), INVALID_CONTRACT_ID);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void ethCallHappyPathAsExpected() {
+        final var inOrder = inOrder(frameBuilder, frameProcessor, gasCharging, messageCallProcessor, senderAccount);
+
+        givenSenderAccount();
+        givenRelayerAccount();
+        givenReceiverAccount();
+
+        final var context = wellKnownContextWith(code, blocks);
+        final var transaction = wellKnownRelayedHapiCall(0);
+
+        given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
+                .willReturn(CHARGING_RESULT);
+        given(senderAccount.getAddress()).willReturn(EIP_1014_ADDRESS);
+        given(receiverAccount.getAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(frameBuilder.buildInitialFrameWith(
+                        eq(transaction),
+                        eq(worldUpdater),
+                        eq(context),
+                        eq(config),
+                        eq(EIP_1014_ADDRESS),
+                        eq(NON_SYSTEM_LONG_ZERO_ADDRESS),
+                        eq(CHARGING_RESULT.intrinsicGas())))
+                .willReturn(initialFrame);
+        given(frameProcessor.process(
+                        eq(transaction.gasLimit()), eq(initialFrame), eq(tracer), any(), eq(contractCreationProcessor)))
+                .willReturn(SUCCESS_RESULT);
+
+        final var result = subject.processTransaction(transaction, worldUpdater, context, tracer, config);
+
+        inOrder.verify(senderAccount).incrementNonce();
+        inOrder.verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction);
+        inOrder.verify(frameBuilder)
+                .buildInitialFrameWith(
+                        eq(transaction),
+                        eq(worldUpdater),
+                        eq(context),
+                        eq(config),
+                        eq(EIP_1014_ADDRESS),
+                        eq(NON_SYSTEM_LONG_ZERO_ADDRESS),
+                        eq(CHARGING_RESULT.intrinsicGas()));
+        inOrder.verify(frameProcessor)
+                .process(transaction.gasLimit(), initialFrame, tracer, messageCallProcessor, contractCreationProcessor);
+        assertSame(SUCCESS_RESULT, result);
     }
 
     private void assertAbortsWith(@NonNull final ResponseCodeEnum reason) {
@@ -122,16 +201,20 @@ class TransactionProcessorTest {
         given(worldUpdater.getHederaAccount(SENDER_ID)).willReturn(senderAccount);
     }
 
+    private void givenRelayerAccount() {
+        given(worldUpdater.getHederaAccount(RELAYER_ID)).willReturn(relayerAccount);
+    }
+
     private void givenSenderAccount(final long balance) {
         given(worldUpdater.getHederaAccount(SENDER_ID)).willReturn(senderAccount);
         given(senderAccount.getBalance()).willReturn(Wei.of(balance));
     }
 
     private void givenReceiverAccount() {
-        given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(calledAccount);
+        given(worldUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(receiverAccount);
     }
 
     private void givenEvmReceiverAccount() {
-        given(worldUpdater.getHederaAccount(CALLED_CONTRACT_EVM_ADDRESS)).willReturn(calledAccount);
+        given(worldUpdater.getHederaAccount(CALLED_CONTRACT_EVM_ADDRESS)).willReturn(receiverAccount);
     }
 }

@@ -23,10 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmCode;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
+import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
+import com.hedera.node.app.service.contract.impl.hevm.*;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,6 +33,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.log.Log;
@@ -62,6 +61,8 @@ public class TestHelpers {
     public static AccountID RELAYER_ID = AccountID.newBuilder().accountNum(2345).build();
     public static ContractID CALLED_CONTRACT_ID =
             ContractID.newBuilder().contractNum(666).build();
+    public static ContractID INVALID_CONTRACT_ADDRESS =
+            ContractID.newBuilder().evmAddress(Bytes.wrap("abcdefg")).build();
     public static Address SYSTEM_ADDRESS =
             Address.fromHexString(BigInteger.valueOf(750).toString(16));
     public static Address HTS_PRECOMPILE_ADDRESS = Address.fromHexString("0x167");
@@ -80,6 +81,15 @@ public class TestHelpers {
             NON_SYSTEM_LONG_ZERO_ADDRESS,
             pbjToTuweniBytes(TestHelpers.CALL_DATA),
             List.of(LogTopic.of(pbjToTuweniBytes(TestHelpers.TOPIC))));
+
+    public static GasCharges CHARGING_RESULT = new GasCharges(INTRINSIC_GAS, MAX_GAS_ALLOWANCE / 2);
+    public static HederaEvmTransactionResult SUCCESS_RESULT = HederaEvmTransactionResult.successFrom(
+            GAS_LIMIT / 2,
+            Wei.of(NETWORK_GAS_PRICE),
+            CALLED_CONTRACT_ID,
+            CALLED_CONTRACT_EVM_ADDRESS,
+            pbjToTuweniBytes(CALL_DATA),
+            List.of(BESU_LOG));
 
     public static void assertSameResult(
             final Operation.OperationResult expected, final Operation.OperationResult actual) {

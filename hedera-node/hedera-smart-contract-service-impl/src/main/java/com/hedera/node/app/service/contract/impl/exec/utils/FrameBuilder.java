@@ -25,7 +25,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Deque;
+import java.util.ArrayDeque;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -47,7 +47,6 @@ public class FrameBuilder {
 
     @SuppressWarnings("java:S107")
     public MessageFrame buildInitialFrameWith(
-            @NonNull final Deque<MessageFrame> messageFrameStack,
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final HederaEvmContext context,
@@ -59,7 +58,7 @@ public class FrameBuilder {
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var nominalCoinbase = asLongZeroAddress(ledgerConfig.fundingAccount());
         final var builder = MessageFrame.builder()
-                .messageFrameStack(messageFrameStack)
+                .messageFrameStack(new ArrayDeque<>())
                 .maxStackSize(MAX_STACK_SIZE)
                 .worldUpdater(worldUpdater.updater())
                 .initialGas(transaction.gasAvailable(intrinsicGas))

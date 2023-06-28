@@ -29,7 +29,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult
 import com.hedera.node.app.service.contract.impl.hevm.HederaTracer;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Deque;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -48,10 +47,9 @@ public class FrameProcessor {
             final long gasLimit,
             @NonNull final MessageFrame frame,
             @NonNull final HederaTracer tracer,
-            @NonNull final Deque<MessageFrame> stack,
             @NonNull final CustomMessageCallProcessor messageCall,
             @NonNull final ContractCreationProcessor contractCreation) {
-        requireAllNonNull(frame, tracer, stack, messageCall, contractCreation);
+        requireAllNonNull(frame, tracer, messageCall, contractCreation);
 
         // We compute the Hedera id up front because the called contract could
         // selfdestruct,preventing us from looking up its contract id later on
@@ -63,6 +61,7 @@ public class FrameProcessor {
 
         // Now process the transaction implied by the frame
         tracer.initProcess(frame);
+        final var stack = frame.getMessageFrameStack();
         stack.addFirst(frame);
         while (!stack.isEmpty()) {
             process(stack.peekFirst(), tracer, messageCall, contractCreation);
@@ -81,12 +80,10 @@ public class FrameProcessor {
     private void requireAllNonNull(
             @NonNull final MessageFrame frame,
             @NonNull final HederaTracer tracer,
-            @NonNull final Deque<MessageFrame> stack,
             @NonNull final CustomMessageCallProcessor messageCall,
             @NonNull final ContractCreationProcessor contractCreation) {
         requireNonNull(frame);
         requireNonNull(tracer);
-        requireNonNull(stack);
         requireNonNull(messageCall);
         requireNonNull(contractCreation);
     }

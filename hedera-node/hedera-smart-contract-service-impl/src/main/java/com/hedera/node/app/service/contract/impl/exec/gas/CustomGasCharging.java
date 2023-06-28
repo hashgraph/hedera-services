@@ -65,24 +65,24 @@ public class CustomGasCharging {
      * @return the result of the gas charging
      * @throws HandleException if the gas charging fails for any reason
      */
-    public GasChargingResult chargeForGas(
+    public GasCharges chargeForGas(
             @NonNull final HederaEvmAccount sender,
             @Nullable final HederaEvmAccount relayer,
             @NonNull final HederaEvmContext context,
             @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final HederaEvmTransaction transaction) {
         if (context.staticCall()) {
-            return new GasChargingResult(0L, 0L);
+            return new GasCharges(0L, 0L);
         }
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, transaction.isCreate());
         validateTrue(transaction.gasLimit() >= intrinsicGas, INSUFFICIENT_GAS);
         if (transaction.isEthereumTransaction()) {
             final var allowanceUsed =
                     chargeWithRelayer(sender, requireNonNull(relayer), context, worldUpdater, transaction);
-            return new GasChargingResult(intrinsicGas, allowanceUsed);
+            return new GasCharges(intrinsicGas, allowanceUsed);
         } else {
             chargeWithOnlySender(sender, context, worldUpdater, transaction);
-            return new GasChargingResult(intrinsicGas, 0L);
+            return new GasCharges(intrinsicGas, 0L);
         }
     }
 

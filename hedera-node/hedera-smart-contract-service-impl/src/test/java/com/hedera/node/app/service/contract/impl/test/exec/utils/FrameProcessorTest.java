@@ -80,12 +80,11 @@ class FrameProcessorTest {
     void happyPathWorksWithEip1014Receiver() {
         final var inOrder = Mockito.inOrder(frame, childFrame, tracer, messageCallProcessor, contractCreationProcessor);
 
-        final var messageFrameStack = givenBaseSuccessWith(EIP_1014_ADDRESS);
+        givenBaseSuccessWith(EIP_1014_ADDRESS);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(CALLED_CONTRACT_ID);
 
-        final var result = subject.process(
-                GAS_LIMIT, frame, tracer, messageFrameStack, messageCallProcessor, contractCreationProcessor);
+        final var result = subject.process(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
         inOrder.verify(tracer).initProcess(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -105,10 +104,9 @@ class FrameProcessorTest {
     void happyPathWorksWithLongZeroReceiver() {
         final var inOrder = Mockito.inOrder(frame, childFrame, tracer, messageCallProcessor, contractCreationProcessor);
 
-        final var messageFrameStack = givenBaseSuccessWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        givenBaseSuccessWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
 
-        final var result = subject.process(
-                GAS_LIMIT, frame, tracer, messageFrameStack, messageCallProcessor, contractCreationProcessor);
+        final var result = subject.process(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
         inOrder.verify(tracer).initProcess(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -123,11 +121,10 @@ class FrameProcessorTest {
     void failurePathWorksWithRevertReason() {
         final var inOrder = Mockito.inOrder(frame, childFrame, tracer, messageCallProcessor, contractCreationProcessor);
 
-        final var messageFrameStack = givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frame.getRevertReason()).willReturn(Optional.of(SOME_REVERT_REASON));
 
-        final var result = subject.process(
-                GAS_LIMIT, frame, tracer, messageFrameStack, messageCallProcessor, contractCreationProcessor);
+        final var result = subject.process(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
         inOrder.verify(tracer).initProcess(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -143,11 +140,10 @@ class FrameProcessorTest {
     void failurePathWorksWithHaltReason() {
         final var inOrder = Mockito.inOrder(frame, childFrame, tracer, messageCallProcessor, contractCreationProcessor);
 
-        final var messageFrameStack = givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(TOO_MANY_CHILD_RECORDS));
 
-        final var result = subject.process(
-                GAS_LIMIT, frame, tracer, messageFrameStack, messageCallProcessor, contractCreationProcessor);
+        final var result = subject.process(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
         inOrder.verify(tracer).initProcess(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -179,15 +175,15 @@ class FrameProcessorTest {
         assertEquals(Bytes.EMPTY, result.output());
     }
 
-    private Deque<MessageFrame> givenBaseSuccessWith(@NonNull final Address receiver) {
-        return givenBaseScenarioWithDetails(receiver, true);
+    private void givenBaseSuccessWith(@NonNull final Address receiver) {
+        givenBaseScenarioWithDetails(receiver, true);
     }
 
-    private Deque<MessageFrame> givenBaseFailureWith(@NonNull final Address receiver) {
-        return givenBaseScenarioWithDetails(receiver, false);
+    private void givenBaseFailureWith(@NonNull final Address receiver) {
+        givenBaseScenarioWithDetails(receiver, false);
     }
 
-    private Deque<MessageFrame> givenBaseScenarioWithDetails(@NonNull final Address receiver, final boolean sucess) {
+    private void givenBaseScenarioWithDetails(@NonNull final Address receiver, final boolean sucess) {
         final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
         given(frame.getType()).willReturn(MessageFrame.Type.CONTRACT_CREATION);
         given(childFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
@@ -222,7 +218,7 @@ class FrameProcessorTest {
             given(frame.getState()).willReturn(MessageFrame.State.COMPLETED_FAILED);
         }
         given(frame.getRecipientAddress()).willReturn(receiver);
-        return messageFrameStack;
+        given(frame.getMessageFrameStack()).willReturn(messageFrameStack);
     }
 
     private long expectedGasUsed(@NonNull final MessageFrame frame) {

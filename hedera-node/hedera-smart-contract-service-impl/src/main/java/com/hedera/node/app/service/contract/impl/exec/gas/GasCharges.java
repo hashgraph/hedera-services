@@ -16,4 +16,4 @@
 
 package com.hedera.node.app.service.contract.impl.exec.gas;
 
-public record GasChargingResult(long intrinsicGas, long relayerAllowanceUsed) {}
+public record GasCharges(long intrinsicGas, long relayerAllowanceUsed) {}

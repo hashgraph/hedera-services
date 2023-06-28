@@ -29,7 +29,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.log.Log;
 
 public record HederaEvmTransactionResult(
         long gasUsed,
@@ -70,16 +72,27 @@ public record HederaEvmTransactionResult(
             @NonNull final ContractID recipientEvmAddress,
             @NonNull final MessageFrame frame) {
         requireNonNull(frame);
+        return successFrom(
+                gasUsed, frame.getGasPrice(), recipientId, recipientEvmAddress, frame.getOutputData(), frame.getLogs());
+    }
+
+    public static HederaEvmTransactionResult successFrom(
+            final long gasUsed,
+            @NonNull final Wei gasPrice,
+            @NonNull final ContractID recipientId,
+            @NonNull final ContractID recipientEvmAddress,
+            @NonNull final org.apache.tuweni.bytes.Bytes output,
+            @NonNull final List<Log> logs) {
         return new HederaEvmTransactionResult(
                 gasUsed,
-                frame.getGasPrice().toLong(),
+                requireNonNull(gasPrice).toLong(),
                 requireNonNull(recipientId),
                 requireNonNull(recipientEvmAddress),
-                tuweniToPbjBytes(frame.getOutputData()),
+                tuweniToPbjBytes(requireNonNull(output)),
                 null,
                 null,
                 null,
-                pbjLogsFrom(frame.getLogs()));
+                pbjLogsFrom(requireNonNull(logs)));
     }
 
     /**

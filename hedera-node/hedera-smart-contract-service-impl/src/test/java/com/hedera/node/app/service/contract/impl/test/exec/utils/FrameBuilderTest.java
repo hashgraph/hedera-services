@@ -27,8 +27,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmCode;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
@@ -57,12 +55,11 @@ class FrameBuilderTest {
     @Mock
     private HederaWorldUpdater stackedUpdater;
 
-    private FrameBuilder subject = new FrameBuilder();
+    private final FrameBuilder subject = new FrameBuilder();
 
     @Test
     void constructsExpectedFrameForCallToExtantContract() {
         final var transaction = wellKnownHapiCall();
-        final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
         given(worldUpdater.updater()).willReturn(stackedUpdater);
         given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
         given(blocks.blockHashOf(SOME_BLOCK_NO)).willReturn(Hash.EMPTY);
@@ -72,7 +69,6 @@ class FrameBuilderTest {
                 .getOrCreateConfig();
 
         final var frame = subject.buildInitialFrameWith(
-                messageFrameStack,
                 transaction,
                 worldUpdater,
                 wellKnownContextWith(code, blocks),
@@ -81,7 +77,6 @@ class FrameBuilderTest {
                 NON_SYSTEM_LONG_ZERO_ADDRESS,
                 INTRINSIC_GAS);
 
-        assertSame(messageFrameStack, frame.getMessageFrameStack());
         assertEquals(1024, frame.getMaxStackSize());
         assertSame(stackedUpdater, frame.getWorldUpdater());
         assertEquals(transaction.gasAvailable(INTRINSIC_GAS), frame.getRemainingGas());
@@ -106,7 +101,6 @@ class FrameBuilderTest {
     @Test
     void constructsExpectedFrameForCallToMissingContract() {
         final var transaction = wellKnownRelayedHapiCall(VALUE);
-        final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
         given(worldUpdater.updater()).willReturn(stackedUpdater);
         given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
         given(blocks.blockHashOf(SOME_BLOCK_NO)).willReturn(Hash.EMPTY);
@@ -116,7 +110,6 @@ class FrameBuilderTest {
                 .getOrCreateConfig();
 
         final var frame = subject.buildInitialFrameWith(
-                messageFrameStack,
                 transaction,
                 worldUpdater,
                 wellKnownContextWith(code, blocks),
@@ -125,7 +118,6 @@ class FrameBuilderTest {
                 NON_SYSTEM_LONG_ZERO_ADDRESS,
                 INTRINSIC_GAS);
 
-        assertSame(messageFrameStack, frame.getMessageFrameStack());
         assertEquals(1024, frame.getMaxStackSize());
         assertSame(stackedUpdater, frame.getWorldUpdater());
         assertEquals(transaction.gasAvailable(INTRINSIC_GAS), frame.getRemainingGas());
@@ -150,7 +142,6 @@ class FrameBuilderTest {
     @Test
     void constructsExpectedFrameForCreate() {
         final var transaction = wellKnownHapiCreate();
-        final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
         given(worldUpdater.updater()).willReturn(stackedUpdater);
         given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);
         given(blocks.blockHashOf(SOME_BLOCK_NO)).willReturn(Hash.EMPTY);
@@ -160,7 +151,6 @@ class FrameBuilderTest {
         final var expectedCode = CodeFactory.createCode(transaction.evmPayload(), 0, false);
 
         final var frame = subject.buildInitialFrameWith(
-                messageFrameStack,
                 transaction,
                 worldUpdater,
                 wellKnownContextWith(code, blocks),
@@ -169,7 +159,6 @@ class FrameBuilderTest {
                 NON_SYSTEM_LONG_ZERO_ADDRESS,
                 INTRINSIC_GAS);
 
-        assertSame(messageFrameStack, frame.getMessageFrameStack());
         assertEquals(1024, frame.getMaxStackSize());
         assertSame(stackedUpdater, frame.getWorldUpdater());
         assertEquals(transaction.gasAvailable(INTRINSIC_GAS), frame.getRemainingGas());
