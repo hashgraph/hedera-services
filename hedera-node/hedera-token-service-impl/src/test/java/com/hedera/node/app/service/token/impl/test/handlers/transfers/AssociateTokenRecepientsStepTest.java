@@ -5,43 +5,52 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.service.token.impl.test.handlers.transfers;
 
 import static com.hedera.test.utils.IdUtils.adjustFrom;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftTransfer;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-
-public class AssociateTokenRecepientsStepTest  extends CryptoTokenHandlerTestBase {
-    @Mock
+@ExtendWith(MockitoExtension.class)
+public class AssociateTokenRecepientsStepTest extends CryptoTokenHandlerTestBase {
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private HandleContext handleContext;
+
+    @Mock
+    private ExpiryValidator expiryValidator;
+
     private AssociateTokenRecepientsStep subject;
     private CryptoTransferTransactionBody txn;
     private TransferContextImpl transferContext;
@@ -50,40 +59,50 @@ public class AssociateTokenRecepientsStepTest  extends CryptoTokenHandlerTestBas
     public void setUp() {
         super.setUp();
         givenTxn();
+        refreshWritableStores();
+        givenStoresAndConfig(handleContext);
         subject = new AssociateTokenRecepientsStep(txn);
         transferContext = new TransferContextImpl(handleContext);
     }
 
     @Test
     void associatesTokenRecepients() {
+        assertThat(writableTokenRelStore.get(ownerId, fungibleTokenId)).isNotNull();
+        assertThat(writableTokenRelStore.get(ownerId, nonFungibleTokenId)).isNotNull();
+        assertThat(writableTokenRelStore.get(spenderId, fungibleTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(spenderId, nonFungibleTokenId)).isNull();
+
         subject.doIn(transferContext);
+
+        assertThat(writableTokenRelStore.get(ownerId, fungibleTokenId)).isNotNull();
+        assertThat(writableTokenRelStore.get(ownerId, nonFungibleTokenId)).isNotNull();
+        assertThat(writableTokenRelStore.get(spenderId, fungibleTokenId)).isNotNull();
+        assertThat(writableTokenRelStore.get(spenderId, nonFungibleTokenId)).isNotNull();
     }
 
-    private void givenTxn(){
+    private void givenTxn() {
         txn = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder()
-                        .accountAmounts(adjustFrom(transferAccountId, -1_000))
-                        .accountAmounts(adjustFrom(deleteAccountId, +1_000))
+                        .accountAmounts(adjustFrom(ownerId, -1_000))
+                        .accountAmounts(adjustFrom(spenderId, +1_000))
                         .build())
-                .tokenTransfers(TokenTransferList.newBuilder()
-                        .token(fungibleTokenId)
-                        .transfers(List.of(
-                                adjustFrom(ownerId, -1_000),
-                                adjustFrom(spenderId, +1_000)))
-                .build())
-                .tokenTransfers(TokenTransferList.newBuilder()
-                        .token(nonFungibleTokenId)
-                        .nftTransfers(nftTransferWith(ownerId, spenderId, 1))
-                        .build())
+                .tokenTransfers(
+                        TokenTransferList.newBuilder()
+                                .token(fungibleTokenId)
+                                .transfers(List.of(adjustFrom(ownerId, -1_000), adjustFrom(spenderId, +1_000)))
+                                .build(),
+                        TokenTransferList.newBuilder()
+                                .token(nonFungibleTokenId)
+                                .nftTransfers(nftTransferWith(ownerId, spenderId, 1))
+                                .build())
                 .build();
         given(handleContext.configuration()).willReturn(configuration);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(ResponseCodeEnum.OK);
     }
 
     public static AccountAmount adjustFrom(AccountID account, long amount) {
-        return AccountAmount.newBuilder()
-                .accountID(account)
-                .amount(amount)
-                .build();
+        return AccountAmount.newBuilder().accountID(account).amount(amount).build();
     }
 
     public static AccountAmount adjustFromWithAllowance(AccountID account, long amount) {

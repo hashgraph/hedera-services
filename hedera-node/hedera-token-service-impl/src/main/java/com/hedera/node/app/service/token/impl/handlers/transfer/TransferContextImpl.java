@@ -42,7 +42,7 @@ public class TransferContextImpl implements TransferContext {
         this.context = context;
         this.accountStore = context.writableStore(WritableAccountStore.class);
         accountStore = context.writableStore(WritableAccountStore.class);
-        this.autoAccountCreator = new AutoAccountCreationStep(accountStore, context);
+        this.autoAccountCreator = new AutoAccountCreationStep(context);
     }
 
     @Override

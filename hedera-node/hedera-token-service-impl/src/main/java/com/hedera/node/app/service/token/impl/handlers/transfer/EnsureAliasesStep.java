@@ -174,6 +174,6 @@ public class EnsureAliasesStep implements TransferStep {
      * @return true if the accountID is an alias, false otherwise
      */
     public static boolean isAlias(AccountID accountID) {
-        return accountID.hasAlias() && accountID.accountNum() == 0L;
+        return accountID.hasAlias() && (!accountID.hasAccountNum() || accountID.accountNum() == 0L);
     }
 }

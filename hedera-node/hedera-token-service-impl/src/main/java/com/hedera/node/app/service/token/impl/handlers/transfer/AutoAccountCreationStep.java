@@ -66,10 +66,9 @@ public class AutoAccountCreationStep {
     protected final Map<Bytes, Set<TokenID>> tokenAliasMap = new HashMap<>();
 
     @Inject
-    public AutoAccountCreationStep(
-            @NonNull final WritableAccountStore accountStore, @NonNull final HandleContext handleContext) {
+    public AutoAccountCreationStep(@NonNull final HandleContext handleContext) {
         this.handleContext = handleContext;
-        this.accountStore = accountStore;
+        this.accountStore = handleContext.writableStore(WritableAccountStore.class);
     }
 
     /**

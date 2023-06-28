@@ -23,7 +23,6 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.a
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
-
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.TokenType;
@@ -33,7 +32,6 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
