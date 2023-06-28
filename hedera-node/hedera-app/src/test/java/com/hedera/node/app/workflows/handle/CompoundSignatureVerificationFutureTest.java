@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.prehandle;
+package com.hedera.node.app.workflows.handle;
 
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
