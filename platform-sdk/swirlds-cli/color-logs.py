@@ -130,6 +130,8 @@ def format(line):
           format_class_name(class_name) + \
           remainder + "\n"
 
-for line in stdin:
-  print(format(line), end='')
-
+try:
+  for line in stdin:
+    print(format(line), end='')
+except KeyboardInterrupt:
+  pass

@@ -85,8 +85,11 @@ def line_is_spam(line):
 
   return in_spam
 
-for line in stdin:
-  if line_is_spam(line):
-    continue
-  print(line, end='')
-  stdout.flush()
+try:
+  for line in stdin:
+    if line_is_spam(line):
+      continue
+    print(line, end='')
+    stdout.flush()
+except KeyboardInterrupt:
+  pass
