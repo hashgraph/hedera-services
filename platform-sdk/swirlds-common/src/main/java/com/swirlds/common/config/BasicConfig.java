@@ -125,6 +125,12 @@ import java.time.Duration;
  * @param genesisFreezeTime
  *      If this node starts from genesis, this value is used as the freeze time. This feature is deprecated and
  *      planned for removal in a future platform version.
+ * @param deadlockCheckPeriod
+ *      check for deadlocks every this many milliseconds (-1 for never)
+ * @param statsBufferSize
+ *      number of bins to store for the history (in StatsBuffer etc.)
+ * @param statsRecentSeconds
+ *      number of seconds covered by "recent" history (in StatsBuffer etc.)
  */
 @ConfigData
 public record BasicConfig(
@@ -164,7 +170,10 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "log4j2.xml") Path logPath,
         @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration,
         @ConfigProperty(defaultValue = "data/saved") String emergencyRecoveryFileLoadDir,
-        @ConfigProperty(defaultValue = "0") long genesisFreezeTime) {
+        @ConfigProperty(defaultValue = "0") long genesisFreezeTime,
+        @ConfigProperty(defaultValue = "1000") int deadlockCheckPeriod,
+        @ConfigProperty(defaultValue = "100") int statsBufferSize,
+        @ConfigProperty(defaultValue = "63") double statsRecentSeconds) {
 
     /**
      * @return Absolute path to the emergency recovery file load directory.

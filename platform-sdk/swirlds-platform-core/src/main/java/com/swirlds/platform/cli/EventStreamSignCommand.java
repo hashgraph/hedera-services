@@ -55,7 +55,6 @@ public final class EventStreamSignCommand extends SignCommand {
     @Override
     public Integer call() {
         EventStreamSigningUtils.initializeSystem();
-
         return super.call();
     }
 }
