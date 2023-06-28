@@ -20,6 +20,7 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.logging.LogMarker.ADV_CRYPTO_SYSTEM;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.demo.stats.signing.algorithms.ExtendedSignature;
 import com.swirlds.demo.stats.signing.algorithms.SigningAlgorithm;
@@ -68,7 +69,7 @@ final class TransactionPool {
 
     private final Map<Byte, SigningAlgorithm> activeAlgorithms;
 
-    private final long nodeId;
+    private final NodeId nodeId;
 
     /**
      * Constructs a TransactionPool instance with a fixed pool size, fixed transaction size, and whether to pre-sign
@@ -85,7 +86,7 @@ final class TransactionPool {
      * 		if the {@code poolSize} or the {@code transactionSize} parameters are less than one (1)
      */
     TransactionPool(
-            final long nodeId,
+            final NodeId nodeId,
             final int poolSize,
             final int transactionSize,
             final boolean signed,
@@ -143,7 +144,7 @@ final class TransactionPool {
 
         final List<SigningAlgorithm> algorithms = new ArrayList<>(this.activeAlgorithms.values());
         int lastChosenAlg = 0;
-        long transactionId = nodeId * transactions.length;
+        long transactionId = nodeId.id() * transactions.length;
 
         for (int i = 0; i < transactions.length; i++) {
             final byte[] data = new byte[transactionSize];

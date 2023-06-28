@@ -37,6 +37,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
@@ -71,7 +72,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
     /** A running sum of transaction contents */
     private long runningSum = 0;
 
-    private final long selfId;
+    private final NodeId selfId;
 
     /** if true, artificially take {@link #HANDLE_MICROS} to handle each consensus transaction */
     private static final boolean SYNTHETIC_HANDLE_TIME = false;
@@ -80,15 +81,15 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
     private static final int HANDLE_MICROS = 100;
 
     public StatsSigningTestingToolState() {
-        this(0L, () -> null);
+        this(new NodeId(0L), () -> null);
     }
 
-    public StatsSigningTestingToolState(final long selfId, final Supplier<TransactionPool> transactionPoolSupplier) {
+    public StatsSigningTestingToolState(final NodeId selfId, final Supplier<TransactionPool> transactionPoolSupplier) {
         this.selfId = selfId;
         this.transactionPoolSupplier = transactionPoolSupplier;
     }
 
-    private StatsSigningTestingToolState(final long selfId, final StatsSigningTestingToolState sourceState) {
+    private StatsSigningTestingToolState(final NodeId selfId, final StatsSigningTestingToolState sourceState) {
         super(sourceState);
         this.selfId = selfId;
         this.transactionPoolSupplier = sourceState.transactionPoolSupplier;
