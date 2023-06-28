@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ public class EnsureAliasesStep implements TransferStep {
     // Temporary token transfer resolutions map containing the token transfers to alias, is needed to check if
     // an alias is repeated. It is allowed to be repeated in multiple token transfer lists, but not in a single
     // token transfer list
-    private final Map<String, AccountID> tokenTransferResolutions = new HashMap<>();
+    private final Map<Bytes, AccountID> tokenTransferResolutions = new HashMap<>();
 
     public EnsureAliasesStep(final CryptoTransferTransactionBody op) {
         this.op = op;
@@ -74,9 +75,8 @@ public class EnsureAliasesStep implements TransferStep {
             for (final var adjust : tt.transfersOrElse(emptyList())) {
                 if (isAlias(adjust.accountIDOrThrow())) {
                     final var account = resolveForFungibleToken(adjust, transferContext);
-                    final var aliasString =
-                            String.valueOf(adjust.accountIDOrThrow().alias());
-                    tokenTransferResolutions.put(aliasString, account);
+                    final var alias = adjust.accountIDOrThrow().alias();
+                    tokenTransferResolutions.put(alias, account);
                     validateTrue(account != null, INVALID_ACCOUNT_ID);
                 }
             }
@@ -91,18 +91,18 @@ public class EnsureAliasesStep implements TransferStep {
         final var accountId = adjust.accountIDOrThrow();
         final var account = transferContext.getFromAlias(accountId);
         if (account == null) {
-            final var aliasString = String.valueOf(accountId.alias());
+            final var alias = accountId.alias();
             // If the token resolutions map already contains this unknown alias, we can assume
             // it was successfully auto-created by a prior mention in this CryptoTransfer.
             // (If it appeared in a sender location, this transfer will fail anyway.)
-            validateFalse(tokenTransferResolutions.containsKey(aliasString), INVALID_ALIAS_KEY);
-            final var isInResolutions = transferContext.resolutions().containsKey(aliasString);
+            validateFalse(tokenTransferResolutions.containsKey(alias), INVALID_ALIAS_KEY);
+            final var isInResolutions = transferContext.resolutions().containsKey(alias);
             if (adjust.amount() > 0 && !isInResolutions) {
-                transferContext.createFromAlias(accountId.alias(), true);
+                transferContext.createFromAlias(alias, true);
             } else {
-                validateTrue(transferContext.resolutions().containsKey(aliasString), INVALID_ACCOUNT_ID);
+                validateTrue(transferContext.resolutions().containsKey(alias), INVALID_ACCOUNT_ID);
             }
-            return transferContext.resolutions().get(aliasString);
+            return transferContext.resolutions().get(alias);
         } else {
             return account;
         }
@@ -133,8 +133,7 @@ public class EnsureAliasesStep implements TransferStep {
             final var account = transferContext.getFromAlias(accountId);
             if (adjust.amount() > 0) {
                 if (account == null) {
-                    final var isInResolutions =
-                            transferContext.resolutions().containsKey(String.valueOf(accountId.alias()));
+                    final var isInResolutions = transferContext.resolutions().containsKey(accountId.alias());
                     validateTrue(!isInResolutions, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
                     transferContext.createFromAlias(accountId.alias(), false);
                 } else {
@@ -163,8 +162,7 @@ public class EnsureAliasesStep implements TransferStep {
         if (isAlias(receiverId)) {
             final var receiver = transferContext.getFromAlias(receiverId);
             if (receiver == null) {
-                final var isInResolutions =
-                        transferContext.resolutions().containsKey(String.valueOf(receiverId.alias()));
+                final var isInResolutions = transferContext.resolutions().containsKey(receiverId.alias());
                 if (!isInResolutions) {
                     transferContext.createFromAlias(receiverId.alias(), false);
                 }

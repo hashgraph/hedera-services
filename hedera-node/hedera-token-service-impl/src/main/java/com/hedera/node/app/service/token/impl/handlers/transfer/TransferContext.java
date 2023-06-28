@@ -57,7 +57,7 @@ public interface TransferContext {
      * Returns the resolved accounts with alias and its account ID
      * @return the resolved accounts with alias and its account ID
      */
-    Map<String, AccountID> resolutions();
+    Map<Bytes, AccountID> resolutions();
 
     // Throw if the fee cannot be charged for whatever reason
     void chargeExtraFeeToHapiPayer(long amount);

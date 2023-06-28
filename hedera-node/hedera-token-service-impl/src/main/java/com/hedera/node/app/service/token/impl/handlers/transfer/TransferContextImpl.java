@@ -36,7 +36,7 @@ public class TransferContextImpl implements TransferContext {
     private final HandleContext context;
     private int numAutoCreations;
     private int numLazyCreations;
-    private final Map<String, AccountID> resolutions = new HashMap<>();
+    private final Map<Bytes, AccountID> resolutions = new HashMap<>();
 
     public TransferContextImpl(final HandleContext context) {
         this.context = context;
@@ -51,7 +51,7 @@ public class TransferContextImpl implements TransferContext {
 
         if (account != null) {
             final var id = asAccount(account.accountNumber());
-            resolutions.put(String.valueOf(aliasedId.alias()), id);
+            resolutions.put(aliasedId.alias(), id);
             return id;
         }
         return null;
@@ -63,7 +63,7 @@ public class TransferContextImpl implements TransferContext {
             autoAccountCreator.create(alias, isFromTokenTransfer);
             final var aliasString = String.valueOf(alias);
             final var createdAccount = accountStore.getAccountIDByAlias(aliasString);
-            resolutions.put(aliasString, createdAccount);
+            resolutions.put(alias, createdAccount);
             numAutoCreations++;
         } else if (isOfEvmAddressSize(alias)) {
             numLazyCreations++;
@@ -85,7 +85,7 @@ public class TransferContextImpl implements TransferContext {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    public Map<String, AccountID> resolutions() {
+    public Map<Bytes, AccountID> resolutions() {
         return resolutions;
     }
 
