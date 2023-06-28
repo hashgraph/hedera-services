@@ -32,14 +32,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TO
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -56,6 +54,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferStep;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -64,12 +63,12 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
-import com.hedera.node.config.data.LazyCreationConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashSet;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -174,7 +173,6 @@ public class CryptoTransferHandler implements TransactionHandler {
 
         validateSemantics(op, ledgerConfig, hederaConfig, tokensConfig);
 
-
         final var transferContext = new TransferContextImpl(context);
         // Ensures all aliases specified in the transfer exist
         // If the aliases are in receiver section, and don't exist they will be auto-created
@@ -186,7 +184,17 @@ public class CryptoTransferHandler implements TransactionHandler {
             validateTrue(config.enabled(), NOT_SUPPORTED);
         }
 
-        final var steps = decomposeIntoSteps(op);
+        // replace all aliases with its account ids, so it will be easier to process in next steps
+        final var replacedOp = new ReplaceAliasesWithIDsInOp().replaceAliasesWithIds(op, transferContext);
+        // re-run pure checks on this op to see if there are no duplicates
+        try {
+            final var txnBody = txn.copyBuilder().cryptoTransfer(replacedOp).build();
+            pureChecks(txnBody);
+        } catch (PreCheckException e) {
+            throw new HandleException(e.responseCode());
+        }
+
+        final var steps = decomposeIntoSteps(replacedOp);
         for (final var step : steps) {
             // Apply all changes to the handleContext's States
             step.doIn(transferContext);

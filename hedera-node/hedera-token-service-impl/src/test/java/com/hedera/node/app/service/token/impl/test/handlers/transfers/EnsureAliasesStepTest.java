@@ -16,6 +16,17 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.transfers;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.adjustFrom;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.nftTransferWith;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -34,25 +45,13 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.List;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.adjustFrom;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.nftTransferWith;
-import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class EnsureAliasesStepTest extends CryptoTokenHandlerTestBase {
@@ -137,7 +136,7 @@ class EnsureAliasesStepTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void resolvedExistingAliases(){
+    void resolvedExistingAliases() {
         // insert aliases into state
         setUpInsertingKnownAliasesToState();
 
@@ -159,16 +158,16 @@ class EnsureAliasesStepTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void failsOnRepeatedAliasesInTokenTransferList(){
+    void failsOnRepeatedAliasesInTokenTransferList() {
         body = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder()
-                        .accountAmounts(adjustFrom(ownerId, -1_000),
-                                adjustFrom(unknownAliasedId, +1_000))
+                        .accountAmounts(adjustFrom(ownerId, -1_000), adjustFrom(unknownAliasedId, +1_000))
                         .build())
                 .tokenTransfers(
                         TokenTransferList.newBuilder()
                                 .token(fungibleTokenId)
-                                .transfers(List.of(adjustFrom(ownerId, -1_000),
+                                .transfers(List.of(
+                                        adjustFrom(ownerId, -1_000),
                                         adjustFrom(unknownAliasedId1, +1_000),
                                         adjustFrom(ownerId, -1_000),
                                         adjustFrom(unknownAliasedId1, +1_000)))
@@ -213,10 +212,11 @@ class EnsureAliasesStepTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void failsOnRepeatedAliasesInHbarTransferList(){
+    void failsOnRepeatedAliasesInHbarTransferList() {
         body = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder()
-                        .accountAmounts(adjustFrom(ownerId, -1_000),
+                        .accountAmounts(
+                                adjustFrom(ownerId, -1_000),
                                 adjustFrom(unknownAliasedId, +1_000),
                                 adjustFrom(ownerId, -1_000),
                                 adjustFrom(unknownAliasedId, +1_000))
@@ -271,8 +271,14 @@ class EnsureAliasesStepTest extends CryptoTokenHandlerTestBase {
         given(writableStates.<Bytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         writableAccountStore = new WritableAccountStore(writableStates);
 
-        writableAccountStore.put(account.copyBuilder().accountNumber(createdNumber).alias(ecKeyAlias).build());
-        writableAccountStore.put(account.copyBuilder().accountNumber(createdNumber + 1).alias(edKeyAlias).build());
+        writableAccountStore.put(account.copyBuilder()
+                .accountNumber(createdNumber)
+                .alias(ecKeyAlias)
+                .build());
+        writableAccountStore.put(account.copyBuilder()
+                .accountNumber(createdNumber + 1)
+                .alias(edKeyAlias)
+                .build());
 
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         transferContext = new TransferContextImpl(handleContext);
