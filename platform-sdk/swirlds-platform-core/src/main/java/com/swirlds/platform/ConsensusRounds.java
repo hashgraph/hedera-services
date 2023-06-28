@@ -284,7 +284,7 @@ class ConsensusRounds implements GraphGenerations, RoundNumberProvider {
         maxRound.set(minGen.get(minGen.size() - 1).round());
         for (final MinGenInfo roundGenPair : minGen) {
             long round = roundGenPair.round();
-            RoundInfo roundInfo = new RoundInfo(round, addressBook.getSize());
+            RoundInfo roundInfo = new RoundInfo(round, addressBook);
             rounds.put(round, roundInfo);
 
             // set the minGeneration as stored in state
