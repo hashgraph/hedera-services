@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.mono.state.submerkle;
 
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.service.mono.state.migration.TokenStateTranslator;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 
@@ -37,7 +39,9 @@ public class FcCustomFeeSerdeTest extends SelfSerializableDataTest<FcCustomFee> 
         if (version < FcCustomFee.RELEASE_0310_VERSION) {
             nextFee.setAllCollectorsAreExempt(false);
         }
-
-        return nextFee;
+        final var seededFee = nextFee;
+        final var pbjFee = PbjConverter.fromFcCustomFee(seededFee);
+        final var merkleFcCustomFee = FcCustomFee.fromGrpc(PbjConverter.fromPbj(pbjFee));
+        return merkleFcCustomFee;
     }
 }

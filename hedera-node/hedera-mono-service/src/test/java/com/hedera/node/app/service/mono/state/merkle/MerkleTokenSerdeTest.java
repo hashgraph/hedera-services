@@ -16,8 +16,14 @@
 
 package com.hedera.node.app.service.mono.state.merkle;
 
+import static com.hedera.test.serde.SerializedForms.assertSameSerialization;
+
+import com.hedera.node.app.service.mono.state.migration.AccountStateTranslator;
+import com.hedera.node.app.service.mono.state.migration.TokenStateTranslator;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 public class MerkleTokenSerdeTest extends SelfSerializableDataTest<MerkleToken> {
     public static final int NUM_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
@@ -32,8 +38,16 @@ public class MerkleTokenSerdeTest extends SelfSerializableDataTest<MerkleToken> 
         return NUM_TEST_CASES;
     }
 
+    @ParameterizedTest
+    @ArgumentsSource(CurrentVersionArgumentsProvider.class)
+    void serializationHasNoRegressionWithCurrentVersion(final int version, final int testCaseNo) {
+    }
+
     @Override
     protected MerkleToken getExpectedObject(final SeededPropertySource propertySource) {
-        return propertySource.nextToken();
+        final var seededToken = propertySource.nextToken();
+        final var pbjToken = TokenStateTranslator.tokenFromMerkle(seededToken);
+        final var merkleToken = TokenStateTranslator.merkleTokenFromToken(pbjToken);
+        return merkleToken;
     }
 }
