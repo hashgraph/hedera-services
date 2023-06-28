@@ -29,7 +29,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -579,7 +578,6 @@ class EventFlowTests {
                 .withValue("transaction.throttleTransactionQueueSize", THROTTLE_TRANSACTION_QUEUE_SIZE)
                 .withValue("transaction.maxTransactionBytesPerEvent", 2048)
                 .getOrCreateConfig();
-        final TransactionConfig transactionConfig = configuration.getConfigData(TransactionConfig.class);
 
         final ConsensusHandlingMetrics consStats = mock(ConsensusHandlingMetrics.class);
         when(consStats.getConsCycleStat()).thenReturn(mock(CycleTimingStat.class));
@@ -627,7 +625,6 @@ class EventFlowTests {
                 postConsensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
                 mock(PlatformStatusStateMachine.class),
-                transactionConfig,
                 () -> false,
                 state);
 

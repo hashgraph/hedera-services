@@ -54,22 +54,34 @@ import org.apache.logging.log4j.Logger;
  */
 public class SwirldStateManagerImpl implements SwirldStateManager {
 
-    /** use this for all logging, as controlled by the optional data/log4j2.xml file */
+    /**
+     * use this for all logging, as controlled by the optional data/log4j2.xml file
+     */
     private static final Logger logger = LogManager.getLogger(SwirldStateManagerImpl.class);
 
-    /** Stats relevant to SwirldState operations. */
+    /**
+     * Stats relevant to SwirldState operations.
+     */
     private final SwirldStateMetrics stats;
 
-    /** reference to the state that reflects all known consensus transactions */
+    /**
+     * reference to the state that reflects all known consensus transactions
+     */
     private final AtomicReference<State> stateRef = new AtomicReference<>();
 
-    /** The most recent immutable state. No value until the first fast copy is created. */
+    /**
+     * The most recent immutable state. No value until the first fast copy is created.
+     */
     private final AtomicReference<State> latestImmutableState = new AtomicReference<>();
 
-    /** Contains self transactions to be included in the next event. */
+    /**
+     * Contains self transactions to be included in the next event.
+     */
     private final EventTransactionPool transactionPool;
 
-    /** Handle transactions by applying them to a state */
+    /**
+     * Handle transactions by applying them to a state
+     */
     private final TransactionHandler transactionHandler;
 
     /**
@@ -107,7 +119,6 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
      * @param postConsensusSystemTransactionManager the manager for post-consensus system transactions
      * @param swirldStateMetrics                    metrics related to SwirldState
      * @param platformStatusStateMachine            the platform status state machine
-     * @param transactionConfig                     the transaction configuration
      * @param inFreeze                              indicates if the system is currently in a freeze
      * @param state                                 the genesis state
      */
@@ -119,7 +130,6 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
             @NonNull final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
             @NonNull final SwirldStateMetrics swirldStateMetrics,
             @NonNull final PlatformStatusStateMachine platformStatusStateMachine,
-            @NonNull final TransactionConfig transactionConfig,
             @NonNull final BooleanSupplier inFreeze,
             @NonNull final State state) {
 
@@ -130,11 +140,13 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
         this.postConsensusSystemTransactionManager = Objects.requireNonNull(postConsensusSystemTransactionManager);
         this.stats = Objects.requireNonNull(swirldStateMetrics);
         Objects.requireNonNull(platformStatusStateMachine);
-        Objects.requireNonNull(transactionConfig);
         Objects.requireNonNull(inFreeze);
         Objects.requireNonNull(state);
 
-        this.transactionPool = new EventTransactionPool(platformContext.getMetrics(), transactionConfig, inFreeze);
+        this.transactionPool = new EventTransactionPool(
+                platformContext.getMetrics(),
+                platformContext.getConfiguration().getConfigData(TransactionConfig.class),
+                inFreeze);
         this.transactionHandler = new TransactionHandler(selfId, stats);
         this.uptimeTracker =
                 new UptimeTracker(platformContext, addressBook, platformStatusStateMachine, selfId, Time.getCurrent());

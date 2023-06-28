@@ -483,17 +483,14 @@ public class SwirldsPlatform implements Platform, Startable {
                 // this should be impossible
                 throw new IllegalStateException("stateToLoad is null");
             }
-            final TransactionConfig transactionConfig =
-                    platformContext.getConfiguration().getConfigData(TransactionConfig.class);
+
             swirldStateManager = PlatformConstructor.swirldStateManager(
                     platformContext,
                     initialAddressBook,
                     selfId,
                     preConsensusSystemTransactionManager,
                     postConsensusSystemTransactionManager,
-                    metrics,
                     platformStatusStateMachine,
-                    transactionConfig,
                     freezeManager::isFreezeStarted,
                     stateToLoad);
 
@@ -567,6 +564,9 @@ public class SwirldsPlatform implements Platform, Startable {
 
             final EventCreator eventCreator = buildEventCreator(eventIntake);
             final Settings settings = Settings.getInstance();
+
+            final TransactionConfig transactionConfig =
+                    platformContext.getConfiguration().getConfigData(TransactionConfig.class);
 
             final List<GossipEventValidator> validators = new ArrayList<>();
             // it is very important to discard ancient events, otherwise the deduplication will not work, since it

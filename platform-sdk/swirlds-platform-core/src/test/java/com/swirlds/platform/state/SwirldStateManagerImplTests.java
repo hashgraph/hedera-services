@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -50,8 +49,6 @@ public class SwirldStateManagerImplTests {
         initialState = newState();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final TransactionConfig transactionConfig =
-                platformContext.getConfiguration().getConfigData(TransactionConfig.class);
 
         swirldStateManagerImpl = new SwirldStateManagerImpl(
                 platformContext,
@@ -61,7 +58,6 @@ public class SwirldStateManagerImplTests {
                 mock(PostConsensusSystemTransactionManager.class),
                 mock(SwirldStateMetrics.class),
                 mock(PlatformStatusStateMachine.class),
-                transactionConfig,
                 () -> false,
                 initialState);
     }
