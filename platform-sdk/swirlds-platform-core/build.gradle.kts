@@ -31,9 +31,7 @@ dependencies {
     api(project(":swirlds-jasperdb"))
     api(project(":swirlds-cli"))
     api(project(":swirlds-base"))
-    testImplementation("org.jetbrains:annotations:23.0.0")
     compileOnly(libs.spotbugs.annotations)
-    testCompileOnly(libs.spotbugs.annotations)
     runtimeOnly(project(":swirlds-config-impl"))
 
     // Bundle Dependencies
@@ -44,6 +42,7 @@ dependencies {
     implementation(libs.bundles.jackson)
 
     // Test Dependencies
+    testCompileOnly(libs.spotbugs.annotations)
 
     // These should not be implementation() based deps, but this requires refactoring to eliminate.
     implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
