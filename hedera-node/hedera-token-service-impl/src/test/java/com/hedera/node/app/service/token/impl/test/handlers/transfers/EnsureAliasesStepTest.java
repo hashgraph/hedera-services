@@ -16,24 +16,15 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.transfers;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.adjustFrom;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.nftTransferWith;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
@@ -41,14 +32,27 @@ import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.util.List;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.adjustFrom;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.nftTransferWith;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class EnsureAliasesStepTest extends CryptoTokenHandlerTestBase {
@@ -70,7 +74,7 @@ class EnsureAliasesStepTest extends CryptoTokenHandlerTestBase {
             AccountID.newBuilder().alias(edKeyAlias).build();
 
     private static final Key aPrimitiveKey = Key.newBuilder()
-            .ed25519(Bytes.wrap("01234567890123456789012345678901"))
+            .ed25519(Bytes.wrap("01234567890123456789012345678911"))
             .build();
     private static final Bytes edKeyAlias = Bytes.wrap(asBytes(Key.PROTOBUF, aPrimitiveKey));
     private static final byte[] ecdsaKeyBytes =
@@ -96,7 +100,7 @@ class EnsureAliasesStepTest extends CryptoTokenHandlerTestBase {
                     final var copy =
                             account.copyBuilder().accountNumber(createdNumber).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(String.valueOf(ecKeyAlias), new EntityNumValue(createdNumber));
+                    writableAliases.put(ecKeyAlias, asAccount(createdNumber));
                     return recordBuilder.accountID(asAccount(createdNumber));
                 })
                 .will((invocation) -> {
@@ -104,33 +108,180 @@ class EnsureAliasesStepTest extends CryptoTokenHandlerTestBase {
                             .accountNumber(createdNumber + 1)
                             .build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(String.valueOf(edKeyAlias), new EntityNumValue(createdNumber + 1));
+                    writableAliases.put(edKeyAlias, asAccount(createdNumber + 1));
                     return recordBuilder.accountID(asAccount(createdNumber + 1));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
+        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(0);
         assertThat(writableAccountStore.get(asAccount(createdNumber))).isNull();
         assertThat(writableAccountStore.get(asAccount(createdNumber + 1))).isNull();
-        assertThat(writableAliases.get(String.valueOf(ecKeyAlias))).isNull();
-        assertThat(writableAliases.get(String.valueOf(edKeyAlias))).isNull();
+        assertThat(writableAliases.get(ecKeyAlias)).isNull();
+        assertThat(writableAliases.get(edKeyAlias)).isNull();
 
         subject.doIn(transferContext);
 
+        assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(2);
+        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(4);
         assertThat(writableAccountStore.get(asAccount(createdNumber))).isNotNull();
         assertThat(writableAccountStore.get(asAccount(createdNumber + 1))).isNotNull();
-        assertThat(writableAliases.get(String.valueOf(ecKeyAlias)).num()).isEqualTo(createdNumber);
-        assertThat(writableAliases.get(String.valueOf(edKeyAlias)).num()).isEqualTo(createdNumber + 1);
+        assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(createdNumber);
+        assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(createdNumber + 1);
 
         assertThat(transferContext.numOfAutoCreations()).isEqualTo(2);
+        assertThat(transferContext.numOfLazyCreations()).isEqualTo(0);
+        assertThat(transferContext.resolutions()).containsKey(edKeyAlias);
+        assertThat(transferContext.resolutions()).containsKey(ecKeyAlias);
+    }
+
+    @Test
+    void resolvedExistingAliases(){
+        // insert aliases into state
+        setUpInsertingKnownAliasesToState();
+
+        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
+        assertThat(writableAccountStore.get(unknownAliasedId)).isNotNull();
+        assertThat(writableAccountStore.get(unknownAliasedId1)).isNotNull();
+
+        subject.doIn(transferContext);
+
+        assertThat(writableAccountStore.modifiedAliasesInState()).isEmpty();
+        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
+        assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(createdNumber);
+        assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(createdNumber + 1);
+
+        assertThat(transferContext.numOfAutoCreations()).isEqualTo(0);
+        assertThat(transferContext.numOfLazyCreations()).isEqualTo(0);
+        assertThat(transferContext.resolutions()).containsKey(edKeyAlias);
+        assertThat(transferContext.resolutions()).containsKey(ecKeyAlias);
+    }
+
+    @Test
+    void failsOnRepeatedAliasesInTokenTransferList(){
+        body = CryptoTransferTransactionBody.newBuilder()
+                .transfers(TransferList.newBuilder()
+                        .accountAmounts(adjustFrom(ownerId, -1_000),
+                                adjustFrom(unknownAliasedId, +1_000))
+                        .build())
+                .tokenTransfers(
+                        TokenTransferList.newBuilder()
+                                .token(fungibleTokenId)
+                                .transfers(List.of(adjustFrom(ownerId, -1_000),
+                                        adjustFrom(unknownAliasedId1, +1_000),
+                                        adjustFrom(ownerId, -1_000),
+                                        adjustFrom(unknownAliasedId1, +1_000)))
+                                .build(),
+                        TokenTransferList.newBuilder()
+                                .token(nonFungibleTokenId)
+                                .nftTransfers(nftTransferWith(ownerId, unknownAliasedId1, 1))
+                                .build())
+                .build();
+        txn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(payerId)
+                        .transactionValidStart(consensusTimestamp)
+                        .build())
+                .cryptoTransfer(body)
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        subject = new EnsureAliasesStep(body);
+        transferContext = new TransferContextImpl(handleContext);
+
+        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
+                .will((invocation) -> {
+                    final var copy =
+                            account.copyBuilder().accountNumber(createdNumber).build();
+                    writableAccountStore.put(copy);
+                    writableAliases.put(ecKeyAlias, asAccount(createdNumber));
+                    return recordBuilder.accountID(asAccount(createdNumber));
+                })
+                .will((invocation) -> {
+                    final var copy = account.copyBuilder()
+                            .accountNumber(createdNumber + 1)
+                            .build();
+                    writableAccountStore.put(copy);
+                    writableAliases.put(edKeyAlias, asAccount(createdNumber + 1));
+                    return recordBuilder.accountID(asAccount(createdNumber + 1));
+                });
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+
+        assertThatThrownBy(() -> subject.doIn(transferContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(ResponseCodeEnum.INVALID_ALIAS_KEY));
+    }
+
+    @Test
+    void failsOnRepeatedAliasesInHbarTransferList(){
+        body = CryptoTransferTransactionBody.newBuilder()
+                .transfers(TransferList.newBuilder()
+                        .accountAmounts(adjustFrom(ownerId, -1_000),
+                                adjustFrom(unknownAliasedId, +1_000),
+                                adjustFrom(ownerId, -1_000),
+                                adjustFrom(unknownAliasedId, +1_000))
+                        .build())
+                .tokenTransfers()
+                .build();
+        txn = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(payerId)
+                        .transactionValidStart(consensusTimestamp)
+                        .build())
+                .cryptoTransfer(body)
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        subject = new EnsureAliasesStep(body);
+        transferContext = new TransferContextImpl(handleContext);
+
+        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
+                .will((invocation) -> {
+                    final var copy =
+                            account.copyBuilder().accountNumber(createdNumber).build();
+                    writableAccountStore.put(copy);
+                    writableAliases.put(ecKeyAlias, asAccount(createdNumber));
+                    return recordBuilder.accountID(asAccount(createdNumber));
+                })
+                .will((invocation) -> {
+                    final var copy = account.copyBuilder()
+                            .accountNumber(createdNumber + 1)
+                            .build();
+                    writableAccountStore.put(copy);
+                    writableAliases.put(edKeyAlias, asAccount(createdNumber + 1));
+                    return recordBuilder.accountID(asAccount(createdNumber + 1));
+                });
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+
+        assertThatThrownBy(() -> subject.doIn(transferContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));
+    }
+
+    private void setUpInsertingKnownAliasesToState() {
+        final var readableBuilder = emptyReadableAliasStateBuilder();
+        readableBuilder.value(ecKeyAlias, asAccount(createdNumber));
+        readableBuilder.value(edKeyAlias, asAccount(createdNumber + 1));
+        readableAliases = readableBuilder.build();
+
+        final var writableBuilder = emptyWritableAliasStateBuilder();
+        writableBuilder.value(ecKeyAlias, asAccount(createdNumber));
+        writableBuilder.value(edKeyAlias, asAccount(createdNumber + 1));
+        writableAliases = writableBuilder.build();
+
+        given(writableStates.<Bytes, AccountID>get(ALIASES)).willReturn(writableAliases);
+        writableAccountStore = new WritableAccountStore(writableStates);
+
+        writableAccountStore.put(account.copyBuilder().accountNumber(createdNumber).alias(ecKeyAlias).build());
+        writableAccountStore.put(account.copyBuilder().accountNumber(createdNumber + 1).alias(edKeyAlias).build());
+
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        transferContext = new TransferContextImpl(handleContext);
     }
 
     private void givenTxn() {
         body = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder()
-                        .accountAmounts(adjustFrom(ownerId, -1_000))
-                        .accountAmounts(adjustFrom(unknownAliasedId, +1_000))
+                        .accountAmounts(adjustFrom(ownerId, -1_000), adjustFrom(unknownAliasedId, +1_000))
                         .build())
                 .tokenTransfers(
                         TokenTransferList.newBuilder()
@@ -154,22 +305,6 @@ class EnsureAliasesStepTest extends CryptoTokenHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .willReturn(recordBuilder);
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
-                .will((invocation) -> {
-                    final var copy =
-                            account.copyBuilder().accountNumber(createdNumber).build();
-                    writableAccountStore.put(copy);
-                    writableAliases.put(String.valueOf(ecKeyAlias), new EntityNumValue(createdNumber));
-                    return recordBuilder.accountID(asAccount(createdNumber));
-                })
-                .will((invocation) -> {
-                    final var copy = account.copyBuilder()
-                            .accountNumber(createdNumber + 1)
-                            .build();
-                    writableAccountStore.put(copy);
-                    writableAliases.put(String.valueOf(edKeyAlias), new EntityNumValue(createdNumber + 1));
-                    return recordBuilder.accountID(asAccount(createdNumber + 1));
-                });
         //        given(handleContext.feeCalculator()).willReturn(fees);
         //        given(fees.computePayment(any(), any())).willReturn(new FeeObject(100, 100, 100));
     }

@@ -159,9 +159,9 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
 
     @Test
     void getAccountIDByAlias() {
-        final var accountId = subject.getAccountIDByAlias(alias.toString());
+        final var accountId = subject.getAccountIDByAlias(alias.alias());
         assertThat(accountId).isEqualTo(id);
-        final var accountId2 = subject.getAccountIDByAlias("test");
+        final var accountId2 = subject.getAccountIDByAlias(Bytes.wrap("test"));
         assertThat(accountId2).isNull();
     }
 }

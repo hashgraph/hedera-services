@@ -110,10 +110,10 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                             yield fromMirror(alias);
                         } else {
                             final var accountID = aliases.get(alias.asUtf8String());
-                            yield accountID == null ? AccountID.DEFAULT.accountNum() : accountID.accountNum();
+                            yield accountID == null ? 0L : accountID.accountNum();
                         }
                     }
-                    case UNSET -> EntityNumValue.DEFAULT.num();
+                    case UNSET -> 0L;
                 };
 
         return accountNum == null

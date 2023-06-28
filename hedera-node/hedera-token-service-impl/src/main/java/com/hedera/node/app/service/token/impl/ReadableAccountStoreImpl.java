@@ -51,7 +51,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
     /** The underlying data storage class that holds the account data. */
     private final ReadableKVState<AccountID, Account> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
-    private final ReadableKVState<String, EntityNumValue> aliases;
+    private final ReadableKVState<Bytes, AccountID> aliases;
 
     /**
      * Create a new {@link ReadableAccountStoreImpl} instance.
@@ -83,12 +83,8 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
 
     @Override
     @Nullable
-    public AccountID getAccountIDByAlias(@NonNull final String alias) {
-        final var entityNum = aliases.get(alias);
-        if (entityNum == null) {
-            return null;
-        }
-        return AccountID.newBuilder().accountNum(entityNum.num()).build();
+    public AccountID getAccountIDByAlias(@NonNull final Bytes alias) {
+        return aliases.get(alias);
     }
 
     /* Helper methods */
@@ -112,11 +108,11 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                         if (isOfEvmAddressSize(alias) && isMirror(alias)) {
                             yield fromMirror(alias);
                         } else {
-                            final var entityNum = aliases.get(alias.asUtf8String());
-                            yield entityNum == null ? EntityNumValue.DEFAULT.num() : entityNum.num();
+                            final var entityNum = aliases.get(alias);
+                            yield entityNum == null ? 0L : entityNum.accountNum();
                         }
                     }
-                    case UNSET -> EntityNumValue.DEFAULT.num();
+                    case UNSET -> 0L;
                 };
 
         return accountNum == null
@@ -147,7 +143,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                         }
 
                         // The evm address is some kind of alias.
-                        var entityNum = aliases.get(evmAddress.asUtf8String());
+                        var entityNum = aliases.get(evmAddress);
 
                         // If we didn't find an alias, we will want to auto-create this account. But
                         // we don't want to auto-create an account if there is already another
@@ -157,13 +153,12 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                             // address from it and look it up
                             final var evmKeyAliasAddress = keyAliasToEVMAddress(evmAddress);
                             if (evmKeyAliasAddress != null) {
-                                entityNum = aliases.get(
-                                        ByteString.copyFrom(evmKeyAliasAddress).toStringUtf8());
+                                entityNum = aliases.get(Bytes.wrap(evmKeyAliasAddress));
                             }
                         }
-                        yield entityNum == null ? EntityNumValue.DEFAULT.num() : entityNum.num();
+                        yield entityNum == null ? 0L : entityNum.accountNum();
                     }
-                    case UNSET -> EntityNumValue.DEFAULT.num();
+                    case UNSET -> 0L;
                 };
 
         return contractNum == null

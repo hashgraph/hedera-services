@@ -16,11 +16,12 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -89,13 +90,13 @@ public class EnsureAliasesStep implements TransferStep {
 
     private AccountID resolveForFungibleToken(final AccountAmount adjust, final TransferContext transferContext) {
         final var accountId = adjust.accountIDOrThrow();
+        validateFalse(tokenTransferResolutions.containsKey(accountId.alias()), INVALID_ALIAS_KEY);
         final var account = transferContext.getFromAlias(accountId);
         if (account == null) {
             final var alias = accountId.alias();
             // If the token resolutions map already contains this unknown alias, we can assume
             // it was successfully auto-created by a prior mention in this CryptoTransfer.
             // (If it appeared in a sender location, this transfer will fail anyway.)
-            validateFalse(tokenTransferResolutions.containsKey(alias), INVALID_ALIAS_KEY);
             final var isInResolutions = transferContext.resolutions().containsKey(alias);
             if (adjust.amount() > 0 && !isInResolutions) {
                 transferContext.createFromAlias(alias, true);
@@ -118,29 +119,22 @@ public class EnsureAliasesStep implements TransferStep {
      */
     private void resolveHbarAdjusts(final List<AccountAmount> hbarTransfers, final TransferContext transferContext) {
         for (final var aa : hbarTransfers) {
-            resolveForHbar(aa, transferContext);
-        }
-    }
+            final var accountId = aa.accountIDOrThrow();
+            if (isAlias(accountId)) {
+                final var account = transferContext.getFromAlias(accountId);
+                // If an alias is repeated for hbar transfers, it will fail
+                final var isInResolutions = transferContext.resolutions().containsKey(accountId.alias());
+                validateTrue(!isInResolutions, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
-    /**
-     * Resolve all hbar adjusts and add all alias resolutions to resolutions map in TransferContext.
-     * @param adjust the hbar transfer to resolve
-     * @param transferContext the transfer context
-     */
-    private void resolveForHbar(final AccountAmount adjust, TransferContext transferContext) {
-        final var accountId = adjust.accountIDOrThrow();
-        if (isAlias(accountId)) {
-            final var account = transferContext.getFromAlias(accountId);
-            if (adjust.amount() > 0) {
-                if (account == null) {
-                    final var isInResolutions = transferContext.resolutions().containsKey(accountId.alias());
-                    validateTrue(!isInResolutions, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
-                    transferContext.createFromAlias(accountId.alias(), false);
+                if (aa.amount() > 0) {
+                    if (account == null) {
+                        transferContext.createFromAlias(accountId.alias(), false);
+                    } else {
+                        validateTrue(account != null, INVALID_ACCOUNT_ID);
+                    }
                 } else {
                     validateTrue(account != null, INVALID_ACCOUNT_ID);
                 }
-            } else {
-                validateTrue(account != null, INVALID_ACCOUNT_ID);
             }
         }
     }

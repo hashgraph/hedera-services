@@ -31,7 +31,7 @@ import java.util.Map;
  * The context of a token transfer. This is used to pass information between the steps of the transfer.
  */
 public class TransferContextImpl implements TransferContext {
-    private WritableAccountStore accountStore;
+    private final WritableAccountStore accountStore;
     private final AutoAccountCreator autoAccountCreator;
     private final HandleContext context;
     private int numAutoCreations;
@@ -41,7 +41,6 @@ public class TransferContextImpl implements TransferContext {
     public TransferContextImpl(final HandleContext context) {
         this.context = context;
         this.accountStore = context.writableStore(WritableAccountStore.class);
-        accountStore = context.writableStore(WritableAccountStore.class);
         this.autoAccountCreator = new AutoAccountCreator(context);
     }
 
@@ -61,8 +60,7 @@ public class TransferContextImpl implements TransferContext {
     public void createFromAlias(final Bytes alias, final boolean isFromTokenTransfer) {
         if (isSerializedProtoKey(alias)) {
             autoAccountCreator.create(alias, isFromTokenTransfer);
-            final var aliasString = String.valueOf(alias);
-            final var createdAccount = accountStore.getAccountIDByAlias(aliasString);
+            final var createdAccount = accountStore.getAccountIDByAlias(alias);
             resolutions.put(alias, createdAccount);
             numAutoCreations++;
         } else if (isOfEvmAddressSize(alias)) {
