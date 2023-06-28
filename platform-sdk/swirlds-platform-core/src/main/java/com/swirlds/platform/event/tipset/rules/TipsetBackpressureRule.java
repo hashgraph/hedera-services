@@ -22,6 +22,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.IntSupplier;
 
+/**
+ * Prevents event creations when the system is stressed and unable to keep up with its work load.
+ */
 public class TipsetBackpressureRule implements TipsetEventCreationRule {
 
     /**
@@ -48,11 +51,17 @@ public class TipsetBackpressureRule implements TipsetEventCreationRule {
         this.eventIntakeQueueSize = Objects.requireNonNull(eventIntakeQueueSize);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEventCreationPermitted() {
         return eventIntakeQueueSize.getAsInt() < eventIntakeThrottle;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void eventWasCreated() {
         // no-op

@@ -259,9 +259,10 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
 
             final List<EventDescriptor> theoreticalParents = new ArrayList<>(2);
             theoreticalParents.add(possibleNerd);
-            if (lastSelfEvent != null) {
-                theoreticalParents.add(lastSelfEvent);
+            if (lastSelfEvent == null) {
+                throw new IllegalStateException("lastSelfEvent is null");
             }
+            theoreticalParents.add(lastSelfEvent);
 
             final TipsetAdvancementWeight advancementWeight =
                     tipsetWeightCalculator.getTheoreticalAdvancementWeight(theoreticalParents);

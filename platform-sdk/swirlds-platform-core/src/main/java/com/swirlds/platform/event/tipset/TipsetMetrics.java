@@ -83,7 +83,7 @@ public class TipsetMetrics {
     /**
      * Get the metric used to track the tipset score of events created by this node.
      *
-     * @return the tipset score metric
+     * @return the tipset advancement metric
      */
     @NonNull
     public RunningAverageMetric getTipsetAdvancementMetric() {
