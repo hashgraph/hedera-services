@@ -118,6 +118,7 @@ public class ConfigRecordParser {
         final String propertyDescription = paramDoc.get(javaRecordComponent.getName());
         final String propertyType = javaRecordComponent.getType().getQualifiedName();
 
-        return new ConfigDataPropertyDefinition(propertyName, propertyType, propertyDefaultValue, propertyDescription);
+        return new ConfigDataPropertyDefinition(
+                javaRecordComponent.getName(), propertyName, propertyType, propertyDefaultValue, propertyDescription);
     }
 }

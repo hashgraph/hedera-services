@@ -16,4 +16,5 @@
 
 package com.swirlds.config.processor;
 
-public record ConfigDataPropertyDefinition(String name, String type, String defaultValue, String description) {}
+public record ConfigDataPropertyDefinition(
+        String fieldName, String name, String type, String defaultValue, String description) {}
