@@ -20,6 +20,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
+/**
+ * Placeholder for future Hedera-specific tracing implementation.
+ */
 public interface HederaTracer extends OperationTracer {
     void initProcess(@NonNull MessageFrame frame);
 

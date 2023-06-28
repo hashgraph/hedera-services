@@ -41,8 +41,7 @@ public interface HederaEvmAccount extends MutableAccount {
     /**
      * Returns the Hedera contract id for this account.
      *
-     * @return the Hedera account id
-     * @throws IllegalStateException if this account is a token facade
+     * @return the Hedera contract id, including if the account is a token facade
      */
     @NonNull
     ContractID hederaContractId();

@@ -19,7 +19,13 @@ package com.hedera.node.app.service.contract.impl.hevm;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.account.Account;
 
+/**
+ * TODO - not sure this makes sense, why can't we just call {@link Account#getCode()} directly?
+ *
+ * (Answer: we probably can. This class should be deleted in upcoming PR.)
+ */
 public interface HederaEvmCode {
     Code load(@NonNull Address contract);
 

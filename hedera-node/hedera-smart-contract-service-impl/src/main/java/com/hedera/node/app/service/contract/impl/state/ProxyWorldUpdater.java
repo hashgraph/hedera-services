@@ -122,6 +122,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
 
     @Override
     public ContractID getHederaContractId(@NonNull final Address address) {
+        // As an important special case, return the pending creation's contract ID if its address matches
         if (pendingCreation != null && pendingCreation.address().equals(requireNonNull(address))) {
             return ContractID.newBuilder().contractNum(pendingCreation.number()).build();
         }
