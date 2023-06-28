@@ -27,6 +27,11 @@ import java.util.Set;
 /**
  * Keeps track of events created that have no children. These events are candidates to be used as parents when creating
  * a new event.
+ *
+ * <p>
+ * At the surface, this class may appear similar to ChatterEventMapper. But unlike that class, this class specifically
+ * only tracks events without children, as opposed to tracking the most recent event from each creator. This class
+ * provides no guarantees that an event from any particular node will always be present.
  */
 public class ChildlessEventTracker {
 
@@ -49,6 +54,7 @@ public class ChildlessEventTracker {
 
     /**
      * Register a self event. Removes parents but does not add the event to the set of childless events.
+     *
      * @param parents the parents of the self event
      */
     public void registerSelfEventParents(@NonNull final List<EventDescriptor> parents) {

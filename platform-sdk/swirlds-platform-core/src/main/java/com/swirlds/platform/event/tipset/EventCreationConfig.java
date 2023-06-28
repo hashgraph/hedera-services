@@ -39,7 +39,8 @@ import java.time.Duration;
  *                                       permit the creation of new self events.
  * @param creationQueueSize              the size of the intake queue for the event creator
  * @param creationQueueBufferSize        the size of the buffer for the event creator
- * @param creationQueueWaitForWorkPeriod the amount of time the event creator spends blocking its intake queue
+ * @param creationQueueWaitForWorkPeriod the amount of time the event creator spends waiting for work in its intake
+ *                                       queue
  */
 @ConfigData("event.creation")
 public record EventCreationConfig(

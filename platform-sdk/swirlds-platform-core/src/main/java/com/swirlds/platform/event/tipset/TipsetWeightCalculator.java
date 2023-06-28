@@ -249,8 +249,8 @@ public class TipsetWeightCalculator {
             return 0;
         }
 
-        if (latestSelfEventTipset.getTipGenerationForNode(nodeId) >
-                snapshotHistory.getLast().getTipGenerationForNode(nodeId)) {
+        if (latestSelfEventTipset.getTipGenerationForNode(nodeId)
+                > snapshotHistory.getLast().getTipGenerationForNode(nodeId)) {
             // Special case: we have advanced this generation since the snapshot was taken.
             return 0;
         }
