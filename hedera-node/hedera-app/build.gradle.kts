@@ -26,6 +26,9 @@ dependencies {
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
 
+        // This is needed to pick up and include the native libraries for the netty epoll transport
+        runtimeOnly(gav("io.netty.transport.epoll"))
+
         testImplementation(project(":app"))
         testImplementation(testFixtures(project(":config")))
         testImplementation(testFixtures(project(":app-service-mono")))
@@ -158,3 +161,40 @@ val cleanRun =
 tasks.clean { dependsOn(cleanRun) }
 
 tasks.register("showHapiVersion") { doLast { println(libs.versions.hapi.proto.get()) } }
+
+var updateDockerEnvTask =
+        tasks.register<Exec>("updateDockerEnv") {
+            description =
+                    "Creates the .env file in the docker folder that contains environment variables for docker"
+            group = "docker"
+
+            workingDir("${rootProject.projectDir}/hedera-node/docker")
+            commandLine("./update-env.sh", project.version)
+        }
+
+tasks.register<Exec>("createDockerImage") {
+    description = "Creates the docker image of the services based on the current version"
+    group = "docker"
+
+    dependsOn(updateDockerEnvTask, tasks.assemble)
+    workingDir("${rootProject.projectDir}/hedera-node/docker")
+    commandLine("./docker-build.sh", project.version, rootProject.projectDir)
+}
+
+tasks.register<Exec>("startDockerContainers") {
+    description = "Starts docker containers of the services based on the current version"
+    group = "docker"
+
+    dependsOn(updateDockerEnvTask)
+    workingDir("${rootProject.projectDir}/hedera-node/docker")
+    commandLine("docker-compose", "up")
+}
+
+tasks.register<Exec>("stopDockerContainers") {
+    description = "Stops running docker containers of the services"
+    group = "docker"
+
+    dependsOn(updateDockerEnvTask)
+    workingDir("${rootProject.projectDir}/hedera-node/docker")
+    commandLine("docker-compose", "stop")
+}
