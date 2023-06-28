@@ -77,7 +77,7 @@ public class TransactionProcessor {
             final var gasCharges =
                     gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
 
-            // Build the initial frame for the transaction and return the result of processing it
+            // Build the initial frame for the transaction
             final var initialFrame = frameBuilder.buildInitialFrameWith(
                     transaction,
                     updater,
@@ -86,6 +86,7 @@ public class TransactionProcessor {
                     parties.sender().getAddress(),
                     parties.toAddress(),
                     gasCharges.intrinsicGas());
+            // Return the result of running the frame to completion
             return frameProcessor.process(transaction.gasLimit(), initialFrame, tracer, messageCall, contractCreation);
         } catch (final HandleException failure) {
             return HederaEvmTransactionResult.abortFor(failure.getStatus());
