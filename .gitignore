@@ -1055,6 +1055,10 @@ hedera-node/hedera-mono-service/swirlds-sst-tmp/**
 *.json.gz
 saved.txt
 
+# Preconsensus event stream files
+*.pces
+*.pcesD
+
 ### Hedera Node Files
 hedera-node/hapi/hedera-protobufs
 hedera-node/hapi/checkouts.bin
