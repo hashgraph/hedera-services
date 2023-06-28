@@ -65,14 +65,25 @@ SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit ; pwd -P )"
 # The entrypoint into the platform CLI (i.e. where the main() method is)
 MAIN_CLASS_NAME='com.swirlds.cli.PlatformCli'
 
+PYTHON_INSTALLED=true
+python3 --version >/dev/null 2>&1 || PYTHON_INSTALLED=false
+
 COLOR=false
 COLOR_LOGS_PATH="${SCRIPT_PATH}/color-logs.py"
 if [[ -e "$COLOR_LOGS_PATH" ]]; then
-  # The color-logs.py script exists, enable color.
-  COLOR=true
+  if [[ "$PYTHON_INSTALLED" = true ]]; then
+    # The color-logs.py script exists and can be executed, enable color.
+    COLOR=true
+  fi
+fi
 
-  # If python is not installed then we can't use the script.
-  python3 --version >/dev/null 2>&1 || COLOR=false
+SQUELCH_SPAM=false
+SQUELCH_SPAM_PATH="${SCRIPT_PATH}/squelch-spam.py"
+if [[ -e "$SQUELCH_SPAM_PATH" ]]; then
+  if [[ "$PYTHON_INSTALLED" = true ]]; then
+    # The squelch-spam.py script exists and can be executed, enable squelching.
+    SQUELCH_SPAM=true
+  fi
 fi
 
 # Iterate over arguments and strip out the classpath arguments and JVM arguments.
@@ -159,8 +170,20 @@ if [[ "$JVM_CLASSPATH" = '' ]]; then
   exit 1
 fi
 
-if [[ "$COLOR" = true ]]; then
-  java "${JVM_ARGS[@]}" -cp "${JVM_CLASSPATH}" $MAIN_CLASS_NAME "${PROGRAM_ARGS[@]}" | $COLOR_LOGS_PATH
-else
+run () {
   java "${JVM_ARGS[@]}" -cp "${JVM_CLASSPATH}" $MAIN_CLASS_NAME "${PROGRAM_ARGS[@]}"
+}
+
+if [[ "$COLOR" = true ]]; then
+  if [[ "$SQUELCH_SPAM" = true ]]; then
+    run 2>&1 | $SQUELCH_SPAM_PATH | $COLOR_LOGS_PATH
+  else
+    run | $COLOR_LOGS_PATH
+  fi
+else
+  if [[ "$SQUELCH_SPAM" = true ]]; then
+    run 2>&1 | $SQUELCH_SPAM_PATH
+  else
+    run
+  fi
 fi

@@ -21,6 +21,7 @@ import static com.swirlds.logging.LogMarker.CERTIFICATES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
+import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
@@ -30,7 +31,6 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.system.SystemExitCode;
@@ -80,6 +80,7 @@ public final class CryptoSetup {
         final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
         final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
         final CryptoConfig cryptoConfig = configuration.getConfigData(CryptoConfig.class);
+        final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
 
         final ExecutorService cryptoThreadPool = Executors.newFixedThreadPool(
                 threadConfig.numCryptoThreads(),
@@ -91,7 +92,7 @@ public final class CryptoSetup {
 
         final Map<NodeId, KeysAndCerts> keysAndCerts;
         try {
-            if (Settings.getInstance().isLoadKeysFromPfxFiles()) {
+            if (basicConfig.loadKeysFromPfxFiles()) {
                 try (final Stream<Path> list = Files.list(pathsConfig.getKeysDirPath())) {
                     CommonUtils.tellUserConsole("Reading crypto keys from the files here:   "
                             + list.filter(path -> path.getFileName().endsWith("pfx"))
@@ -129,9 +130,7 @@ public final class CryptoSetup {
             throw new CryptographyException(e); // will never reach this line due to exit above
         }
 
-        final String msg = Settings.getInstance().isLoadKeysFromPfxFiles()
-                ? "Certificate loaded: {}"
-                : "Certificate generated: {}";
+        final String msg = basicConfig.loadKeysFromPfxFiles() ? "Certificate loaded: {}" : "Certificate generated: {}";
 
         final Map<NodeId, Crypto> cryptoMap = new HashMap<>();
 

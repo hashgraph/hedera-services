@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.node.app.spi.fixtures.Scenarios.ALICE;
 import static com.hedera.node.app.spi.fixtures.Scenarios.ERIN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -106,6 +107,8 @@ class HandleContextImplTest extends StateTestBase {
     private HandleContextImpl createContext(TransactionBody txBody) {
         return new HandleContextImpl(
                 txBody,
+                ALICE.accountID(),
+                ALICE.account().keyOrThrow(),
                 TransactionCategory.USER,
                 recordBuilder,
                 stack,
@@ -119,8 +122,12 @@ class HandleContextImplTest extends StateTestBase {
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithInvalidArguments() {
+        final var payer = ALICE.accountID();
+        final var payerKey = ALICE.account().keyOrThrow();
         assertThatThrownBy(() -> new HandleContextImpl(
                         null,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -133,6 +140,8 @@ class HandleContextImplTest extends StateTestBase {
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
                         null,
+                        payerKey,
+                        TransactionCategory.USER,
                         recordBuilder,
                         stack,
                         verifier,
@@ -143,6 +152,34 @@ class HandleContextImplTest extends StateTestBase {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
+                        payer,
+                        null,
+                        TransactionCategory.USER,
+                        recordBuilder,
+                        stack,
+                        verifier,
+                        recordListBuilder,
+                        checker,
+                        dispatcher,
+                        serviceScopeLookup))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
+                        null,
+                        recordBuilder,
+                        stack,
+                        verifier,
+                        recordListBuilder,
+                        checker,
+                        dispatcher,
+                        serviceScopeLookup))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         null,
                         stack,
@@ -154,6 +191,8 @@ class HandleContextImplTest extends StateTestBase {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         recordBuilder,
                         null,
@@ -165,6 +204,8 @@ class HandleContextImplTest extends StateTestBase {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -176,6 +217,8 @@ class HandleContextImplTest extends StateTestBase {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -187,6 +230,8 @@ class HandleContextImplTest extends StateTestBase {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -198,6 +243,8 @@ class HandleContextImplTest extends StateTestBase {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -209,6 +256,8 @@ class HandleContextImplTest extends StateTestBase {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -504,6 +553,8 @@ class HandleContextImplTest extends StateTestBase {
         private HandleContextImpl createContext(TransactionBody txBody, TransactionCategory category) {
             return new HandleContextImpl(
                     txBody,
+                    ALICE.accountID(),
+                    ALICE.account().keyOrThrow(),
                     category,
                     recordBuilder,
                     stack,
@@ -618,7 +669,7 @@ class HandleContextImplTest extends StateTestBase {
 
         @ParameterizedTest
         @MethodSource("createContextDispatchers")
-        void testDispatchHandleFails(Consumer<HandleContext> contextDispatcher) throws PreCheckException {
+        void testDispatchHandleFails(Consumer<HandleContext> contextDispatcher) {
             // given
             final var txBody = TransactionBody.newBuilder().build();
             doThrow(new HandleException(ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT))
