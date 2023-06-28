@@ -282,18 +282,6 @@ public class Browser {
                 jframe.dispose();
             }
 
-            // Read from data/settings.txt (where data is in same directory as .jar, usually sdk/) to change
-            // the default settings given in the Settings class. This file won't normally exist. But it can
-            // be used for testing and debugging. This is NOT documented for users.
-            //
-            // Also, if the settings.txt file exists, then after reading it and changing the settings, write
-            // all the current settings to settingsUsed.txt, some of which might have been changed by
-            // settings.txt
-            Settings.getInstance().loadSettings();
-
-            // Provide swirlds.common the settings it needs via the SettingsCommon class
-            Settings.populateSettingsCommon();
-
             // Write the settingsUsed.txt file
             writeSettingsUsed(configuration);
 
@@ -430,7 +418,7 @@ public class Browser {
         // Add all settings values to the string builder
         final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
         if (Files.exists(pathsConfig.getSettingsPath())) {
-            Settings.getInstance().addSettingsUsed(settingsUsedBuilder);
+            PlatformConfigUtils.generateSettingsUsed(settingsUsedBuilder, configuration);
         }
 
         settingsUsedBuilder.append(System.lineSeparator());
@@ -441,7 +429,8 @@ public class Browser {
         ConfigExport.addConfigContents(configuration, settingsUsedBuilder);
 
         // Write the settingsUsed.txt file
-        final Path settingsUsedPath = pathsConfig.getSettingsUsedDir().resolve(SettingConstants.SETTING_USED_FILENAME);
+        final Path settingsUsedPath =
+                pathsConfig.getSettingsUsedDir().resolve(PlatformConfigUtils.SETTING_USED_FILENAME);
         try (final OutputStream outputStream = new FileOutputStream(settingsUsedPath.toFile())) {
             outputStream.write(settingsUsedBuilder.toString().getBytes(StandardCharsets.UTF_8));
         } catch (final IOException | RuntimeException e) {

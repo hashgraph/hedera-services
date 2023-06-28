@@ -561,7 +561,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     shadowGraph);
 
             final EventCreator eventCreator = buildEventCreator(eventIntake);
-            final Settings settings = Settings.getInstance();
+            final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
             final TransactionConfig transactionConfig =
                     platformContext.getConfiguration().getConfigData(TransactionConfig.class);
@@ -573,7 +573,7 @@ public class SwirldsPlatform implements Platform, Startable {
             validators.add(new EventDeduplication(isDuplicateChecks, eventIntakeMetrics));
             validators.add(StaticValidators::isParentDataValid);
             validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
-            if (settings.isVerifyEventSigs()) {
+            if (basicConfig.verifyEventSigs()) {
                 validators.add(new SignatureValidator(initialAddressBook));
             }
             final GossipEventValidators eventValidators = new GossipEventValidators(validators);
