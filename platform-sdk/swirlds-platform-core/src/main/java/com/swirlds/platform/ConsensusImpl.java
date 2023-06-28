@@ -1126,7 +1126,7 @@ public class ConsensusImpl implements Consensus {
      * 		the index of the member ID of the creator
      * @return the last event created by member at index m that is an ancestor of x, or null if none
      */
-    private EventImpl lastSee(EventImpl x, int m) {
+    private EventImpl lastSee(@Nullable final EventImpl x, final int m) {
         int numMembers;
         EventImpl sp, op;
 
