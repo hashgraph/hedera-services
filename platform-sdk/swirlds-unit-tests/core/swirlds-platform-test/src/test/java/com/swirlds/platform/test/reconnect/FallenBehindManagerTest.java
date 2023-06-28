@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatusStateMachine;
+import com.swirlds.common.system.status.PlatformStatusComponent;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
@@ -48,7 +48,7 @@ class FallenBehindManagerTest {
             addressBook,
             selfId,
             graph,
-            mock(PlatformStatusStateMachine.class),
+            mock(PlatformStatusComponent.class),
             fallenBehindNotification::incrementAndGet,
             config);
 

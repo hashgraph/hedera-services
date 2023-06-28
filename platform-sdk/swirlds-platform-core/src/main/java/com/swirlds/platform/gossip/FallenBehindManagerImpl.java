@@ -21,7 +21,7 @@ import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatusStateMachine;
+import com.swirlds.common.system.status.PlatformStatusComponent;
 import com.swirlds.common.system.status.actions.FallenBehindAction;
 import com.swirlds.platform.network.RandomGraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,11 +37,17 @@ import java.util.concurrent.ConcurrentHashMap;
  * A thread-safe implementation of {@link FallenBehindManager}
  */
 public class FallenBehindManagerImpl implements FallenBehindManager, EventCreationRule {
-    /** a set of all neighbors of this node */
+    /**
+     * a set of all neighbors of this node
+     */
     private final HashSet<NodeId> allNeighbors;
-    /** the number of neighbors we have */
+    /**
+     * the number of neighbors we have
+     */
     private final int numNeighbors;
-    /** set of neighbors who report that this node has fallen behind */
+    /**
+     * set of neighbors who report that this node has fallen behind
+     */
     private final HashSet<NodeId> reportFallenBehind;
     /**
      * set of neighbors that have not yet reported that we have fallen behind, only exists if someone reports we have
@@ -50,22 +56,26 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
     private final Set<NodeId> notYetReportFallenBehind;
 
     /**
-     * The state machine that manages platform status
+     * Manages the platform status
      */
-    private final PlatformStatusStateMachine platformStatusStateMachine;
+    private final PlatformStatusComponent platformStatusComponent;
 
-    /** Called when the status becomes fallen behind */
+    /**
+     * Called when the status becomes fallen behind
+     */
     private final Runnable fallenBehindCallback;
 
     private final ReconnectConfig config;
-    /** number of neighbors who think this node has fallen behind */
+    /**
+     * number of neighbors who think this node has fallen behind
+     */
     volatile int numReportFallenBehind;
 
     public FallenBehindManagerImpl(
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final RandomGraph connectionGraph,
-            @NonNull final PlatformStatusStateMachine platformStatusStateMachine,
+            @NonNull final PlatformStatusComponent platformStatusComponent,
             @NonNull final Runnable fallenBehindCallback,
             @NonNull final ReconnectConfig config) {
         Objects.requireNonNull(addressBook, "addressBook");
@@ -81,7 +91,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
         for (final int neighbor : neighbors) {
             allNeighbors.add(addressBook.getNodeId(neighbor));
         }
-        this.platformStatusStateMachine = Objects.requireNonNull(platformStatusStateMachine);
+        this.platformStatusComponent = Objects.requireNonNull(platformStatusComponent);
         this.fallenBehindCallback =
                 Objects.requireNonNull(fallenBehindCallback, "fallenBehindCallback must not be null");
         this.config = Objects.requireNonNull(config, "config must not be null");
@@ -100,7 +110,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
             notYetReportFallenBehind.remove(id);
             numReportFallenBehind++;
             if (!previouslyFallenBehind && hasFallenBehind()) {
-                platformStatusStateMachine.processStatusAction(new FallenBehindAction());
+                platformStatusComponent.processStatusAction(new FallenBehindAction());
                 fallenBehindCallback.run();
             }
         }

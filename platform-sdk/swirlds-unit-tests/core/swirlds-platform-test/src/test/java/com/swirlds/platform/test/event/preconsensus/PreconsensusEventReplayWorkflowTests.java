@@ -32,12 +32,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.system.status.PlatformStatusConfig;
-import com.swirlds.common.system.status.PlatformStatusStateMachine;
-import com.swirlds.common.system.status.SyncPlatformStatusStateMachine;
+import com.swirlds.common.system.status.PlatformStatusComponent;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
+import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
@@ -50,7 +50,6 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -168,9 +167,10 @@ class PreconsensusEventReplayWorkflowTests {
         when(latestImmutableState.get()).thenReturn(signedState);
         when(stateManagementComponent.getLatestImmutableState(any())).thenReturn(latestImmutableState);
 
-        final PlatformStatusStateMachine platformStatusStateMachine = new SyncPlatformStatusStateMachine(
+        final PlatformStatusComponent platformStatusComponent = new PlatformStatusComponent(
+                mock(PlatformContext.class),
                 Time.getCurrent(),
-                new TestConfigBuilder().getOrCreateConfig().getConfigData(PlatformStatusConfig.class),
+                mock(ThreadManager.class),
                 mock(NotificationEngine.class));
 
         replayPreconsensusEvents(
@@ -184,7 +184,7 @@ class PreconsensusEventReplayWorkflowTests {
                 consensusRoundHandler,
                 stateHashSignQueue,
                 stateManagementComponent,
-                platformStatusStateMachine,
+                platformStatusComponent,
                 minimumGenerationNonAncient);
 
         assertEquals(TestPhase.TEST_FINISHED, phase.get());

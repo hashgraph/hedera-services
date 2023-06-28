@@ -32,7 +32,7 @@ import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatusStateMachine;
+import com.swirlds.common.system.status.PlatformStatusComponent;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.threading.framework.QueueThread;
@@ -126,7 +126,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 stateHashSignQueue,
                 e -> {},
                 () -> {},
-                mock(PlatformStatusStateMachine.class),
+                mock(PlatformStatusComponent.class),
                 (round) -> {},
                 new BasicSoftwareVersion(1));
 
@@ -206,7 +206,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
-                mock(PlatformStatusStateMachine.class),
+                mock(PlatformStatusComponent.class),
                 () -> false,
                 state);
 
@@ -220,7 +220,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 stateHashSignQueue,
                 e -> {},
                 () -> {},
-                mock(PlatformStatusStateMachine.class),
+                mock(PlatformStatusComponent.class),
                 (round) -> {},
                 new BasicSoftwareVersion(1));
         consensusRoundHandler.start();

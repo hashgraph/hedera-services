@@ -35,7 +35,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.status.PlatformStatus;
-import com.swirlds.common.system.status.PlatformStatusStateMachine;
+import com.swirlds.common.system.status.PlatformStatusComponent;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.test.AssertionUtils;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -661,8 +661,8 @@ class StateManagementComponentTests {
         final PlatformSigner signer = mock(PlatformSigner.class);
         when(signer.sign(any(Hash.class))).thenReturn(mock(Signature.class));
 
-        final PlatformStatusStateMachine stateMachine = mock(PlatformStatusStateMachine.class);
-        when(stateMachine.getCurrentStatus()).thenReturn(PlatformStatus.ACTIVE);
+        final PlatformStatusComponent platformStatusComponent = mock(PlatformStatusComponent.class);
+        when(platformStatusComponent.getCurrentStatus()).thenReturn(PlatformStatus.ACTIVE);
 
         return new DefaultStateManagementComponent(
                 platformContext,
@@ -681,6 +681,6 @@ class StateManagementComponentTests {
                 (msg) -> {},
                 (msg, t, code) -> {},
                 mock(PreconsensusEventWriter.class),
-                stateMachine);
+                platformStatusComponent);
     }
 }

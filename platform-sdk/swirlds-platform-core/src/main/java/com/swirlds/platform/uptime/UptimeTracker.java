@@ -29,7 +29,7 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
-import com.swirlds.common.system.status.PlatformStatusStateMachine;
+import com.swirlds.common.system.status.PlatformStatusComponent;
 import com.swirlds.common.system.status.actions.SelfEventReachedConsensusAction;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -61,31 +61,30 @@ public class UptimeTracker {
     private final AtomicReference<Instant> lastSelfEventTime = new AtomicReference<>();
 
     /**
-     * The state machine managing platform status
+     * Manages the platform status.
      */
-    private final PlatformStatusStateMachine platformStatusStateMachine;
+    private final PlatformStatusComponent platformStatusComponent;
 
     /**
      * Construct a new uptime detector.
      *
-     * @param platformContext            the platform context
-     * @param time                       the time
-     * @param addressBook                the address book
-     * @param platformStatusStateMachine the state machine managing platform status
-     * @param selfId                     the ID of this node
-     * @param time                       a source of time
+     * @param platformContext         the platform context
+     * @param addressBook             the address book
+     * @param platformStatusComponent manages platform status
+     * @param selfId                  the ID of this node
+     * @param time                    a source of time
      */
     public UptimeTracker(
             @NonNull PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
-            @NonNull final PlatformStatusStateMachine platformStatusStateMachine,
+            @NonNull final PlatformStatusComponent platformStatusComponent,
             @NonNull final NodeId selfId,
             @NonNull final Time time) {
 
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
         this.time = Objects.requireNonNull(time);
         this.addressBook = Objects.requireNonNull(addressBook);
-        this.platformStatusStateMachine = Objects.requireNonNull(platformStatusStateMachine);
+        this.platformStatusComponent = Objects.requireNonNull(platformStatusComponent);
         this.degradationThreshold = platformContext
                 .getConfiguration()
                 .getConfigData(UptimeConfig.class)
@@ -199,7 +198,7 @@ public class UptimeTracker {
                 lastSelfEventTime.set(lastSelfEventConsensusTimestamp);
 
                 // the action receives the wall clock time, NOT the consensus timestamp
-                platformStatusStateMachine.processStatusAction(new SelfEventReachedConsensusAction(time.now()));
+                platformStatusComponent.processStatusAction(new SelfEventReachedConsensusAction(time.now()));
             }
         }
     }

@@ -55,11 +55,8 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.AsyncPlatformStatusStateMachine;
 import com.swirlds.common.system.status.PlatformStatus;
-import com.swirlds.common.system.status.PlatformStatusConfig;
-import com.swirlds.common.system.status.PlatformStatusStateMachine;
-import com.swirlds.common.system.status.SyncPlatformStatusStateMachine;
+import com.swirlds.common.system.status.PlatformStatusComponent;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.common.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.common.system.status.actions.StartedReplayingEventsAction;
@@ -279,7 +276,7 @@ public class SwirldsPlatform implements Platform, Startable {
     /**
      * Manages the status of the platform.
      */
-    private final PlatformStatusStateMachine platformStatusStateMachine;
+    private final PlatformStatusComponent platformStatusComponent;
 
     /**
      * Responsible for transmitting and receiving events from the network.
@@ -350,7 +347,8 @@ public class SwirldsPlatform implements Platform, Startable {
 
         this.eventMapper = new EventMapper(platformContext.getMetrics(), selfId);
 
-        platformStatusStateMachine = components.add(buildPlatformStatusStateMachine(time));
+        platformStatusComponent =
+                components.add(new PlatformStatusComponent(platformContext, time, threadManager, notificationEngine));
 
         this.metrics = platformContext.getMetrics();
 
@@ -358,7 +356,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 "PlatformStatus",
                 Metrics.PLATFORM_CATEGORY,
                 PlatformStatus.values(),
-                platformStatusStateMachine::getCurrentStatus));
+                platformStatusComponent::getCurrentStatus));
 
         registerAddressBookMetrics(metrics, initialAddressBook, selfId);
 
@@ -397,7 +395,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 this::haltRequested,
                 appCommunicationComponent,
                 preconsensusEventWriter,
-                platformStatusStateMachine);
+                platformStatusComponent);
         wiring.registerComponents(components);
 
         final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
@@ -490,7 +488,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     selfId,
                     preConsensusSystemTransactionManager,
                     postConsensusSystemTransactionManager,
-                    platformStatusStateMachine,
+                    platformStatusComponent,
                     freezeManager::isFreezeStarted,
                     stateToLoad);
 
@@ -510,7 +508,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     stateHashSignQueue,
                     preconsensusEventWriter::waitUntilDurable,
                     freezeManager::freezeStarted,
-                    platformStatusStateMachine,
+                    platformStatusComponent,
                     stateManagementComponent::roundAppliedToState,
                     appVersion));
 
@@ -607,7 +605,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     .build());
 
             transactionSubmitter = new SwirldTransactionSubmitter(
-                    platformStatusStateMachine,
+                    platformStatusComponent,
                     transactionConfig,
                     swirldStateManager::submitTransaction,
                     new TransactionMetrics(metrics));
@@ -635,7 +633,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     eventMapper,
                     eventIntakeMetrics,
                     eventLinker,
-                    platformStatusStateMachine,
+                    platformStatusComponent,
                     this::loadReconnectState,
                     this::clearAllPipelines);
 
@@ -922,7 +920,7 @@ public class SwirldsPlatform implements Platform, Startable {
         }
 
         gossip.resetFallenBehind();
-        platformStatusStateMachine.processStatusAction(new ReconnectCompleteAction(signedState.getRound()));
+        platformStatusComponent.processStatusAction(new ReconnectCompleteAction(signedState.getRound()));
     }
 
     /**
@@ -1040,23 +1038,6 @@ public class SwirldsPlatform implements Platform, Startable {
     }
 
     /**
-     * Build the platform status state machine
-     *
-     * @param time a source of time
-     * @return the platform status state machine
-     */
-    @NonNull
-    private PlatformStatusStateMachine buildPlatformStatusStateMachine(@NonNull final Time time) {
-        final PlatformStatusConfig platformStatusConfig =
-                platformContext.getConfiguration().getConfigData(PlatformStatusConfig.class);
-
-        final PlatformStatusStateMachine syncStateMachine =
-                new SyncPlatformStatusStateMachine(time, platformStatusConfig, notificationEngine);
-
-        return new AsyncPlatformStatusStateMachine(platformContext, time, syncStateMachine, threadManager);
-    }
-
-    /**
      * Start this platform.
      */
     @Override
@@ -1107,12 +1088,12 @@ public class SwirldsPlatform implements Platform, Startable {
                     consensusRoundHandler,
                     stateHashSignQueue,
                     stateManagementComponent,
-                    platformStatusStateMachine,
+                    platformStatusComponent,
                     initialMinimumGenerationNonAncient);
         } else {
             // if preconsensus events aren't being replayed, advance through that part of the state machine anyway
-            platformStatusStateMachine.processStatusAction(new StartedReplayingEventsAction());
-            platformStatusStateMachine.processStatusAction(
+            platformStatusComponent.processStatusAction(new StartedReplayingEventsAction());
+            platformStatusComponent.processStatusAction(
                     new DoneReplayingEventsAction(Time.getCurrent().now()));
         }
     }

@@ -31,7 +31,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatusStateMachine;
+import com.swirlds.common.system.status.PlatformStatusComponent;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -105,13 +105,15 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected final ReconnectMetrics reconnectMetrics;
 
     /**
-     * The state machine that manages platform status
+     * Manages the platform status
      */
-    protected final PlatformStatusStateMachine platformStatusStateMachine;
+    protected final PlatformStatusComponent platformStatusComponent;
 
     protected final List<Startable> thingsToStart = new ArrayList<>();
 
-    /** the number of active connections this node has to other nodes */
+    /**
+     * the number of active connections this node has to other nodes
+     */
     private final AtomicInteger activeConnectionNumber = new AtomicInteger(0);
 
     /**
@@ -131,7 +133,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
-     * @param platformStatusStateMachine    the state machine that manages platform status
+     * @param platformStatusComponent       manages the platform status
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
@@ -150,14 +152,14 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
-            @NonNull final PlatformStatusStateMachine platformStatusStateMachine,
+            @NonNull final PlatformStatusComponent platformStatusComponent,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
-        this.platformStatusStateMachine = Objects.requireNonNull(platformStatusStateMachine);
+        this.platformStatusComponent = Objects.requireNonNull(platformStatusComponent);
 
         threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         criticalQuorum = buildCriticalQuorum();

@@ -16,8 +16,11 @@
 
 package com.swirlds.common.system.status;
 
+import com.swirlds.base.state.Startable;
+import com.swirlds.base.state.Stoppable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.status.actions.PlatformStatusAction;
 import com.swirlds.common.system.status.actions.TimeElapsedAction;
 import com.swirlds.common.threading.framework.QueueThread;
@@ -28,9 +31,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 /**
- * An asynchronous implementation of the platform status state machine
+ * An asynchronous component which manages platform status.
+ * <p>
+ * This object wraps a {@link PlatformStatusStateMachine}, which contains the actual state machine logic.
  */
-public class AsyncPlatformStatusStateMachine implements PlatformStatusStateMachine {
+public class PlatformStatusComponent implements PlatformStatusGetter, Startable, Stoppable {
     /**
      * A source of time
      */
@@ -42,27 +47,31 @@ public class AsyncPlatformStatusStateMachine implements PlatformStatusStateMachi
     private final QueueThread<PlatformStatusAction> handleThread;
 
     /**
-     * The state machine that is being wrapped by this asynchronous implementation
+     * The platform status state machine that is being wrapped by this asynchronous component
      */
     private final PlatformStatusStateMachine stateMachine;
 
     /**
      * Constructor
      *
-     * @param platformContext the platform context
-     * @param time            a source of time
-     * @param stateMachine    the state machine that is being wrapped by this asynchronous implementation
-     * @param threadManager   the thread manager
+     * @param platformContext    the platform context
+     * @param time               a source of time
+     * @param threadManager      the thread manager
+     * @param notificationEngine the notification engine
      */
-    public AsyncPlatformStatusStateMachine(
+    public PlatformStatusComponent(
             @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
-            @NonNull final PlatformStatusStateMachine stateMachine,
-            @NonNull final ThreadManager threadManager) {
+            @NonNull final ThreadManager threadManager,
+            @NonNull final NotificationEngine notificationEngine) {
 
         this.time = Objects.requireNonNull(time);
-        this.stateMachine = Objects.requireNonNull(stateMachine);
         Objects.requireNonNull(threadManager);
+        Objects.requireNonNull(notificationEngine);
+
+        final PlatformStatusConfig config =
+                platformContext.getConfiguration().getConfigData(PlatformStatusConfig.class);
+        this.stateMachine = new PlatformStatusStateMachine(time, config, notificationEngine);
 
         this.handleThread = new QueueThreadConfiguration<PlatformStatusAction>(threadManager)
                 .setComponent("platform-status")
@@ -93,7 +102,6 @@ public class AsyncPlatformStatusStateMachine implements PlatformStatusStateMachi
     /**
      * {@inheritDoc}
      */
-    @Override
     public void processStatusAction(@NonNull final PlatformStatusAction action) {
         Objects.requireNonNull(action);
         stateMachine.processStatusAction(action);
@@ -102,7 +110,6 @@ public class AsyncPlatformStatusStateMachine implements PlatformStatusStateMachi
     /**
      * {@inheritDoc}
      */
-    @Override
     @NonNull
     public PlatformStatus getCurrentStatus() {
         return stateMachine.getCurrentStatus();
