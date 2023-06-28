@@ -18,19 +18,20 @@ package com.swirlds.platform.eventhandling;
 
 import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
 
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
-import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.transaction.TransactionPool;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.function.BooleanSupplier;
 
@@ -66,20 +67,20 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
      */
     private final BooleanSupplier inFreeze;
 
-    protected final SettingsProvider settings;
+    protected final TransactionConfig transactionConfig;
 
     /**
      * Creates a new transaction pool for transactions waiting to be put in an event.
      *
      * @param metrics  the metrics engine
-     * @param settings settings to use
+     * @param transactionConfig configuration to use
      * @param inFreeze Indicates if the system is currently in a freeze
      */
     public EventTransactionPool(
             @NonNull final Metrics metrics,
-            @Nullable SettingsProvider settings,
+            @NonNull final TransactionConfig transactionConfig,
             @Nullable final BooleanSupplier inFreeze) {
-        this.settings = settings;
+        this.transactionConfig = Objects.requireNonNull(transactionConfig);
         this.inFreeze = inFreeze;
 
         metrics.getOrCreate(
@@ -101,7 +102,7 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
     @SuppressWarnings("ConstantConditions")
     private ConsensusTransactionImpl getNextTransaction(final int currentEventSize) {
 
-        final int maxSize = settings.getMaxTransactionBytesPerEvent() - currentEventSize;
+        final int maxSize = transactionConfig.maxTransactionBytesPerEvent() - currentEventSize;
 
         if (!priorityTransEvent.isEmpty() && priorityTransEvent.peek().getSerializedLength() <= maxSize) {
             return priorityTransEvent.poll();
@@ -206,7 +207,7 @@ public class EventTransactionPool implements TransactionPool, TransactionSupplie
         // Always submit system transactions. If it's not a system transaction, then only submit it if we
         // don't violate queue size capacity restrictions.
         if (!transaction.isSystem()
-                && (transEvent.size() + priorityTransEvent.size()) > settings.getThrottleTransactionQueueSize()) {
+                && (transEvent.size() + priorityTransEvent.size()) > transactionConfig.throttleTransactionQueueSize()) {
             return false;
         }
 

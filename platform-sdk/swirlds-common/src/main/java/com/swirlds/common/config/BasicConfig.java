@@ -37,9 +37,6 @@ import java.time.Duration;
  * 		show expand statistics values, inlcude mean, min, max, stdDev
  * @param maxEventQueueForCons
  * 		max events that can be put in the forCons queue (q2) in ConsensusRoundHandler (0 for infinity)
- * @param throttleTransactionQueueSize
- * 		Stop accepting new non-system transactions into the 4 transaction queues if any of them have more than this
- * 		many.
  * @param throttle7
  * 		should we slow down when not behind? One of N members is "falling behind" when it receives at least (N +
  * 		throttle7threshold) events during a sync.
@@ -61,19 +58,12 @@ import java.time.Duration;
  * 		when its queue is empty and the two are equal, but never twice within this many milliseconds
  * @param statsSkipSeconds
  * 		number of seconds that the "all" history window skips at the start
- * @param maxAddressSizeAllowed
- * 		the maximum number of address allowed in a address book, the same as the maximum allowed network size
  * @param freezeSecondsAfterStartup
  * 		do not create events for this many seconds after the platform has started (0 or less to not freeze at startup)
  * @param loadKeysFromPfxFiles
  * 		When enabled, the platform will try to load node keys from .pfx files located in the keysDirPath. If even a
  * 		single key is missing, the platform will warn and exit. If disabled, the platform will generate keys
  * 		deterministically.
- * @param maxTransactionBytesPerEvent
- * 		the maximum number of bytes that a single event may contain not including the event headers if a single
- * 		transaction exceeds this limit then the event will contain the single transaction only
- * @param maxTransactionCountPerEvent
- * 		the maximum number of transactions that a single event may contain
  * @param eventIntakeQueueSize
  * 		The size of the event intake queue,
  *        {@link com.swirlds.common.threading.framework.config.QueueThreadConfiguration#UNLIMITED_CAPACITY} for
@@ -124,8 +114,6 @@ import java.time.Duration;
  * 		sync, to reduce the probability of creating an event that will become stale.
  * @param eventIntakeQueueThrottleSize
  * 		The value for the event intake queue at which the node should stop syncing
- * @param transactionMaxBytes
- * 		maximum number of bytes allowed in a transaction
  * @param logPath
  * 		path to log4j2.xml (which might not exist)
  * @param hangingThreadDuration
@@ -145,7 +133,6 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "false") boolean showInternalStats,
         @ConfigProperty(defaultValue = "false") boolean verboseStatistics,
         @ConfigProperty(defaultValue = "10000") int maxEventQueueForCons,
-        @ConfigProperty(defaultValue = "100000") int throttleTransactionQueueSize,
         @ConfigProperty(defaultValue = "false") boolean throttle7,
         @ConfigProperty(defaultValue = "1.5") double throttle7threshold,
         @ConfigProperty(defaultValue = "0.05") double throttle7extra,
@@ -155,11 +142,8 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "500") int sleepHeartbeat,
         @ConfigProperty(defaultValue = "200") long delayShuffle,
         @ConfigProperty(defaultValue = "60") double statsSkipSeconds,
-        @ConfigProperty(defaultValue = "1024") int maxAddressSizeAllowed,
         @ConfigProperty(defaultValue = "10") int freezeSecondsAfterStartup,
         @ConfigProperty(defaultValue = "true") boolean loadKeysFromPfxFiles,
-        @ConfigProperty(defaultValue = "245760") int maxTransactionBytesPerEvent,
-        @ConfigProperty(defaultValue = "245760") int maxTransactionCountPerEvent,
         @ConfigProperty(defaultValue = "10000") int eventIntakeQueueSize,
         @ConfigProperty(defaultValue = "0") int randomEventProbability,
         @ConfigProperty(defaultValue = "10") int rescueChildlessInverseProbability,
@@ -177,7 +161,6 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "1") long pingTransFreq,
         @ConfigProperty(defaultValue = "5") int staleEventPreventionThreshold,
         @ConfigProperty(defaultValue = "1000") int eventIntakeQueueThrottleSize,
-        @ConfigProperty(defaultValue = "6144") int transactionMaxBytes,
         @ConfigProperty(defaultValue = "log4j2.xml") Path logPath,
         @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration,
         @ConfigProperty(defaultValue = "data/saved") String emergencyRecoveryFileLoadDir,

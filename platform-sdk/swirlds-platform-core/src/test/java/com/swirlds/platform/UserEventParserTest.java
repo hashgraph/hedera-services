@@ -23,7 +23,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.utility.CommonUtils;
@@ -58,10 +57,6 @@ class UserEventParserTest {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.common");
         registry.registerConstructables("com.swirlds.common.system.transaction");
-        SettingsCommon.maxTransactionCountPerEvent = 245760;
-        SettingsCommon.maxTransactionBytesPerEvent = 245760;
-        SettingsCommon.transactionMaxBytes = 6144;
-        SettingsCommon.maxAddressSizeAllowed = MAX_ADDRESSBOOK_SIZE;
     }
 
     @ParameterizedTest

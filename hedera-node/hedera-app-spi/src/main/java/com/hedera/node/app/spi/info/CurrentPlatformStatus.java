@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.spi.info;
 
-import com.swirlds.common.system.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

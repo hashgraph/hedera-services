@@ -54,6 +54,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.internal.EventImpl;
@@ -353,6 +354,7 @@ class HandleWorkflowTest extends AppTestBase {
         void testPreHandleNotExecuted() {
             // given
             when(platformTxn.getMetadata()).thenReturn(null);
+            when(event.getCreatorId()).thenReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
@@ -379,6 +381,7 @@ class HandleWorkflowTest extends AppTestBase {
         void testUnknownFailure() {
             // given
             when(platformTxn.getMetadata()).thenReturn(PreHandleResult.unknownFailure());
+            when(event.getCreatorId()).thenReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
@@ -403,6 +406,7 @@ class HandleWorkflowTest extends AppTestBase {
                     null,
                     CONFIG_VERSION - 1L);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
+            when(event.getCreatorId()).thenReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
@@ -416,6 +420,7 @@ class HandleWorkflowTest extends AppTestBase {
         void testPreHandleSuccess() {
             // given
             when(platformTxn.getMetadata()).thenReturn(null);
+            when(event.getCreatorId()).thenReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);

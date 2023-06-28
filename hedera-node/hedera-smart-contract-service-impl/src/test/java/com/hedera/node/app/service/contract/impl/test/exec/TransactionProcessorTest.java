@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
@@ -31,7 +32,6 @@ import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,9 +42,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionProcessorTest {
-    @Mock
-    private GasCalculator gasCalculator;
-
     @Mock
     private CustomMessageCallProcessor messageCallProcessor;
 
@@ -69,11 +66,14 @@ class TransactionProcessorTest {
     @Mock
     private HederaEvmAccount calledAccount;
 
+    @Mock
+    private CustomGasCharging gasCharging;
+
     private TransactionProcessor subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TransactionProcessor(gasCalculator, messageCallProcessor, contractCreationProcessor);
+        subject = new TransactionProcessor(gasCharging, messageCallProcessor, contractCreationProcessor);
     }
 
     @Test
