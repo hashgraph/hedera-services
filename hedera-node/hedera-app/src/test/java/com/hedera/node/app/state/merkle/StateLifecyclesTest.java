@@ -89,7 +89,7 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
         merkleState.setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, recordsRunningHashLeaf);
         final var app = createApp(platform);
 
-        APPS.save(platform.getSelfId().getIdAsInt(), app);
+        APPS.save(platform.getSelfId(), app);
 
         assertDoesNotThrow(() -> merkleState.init(platform, new DualStateImpl(), InitTrigger.GENESIS, null));
     }
@@ -157,7 +157,7 @@ class StateLifecyclesTest extends ResponsibleVMapUser {
                 .crypto(CryptographyHolder.get())
                 .consoleCreator((ignore, visible) -> null)
                 .selfId(AccountID.newBuilder()
-                        .accountNum(platform.getSelfId().getIdAsInt())
+                        .accountNum(platform.getSelfId().id() + 3)
                         .build())
                 .staticAccountMemo("memo")
                 .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)

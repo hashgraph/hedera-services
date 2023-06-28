@@ -63,7 +63,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
         this.aliases = states.get("ALIASES");
     }
 
-    protected static boolean isMirror(final Bytes bytes) {
+    public static boolean isMirror(final Bytes bytes) {
         return bytes.matchesPrefix(MIRROR_PREFIX);
     }
 
@@ -79,6 +79,16 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
     public Account getAccountById(@NonNull final AccountID accountID) {
         final var account = getAccountLeaf(accountID);
         return account == null ? null : account;
+    }
+
+    @Override
+    @Nullable
+    public AccountID getAccountIDByAlias(@NonNull final String alias) {
+        final var entityNum = aliases.get(alias);
+        if (entityNum == null) {
+            return null;
+        }
+        return AccountID.newBuilder().accountNum(entityNum.num()).build();
     }
 
     /* Helper methods */

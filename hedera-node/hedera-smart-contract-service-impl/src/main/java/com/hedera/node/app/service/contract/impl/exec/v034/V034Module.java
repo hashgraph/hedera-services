@@ -24,6 +24,7 @@ import com.hedera.node.app.service.contract.impl.annotations.ServicesV034;
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomBalanceOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomChainIdOperation;
@@ -69,8 +70,8 @@ public interface V034Module {
     static TransactionProcessor provideTransactionProcessor(
             @ServicesV034 @NonNull final CustomMessageCallProcessor messageCallProcessor,
             @ServicesV034 @NonNull final ContractCreationProcessor contractCreationProcessor,
-            @NonNull final GasCalculator gasCalculator) {
-        return new TransactionProcessor(gasCalculator, messageCallProcessor, contractCreationProcessor);
+            @NonNull final CustomGasCharging gasCharging) {
+        return new TransactionProcessor(gasCharging, messageCallProcessor, contractCreationProcessor);
     }
 
     @Provides
