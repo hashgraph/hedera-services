@@ -116,7 +116,7 @@ public final class TipsetEventCreationManagerFactory {
                 appVersion,
                 transactionPool,
                 newEventHandler,
-                eventIntakeQueue,
+                eventIntakeQueue::size,
                 platformStatusSupplier,
                 startUpEventFrozenManager);
 

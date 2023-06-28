@@ -52,9 +52,6 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Responsible for creating new events using the tipset algorithm.
- * <p>
- * Note that this class should not be directly used by a running platform, and should be wrapped in
- * a {@link ThrottledTipsetEventCreator}.
  */
 public class TipsetEventCreatorImpl implements TipsetEventCreator {
 
