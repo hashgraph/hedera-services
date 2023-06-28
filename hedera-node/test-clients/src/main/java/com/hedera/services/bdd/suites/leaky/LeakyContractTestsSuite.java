@@ -219,7 +219,6 @@ import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
@@ -2197,7 +2196,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                             .filter(contractNonceInfo -> !contractNonceInfo
                                     .getContractId()
                                     .equals(spec.registry().getContractId(contract)))
-                            .collect(Collectors.toList());
+                            .toList();
 
                     /** 2. Asserts main contract (NoncesExternalization) nonce is 5 */
                     final var opAssertMain = getTxnRecord(deployContractTx)
