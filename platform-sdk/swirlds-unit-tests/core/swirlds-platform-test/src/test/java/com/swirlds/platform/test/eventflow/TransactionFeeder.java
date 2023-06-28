@@ -25,12 +25,12 @@ import com.swirlds.common.test.TransactionUtils;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Consumer;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * Feeds transactions to a consumer in a worker thread.
