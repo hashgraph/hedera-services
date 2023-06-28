@@ -53,7 +53,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.swirlds.common.system.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatus;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;

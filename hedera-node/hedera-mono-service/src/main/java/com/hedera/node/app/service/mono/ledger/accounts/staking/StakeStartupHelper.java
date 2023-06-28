@@ -229,7 +229,7 @@ public class StakeStartupHelper {
     private List<Long> idsFromAddressBook(final AddressBook addressBook) {
         final List<Long> nodeIds = new ArrayList<>();
         for (int i = 0, n = addressBook.getSize(); i < n; i++) {
-            final long id = addressBook.getId(i);
+            final long id = addressBook.getNodeId(i).id();
             nodeIds.add(id);
         }
         return nodeIds;

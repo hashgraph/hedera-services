@@ -30,6 +30,7 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.state.notifications.IssNotification;
@@ -137,6 +138,6 @@ class ServicesIssListenerTest {
 
     private void givenNoticeMeta() {
         given(issNotification.getRound()).willReturn(round);
-        given(issNotification.getOtherNodeId()).willReturn(otherId);
+        given(issNotification.getOtherNodeId()).willReturn(new NodeId(otherId));
     }
 }
