@@ -104,7 +104,6 @@ final class ReconnectTest {
                 .setAverageWeight(weightPerNode)
                 .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
-                .setSequentialIds(false)
                 .build();
 
         try (final PairedStreams pairedStreams = new PairedStreams()) {

@@ -128,8 +128,7 @@ public class NodeContext {
         // load events from signed state into the sources
         final AddressBook addressBook = collectingEmitter.getGraphGenerator().getAddressBook();
         for (final Address address : addressBook) {
-            final EventSource<?> source =
-                    collectingEmitter.getGraphGenerator().getSource(addressBook.getIndexOfNodeId(address.getNodeId()));
+            final EventSource<?> source = collectingEmitter.getGraphGenerator().getSource(address.getNodeId());
             final List<IndexedEvent> eventsByCreator = Arrays.stream(indexedEvents)
                     .filter(e -> Objects.equals(e.getCreatorId(), address.getNodeId()))
                     .toList();

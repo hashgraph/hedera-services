@@ -65,4 +65,21 @@ public interface SignatureExpander {
      * @param expanded Will be populated with all created {@link ExpandedSignaturePair}s
      */
     void expand(@NonNull Key key, @NonNull List<SignaturePair> sigPairs, @NonNull Set<ExpandedSignaturePair> expanded);
+
+    /**
+     * Expands all {@link Key}s within an {@link Iterable}.
+     *
+     * @param keys The {@link Iterable} of keys
+     * @param sigPairs The {@link SignaturePair}s to search for full key prefixes. This list must be pre-filtered such
+     *                 that there are no duplicate entries and one prefix is not the prefix of another.
+     * @param expanded Will be populated with all created {@link ExpandedSignaturePair}s
+     */
+    default void expand(
+            @NonNull Iterable<Key> keys,
+            @NonNull List<SignaturePair> sigPairs,
+            @NonNull Set<ExpandedSignaturePair> expanded) {
+        for (final var key : keys) {
+            expand(key, sigPairs, expanded);
+        }
+    }
 }

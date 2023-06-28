@@ -16,9 +16,12 @@
 
 package com.swirlds.platform.test.event.source;
 
+import com.swirlds.common.system.address.AddressBook;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
@@ -26,14 +29,15 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class EventSourceFactory {
 
-    private final int numNetworkNodes;
+    /** the address book to use */
+    private final AddressBook addressBook;
     /**
      * a list of lambdas that supply a custom event source for some indexes
      */
     private final List<Pair<Predicate<Long>, Supplier<EventSource<?>>>> customSources;
 
-    public EventSourceFactory(final int numNetworkNodes) {
-        this.numNetworkNodes = numNetworkNodes;
+    public EventSourceFactory(@NonNull final AddressBook addressBook) {
+        this.addressBook = Objects.requireNonNull(addressBook);
         this.customSources = new LinkedList<>();
     }
 
@@ -55,8 +59,9 @@ public class EventSourceFactory {
      */
     public List<EventSource<?>> generateSources() {
         final List<EventSource<?>> list = new LinkedList<>();
+        final int numNodes = addressBook.getSize();
         forEachNode:
-        for (long i = 0; i < numNetworkNodes; i++) {
+        for (long i = 0; i < numNodes; i++) {
             for (final Pair<Predicate<Long>, Supplier<EventSource<?>>> customSource : customSources) {
                 if (customSource.getLeft().test(i)) {
                     list.add(customSource.getRight().get());
