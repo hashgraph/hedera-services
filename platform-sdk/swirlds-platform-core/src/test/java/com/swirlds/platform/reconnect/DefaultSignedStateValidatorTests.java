@@ -236,7 +236,6 @@ class DefaultSignedStateValidatorTests {
         addressBook = new RandomAddressBookGenerator()
                 .setNodeIds(nodeWeights.keySet())
                 .setCustomWeightGenerator(nodeWeights::get)
-                .setSequentialIds(false)
                 .build();
 
         validator = new DefaultSignedStateValidator();
