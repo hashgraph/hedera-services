@@ -396,10 +396,15 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final var nft = uniqueTokenStore.get(tokenId, serialNum);
             final var token = tokenStore.get(tokenId);
 
-            validateTrue(isValidOwner(nft, owner.accountNumber(), token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
-            final var copy = nft.copyBuilder()
-                    .spenderNumber(spenderId.accountNumOrThrow())
+            // FUTURE: owner will be updated to use an AccountID instead of a long account number
+            // Issue #7243
+            AccountID accountOwner = AccountID.newBuilder()
+                    .accountNum(owner.accountNumber())
+                    .realmNum(0)
+                    .shardNum(0)
                     .build();
+            validateTrue(isValidOwner(nft, accountOwner, token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+            final var copy = nft.copyBuilder().spenderId(spenderId).build();
             uniqueTokenStore.put(copy);
         }
     }
