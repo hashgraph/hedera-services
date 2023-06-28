@@ -368,6 +368,7 @@ class HandleWorkflowTest extends AppTestBase {
         void testPreHandleFailure() {
             // given
             when(platformTxn.getMetadata()).thenReturn(PRE_HANDLE_FAILURE_RESULT);
+            when(event.getCreatorId()).thenReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
