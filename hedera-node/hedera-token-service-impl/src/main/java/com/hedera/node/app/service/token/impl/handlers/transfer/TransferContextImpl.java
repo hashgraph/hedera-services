@@ -32,11 +32,11 @@ import java.util.Map;
  */
 public class TransferContextImpl implements TransferContext {
     private WritableAccountStore accountStore;
-    private AutoAccountCreator autoAccountCreator;
-    private HandleContext context;
+    private final AutoAccountCreator autoAccountCreator;
+    private final HandleContext context;
     private int numAutoCreations;
     private int numLazyCreations;
-    private Map<Bytes, AccountID> resolutions = new HashMap<>();
+    private final Map<String, AccountID> resolutions = new HashMap<>();
 
     public TransferContextImpl(final HandleContext context) {
         this.context = context;
@@ -51,17 +51,19 @@ public class TransferContextImpl implements TransferContext {
 
         if (account != null) {
             final var id = asAccount(account.accountNumber());
-            resolutions.put(aliasedId.alias(), id);
+            resolutions.put(String.valueOf(aliasedId.alias()), id);
             return id;
         }
         return null;
     }
 
     @Override
-    public void createFromAlias(Bytes alias, boolean isFromTokenTransfer) {
+    public void createFromAlias(final Bytes alias, final boolean isFromTokenTransfer) {
         if (isSerializedProtoKey(alias)) {
             autoAccountCreator.create(alias, isFromTokenTransfer);
-            resolutions.put(alias, AccountID.DEFAULT);
+            final var aliasString = String.valueOf(alias);
+            final var createdAccount = accountStore.getAccountIDByAlias(aliasString);
+            resolutions.put(aliasString, createdAccount);
             numAutoCreations++;
         } else if (isOfEvmAddressSize(alias)) {
             numLazyCreations++;
@@ -83,7 +85,7 @@ public class TransferContextImpl implements TransferContext {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    public Map<Bytes, AccountID> resolutions() {
+    public Map<String, AccountID> resolutions() {
         return resolutions;
     }
 
