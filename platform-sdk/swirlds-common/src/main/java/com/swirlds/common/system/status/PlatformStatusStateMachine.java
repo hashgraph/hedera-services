@@ -171,13 +171,13 @@ public class PlatformStatusStateMachine implements PlatformStatusGetter {
                 PLATFORM_STATUS.getMarker(),
                 () -> new PlatformStatusPayload(statusChangeMessage, previousStatusName, newStatusName).toString());
 
-        notificationEngine.dispatch(
-                PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newLogic.getStatus()));
-
         currentStatusLogic = newLogic;
         currentStatus.set(currentStatusLogic.getStatus());
 
         currentStatusStartTime = time.now();
+
+        notificationEngine.dispatch(
+                PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newLogic.getStatus()));
     }
 
     /**
