@@ -1459,7 +1459,7 @@ public class ConsensusImpl implements Consensus {
      * @return firstSelfWitnessS(lastSee ( x, m)), which is the first witness in round r that is a self-ancestor of x,
      * where r is the round of the last event by the member at index m that is seen by x, or null if none
      */
-    private EventImpl firstSee(EventImpl x, int m) {
+    private EventImpl firstSee(@Nullable final EventImpl x, final int m) {
         return firstSelfWitnessS(lastSee(x, m));
     }
 
