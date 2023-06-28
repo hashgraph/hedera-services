@@ -174,6 +174,31 @@ public class CryptoTransferHandler implements TransactionHandler {
         validateSemantics(op, ledgerConfig, hederaConfig, tokensConfig);
 
         final var transferContext = new TransferContextImpl(context);
+        final var replacedOp = ensureAndReplaceAliasesInOp(txn, transferContext, context);
+
+        final var steps = decomposeIntoSteps(replacedOp);
+        for (final var step : steps) {
+            // Apply all changes to the handleContext's States
+            step.doIn(transferContext);
+        }
+    }
+
+    /**
+     * Ensures all aliases specified in the transfer exist. If the aliases are in receiver section, and don't exist
+     * they will be auto-created. This step populates resolved aliases and number of auto creations in the
+     * transferContext, which is used by subsequent steps and throttling.
+     * It will also replace all aliases in the {@link CryptoTransferTransactionBody} with its account ids, so it will
+     * be easier to process in next steps.
+     * @param txn the given transaction body
+     * @param transferContext the given transfer context
+     * @param context the given handle context
+     * @return the replaced transaction body with all aliases replaced with its account ids
+     * @throws HandleException if any error occurs during the process
+     */
+    private CryptoTransferTransactionBody ensureAndReplaceAliasesInOp(
+            final TransactionBody txn, final TransferContextImpl transferContext, final HandleContext context)
+            throws HandleException {
+        final var op = txn.cryptoTransferOrThrow();
         // Ensures all aliases specified in the transfer exist
         // If the aliases are in receiver section, and don't exist they will be auto-created
         // This step populates resolved aliases and number of auto creations in the transferContext,
@@ -193,12 +218,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         } catch (PreCheckException e) {
             throw new HandleException(e.responseCode());
         }
-
-        final var steps = decomposeIntoSteps(replacedOp);
-        for (final var step : steps) {
-            // Apply all changes to the handleContext's States
-            step.doIn(transferContext);
-        }
+        return replacedOp;
     }
 
     private void ensureExistenceOfAliasesOrCreate(

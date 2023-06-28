@@ -120,11 +120,11 @@ public class EnsureAliasesStep implements TransferStep {
         for (final var aa : hbarTransfers) {
             final var accountId = aa.accountIDOrThrow();
             if (isAlias(accountId)) {
-                final var account = transferContext.getFromAlias(accountId);
                 // If an alias is repeated for hbar transfers, it will fail
                 final var isInResolutions = transferContext.resolutions().containsKey(accountId.alias());
                 validateTrue(!isInResolutions, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
+                final var account = transferContext.getFromAlias(accountId);
                 if (aa.amount() > 0) {
                     if (account == null) {
                         transferContext.createFromAlias(accountId.alias(), false);

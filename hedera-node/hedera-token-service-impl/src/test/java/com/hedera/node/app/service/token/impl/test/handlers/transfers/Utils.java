@@ -22,11 +22,11 @@ import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 
 public class Utils {
-    public static AccountAmount adjustFrom(AccountID account, long amount) {
+    public static AccountAmount aaWith(AccountID account, long amount) {
         return AccountAmount.newBuilder().accountID(account).amount(amount).build();
     }
 
-    public static AccountAmount adjustFromWithAllowance(AccountID account, long amount) {
+    public static AccountAmount aaWithAllowance(AccountID account, long amount) {
         return AccountAmount.newBuilder()
                 .accountID(account)
                 .amount(amount)
@@ -43,6 +43,13 @@ public class Utils {
                 .senderAccountID(from)
                 .receiverAccountID(to)
                 .serialNumber(serialNo)
+                .build();
+    }
+
+    public static AccountAmount aaAlias(final Bytes alias, final long amount) {
+        return AccountAmount.newBuilder()
+                .amount(amount)
+                .accountID(AccountID.newBuilder().alias(alias).build())
                 .build();
     }
 }

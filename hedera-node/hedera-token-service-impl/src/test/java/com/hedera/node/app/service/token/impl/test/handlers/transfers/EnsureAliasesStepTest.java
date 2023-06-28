@@ -18,17 +18,21 @@ package com.hedera.node.app.service.token.impl.test.handlers.transfers;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.adjustFrom;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.aaAlias;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.aaWith;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.nftTransferWith;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
+import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransactionID;
@@ -45,6 +49,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.Arrays;
 import java.util.List;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,6 +84,12 @@ class EnsureAliasesStepTest extends CryptoTokenHandlerTestBase {
     private static final byte[] ecdsaKeyBytes =
             Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
     private static final Bytes ecKeyAlias = Bytes.wrap(ecdsaKeyBytes);
+
+    private static final byte[] evmAddress = unhex("0000000000000000000000000000000000000003");
+    private static final byte[] create2Address = unhex("0111111111111111111111111111111111defbbb");
+    private static final Bytes mirrorAlias = Bytes.wrap(evmAddress);
+    private static final Bytes create2Alias = Bytes.wrap(create2Address);
+    private static final Long mirrorNum = Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20));
     private final int createdNumber = 10000000;
 
     @BeforeEach
@@ -161,29 +172,23 @@ class EnsureAliasesStepTest extends CryptoTokenHandlerTestBase {
     void failsOnRepeatedAliasesInTokenTransferList() {
         body = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder()
-                        .accountAmounts(adjustFrom(ownerId, -1_000), adjustFrom(unknownAliasedId, +1_000))
+                        .accountAmounts(aaWith(ownerId, -1_000), aaWith(unknownAliasedId, +1_000))
                         .build())
                 .tokenTransfers(
                         TokenTransferList.newBuilder()
                                 .token(fungibleTokenId)
                                 .transfers(List.of(
-                                        adjustFrom(ownerId, -1_000),
-                                        adjustFrom(unknownAliasedId1, +1_000),
-                                        adjustFrom(ownerId, -1_000),
-                                        adjustFrom(unknownAliasedId1, +1_000)))
+                                        aaWith(ownerId, -1_000),
+                                        aaWith(unknownAliasedId1, +1_000),
+                                        aaWith(ownerId, -1_000),
+                                        aaWith(unknownAliasedId1, +1_000)))
                                 .build(),
                         TokenTransferList.newBuilder()
                                 .token(nonFungibleTokenId)
                                 .nftTransfers(nftTransferWith(ownerId, unknownAliasedId1, 1))
                                 .build())
                 .build();
-        txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder()
-                        .accountID(payerId)
-                        .transactionValidStart(consensusTimestamp)
-                        .build())
-                .cryptoTransfer(body)
-                .build();
+        txn = asTxn(body);
         given(handleContext.body()).willReturn(txn);
         subject = new EnsureAliasesStep(body);
         transferContext = new TransferContextImpl(handleContext);
@@ -216,20 +221,14 @@ class EnsureAliasesStepTest extends CryptoTokenHandlerTestBase {
         body = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder()
                         .accountAmounts(
-                                adjustFrom(ownerId, -1_000),
-                                adjustFrom(unknownAliasedId, +1_000),
-                                adjustFrom(ownerId, -1_000),
-                                adjustFrom(unknownAliasedId, +1_000))
+                                aaWith(ownerId, -1_000),
+                                aaWith(unknownAliasedId, +1_000),
+                                aaWith(ownerId, -1_000),
+                                aaWith(unknownAliasedId, +1_000))
                         .build())
                 .tokenTransfers()
                 .build();
-        txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder()
-                        .accountID(payerId)
-                        .transactionValidStart(consensusTimestamp)
-                        .build())
-                .cryptoTransfer(body)
-                .build();
+        txn = asTxn(body);
         given(handleContext.body()).willReturn(txn);
         subject = new EnsureAliasesStep(body);
         transferContext = new TransferContextImpl(handleContext);
@@ -255,6 +254,49 @@ class EnsureAliasesStepTest extends CryptoTokenHandlerTestBase {
         assertThatThrownBy(() -> subject.doIn(transferContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));
+    }
+
+    @Test
+    void resolvesMirrorAddressInHbarList() {
+        final var mirrorAdjust = aaAlias(mirrorAlias, +100);
+        body = CryptoTransferTransactionBody.newBuilder()
+                .transfers(
+                        TransferList.newBuilder().accountAmounts(mirrorAdjust).build())
+                .build();
+        txn = asTxn(body);
+        given(handleContext.body()).willReturn(txn);
+        subject = new EnsureAliasesStep(body);
+        transferContext = new TransferContextImpl(handleContext);
+
+        subject.doIn(transferContext);
+
+        assertThat(transferContext.resolutions().get(mirrorAlias)).isEqualTo(payerId);
+        assertThat(transferContext.numOfLazyCreations()).isZero();
+    }
+
+    @Test
+    void resolvesMirrorAddressInNftTransfer() {
+        body = CryptoTransferTransactionBody.newBuilder()
+                .tokenTransfers(TokenTransferList.newBuilder()
+                        .token(nonFungibleTokenId)
+                        .nftTransfers(NftTransfer.newBuilder()
+                                .receiverAccountID(AccountID.newBuilder()
+                                        .alias(mirrorAlias)
+                                        .build())
+                                .senderAccountID(payerId)
+                                .serialNumber(1)
+                                .build())
+                        .build())
+                .build();
+        txn = asTxn(body);
+        given(handleContext.body()).willReturn(txn);
+        subject = new EnsureAliasesStep(body);
+        transferContext = new TransferContextImpl(handleContext);
+
+        subject.doIn(transferContext);
+
+        assertThat(transferContext.resolutions().get(mirrorAlias)).isEqualTo(payerId);
+        assertThat(transferContext.numOfLazyCreations()).isZero();
     }
 
     private void setUpInsertingKnownAliasesToState() {
@@ -287,25 +329,19 @@ class EnsureAliasesStepTest extends CryptoTokenHandlerTestBase {
     private void givenTxn() {
         body = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder()
-                        .accountAmounts(adjustFrom(ownerId, -1_000), adjustFrom(unknownAliasedId, +1_000))
+                        .accountAmounts(aaWith(ownerId, -1_000), aaWith(unknownAliasedId, +1_000))
                         .build())
                 .tokenTransfers(
                         TokenTransferList.newBuilder()
                                 .token(fungibleTokenId)
-                                .transfers(List.of(adjustFrom(ownerId, -1_000), adjustFrom(unknownAliasedId1, +1_000)))
+                                .transfers(List.of(aaWith(ownerId, -1_000), aaWith(unknownAliasedId1, +1_000)))
                                 .build(),
                         TokenTransferList.newBuilder()
                                 .token(nonFungibleTokenId)
                                 .nftTransfers(nftTransferWith(ownerId, unknownAliasedId1, 1))
                                 .build())
                 .build();
-        txn = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder()
-                        .accountID(payerId)
-                        .transactionValidStart(consensusTimestamp)
-                        .build())
-                .cryptoTransfer(body)
-                .build();
+        txn = asTxn(body);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
@@ -313,5 +349,15 @@ class EnsureAliasesStepTest extends CryptoTokenHandlerTestBase {
                 .willReturn(recordBuilder);
         //        given(handleContext.feeCalculator()).willReturn(fees);
         //        given(fees.computePayment(any(), any())).willReturn(new FeeObject(100, 100, 100));
+    }
+
+    public TransactionBody asTxn(final CryptoTransferTransactionBody body) {
+        return TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(payerId)
+                        .transactionValidStart(consensusTimestamp)
+                        .build())
+                .cryptoTransfer(body)
+                .build();
     }
 }
