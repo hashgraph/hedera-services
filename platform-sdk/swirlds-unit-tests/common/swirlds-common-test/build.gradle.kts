@@ -30,9 +30,9 @@ dependencies {
     implementation(project(":swirlds-base"))
     api(testLibs.junit.jupiter.api)
     compileOnly(libs.spotbugs.annotations)
-    testCompileOnly(libs.spotbugs.annotations)
 
     // Test Dependencies
+    testCompileOnly(libs.spotbugs.annotations)
 
     // These should not be implementation() based deps, but this requires refactoring to eliminate.
     implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))

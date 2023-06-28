@@ -40,9 +40,9 @@ dependencies {
     runtimeOnly(libs.bundles.cryptography.runtime)
     implementation(libs.bundles.logging.impl)
     compileOnly(libs.spotbugs.annotations)
-    testCompileOnly(libs.spotbugs.annotations)
 
     // Test Dependencies
+    testCompileOnly(libs.spotbugs.annotations)
     testImplementation(testLibs.bundles.junit)
     testImplementation(testLibs.bundles.mocking)
     testImplementation(testLibs.bundles.utils)

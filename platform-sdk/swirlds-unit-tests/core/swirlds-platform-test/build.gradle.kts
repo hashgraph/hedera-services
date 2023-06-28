@@ -27,9 +27,9 @@ dependencies {
     // Individual Dependencies
     implementation(project(":swirlds-platform-core"))
     compileOnly(libs.spotbugs.annotations)
-    testCompileOnly(libs.spotbugs.annotations)
 
     // Test Dependencies
+    testCompileOnly(libs.spotbugs.annotations)
 
     // These should not be implementation() based deps, but this requires refactoring to eliminate.
     implementation(testLibs.bundles.mocking)
