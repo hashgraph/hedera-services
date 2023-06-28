@@ -16,11 +16,20 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.system.EventCreationRuleResponse.*;
+import static com.swirlds.common.system.EventCreationRuleResponse.CREATE;
+import static com.swirlds.common.system.EventCreationRuleResponse.DONT_CREATE;
+import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.TransactionConfig;
