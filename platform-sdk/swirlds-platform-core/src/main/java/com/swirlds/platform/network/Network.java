@@ -73,7 +73,7 @@ public class Network {
      * 		if there are any errors getting the addreses
      */
     public static boolean isOwn(InetAddress addr) throws SocketException {
-        return getOwnAddresses().contains(addr);
+        return getOwnAddresses().contains(addr) || addr.isLoopbackAddress();
     }
 
     /**

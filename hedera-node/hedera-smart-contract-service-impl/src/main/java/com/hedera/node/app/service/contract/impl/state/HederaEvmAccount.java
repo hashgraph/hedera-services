@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import com.hedera.hapi.node.base.AccountID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
 public interface HederaEvmAccount extends MutableAccount {
@@ -25,4 +27,13 @@ public interface HederaEvmAccount extends MutableAccount {
      * @return whether this account is token facade
      */
     boolean isTokenFacade();
+
+    /**
+     * Returns the Hedera account id for this account.
+     *
+     * @return the Hedera account id
+     * @throws IllegalStateException if this account is a token facade
+     */
+    @NonNull
+    AccountID hederaId();
 }

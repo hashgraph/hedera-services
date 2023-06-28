@@ -21,11 +21,10 @@ import static com.hedera.node.app.service.mono.state.migration.StakingInfoMapBui
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,26 +42,16 @@ class StakingInfoMapBuilderTest {
 
     @Test
     void buildsStakingInfoMapAsExpected() {
-        final var address1 = mock(Address.class);
-        final var address2 = mock(Address.class);
-        final var address3 = mock(Address.class);
-        final var address4 = mock(Address.class);
-        final var address5 = mock(Address.class);
         final var totalHbar = 5_000_000_000L;
         final var expectedMaxStakePerNode = 1_000_000_000L;
         final var expectedMinStakePerNode = 500_000_000L;
 
         given(addressBook.getSize()).willReturn(5);
-        given(addressBook.getAddress(0)).willReturn(address1);
-        given(address1.getId()).willReturn(0L);
-        given(addressBook.getAddress(1)).willReturn(address2);
-        given(address2.getId()).willReturn(1L);
-        given(addressBook.getAddress(2)).willReturn(address3);
-        given(address3.getId()).willReturn(2L);
-        given(addressBook.getAddress(3)).willReturn(address4);
-        given(address4.getId()).willReturn(3L);
-        given(addressBook.getAddress(4)).willReturn(address5);
-        given(address5.getId()).willReturn(4L);
+        given(addressBook.getNodeId(0)).willReturn(new NodeId(0));
+        given(addressBook.getNodeId(1)).willReturn(new NodeId(1));
+        given(addressBook.getNodeId(2)).willReturn(new NodeId(2));
+        given(addressBook.getNodeId(3)).willReturn(new NodeId(3));
+        given(addressBook.getNodeId(4)).willReturn(new NodeId(4));
         given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(totalHbar);
 
         final var stakingInfoMap = buildStakingInfoMap(addressBook, bootstrapProperties);

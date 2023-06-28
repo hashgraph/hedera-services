@@ -19,7 +19,8 @@ package com.swirlds.common.system.transaction.internal;
 import static com.swirlds.common.io.streams.AugmentedDataOutputStream.getArraySerializedLength;
 import static com.swirlds.common.system.transaction.SystemTransactionType.SYS_TRANS_PING_MICROSECONDS;
 
-import com.swirlds.common.internal.SettingsCommon;
+import com.swirlds.common.config.TransactionConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.transaction.SystemTransactionType;
@@ -80,7 +81,8 @@ public final class SystemTransactionPing extends SystemTransaction {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        this.avgPingMilliseconds = in.readIntArray(SettingsCommon.maxAddressSizeAllowed);
+        final TransactionConfig transactionConfig = ConfigurationHolder.getConfigData(TransactionConfig.class);
+        this.avgPingMilliseconds = in.readIntArray(transactionConfig.maxAddressSizeAllowed());
     }
 
     /**

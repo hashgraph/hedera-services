@@ -388,7 +388,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             final InitTrigger trigger,
             @Nullable final SoftwareVersion deserializedVersion) {
         this.platform = platform;
-        final var selfId = platform.getSelfId().getIdAsInt();
+        final var selfId = platform.getSelfId();
 
         final ServicesApp app;
         if (APPS.includes(selfId)) {
@@ -499,7 +499,7 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     /* -- Getters and helpers -- */
     public AccountID getAccountFromNodeId(final NodeId nodeId) {
-        final var address = addressBook().getAddress(nodeId.getIdAsInt());
+        final var address = addressBook().getAddress(nodeId);
         final var memo = address.getMemo();
         return parseAccount(memo);
     }

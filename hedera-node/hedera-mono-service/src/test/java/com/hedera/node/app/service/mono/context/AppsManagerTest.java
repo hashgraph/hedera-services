@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.mono.ServicesApp;
+import com.swirlds.common.system.NodeId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,8 +32,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AppsManagerTest {
-    private final long nodeIdA = 1L;
-    private final long nodeIdB = 2L;
+    private final NodeId nodeIdA = new NodeId(1L);
+    private final NodeId nodeIdB = new NodeId(2L);
 
     @Mock
     private ServicesApp app;

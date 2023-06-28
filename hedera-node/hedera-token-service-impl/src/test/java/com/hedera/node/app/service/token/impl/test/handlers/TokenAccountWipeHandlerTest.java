@@ -606,7 +606,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                             .tokenTypeNumber(TOKEN_531.tokenNum())
                             .serialNumber(1)
                             .build())
-                    .ownerNumber(TREASURY_ACCOUNT_9876.accountNumOrThrow())
+                    .ownerId(TREASURY_ACCOUNT_9876)
                     .build());
 
             final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, 0, 1L);
@@ -697,28 +697,28 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                                     .tokenTypeNumber(TOKEN_531.tokenNum())
                                     .serialNumber(1)
                                     .build())
-                            .ownerNumber(0) // treasury owns this NFT
+                            // do not set ownerId - default to null, meaning treasury owns this NFT
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
                                     .tokenTypeNumber(TOKEN_531.tokenNum())
                                     .serialNumber(2)
                                     .build())
-                            .ownerNumber(ACCOUNT_4680.accountNumOrThrow())
+                            .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
                                     .tokenTypeNumber(TOKEN_531.tokenNum())
                                     .serialNumber(3)
                                     .build())
-                            .ownerNumber(ACCOUNT_4680.accountNumOrThrow())
+                            .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
                                     .tokenTypeNumber(TOKEN_531.tokenNum())
                                     .serialNumber(4)
                                     .build())
-                            .ownerNumber(ACCOUNT_4680.accountNumOrThrow())
+                            .ownerId(ACCOUNT_4680)
                             .build());
             final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, 0, 2L, 3L);
             final var context = mockContext(txn);
@@ -776,28 +776,28 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                                     .tokenTypeNumber(TOKEN_531.tokenNum())
                                     .serialNumber(1)
                                     .build())
-                            .ownerNumber(0) // treasury owns this NFT
+                            // do not set ownerId - default to null, meaning treasury owns this NFT
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
                                     .tokenTypeNumber(TOKEN_531.tokenNum())
                                     .serialNumber(2)
                                     .build())
-                            .ownerNumber(ACCOUNT_4680.accountNumOrThrow())
+                            .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
                                     .tokenTypeNumber(TOKEN_531.tokenNum())
                                     .serialNumber(3)
                                     .build())
-                            .ownerNumber(ACCOUNT_4680.accountNumOrThrow())
+                            .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
                                     .tokenTypeNumber(TOKEN_531.tokenNum())
                                     .serialNumber(4)
                                     .build())
-                            .ownerNumber(ACCOUNT_4680.accountNumOrThrow())
+                            .ownerId(ACCOUNT_4680)
                             .build());
             final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, 0, 2L, 3L, 4L);
             final var context = mockContext(txn);
@@ -856,28 +856,28 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                                     .tokenTypeNumber(TOKEN_531.tokenNum())
                                     .serialNumber(1)
                                     .build())
-                            .ownerNumber(0) // treasury owns this NFT
+                            // do not set ownerId - default to null, meaning treasury owns this NFT
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
                                     .tokenTypeNumber(TOKEN_531.tokenNum())
                                     .serialNumber(2)
                                     .build())
-                            .ownerNumber(ACCOUNT_4680.accountNumOrThrow())
+                            .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
                                     .tokenTypeNumber(TOKEN_531.tokenNum())
                                     .serialNumber(3)
                                     .build())
-                            .ownerNumber(ACCOUNT_4680.accountNumOrThrow())
+                            .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
                                     .tokenTypeNumber(TOKEN_531.tokenNum())
                                     .serialNumber(4)
                                     .build())
-                            .ownerNumber(ACCOUNT_4680.accountNumOrThrow())
+                            .ownerId(ACCOUNT_4680)
                             .build());
             final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, 0, 2L, 2L, 3L, 3L, 4L, 4L, 2L, 3L, 4L);
             final var context = mockContext(txn);
