@@ -27,31 +27,27 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.io.SerializationUtils;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
+import com.swirlds.platform.event.EventDescriptor;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 
-class ChatterEventDescriptorTest {
+class EventDescriptorTest {
     @Test
     void testSerialization() throws IOException, ConstructableRegistryException {
-        final ChatterEventDescriptor descriptor =
-                new ChatterEventDescriptor(RandomUtils.randomHash(), new NodeId(1), 123);
+        final EventDescriptor descriptor = new EventDescriptor(RandomUtils.randomHash(), new NodeId(1), 123);
         ConstructableRegistry.getInstance()
-                .registerConstructable(
-                        new ClassConstructorPair(ChatterEventDescriptor.class, ChatterEventDescriptor::new));
-        final ChatterEventDescriptor copy = SerializationUtils.serializeDeserialize(descriptor);
+                .registerConstructable(new ClassConstructorPair(EventDescriptor.class, EventDescriptor::new));
+        final EventDescriptor copy = SerializationUtils.serializeDeserialize(descriptor);
         assertEquals(descriptor, copy, "deserialized version should be the same");
 
         assertThrows(
-                Exception.class,
-                () -> new ChatterEventDescriptor(null, new NodeId(0), 0),
-                "we should not permit a null hash");
+                Exception.class, () -> new EventDescriptor(null, new NodeId(0), 0), "we should not permit a null hash");
     }
 
     @Test
     void testEquals() {
-        final ChatterEventDescriptor d1 = new ChatterEventDescriptor(RandomUtils.randomHash(), new NodeId(1), 123);
-        final ChatterEventDescriptor d2 = new ChatterEventDescriptor(RandomUtils.randomHash(), new NodeId(2), 234);
+        final EventDescriptor d1 = new EventDescriptor(RandomUtils.randomHash(), new NodeId(1), 123);
+        final EventDescriptor d2 = new EventDescriptor(RandomUtils.randomHash(), new NodeId(2), 234);
         assertTrue(d1.equals(d1), "should be equal to itself");
         assertFalse(d1.equals(null), "should not be equal to null");
         assertFalse(d1.equals(new Object()), "should not be equal to a different class");

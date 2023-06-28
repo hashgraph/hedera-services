@@ -25,6 +25,7 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 public class TestFixturesKeyLookup implements ReadableAccountStore {
     private final ReadableKVState<String, Long> aliases;
@@ -62,11 +63,7 @@ public class TestFixturesKeyLookup implements ReadableAccountStore {
 
     @Override
     @Nullable
-    public AccountID getAccountIDByAlias(@NonNull final String alias) {
-        final var entityNum = aliases.get(alias);
-        if (entityNum == null) {
-            return null;
-        }
-        return AccountID.newBuilder().accountNum(entityNum).build();
+    public AccountID getAccountIDByAlias(@NonNull final Bytes alias) {
+        return aliases.get(alias);
     }
 }
