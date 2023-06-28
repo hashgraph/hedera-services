@@ -17,7 +17,6 @@
 package com.swirlds.common.system;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.stream.Signer;
 
@@ -39,15 +38,4 @@ public interface Platform extends PlatformIdentity, StateAccessor, Signer, Trans
      * @return a notification engine
      */
     NotificationEngine getNotificationEngine();
-
-    /**
-     * Get the transactionMaxBytes in Settings
-     *
-     * @return integer representing the maximum number of bytes allowed in a transaction
-     * @deprecated access "transactionMaxBytes" configuration directly instead of using this method
-     */
-    @Deprecated(forRemoval = true)
-    static int getTransactionMaxBytes() {
-        return SettingsCommon.transactionMaxBytes;
-    }
 }

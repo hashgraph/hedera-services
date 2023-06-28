@@ -17,7 +17,7 @@
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-import static com.swirlds.common.system.PlatformStatus.ACTIVE;
+import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;

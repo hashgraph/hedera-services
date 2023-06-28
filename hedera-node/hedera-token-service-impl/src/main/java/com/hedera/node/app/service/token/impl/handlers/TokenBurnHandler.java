@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.token.impl.validators.TokenSupplyChang
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
@@ -121,7 +122,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
                 final var nft = nftStore.get(tokenId, nftSerial);
                 validateTrue(nft != null, INVALID_NFT_ID);
 
-                final var nftOwner = nft.ownerNumber();
+                final var nftOwner = nft.ownerId();
                 validateTrue(treasuryOwnsNft(nftOwner), TREASURY_MUST_OWN_BURNED_NFT);
             }
 
@@ -167,8 +168,8 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
         return new ValidationResult(token, treasuryRel);
     }
 
-    private boolean treasuryOwnsNft(final long ownerNum) {
-        return ownerNum == 0;
+    private boolean treasuryOwnsNft(final AccountID ownerID) {
+        return ownerID == null;
     }
 
     private record ValidationResult(@NonNull Token token, @NonNull TokenRelation tokenTreasuryRel) {}

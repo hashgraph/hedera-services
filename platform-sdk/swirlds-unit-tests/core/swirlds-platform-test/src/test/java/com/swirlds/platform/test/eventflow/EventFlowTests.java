@@ -20,6 +20,7 @@ import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -45,7 +47,6 @@ import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
@@ -104,7 +105,6 @@ class EventFlowTests {
     protected static final NodeId selfId = new NodeId(0L);
     private static final int THROTTLE_TRANSACTION_QUEUE_SIZE = 100_000;
 
-    private final SettingsProvider settingsProvider = mock(SettingsProvider.class);
     protected AddressBook addressBook;
     private BlockingQueue<ReservedSignedState> signedStateTracker;
     protected SystemTransactionTracker systemTransactionTracker;
@@ -258,6 +258,8 @@ class EventFlowTests {
         // Extract the transactions from other events
         final HashSet<Transaction> otherConsensusTransactions =
                 extractTransactions((id) -> !Objects.equals(id, selfId), consensusRounds);
+
+        assertDoesNotThrow(wrapper::waitUntilAllRoundsAreHandled);
 
         final TransactionTracker consensusState =
                 (TransactionTracker) swirldStateManager.getConsensusState().getSwirldState();
@@ -570,9 +572,13 @@ class EventFlowTests {
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
                 .setSequentialIds(true)
                 .build();
-        when(settingsProvider.getTransactionMaxBytes()).thenReturn(TX_MAX_BYTES);
-        when(settingsProvider.getThrottleTransactionQueueSize()).thenReturn(THROTTLE_TRANSACTION_QUEUE_SIZE);
-        when(settingsProvider.getMaxTransactionBytesPerEvent()).thenReturn(2048);
+
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("transaction.transactionMaxBytes", TX_MAX_BYTES)
+                .withValue("transaction.throttleTransactionQueueSize", THROTTLE_TRANSACTION_QUEUE_SIZE)
+                .withValue("transaction.maxTransactionBytesPerEvent", 2048)
+                .getOrCreateConfig();
+        final TransactionConfig transactionConfig = configuration.getConfigData(TransactionConfig.class);
 
         final ConsensusHandlingMetrics consStats = mock(ConsensusHandlingMetrics.class);
         when(consStats.getConsCycleStat()).thenReturn(mock(CycleTimingStat.class));
@@ -600,7 +606,7 @@ class EventFlowTests {
         final State state = getInitialState(swirldState, initialState, addressBook);
 
         systemTransactionTracker = new SystemTransactionTracker();
-        signedStateTracker = new ArrayBlockingQueue<>(100);
+        signedStateTracker = new ArrayBlockingQueue<>(1000);
 
         final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
                 new PreConsensusSystemTransactionManagerFactory()
@@ -619,7 +625,7 @@ class EventFlowTests {
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
-                settingsProvider,
+                transactionConfig,
                 () -> false,
                 state);
 
@@ -714,7 +720,7 @@ class EventFlowTests {
         assertEventuallyEquals(
                 expected.size(),
                 actual::size,
-                Duration.ofSeconds(4),
+                Duration.ofSeconds(2),
                 String.format(
                         "%s contains a different number of transactions. Expected: %s, actual: %s",
                         desc, expected.size(), actual.size()));

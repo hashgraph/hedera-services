@@ -646,10 +646,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     protected Nft givenNft(UniqueTokenId uniqueTokenId) {
-        return Nft.newBuilder()
-                .ownerNumber(ownerId.accountNum())
-                .id(uniqueTokenId)
-                .build();
+        return Nft.newBuilder().ownerId(ownerId).id(uniqueTokenId).build();
     }
 
     protected CustomFee withFixedFee(final FixedFee fixedFee) {
