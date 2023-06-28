@@ -1177,7 +1177,7 @@ public class ConsensusImpl implements Consensus {
      * 		the index of the creator of z, the intermediate event through which x sees y
      * @return the event y that is created by the member at index m and seen by x through an event by the member at index m2
      */
-    private EventImpl seeThru(EventImpl x, int m, int m2) {
+    private EventImpl seeThru(@Nullable final EventImpl x, final int m, final int m2) {
         if (x == null) {
             return null;
         }
