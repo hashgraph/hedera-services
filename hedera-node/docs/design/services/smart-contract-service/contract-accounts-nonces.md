@@ -6,21 +6,12 @@ In order to provide more complete EVM account equivalence support and a better d
 
 ## Goals
 
+- Fix logic for storing of contract nonces in Consensus Node state
 - Externalize contract accounts nonces in transaction records
-- Migrate all existing contract nonce values to Mirror Node
 
 ## Non Goals
 
-- Update existing logic for storing contract nonce updates in Consensus Node state
 - Handle nonce updates for EOAs
-
-## Assumptions
-
-- Account nonces are updated in Consensus Node state using in the following places:
-  - [ContractCreateTransitionLogic](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/txns/contract/ContractCreateTransitionLogic.java#L209)
-  - [ContractCallTransitionLogic](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/txns/contract/ContractCallTransitionLogic.java#L148)
-  - [AbstractEvmRecordingCreateOperation](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-evm/src/main/java/com/hedera/node/app/service/evm/contracts/operations/AbstractEvmRecordingCreateOperation.java#L122)
-- Mirror Node is able to process nonce updates through transaction records 
 
 ## Architecture
 
@@ -34,35 +25,56 @@ The following is a table with general use cases and behavior for Ethereum and He
 | Contract transaction resulting in `CREATE/CREATE2` (`ContractCall` or `ContractCreate`) | -                                                                                                          | initial contract nonce value is 1; nonce is incremented for each contract creation initiated by an account, updates are not externalized to Mirror Node                          | initial contract nonce value is 1; nonce is incremented for each contract creation initiated by an account, updates are externalized to Mirror Node                              |
 
 ### Contract Nonce Externalization
+- Contract account nonces are updated in Consensus Node state using in the following places:
+  - [HederaWorldState](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/contracts/HederaWorldState.java)
+  - [ContractCreateTransitionLogic](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/txns/contract/ContractCreateTransitionLogic.java#L209)
+  - [ContractCallTransitionLogic](https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/txns/contract/ContractCallTransitionLogic.java#L148)
+  - [TransactionProcessingResult](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/contracts/execution/TransactionProcessingResult.java)
+  - [EvmFnResult](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/state/submerkle/EvmFnResult.java)
 
-- We can keep a `ContractId -> nonce` map inside `TxnAwareRecordsHistorian`, it would be updated on each call to `AbstractRecordingCreateOperation` (possibly using its `createOperationExternalizer` field) even if the contract creation operation does not succeed
-- When the ledgers `commit()` are executed, and we go to `TxnAwareRecordsHistorian.saveExpirableTransactionRecords` method we can save the constructed map to the top-level `RecordStreamObject`
-- This would be done via setting it inside it's `ExpirableTxnRecord` in the corresponding `EvmFnResult` field
-    - `contractCreateResult` if the top level transaction was `ContractCreate`
-    - `contractCallResult` if the top level transaction was `ContractCall`
 
-### Migration Of Nonces For Existing Contracts
+- We keep a `ContractId -> nonce` tree map inside `HederaWorldState`, it is updated on each call of `commit()` (using newly added method `trackContractNonces()`).
+- Method `trackContractNonces` in `HederaWorldState` follows the pattern of `trackNewlyCreatedAccounts`.
+    - Checks if an account is a new smart contract and externalizes its nonce.
+    - Checks if an existing smart contract's nonce is updated and externalizes it.
+- Added a `ContractId -> nonce` tree map inside `TransactionProcessingResult`.
+- Persists account contract nonces into state in `ContractCreateTransitionLogic` and `ContractCallTransitionLogic` using `setContractNonces` from `TransactionProcessingResult`.
+- Created new `ContractNonceInfo` submerkle class with two main entities - `contractId` and `nonce`
+- Added new method `serializableContractNoncesFrom` in `EvmFnResult` that builds `List<ContractNonceInfo>` (submerkle) from `Map<ContractID, Long>`
+- Added new verison `7` (`RELEASE_0400_VERSION`) and externalized logic for `serialize` and `deserialize` of `contractNonces` in `EvmFnResult`
 
-- We need perform a migration for all existing contract nonces from Consensus Node state to Mirror Node e.g. similar to traceability migration performed in the past
-- For all contracts in state we should produce synthetic transaction records that would contain the contract id and it's corresponding nonce value
-  - We will create a synthetic `ContractCall` transaction body with:
-    - `contractID` field set to the contract which nonce we want to externalize
-    - `gas` field set to 0
-    - `amount` field set to 0
-    - `functionParameters` field set to empty byte array
-  - For each synthetic `ContractCall` transaction we will create a corresponding record with the `contractCallResult` field set to `ContractFunctionResult` value containing the following:
-    - `contractID` field set to the contract which nonce we want to externalize
-    - `contractCallResult` field set to empty byte array
-    - `errorMessage` field set to empty string
-    - `bloom` field set to empty byte array
-    - `gasUsed` field set to 0
-    - `contract_nonces` field set to `ContractNonceInfo` value with `contract_id` field set to the contract which nonce we want to externalize and `nonce` field set to the contract nonce value
+
+
+
+### Fix Storing Of Nonces Into State
+
+- Fix storing of nonces is done in the following places:
+  - [UpdateAccountTracker](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-evm/src/main/java/com/hedera/node/app/service/evm/store/UpdateAccountTracker.java)
+  - [UpdateAccountTrackerImpl](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/UpdateAccountTrackerImpl.java)
+  - [UpdateTrackingAccount](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-evm/src/main/java/com/hedera/node/app/service/evm/store/models/UpdateTrackingAccount.java)
+  - [HederaEvmEntityAccess](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-evm/src/main/java/com/hedera/node/app/service/evm/store/contracts/HederaEvmEntityAccess.java)
+  - [MutableEntityAccess](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/contracts/MutableEntityAccess.java)
+  - [WorldStateAccount](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-evm/src/main/java/com/hedera/node/app/service/evm/store/contracts/WorldStateAccount.java)
+  - [HederaLedger](https://github.com/hashgraph/hedera-services/blob/96a85f0e08f82582bbf25328d14ca90fc630c5ef/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/ledger/HederaLedger.java)
+  
+
+- Currently we are not storing contract account nonces into state and this needs a fix similar to `setBalance` in `UpdateTrackingAccount`.
+- For all created and updated contracts we should store their nonces in state.
+  - We need a way to track a contract account's `nonce` by its `address`.
+  - - Added new method `setNonce` in `UpdateAccountTrackerImpl` 
+  - - It sets property `ETHEREUM_NONCE` for `address` into `trackingAccounts`
+  - Updated `setNonce` in `UpdateTrackingAccount` to use `UpdateAccountTrackerImpl`s implementation
+  - `AbstractLedgerWorldUpdater` -> `createAccount` -> `newMutable.setNonce(nonce)`
+  - `AbstractStackedLedgerUpdater` -> `commit` -> `mutable.setNonce(updatedAccount.getNonce())`
+- We also need a way to read a contract account's nonces from state.
+  - Added `getNonce` method in `HederaLedger` that retrieves `nonce` by `AccountID`
+  - Added `getNonce` method in `MutableEntityAccess` that uses `HederaLedger`'s `getNonce`
+  - Updated `getNonce` in `WorldStateAccount` to return value from state using `entityAccess` instead of `0`
 
 ### Feature Flags
 
 We will need to add two feature flags:
 - one for toggling the contract nonce externalization in transaction handling e.g. `contracts.nonces.externalization.enabled`
-- one for triggering the migration of contract nonces for existing contracts e.g. `contracts.nonces.migration.enabled`
 
 ### Merging of contract into hollow account
 
@@ -70,7 +82,7 @@ When contract is merged into an existing hollow account we are correctly setting
 
 ### New Classes
 
-No new classes expected to be created as part of this design.
+- `ContractNonceInfo` in submerkle
 
 ## Acceptance Tests
 
@@ -83,7 +95,7 @@ No new classes expected to be created as part of this design.
   * D -> 1
 * Verify that when contract A is merged into hollow account H, the nonce of the resulting account is set to 1.
 * Verify that when contract A is merged into hollow account H and the init code of A also deploys contract B, the nonce of the resulting account is 2 and the nonce of contract B is set to 1.
-
+* Verify that when feature flag is disabled contract nonces won't be externalized.
 ### Negative Tests
 
 * Verify that when contract A fails to deploy contract B, the nonce of contract A is still incremented by 1.
