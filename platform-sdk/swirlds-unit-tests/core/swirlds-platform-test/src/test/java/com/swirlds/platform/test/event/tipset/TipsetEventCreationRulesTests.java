@@ -52,7 +52,7 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("ThrottledTipsetEventCreator Tests")
+@DisplayName("Tipset Event Creation Rules Tests")
 class TipsetEventCreationRulesTests {
 
     @Test
@@ -267,22 +267,24 @@ class TipsetEventCreationRulesTests {
         final StartUpEventFrozenManager startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
         when(startUpEventFrozenManager.shouldCreateEvent()).thenAnswer(invocation -> PASS);
 
-        final AtomicInteger eventCreationAttemptCount = new AtomicInteger(0);
-
         final TipsetEventCreationRule rule = new TipsetMaximumRateRule(platformContext, time);
 
+        int millisSinceLastEvent = (int) period.toMillis();
         for (int i = 0; i < 100; i++) {
-            System.out.println(i);
-
             final boolean tickForwards = random.nextBoolean();
             if (tickForwards) {
-                time.tick(period.plusMillis(random.nextInt(10)));
+                time.tick(period.plusMillis(random.nextInt(5)));
+                millisSinceLastEvent += period.toMillis();
             }
 
-            if (tickForwards) {
-                // If we are eligible to create a new event, an attempt should be made to create an event.
+            if (millisSinceLastEvent >= period.toMillis()) {
                 assertTrue(rule.isEventCreationPermitted());
-                rule.eventWasCreated();
+
+                // Sometimes create an event. Sometimes don't.
+                if (random.nextBoolean()) {
+                    rule.eventWasCreated();
+                    millisSinceLastEvent = 0;
+                }
             } else {
                 assertFalse(rule.isEventCreationPermitted());
             }
