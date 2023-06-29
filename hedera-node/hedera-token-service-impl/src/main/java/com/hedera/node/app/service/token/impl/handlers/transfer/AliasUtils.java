@@ -28,7 +28,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Objects;
 
-public class Utils {
+public final class AliasUtils {
+    private AliasUtils() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
     /**
      * Attempts to parse a {@code Key} from given alias {@code ByteString}. If the Key is of type
      * Ed25519 or ECDSA(secp256k1), returns true if it is a valid key; and false otherwise.
@@ -41,18 +44,18 @@ public class Utils {
             final var stream = new ReadableStreamingData(bais);
             stream.limit(bais.available());
             final var key = Key.PROTOBUF.parse(stream);
-            if (key.hasEcdsaSecp256k1()) {
-                return isValid(key);
-            } else if (key.hasEd25519()) {
-                return isValid(key);
-            } else {
-                return false;
-            }
+            return (key.hasEcdsaSecp256k1() || key.hasEd25519()) && isValid(key);
         } catch (final IOException e) {
             return false;
         }
     }
 
+    /**
+     * Parse a {@code Key} from given alias {@code Bytes}. If there is a parse error, throws a
+     * {@code HandleException} with {@code INVALID_ALIAS_KEY} response code.
+     * @param alias given alias bytes
+     * @return the parsed key
+     */
     public static Key asKeyFromAlias(Bytes alias) {
         try (final var bais = new ByteArrayInputStream(Objects.requireNonNull(asBytes(alias)))) {
             final var stream = new ReadableStreamingData(bais);

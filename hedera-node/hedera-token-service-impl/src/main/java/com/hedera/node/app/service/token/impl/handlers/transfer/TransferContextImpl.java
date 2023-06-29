@@ -16,23 +16,24 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.Utils.isSerializedProtoKey;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.isSerializedProtoKey;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
+import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The context of a token transfer. This is used to pass information between the steps of the transfer.
+ * The context of a token transfer. This This is used to pass information between the steps of the transfer.
  */
 public class TransferContextImpl implements TransferContext {
     private final WritableAccountStore accountStore;
@@ -43,6 +44,7 @@ public class TransferContextImpl implements TransferContext {
     private final Map<Bytes, AccountID> resolutions = new HashMap<>();
     private final AutoCreationConfig autoCreationConfig;
     private final LazyCreationConfig lazyCreationConfig;
+    private final TokensConfig tokensConfig;
 
     public TransferContextImpl(final HandleContext context) {
         this.context = context;
@@ -50,6 +52,7 @@ public class TransferContextImpl implements TransferContext {
         this.autoAccountCreator = new AutoAccountCreator(context);
         this.autoCreationConfig = context.configuration().getConfigData(AutoCreationConfig.class);
         this.lazyCreationConfig = context.configuration().getConfigData(LazyCreationConfig.class);
+        this.tokensConfig = context.configuration().getConfigData(TokensConfig.class);
     }
 
     @Override
@@ -66,15 +69,21 @@ public class TransferContextImpl implements TransferContext {
 
     @Override
     public void createFromAlias(final Bytes alias, final boolean isFromTokenTransfer) {
+        // if it is a serialized proto key, auto-create account
         if (isSerializedProtoKey(alias)) {
-            validateTrue(autoCreationConfig.enabled(), ResponseCodeEnum.NOT_SUPPORTED);
+            validateTrue(autoCreationConfig.enabled(), NOT_SUPPORTED);
             numAutoCreations++;
         } else if (isOfEvmAddressSize(alias)) {
-            validateTrue(lazyCreationConfig.enabled(), ResponseCodeEnum.NOT_SUPPORTED);
+            // if it is an evm address create a hollow account
+            validateTrue(lazyCreationConfig.enabled(), NOT_SUPPORTED);
             numLazyCreations++;
         }
-        autoAccountCreator.create(alias, isFromTokenTransfer);
-        final var createdAccount = accountStore.getAccountIDByAlias(alias);
+        // if this auto creation is from a token transfer, check if auto creation from tokens is enabled
+        if (isFromTokenTransfer) {
+            validateTrue(tokensConfig.autoCreationsIsEnabled(), NOT_SUPPORTED);
+        }
+        // Keep the created account in the resolutions map
+        final var createdAccount = autoAccountCreator.create(alias, isFromTokenTransfer);
         resolutions.put(alias, createdAccount);
     }
 

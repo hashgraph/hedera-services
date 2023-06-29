@@ -114,11 +114,12 @@ public class CryptoTransferHandler implements TransactionHandler {
 
         validator.validateSemantics(op, ledgerConfig, hederaConfig, tokensConfig);
 
+        // create a new transfer context that is specific only for this transaction
         final var transferContext = new TransferContextImpl(context);
 
         // Replace all aliases in the transaction body with its account ids
         final var replacedOp = ensureAndReplaceAliasesInOp(txn, transferContext, context);
-
+        // Use the op with replaced aliases in further steps
         final var steps = decomposeIntoSteps(replacedOp);
         for (final var step : steps) {
             // Apply all changes to the handleContext's States
@@ -142,10 +143,8 @@ public class CryptoTransferHandler implements TransactionHandler {
             final TransactionBody txn, final TransferContextImpl transferContext, final HandleContext context)
             throws HandleException {
         final var op = txn.cryptoTransferOrThrow();
-        // Ensures all aliases specified in the transfer exist
-        // If the aliases are in receiver section, and don't exist they will be auto-created
-        // This step populates resolved aliases and number of auto creations in the transferContext,
-        // which is used by subsequent steps and throttling
+
+        // ensure all aliases exist, if not create then if receivers
         ensureExistenceOfAliasesOrCreate(op, transferContext);
         if (transferContext.numOfLazyCreations() > 0) {
             final var config = context.configuration().getConfigData(LazyCreationConfig.class);
