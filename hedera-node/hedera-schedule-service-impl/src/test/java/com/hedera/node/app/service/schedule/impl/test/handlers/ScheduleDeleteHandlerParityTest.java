@@ -80,7 +80,6 @@ import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
@@ -228,17 +227,16 @@ class AdapterUtils {
 
         public static Map<AccountID, Account> wellKnownAccountStoreAt() {
             final var destination = new HashMap<AccountID, Account>();
-            destination.put(toPbj(FIRST_TOKEN_SENDER),
+            destination.put(
+                    toPbj(FIRST_TOKEN_SENDER),
                     toPbjAccount(FIRST_TOKEN_SENDER.getAccountNum(), FIRST_TOKEN_SENDER_KT.asPbjKey(), 10_000L));
             destination.put(
                     toPbj(SECOND_TOKEN_SENDER),
                     toPbjAccount(SECOND_TOKEN_SENDER.getAccountNum(), SECOND_TOKEN_SENDER_KT.asPbjKey(), 10_000L));
             destination.put(
-                    toPbj(TOKEN_RECEIVER),
-                    toPbjAccount(TOKEN_RECEIVER.getAccountNum(), TOKEN_WIPE_KT.asPbjKey(), 0L));
+                    toPbj(TOKEN_RECEIVER), toPbjAccount(TOKEN_RECEIVER.getAccountNum(), TOKEN_WIPE_KT.asPbjKey(), 0L));
             destination.put(
-                    toPbj(DEFAULT_NODE),
-                    toPbjAccount(DEFAULT_NODE.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), 0L));
+                    toPbj(DEFAULT_NODE), toPbjAccount(DEFAULT_NODE.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), 0L));
             destination.put(
                     toPbj(DEFAULT_PAYER),
                     toPbjAccount(DEFAULT_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE));

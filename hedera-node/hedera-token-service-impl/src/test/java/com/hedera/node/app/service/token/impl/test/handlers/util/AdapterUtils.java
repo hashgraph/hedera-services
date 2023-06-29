@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl.test.handlers.util;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
-import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CURRENTLY_UNUSED_ALIAS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER;
@@ -32,7 +31,6 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
@@ -87,6 +85,7 @@ public class AdapterUtils {
                 wrappedState,
                 (AccountID id) -> new EntityNum(id.accountNumOrThrow().intValue()));
     }
+
     public static MapWritableKVState<Bytes, AccountID> wellKnownAliasState() {
         final Map<Bytes, AccountID> wellKnownAliases = Map.ofEntries(
                 Map.entry(Bytes.wrap(CURRENTLY_UNUSED_ALIAS), asAccount(MISSING_NUM.longValue())),

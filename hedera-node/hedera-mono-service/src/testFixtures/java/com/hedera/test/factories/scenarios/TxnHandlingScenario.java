@@ -762,5 +762,4 @@ public interface TxnHandlingScenario {
             .setApprovedForAll(BoolValue.of(false))
             .addAllSerialNumbers(List.of(1L))
             .build());
-
 }

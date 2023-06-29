@@ -5,36 +5,16 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.service.token.impl.validators;
-
-import com.hedera.hapi.node.base.AccountAmount;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.NftTransfer;
-import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TokenTransferList;
-import com.hedera.hapi.node.base.TransferList;
-import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.data.HederaConfig;
-import com.hedera.node.config.data.LedgerConfig;
-import com.hedera.node.config.data.TokensConfig;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.HashSet;
-import java.util.List;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
@@ -43,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
@@ -55,7 +34,23 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Collections.emptyList;
-import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftTransfer;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.TokensConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashSet;
+import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Singleton
 public class CryptoTransferValidator {

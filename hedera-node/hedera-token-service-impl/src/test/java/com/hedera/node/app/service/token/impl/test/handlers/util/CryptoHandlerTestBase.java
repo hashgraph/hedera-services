@@ -34,7 +34,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
@@ -79,7 +78,8 @@ public class CryptoHandlerTestBase {
     protected final ContractID contractAlias =
             ContractID.newBuilder().evmAddress(Bytes.wrap(evmAddress)).build();
     /*Contracts */
-    protected final ContractID contract = ContractID.newBuilder().contractNum(1234).build();
+    protected final ContractID contract =
+            ContractID.newBuilder().contractNum(1234).build();
     protected final AccountID deleteAccountId =
             AccountID.newBuilder().accountNum(3213).build();
     protected final AccountID transferAccountId =

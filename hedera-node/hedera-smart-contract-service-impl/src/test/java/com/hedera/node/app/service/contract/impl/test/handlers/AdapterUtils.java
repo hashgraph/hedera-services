@@ -19,9 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.handlers;
 import static com.hedera.node.app.service.contract.impl.test.handlers.AdapterUtils.SigReqAdapterUtils.wellKnownAccountsState;
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asAccount;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
-import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
@@ -72,14 +70,11 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -154,11 +149,13 @@ public class AdapterUtils {
 
         public static Map<AccountID, Account> wellKnownAccountStoreAt() {
             final var destination = new HashMap<AccountID, Account>();
-            destination.put(toPbj(FIRST_TOKEN_SENDER),
+            destination.put(
+                    toPbj(FIRST_TOKEN_SENDER),
                     toPbjAccount(FIRST_TOKEN_SENDER.getAccountNum(), FIRST_TOKEN_SENDER_KT.asPbjKey(), 10_000L, false));
             destination.put(
                     toPbj(SECOND_TOKEN_SENDER),
-                    toPbjAccount(SECOND_TOKEN_SENDER.getAccountNum(), SECOND_TOKEN_SENDER_KT.asPbjKey(), 10_000L, false));
+                    toPbjAccount(
+                            SECOND_TOKEN_SENDER.getAccountNum(), SECOND_TOKEN_SENDER_KT.asPbjKey(), 10_000L, false));
             destination.put(
                     toPbj(TOKEN_RECEIVER),
                     toPbjAccount(TOKEN_RECEIVER.getAccountNum(), TOKEN_WIPE_KT.asPbjKey(), 0L, false));
@@ -167,22 +164,27 @@ public class AdapterUtils {
                     toPbjAccount(DEFAULT_NODE.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), 0L, false));
             destination.put(
                     toPbj(DEFAULT_PAYER),
-                    toPbjAccount(DEFAULT_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE, false));
+                    toPbjAccount(
+                            DEFAULT_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE, false));
             destination.put(
                     toPbj(STAKING_FUND),
                     toPbjAccount(STAKING_FUND.getAccountNum(), toPbj(asKeyUnchecked(EMPTY_KEY)), 0L, false));
             destination.put(
                     toPbj(MASTER_PAYER),
-                    toPbjAccount(MASTER_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE, false));
+                    toPbjAccount(
+                            MASTER_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE, false));
             destination.put(
                     toPbj(TREASURY_PAYER),
-                    toPbjAccount(TREASURY_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE, false));
+                    toPbjAccount(
+                            TREASURY_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE, false));
             destination.put(
                     toPbj(NO_RECEIVER_SIG),
-                    toPbjAccount(NO_RECEIVER_SIG.getAccountNum(), NO_RECEIVER_SIG_KT.asPbjKey(), DEFAULT_BALANCE, false));
+                    toPbjAccount(
+                            NO_RECEIVER_SIG.getAccountNum(), NO_RECEIVER_SIG_KT.asPbjKey(), DEFAULT_BALANCE, false));
             destination.put(
                     toPbj(RECEIVER_SIG),
-                    toPbjAccount(RECEIVER_SIG.getAccountNum(), RECEIVER_SIG_KT.asPbjKey(), DEFAULT_BALANCE, true, false));
+                    toPbjAccount(
+                            RECEIVER_SIG.getAccountNum(), RECEIVER_SIG_KT.asPbjKey(), DEFAULT_BALANCE, true, false));
             destination.put(
                     toPbj(SYS_ACCOUNT),
                     toPbjAccount(SYS_ACCOUNT.getAccountNum(), SYS_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE, false));
@@ -221,7 +223,10 @@ public class AdapterUtils {
             destination.put(
                     toPbj(COMPLEX_KEY_ACCOUNT),
                     toPbjAccount(
-                            COMPLEX_KEY_ACCOUNT.getAccountNum(), COMPLEX_KEY_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE, false));
+                            COMPLEX_KEY_ACCOUNT.getAccountNum(),
+                            COMPLEX_KEY_ACCOUNT_KT.asPbjKey(),
+                            DEFAULT_BALANCE,
+                            false));
             destination.put(
                     toPbj(TOKEN_TREASURY),
                     toPbjAccount(TOKEN_TREASURY.getAccountNum(), TOKEN_TREASURY_KT.asPbjKey(), DEFAULT_BALANCE, false));
@@ -230,11 +235,15 @@ public class AdapterUtils {
                     toPbjAccount(
                             DILIGENT_SIGNING_PAYER.getAccountNum(),
                             DILIGENT_SIGNING_PAYER_KT.asPbjKey(),
-                            DEFAULT_BALANCE, false));
+                            DEFAULT_BALANCE,
+                            false));
             destination.put(
                     toPbj(FROM_OVERLAP_PAYER),
                     toPbjAccount(
-                            FROM_OVERLAP_PAYER.getAccountNum(), FROM_OVERLAP_PAYER_KT.asPbjKey(), DEFAULT_BALANCE, true));
+                            FROM_OVERLAP_PAYER.getAccountNum(),
+                            FROM_OVERLAP_PAYER_KT.asPbjKey(),
+                            DEFAULT_BALANCE,
+                            true));
             destination.put(
                     toPbj(asAccountFromNum(MISC_RECIEVER_SIG_CONTRACT)),
                     toPbjAccount(
@@ -251,8 +260,8 @@ public class AdapterUtils {
             return destination;
         }
 
-
-        public static com.hederahashgraph.api.proto.java.AccountID asAccountFromNum(com.hederahashgraph.api.proto.java.ContractID id) {
+        public static com.hederahashgraph.api.proto.java.AccountID asAccountFromNum(
+                com.hederahashgraph.api.proto.java.ContractID id) {
             return com.hederahashgraph.api.proto.java.AccountID.newBuilder()
                     .setAccountNum(id.getContractNum())
                     .build();
