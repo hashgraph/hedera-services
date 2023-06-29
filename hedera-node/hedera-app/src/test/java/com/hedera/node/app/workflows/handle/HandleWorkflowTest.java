@@ -297,7 +297,7 @@ class HandleWorkflowTest extends AppTestBase {
                         instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                        nodeInfo,
+                        networkInfo,
                         preHandleWorkflow,
                         dispatcher,
                         recordManager,

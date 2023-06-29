@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.components;
 
-import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -35,7 +34,9 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.config.api.Configuration;
+import java.time.InstantSource;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,8 +73,9 @@ class IngestComponentTest {
                 .selfId(AccountID.newBuilder().accountNum(selfNodeId.id() + 3).build())
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
-                .currentPlatformStatus(() -> ACTIVE)
+                .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
                 .servicesRegistry(Set::of)
+                .instantSource(InstantSource.system())
                 .build();
     }
 

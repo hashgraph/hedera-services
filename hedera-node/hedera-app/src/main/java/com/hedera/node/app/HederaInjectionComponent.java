@@ -56,6 +56,7 @@ import com.swirlds.common.system.Platform;
 import dagger.BindsInstance;
 import dagger.Component;
 import java.nio.charset.Charset;
+import java.time.InstantSource;
 import java.util.function.Supplier;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -143,6 +144,9 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder currentPlatformStatus(CurrentPlatformStatus currentPlatformStatus);
+
+        @BindsInstance
+        Builder instantSource(InstantSource instantSource);
 
         HederaInjectionComponent build();
     }

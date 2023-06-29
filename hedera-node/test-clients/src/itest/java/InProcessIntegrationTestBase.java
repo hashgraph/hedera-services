@@ -72,7 +72,10 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 
-/** Base class for integration tests */
+/**
+ * Base class for integration tests. Not currently used. Once the e2e tests are all passing, we'll switch
+ * {@link AllIntegrationTests} to use this instead of `DockerIntegrationTestBase` -- most likely.
+ */
 public abstract class InProcessIntegrationTestBase extends TestBase {
     static {
         System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");

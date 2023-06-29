@@ -72,6 +72,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Set;
@@ -875,6 +876,7 @@ public final class Hedera implements SwirldMain {
                     .selfId(nodeSelfAccount)
                     .servicesRegistry(servicesRegistry)
                     .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
+                    .instantSource(InstantSource.system())
                     .build();
 
             daggerApp.workingStateAccessor().setHederaState(state);

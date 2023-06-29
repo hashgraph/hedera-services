@@ -75,6 +75,8 @@ import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.sources.PropertyFileConfigSource;
+import com.swirlds.common.config.sources.SystemEnvironmentConfigSource;
+import com.swirlds.common.config.sources.SystemPropertiesConfigSource;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.config.api.Configuration;
@@ -158,6 +160,8 @@ public class ConfigProviderImpl implements ConfigProvider {
 
     private ConfigurationBuilder createConfigurationBuilder() {
         return ConfigurationBuilder.create()
+                .withSource(SystemEnvironmentConfigSource.getInstance())
+                .withSource(SystemPropertiesConfigSource.getInstance())
                 .withSource(new PropertyConfigSource(SEMANTIC_VERSION_PROPERTIES_DEFAULT_PATH, 500))
                 .withConfigDataType(AccountsConfig.class)
                 .withConfigDataType(AutoCreationConfig.class)
