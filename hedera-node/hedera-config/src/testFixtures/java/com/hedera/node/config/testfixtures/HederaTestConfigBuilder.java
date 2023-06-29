@@ -29,7 +29,6 @@ import com.hedera.node.config.converter.KnownBlockValuesConverter;
 import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
 import com.hedera.node.config.converter.MapAccessTypeConverter;
 import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
-import com.hedera.node.config.converter.ProfileConverter;
 import com.hedera.node.config.converter.RecomputeTypeConverter;
 import com.hedera.node.config.converter.ScaleFactorConverter;
 import com.hedera.node.config.converter.SemanticVersionConverter;
@@ -82,7 +81,6 @@ public final class HederaTestConfigBuilder {
                 .withConverter(new LegacyContractIdActivationsConverter())
                 .withConverter(new MapAccessTypeConverter())
                 .withConverter(new PermissionedAccountsRangeConverter())
-                .withConverter(new ProfileConverter())
                 .withConverter(new RecomputeTypeConverter())
                 .withConverter(new ScaleFactorConverter())
                 .withConverter(new SemanticVersionConverter())

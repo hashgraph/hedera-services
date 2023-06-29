@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.info;
+package com.hedera.node.app.info;
 
 import com.swirlds.common.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;

@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.solvency;
+package com.hedera.node.app;
 
-import dagger.Binds;
-import dagger.Module;
-import javax.inject.Singleton;
-
-@Module
-public interface SolvencyInjectionModule {
-    @Binds
-    @Singleton
-    SolvencyPreCheck bindSolvencyPreCheck(SolvencyPreCheckImpl solvencyPreCheck);
+/**
+ * Defines the mode in which the consensus node is executed.
+ */
+public enum Profile {
+    DEV,
+    TEST,
+    PROD
 }

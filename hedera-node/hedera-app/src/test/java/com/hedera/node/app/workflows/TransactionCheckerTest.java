@@ -38,9 +38,7 @@ import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -55,10 +53,13 @@ import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -87,7 +88,7 @@ final class TransactionCheckerTest extends AppTestBase {
     /** The standard {@link TransactionBody#transactionValidDuration()} for most tests */
     private static final Duration ONE_MINUTE = Duration.newBuilder().seconds(60).build();
 
-    private GlobalDynamicProperties props;
+    private ConfigProvider props;
 
     private Transaction tx;
     private SignatureMap signatureMap;
@@ -165,11 +166,15 @@ final class TransactionCheckerTest extends AppTestBase {
         inputBuffer = Bytes.wrap(asByteArray(tx));
 
         // Set up the properties
-        props = mock(GlobalDynamicProperties.class);
-        when(props.maxMemoUtf8Bytes()).thenReturn(MAX_MEMO_SIZE);
-        when(props.minTxnDuration()).thenReturn(MIN_DURATION);
-        when(props.maxTxnDuration()).thenReturn(MAX_DURATION);
-        when(props.minValidityBuffer()).thenReturn(MIN_VALIDITY_BUFFER);
+        props = () -> new VersionedConfigImpl(
+                HederaTestConfigBuilder.create(false)
+                        .withConfigDataType(HederaConfig.class)
+                        .withValue("hedera.transaction.maxMemoUtf8Bytes", MAX_MEMO_SIZE)
+                        .withValue("hedera.transaction.minValidityBufferSecs", MIN_VALIDITY_BUFFER)
+                        .withValue("hedera.transaction.minValidDuration", MIN_DURATION)
+                        .withValue("hedera.transaction.maxValidDuration", MAX_DURATION)
+                        .getOrCreateConfig(),
+                1);
 
         // And create the checker itself
         checker = new TransactionChecker(MAX_TX_SIZE, nodeSelfAccountId, props, metrics);

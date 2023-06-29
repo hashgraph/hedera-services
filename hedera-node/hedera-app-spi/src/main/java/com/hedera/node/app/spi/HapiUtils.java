@@ -248,4 +248,45 @@ public class HapiUtils {
         }
         return baseVersion.toString();
     }
+
+    /**
+     * Parses an account from a string of the form shardNum.realmNum.accountNum
+     * @param string The input string
+     * @return The corresponding {@link AccountID}
+     * @throws IllegalArgumentException if the string is not a dot-separated triplet of numbers
+     */
+    public static AccountID parseAccount(@NonNull final String string) {
+        try {
+            final var parts = string.split("\\.");
+            return AccountID.newBuilder()
+                    .shardNum(Long.parseLong(parts[0]))
+                    .realmNum(Long.parseLong(parts[1]))
+                    .accountNum(Long.parseLong(parts[2]))
+                    .build();
+        } catch (final NumberFormatException | ArrayIndexOutOfBoundsException e) {
+            throw new IllegalArgumentException(String.format("'%s' is not a dot-separated triplet", string));
+        }
+    }
+
+    /**
+     * Utility to convert an {@link AccountID} into a nicely formatted String.
+     * @param id The id to convert
+     * @return The string representation
+     */
+    public static String toString(@NonNull final AccountID id) {
+        var builder = new StringBuilder()
+                .append(id.shardNum())
+                .append(".")
+                .append(id.realmNum())
+                .append(".");
+
+        if (id.hasAccountNum()) {
+            builder.append(id.accountNum());
+        } else if (id.hasAlias()) {
+            builder.append(id.alias());
+        } else {
+            builder.append("-");
+        }
+        return builder.toString();
+    }
 }
