@@ -64,10 +64,8 @@ public class ConfigRecordParser {
                         .map(javaRecordComponent ->
                                 getConfigDataPropertyDefinition(configDataValue, paramDoc, javaRecordComponent))
                         .collect(Collectors.toSet());
-                final String qualifiedName = type.getQualifiedName().toString();
-                final int split = qualifiedName.lastIndexOf(".");
                 return new ConfigDataRecordDefinition(
-                        type.getPackage(), qualifiedName.substring(split + 1), configDataValue, propertyDefinitions);
+                        type.getPackage(), type.getName(), configDataValue, propertyDefinitions);
             } else {
                 throw new IllegalArgumentException(
                         "ConfigData annotation must be on a record! Type " + type + " is not a record!");
