@@ -78,8 +78,6 @@ public class AutoAccountCreator {
      */
     public void create(@NonNull final Bytes alias, final boolean isByTokenTransfer) {
         final var accountsConfig = handleContext.configuration().getConfigData(AccountsConfig.class);
-        final var autoCreationConfig = handleContext.configuration().getConfigData(AutoCreationConfig.class);
-        validateTrue(autoCreationConfig.enabled(), NOT_SUPPORTED);
 
         validateTrue(
                 accountStore.sizeOfAccountState() + 1 <= accountsConfig.maxNumber(),
