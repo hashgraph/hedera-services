@@ -17,10 +17,10 @@
 package com.hedera.node.app.service.mono.state.merkle;
 
 import com.hedera.node.app.service.mono.state.migration.TokenStateTranslator;
+import com.hedera.test.serde.EqualityType;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class MerkleTokenSerdeTest extends SelfSerializableDataTest<MerkleToken> {
     public static final int NUM_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
@@ -35,15 +35,22 @@ public class MerkleTokenSerdeTest extends SelfSerializableDataTest<MerkleToken> 
         return NUM_TEST_CASES;
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(CurrentVersionArgumentsProvider.class)
-    void serializationHasNoRegressionWithCurrentVersion(final int version, final int testCaseNo) {}
+    @Override
+    protected MerkleToken getExpectedObject(
+            final SeededPropertySource propertySource, @NonNull final EqualityType equalityType) {
+        final var strictExpectation = getExpectedObject(propertySource);
+        // The to-and-from PBJ conversion will lose some shard/realm information for now; so don't do
+        // it when running a test that requires the serialized bytes to be identical
+        if (equalityType == EqualityType.SERIALIZED_EQUALITY) {
+            return strictExpectation;
+        } else {
+            final var pbjToken = TokenStateTranslator.tokenFromMerkle(strictExpectation);
+            return TokenStateTranslator.merkleTokenFromToken(pbjToken);
+        }
+    }
 
     @Override
-    protected MerkleToken getExpectedObject(final SeededPropertySource propertySource) {
-        final var seededToken = propertySource.nextToken();
-        final var pbjToken = TokenStateTranslator.tokenFromMerkle(seededToken);
-        final var merkleToken = TokenStateTranslator.merkleTokenFromToken(pbjToken);
-        return merkleToken;
+    protected MerkleToken getExpectedObject(@NonNull final SeededPropertySource propertySource) {
+        return propertySource.nextToken();
     }
 }
