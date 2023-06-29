@@ -63,8 +63,6 @@ dependencies {
         itestImplementation(gav("org.junit.jupiter.params"))
         itestImplementation(gav("io.netty.transport.classes.epoll"))
         itestImplementation(gav("io.netty.transport.epoll"))
-        itestImplementation("io.netty:netty-transport-native-epoll:4.1.94.Final")
-        itestImplementation("io.netty:netty-transport-classes-epoll:4.1.94.Final")
 
         jmhImplementation(project(":app"))
         jmhImplementation(project(":app-service-mono"))
