@@ -64,8 +64,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
     @BeforeEach
     public void setUp() {
-        super.setup();
-        subject = new CryptoTransferHandler();
+        super.setUp();
+        subject = new CryptoTransferHandler(validator);
     }
 
     @SuppressWarnings("DataFlowIssue")

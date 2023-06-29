@@ -71,6 +71,8 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.swirlds.common.utility.CommonUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -367,13 +369,14 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void testEvmAddressAlias() {
+        final Bytes evmAddress = Bytes.wrap(CommonUtils.unhex("6aeb3773ea468a814d954e6dec795bfee7d76e26"));
         final var responseHeader = getOkResponse();
-        final var expectedInfo = getExpectedAccountInfoEvm();
+        final var expectedInfo = getExpectedAccountInfoEvm(evmAddress);
 
         account = account.copyBuilder()
                 .stakedNumber(-1)
                 .declineReward(false)
-                .alias(Bytes.wrap(evmAddress))
+                .alias(evmAddress)
                 .build();
         setupAccountStore();
 
@@ -493,7 +496,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .build();
     }
 
-    private AccountInfo getExpectedAccountInfoEvm() {
+    private AccountInfo getExpectedAccountInfoEvm(Bytes evmAddress) {
         return AccountInfo.newBuilder()
                 .key(key)
                 .accountID(id)
@@ -507,7 +510,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .ownedNfts(2)
                 .maxAutomaticTokenAssociations(10)
                 .ethereumNonce(0)
-                .alias(Bytes.wrap(evmAddress))
+                .alias(evmAddress)
                 .contractAccountID("6aea3773ea468a814d954e6dec795bfee7d76e25")
                 .tokenRelationships(getExpectedTokenRelationship())
                 .stakingInfo(getExpectedStakingInfo())

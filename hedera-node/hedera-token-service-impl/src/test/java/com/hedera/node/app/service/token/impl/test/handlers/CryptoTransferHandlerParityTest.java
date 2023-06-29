@@ -70,12 +70,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
+import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import org.junit.jupiter.api.Test;
 
 class CryptoTransferHandlerParityTest extends ParityTestBase {
-    private final CryptoTransferHandler subject = new CryptoTransferHandler();
+    private final CryptoTransferValidator validator = new CryptoTransferValidator();
+    private final CryptoTransferHandler subject = new CryptoTransferHandler(validator);
 
     @Test
     void cryptoTransferTokenReceiverIsMissingAliasScenario() throws PreCheckException {

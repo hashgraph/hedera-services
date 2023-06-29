@@ -203,7 +203,8 @@ public class SigReqAdapterUtils {
 
     public static WritableAccountStore wellKnownWritableAccountStoreAt() {
         return new WritableAccountStore(
-                mockWritableStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())));
+                mockWritableStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(),
+                        ALIASES_KEY, wellKnownAliasState())));
     }
 
     private static WritableKVState<AccountID, Account> wrappedAccountState() {

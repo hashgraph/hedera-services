@@ -57,6 +57,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesSte
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferStep;
+import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -79,9 +80,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoTransferHandler implements TransactionHandler {
+    private final CryptoTransferValidator validator;
     @Inject
-    public CryptoTransferHandler() {
-        // Exists for injection
+    public CryptoTransferHandler(@NonNull final CryptoTransferValidator validator) {
+        this.validator = validator;
     }
 
     @Override
@@ -108,57 +110,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         requireNonNull(txn);
         final var op = txn.cryptoTransfer();
         validateTruePreCheck(op != null, INVALID_TRANSACTION_BODY);
-
-        final var acctAmounts = op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
-        final var uniqueAcctIds = new HashSet<AccountID>();
-        long netBalance = 0;
-        for (final AccountAmount acctAmount : acctAmounts) {
-            validateTruePreCheck(acctAmount.hasAccountID(), INVALID_ACCOUNT_ID);
-            final var acctId = validateAccountID(acctAmount.accountIDOrThrow());
-            uniqueAcctIds.add(acctId);
-            netBalance += acctAmount.amount();
-        }
-        validateTruePreCheck(netBalance == 0, INVALID_ACCOUNT_AMOUNTS);
-        validateFalsePreCheck(uniqueAcctIds.size() < acctAmounts.size(), ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
-
-        final var tokenTransfers = op.tokenTransfersOrElse(emptyList());
-        for (final TokenTransferList tokenTransfer : tokenTransfers) {
-            final var tokenID = tokenTransfer.token();
-            validateTruePreCheck(tokenID != null && !tokenID.equals(TokenID.DEFAULT), INVALID_TOKEN_ID);
-
-            // Validate the fungible transfers
-            final var uniqueTokenAcctIds = new HashSet<AccountID>();
-            final var fungibleTransfers = tokenTransfer.transfersOrElse(emptyList());
-            long netTokenBalance = 0;
-            boolean nonZeroFungibleValueFound = false;
-            for (final AccountAmount acctAmount : fungibleTransfers) {
-                validateTruePreCheck(acctAmount.hasAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
-                uniqueTokenAcctIds.add(acctAmount.accountIDOrThrow());
-                netTokenBalance += acctAmount.amount();
-                if (!nonZeroFungibleValueFound && acctAmount.amount() != 0) {
-                    nonZeroFungibleValueFound = true;
-                }
-            }
-            validateFalsePreCheck(
-                    uniqueTokenAcctIds.size() < fungibleTransfers.size(), ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
-            validateTruePreCheck(netTokenBalance == 0, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
-
-            // Validate the nft transfers
-            final var nftTransfers = tokenTransfer.nftTransfersOrElse(emptyList());
-            final var nftIds = new HashSet<Long>();
-            for (final NftTransfer nftTransfer : nftTransfers) {
-                validateTruePreCheck(nftTransfer.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
-                validateTruePreCheck(nftTransfer.hasSenderAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
-                validateTruePreCheck(nftTransfer.hasReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
-
-                nftIds.add(nftTransfer.serialNumber());
-            }
-            validateFalsePreCheck(nftIds.size() < nftTransfers.size(), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
-
-            // Verify that one and only one of the two types of transfers (fungible or non-fungible) is present
-            validateFalsePreCheck(!nonZeroFungibleValueFound && nftIds.isEmpty(), EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
-            validateFalsePreCheck(nonZeroFungibleValueFound && !nftIds.isEmpty(), INVALID_ACCOUNT_AMOUNTS);
-        }
+        validator.pureChecks(op);
     }
 
     @Override
@@ -171,7 +123,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
 
-        validateSemantics(op, ledgerConfig, hederaConfig, tokensConfig);
+        validator.validateSemantics(op, ledgerConfig, hederaConfig, tokensConfig);
 
         final var transferContext = new TransferContextImpl(context);
 
@@ -255,66 +207,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         return steps;
     }
 
-    private void validateSemantics(
-            @NonNull final CryptoTransferTransactionBody op,
-            @NonNull final LedgerConfig ledgerConfig,
-            @NonNull final HederaConfig hederaConfig,
-            @NonNull final TokensConfig tokensConfig) {
-        final var transfers = op.transfersOrElse(TransferList.DEFAULT);
 
-        // Validate that there aren't too many hbar transfers
-        final var hbarTransfers = transfers.accountAmountsOrElse(emptyList());
-        validateTrue(hbarTransfers.size() < ledgerConfig.transfersMaxLen(), TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
-
-        // Validate that allowances are enabled, or that no hbar transfers are an allowance transfer
-        final var allowancesEnabled = hederaConfig.allowancesIsEnabled();
-        validateTrue(allowancesEnabled || !hasAllowance(hbarTransfers), NOT_SUPPORTED);
-
-        // The loop below will validate the counts for token transfers (both fungible and non-fungible)
-        final var tokenTransfers = op.tokenTransfersOrElse(emptyList());
-        var totalFungibleTransfers = 0;
-        var totalNftTransfers = 0;
-        final var nftsEnabled = tokensConfig.nftsAreEnabled();
-        for (final TokenTransferList tokenTransfer : tokenTransfers) {
-            // Validate the fungible token transfer(s) (if present)
-            final var fungibleTransfers = tokenTransfer.transfersOrElse(emptyList());
-            validateTrue(allowancesEnabled || !hasAllowance(fungibleTransfers), NOT_SUPPORTED);
-            totalFungibleTransfers += fungibleTransfers.size();
-
-            // Validate the nft transfer(s) (if present)
-            final var nftTransfers = tokenTransfer.nftTransfersOrElse(emptyList());
-            validateTrue(nftsEnabled || nftTransfers.isEmpty(), NOT_SUPPORTED);
-            validateTrue(allowancesEnabled || !hasNftAllowance(nftTransfers), NOT_SUPPORTED);
-            totalNftTransfers += nftTransfers.size();
-
-            // Verify that the current total number of (counted) fungible transfers does not exceed the limit
-            validateTrue(
-                    totalFungibleTransfers < ledgerConfig.tokenTransfersMaxLen(),
-                    TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
-            // Verify that the current total number of (counted) nft transfers does not exceed the limit
-            validateTrue(totalNftTransfers < ledgerConfig.nftTransfersMaxLen(), BATCH_SIZE_LIMIT_EXCEEDED);
-        }
-    }
-
-    private boolean hasAllowance(@NonNull final List<AccountAmount> transfers) {
-        for (final AccountAmount transfer : transfers) {
-            if (transfer.isApproval()) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private boolean hasNftAllowance(@NonNull final List<NftTransfer> nftTransfers) {
-        for (final NftTransfer nftTransfer : nftTransfers) {
-            if (nftTransfer.isApproval()) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     /**
      * As part of pre-handle, checks that HBAR or fungible token transfers in the transfer list are plausible.
