@@ -76,8 +76,8 @@ public class ConfigRecordParser {
     }
 
     @Nullable
-    private static String getDefaultValue(@NonNull final JavaRecordComponent javaRecordComponent) {
-        final Annotation configPropertyAnnotation = javaRecordComponent.getAnnotation(ConfigProperty.class);
+    private static String getDefaultValue(@NonNull final JavaRecordComponent<?> javaRecordComponent) {
+        final Annotation<?> configPropertyAnnotation = javaRecordComponent.getAnnotation(ConfigProperty.class);
         if (configPropertyAnnotation != null) {
             final String annotationDefaultValue =
                     configPropertyAnnotation.getStringValue(ConfigProcessorConstants.DEFAULT_VALUE_FIELD_NAME);
