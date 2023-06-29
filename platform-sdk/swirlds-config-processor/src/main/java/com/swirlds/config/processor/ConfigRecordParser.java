@@ -91,7 +91,7 @@ public class ConfigRecordParser {
 
     @NonNull
     private static String getName(
-            @Nullable final String configDataValue, @NonNull final JavaRecordComponent javaRecordComponent) {
+            @Nullable final String configDataValue, @NonNull final JavaRecordComponent<?> javaRecordComponent) {
         String name = javaRecordComponent.getName();
         final Annotation<?> configPropertyAnnotation = javaRecordComponent.getAnnotation(ConfigProperty.class);
         if (configPropertyAnnotation != null) {
