@@ -54,7 +54,7 @@ class IngestComponentTest {
 
     @BeforeEach
     void setUp() {
-        final Configuration configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        final Configuration configuration = HederaTestConfigBuilder.createConfig();
         final PlatformContext platformContext = mock(PlatformContext.class);
         when(platformContext.getConfiguration()).thenReturn(configuration);
         when(platform.getContext()).thenReturn(platformContext);
@@ -70,9 +70,7 @@ class IngestComponentTest {
                 .consoleCreator(SwirldsGui::createConsole)
                 .staticAccountMemo("memo")
                 .bootstrapProps(new BootstrapProperties())
-                .selfId(AccountID.newBuilder()
-                        .accountNum(selfNodeId.getIdAsInt())
-                        .build())
+                .selfId(AccountID.newBuilder().accountNum(selfNodeId.id() + 3).build())
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
                 .genesisUsage(false)

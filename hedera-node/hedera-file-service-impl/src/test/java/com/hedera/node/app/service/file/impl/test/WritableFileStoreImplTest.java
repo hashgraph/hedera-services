@@ -58,7 +58,7 @@ class WritableFileStoreImplTest extends FileTestBase {
         file = createFile();
         writableStore.put(file);
 
-        final var maybeReadFile = writableStore.get(fileId.fileNum());
+        final var maybeReadFile = writableStore.get(fileId);
 
         assertTrue(maybeReadFile.isPresent());
         final var readFile = maybeReadFile.get();
@@ -70,13 +70,13 @@ class WritableFileStoreImplTest extends FileTestBase {
         file = createFile();
         writableStore.put(file);
 
-        final var maybeReadFile = writableStore.get(fileId.fileNum());
+        final var maybeReadFile = writableStore.get(fileId);
 
         assertTrue(maybeReadFile.isPresent());
 
-        writableStore.removeFile(fileId.fileNum());
+        writableStore.removeFile(fileId);
 
-        final var readFile = writableStore.get(fileId.fileNum());
+        final var readFile = writableStore.get(fileId);
         assertEquals(readFile, Optional.empty());
     }
 }

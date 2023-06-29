@@ -42,12 +42,14 @@ import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.shadowgraph.SimultaneousSyncThrottle;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.network.unidirectional.HeartbeatProtocolResponder;
 import com.swirlds.platform.network.unidirectional.HeartbeatSender;
@@ -78,6 +80,7 @@ public class LegacySyncGossip extends AbstractGossip {
     private final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
     private final ThreadManager threadManager;
+    private final ThreadConfig threadConfig;
 
     /**
      * Holds a list of objects that need to be cleared when {@link #clear()} is called on this object.
@@ -151,6 +154,7 @@ public class LegacySyncGossip extends AbstractGossip {
 
         this.threadManager = Objects.requireNonNull(threadManager);
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
+        threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
 
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
         thingsToStart.add(shadowgraphExecutor);
@@ -175,8 +179,9 @@ public class LegacySyncGossip extends AbstractGossip {
 
         sharedConnectionLocks = new SharedConnectionLocks(topology, connectionManagers);
 
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         simultaneousSyncThrottle = new SimultaneousSyncThrottle(
-                platformContext.getMetrics(), settings.getMaxIncomingSyncsInc() + settings.getMaxOutgoingSyncs());
+                platformContext.getMetrics(), syncConfig.maxIncomingSyncsInc() + syncConfig.maxOutgoingSyncs());
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
@@ -215,18 +220,18 @@ public class LegacySyncGossip extends AbstractGossip {
 
             // create and start new thread to send heartbeats on the SyncCaller channels
             thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
-                    .setPriority(settings.getThreadPrioritySync())
+                    .setPriority(threadConfig.threadPrioritySync())
                     .setNodeId(selfId)
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setThreadName("heartbeat")
                     .setOtherNodeId(otherId)
                     .setWork(new HeartbeatSender(
-                            otherId, sharedConnectionLocks, networkMetrics, PlatformConstructor.settingsProvider()))
+                            otherId, sharedConnectionLocks, networkMetrics, platformContext.getConfiguration()))
                     .build());
         }
 
         // create and start threads to call other members
-        for (int i = 0; i < settings.getMaxOutgoingSyncs(); i++) {
+        for (int i = 0; i < syncConfig.maxOutgoingSyncs(); i++) {
             spawnSyncCaller(i);
         }
     }
@@ -252,7 +257,7 @@ public class LegacySyncGossip extends AbstractGossip {
 
         /* the thread that repeatedly initiates syncs with other members */
         final Thread syncCallerThread = new ThreadConfiguration(threadManager)
-                .setPriority(settings.getThreadPrioritySync())
+                .setPriority(threadConfig.threadPrioritySync())
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("syncCaller-" + callerNumber)

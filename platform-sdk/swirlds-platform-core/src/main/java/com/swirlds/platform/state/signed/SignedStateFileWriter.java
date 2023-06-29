@@ -20,6 +20,7 @@ import static com.swirlds.common.io.utility.FileUtils.executeAndRename;
 import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.platform.config.internal.PlatformConfigUtils.writeSettingsUsed;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.FILE_VERSION;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_FILE_NAME;
@@ -33,7 +34,6 @@ import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.logging.payloads.StateSavedToDiskPayload;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -143,8 +143,8 @@ public final class SignedStateFileWriter {
         writeHashInfoFile(directory, signedState.getState());
         writeMetadataFile(selfId, directory, signedState);
         writeEmergencyRecoveryFile(directory, signedState);
-        Settings.getInstance().writeSettingsUsed(directory);
         writeStateAddressBookFile(directory, signedState.getAddressBook());
+        writeSettingsUsed(directory);
     }
 
     /**

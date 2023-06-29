@@ -19,6 +19,7 @@ package com.swirlds.platform.test.graph;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createBalancedOtherParentMatrix;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createPartitionedOtherParentAffinityMatrix;
 
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.event.generator.GraphGenerator;
 import com.swirlds.platform.test.sync.SyncNode;
@@ -41,6 +42,7 @@ public class PartitionedGraphCreator {
             final SyncTestParams params, final SyncNode node, final List<Integer> nodesInPartition) {
         final EventEmitter<?> emitter = node.getEmitter();
         final GraphGenerator<?> graphGenerator = emitter.getGraphGenerator();
+        final AddressBook addressBook = graphGenerator.getAddressBook();
 
         final List<List<Double>> fullyConnectedMatrix = createBalancedOtherParentMatrix(params.getNumNetworkNodes());
 
@@ -53,7 +55,7 @@ public class PartitionedGraphCreator {
         for (int i = 0; i < graphGenerator.getNumberOfSources(); i++) {
             final boolean isSourceInPartition = nodesInPartition.contains(i);
 
-            graphGenerator.getSource(i).setNewEventWeight((r, index, prev) -> {
+            graphGenerator.getSource(addressBook.getNodeId(i)).setNewEventWeight((r, index, prev) -> {
                 if (index < params.getNumCommonEvents() || isSourceInPartition) {
                     return 1.0;
                 } else {

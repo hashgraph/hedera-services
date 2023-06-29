@@ -26,8 +26,7 @@ import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
-import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
+import com.swirlds.platform.event.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -111,7 +110,7 @@ public class EventTracker {
      * @param descriptor   describes the event that was just created
      * @param creationTime the time when the event was created
      */
-    public void registerNewEvent(final ChatterEventDescriptor descriptor, final Instant creationTime) {
+    public void registerNewEvent(final EventDescriptor descriptor, final Instant creationTime) {
         final TrackedEvent prev = events.put(descriptor, new TrackedEvent(descriptor.getCreator(), creationTime));
 
         if (prev != null) {

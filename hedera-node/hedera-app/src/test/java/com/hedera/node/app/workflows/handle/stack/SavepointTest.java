@@ -30,7 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SavepointTest {
 
-    private static final Configuration BASE_CONFIG = new HederaTestConfigBuilder(false).getOrCreateConfig();
+    private static final Configuration BASE_CONFIG = HederaTestConfigBuilder.createConfig(false);
 
     @Mock
     private WrappedHederaState state;
@@ -56,7 +56,7 @@ class SavepointTest {
     void testSetConfiguration() {
         // given
         final var savepoint = new Savepoint(state, BASE_CONFIG);
-        final var newConfig = new HederaTestConfigBuilder(false).getOrCreateConfig();
+        final var newConfig = HederaTestConfigBuilder.create(false).getOrCreateConfig();
 
         // when
         savepoint.configuration(newConfig);

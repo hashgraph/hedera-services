@@ -18,20 +18,64 @@ package com.hedera.node.app.service.contract.impl.utils;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
+import org.hyperledger.besu.evm.log.Log;
+import org.hyperledger.besu.evm.log.LogsBloomFilter;
 
 public class ConversionUtils {
     public static final long EVM_ADDRESS_LENGTH_AS_LONG = 20L;
     public static final long MISSING_ENTITY_NUMBER = -1L;
     public static final int EVM_ADDRESS_LENGTH_AS_INT = 20;
     public static final int NUM_LONG_ZEROS = 12;
+
+    private ConversionUtils() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
+    /**
+     * Given a list of Besu {@link Log}s, converts them to a list of PBJ {@link ContractLoginfo}.
+     *
+     * @param logs the Besu {@link Log}s
+     * @return the PBJ {@link ContractLoginfo}s
+     */
+    public static List<ContractLoginfo> pbjLogsFrom(@NonNull final List<Log> logs) {
+        final List<ContractLoginfo> pbjLogs = new ArrayList<>();
+        for (final var log : logs) {
+            pbjLogs.add(pbjLogFrom(log));
+        }
+        return pbjLogs;
+    }
+
+    /**
+     * Given a Besu {@link Log}, converts it a PBJ {@link ContractLoginfo}.
+     *
+     * @param log the Besu {@link Log}
+     * @return the PBJ {@link ContractLoginfo}
+     */
+    public static ContractLoginfo pbjLogFrom(@NonNull final Log log) {
+        final var loggerNumber = numberOfLongZero(log.getLogger());
+        final List<com.hedera.pbj.runtime.io.buffer.Bytes> loggedTopics = new ArrayList<>();
+        for (final var topic : log.getTopics()) {
+            loggedTopics.add(tuweniToPbjBytes(topic));
+        }
+        return ContractLoginfo.newBuilder()
+                .contractID(ContractID.newBuilder().contractNum(loggerNumber))
+                .data(tuweniToPbjBytes(log.getData()))
+                .topic(loggedTopics)
+                .bloom(bloomFor(log))
+                .build();
+    }
 
     /**
      * Given an EVM address (possibly long-zero), returns the number of the corresponding Hedera entity
@@ -109,6 +153,14 @@ public class ConversionUtils {
      */
     public static @NonNull com.hedera.pbj.runtime.io.buffer.Bytes tuweniToPbjBytes(@NonNull final Bytes bytes) {
         return com.hedera.pbj.runtime.io.buffer.Bytes.wrap(requireNonNull(bytes).toArrayUnsafe());
+    }
+
+    public static ContractID asEvmContractId(@NonNull final Address address) {
+        return ContractID.newBuilder().evmAddress(tuweniToPbjBytes(address)).build();
+    }
+
+    public static ContractID asNumberedContractId(@NonNull final Address address) {
+        return ContractID.newBuilder().contractNum(numberOfLongZero(address)).build();
     }
 
     /**
@@ -221,5 +273,10 @@ public class ConversionUtils {
                 | (b6 & 0xFFL) << 16
                 | (b7 & 0xFFL) << 8
                 | (b8 & 0xFFL);
+    }
+
+    private static com.hedera.pbj.runtime.io.buffer.Bytes bloomFor(@NonNull final Log log) {
+        return com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
+                LogsBloomFilter.builder().insertLog(log).build().toArray());
     }
 }

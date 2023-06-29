@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Assertions;
 public class BlockNoValidator implements RecordStreamValidator {
     @Override
     public void validateFiles(final List<RecordStreamFile> files) {
-        var precedingBlockNo = 0L;
+        var precedingBlockNo = -1L;
         for (final var file : files) {
             final var blockNo = file.getBlockNumber();
             Assertions.assertEquals(

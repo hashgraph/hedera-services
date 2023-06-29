@@ -53,7 +53,6 @@ class AddIncompleteStateTest extends AbstractSignedStateManagerTest {
     private final AddressBook addressBook = new RandomAddressBookGenerator(random)
             .setSize(4)
             .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-            .setSequentialIds(false)
             .build();
 
     private final long firstRound = 50;
