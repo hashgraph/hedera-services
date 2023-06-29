@@ -32,12 +32,12 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Calculates tipset scores for events created by a node.
+ * Calculates tipset advancement weights for events created by a node.
  */
-public class TipsetScoreCalculator {
+public class TipsetWeightCalculator {
 
     /**
-     * The node ID that is being tracked by this window.
+     * The node ID that is being tracked by this object.
      */
     private final NodeId selfId;
 
@@ -52,9 +52,9 @@ public class TipsetScoreCalculator {
     private final ChildlessEventTracker childlessEventTracker;
 
     /**
-     * The current tipset snapshot. This is updated to the latest self event's tipset whenever the targeted weighted
-     * advancement between the current snapshot and the new event's tipset exceeds the threshold of 2/3 consensus weight
-     * minus the self weight.
+     * The current tipset snapshot. This is updated to the latest self event's tipset whenever the weighted advancement
+     * between the current snapshot and the new event's tipset exceeds the threshold of 2/3 consensus weight minus the
+     * self weight.
      */
     private Tipset snapshot;
 
@@ -74,7 +74,7 @@ public class TipsetScoreCalculator {
     private final long totalWeight;
 
     /**
-     * The weight of the node tracked by this window.
+     * The weight of the node tracked by this object.
      */
     private final long selfWeight;
 
@@ -86,7 +86,7 @@ public class TipsetScoreCalculator {
     /**
      * The previous tipset advancement weight.
      */
-    private TipsetAdvancementWeight previousScore = ZERO_ADVANCEMENT_WEIGHT;
+    private TipsetAdvancementWeight previousAdvancementWeight = ZERO_ADVANCEMENT_WEIGHT;
 
     /**
      * The tipset of the latest self event, or the starting snapshot if there has not yet been a self event.
@@ -94,15 +94,15 @@ public class TipsetScoreCalculator {
     private Tipset latestSelfEventTipset;
 
     /**
-     * Create a new tipset window.
+     * Create a new tipset weight calculator.
      *
      * @param platformContext       the platform context
      * @param addressBook           the current address book
-     * @param selfId                the ID of the node tracked by this window
+     * @param selfId                the ID of the node tracked by this object
      * @param tipsetTracker         builds tipsets for individual events
      * @param childlessEventTracker tracks non-ancient events without children
      */
-    public TipsetScoreCalculator(
+    public TipsetWeightCalculator(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
@@ -128,9 +128,9 @@ public class TipsetScoreCalculator {
     }
 
     /**
-     * Get the maximum possible tipset score that a new event can achieve.
+     * Get the maximum possible tipset advancement weight that a new event can achieve.
      */
-    public long getMaximumPossibleScore() {
+    public long getMaximumPossibleAdvancementWeight() {
         return maximumPossibleAdvancementWeight;
     }
 
@@ -144,23 +144,24 @@ public class TipsetScoreCalculator {
     }
 
     /**
-     * Add an event created by this node and compute the increase in tipset score. Higher score changes mean that this
-     * event caused consensus to advance more. A score change of 0 means that this event did not advance consensus. A
-     * score change close to the total weight means that this event did a very good job at advancing consensus. It's
-     * impossible to get a perfect score, since the weight of advancing self events is not included. The maximum score
-     * an event can achieve is equal to the sum of all weights minus this node's weight.
+     * Add an event created by this node and compute the increase in tipset advancement weight. Higher weight changes
+     * mean that this event will cause consensus to advance more. An advancement weight change of 0 means that this
+     * event did not advance consensus. An advancement weight change close to the total weight means that this event
+     * will not do a very good job at advancing consensus. It's impossible to get a perfect advancement weight, since
+     * the weight of advancing self events is not included. The maximum advancement weight an event can achieve is equal
+     * to the sum of all weights minus this node's weight.
      * <p>
-     * Whenever the total advancement score of a new event exceeds the threshold (2/3 minus self weight), the snapshot
+     * Whenever the total advancement weight of a new event exceeds the threshold (2/3 minus self weight), the snapshot
      * is set to be equal to this event's tipset.
      *
      * @param event the event that is being added
-     * @return the change in this event's tipset score compared to the tipset score of the previous event passed to this
-     * method
+     * @return the change in this event's tipset advancement weight compared to the tipset advancement weight of the
+     * previous event passed to this method
      */
-    public TipsetAdvancementWeight addEventAndGetAdvancementScore(@NonNull final EventDescriptor event) {
+    public TipsetAdvancementWeight addEventAndGetAdvancementWeight(@NonNull final EventDescriptor event) {
         Objects.requireNonNull(event);
         if (!event.getCreator().equals(selfId)) {
-            throw new IllegalArgumentException("event creator must be the same as the window ID");
+            throw new IllegalArgumentException("event creator must be the same as self ID");
         }
 
         final Tipset eventTipset = tipsetTracker.getTipset(event);
@@ -168,37 +169,37 @@ public class TipsetScoreCalculator {
             throw new IllegalArgumentException("event " + event + " is not in the tipset tracker");
         }
 
-        final TipsetAdvancementWeight score = snapshot.getTipAdvancementWeight(selfId, eventTipset);
-        if (score.advancementWeight() > maximumPossibleAdvancementWeight) {
-            throw new IllegalStateException("score " + score + " is greater than the maximum possible score "
-                    + maximumPossibleAdvancementWeight);
+        final TipsetAdvancementWeight advancementWeight = snapshot.getTipAdvancementWeight(selfId, eventTipset);
+        if (advancementWeight.advancementWeight() > maximumPossibleAdvancementWeight) {
+            throw new IllegalStateException("advancement weight " + advancementWeight
+                    + " is greater than the maximum possible weight " + maximumPossibleAdvancementWeight);
         }
 
-        final TipsetAdvancementWeight scoreImprovement = score.minus(previousScore);
+        final TipsetAdvancementWeight advancementWeightImprovement = advancementWeight.minus(previousAdvancementWeight);
 
-        if (isSuperMajority(score.advancementWeight() + selfWeight, totalWeight)) {
+        if (isSuperMajority(advancementWeight.advancementWeight() + selfWeight, totalWeight)) {
             snapshot = eventTipset;
             snapshotHistory.add(snapshot);
             if (snapshotHistory.size() > maxSnapshotHistorySize) {
                 snapshotHistory.remove();
             }
-            previousScore = ZERO_ADVANCEMENT_WEIGHT;
+            previousAdvancementWeight = ZERO_ADVANCEMENT_WEIGHT;
         } else {
-            previousScore = score;
+            previousAdvancementWeight = advancementWeight;
         }
 
         latestSelfEventTipset = eventTipset;
 
-        return scoreImprovement;
+        return advancementWeightImprovement;
     }
 
     /**
-     * Figure out what advancement score we would get if we created an event with a given list of parents.
+     * Figure out what advancement weight we would get if we created an event with a given list of parents.
      *
      * @param parents the proposed parents of an event
-     * @return the advancement score we would get by creating an event with the given parents
+     * @return the advancement weight we would get by creating an event with the given parents
      */
-    public TipsetAdvancementWeight getTheoreticalAdvancementScore(@NonNull final List<EventDescriptor> parents) {
+    public TipsetAdvancementWeight getTheoreticalAdvancementWeight(@NonNull final List<EventDescriptor> parents) {
         if (parents.isEmpty()) {
             return ZERO_ADVANCEMENT_WEIGHT;
         }
@@ -209,10 +210,10 @@ public class TipsetScoreCalculator {
         }
 
         // Don't bother advancing the self generation in this theoretical tipset,
-        // since self advancement doesn't contribute to tipset score.
+        // since self advancement doesn't contribute to tipset advancement weight.
         final Tipset newTipset = Tipset.merge(parentTipsets);
 
-        return snapshot.getTipAdvancementWeight(selfId, newTipset).minus(previousScore);
+        return snapshot.getTipAdvancementWeight(selfId, newTipset).minus(previousAdvancementWeight);
     }
 
     /**
@@ -231,31 +232,36 @@ public class TipsetScoreCalculator {
     }
 
     /**
-     * Get the bully score with respect to one node. A high bully score means that we have access to events that could
-     * go into our ancestry, but for whatever reason we have decided not to put into our ancestry.
+     * Get the bully score with respect to one node, i.e. how much this node is bullying the specified node. A high
+     * bully score means that we have access to events that could go into our ancestry, but for whatever reason we have
+     * decided not to put into our ancestry.
      * <p>
-     * The bully score is defined as the number times the snapshot has been advanced without updating the generation of
-     * a particular node. For nodes that do not have any events that are legal other parents, the bully score is defined
-     * to be 0, regardless of how many times the snapshot has been advanced.
+     * The bully score is defined as the number of times the snapshot has been advanced without updating the generation
+     * of a particular node. For nodes that do not have any events that are legal other parents, the bully score is
+     * defined to be 0, regardless of how many times the snapshot has been advanced.
      *
      * @param nodeId the node to compute the bully score for
      * @return the bully score with respect to this node
      */
     public int getBullyScoreForNode(@NonNull final NodeId nodeId) {
-        int bullyScore = 0;
-        final long latestGeneration = tipsetTracker.getLatestGenerationForNode(nodeId);
-
-        if (latestSelfEventTipset.getTipGenerationForNode(nodeId) == latestGeneration) {
-            // Our latest event has their latest event as an ancestor.
+        if (latestSelfEventTipset == null) {
+            // We can't be a bully if we haven't created any events yet.
             return 0;
         }
+
+        if (latestSelfEventTipset.getTipGenerationForNode(nodeId)
+                > snapshotHistory.getLast().getTipGenerationForNode(nodeId)) {
+            // Special case: we have advanced this generation since the snapshot was taken.
+            return 0;
+        }
+
+        int bullyScore = 0;
+        final long latestGeneration = tipsetTracker.getLatestGenerationForNode(nodeId);
 
         // Iterate backwards in time until we find an event from the node being added to our ancestry, or if
         // we find that there are no eligible nodes to be added to our ancestry.
         final Iterator<Tipset> iterator = snapshotHistory.descendingIterator();
-
         Tipset previousTipset = iterator.next();
-
         while (iterator.hasNext()) {
             final Tipset currentTipset = previousTipset;
             previousTipset = iterator.next();

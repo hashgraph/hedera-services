@@ -32,12 +32,12 @@ import java.util.Map;
  */
 public class TipsetMetrics {
 
-    private static final RunningAverageMetric.Config TIPSET_SCORE_CONFIG = new RunningAverageMetric.Config(
-                    "platform", "tipsetScore")
-            .withDescription("The score, based on tipset advancements, of each new event created by this "
-                    + "node. A score of 0.0 means the event did not advance consensus at all, while a score "
-                    + "of 1.0 means that the event advanced consensus as much as a single event can.");
-    private final RunningAverageMetric tipsetScoreMetric;
+    private static final RunningAverageMetric.Config TIPSET_ADVANCEMENT_CONFIG = new RunningAverageMetric.Config(
+                    "platform", "tipsetAdvancement")
+            .withDescription("The score, based on tipset advancement weight, of each new event created by this "
+                    + "node. A score of 0.0 means the an event has zero advancement weight, while a score "
+                    + "of 1.0 means that the event had the maximum possible advancement weight.");
+    private final RunningAverageMetric tipsetAdvancementMetric;
 
     private static final RunningAverageMetric.Config BULLY_SCORE_CONFIG = new RunningAverageMetric.Config(
                     "platform", "bullyScore")
@@ -57,7 +57,7 @@ public class TipsetMetrics {
     public TipsetMetrics(@NonNull final PlatformContext platformContext, @NonNull final AddressBook addressBook) {
 
         final Metrics metrics = platformContext.getMetrics();
-        tipsetScoreMetric = metrics.getOrCreate(TIPSET_SCORE_CONFIG);
+        tipsetAdvancementMetric = metrics.getOrCreate(TIPSET_ADVANCEMENT_CONFIG);
         bullyScoreMetric = metrics.getOrCreate(BULLY_SCORE_CONFIG);
 
         for (final Address address : addressBook) {
@@ -66,14 +66,14 @@ public class TipsetMetrics {
             final SpeedometerMetric.Config parentConfig = new SpeedometerMetric.Config(
                             "platform", "tipsetParent" + nodeId.id())
                     .withDescription("Cycled when an event from that node is used as a "
-                            + "parent because it optimized the tipset score.");
+                            + "parent because it optimized the tipset advancement weight.");
             final SpeedometerMetric parentMetric = metrics.getOrCreate(parentConfig);
             tipsetParentMetrics.put(nodeId, parentMetric);
 
             final SpeedometerMetric.Config pityParentConfig = new SpeedometerMetric.Config(
                             "platform", "pityParent" + nodeId.id())
                     .withDescription("Cycled when an event from that node is used as a "
-                            + "parent without consideration of tipset score optimization "
+                            + "parent without consideration of tipset advancement weight optimization "
                             + "(i.e. taking 'pity' on a node that isn't getting its events chosen as parents).");
             final SpeedometerMetric pityParentMetric = metrics.getOrCreate(pityParentConfig);
             pityParentMetrics.put(nodeId, pityParentMetric);
@@ -83,11 +83,11 @@ public class TipsetMetrics {
     /**
      * Get the metric used to track the tipset score of events created by this node.
      *
-     * @return the tipset score metric
+     * @return the tipset advancement metric
      */
     @NonNull
-    public RunningAverageMetric getTipsetScoreMetric() {
-        return tipsetScoreMetric;
+    public RunningAverageMetric getTipsetAdvancementMetric() {
+        return tipsetAdvancementMetric;
     }
 
     /**
@@ -114,7 +114,7 @@ public class TipsetMetrics {
 
     /**
      * Get the metric used to track the number of times this node has used an event from the given node as a parent
-     * without consideration of tipset score optimization.
+     * without consideration of tipset advancement weight optimization.
      *
      * @param nodeId the node ID
      * @return the pity parent metric

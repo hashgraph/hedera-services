@@ -20,6 +20,7 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.common.config.SocketConfig;
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.metrics.Metrics;
@@ -84,10 +85,6 @@ public final class PlatformConstructor {
      */
     public static ParallelExecutor parallelExecutor(final ThreadManager threadManager) {
         return new CachedPoolParallelExecutor(threadManager, "node-sync");
-    }
-
-    public static SettingsProvider settingsProvider() {
-        return StaticSettingsProvider.getSingleton();
     }
 
     public static SocketFactory socketFactory(
@@ -160,7 +157,7 @@ public final class PlatformConstructor {
      * @param preConsensusSystemTransactionManager  the manager which handles system transactions pre-consensus
      * @param postConsensusSystemTransactionManager the manager which handles system transactions post-consensus
      * @param metrics                               reference to the metrics-system
-     * @param settings                              static settings provider
+     * @param transactionConfig                     the transaction configuration
      * @param initialState                          the initial state
      * @param softwareVersion                       the software version
      * @return the newly constructed instance of {@link SwirldStateManager}
@@ -172,7 +169,7 @@ public final class PlatformConstructor {
             @NonNull final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
             @NonNull final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
             @NonNull final Metrics metrics,
-            @NonNull final SettingsProvider settings,
+            @NonNull final TransactionConfig transactionConfig,
             @NonNull final BooleanSupplier inFreezeChecker,
             @NonNull final State initialState,
             @NonNull final SoftwareVersion softwareVersion) {
@@ -183,7 +180,7 @@ public final class PlatformConstructor {
         Objects.requireNonNull(preConsensusSystemTransactionManager);
         Objects.requireNonNull(postConsensusSystemTransactionManager);
         Objects.requireNonNull(metrics);
-        Objects.requireNonNull(settings);
+        Objects.requireNonNull(transactionConfig);
         Objects.requireNonNull(inFreezeChecker);
         Objects.requireNonNull(initialState);
         Objects.requireNonNull(softwareVersion);
@@ -195,7 +192,7 @@ public final class PlatformConstructor {
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 new SwirldStateMetrics(metrics),
-                settings,
+                transactionConfig,
                 inFreezeChecker,
                 initialState,
                 softwareVersion);

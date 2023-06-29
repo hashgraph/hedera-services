@@ -233,7 +233,7 @@ public interface ServicesApp {
         Builder consoleCreator(StateModule.ConsoleCreator consoleCreator);
 
         @BindsInstance
-        Builder selfId(long selfId);
+        Builder selfId(NodeId selfId);
 
         @BindsInstance
         Builder staticAccountMemo(@StaticAccountMemo String accountMemo);

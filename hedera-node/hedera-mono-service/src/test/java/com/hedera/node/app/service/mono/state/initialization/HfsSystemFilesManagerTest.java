@@ -77,6 +77,7 @@ import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
@@ -175,8 +176,8 @@ class HfsSystemFilesManagerTest {
         addressA = mock(Address.class);
         final var aIpv4 = new byte[] {(byte) 1, (byte) 2, (byte) 3, (byte) 4};
         final var memoA = "A new memo that is not the node account ID.";
-        given(addressA.getId()).willReturn(111L);
         given(addressA.getMemo()).willReturn(memoA);
+        given(addressA.getNodeId()).willReturn(new NodeId(0));
         given(addressA.getAddressExternalIpv4()).willReturn(aIpv4);
         given(addressA.getSigPublicKey()).willReturn(keyA);
 
@@ -185,14 +186,16 @@ class HfsSystemFilesManagerTest {
         addressB = mock(Address.class);
         final var bIpv4 = new byte[] {(byte) 2, (byte) 3, (byte) 4, (byte) 5};
         final var memoB = "0.0.3";
-        given(addressB.getId()).willReturn(222L);
         given(addressB.getMemo()).willReturn(memoB);
+        given(addressB.getNodeId()).willReturn(new NodeId(1));
         given(addressB.getAddressExternalIpv4()).willReturn(bIpv4);
         given(addressB.getSigPublicKey()).willReturn(keyB);
 
         currentBook = mock(AddressBook.class);
-        given(currentBook.getAddress(0L)).willReturn(addressA);
-        given(currentBook.getAddress(1L)).willReturn(addressB);
+        given(currentBook.getNodeId(0)).willReturn(new NodeId(0));
+        given(currentBook.getNodeId(1)).willReturn(new NodeId(1));
+        given(currentBook.getAddress(new NodeId(0))).willReturn(addressA);
+        given(currentBook.getAddress(new NodeId(1))).willReturn(addressB);
         given(currentBook.getSize()).willReturn(2);
 
         data = mock(Map.class);
@@ -678,7 +681,8 @@ class HfsSystemFilesManagerTest {
     private static NodeAddressBook legacyBookConstruction(final AddressBook fromBook) {
         final var builder = NodeAddressBook.newBuilder();
         for (int i = 0; i < fromBook.getSize(); i++) {
-            final var address = fromBook.getAddress(i);
+            final var nodeId = fromBook.getNodeId(i);
+            final var address = fromBook.getAddress(nodeId);
             final var publicKey = address.getSigPublicKey();
             final var nodeIP = address.getAddressExternalIpv4();
             final var nodeIPStr = Address.ipString(nodeIP);
@@ -687,7 +691,7 @@ class HfsSystemFilesManagerTest {
                     .setIpAddress(ByteString.copyFromUtf8(nodeIPStr))
                     .setMemo(ByteString.copyFromUtf8(memo))
                     .setRSAPubKey(CommonUtils.hex(publicKey.getEncoded()))
-                    .setNodeId(address.getId())
+                    .setNodeId(nodeId.id())
                     .setStake(address.getWeight());
 
             final var serviceEndpoint = ServiceEndpoint.newBuilder()

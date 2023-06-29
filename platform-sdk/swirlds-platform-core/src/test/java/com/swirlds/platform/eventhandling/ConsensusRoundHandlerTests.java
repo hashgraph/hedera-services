@@ -27,6 +27,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.BasicSoftwareVersion;
@@ -196,6 +197,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)
                 .build();
+        final TransactionConfig transactionConfig = configuration.getConfigData(TransactionConfig.class);
 
         final SwirldStateManager swirldStateManager = new SwirldStateManagerImpl(
                 platformContext,
@@ -204,7 +206,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
-                settingsProvider,
+                transactionConfig,
                 () -> false,
                 state,
                 new BasicSoftwareVersion(1));

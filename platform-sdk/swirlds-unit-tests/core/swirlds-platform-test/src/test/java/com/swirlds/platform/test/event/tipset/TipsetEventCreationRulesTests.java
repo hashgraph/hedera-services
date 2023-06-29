@@ -23,10 +23,7 @@ import static com.swirlds.common.system.status.PlatformStatus.FREEZING;
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -36,88 +33,108 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.test.fixtures.FakeTime;
-import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.StartUpEventFrozenManager;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.tipset.ThrottledTipsetEventCreator;
 import com.swirlds.platform.event.tipset.TipsetEventCreator;
+import com.swirlds.platform.event.tipset.rules.AggregateTipsetEventCreationRules;
+import com.swirlds.platform.event.tipset.rules.TipsetEventCreationRule;
+import com.swirlds.platform.event.tipset.rules.TipsetMaximumRateRule;
+import com.swirlds.platform.event.tipset.rules.TipsetPlatformStatusRule;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("ThrottledTipsetEventCreator Tests")
-class ThrottledTipsetEventCreatorTests {
+class TipsetEventCreationRulesTests {
 
     @Test
-    @DisplayName("PassThrough Test")
-    void passThroughTest() {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+    @DisplayName("Empty Aggregate Test")
+    void emptyAggregateTest() {
+        final TipsetEventCreationRule rule = AggregateTipsetEventCreationRules.of();
+        assertTrue(rule.isEventCreationPermitted());
 
-        final EventTransactionPool transactionPool = mock(EventTransactionPool.class);
-        final QueueThread<EventIntakeTask> eventIntakeQueue = mock(QueueThread.class);
-        final Supplier<PlatformStatus> platformStatusSupplier = () -> ACTIVE;
-        final StartUpEventFrozenManager startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
-        when(startUpEventFrozenManager.shouldCreateEvent()).thenAnswer(invocation -> PASS);
+        // should not throw
+        rule.eventWasCreated();
+    }
 
-        final TipsetEventCreator baseEventCreator = mock(TipsetEventCreator.class);
-
-        final AtomicLong minimumGenerationNonAncient = new AtomicLong(0);
+    @Test
+    @DisplayName("Aggregate Test")
+    void aggregateTest() {
+        final TipsetEventCreationRule rule1 = mock(TipsetEventCreationRule.class);
+        when(rule1.isEventCreationPermitted()).thenAnswer(invocation -> true);
+        final AtomicInteger rule1Count = new AtomicInteger(0);
         doAnswer(invocation -> {
-                    minimumGenerationNonAncient.set(invocation.getArgument(0));
+                    rule1Count.incrementAndGet();
                     return null;
                 })
-                .when(baseEventCreator)
-                .setMinimumGenerationNonAncient(anyLong());
+                .when(rule1)
+                .eventWasCreated();
 
-        final AtomicReference<EventImpl> latestEvent = new AtomicReference<>(null);
+        final TipsetEventCreationRule rule2 = mock(TipsetEventCreationRule.class);
+        when(rule2.isEventCreationPermitted()).thenAnswer(invocation -> true);
+        final AtomicInteger rule2Count = new AtomicInteger(0);
         doAnswer(invocation -> {
-                    latestEvent.set(invocation.getArgument(0));
+                    rule2Count.incrementAndGet();
                     return null;
                 })
-                .when(baseEventCreator)
-                .registerEvent(any());
+                .when(rule2)
+                .eventWasCreated();
 
-        final ThrottledTipsetEventCreator eventCreator = new ThrottledTipsetEventCreator(
-                platformContext,
-                Time.getCurrent(),
-                transactionPool,
-                eventIntakeQueue,
-                platformStatusSupplier,
-                startUpEventFrozenManager,
-                baseEventCreator);
+        final TipsetEventCreationRule rule3 = mock(TipsetEventCreationRule.class);
+        when(rule3.isEventCreationPermitted()).thenAnswer(invocation -> true);
+        final AtomicInteger rule3Count = new AtomicInteger(0);
+        doAnswer(invocation -> {
+                    rule3Count.incrementAndGet();
+                    return null;
+                })
+                .when(rule3)
+                .eventWasCreated();
 
-        for (int i = 0; i < 10; i++) {
-            eventCreator.setMinimumGenerationNonAncient(i);
-            assertEquals(i, minimumGenerationNonAncient.get());
-        }
+        final TipsetEventCreationRule rule4 = mock(TipsetEventCreationRule.class);
+        when(rule4.isEventCreationPermitted()).thenAnswer(invocation -> true);
+        final AtomicInteger rule4Count = new AtomicInteger(0);
+        doAnswer(invocation -> {
+                    rule4Count.incrementAndGet();
+                    return null;
+                })
+                .when(rule4)
+                .eventWasCreated();
 
-        for (int i = 0; i < 10; i++) {
-            final EventImpl gossipEvent = mock(EventImpl.class);
-            eventCreator.registerEvent(gossipEvent);
-            assertSame(gossipEvent, latestEvent.get());
-        }
+        final TipsetEventCreationRule aggregateRule = AggregateTipsetEventCreationRules.of(rule1, rule2, rule3, rule4);
+
+        assertTrue(aggregateRule.isEventCreationPermitted());
+
+        when(rule3.isEventCreationPermitted()).thenAnswer(invocation -> false);
+        assertFalse(aggregateRule.isEventCreationPermitted());
+
+        when(rule2.isEventCreationPermitted()).thenAnswer(invocation -> false);
+        assertFalse(aggregateRule.isEventCreationPermitted());
+
+        when(rule1.isEventCreationPermitted()).thenAnswer(invocation -> false);
+        assertFalse(aggregateRule.isEventCreationPermitted());
+
+        when(rule4.isEventCreationPermitted()).thenAnswer(invocation -> false);
+        assertFalse(aggregateRule.isEventCreationPermitted());
+
+        aggregateRule.eventWasCreated();
+        assertEquals(1, rule1Count.get());
+        assertEquals(1, rule2Count.get());
+        assertEquals(1, rule3Count.get());
+        assertEquals(1, rule4Count.get());
     }
 
     @Test
     @DisplayName("Blocked by StartUpFrozenManager Test")
     void blockedByStartUpFrozenManagerTest() {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
         final EventTransactionPool transactionPool = mock(EventTransactionPool.class);
-        final QueueThread<EventIntakeTask> eventIntakeQueue = mock(QueueThread.class);
         final Supplier<PlatformStatus> platformStatusSupplier = () -> ACTIVE;
 
         final AtomicReference<EventCreationRuleResponse> shouldCreateEvent =
@@ -132,32 +149,19 @@ class ThrottledTipsetEventCreatorTests {
             return null;
         });
 
-        final ThrottledTipsetEventCreator eventCreator = new ThrottledTipsetEventCreator(
-                platformContext,
-                Time.getCurrent(),
-                transactionPool,
-                eventIntakeQueue,
-                platformStatusSupplier,
-                startUpEventFrozenManager,
-                baseEventCreator);
+        final TipsetPlatformStatusRule rule =
+                new TipsetPlatformStatusRule(platformStatusSupplier, transactionPool, startUpEventFrozenManager);
 
-        assertFalse(eventCreator.isEventCreationPermitted());
-        eventCreator.maybeCreateEvent();
-        assertEquals(0, eventCreationCount.get());
+        assertFalse(rule.isEventCreationPermitted());
 
         shouldCreateEvent.set(PASS);
 
-        assertTrue(eventCreator.isEventCreationPermitted());
-        eventCreator.maybeCreateEvent();
-        assertEquals(1, eventCreationCount.get());
+        assertTrue(rule.isEventCreationPermitted());
     }
 
     @Test
     @DisplayName("Blocked by Freeze Test")
     void blockedByFreeze() {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
-        final QueueThread<EventIntakeTask> eventIntakeQueue = mock(QueueThread.class);
         final Supplier<PlatformStatus> platformStatusSupplier = () -> FREEZING;
         final StartUpEventFrozenManager startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
         when(startUpEventFrozenManager.shouldCreateEvent()).thenAnswer(invocation -> PASS);
@@ -173,33 +177,18 @@ class ThrottledTipsetEventCreatorTests {
             return null;
         });
 
-        final ThrottledTipsetEventCreator eventCreator = new ThrottledTipsetEventCreator(
-                platformContext,
-                Time.getCurrent(),
-                transactionPool,
-                eventIntakeQueue,
-                platformStatusSupplier,
-                startUpEventFrozenManager,
-                baseEventCreator);
+        final TipsetEventCreationRule rule =
+                new TipsetPlatformStatusRule(platformStatusSupplier, transactionPool, startUpEventFrozenManager);
 
-        assertFalse(eventCreator.isEventCreationPermitted());
-        eventCreator.maybeCreateEvent();
-        assertEquals(0, eventCreationCount.get());
-
+        assertFalse(rule.isEventCreationPermitted());
         numSignatureTransactions.set(1);
-
-        assertTrue(eventCreator.isEventCreationPermitted());
-        eventCreator.maybeCreateEvent();
-        assertEquals(1, eventCreationCount.get());
+        assertTrue(rule.isEventCreationPermitted());
     }
 
     @Test
     @DisplayName("Blocked by Status Test")
     void blockedByStatus() {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
         final EventTransactionPool transactionPool = mock(EventTransactionPool.class);
-        final QueueThread<EventIntakeTask> eventIntakeQueue = mock(QueueThread.class);
         final StartUpEventFrozenManager startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
         when(startUpEventFrozenManager.shouldCreateEvent()).thenAnswer(invocation -> PASS);
 
@@ -212,16 +201,8 @@ class ThrottledTipsetEventCreatorTests {
             return null;
         });
 
-        final ThrottledTipsetEventCreator eventCreator = new ThrottledTipsetEventCreator(
-                platformContext,
-                Time.getCurrent(),
-                transactionPool,
-                eventIntakeQueue,
-                status::get,
-                startUpEventFrozenManager,
-                baseEventCreator);
-
-        int expectedEventCreationCount = 0;
+        final TipsetEventCreationRule rule =
+                new TipsetPlatformStatusRule(status::get, transactionPool, startUpEventFrozenManager);
 
         for (final PlatformStatus platformStatus : PlatformStatus.values()) {
             if (platformStatus == FREEZING) {
@@ -232,13 +213,10 @@ class ThrottledTipsetEventCreatorTests {
             status.set(platformStatus);
 
             if (platformStatus == ACTIVE || platformStatus == CHECKING) {
-                assertTrue(eventCreator.isEventCreationPermitted());
-                expectedEventCreationCount++;
+                assertTrue(rule.isEventCreationPermitted());
             } else {
-                assertFalse(eventCreator.isEventCreationPermitted());
+                assertFalse(rule.isEventCreationPermitted());
             }
-            eventCreator.maybeCreateEvent();
-            assertEquals(expectedEventCreationCount, eventCreationCount.get());
         }
     }
 
@@ -250,8 +228,6 @@ class ThrottledTipsetEventCreatorTests {
 
         final Time time = new FakeTime();
 
-        final EventTransactionPool transactionPool = mock(EventTransactionPool.class);
-        final QueueThread<EventIntakeTask> eventIntakeQueue = mock(QueueThread.class);
         final StartUpEventFrozenManager startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
         when(startUpEventFrozenManager.shouldCreateEvent()).thenAnswer(invocation -> PASS);
 
@@ -262,19 +238,11 @@ class ThrottledTipsetEventCreatorTests {
             return mock(GossipEvent.class);
         });
 
-        final ThrottledTipsetEventCreator eventCreator = new ThrottledTipsetEventCreator(
-                platformContext,
-                time,
-                transactionPool,
-                eventIntakeQueue,
-                () -> ACTIVE,
-                startUpEventFrozenManager,
-                baseEventCreator);
+        final TipsetEventCreationRule rule = new TipsetMaximumRateRule(platformContext, time);
 
         // Ask for a bunch of events to be created without advancing the time.
         for (int i = 0; i < 100; i++) {
-            eventCreator.maybeCreateEvent();
-            assertEquals(i + 1, eventCreationCount.get());
+            assertTrue(rule.isEventCreationPermitted());
         }
     }
 
@@ -296,34 +264,12 @@ class ThrottledTipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final EventTransactionPool transactionPool = mock(EventTransactionPool.class);
-        final QueueThread<EventIntakeTask> eventIntakeQueue = mock(QueueThread.class);
         final StartUpEventFrozenManager startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
         when(startUpEventFrozenManager.shouldCreateEvent()).thenAnswer(invocation -> PASS);
 
         final AtomicInteger eventCreationAttemptCount = new AtomicInteger(0);
-        final TipsetEventCreator baseEventCreator = mock(TipsetEventCreator.class);
-        final AtomicBoolean createNonNullEvent = new AtomicBoolean(false);
-        when(baseEventCreator.maybeCreateEvent()).thenAnswer(invocation -> {
-            eventCreationAttemptCount.incrementAndGet();
-            if (createNonNullEvent.get()) {
-                return mock(GossipEvent.class);
-            } else {
-                return null;
-            }
-        });
 
-        final ThrottledTipsetEventCreator eventCreator = new ThrottledTipsetEventCreator(
-                platformContext,
-                time,
-                transactionPool,
-                eventIntakeQueue,
-                () -> ACTIVE,
-                startUpEventFrozenManager,
-                baseEventCreator);
-
-        boolean eligibleForEventCreation = true;
-        int expectedAttemptCount = 0;
+        final TipsetEventCreationRule rule = new TipsetMaximumRateRule(platformContext, time);
 
         for (int i = 0; i < 100; i++) {
             System.out.println(i);
@@ -331,25 +277,14 @@ class ThrottledTipsetEventCreatorTests {
             final boolean tickForwards = random.nextBoolean();
             if (tickForwards) {
                 time.tick(period.plusMillis(random.nextInt(10)));
-
-                // Any time the time advances, we are eligible to create a new event.
-                eligibleForEventCreation = true;
             }
 
-            // Sometimes the tipset algorithm will create an event, sometimes it will not.
-            createNonNullEvent.set(random.nextBoolean());
-
-            if (eligibleForEventCreation) {
+            if (tickForwards) {
                 // If we are eligible to create a new event, an attempt should be made to create an event.
-                expectedAttemptCount++;
-            }
-
-            eventCreator.maybeCreateEvent();
-            assertEquals(expectedAttemptCount, eventCreationAttemptCount.get());
-
-            if (eligibleForEventCreation && createNonNullEvent.get()) {
-                // If we actually manage to create an event, we will not be eligible again until time advances.
-                eligibleForEventCreation = false;
+                assertTrue(rule.isEventCreationPermitted());
+                rule.eventWasCreated();
+            } else {
+                assertFalse(rule.isEventCreationPermitted());
             }
         }
     }

@@ -16,7 +16,6 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static java.lang.Double.isInfinite;
@@ -26,13 +25,15 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
-import com.swirlds.common.internal.SettingsCommon;
+import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metric.ValueType;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
+import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -85,6 +86,7 @@ public class LegacyCsvWriter {
     // path and filename of the .csv file to write to
     private final Path csvFilePath;
     private final MetricsConfig metricsConfig;
+    private final BasicConfig basicConfig;
 
     private final Map<Pair<String, String>, Integer> indexLookup = new HashMap<>();
     private final List<Integer> cellCount = new ArrayList<>();
@@ -98,16 +100,20 @@ public class LegacyCsvWriter {
      * Constructor of a {@code LegacyCsvWriter}
      *
      * @param selfId
-     * 		{@link NodeId} of the platform for which the CSV-file is written
+     *        {@link NodeId} of the platform for which the CSV-file is written
      * @param folderPath
-     *		{@link Path} to the folder where the file should be stored
-     * @param metricsConfig
-     *		the metrics configuration
+     *        {@link Path} to the folder where the file should be stored
+     * @param configuration
+     *		the configuration
      */
-    public LegacyCsvWriter(final NodeId selfId, final Path folderPath, final MetricsConfig metricsConfig) {
-        this.selfId = throwArgNull(selfId, "selfId");
-        throwArgNull(folderPath, "folderPath");
-        this.metricsConfig = throwArgNull(metricsConfig, "metricsConfig");
+    public LegacyCsvWriter(
+            @NonNull final NodeId selfId, @NonNull final Path folderPath, @NonNull final Configuration configuration) {
+        Objects.requireNonNull(folderPath, "folderPath is null");
+        Objects.requireNonNull(configuration, "configuration is null");
+
+        this.selfId = Objects.requireNonNull(selfId, "selfId is null");
+        metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        basicConfig = configuration.getConfigData(BasicConfig.class);
 
         final String fileName = String.format("%s%d.csv", metricsConfig.csvFileName(), selfId.id());
         this.csvFilePath = folderPath.resolve(fileName);
@@ -127,7 +133,7 @@ public class LegacyCsvWriter {
      * it is not possible to add new metrics.
      *
      * @param snapshots
-     * 		{@link List} of {@link Snapshot}s of all known metrics at this point in time
+     *        {@link List} of {@link Snapshot}s of all known metrics at this point in time
      */
     private void init(final Collection<Snapshot> snapshots) {
         logger.info(
@@ -139,7 +145,7 @@ public class LegacyCsvWriter {
         // eventually filter out internal metrics
         final List<Metric> filteredMetrics = snapshots.stream()
                 .map(Snapshot::metric)
-                .filter(LegacyCsvWriter::shouldWrite)
+                .filter(this::shouldWrite)
                 .toList();
 
         indexLookup.clear();
@@ -153,7 +159,6 @@ public class LegacyCsvWriter {
         try {
             // create parent folder, if it does not exist
             ensureFolderExists();
-
             if (metricsConfig.csvAppend() && Files.exists(csvFilePath)) {
                 // make sure last line of previous test was ended, and a blank line is inserted between tests.
                 Files.writeString(csvFilePath, "\n\n", StandardOpenOption.APPEND);
@@ -185,13 +190,16 @@ public class LegacyCsvWriter {
         }
     }
 
-    @SuppressWarnings("deprecation")
-    private static boolean showAllEntries(final Metric metric) {
-        return SettingsCommon.verboseStatistics && !metric.getCategory().contains(EXCLUDE_CATEGORY);
+    private boolean showAllEntries(@NonNull final Metric metric) {
+        Objects.requireNonNull(metric, "metric is null");
+        return basicConfig.verboseStatistics() && !metric.getCategory().contains(EXCLUDE_CATEGORY);
     }
 
     // Add two rows, one with all categories, the other with all names
-    private static void addHeaderRows(final ContentBuilder builder, final List<Metric> metrics) {
+    private void addHeaderRows(@NonNull final ContentBuilder builder, @NonNull final List<Metric> metrics) {
+        Objects.requireNonNull(builder, "builder is null");
+        Objects.requireNonNull(metrics, "metrics is null");
+
         final List<String> categories = new ArrayList<>();
         final List<String> names = new ArrayList<>();
         for (final Metric metric : metrics) {
@@ -315,9 +323,9 @@ public class LegacyCsvWriter {
     }
 
     // Returns false, if a Metric is internal and internal metrics should not be written
-    @SuppressWarnings("deprecation")
-    private static boolean shouldWrite(final Metric metric) {
-        return SettingsCommon.showInternalStats || !metric.getCategory().equals(Metrics.INTERNAL_CATEGORY);
+    private boolean shouldWrite(@NonNull final Metric metric) {
+        Objects.requireNonNull(metric, "metric is null");
+        return basicConfig.showInternalStats() || !metric.getCategory().equals(Metrics.INTERNAL_CATEGORY);
     }
 
     // Ensure that the parent folder specified by {@link #csvFilePath} exists and if not create it recursively.

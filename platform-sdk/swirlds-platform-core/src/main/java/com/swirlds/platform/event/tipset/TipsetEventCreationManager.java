@@ -31,18 +31,22 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.BlockingQueueInserter;
 import com.swirlds.common.threading.framework.MultiQueueThread;
-import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.StartUpEventFrozenManager;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.tipset.rules.AggregateTipsetEventCreationRules;
+import com.swirlds.platform.event.tipset.rules.TipsetBackpressureRule;
+import com.swirlds.platform.event.tipset.rules.TipsetEventCreationRule;
+import com.swirlds.platform.event.tipset.rules.TipsetMaximumRateRule;
+import com.swirlds.platform.event.tipset.rules.TipsetPlatformStatusRule;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Consumer;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -81,6 +85,11 @@ public class TipsetEventCreationManager implements Lifecycle {
     private final Consumer<GossipEvent> newEventHandler;
 
     /**
+     * The rules that determine whether or not a new event should be created.
+     */
+    private final TipsetEventCreationRule eventCreationRules;
+
+    /**
      * Constructor.
      *
      * @param platformContext           the platform's context
@@ -93,7 +102,7 @@ public class TipsetEventCreationManager implements Lifecycle {
      * @param softwareVersion           the current software version
      * @param transactionPool           provides transactions to be added to new events
      * @param newEventHandler           when the event creator makes a new event, pass it to this lambda
-     * @param eventIntakeQueue          the queue to which new events should be added
+     * @param eventIntakeQueueSize      provides the current size of the event intake queue
      * @param platformStatusSupplier    provides the current platform status
      * @param startUpEventFrozenManager prevents event creation when the platform has just started up
      */
@@ -108,7 +117,7 @@ public class TipsetEventCreationManager implements Lifecycle {
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final EventTransactionPool transactionPool,
             @NonNull final Consumer<GossipEvent> newEventHandler,
-            @NonNull final QueueThread<EventIntakeTask> eventIntakeQueue,
+            @NonNull final IntSupplier eventIntakeQueueSize,
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager) {
 
@@ -123,11 +132,16 @@ public class TipsetEventCreationManager implements Lifecycle {
         Objects.requireNonNull(selfId);
         Objects.requireNonNull(softwareVersion);
         Objects.requireNonNull(transactionPool);
-        Objects.requireNonNull(eventIntakeQueue);
+        Objects.requireNonNull(eventIntakeQueueSize);
         Objects.requireNonNull(platformStatusSupplier);
         Objects.requireNonNull(startUpEventFrozenManager);
 
-        final TipsetEventCreator baseCreator = new TipsetEventCreatorImpl(
+        eventCreationRules = AggregateTipsetEventCreationRules.of(
+                new TipsetMaximumRateRule(platformContext, time),
+                new TipsetBackpressureRule(platformContext, eventIntakeQueueSize),
+                new TipsetPlatformStatusRule(platformStatusSupplier, transactionPool, startUpEventFrozenManager));
+
+        eventCreator = new TipsetEventCreatorImpl(
                 platformContext,
                 time,
                 random /* does not need to be cryptographically secure */,
@@ -136,15 +150,6 @@ public class TipsetEventCreationManager implements Lifecycle {
                 selfId,
                 softwareVersion,
                 transactionPool);
-
-        eventCreator = new ThrottledTipsetEventCreator(
-                platformContext,
-                time,
-                transactionPool,
-                eventIntakeQueue,
-                platformStatusSupplier,
-                startUpEventFrozenManager,
-                baseCreator);
 
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
@@ -205,8 +210,13 @@ public class TipsetEventCreationManager implements Lifecycle {
      * Create a new event if it is legal to do so.
      */
     private void maybeCreateEvent() {
+        if (!eventCreationRules.isEventCreationPermitted()) {
+            return;
+        }
+
         final GossipEvent event = eventCreator.maybeCreateEvent();
         if (event != null) {
+            eventCreationRules.eventWasCreated();
             newEventHandler.accept(event);
         }
     }

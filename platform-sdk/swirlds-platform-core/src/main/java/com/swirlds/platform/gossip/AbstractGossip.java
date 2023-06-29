@@ -37,7 +37,6 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.FreezeManager;
 import com.swirlds.platform.PlatformConstructor;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
@@ -91,7 +90,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected final AddressBook addressBook;
     protected final NodeId selfId;
     protected final NetworkTopology topology;
-    protected final Settings settings = Settings.getInstance();
     protected final CriticalQuorum criticalQuorum;
     protected final NetworkMetrics networkMetrics;
     protected final SyncMetrics syncMetrics;

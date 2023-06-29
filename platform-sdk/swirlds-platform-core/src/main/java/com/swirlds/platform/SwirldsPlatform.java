@@ -34,6 +34,7 @@ import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -412,6 +413,9 @@ public class SwirldsPlatform implements Platform, Startable {
 
         initializeState(initialState);
 
+        final TransactionConfig transactionConfig =
+                platformContext.getConfiguration().getConfigData(TransactionConfig.class);
+
         // This object makes a copy of the state. After this point, initialState becomes immutable.
         swirldStateManager = PlatformConstructor.swirldStateManager(
                 platformContext,
@@ -420,7 +424,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 metrics,
-                PlatformConstructor.settingsProvider(),
+                transactionConfig,
                 freezeManager::isFreezeStarted,
                 initialState.getState(),
                 appVersion);
@@ -489,7 +493,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 shadowGraph);
 
         final EventCreator eventCreator = buildEventCreator(eventIntake);
-        final Settings settings = Settings.getInstance();
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
         final List<GossipEventValidator> validators = new ArrayList<>();
         // it is very important to discard ancient events, otherwise the deduplication will not work, since it
@@ -497,8 +501,8 @@ public class SwirldsPlatform implements Platform, Startable {
         validators.add(new AncientValidator(consensusRef::get));
         validators.add(new EventDeduplication(isDuplicateChecks, eventIntakeMetrics));
         validators.add(StaticValidators::isParentDataValid);
-        validators.add(new TransactionSizeValidator(settings.getMaxTransactionBytesPerEvent()));
-        if (settings.isVerifyEventSigs()) {
+        validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
+        if (basicConfig.verifyEventSigs()) {
             validators.add(new SignatureValidator(initialAddressBook));
         }
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
@@ -545,7 +549,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 currentPlatformStatus::get,
-                PlatformConstructor.settingsProvider(),
+                transactionConfig,
                 swirldStateManager::submitTransaction,
                 new TransactionMetrics(metrics));
 
