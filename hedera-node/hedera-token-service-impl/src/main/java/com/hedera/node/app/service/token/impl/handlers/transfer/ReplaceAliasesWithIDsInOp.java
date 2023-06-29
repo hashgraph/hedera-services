@@ -27,6 +27,9 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Replaces aliases with IDs in the crypto transfer operation.
+ */
 public class ReplaceAliasesWithIDsInOp {
     public ReplaceAliasesWithIDsInOp() {}
 
@@ -36,20 +39,23 @@ public class ReplaceAliasesWithIDsInOp {
         final var replacedAliasesOp = CryptoTransferTransactionBody.newBuilder();
         final var transferList = TransferList.newBuilder();
         final var tokenTransfersList = new ArrayList<TokenTransferList>();
+        final var accountAmounts = new ArrayList<AccountAmount>();
+        // replace all aliases in hbar transfers
         for (final var aa : op.transfers().accountAmountsOrElse(emptyList())) {
             if (isAlias(aa.accountIDOrThrow())) {
                 final var resolvedId = resolutions.get(aa.accountID().alias());
-                transferList.accountAmounts(
-                        aa.copyBuilder().accountID(resolvedId).build());
+                accountAmounts.add(aa.copyBuilder().accountID(resolvedId).build());
             } else {
-                transferList.accountAmounts(aa);
+                accountAmounts.add(aa);
             }
         }
+        transferList.accountAmounts(accountAmounts);
         replacedAliasesOp.transfers(transferList);
 
+        // replace all aliases in token transfers
         for (final var adjust : op.tokenTransfersOrElse(emptyList())) {
-            final var tokenTransferList = TokenTransferList.newBuilder();
-            List<AccountAmount> replacedTokenAdjusts = new ArrayList<>();
+            final var tokenTransferList = TokenTransferList.newBuilder().token(adjust.token());
+            final List<AccountAmount> replacedTokenAdjusts = new ArrayList<>();
             for (final var tokenAdjust : adjust.transfersOrElse(emptyList())) {
                 if (isAlias(tokenAdjust.accountIDOrThrow())) {
                     final var resolvedId =
@@ -60,32 +66,32 @@ public class ReplaceAliasesWithIDsInOp {
                     replacedTokenAdjusts.add(tokenAdjust);
                 }
             }
-            tokenTransferList.transfers(replacedTokenAdjusts);
+            if (!replacedTokenAdjusts.isEmpty()) {
+                tokenTransferList.transfers(replacedTokenAdjusts);
+            }
 
-            List<NftTransfer> replacedNftAdjusts = new ArrayList<>();
+            final List<NftTransfer> replacedNftAdjusts = new ArrayList<>();
             for (final var nftAdjust : adjust.nftTransfersOrElse(emptyList())) {
+                final var nftAdjustCopy = nftAdjust.copyBuilder();
                 if (isAlias(nftAdjust.receiverAccountIDOrThrow()) || isAlias(nftAdjust.senderAccountIDOrThrow())) {
                     if (isAlias(nftAdjust.receiverAccountIDOrThrow())) {
                         final var resolvedId = resolutions.get(
                                 nftAdjust.receiverAccountIDOrThrow().alias());
-                        replacedNftAdjusts.add(nftAdjust
-                                .copyBuilder()
-                                .receiverAccountID(resolvedId)
-                                .build());
+                        nftAdjustCopy.receiverAccountID(resolvedId);
                     }
                     if (isAlias(nftAdjust.senderAccountIDOrThrow())) {
                         final var resolvedId = resolutions.get(
                                 nftAdjust.senderAccountIDOrThrow().alias());
-                        replacedNftAdjusts.add(nftAdjust
-                                .copyBuilder()
-                                .senderAccountID(resolvedId)
-                                .build());
+                        nftAdjustCopy.receiverAccountID(resolvedId);
                     }
+                    replacedNftAdjusts.add(nftAdjustCopy.build());
                 } else {
                     replacedNftAdjusts.add(nftAdjust);
                 }
             }
-            tokenTransferList.nftTransfers(replacedNftAdjusts);
+            if (!replacedNftAdjusts.isEmpty()) {
+                tokenTransferList.nftTransfers(replacedNftAdjusts);
+            }
             tokenTransfersList.add(tokenTransferList.build());
         }
         replacedAliasesOp.transfers(transferList);
