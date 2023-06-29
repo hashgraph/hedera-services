@@ -20,15 +20,16 @@ import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.set.SequenceSet;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.ToLongFunction;
 
 /**
  * Boilerplate implementation for {@link SequenceSet}.
  *
- * @param <T>
- * 		the type of the element contained within this set
+ * @param <T> the type of the element contained within this set
  */
 public abstract class AbstractSequenceSet<T> implements SequenceSet<T> {
 
@@ -40,42 +41,47 @@ public abstract class AbstractSequenceSet<T> implements SequenceSet<T> {
     /**
      * Create a new abstract sequence set.
      *
-     * @param lowestAllowedSequenceNumber
-     * 		the initial lowest permitted sequence in the set
-     * @param sequenceNumberCapacity
-     * 		the number of sequence numbers permitted to exist in this data structure. E.g. if
-     * 		the lowest allowed sequence number is 100 and the capacity is 10, then values with
-     * 		a sequence number between 100 and 109 (inclusive) will be allowed, and any value
-     * 		with a sequence number outside that range will be rejected.
-     * @param getSequenceNumberFromEntry
-     * 		given an entry, extract the sequence number
+     * @param lowestAllowedSequenceNumber the initial lowest permitted sequence in the set
+     * @param sequenceNumberCapacity      the number of sequence numbers permitted to exist in this data structure. E.g.
+     *                                    if the lowest allowed sequence number is 100 and the capacity is 10, then
+     *                                    values with a sequence number between 100 and 109 (inclusive) will be allowed,
+     *                                    and any value with a sequence number outside that range will be rejected.
+     * @param allowExpansion              if true, then instead of rejecting elements with a sequence number higher than
+     *                                    the allowed by the current capacity, increase capacity and then insert the
+     *                                    element.
+     * @param getSequenceNumberFromEntry  given an entry, extract the sequence number
      */
     protected AbstractSequenceSet(
             final long lowestAllowedSequenceNumber,
             final int sequenceNumberCapacity,
-            final ToLongFunction<T> getSequenceNumberFromEntry) {
+            final boolean allowExpansion,
+            @NonNull final ToLongFunction<T> getSequenceNumberFromEntry) {
 
-        map = buildMap(lowestAllowedSequenceNumber, sequenceNumberCapacity, getSequenceNumberFromEntry);
+        Objects.requireNonNull(getSequenceNumberFromEntry);
+
+        map = buildMap(lowestAllowedSequenceNumber, sequenceNumberCapacity, allowExpansion, getSequenceNumberFromEntry);
     }
 
     /**
      * Build a map that is used to implement the set.
      *
-     * @param lowestAllowedSequenceNumber
-     * 		the initial lowest permitted sequence in the set
-     * @param sequenceNumberCapacity
-     * 		the number of sequence numbers permitted to exist in this data structure. E.g. if
-     * 		the lowest allowed sequence number is 100 and the capacity is 10, then values with
-     * 		a sequence number between 100 and 109 (inclusive) will be allowed, and any value
-     * 		with a sequence number outside that range will be rejected.
-     * @param getSequenceNumberFromEntry
-     * 		given an entry, extract the sequence number
+     * @param lowestAllowedSequenceNumber the initial lowest permitted sequence in the set
+     * @param sequenceNumberCapacity      the number of sequence numbers permitted to exist in this data structure. E.g.
+     *                                    if the lowest allowed sequence number is 100 and the capacity is 10, then
+     *                                    values with a sequence number between 100 and 109 (inclusive) will be allowed,
+     *                                    and any value with a sequence number outside that range will be rejected.
+     * @param allowExpansion              if true, then instead of rejecting elements with a sequence number higher than
+     *                                    the allowed by the current capacity, increase capacity and then insert the
+     *                                    element.
+     * @param getSequenceNumberFromEntry  given an entry, extract the sequence number
      * @return a sequence map
      */
+    @NonNull
     protected abstract SequenceMap<T, Boolean> buildMap(
             final long lowestAllowedSequenceNumber,
             final int sequenceNumberCapacity,
-            final ToLongFunction<T> getSequenceNumberFromEntry);
+            final boolean allowExpansion,
+            @NonNull final ToLongFunction<T> getSequenceNumberFromEntry);
 
     /**
      * {@inheritDoc}

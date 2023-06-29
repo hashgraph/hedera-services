@@ -81,10 +81,10 @@ public final class ConfigMappings {
             new ConfigMapping("sync.sleepCallerSkips", "sleepCallerSkips"),
             new ConfigMapping("jvmPauseDetectorSleepMs", "jVMPauseDetectorSleepMs"),
             new ConfigMapping("jvmPauseReportMs", "jVMPauseReportMs"),
-            new ConfigMapping("threadPrioritySync", "thread.threadPrioritySync"),
-            new ConfigMapping("threadPriorityNonSync", "thread.threadPriorityNonSync"),
-            new ConfigMapping("threadDumpPeriodMs", "thread.threadDumpPeriodMs"),
-            new ConfigMapping("threadDumpLogDir", "thread.threadDumpLogDir"));
+            new ConfigMapping("thread.threadPrioritySync", "threadPrioritySync"),
+            new ConfigMapping("thread.threadPriorityNonSync", "threadPriorityNonSync"),
+            new ConfigMapping("thread.threadDumpPeriodMs", "threadDumpPeriodMs"),
+            new ConfigMapping("thread.threadDumpLogDir", "threadDumpLogDir"));
 
     /**
      * Add all known aliases to the provided config source
