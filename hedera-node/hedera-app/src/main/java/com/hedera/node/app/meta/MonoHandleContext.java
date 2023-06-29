@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.meta;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
@@ -86,6 +87,12 @@ public class MonoHandleContext implements HandleContext {
         return txBody;
     }
 
+    @NonNull
+    @Override
+    public AccountID payer() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -93,6 +100,12 @@ public class MonoHandleContext implements HandleContext {
     @NonNull
     public Configuration configuration() {
         throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Nullable
+    @Override
+    public Key payerKey() {
+        return null;
     }
 
     /**
@@ -125,13 +138,13 @@ public class MonoHandleContext implements HandleContext {
      * {@inheritDoc}
      */
     @Override
-    @Nullable
+    @NonNull
     public SignatureVerification verificationFor(@NonNull Key key) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    @Nullable
+    @NonNull
     public SignatureVerification verificationFor(@NonNull Bytes evmAlias) {
         throw new UnsupportedOperationException("Not yet implemented");
     }

@@ -34,6 +34,7 @@ event.enableEventStreaming,               false
 event.preconsensus.enableReplay,          false
 event.preconsensus.enableStorage,         false
 
+
                                           #############################
                                           #         Reconnect         #
                                           #############################
@@ -51,6 +52,7 @@ showInternalStats,                        true
                                           #############################
                                           #           State           #
                                           #############################
+
 
 state.checkSignedStateFromDisk,           true
 state.saveStatePeriod,                    0
