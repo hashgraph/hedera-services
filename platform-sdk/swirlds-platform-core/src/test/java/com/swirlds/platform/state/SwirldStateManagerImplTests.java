@@ -117,6 +117,16 @@ public class SwirldStateManagerImplTests {
     private static State newState() {
         final State state = new State();
         state.setSwirldState(new DummySwirldState());
+
+        final PlatformState platformState = mock(PlatformState.class);
+        when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
+        when(platformState.copy()).thenReturn(platformState);
+
+        final PlatformData platformData = mock(PlatformData.class);
+        when(platformState.getPlatformData()).thenReturn(platformData);
+
+        state.setPlatformState(platformState);
+
         assertEquals(0, state.getReservationCount(), "A brand new state should have no references.");
         return state;
     }
