@@ -59,13 +59,19 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
         configDocumentationFile.toFile().getParentFile().mkdirs();
 
         log("Config Data Annotation Processor started...");
-        annotations.stream()
-                .flatMap(annotation -> roundEnv.getElementsAnnotatedWith(annotation).stream())
-                .filter(element -> element.getKind() == ElementKind.RECORD)
-                .filter(element -> element instanceof TypeElement typeElement)
-                .map(typeElement -> (TypeElement) typeElement)
-                .forEach(typeElement -> handleTypeElement(typeElement, configDocumentationFile));
-        return true;
+        try {
+            annotations.stream()
+                    .flatMap(annotation -> roundEnv.getElementsAnnotatedWith(annotation).stream())
+                    .filter(element -> element.getKind() == ElementKind.RECORD)
+                    .filter(element -> element instanceof TypeElement typeElement)
+                    .map(typeElement -> (TypeElement) typeElement)
+                    .forEach(typeElement -> handleTypeElement(typeElement, configDocumentationFile));
+            return true;
+        } catch (final Exception e) {
+            log("Error while processing annotations: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 
     private void handleTypeElement(
