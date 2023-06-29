@@ -17,21 +17,17 @@
 package com.hedera.node.app.service.contract.impl.hevm;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;
-import org.hyperledger.besu.evm.frame.BlockValues;
+import org.hyperledger.besu.evm.account.Account;
 
-public record HederaEvmContext(long gasPrice, boolean staticCall, HederaEvmCode code, HederaEvmBlocks blocks) {
-    public Code load(@NonNull final Address contract) {
-        return code.load(Objects.requireNonNull(contract));
-    }
+/**
+ * TODO - not sure this makes sense, why can't we just call {@link Account#getCode()} directly?
+ *
+ * (Answer: we probably can. This class should be deleted in upcoming PR.)
+ */
+public interface HederaEvmCode {
+    Code load(@NonNull Address contract);
 
-    public Code loadIfPresent(@NonNull final Address contract) {
-        return code.loadIfPresent(Objects.requireNonNull(contract));
-    }
-
-    public BlockValues blockValuesOf(final long gasLimit) {
-        return blocks.blockValuesOf(gasLimit);
-    }
+    Code loadIfPresent(@NonNull Address contract);
 }

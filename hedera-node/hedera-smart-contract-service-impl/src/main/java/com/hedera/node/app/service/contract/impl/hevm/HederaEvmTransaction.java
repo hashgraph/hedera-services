@@ -16,19 +16,22 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
+import org.hyperledger.besu.datatypes.Wei;
 
 public record HederaEvmTransaction(
         @NonNull AccountID senderId,
         @Nullable AccountID relayerId,
         @Nullable ContractID contractId,
         long nonce,
-        @NonNull Bytes callData,
+        @NonNull Bytes payload,
         @Nullable Bytes chainId,
         long value,
         long gasLimit,
@@ -42,12 +45,28 @@ public record HederaEvmTransaction(
         return relayerId != null;
     }
 
+    public boolean permitsMissingContract() {
+        return isEthereumTransaction() && hasValue();
+    }
+
     public @NonNull ContractID contractIdOrThrow() {
         return Objects.requireNonNull(contractId);
     }
 
     public boolean hasValue() {
         return value > 0;
+    }
+
+    public org.apache.tuweni.bytes.Bytes evmPayload() {
+        return pbjToTuweniBytes(payload);
+    }
+
+    public Wei weiValue() {
+        return Wei.of(value);
+    }
+
+    public long gasAvailable(final long intrinsicGas) {
+        return gasLimit - intrinsicGas;
     }
 
     public long upfrontCostGiven(final long gasPrice) {
