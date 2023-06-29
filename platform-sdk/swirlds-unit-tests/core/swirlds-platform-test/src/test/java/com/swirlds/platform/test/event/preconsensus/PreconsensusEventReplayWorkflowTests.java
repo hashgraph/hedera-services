@@ -167,14 +167,14 @@ class PreconsensusEventReplayWorkflowTests {
         when(latestImmutableState.get()).thenReturn(signedState);
         when(stateManagementComponent.getLatestImmutableState(any())).thenReturn(latestImmutableState);
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         final PlatformStatusComponent platformStatusComponent = new PlatformStatusComponent(
-                mock(PlatformContext.class),
-                Time.getCurrent(),
-                mock(ThreadManager.class),
-                mock(NotificationEngine.class));
+                platformContext, Time.getCurrent(), mock(ThreadManager.class), mock(NotificationEngine.class));
 
         replayPreconsensusEvents(
-                TestPlatformContextBuilder.create().build(),
+                platformContext,
                 AdHocThreadManager.getStaticThreadManager(),
                 Time.getCurrent(),
                 preconsensusEventFileManager,
