@@ -75,7 +75,7 @@ public class StatsDemoMain implements SwirldMain {
     /** path and filename of the .csv file to write to */
     private String path;
     /** ID number for this member */
-    private long selfId;
+    private NodeId selfId;
     /** the app is run by this */
     private Platform platform;
     /** a console window for text output */
@@ -209,7 +209,7 @@ public class StatsDemoMain implements SwirldMain {
     public void init(final Platform platform, final NodeId id) {
 
         this.platform = platform;
-        selfId = id.id();
+        selfId = id;
         // parse the config.txt parameters, and allow optional _ as in 1_000_000
         final String[] parameters = ParameterProvider.getInstance().getParameters();
         headless = (parameters[0].equals("1"));
