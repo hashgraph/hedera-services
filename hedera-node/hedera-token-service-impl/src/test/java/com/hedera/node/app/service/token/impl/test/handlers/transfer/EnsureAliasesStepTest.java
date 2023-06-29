@@ -366,4 +366,27 @@ class EnsureAliasesStepTest extends StepsBase {
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(NOT_SUPPORTED));
     }
+
+    @Test
+    void doesntAutoCreateWhenTokenTransferToAliasFeatureDisabled() {
+        configuration = HederaTestConfigBuilder.create()
+                .withValue("tokens.autoCreations.isEnabled", false)
+                .getOrCreateConfig();
+        body = CryptoTransferTransactionBody.newBuilder()
+                .tokenTransfers(TokenTransferList.newBuilder()
+                        .token(fungibleTokenId)
+                        .transfers(List.of(aaWith(ownerId, -1_000), aaWith(unknownAliasedId1, +1_000)))
+                        .build())
+                .build();
+        txn = asTxn(body);
+        given(handleContext.body()).willReturn(txn);
+        given(handleContext.configuration()).willReturn(configuration);
+
+        ensureAliasesStep = new EnsureAliasesStep(body);
+        transferContext = new TransferContextImpl(handleContext);
+
+        assertThatThrownBy(() -> ensureAliasesStep.doIn(transferContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(NOT_SUPPORTED));
+    }
 }

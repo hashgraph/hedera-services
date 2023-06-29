@@ -18,11 +18,11 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.LAZY_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.asKeyFromAlias;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl.isOfEvmAddressSize;
 import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -227,6 +227,6 @@ public class AutoAccountCreator {
      * @return true if the given address is a valid EVM address length, false otherwise
      */
     private boolean isEvmAddress(final Bytes address) {
-        return address != null && address.length() == EVM_ADDRESS_LEN;
+        return address != null && isOfEvmAddressSize(address);
     }
 }

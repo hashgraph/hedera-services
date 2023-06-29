@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,18 +50,6 @@ class AutoAccountCreatorTest extends StepsBase {
 
         transferContext = new TransferContextImpl(handleContext);
         subject = new AutoAccountCreator(handleContext);
-    }
-
-    @Test
-    void doesntAutoCreateWhenTokenTransferToAliasFeatureDisabled() {
-        configuration = HederaTestConfigBuilder.create()
-                .withValue("tokens.autoCreations.isEnabled", false)
-                .getOrCreateConfig();
-        given(handleContext.configuration()).willReturn(configuration);
-
-        assertThatThrownBy(() -> subject.create(alias.alias(), true))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(NOT_SUPPORTED));
     }
 
     @Test
