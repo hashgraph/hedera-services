@@ -33,7 +33,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
@@ -51,7 +50,6 @@ class EnsureAliasesStepTest extends StepsBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        recordBuilder = new SingleTransactionRecordBuilder(consensusInstant);
         givenTxn();
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
@@ -80,7 +78,7 @@ class EnsureAliasesStepTest extends StepsBase {
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
-        assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(0);
+        assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
         assertThat(writableAccountStore.get(asAccount(createdNumber))).isNull();
         assertThat(writableAccountStore.get(asAccount(createdNumber + 1))).isNull();
         assertThat(writableAliases.get(ecKeyAlias)).isNull();
@@ -97,7 +95,7 @@ class EnsureAliasesStepTest extends StepsBase {
         assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(createdNumber + 1);
 
         assertThat(transferContext.numOfAutoCreations()).isEqualTo(2);
-        assertThat(transferContext.numOfLazyCreations()).isEqualTo(0);
+        assertThat(transferContext.numOfLazyCreations()).isZero();
         assertThat(transferContext.resolutions()).containsKey(edKeyAlias);
         assertThat(transferContext.resolutions()).containsKey(ecKeyAlias);
     }
@@ -118,8 +116,8 @@ class EnsureAliasesStepTest extends StepsBase {
         assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(createdNumber);
         assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(createdNumber + 1);
 
-        assertThat(transferContext.numOfAutoCreations()).isEqualTo(0);
-        assertThat(transferContext.numOfLazyCreations()).isEqualTo(0);
+        assertThat(transferContext.numOfAutoCreations()).isZero();
+        assertThat(transferContext.numOfLazyCreations()).isZero();
         assertThat(transferContext.resolutions()).containsKey(edKeyAlias);
         assertThat(transferContext.resolutions()).containsKey(ecKeyAlias);
     }
@@ -226,7 +224,7 @@ class EnsureAliasesStepTest extends StepsBase {
 
         ensureAliasesStep.doIn(transferContext);
 
-        assertThat(transferContext.resolutions().get(mirrorAlias)).isEqualTo(payerId);
+        assertThat(transferContext.resolutions()).containsEntry(mirrorAlias, payerId);
         assertThat(transferContext.numOfLazyCreations()).isZero();
     }
 
@@ -251,7 +249,7 @@ class EnsureAliasesStepTest extends StepsBase {
 
         ensureAliasesStep.doIn(transferContext);
 
-        assertThat(transferContext.resolutions().get(mirrorAlias)).isEqualTo(payerId);
+        assertThat(transferContext.resolutions()).containsEntry(mirrorAlias, payerId);
         assertThat(transferContext.numOfLazyCreations()).isZero();
     }
 

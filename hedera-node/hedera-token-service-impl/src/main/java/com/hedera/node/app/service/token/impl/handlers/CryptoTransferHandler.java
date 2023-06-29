@@ -174,6 +174,8 @@ public class CryptoTransferHandler implements TransactionHandler {
         validateSemantics(op, ledgerConfig, hederaConfig, tokensConfig);
 
         final var transferContext = new TransferContextImpl(context);
+
+        // Replace all aliases in the transaction body with its account ids
         final var replacedOp = ensureAndReplaceAliasesInOp(txn, transferContext, context);
 
         final var steps = decomposeIntoSteps(replacedOp);

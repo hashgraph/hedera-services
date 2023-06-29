@@ -37,7 +37,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ReplaceAliasesWithIDsInOpTest extends StepsBase {
+class ReplaceAliasesWithIDsInOpTest extends StepsBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
@@ -80,7 +80,7 @@ public class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(createdNumber + 1);
 
         assertThat(transferContext.numOfAutoCreations()).isEqualTo(2);
-        assertThat(transferContext.numOfLazyCreations()).isEqualTo(0);
+        assertThat(transferContext.numOfLazyCreations()).isZero();
         assertThat(transferContext.resolutions()).containsKey(edKeyAlias);
         assertThat(transferContext.resolutions()).containsKey(ecKeyAlias);
 
