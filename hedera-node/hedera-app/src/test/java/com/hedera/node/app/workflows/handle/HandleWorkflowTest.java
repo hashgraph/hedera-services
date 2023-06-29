@@ -276,7 +276,7 @@ class HandleWorkflowTest extends AppTestBase {
                         networkInfo,
                         preHandleWorkflow,
                         dispatcher,
-                        recordManager,
+                        blockRecordManager,
                         signatureExpander,
                         signatureVerifier,
                         checker,

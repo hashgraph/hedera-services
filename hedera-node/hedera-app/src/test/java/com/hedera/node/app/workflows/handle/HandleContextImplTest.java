@@ -171,7 +171,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         recordListBuilder,
                         checker,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        blockRecordInfo))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -184,7 +185,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         recordListBuilder,
                         checker,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        blockRecordInfo))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -286,6 +288,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -294,7 +298,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         checker,
                         dispatcher,
                         serviceScopeLookup,
-                        null))
+                null))
                 .isInstanceOf(NullPointerException.class);
     }
 
