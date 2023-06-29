@@ -22,12 +22,12 @@ import static com.swirlds.common.test.RandomUtils.randomHash;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.stream.Signer;
@@ -38,20 +38,21 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.PlatformEvent;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventHandler;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.transaction.TransactionPool;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.event.EventConstants;
-import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.creation.AncientParentsRule;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.EventMocks;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -190,96 +191,6 @@ class EventCreatorTests {
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.PLATFORM)
-    @DisplayName("getTimeCreated() Test")
-    void getTimeCreatedTest() {
-        final Instant now = Instant.now();
-
-        assertEquals(
-                now, EventUtils.getChildTimeCreated(now, null), "time should not be increased for null self parent");
-
-        final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-
-        Mockito.when(hashedData.getTimeCreated()).thenReturn(now.minusNanos(1000));
-
-        assertEquals(
-                now,
-                EventUtils.getChildTimeCreated(now, EventMocks.mockEvent(hashedData)),
-                "time should not be increased if parent is in the past with no transactions");
-
-        Mockito.when(hashedData.getTransactions()).thenReturn(new SwirldTransaction[100]);
-        assertEquals(
-                now,
-                EventUtils.getChildTimeCreated(now, EventMocks.mockEvent(hashedData)),
-                "time should not be increased if parent is in the past with a few transactions");
-
-        Mockito.when(hashedData.getTransactions()).thenReturn(new SwirldTransaction[2000]);
-        assertEquals(
-                now.plusNanos(1000),
-                EventUtils.getChildTimeCreated(now, EventMocks.mockEvent(hashedData)),
-                "time should be increased so that 1 nanosecond passes per previous transaction");
-
-        Mockito.when(hashedData.getTransactions()).thenReturn(new SwirldTransaction[0]);
-        Mockito.when(hashedData.getTimeCreated()).thenReturn(now);
-        assertEquals(
-                now.plusNanos(1),
-                EventUtils.getChildTimeCreated(now, EventMocks.mockEvent(hashedData)),
-                "time should be increased so that 1 nanosecond since event with 0 transactions");
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestComponentTags.PLATFORM)
-    @DisplayName("getEventGeneration() Test")
-    void getEventGenerationTest() {
-        assertEquals(-1, EventUtils.getEventGeneration(null), "generation of a null event should equal -1");
-
-        final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-        Mockito.when(hashedData.getGeneration()).thenReturn(1234L);
-
-        assertEquals(
-                hashedData.getGeneration(),
-                EventUtils.getEventGeneration(EventMocks.mockEvent(hashedData)),
-                "should return generation of non-null event");
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestComponentTags.PLATFORM)
-    @DisplayName("getEventHash() Test")
-    void getEventHashTest() {
-        assertNull(EventUtils.getEventHash(null), "hash of null event should be null");
-
-        final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-        Mockito.when(hashedData.getHash()).thenReturn(randomHash());
-
-        assertSame(
-                hashedData.getHash().getValue(),
-                EventUtils.getEventHash(EventMocks.mockEvent(hashedData)),
-                "should return the hash of a non-null event");
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestComponentTags.PLATFORM)
-    @DisplayName("getOtherParentCreatorId() Test")
-    void getOtherParentCreatorIdTest() {
-        assertEquals(
-                EventConstants.CREATOR_ID_UNDEFINED,
-                EventUtils.getCreatorId(null),
-                "null event should have creator ID = CREATOR_ID_UNDEFINED");
-
-        final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-        Mockito.when(hashedData.getCreatorId()).thenReturn(new NodeId(4321L));
-
-        assertEquals(
-                hashedData.getCreatorId(),
-                EventUtils.getCreatorId(EventMocks.mockEvent(hashedData)),
-                "should have returned creator id of event");
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Transactions Are Put Into Events Test")
     void transactionsArePutIntoEventsTest() {
 
@@ -294,7 +205,16 @@ class EventCreatorTests {
         recentEvents.put(0L, parent);
         final Queue<EventImpl> events = new LinkedList<>();
 
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("event.creation.useTipsetAlgorithm", "false")
+                .getOrCreateConfig();
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
+                platformContext,
                 selfId,
                 mockMapper(recentEvents, null),
                 noOpSigner,
@@ -348,7 +268,16 @@ class EventCreatorTests {
         recentEvents.put(selfId.id(), selfParentImpl);
         recentEvents.put(1L, otherParent);
 
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("event.creation.useTipsetAlgorithm", "false")
+                .getOrCreateConfig();
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
+                platformContext,
                 selfId,
                 mockMapper(recentEvents, selfParentImpl),
                 noOpSigner,
@@ -410,7 +339,16 @@ class EventCreatorTests {
         Mockito.when(mapper.getMostRecentSelfEvent()).thenReturn(selfParent);
         Mockito.when(mapper.getMostRecentEvent(new NodeId(0L))).thenReturn(otherParent);
 
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("event.creation.useTipsetAlgorithm", "false")
+                .getOrCreateConfig();
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
+                platformContext,
                 selfId,
                 mapper,
                 noOpSigner,
@@ -452,7 +390,16 @@ class EventCreatorTests {
         recentEvents.put(0L, parent);
         final Queue<EventImpl> events = new LinkedList<>();
 
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("event.creation.useTipsetAlgorithm", "false")
+                .getOrCreateConfig();
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
         final AccessibleEventCreator eventCreator = new AccessibleEventCreator(
+                platformContext,
                 selfId,
                 mockMapper(recentEvents, null),
                 noOpSigner,

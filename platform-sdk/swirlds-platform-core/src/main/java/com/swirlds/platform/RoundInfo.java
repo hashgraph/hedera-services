@@ -16,12 +16,15 @@
 
 package com.swirlds.platform;
 
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Hold all of the information about a round, such as lists of witnesses, statistics about them, and all the
@@ -48,6 +51,11 @@ public class RoundInfo {
      * the round this is about ({@link EventConstants#MINIMUM_ROUND_CREATED} is first)
      */
     private final long round;
+
+    /**
+     * the address book for this round
+     */
+    private final AddressBook addressBook;
 
     /**
      * are all the famous witnesses known for this round?
@@ -172,12 +180,13 @@ public class RoundInfo {
      *
      * @param round
      * 		the round it will be used to describe
-     * @param numMembers
-     * 		the number of members currently in the address book
+     * @param addressBook
+     * 		the address book to use for the round
      */
-    protected RoundInfo(long round, int numMembers) {
+    protected RoundInfo(long round, @NonNull final AddressBook addressBook) {
         this.round = round;
-        this.judges = new EventImpl[numMembers];
+        this.addressBook = Objects.requireNonNull(addressBook);
+        this.judges = new EventImpl[addressBook.getSize()];
     }
 
     /**
@@ -187,17 +196,17 @@ public class RoundInfo {
      * 		the witness to add
      */
     protected void addFamousWitness(EventImpl w) {
-        int creator = (int) w.getCreatorId().id();
-        if (judges[creator] == null) {
-            judges[creator] = w;
+        final int creatorIndex = addressBook.getIndexOfNodeId(w.getCreatorId());
+        if (judges[creatorIndex] == null) {
+            judges[creatorIndex] = w;
         } else {
             // if this creator forked, then the judge is the "unique" famous witness, which is the one with minimum hash
             // (where "minimum" is the lexicographically-least signed byte array)
             if (Utilities.arrayCompare(
                             w.getBaseHash().getValue(),
-                            judges[creator].getBaseHash().getValue())
+                            judges[creatorIndex].getBaseHash().getValue())
                     < 0) {
-                judges[creator] = w;
+                judges[creatorIndex] = w;
             }
         }
 

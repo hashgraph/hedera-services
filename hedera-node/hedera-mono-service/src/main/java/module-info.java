@@ -81,7 +81,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.sigs.utils to
             com.hedera.node.app.service.mono.test.fixtures,
-            com.hedera.node.app;
+            com.hedera.node.app,
+            com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.service.mono.sigs.verification to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app;

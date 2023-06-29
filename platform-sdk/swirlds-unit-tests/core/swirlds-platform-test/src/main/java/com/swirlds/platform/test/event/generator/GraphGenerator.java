@@ -16,10 +16,13 @@
 
 package com.swirlds.platform.test.event.generator;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.test.event.DynamicValue;
 import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.source.EventSource;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,7 +47,7 @@ public interface GraphGenerator<T extends GraphGenerator<T>> {
     /**
      * Get the event source for a particular node ID.
      */
-    EventSource<?> getSource(final int nodeID);
+    EventSource<?> getSource(@NonNull final NodeId nodeID);
 
     /**
      * Get an exact copy of this event generator in its current state. The events returned by this
@@ -113,6 +116,7 @@ public interface GraphGenerator<T extends GraphGenerator<T>> {
     /**
      * Get an address book that represents the collection of nodes that are generating the events.
      */
+    @NonNull
     AddressBook getAddressBook();
 
     /**
@@ -122,7 +126,7 @@ public interface GraphGenerator<T extends GraphGenerator<T>> {
      * 		the event creator
      * @return the maximum event generation for the supplied creator
      */
-    long getMaxGeneration(long creatorId);
+    long getMaxGeneration(@Nullable final NodeId creatorId);
 
     /**
      * Returns the maximum generation of all events created by this generator
@@ -134,8 +138,9 @@ public interface GraphGenerator<T extends GraphGenerator<T>> {
      *
      * @param affinityMatrix
      * 		An n by n matrix where n is the number of event sources. Each row defines the preference of a particular
-     * 		node when choosing other parents. Node 0 is described by the first row, node 1 by the next, etc.
-     * 		Each entry should be a weight. Weights of self (i.e. the weights on the diagonal) should be 0.
+     * 		node when choosing other parents. The node at index 0 in the address book is described by the first row,
+     * 		the node at index 1 in the address book by the next row, etc. Each entry should be a weight. Weights of
+     * 		self (i.e. the weights on the diagonal) should be 0.
      */
     void setOtherParentAffinity(final List<List<Double>> affinityMatrix);
 
@@ -143,7 +148,9 @@ public interface GraphGenerator<T extends GraphGenerator<T>> {
      * Set the affinity of each node for choosing the parents of its events.
      *
      * @param affinityMatrix
-     * 		A dynamic n by n matrix where n is the number of event sources. Each entry should be a weight.
+     * 		A dynamic n by n matrix where n is the number of event sources. Each row defines the preference of a
+     * 		particular node when choosing other parents. The node at index 0 in the address book is described by
+     * 		the first row, the node at index 1 in the address book by the next row, etc. Each entry should be a weight.
      * 		Weights of self (i.e. the weights on the diagonal) should be 0.
      */
     void setOtherParentAffinity(final DynamicValue<List<List<Double>>> affinityMatrix);
