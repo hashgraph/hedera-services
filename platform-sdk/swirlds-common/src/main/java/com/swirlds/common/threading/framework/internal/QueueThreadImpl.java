@@ -33,8 +33,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 /**
  * Implements a thread that continuously takes elements from a queue and handles them.
  *
- * @param <T>
- * 		the type of the item in the queue
+ * @param <T> the type of the item in the queue
  */
 public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements QueueThread<T> {
 
@@ -64,6 +63,11 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
     private final InterruptableRunnable idleCallback;
 
     /**
+     * If not null, called when a batch of work has been handled.
+     */
+    private final InterruptableRunnable batchHandledCallback;
+
+    /**
      * The amount of time to wait for work.
      */
     private final Duration waitForWorkDuration;
@@ -74,12 +78,11 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
      * </p>
      *
      * <p>
-     * Unlike previous iterations of this class, this constructor DOES NOT start the background handler thread.
-     * Call {@link #start()} to start the handler thread.
+     * Unlike previous iterations of this class, this constructor DOES NOT start the background handler thread. Call
+     * {@link #start()} to start the handler thread.
      * </p>
      *
-     * @param configuration
-     * 		the configuration object
+     * @param configuration the configuration object
      */
     public QueueThreadImpl(final AbstractQueueThreadConfiguration<?, T> configuration) {
         super(ThreadBuildingUtils.getOrBuildQueue(configuration));
@@ -97,6 +100,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
         buffer = new ArrayList<>(bufferSize);
         handler = configuration.getHandler();
         idleCallback = configuration.getIdleCallback();
+        batchHandledCallback = configuration.getBatchHandledCallback();
         this.waitForWorkDuration = configuration.getWaitForWorkDuration();
         metrics = new QueueThreadMetrics(configuration);
 
@@ -109,15 +113,14 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
 
     /**
      * <p>
-     * Build a "seed" that can be planted in a thread. When the runnable is executed, it takes over the calling
-     * thread
-     * and configures that thread the way it would configure a newly created thread. When work
-     * is finished, the calling thread is restored back to its original configuration.
+     * Build a "seed" that can be planted in a thread. When the runnable is executed, it takes over the calling thread
+     * and configures that thread the way it would configure a newly created thread. When work is finished, the calling
+     * thread is restored back to its original configuration.
      * </p>
      *
      * <p>
-     * Note that this seed will be unable to change the thread group of the calling thread, regardless of the
-     * thread group that is configured.
+     * Note that this seed will be unable to change the thread group of the calling thread, regardless of the thread
+     * group that is configured.
      * </p>
      *
      * <p>
@@ -249,6 +252,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
             metrics.startingWork();
             if (item != null) {
                 handler.accept(item);
+                batchHandled();
             }
             return;
         }
@@ -257,14 +261,23 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
             handler.accept(item);
         }
         buffer.clear();
+        batchHandled();
     }
 
     /**
-     * Wait a while for the next item to become available and return it. If no item becomes available before
-     * a timeout then return null.
+     * This method is called whenever a batch of work is completed.
+     */
+    private void batchHandled() throws InterruptedException {
+        if (batchHandledCallback != null) {
+            batchHandledCallback.run();
+        }
+    }
+
+    /**
+     * Wait a while for the next item to become available and return it. If no item becomes available before a timeout
+     * then return null.
      *
-     * @throws InterruptedException
-     * 		if this method is interrupted during execution
+     * @throws InterruptedException if this method is interrupted during execution
      */
     private T waitForItem() throws InterruptedException {
         final T item = poll(waitForWorkDuration.toNanos(), NANOSECONDS);

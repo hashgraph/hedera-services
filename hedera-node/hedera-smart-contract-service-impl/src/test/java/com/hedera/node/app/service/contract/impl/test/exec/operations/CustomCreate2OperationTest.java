@@ -70,7 +70,7 @@ class CustomCreate2OperationTest extends CreateOperationTestBase {
         final var expected = new Operation.OperationResult(GAS_COST, null);
         assertSameResult(expected, subject.execute(frame, evm));
 
-        verify(worldUpdater, never()).setupCreate2(RECIEVER_ADDRESS, EIP_1014_ADDRESS);
+        verify(worldUpdater, never()).setupAliasedCreate(RECIEVER_ADDRESS, EIP_1014_ADDRESS);
         verify(frame).popStackItems(4);
         verify(frame).pushStackItem(UInt256.ZERO);
         verify(featureFlags).isImplicitCreationEnabled(frame);
@@ -92,7 +92,7 @@ class CustomCreate2OperationTest extends CreateOperationTestBase {
         final var expected = new Operation.OperationResult(GAS_COST, null);
         assertSameResult(expected, subject.execute(frame, evm));
 
-        verify(worldUpdater).setupCreate2(RECIEVER_ADDRESS, EIP_1014_ADDRESS);
+        verify(worldUpdater).setupAliasedCreate(RECIEVER_ADDRESS, EIP_1014_ADDRESS);
 
         verify(stack).addFirst(frameCaptor.capture());
         final var childFrame = frameCaptor.getValue();

@@ -602,12 +602,13 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .balance(10)
                     .build());
             // this owner number isn't the treasury
+            AccountID ownerId = AccountID.newBuilder().accountNum(999).build();
             writableNftStore = newWritableStoreWithNfts(Nft.newBuilder()
                     .id(UniqueTokenId.newBuilder()
                             .tokenTypeNumber(TOKEN_123.tokenNum())
                             .serialNumber(1L)
                             .build())
-                    .ownerNumber(999)
+                    .ownerId(ownerId)
                     .build());
 
             final var txn = newBurnTxn(TOKEN_123, 0, 1L);
@@ -640,7 +641,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                             .tokenTypeNumber(TOKEN_123.tokenNum())
                             .serialNumber(1L)
                             .build())
-                    .ownerNumber(0)
+                    // do not set ownerId - default to null
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L);
             final var context = mockContext(txn);
@@ -676,14 +677,14 @@ class TokenBurnHandlerTest extends ParityTestBase {
                                     .tokenTypeNumber(TOKEN_123.tokenNum())
                                     .serialNumber(1L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
                                     .tokenTypeNumber(TOKEN_123.tokenNum())
                                     .serialNumber(2L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
             final var context = mockContext(txn);
@@ -720,21 +721,21 @@ class TokenBurnHandlerTest extends ParityTestBase {
                                     .tokenTypeNumber(TOKEN_123.tokenNum())
                                     .serialNumber(1L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
                                     .tokenTypeNumber(TOKEN_123.tokenNum())
                                     .serialNumber(2L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
                                     .tokenTypeNumber(TOKEN_123.tokenNum())
                                     .serialNumber(3L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
             final var context = mockContext(txn);
@@ -780,21 +781,21 @@ class TokenBurnHandlerTest extends ParityTestBase {
                                     .tokenTypeNumber(TOKEN_123.tokenNum())
                                     .serialNumber(1L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
                                     .tokenTypeNumber(TOKEN_123.tokenNum())
                                     .serialNumber(2L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
                                     .tokenTypeNumber(TOKEN_123.tokenNum())
                                     .serialNumber(3L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L);
             final var context = mockContext(txn);
@@ -841,21 +842,21 @@ class TokenBurnHandlerTest extends ParityTestBase {
                                     .tokenTypeNumber(TOKEN_123.tokenNum())
                                     .serialNumber(1L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
                                     .tokenTypeNumber(TOKEN_123.tokenNum())
                                     .serialNumber(2L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
                                     .tokenTypeNumber(TOKEN_123.tokenNum())
                                     .serialNumber(3L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L, 1L, 2L, 3L, 3L, 1L, 1L, 2L);
             final var context = mockContext(txn);

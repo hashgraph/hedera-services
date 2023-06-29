@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -112,6 +114,16 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
     @Override
     public boolean isTokenFacade() {
         return false;
+    }
+
+    @Override
+    public @NonNull AccountID hederaId() {
+        return AccountID.newBuilder().accountNum(number).build();
+    }
+
+    @Override
+    public @NonNull ContractID hederaContractId() {
+        return ContractID.newBuilder().contractNum(number).build();
     }
 
     /**

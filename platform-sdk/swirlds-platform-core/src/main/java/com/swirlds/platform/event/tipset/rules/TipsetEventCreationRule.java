@@ -14,11 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.gas;
+package com.swirlds.platform.event.tipset.rules;
 
-import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+/**
+ * An object used to limit or prevent the creation of new events.
+ */
+public interface TipsetEventCreationRule {
 
-public record GasChargingResult(
-        @NonNull HederaEvmAccount sender, @Nullable HederaEvmAccount relayer, long allowanceUsed) {}
+    /**
+     * Check if event creation is currently permitted.
+     *
+     * @return true if event creation is permitted, false otherwise
+     */
+    boolean isEventCreationPermitted();
+
+    /**
+     * This method is called whenever an event is created.
+     */
+    void eventWasCreated();
+}

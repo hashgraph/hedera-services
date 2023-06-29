@@ -19,6 +19,7 @@ package com.swirlds.platform.event.creation;
 import static com.swirlds.logging.LogMarker.CREATE_EVENT;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.EventCreationRuleResponse;
@@ -32,6 +33,7 @@ import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.tipset.EventCreationConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -64,7 +66,13 @@ public class ChatterEventCreator {
 
     private final Time time;
 
+    /**
+     * If true, event creation is being handled by the tipset algorithm and this class should not create any events.
+     */
+    private final boolean disabled;
+
     public ChatterEventCreator(
+            @NonNull final PlatformContext platformContext,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final NodeId selfId,
             @NonNull final Signer signer,
@@ -83,6 +91,10 @@ public class ChatterEventCreator {
         this.eventCreationRules = Objects.requireNonNull(eventCreationRules, "the eventCreationRules is null");
         this.hasher = Objects.requireNonNull(hasher, "the hasher is null");
         this.time = Objects.requireNonNull(time, "the time is null");
+        this.disabled = platformContext
+                .getConfiguration()
+                .getConfigData(EventCreationConfig.class)
+                .useTipsetAlgorithm();
     }
 
     /**
@@ -101,6 +113,11 @@ public class ChatterEventCreator {
      */
     public boolean createEvent(@NonNull final NodeId otherId) {
         Objects.requireNonNull(otherId, "the otherId must not be null");
+
+        if (disabled) {
+            return false;
+        }
+
         final EventCreationRuleResponse basicRulesResponse = eventCreationRules.shouldCreateEvent();
         if (basicRulesResponse == EventCreationRuleResponse.DONT_CREATE) {
             return false;

@@ -24,6 +24,7 @@ import com.hedera.node.app.service.contract.impl.annotations.ServicesV034;
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomBalanceOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomChainIdOperation;
@@ -31,6 +32,8 @@ import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreate2Op
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreateOperation;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomContractCreationProcessor;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.v030.Version030AddressChecks;
 import dagger.Binds;
 import dagger.Module;
@@ -67,10 +70,13 @@ public interface V034Module {
     @Singleton
     @ServicesV034
     static TransactionProcessor provideTransactionProcessor(
+            @NonNull final FrameBuilder frameBuilder,
+            @NonNull final FrameRunner frameRunner,
             @ServicesV034 @NonNull final CustomMessageCallProcessor messageCallProcessor,
             @ServicesV034 @NonNull final ContractCreationProcessor contractCreationProcessor,
-            @NonNull final GasCalculator gasCalculator) {
-        return new TransactionProcessor(gasCalculator, messageCallProcessor, contractCreationProcessor);
+            @NonNull final CustomGasCharging gasCharging) {
+        return new TransactionProcessor(
+                frameBuilder, frameRunner, gasCharging, messageCallProcessor, contractCreationProcessor);
     }
 
     @Provides

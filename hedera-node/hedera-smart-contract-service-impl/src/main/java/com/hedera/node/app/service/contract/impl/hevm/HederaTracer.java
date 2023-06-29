@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.internal;
+package com.hedera.node.app.service.contract.impl.hevm;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
- * @deprecated this is not a good access pattern, don't add to this mess by increasing the places where its used
+ * Placeholder for future Hedera-specific tracing implementation.
  */
-@Deprecated
-public class SettingsCommon {
-    // used by AbstractStatistics
-    public static boolean showInternalStats;
-    public static boolean verboseStatistics;
+public interface HederaTracer extends OperationTracer {
+    void initProcess(@NonNull MessageFrame frame);
+
+    void finalizeProcess(@NonNull MessageFrame frame);
 }
