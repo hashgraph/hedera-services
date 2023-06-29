@@ -64,10 +64,8 @@ public class ConfigRecordParser {
                         .map(javaRecordComponent ->
                                 getConfigDataPropertyDefinition(configDataValue, paramDoc, javaRecordComponent))
                         .collect(Collectors.toSet());
-                final String qualifiedName = type.getQualifiedName().toString();
-                final int split = qualifiedName.lastIndexOf(".");
                 return new ConfigDataRecordDefinition(
-                        type.getPackage(), qualifiedName.substring(split + 1), configDataValue, propertyDefinitions);
+                        type.getPackage(), type.getName(), configDataValue, propertyDefinitions);
             } else {
                 throw new IllegalArgumentException(
                         "ConfigData annotation must be on a record! Type " + type + " is not a record!");
@@ -76,8 +74,8 @@ public class ConfigRecordParser {
     }
 
     @Nullable
-    private static String getDefaultValue(@NonNull final JavaRecordComponent javaRecordComponent) {
-        final Annotation configPropertyAnnotation = javaRecordComponent.getAnnotation(ConfigProperty.class);
+    private static String getDefaultValue(@NonNull final JavaRecordComponent<?> javaRecordComponent) {
+        final Annotation<?> configPropertyAnnotation = javaRecordComponent.getAnnotation(ConfigProperty.class);
         if (configPropertyAnnotation != null) {
             final String annotationDefaultValue =
                     configPropertyAnnotation.getStringValue(ConfigProcessorConstants.DEFAULT_VALUE_FIELD_NAME);
@@ -91,9 +89,9 @@ public class ConfigRecordParser {
 
     @NonNull
     private static String getName(
-            @Nullable final String configDataValue, @NonNull final JavaRecordComponent javaRecordComponent) {
+            @Nullable final String configDataValue, @NonNull final JavaRecordComponent<?> javaRecordComponent) {
         String name = javaRecordComponent.getName();
-        final Annotation configPropertyAnnotation = javaRecordComponent.getAnnotation(ConfigProperty.class);
+        final Annotation<?> configPropertyAnnotation = javaRecordComponent.getAnnotation(ConfigProperty.class);
         if (configPropertyAnnotation != null) {
             final String annotationValue =
                     configPropertyAnnotation.getStringValue(ConfigProcessorConstants.VALUE_FIELD_NAME);
@@ -111,7 +109,7 @@ public class ConfigRecordParser {
     private static ConfigDataPropertyDefinition getConfigDataPropertyDefinition(
             @Nullable final String configDataValue,
             final @NonNull Map<String, String> paramDoc,
-            @NonNull final JavaRecordComponent javaRecordComponent) {
+            @NonNull final JavaRecordComponent<?> javaRecordComponent) {
         Objects.requireNonNull(paramDoc, "paramDoc must not be null");
         Objects.requireNonNull(javaRecordComponent, "javaRecordComponent must not be null");
 

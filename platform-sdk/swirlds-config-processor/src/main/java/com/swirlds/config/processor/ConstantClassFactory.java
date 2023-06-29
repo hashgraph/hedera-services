@@ -80,7 +80,7 @@ public class ConstantClassFactory {
         final StringBuilder builder = new StringBuilder();
         for (int i = 0; i < propertyName.length(); i++) {
             final char character = propertyName.charAt(i);
-            if (Character.isUpperCase(character)) {
+            if (i > 0 && Character.isUpperCase(character)) {
                 builder.append("_");
                 builder.append(character);
             } else {

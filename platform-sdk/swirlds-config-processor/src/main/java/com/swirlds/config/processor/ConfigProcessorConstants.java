@@ -23,7 +23,7 @@ public class ConfigProcessorConstants {
     public static final String VALUE_FIELD_NAME = "value";
     public static final String DEFAULT_VALUE_FIELD_NAME = "defaultValue";
     public static final String JAVA_LANG_STRING = "java.lang.String";
-    public static final String CONSTANTS_CLASS_SUFFIX = "Constants";
+    public static final String CONSTANTS_CLASS_SUFFIX = "_";
     public static final String CONFIG_DATA_ANNOTATION = "com.swirlds.config.api.ConfigData";
 
     private ConfigProcessorConstants() {}
