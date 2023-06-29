@@ -18,6 +18,7 @@ package com.swirlds.config.processor;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.io.Writer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
@@ -67,7 +68,9 @@ public class ConstantClassFactory {
                             + "} property")
                     .addTagValue("@see", orginalRecordClassName + "#" + propertyDefinition.fieldName());
         });
-        constantsSourceFile.openWriter().append(javaClassSource.toString()).close();
+        try (final Writer writer = constantsSourceFile.openWriter()) {
+            writer.append(javaClassSource.toString());
+        }
     }
 
     @NonNull
