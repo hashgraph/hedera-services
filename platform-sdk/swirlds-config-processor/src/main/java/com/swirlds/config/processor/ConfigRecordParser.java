@@ -93,7 +93,7 @@ public class ConfigRecordParser {
     private static String getName(
             @Nullable final String configDataValue, @NonNull final JavaRecordComponent javaRecordComponent) {
         String name = javaRecordComponent.getName();
-        final Annotation configPropertyAnnotation = javaRecordComponent.getAnnotation(ConfigProperty.class);
+        final Annotation<?> configPropertyAnnotation = javaRecordComponent.getAnnotation(ConfigProperty.class);
         if (configPropertyAnnotation != null) {
             final String annotationValue =
                     configPropertyAnnotation.getStringValue(ConfigProcessorConstants.VALUE_FIELD_NAME);
