@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.service.mono.state.merkle;
 
-import static com.hedera.test.serde.SerializedForms.assertSameSerialization;
-
-import com.hedera.node.app.service.mono.state.migration.AccountStateTranslator;
 import com.hedera.node.app.service.mono.state.migration.TokenStateTranslator;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
@@ -40,8 +37,7 @@ public class MerkleTokenSerdeTest extends SelfSerializableDataTest<MerkleToken> 
 
     @ParameterizedTest
     @ArgumentsSource(CurrentVersionArgumentsProvider.class)
-    void serializationHasNoRegressionWithCurrentVersion(final int version, final int testCaseNo) {
-    }
+    void serializationHasNoRegressionWithCurrentVersion(final int version, final int testCaseNo) {}
 
     @Override
     protected MerkleToken getExpectedObject(final SeededPropertySource propertySource) {

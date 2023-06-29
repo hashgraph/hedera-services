@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.state.migration.TokenStateTranslator;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 

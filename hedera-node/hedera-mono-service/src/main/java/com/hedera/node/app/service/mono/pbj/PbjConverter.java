@@ -1365,13 +1365,11 @@ public final class PbjConverter {
 
     public static com.hederahashgraph.api.proto.java.CustomFee fromPbj(CustomFee customFee) {
         var builder = com.hederahashgraph.api.proto.java.CustomFee.newBuilder();
-        if(customFee.hasFixedFee()) {
+        if (customFee.hasFixedFee()) {
             builder.setFixedFee(fromPbj(customFee.fixedFee()));
-        }
-        else if(customFee.hasFractionalFee()) {
+        } else if (customFee.hasFractionalFee()) {
             builder.setFractionalFee(fromPbj(customFee.fractionalFee()));
-        }
-        else if(customFee.hasRoyaltyFee()) {
+        } else if (customFee.hasRoyaltyFee()) {
             builder.setRoyaltyFee(fromPbj(customFee.royaltyFee()));
         }
 
@@ -1381,14 +1379,11 @@ public final class PbjConverter {
         return builder.build();
     }
 
-
     public static RoyaltyFee fromPbj(com.hedera.hapi.node.transaction.RoyaltyFee royaltyFee) {
         var builder = com.hederahashgraph.api.proto.java.RoyaltyFee.newBuilder();
         builder.setExchangeValueFraction(fromPbj(royaltyFee.exchangeValueFraction()));
-        if(royaltyFee.hasFallbackFee())
-            builder.setFallbackFee(fromPbj(royaltyFee.fallbackFee()));
+        if (royaltyFee.hasFallbackFee()) builder.setFallbackFee(fromPbj(royaltyFee.fallbackFee()));
         return builder.build();
-
     }
 
     public static Fraction fromPbj(com.hedera.hapi.node.base.Fraction fraction) {
@@ -1409,13 +1404,12 @@ public final class PbjConverter {
 
     public static FixedFee fromPbj(com.hedera.hapi.node.transaction.FixedFee fixedFee) {
         var builder = com.hederahashgraph.api.proto.java.FixedFee.newBuilder();
-        if(fixedFee != null) {
+        if (fixedFee != null) {
             builder.setAmount(fixedFee.amount());
             builder.setDenominatingTokenId(fromPbj(fixedFee.denominatingTokenId()));
         }
         return builder.build();
     }
-
 
     public static TopicID toPbj(com.hederahashgraph.api.proto.java.TopicID topicId) {
         return protoToPbj(topicId, TopicID.class);
