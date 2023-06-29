@@ -59,13 +59,13 @@ public class TransferContextImpl implements TransferContext {
     @Override
     public void createFromAlias(final Bytes alias, final boolean isFromTokenTransfer) {
         if (isSerializedProtoKey(alias)) {
-            autoAccountCreator.create(alias, isFromTokenTransfer);
-            final var createdAccount = accountStore.getAccountIDByAlias(alias);
-            resolutions.put(alias, createdAccount);
             numAutoCreations++;
         } else if (isOfEvmAddressSize(alias)) {
             numLazyCreations++;
         }
+        autoAccountCreator.create(alias, isFromTokenTransfer);
+        final var createdAccount = accountStore.getAccountIDByAlias(alias);
+        resolutions.put(alias, createdAccount);
     }
 
     @Override
