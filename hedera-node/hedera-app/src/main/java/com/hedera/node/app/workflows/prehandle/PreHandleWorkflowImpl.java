@@ -48,6 +48,7 @@ import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -169,7 +170,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // If the payer account doesn't exist, then we cannot gather signatures for it, and will need to do
             // so later during the handle phase. Technically, we could still try to gather and verify the other
             // signatures, but that might be tricky and complicated with little gain. So just throw.
-            return preHandleFailure(creator, null, PAYER_ACCOUNT_NOT_FOUND, txInfo, null);
+            return preHandleFailure(creator, null, PAYER_ACCOUNT_NOT_FOUND, txInfo, null, null);
         }
 
         // Bootstrap the expanded signature pairs by grabbing all prefixes that are "full" keys already
@@ -217,21 +218,27 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // In that case, the payer will end up paying for the transaction. So we still need to do the signature
             // verifications that we have determined so far.
             final var results = signatureVerifier.verify(txInfo.signedBytes(), expanded);
-            return preHandleFailure(payer, payerKey, preCheck.responseCode(), txInfo, results);
+            return preHandleFailure(payer, payerKey, preCheck.responseCode(), txInfo, Set.of(), results);
         }
 
         // 5. Expand additional SignaturePairs based on gathered keys (we can safely ignore hollow accounts because we
         // already grabbed them when expanding the "full prefix" keys above)
-        final var nonPayerKeys = context.requiredNonPayerKeys();
-        for (final var key : nonPayerKeys) {
-            signatureExpander.expand(key, originals, expanded);
-        }
+        signatureExpander.expand(context.requiredNonPayerKeys(), originals, expanded);
+        signatureExpander.expand(context.optionalNonPayerKeys(), originals, expanded);
 
         // 6. Submit the expanded SignaturePairs to the cryptography engine for verification
         final var results = signatureVerifier.verify(txInfo.signedBytes(), expanded);
 
         // 7. Create and return TransactionMetadata
         return new PreHandleResult(
-                payer, payerKey, SO_FAR_SO_GOOD, OK, txInfo, results, null, configuration.getVersion());
+                payer,
+                payerKey,
+                SO_FAR_SO_GOOD,
+                OK,
+                txInfo,
+                context.requiredNonPayerKeys(),
+                results,
+                null,
+                configuration.getVersion());
     }
 }

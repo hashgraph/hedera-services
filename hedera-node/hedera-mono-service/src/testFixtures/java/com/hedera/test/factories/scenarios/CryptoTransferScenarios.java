@@ -320,6 +320,8 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
             return PlatformTxnAccessor.from(newSignedCryptoTransfer()
                     .changingOwner(ROYALTY_TOKEN_NFT, FIRST_TOKEN_SENDER, NO_RECEIVER_SIG)
                     .adjustingHbars(FIRST_TOKEN_SENDER, +1_000)
+                    // SECOND_TOKEN_SENDER here is used only because it has a key, not because it's sending any tokens
+                    .adjustingHbars(SECOND_TOKEN_SENDER, -1_000)
                     .get());
         }
     },
@@ -329,6 +331,8 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
             return PlatformTxnAccessor.from(newSignedCryptoTransfer()
                     .changingOwner(ROYALTY_TOKEN_NFT, FIRST_TOKEN_SENDER, NO_RECEIVER_SIG)
                     .adjusting(FIRST_TOKEN_SENDER, KNOWN_TOKEN_IMMUTABLE, +1_000)
+                    // SECOND_TOKEN_SENDER here is used only because it has a key, not because it's sending any tokens
+                    .adjusting(SECOND_TOKEN_SENDER, KNOWN_TOKEN_IMMUTABLE, -1_000)
                     .get());
         }
     },
@@ -338,6 +342,8 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
             return PlatformTxnAccessor.from(newSignedCryptoTransfer()
                     .changingOwner(MISSING_TOKEN_NFT, FIRST_TOKEN_SENDER, NO_RECEIVER_SIG)
                     .adjusting(FIRST_TOKEN_SENDER, KNOWN_TOKEN_IMMUTABLE, +1_000)
+                    // SECOND_TOKEN_SENDER here is used only because it has a key, not because it's sending any tokens
+                    .adjusting(SECOND_TOKEN_SENDER, KNOWN_TOKEN_IMMUTABLE, -1_000)
                     .get());
         }
     },
