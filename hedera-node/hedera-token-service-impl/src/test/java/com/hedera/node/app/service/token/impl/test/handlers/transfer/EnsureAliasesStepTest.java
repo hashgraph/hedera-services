@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.test.handlers.transfers;
+package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.aaAlias;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.aaWith;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.asAccountWithAlias;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.nftTransferWith;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaAlias;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.asAccountWithAlias;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.nftTransferWith;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.assertj.core.api.Assertions.assertThat;

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.test.handlers.transfers;
+package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 
-public class Utils {
+public class AccountAmountUtils {
     public static AccountAmount aaWith(AccountID account, long amount) {
         return AccountAmount.newBuilder().accountID(account).amount(amount).build();
     }

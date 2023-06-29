@@ -29,7 +29,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.service.token.impl.test.handlers.transfers.StepsBase;
+import com.hedera.node.app.service.token.impl.test.handlers.transfer.StepsBase;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import java.util.Arrays;
 import java.util.List;

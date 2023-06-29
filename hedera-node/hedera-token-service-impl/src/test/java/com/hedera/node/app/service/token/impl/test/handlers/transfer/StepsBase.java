@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.test.handlers.transfers;
+package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.aaWith;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.nftTransferWith;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.nftTransferWith;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
