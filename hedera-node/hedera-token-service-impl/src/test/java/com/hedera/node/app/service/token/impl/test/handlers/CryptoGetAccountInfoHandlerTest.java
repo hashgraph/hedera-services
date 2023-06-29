@@ -510,7 +510,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .maxAutomaticTokenAssociations(10)
                 .ethereumNonce(0)
                 .alias(evmAddress)
-                .contractAccountID("6aea3773ea468a814d954e6dec795bfee7d76e25")
+                .contractAccountID("6aeb3773ea468a814d954e6dec795bfee7d76e26")
                 .tokenRelationships(getExpectedTokenRelationship())
                 .stakingInfo(getExpectedStakingInfo())
                 .build();
