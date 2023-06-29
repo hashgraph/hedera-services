@@ -30,6 +30,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -55,7 +56,6 @@ import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
@@ -72,6 +72,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import java.util.function.LongSupplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -454,6 +455,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Test
     @DisplayName("handle commits when alias is mentioned in the transaction")
     void handleCommitsAnyAlias() {
+        final byte[] evmAddress = CommonUtils.unhex("6aeb3773ea468a814d954e6dec795bfee7d76e26");
         txn = new CryptoCreateBuilder()
                 .withAlias(Bytes.wrap(evmAddress))
                 .withStakedAccountId(3)
@@ -583,9 +585,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         setupConfig();
         setupExpiryValidator();
         final var writableAliases = emptyWritableAliasStateBuilder()
-                .value(Bytes.wrap(evmAddress).toString(), new EntityNumValue(accountNum))
+                .value(Bytes.wrap(evmAddress), asAccount(accountNum))
                 .build();
-        given(writableStates.<String, EntityNumValue>get(ALIASES)).willReturn(writableAliases);
+        given(writableStates.<Bytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         writableStore = new WritableAccountStore(writableStates);
         when(handleContext.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
 

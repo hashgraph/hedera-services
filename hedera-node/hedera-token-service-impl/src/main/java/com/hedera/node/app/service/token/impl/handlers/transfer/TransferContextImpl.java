@@ -19,10 +19,14 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.Utils.isSerializedProtoKey;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.data.AutoCreationConfig;
+import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,11 +41,15 @@ public class TransferContextImpl implements TransferContext {
     private int numAutoCreations;
     private int numLazyCreations;
     private final Map<Bytes, AccountID> resolutions = new HashMap<>();
+    private final AutoCreationConfig autoCreationConfig;
+    private final LazyCreationConfig lazyCreationConfig;
 
     public TransferContextImpl(final HandleContext context) {
         this.context = context;
         this.accountStore = context.writableStore(WritableAccountStore.class);
         this.autoAccountCreator = new AutoAccountCreator(context);
+        this.autoCreationConfig = context.configuration().getConfigData(AutoCreationConfig.class);
+        this.lazyCreationConfig = context.configuration().getConfigData(LazyCreationConfig.class);
     }
 
     @Override
@@ -59,13 +67,15 @@ public class TransferContextImpl implements TransferContext {
     @Override
     public void createFromAlias(final Bytes alias, final boolean isFromTokenTransfer) {
         if (isSerializedProtoKey(alias)) {
-            autoAccountCreator.create(alias, isFromTokenTransfer);
-            final var createdAccount = accountStore.getAccountIDByAlias(alias);
-            resolutions.put(alias, createdAccount);
+            validateTrue(autoCreationConfig.enabled(), ResponseCodeEnum.NOT_SUPPORTED);
             numAutoCreations++;
         } else if (isOfEvmAddressSize(alias)) {
+            validateTrue(lazyCreationConfig.enabled(), ResponseCodeEnum.NOT_SUPPORTED);
             numLazyCreations++;
         }
+        autoAccountCreator.create(alias, isFromTokenTransfer);
+        final var createdAccount = accountStore.getAccountIDByAlias(alias);
+        resolutions.put(alias, createdAccount);
     }
 
     @Override

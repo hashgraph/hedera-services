@@ -34,8 +34,8 @@ public class Utils {
                 .build();
     }
 
-    public static AccountID asAccountWithAlias(String alias) {
-        return AccountID.newBuilder().alias(Bytes.wrap(alias)).build();
+    public static AccountID asAccountWithAlias(Bytes alias) {
+        return AccountID.newBuilder().alias(alias).build();
     }
 
     public static NftTransfer nftTransferWith(AccountID from, AccountID to, long serialNo) {

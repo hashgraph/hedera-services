@@ -71,6 +71,8 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
+        recordBuilder = new SingleTransactionRecordBuilder(consensusInstant);
+        refreshWritableStores();
     }
 
     protected final AccountID unknownAliasedId =
@@ -118,12 +120,18 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                                 .nftTransfers(nftTransferWith(ownerId, unknownAliasedId1, 1))
                                 .build())
                 .build();
+        givenTxn(body);
+    }
+
+    protected void givenTxn(CryptoTransferTransactionBody txnBody) {
+        body = txnBody;
         txn = asTxn(body);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .willReturn(recordBuilder);
+        transferContext = new TransferContextImpl(handleContext);
         //        given(handleContext.feeCalculator()).willReturn(fees);
         //        given(fees.computePayment(any(), any())).willReturn(new FeeObject(100, 100, 100));
     }
