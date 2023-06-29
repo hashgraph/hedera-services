@@ -11,4 +11,4 @@ echo "Using project directory: ${2}"
 echo
 
 echo "Building container:"
-docker buildx build -t "services-node:${TAG}" --build-context services-data=../data . || exit "${?}"
+docker buildx build --load -t "services-node:${TAG}" --build-context services-data=../data . || exit "${?}"
