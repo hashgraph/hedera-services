@@ -8,7 +8,8 @@
 #ARG UBUNTU_TAG="focal-20220801"
 #ARG UBUNTU_TAG="focal-20220922"
 #ARG UBUNTU_TAG="focal-20221019"
-ARG UBUNTU_TAG="focal-20221130"
+#ARG UBUNTU_TAG="focal-20221130"
+ARG UBUNTU_TAG="focal-20230605"
 
 ########################################################################################################################
 #
@@ -87,7 +88,7 @@ COPY --from=openjdk-builder /usr/local/java/ /usr/local/java/
 
 # Install Basic OS Requirements
 RUN apt-get update && \
-	apt-get install --yes --no-install-recommends tar gzip openssl zlib1g libsodium23 sudo netcat && \
+	apt-get install --yes --no-install-recommends tar gzip openssl zlib1g libsodium23 sudo && \
 	apt-get install --yes --no-install-recommends libnetty-tcnative-jni && \
 	apt-get autoremove --yes && \
 	apt-get autoclean --yes && \
