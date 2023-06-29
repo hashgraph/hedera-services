@@ -44,8 +44,10 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
@@ -84,14 +86,16 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
         this(new NodeId(0L), () -> null);
     }
 
-    public StatsSigningTestingToolState(final NodeId selfId, final Supplier<TransactionPool> transactionPoolSupplier) {
-        this.selfId = selfId;
-        this.transactionPoolSupplier = transactionPoolSupplier;
+    public StatsSigningTestingToolState(
+            @NonNull final NodeId selfId, @NonNull final Supplier<TransactionPool> transactionPoolSupplier) {
+        this.selfId = Objects.requireNonNull(selfId);
+        this.transactionPoolSupplier = Objects.requireNonNull(transactionPoolSupplier);
     }
 
-    private StatsSigningTestingToolState(final NodeId selfId, final StatsSigningTestingToolState sourceState) {
+    private StatsSigningTestingToolState(
+            @NonNull final NodeId selfId, @NonNull final StatsSigningTestingToolState sourceState) {
         super(sourceState);
-        this.selfId = selfId;
+        this.selfId = Objects.requireNonNull(selfId);
         this.transactionPoolSupplier = sourceState.transactionPoolSupplier;
         setImmutable(false);
         sourceState.setImmutable(true);
