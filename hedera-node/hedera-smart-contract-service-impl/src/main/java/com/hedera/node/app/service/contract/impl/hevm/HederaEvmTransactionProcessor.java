@@ -24,7 +24,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 @Singleton
 public class HederaEvmTransactionProcessor {
@@ -41,7 +40,7 @@ public class HederaEvmTransactionProcessor {
             @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final HederaEvmContext context,
             @NonNull final HederaEvmVersion version,
-            @NonNull final OperationTracer tracer,
+            @NonNull final HederaTracer tracer,
             @NonNull final Configuration config) {
         return requireNonNull(transactionProcessors.get(version))
                 .processTransaction(
