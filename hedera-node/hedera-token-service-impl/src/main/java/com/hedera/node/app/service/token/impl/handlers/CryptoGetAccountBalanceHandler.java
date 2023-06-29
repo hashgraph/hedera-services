@@ -153,7 +153,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
                             .build();
                     ret.add(tokenBalance);
                 }
-                tokenNum = tokenRelation.nextToken();
+                tokenNum = tokenRelation.nextToken().tokenNum();
             } else {
                 break;
             }

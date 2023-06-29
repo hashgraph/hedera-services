@@ -224,7 +224,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
                             .build();
                     tokenRelationshipList.add(tokenRelationship);
                 }
-                tokenNum = tokenRelation.nextToken();
+                tokenNum = tokenRelation.nextToken().tokenNum();
             } else {
                 break;
             }

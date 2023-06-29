@@ -205,7 +205,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
 
         final var accountRel = TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore);
         validateFalse(
-                token.treasuryAccountNumber() == accountRel.accountNumber(),
+                token.treasuryAccountId().accountNum() == accountRel.accountId().accountNum(),
                 ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
 
         return new ValidationResult(account, token, accountRel);

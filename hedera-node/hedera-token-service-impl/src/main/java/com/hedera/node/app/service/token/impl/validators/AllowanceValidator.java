@@ -112,7 +112,7 @@ public class AllowanceValidator {
      */
     public static boolean isValidOwner(final Nft nft, final long ownerNum, final Token token) {
         final var listedOwner = nft.ownerNumber();
-        return listedOwner == 0 ? ownerNum == token.treasuryAccountNumber() : listedOwner == ownerNum;
+        return listedOwner == 0 ? ownerNum == token.treasuryAccountId().accountNum() : listedOwner == ownerNum;
     }
 
     /**

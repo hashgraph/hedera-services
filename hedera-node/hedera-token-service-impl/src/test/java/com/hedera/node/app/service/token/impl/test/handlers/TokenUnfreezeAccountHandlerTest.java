@@ -241,8 +241,8 @@ class TokenUnfreezeAccountHandlerTest {
                             Account.newBuilder().accountNumber(accountNumber).build());
             given(tokenRelStore.getForModify(ACCOUNT_13257, token))
                     .willReturn(TokenRelation.newBuilder()
-                            .tokenNumber(token.tokenNum())
-                            .accountNumber(accountNumber)
+                            .tokenId(token)
+                            .accountId(ACCOUNT_13257)
                             .build());
             final var txn = newUnfreezeTxn(token);
             given(context.body()).willReturn(txn);
@@ -250,8 +250,8 @@ class TokenUnfreezeAccountHandlerTest {
             subject.handle(context);
             verify(tokenRelStore)
                     .put(TokenRelation.newBuilder()
-                            .tokenNumber(token.tokenNum())
-                            .accountNumber(accountNumber)
+                            .tokenId(token)
+                            .accountId(ACCOUNT_13257)
                             .frozen(false)
                             .build());
         }

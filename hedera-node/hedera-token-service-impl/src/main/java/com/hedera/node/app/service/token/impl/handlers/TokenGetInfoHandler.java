@@ -149,7 +149,8 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
             info.symbol(token.symbol());
             info.name(token.name());
             info.memo(token.memo());
-            info.treasury(AccountID.newBuilder().accountNum(token.treasuryAccountNumber()));
+            info.treasury(
+                    AccountID.newBuilder().accountNum(token.treasuryAccountId().accountNum()));
             info.totalSupply(token.totalSupply());
             info.maxSupply(token.maxSupply());
             info.decimals(token.decimals());
@@ -165,8 +166,9 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
                 info.feeScheduleKey(token.feeScheduleKey());
             }
 
-            if (token.autoRenewAccountNumber() != 0) {
-                info.autoRenewAccount(AccountID.newBuilder().accountNum(token.autoRenewAccountNumber()));
+            if (token.autoRenewAccountId().accountNum() != 0) {
+                info.autoRenewAccount(AccountID.newBuilder()
+                        .accountNum(token.autoRenewAccountId().accountNum()));
                 info.autoRenewPeriod(Duration.newBuilder().seconds(token.autoRenewSecs()));
             }
 

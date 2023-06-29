@@ -17,14 +17,14 @@
 package com.hedera.node.app.service.token.impl.test.handlers.util;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,12 +48,12 @@ public class StateBuilderUtil {
     }
 
     @NonNull
-    protected MapReadableKVState.Builder<EntityNumPair, TokenRelation> emptyReadableTokenRelsStateBuilder() {
+    protected MapReadableKVState.Builder<EntityIDPair, TokenRelation> emptyReadableTokenRelsStateBuilder() {
         return MapReadableKVState.builder(TOKEN_RELS);
     }
 
     @NonNull
-    protected MapWritableKVState.Builder<EntityNumPair, TokenRelation> emptyWritableTokenRelsStateBuilder() {
+    protected MapWritableKVState.Builder<EntityIDPair, TokenRelation> emptyWritableTokenRelsStateBuilder() {
         return MapWritableKVState.builder(TOKEN_RELS);
     }
 
@@ -68,12 +68,12 @@ public class StateBuilderUtil {
     }
 
     @NonNull
-    protected MapReadableKVState.Builder<EntityNum, Token> emptyReadableTokenStateBuilder() {
+    protected MapReadableKVState.Builder<TokenID, Token> emptyReadableTokenStateBuilder() {
         return MapReadableKVState.builder(TOKENS);
     }
 
     @NonNull
-    protected MapWritableKVState.Builder<EntityNum, Token> emptyWritableTokenStateBuilder() {
+    protected MapWritableKVState.Builder<TokenID, Token> emptyWritableTokenStateBuilder() {
         return MapWritableKVState.builder(TOKENS);
     }
 
@@ -88,7 +88,7 @@ public class StateBuilderUtil {
     }
 
     @NonNull
-    protected MapWritableKVState<EntityNum, Token> emptyWritableTokenState() {
-        return MapWritableKVState.<EntityNum, Token>builder(TOKENS).build();
+    protected MapWritableKVState<TokenID, Token> emptyWritableTokenState() {
+        return MapWritableKVState.<TokenID, Token>builder(TOKENS).build();
     }
 }

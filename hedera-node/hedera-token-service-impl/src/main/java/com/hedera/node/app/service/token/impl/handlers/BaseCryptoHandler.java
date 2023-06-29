@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -55,5 +56,10 @@ public class BaseCryptoHandler {
     @NonNull
     public static AccountID asAccount(final long num) {
         return AccountID.newBuilder().accountNum(num).build();
+    }
+
+    @NonNull
+    public static TokenID asToken(final long num) {
+        return TokenID.newBuilder().tokenNum(num).build();
     }
 }

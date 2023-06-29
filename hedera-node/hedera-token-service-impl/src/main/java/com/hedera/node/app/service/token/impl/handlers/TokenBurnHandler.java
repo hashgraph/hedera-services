@@ -136,7 +136,8 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
                     tokenRelStore);
 
             // Update treasury's NFT count
-            final var treasuryAcct = accountStore.get(asAccount(token.treasuryAccountNumber()));
+            final var treasuryAcct =
+                    accountStore.get(asAccount(token.treasuryAccountId().accountNum()));
             final var updatedTreasuryAcct = treasuryAcct
                     .copyBuilder()
                     .numberOwnedNfts(treasuryAcct.numberOwnedNfts() - nftSerialNums.size())
@@ -162,7 +163,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
         validateTrue(token.supplyKey() != null, TOKEN_HAS_NO_SUPPLY_KEY);
 
-        final var treasuryAcctId = asAccount(token.treasuryAccountNumber());
+        final var treasuryAcctId = asAccount(token.treasuryAccountId().accountNum());
         final var treasuryRel = TokenHandlerHelper.getIfUsable(treasuryAcctId, tokenId, tokenRelStore);
         return new ValidationResult(token, treasuryRel);
     }

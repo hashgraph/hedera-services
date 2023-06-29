@@ -247,8 +247,8 @@ class TokenFreezeAccountHandlerTest {
                             Account.newBuilder().accountNumber(accountNumber).build());
             given(tokenRelStore.getForModify(ACCOUNT_13257, token))
                     .willReturn(TokenRelation.newBuilder()
-                            .tokenNumber(token.tokenNum())
-                            .accountNumber(accountNumber)
+                            .tokenId(token)
+                            .accountId(ACCOUNT_13257)
                             .build());
             final var txn = newFreezeTxn(token);
             given(context.body()).willReturn(txn);
@@ -256,8 +256,8 @@ class TokenFreezeAccountHandlerTest {
             subject.handle(context);
             verify(tokenRelStore)
                     .put(TokenRelation.newBuilder()
-                            .tokenNumber(token.tokenNum())
-                            .accountNumber(accountNumber)
+                            .tokenId(token)
+                            .accountId(ACCOUNT_13257)
                             .frozen(true)
                             .build());
         }

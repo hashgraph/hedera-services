@@ -114,8 +114,8 @@ public class BaseTokenHandler {
         requireNonNull(invalidSupplyCode);
 
         validateTrue(
-                treasuryRel.accountNumber() == token.treasuryAccountNumber()
-                        && token.tokenNumber() == treasuryRel.tokenNumber(),
+                treasuryRel.accountId().equals(token.treasuryAccountId())
+                        && token.tokenId().equals(treasuryRel.tokenId()),
                 FAIL_INVALID);
         final long newTotalSupply = token.totalSupply() + amount;
 
@@ -128,7 +128,8 @@ public class BaseTokenHandler {
             validateTrue(token.maxSupply() >= newTotalSupply, TOKEN_MAX_SUPPLY_REACHED);
         }
 
-        final var treasuryAccount = accountStore.get(asAccount(treasuryRel.accountNumber()));
+        final var treasuryAccount =
+                accountStore.get(asAccount(treasuryRel.accountId().accountNum()));
         validateTrue(treasuryAccount != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
         final long newTreasuryBalance = treasuryRel.balance() + amount;
@@ -184,7 +185,7 @@ public class BaseTokenHandler {
         final var firstOfNewTokenRels = newTokenRels.get(0);
         final var updatedAcct = account.copyBuilder()
                 // replace the head token number with the first token number of the new tokenRels
-                .headTokenNumber(firstOfNewTokenRels.tokenNumber())
+                .headTokenNumber(firstOfNewTokenRels.tokenId().tokenNum())
                 // and also update the account's total number of token associations
                 .numberAssociations(account.numberAssociations() + newTokenRels.size())
                 .build();
@@ -225,13 +226,13 @@ public class BaseTokenHandler {
                 final var lastOfNewTokenRels = newTokenRels.remove(newTokenRels.size() - 1);
                 final var headTokenAsNonHeadTokenRel = headTokenRel
                         .copyBuilder()
-                        .previousToken(lastOfNewTokenRels.tokenNumber())
+                        .previousToken(lastOfNewTokenRels.tokenId())
                         .build(); // the old head token rel is no longer the head
 
                 // Also connect the last of the new tokenRels to the old head token rel
                 newTokenRels.add(lastOfNewTokenRels
                         .copyBuilder()
-                        .nextToken(headTokenAsNonHeadTokenRel.tokenNumber())
+                        .nextToken(headTokenAsNonHeadTokenRel.tokenId())
                         .build());
                 tokenRelStore.put(headTokenAsNonHeadTokenRel);
             } else {
@@ -262,25 +263,25 @@ public class BaseTokenHandler {
             // Compute the previous and next token IDs. Unfortunately `TokenRelation` doesn't
             // allow for null values, so a value of '0' will have to indicate a null pointer to
             // the previous or next token (since no token number 0 can exist)
-            long prevTokenId = 0;
-            long nextTokenId = 0;
+            TokenID prevTokenId = TokenID.DEFAULT;
+            TokenID nextTokenId = TokenID.DEFAULT;
             if (i - 1 >= 0) { // if there is a previous token
                 prevTokenId = Optional.ofNullable(tokens.get(i - 1))
-                        .map(Token::tokenNumber)
-                        .orElse(0L);
+                        .map(Token::tokenId)
+                        .orElse(TokenID.DEFAULT);
             }
             if (i + 1 < tokens.size()) { // if there is a next token
                 nextTokenId = Optional.ofNullable(tokens.get(i + 1))
-                        .map(Token::tokenNumber)
-                        .orElse(0L);
+                        .map(Token::tokenId)
+                        .orElse(TokenID.DEFAULT);
             }
 
             // Create the new token relation
             final var isFrozen = token.hasFreezeKey() && token.accountsFrozenByDefault();
             final var kycGranted = !token.hasKycKey();
             final var newTokenRel = new TokenRelation(
-                    token.tokenNumber(),
-                    account.accountNumber(),
+                    token.tokenId(),
+                    AccountID.newBuilder().accountNum(account.accountNumber()).build(),
                     0,
                     isFrozen,
                     kycGranted,
@@ -312,7 +313,7 @@ public class BaseTokenHandler {
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
 
         final var accountId = asAccount(account.accountNumber());
-        final var tokenId = asToken(token.tokenNumber());
+        final var tokenId = token.tokenId();
         // If token is already associated, no need to associate again
         validateTrue(tokenRelStore.get(accountId, tokenId) == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
         validateTrue(
@@ -331,13 +332,13 @@ public class BaseTokenHandler {
 
         // Create new token relation and commit to store
         final var newTokenRel = TokenRelation.newBuilder()
-                .tokenNumber(tokenId.tokenNum())
-                .accountNumber(account.accountNumber())
+                .tokenId(tokenId)
+                .accountId(accountId)
                 .automaticAssociation(true)
                 .kycGranted(!token.hasKycKey())
                 .frozen(token.hasFreezeKey() && token.accountsFrozenByDefault())
-                .previousToken(-1)
-                .nextToken(account.headTokenNumber())
+                .previousToken(asToken(-1))
+                .nextToken(asToken(account.headTokenNumber()))
                 .build();
 
         final var copyAccount = account.copyBuilder()

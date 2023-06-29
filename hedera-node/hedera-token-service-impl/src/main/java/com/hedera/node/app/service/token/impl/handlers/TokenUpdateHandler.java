@@ -130,7 +130,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         // We allow existing treasuries to have any nft balances left over, but the new treasury should
         // not have any balances left over. Transfer all balances for the current token to new treasury
         if (op.hasTreasury()) {
-            final var existingTreasury = asAccount(token.treasuryAccountNumber());
+            final var existingTreasury = asAccount(token.treasuryAccountId().accountNum());
             final var newTreasury = op.treasuryOrThrow();
             final var newTreasuryAccount = getIfUsable(
                     newTreasury, accountStore, context.expiryValidator(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
@@ -179,7 +179,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             final Token token,
             final WritableTokenRelationStore tokenRelStore,
             final WritableAccountStore accountStore) {
-        final var tokenId = asToken(token.tokenNumber());
+        final var tokenId = token.tokenId();
         // Validate both accounts are not frozen and have the right keys
         final var oldTreasuryRel = getIfUsable(oldTreasury, tokenId, tokenRelStore);
         final var newTreasuryRel = getIfUsable(newTreasury, tokenId, tokenRelStore);
@@ -213,8 +213,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             final WritableAccountStore accountStore) {
         final var adjustment = fromTreasuryRel.balance();
 
-        final var fromTreasury = accountStore.getAccountById(asAccount(fromTreasuryRel.accountNumber()));
-        final var toTreasury = accountStore.getAccountById(asAccount(toTreasuryRel.accountNumber()));
+        final var fromTreasury = accountStore.getAccountById(fromTreasuryRel.accountId());
+        final var toTreasury = accountStore.getAccountById(toTreasuryRel.accountId());
 
         adjustBalance(fromTreasuryRel, fromTreasury, -adjustment, tokenRelStore, accountStore);
         adjustBalance(toTreasuryRel, toTreasury, adjustment, tokenRelStore, accountStore);
@@ -272,8 +272,8 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             final TokenRelation toTreasuryRel,
             final WritableTokenRelationStore tokenRelStore,
             final WritableAccountStore accountStore) {
-        final var fromTreasury = accountStore.getAccountById(asAccount(fromTreasuryRel.accountNumber()));
-        final var toTreasury = accountStore.getAccountById(asAccount(toTreasuryRel.accountNumber()));
+        final var fromTreasury = accountStore.getAccountById(fromTreasuryRel.accountId());
+        final var toTreasury = accountStore.getAccountById(toTreasuryRel.accountId());
 
         final var fromRelBalance = fromTreasuryRel.balance();
         final var toRelBalance = toTreasuryRel.balance();
@@ -343,8 +343,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (op.hasMemo() && op.memo().length() > 0) {
             builder.memo(op.memo());
         }
-        if (op.hasTreasury() && op.treasuryOrThrow().accountNum() != originalToken.treasuryAccountNumber()) {
-            builder.treasuryAccountNumber(op.treasuryOrThrow().accountNum());
+        if (op.hasTreasury()
+                && op.treasuryOrThrow().accountNum()
+                        != originalToken.treasuryAccountId().accountNum()) {
+            builder.treasuryAccountId(op.treasuryOrThrow());
         }
     }
 
@@ -363,7 +365,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             builder.autoRenewSecs(resolvedExpiry.autoRenewPeriod());
         }
         if (op.hasAutoRenewAccount()) {
-            builder.autoRenewAccountNumber(resolvedExpiry.autoRenewNum());
+            builder.autoRenewAccountId(AccountID.newBuilder().accountNum(resolvedExpiry.autoRenewNum()));
         }
     }
 
@@ -432,7 +434,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore) {
         final var newTokenRelation =
-                tokenRelStore.get(asAccount(newTreasuryAccount.accountNumber()), asToken(originalToken.tokenNumber()));
+                tokenRelStore.get(asAccount(newTreasuryAccount.accountNumber()), originalToken.tokenId());
         final var newRelCopy = newTokenRelation.copyBuilder();
 
         if (originalToken.hasFreezeKey()) {

@@ -167,7 +167,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
         // This should exist as it is validated in validateSemantics
         final var treasury = accountStore.get(AccountID.newBuilder()
-                .accountNum(newToken.treasuryAccountNumber())
+                .accountNum(newToken.treasuryAccountId().accountNum())
                 .build());
         // Validate if token relation can be created between treasury and new token
         // If this succeeds, create and link token relation.
@@ -194,12 +194,12 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     private Token buildToken(
             final long newTokenNum, final TokenCreateTransactionBody op, final ExpiryMeta resolvedExpiryMeta) {
         return new Token(
-                newTokenNum,
+                TokenID.newBuilder().tokenNum(newTokenNum).build(),
                 op.name(),
                 op.symbol(),
                 op.decimals(),
                 0, // is this correct ?
-                op.treasury().accountNum(),
+                op.treasury(),
                 op.adminKey(),
                 op.kycKey(),
                 op.freezeKey(),
@@ -211,7 +211,9 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 false,
                 op.tokenType(),
                 op.supplyType(),
-                resolvedExpiryMeta.autoRenewNum(),
+                AccountID.newBuilder()
+                        .accountNum(resolvedExpiryMeta.autoRenewNum())
+                        .build(),
                 resolvedExpiryMeta.autoRenewPeriod(),
                 resolvedExpiryMeta.expiry(),
                 op.memo(),

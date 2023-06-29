@@ -255,7 +255,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
                 if (token != null) {
                     addTokenRelation(ret, token, tokenRelation, tokenNum);
                 }
-                tokenNum = tokenRelation.nextToken();
+                tokenNum = tokenRelation.nextToken().tokenNum();
             } else {
                 break;
             }

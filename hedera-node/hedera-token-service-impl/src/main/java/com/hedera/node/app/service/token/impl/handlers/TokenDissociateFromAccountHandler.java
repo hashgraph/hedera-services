@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asToken;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -125,7 +126,11 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                 }
             } else {
                 // Handle active tokens
-                validateFalse(tokenRel.accountNumber() == token.treasuryAccountNumber(), ACCOUNT_IS_TREASURY);
+                validateFalse(
+                        token.treasuryAccountId() != null
+                                && tokenRel.accountId().accountNum()
+                                        == token.treasuryAccountId().accountNum(),
+                        ACCOUNT_IS_TREASURY);
                 validateFalse(tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
 
                 if (tokenRelBalance > 0) {
@@ -169,7 +174,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                 new TokenRelListCalculator(tokenRelStore).removeTokenRels(account, tokenRelsToRemove);
         final var newHeadTokenId = updatedTokenRels.updatedHeadTokenId() != null
                 ? updatedTokenRels.updatedHeadTokenId()
-                : account.headTokenNumber();
+                : asToken(account.headTokenNumber());
 
         // Update the account with the aggregate number of NFTs, auto associations, associations, and positive balances
         // to remove, as well as the new head token number
@@ -178,7 +183,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                 .usedAutoAssociations(account.usedAutoAssociations() - numAutoAssociationsToSubtract)
                 .numberAssociations(account.numberAssociations() - numAssociationsToSubtract)
                 .numberPositiveBalances(account.numberPositiveBalances() - numPositiveBalancesToSubtract)
-                .headTokenNumber(newHeadTokenId)
+                .headTokenNumber(newHeadTokenId.tokenNum())
                 .build();
 
         // Finally, update the account and the token relations via their respective stores
@@ -223,10 +228,15 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
             final TokenRelation dissociatedTokenTreasuryRel;
             if (possiblyUnusableToken != null) {
                 validateFalse(possiblyUnusableToken.paused(), TOKEN_IS_PAUSED);
-                final var tokenTreasuryAcct = AccountID.newBuilder()
-                        .accountNum(possiblyUnusableToken.treasuryAccountNumber())
-                        .build();
-                dissociatedTokenTreasuryRel = tokenRelStore.get(tokenTreasuryAcct, tokenId);
+                if (possiblyUnusableToken.treasuryAccountId() != null) {
+                    final var tokenTreasuryAcct = AccountID.newBuilder()
+                            .accountNum(
+                                    possiblyUnusableToken.treasuryAccountId().accountNum())
+                            .build();
+                    dissociatedTokenTreasuryRel = tokenRelStore.get(tokenTreasuryAcct, tokenId);
+                } else {
+                    dissociatedTokenTreasuryRel = null;
+                }
             } else {
                 // If the token isn't found, assume the treasury token rel is null
                 dissociatedTokenTreasuryRel = null;

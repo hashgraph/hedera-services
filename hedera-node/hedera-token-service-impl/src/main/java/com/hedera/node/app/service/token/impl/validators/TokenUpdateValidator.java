@@ -83,7 +83,7 @@ public class TokenUpdateValidator {
         final var resolvedExpiryMeta = resolveExpiry(token, op, context.expiryValidator());
         validateNewAndExistingAutoRenewAccount(
                 resolvedExpiryMeta.autoRenewNum(),
-                token.autoRenewAccountNumber(),
+                token.autoRenewAccountId().accountNum(),
                 readableAccountStore,
                 context.expiryValidator());
         return new ValidationResult(token, resolvedExpiryMeta);
@@ -108,8 +108,10 @@ public class TokenUpdateValidator {
             @NonNull final Token token,
             @NonNull final TokenUpdateTransactionBody op,
             @NonNull final ExpiryValidator expiryValidator) {
-        final var givenExpiryMeta =
-                new ExpiryMeta(token.expiry(), token.autoRenewSecs(), token.autoRenewAccountNumber());
+        final var givenExpiryMeta = new ExpiryMeta(
+                token.expiry(),
+                token.autoRenewSecs(),
+                token.autoRenewAccountId().accountNum());
         final var updateExpiryMeta = new ExpiryMeta(
                 op.hasExpiry() ? op.expiryOrThrow().seconds() : NA,
                 op.hasAutoRenewPeriod() ? op.autoRenewPeriodOrThrow().seconds() : NA,
