@@ -273,8 +273,9 @@ class TipsetEventCreationRulesTests {
         for (int i = 0; i < 100; i++) {
             final boolean tickForwards = random.nextBoolean();
             if (tickForwards) {
-                time.tick(period.plusMillis(random.nextInt(5)));
-                millisSinceLastEvent += period.toMillis();
+                final int millisToTick = random.nextInt(5);
+                time.tick(Duration.ofMillis(millisToTick));
+                millisSinceLastEvent += millisToTick;
             }
 
             if (millisSinceLastEvent >= period.toMillis()) {
