@@ -16,7 +16,7 @@
 
 plugins {
     id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
+    `java-library`
     id("com.swirlds.platform.maven-publish")
 }
 
@@ -31,7 +31,6 @@ dependencies {
     testImplementation(project(":swirlds-config-impl"))
     testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
     testImplementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
-    testImplementation(testFixtures(project(":swirlds-common")))
-    testImplementation(testLibs.junit.jupiter.api)
+    testImplementation(testFixtures(project(":swirlds-common")))testImplementation(testLibs.junit.jupiter.api)
     testImplementation(testLibs.bundles.junit)
 }

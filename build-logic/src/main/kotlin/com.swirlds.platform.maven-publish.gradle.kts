@@ -19,7 +19,7 @@ import java.time.Duration
  */
 
 plugins {
-    `java`
+    java
     `maven-publish`
     signing
     id("com.google.cloud.artifactregistry.gradle-plugin")
@@ -121,7 +121,7 @@ signing {
     sign(publishing.publications.getByName("maven"))
 }
 
-tasks.withType<Sign>() {
+tasks.withType<Sign>().configureEach {
     onlyIf {
         project.hasProperty("publishSigningEnabled")
             && (project.property("publishSigningEnabled") as String).toBoolean()
