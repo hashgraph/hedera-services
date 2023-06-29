@@ -44,7 +44,7 @@ public class ZeroSumHbarChangesStep implements TransferStep {
             if (!netHbarTransfers.containsKey(aa.accountID())) {
                 netHbarTransfers.put(aa.accountID(), aa.amount());
             } else {
-                var existingChange = netHbarTransfers.get(aa.accountID());
+                final var existingChange = netHbarTransfers.get(aa.accountID());
                 netHbarTransfers.put(aa.accountID(), existingChange + aa.amount());
             }
 

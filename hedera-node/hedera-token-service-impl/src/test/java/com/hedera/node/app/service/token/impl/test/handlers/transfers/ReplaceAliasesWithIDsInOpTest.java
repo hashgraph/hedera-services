@@ -52,23 +52,7 @@ public class ReplaceAliasesWithIDsInOpTest extends StepsBase {
 
     @Test
     void replacesAliasesInOp() {
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
-                .will((invocation) -> {
-                    final var copy =
-                            account.copyBuilder().accountNumber(createdNumber).build();
-                    writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(createdNumber));
-                    return recordBuilder.accountID(asAccount(createdNumber));
-                })
-                .will((invocation) -> {
-                    final var copy = account.copyBuilder()
-                            .accountNumber(createdNumber + 1)
-                            .build();
-                    writableAccountStore.put(copy);
-                    writableAliases.put(edKeyAlias, asAccount(createdNumber + 1));
-                    return recordBuilder.accountID(asAccount(createdNumber + 1));
-                });
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        givenConditions();
         ensureAliasesStep.doIn(transferContext);
 
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(2);

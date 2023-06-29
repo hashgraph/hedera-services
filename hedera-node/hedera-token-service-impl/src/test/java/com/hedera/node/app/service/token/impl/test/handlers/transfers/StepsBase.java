@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers.transfers;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.aaWith;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.nftTransferWith;
 import static com.swirlds.common.utility.CommonUtils.unhex;
@@ -33,6 +34,8 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.handlers.transfer.ChangeNFTOwnersStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
@@ -59,6 +62,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
 
     protected EnsureAliasesStep ensureAliasesStep;
     protected ReplaceAliasesWithIDsInOp replaceAliasesWithIDsInOp;
+    protected ChangeNFTOwnersStep changeNFTOwnersStep;
     protected CryptoTransferTransactionBody body;
     protected TransactionBody txn;
     protected TransferContextImpl transferContext;
@@ -122,5 +126,26 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                 .willReturn(recordBuilder);
         //        given(handleContext.feeCalculator()).willReturn(fees);
         //        given(fees.computePayment(any(), any())).willReturn(new FeeObject(100, 100, 100));
+    }
+
+    protected void givenConditions(){
+        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
+                .will((invocation) -> {
+                    final var copy =
+                            account.copyBuilder().accountNumber(createdNumber).build();
+                    writableAccountStore.put(copy);
+                    writableAliases.put(ecKeyAlias, asAccount(createdNumber));
+                    return recordBuilder.accountID(asAccount(createdNumber));
+                })
+                .will((invocation) -> {
+                    final var copy = account.copyBuilder()
+                            .accountNumber(createdNumber + 1)
+                            .build();
+                    writableAccountStore.put(copy);
+                    writableAliases.put(edKeyAlias, asAccount(createdNumber + 1));
+                    return recordBuilder.accountID(asAccount(createdNumber + 1));
+                });
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+
     }
 }

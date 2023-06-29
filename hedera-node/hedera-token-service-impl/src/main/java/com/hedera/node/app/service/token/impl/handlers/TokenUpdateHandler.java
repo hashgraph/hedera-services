@@ -59,6 +59,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -231,12 +232,12 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
      * @param tokenRelStore token relationship store
      * @param accountStore account store
      */
-    private void adjustBalance(
+    protected void adjustBalance(
             final TokenRelation tokenRel,
             final Account account,
             final long adjustment,
             final WritableTokenRelationStore tokenRelStore,
-            final WritableAccountStore accountStore) {
+            @NonNull final WritableAccountStore accountStore) {
         final var originalBalance = tokenRel.balance();
         final var newBalance = originalBalance + adjustment;
         validateTrue(newBalance >= 0, INSUFFICIENT_TOKEN_BALANCE);

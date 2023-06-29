@@ -189,24 +189,7 @@ class EnsureAliasesStepTest extends StepsBase {
         ensureAliasesStep = new EnsureAliasesStep(body);
         transferContext = new TransferContextImpl(handleContext);
 
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
-                .will((invocation) -> {
-                    final var copy =
-                            account.copyBuilder().accountNumber(createdNumber).build();
-                    writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(createdNumber));
-                    return recordBuilder.accountID(asAccount(createdNumber));
-                })
-                .will((invocation) -> {
-                    final var copy = account.copyBuilder()
-                            .accountNumber(createdNumber + 1)
-                            .build();
-                    writableAccountStore.put(copy);
-                    writableAliases.put(edKeyAlias, asAccount(createdNumber + 1));
-                    return recordBuilder.accountID(asAccount(createdNumber + 1));
-                });
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-
+        givenConditions();
         assertThatThrownBy(() -> ensureAliasesStep.doIn(transferContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));

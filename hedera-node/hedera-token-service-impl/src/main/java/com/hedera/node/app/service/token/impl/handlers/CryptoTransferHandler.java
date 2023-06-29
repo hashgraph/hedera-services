@@ -53,10 +53,14 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.ChangeNFTOwnersStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.ZeroSumFungibleTransfersStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.ZeroSumHbarChangesStep;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -248,7 +252,26 @@ public class CryptoTransferHandler implements TransactionHandler {
      */
     private List<TransferStep> decomposeIntoSteps(final CryptoTransferTransactionBody op) {
         final List<TransferStep> steps = new ArrayList<>();
-        // TODO: implement other steps
+        // Step 1: associate any token recipients that are not already associated and have
+        // auto association slots open
+        final var associateTokenRecepients = new AssociateTokenRecepientsStep(op);
+
+        // TODO Step 2: assess custom fees and will be charged in next steps
+
+
+        // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
+        final var assessHbarTransfers = new ZeroSumHbarChangesStep(op);
+        // Step 4: Charge token transfers with an approval. Modify the allowances map on account
+        final var assessFungibleTokenTransfers = new ZeroSumFungibleTransfersStep(op);
+        // Step 5: Change NFT owners and also ones with isApproval. Clear the spender on NFT
+        final var changeNftOwners = new ChangeNFTOwnersStep(op);
+
+        // Step 6: TODO Pay staking rewards
+
+        steps.add(associateTokenRecepients);
+        steps.add(assessHbarTransfers);
+        steps.add(assessFungibleTokenTransfers);
+        steps.add(changeNftOwners);
 
         return steps;
     }

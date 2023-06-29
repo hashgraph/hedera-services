@@ -16,4 +16,49 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.transfers;
 
-public class ChangeNFTOwnersStepTest {}
+import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.service.token.impl.handlers.transfer.ChangeNFTOwnersStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
+import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.aaWith;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.nftTransferWith;
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class ChangeNFTOwnersStepTest extends StepsBase{
+    @BeforeEach
+    public void setUp() {
+        super.setUp();
+        recordBuilder = new SingleTransactionRecordBuilder(consensusInstant);
+        givenTxn();
+        refreshWritableStores();
+        givenStoresAndConfig(handleContext);
+        ensureAliasesStep = new EnsureAliasesStep(body);
+        replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
+        transferContext = new TransferContextImpl(handleContext);
+    }
+
+    @Test
+    void replacesAliasesInOp() {
+        final var replacedOp = getReplacedOp();
+        changeNFTOwnersStep = new ChangeNFTOwnersStep(replacedOp);
+
+        assertThat(nftSt)
+        changeNFTOwnersStep.doIn(transferContext);
+    }
+
+    CryptoTransferTransactionBody getReplacedOp(){
+        givenConditions();
+        ensureAliasesStep.doIn(transferContext);
+        return replaceAliasesWithIDsInOp.replaceAliasesWithIds(body, transferContext);
+    }
+}

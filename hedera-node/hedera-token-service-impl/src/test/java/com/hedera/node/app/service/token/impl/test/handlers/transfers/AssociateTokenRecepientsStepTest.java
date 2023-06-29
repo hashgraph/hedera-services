@@ -43,7 +43,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class AssociateTokenRecepientsStepTest extends CryptoTokenHandlerTestBase {
+public class AssociateTokenRecepientsStepTest extends StepsBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private HandleContext handleContext;
 
@@ -57,7 +57,7 @@ public class AssociateTokenRecepientsStepTest extends CryptoTokenHandlerTestBase
     @BeforeEach
     public void setUp() {
         super.setUp();
-        givenTxn();
+        givenValidTxn();
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
         subject = new AssociateTokenRecepientsStep(txn);
@@ -79,7 +79,7 @@ public class AssociateTokenRecepientsStepTest extends CryptoTokenHandlerTestBase
         assertThat(writableTokenRelStore.get(spenderId, nonFungibleTokenId)).isNotNull();
     }
 
-    private void givenTxn() {
+    void givenValidTxn() {
         txn = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder()
                         .accountAmounts(adjustFrom(ownerId, -1_000))
