@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -159,8 +160,10 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void failsDeleteAllowancesOnInvalidTreasury() {
-        writableTokenStore.put(
-                nonFungibleToken.copyBuilder().treasuryAccountNumber(asAccount(200L)).build());
+        writableTokenStore.put(nonFungibleToken
+                .copyBuilder()
+                .treasuryAccountId(asAccount(200L))
+                .build());
         writableNftStore.put(nftSl1.copyBuilder().spenderId(spenderId).build());
         writableNftStore.put(nftSl2.copyBuilder().spenderId(spenderId).build());
 
