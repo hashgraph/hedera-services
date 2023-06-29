@@ -111,7 +111,7 @@ public class ConfigRecordParser {
     private static ConfigDataPropertyDefinition getConfigDataPropertyDefinition(
             @Nullable final String configDataValue,
             final @NonNull Map<String, String> paramDoc,
-            @NonNull final JavaRecordComponent javaRecordComponent) {
+            @NonNull final JavaRecordComponent<?> javaRecordComponent) {
         Objects.requireNonNull(paramDoc, "paramDoc must not be null");
         Objects.requireNonNull(javaRecordComponent, "javaRecordComponent must not be null");
 
