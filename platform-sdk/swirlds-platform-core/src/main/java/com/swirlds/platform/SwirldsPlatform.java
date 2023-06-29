@@ -22,6 +22,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.event.tipset.TipsetEventCreationManagerFactory.buildTipsetEventCreationManager;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
@@ -89,6 +90,7 @@ import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
 import com.swirlds.platform.event.EventCounter;
+import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.linking.EventLinker;
@@ -103,6 +105,7 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
+import com.swirlds.platform.event.tipset.TipsetEventCreationManager;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplication;
 import com.swirlds.platform.event.validation.EventValidator;
@@ -116,7 +119,6 @@ import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.gossip.Gossip;
 import com.swirlds.platform.gossip.GossipFactory;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
-import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
@@ -151,7 +153,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -284,6 +288,11 @@ public class SwirldsPlatform implements Platform, Startable {
      * Allows files to be deleted, and potentially recovered later for debugging.
      */
     private final RecycleBin recycleBin;
+
+    /**
+     * Creates new events using the tipset algorithm.
+     */
+    private final TipsetEventCreationManager tipsetEventCreator;
 
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
@@ -553,7 +562,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     shadowGraph);
 
             final EventCreator eventCreator = buildEventCreator(eventIntake);
-            final Settings settings = Settings.getInstance();
+            final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
             final List<GossipEventValidator> validators = new ArrayList<>();
             // it is very important to discard ancient events, otherwise the deduplication will not work, since it
@@ -562,7 +571,7 @@ public class SwirldsPlatform implements Platform, Startable {
             validators.add(new EventDeduplication(isDuplicateChecks, eventIntakeMetrics));
             validators.add(StaticValidators::isParentDataValid);
             validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
-            if (settings.isVerifyEventSigs()) {
+            if (basicConfig.verifyEventSigs()) {
                 validators.add(new SignatureValidator(initialAddressBook));
             }
             final GossipEventValidators eventValidators = new GossipEventValidators(validators);
@@ -592,6 +601,20 @@ public class SwirldsPlatform implements Platform, Startable {
                             .enableMaxSizeMetric()
                             .enableBusyTimeMetric())
                     .build());
+
+            tipsetEventCreator = buildTipsetEventCreationManager(
+                    platformContext,
+                    threadManager,
+                    time,
+                    this,
+                    initialAddressBook,
+                    selfId,
+                    appVersion,
+                    swirldStateManager.getTransactionPool(),
+                    intakeQueue,
+                    eventObserverDispatcher,
+                    currentPlatformStatus::get,
+                    startUpEventFrozenManager);
 
             transactionSubmitter = new SwirldTransactionSubmitter(
                     currentPlatformStatus::get,
@@ -627,7 +650,8 @@ public class SwirldsPlatform implements Platform, Startable {
                     this::clearAllPipelines);
 
             if (signedStateFromDisk != null) {
-                loadIntoConsensusAndEventMapper(signedStateFromDisk);
+                loadStateIntoConsensusAndEventMapper(signedStateFromDisk);
+                loadStateIntoEventCreator(signedStateFromDisk);
                 eventLinker.loadFromSignedState(signedStateFromDisk);
             } else {
                 consensusRef.set(new ConsensusImpl(
@@ -800,11 +824,50 @@ public class SwirldsPlatform implements Platform, Startable {
     }
 
     /**
+     * Load the signed state (either at reboot or reconnect) into the event creator.
+     *
+     * @param signedState the signed state to load from
+     */
+    private void loadStateIntoEventCreator(@NonNull final SignedState signedState) {
+        Objects.requireNonNull(signedState);
+
+        if (tipsetEventCreator == null) {
+            // New event creation logic is disabled via settings
+            return;
+        }
+
+        try {
+            tipsetEventCreator.setMinimumGenerationNonAncient(
+                    signedState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient());
+
+            // The event creator may not be started yet. To avoid filling up queues, only register
+            // the latest event from each creator. These are the only ones the event creator cares about.
+
+            final Map<NodeId, EventImpl> latestEvents = new HashMap<>();
+
+            for (final EventImpl event :
+                    signedState.getState().getPlatformState().getPlatformData().getEvents()) {
+                latestEvents.put(event.getCreatorId(), event);
+            }
+
+            for (final EventImpl event : latestEvents.values()) {
+                tipsetEventCreator.registerEvent(event);
+            }
+
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("interrupted while loading state into event creator", e);
+        }
+    }
+
+    /**
      * Loads the signed state data into consensus and event mapper
      *
      * @param signedState the state to get the data from
      */
-    void loadIntoConsensusAndEventMapper(final SignedState signedState) {
+    private void loadStateIntoConsensusAndEventMapper(@NonNull final SignedState signedState) {
+        Objects.requireNonNull(signedState);
+
         consensusRef.set(new ConsensusImpl(
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 consensusMetrics,
@@ -838,7 +901,7 @@ public class SwirldsPlatform implements Platform, Startable {
      *
      * @param signedState the signed state that was received from the sender
      */
-    void loadReconnectState(final SignedState signedState) {
+    private void loadReconnectState(final SignedState signedState) {
         // the state was received, so now we load its data into different objects
         logger.info(LogMarker.STATE_HASH.getMarker(), "RECONNECT: loadReconnectState: reloading state");
         logger.debug(RECONNECT.getMarker(), "`loadReconnectState` : reloading state");
@@ -873,7 +936,8 @@ public class SwirldsPlatform implements Platform, Startable {
 
             stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
 
-            loadIntoConsensusAndEventMapper(signedState);
+            loadStateIntoConsensusAndEventMapper(signedState);
+            loadStateIntoEventCreator(signedState);
             // eventLinker is not thread safe, which is not a problem regularly because it is only used by a single
             // thread. after a reconnect, it needs to load the minimum generation from a state on a different thread,
             // so the intake thread is paused before the data is loaded and unpaused after. this ensures that the
@@ -935,6 +999,7 @@ public class SwirldsPlatform implements Platform, Startable {
             return null;
         } else {
             return new EventCreator(
+                    platformContext,
                     this.appVersion,
                     selfId,
                     PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
@@ -1036,6 +1101,13 @@ public class SwirldsPlatform implements Platform, Startable {
 
         metrics.start();
 
+        if (tipsetEventCreator != null) {
+            // The event creator is intentionally started before replaying the preconsensus event stream.
+            // This prevents the event creator's intake queue from filling up and blocking. Note that
+            // this component won't actually create events until the platform has the appropriate status.
+            tipsetEventCreator.start();
+        }
+
         replayPreconsensusEvents();
         configureStartupEventFreeze();
         gossip.start();
@@ -1126,6 +1198,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
     /**
      * Change the current platform status.
+     *
      * @param newStatus the new platform status
      */
     private void setPlatformStatus(@NonNull final PlatformStatus newStatus) {
