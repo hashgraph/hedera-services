@@ -17,12 +17,15 @@
 package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.resourceExhaustionFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
+import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameRunner;
@@ -32,6 +35,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.function.Supplier;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
@@ -60,38 +64,84 @@ public class TransactionProcessor {
         this.contractCreation = requireNonNull(contractCreation);
     }
 
+    /**
+     * Process the given transaction, returning the result of running it to completion
+     * and committing to the given updater.
+     *
+     * @param transaction     the transaction to process
+     * @param updater         the world updater to commit to
+     * @param feesOnlyUpdater if base commit fails, a fees-only updater
+     * @param context         the context to use
+     * @param tracer          the tracer to use
+     * @param config          the node configuration
+     * @return the result of running the transaction to completion
+     */
     public HederaEvmTransactionResult processTransaction(
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final HederaWorldUpdater updater,
+            @NonNull final Supplier<HederaWorldUpdater> feesOnlyUpdater,
             @NonNull final HederaEvmContext context,
             @NonNull final HederaTracer tracer,
             @NonNull final Configuration config) {
+        final InvolvedParties parties;
+        final GasCharges gasCharges;
         try {
-            // Compute the sender, relayer, and to address (will throw if invalid)
-            final var parties = computeInvolvedParties(transaction, updater, config);
+            // Compute the sender, relayer, and to address (throws if invalid)
+            parties = computeInvolvedParties(transaction, updater, config);
             if (transaction.isEthereumTransaction()) {
                 parties.sender().incrementNonce();
             }
-
-            // Charge gas and return intrinsic gas and relayer allowance used (will throw on failure)
-            final var gasCharges =
-                    gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
-
-            // Build the initial frame for the transaction
-            final var initialFrame = frameBuilder.buildInitialFrameWith(
-                    transaction,
-                    updater,
-                    context,
-                    config,
-                    parties.sender().getAddress(),
-                    parties.toAddress(),
-                    gasCharges.intrinsicGas());
-            // Return the result of running the frame to completion
-            return frameRunner.runToCompletion(
-                    transaction.gasLimit(), initialFrame, tracer, messageCall, contractCreation);
+            // Charge gas and return intrinsic gas and relayer allowance used (throws on failure)
+            gasCharges = gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
         } catch (final HandleException failure) {
             return HederaEvmTransactionResult.abortFor(failure.getStatus());
         }
+
+        // Build the initial frame for the transaction
+        final var initialFrame = frameBuilder.buildInitialFrameWith(
+                transaction,
+                updater,
+                context,
+                config,
+                parties.sender().getAddress(),
+                parties.toAddress(),
+                gasCharges.intrinsicGas());
+
+        // Compute the result of running the frame to completion
+        final HederaEvmTransactionResult result;
+        try {
+            result = frameRunner.runToCompletion(
+                    transaction.gasLimit(), initialFrame, tracer, messageCall, contractCreation);
+        } catch (ResourceExhaustedException e) {
+            return resourceExhaustionFrom(transaction.gasLimit(), context.gasPrice(), e.getStatus());
+        }
+        // Adjust the pending commit based on the result
+        gasCharging.maybeRefundGiven(
+                transaction.unusedGas(result.gasUsed()),
+                gasCharges.relayerAllowanceUsed(),
+                parties.sender(),
+                parties.relayer(),
+                context,
+                updater);
+        initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
+
+        // Returns this result if we can commit it without resource exhaustion, otherwise returns a fees-only result
+        return safeCommit(result, transaction, updater, feesOnlyUpdater, context);
+    }
+
+    private HederaEvmTransactionResult safeCommit(
+            @NonNull final HederaEvmTransactionResult result,
+            @NonNull final HederaEvmTransaction transaction,
+            @NonNull final HederaWorldUpdater updater,
+            @NonNull final Supplier<HederaWorldUpdater> feesOnlyUpdater,
+            @NonNull final HederaEvmContext context) {
+        try {
+            updater.commit();
+        } catch (ResourceExhaustedException e) {
+            // TODO - increment sender nonce and re-charge gas using feesOnlyUpdater
+            return resourceExhaustionFrom(transaction.gasLimit(), context.gasPrice(), e.getStatus());
+        }
+        return result;
     }
 
     private record InvolvedParties(
@@ -99,20 +149,28 @@ public class TransactionProcessor {
 
     private InvolvedParties computeInvolvedParties(
             @NonNull final HederaEvmTransaction transaction,
-            @NonNull final HederaWorldUpdater worldUpdater,
+            @NonNull final HederaWorldUpdater updater,
             @NonNull final Configuration config) {
 
-        final var sender = worldUpdater.getHederaAccount(transaction.senderId());
+        final var sender = updater.getHederaAccount(transaction.senderId());
         validateTrue(sender != null, INVALID_ACCOUNT_ID);
         HederaEvmAccount relayer = null;
         if (transaction.isEthereumTransaction()) {
-            relayer = worldUpdater.getHederaAccount(requireNonNull(transaction.relayerId()));
+            relayer = updater.getHederaAccount(requireNonNull(transaction.relayerId()));
             validateTrue(relayer != null, INVALID_ACCOUNT_ID);
         }
         if (transaction.isCreate()) {
-            throw new AssertionError("Not implemented");
+            final Address to;
+            if (transaction.isEthereumTransaction()) {
+                to = Address.contractAddress(sender.getAddress(), sender.getNonce());
+                // Top-level creates "originate" from the zero address
+                updater.setupAliasedCreate(Address.ZERO, to);
+            } else {
+                to = updater.setupCreate(Address.ZERO);
+            }
+            return new InvolvedParties(sender, relayer, to);
         } else {
-            final var to = worldUpdater.getHederaAccount(transaction.contractIdOrThrow());
+            final var to = updater.getHederaAccount(transaction.contractIdOrThrow());
             if (maybeLazyCreate(transaction, to, config)) {
                 validateTrue(transaction.hasValue(), INVALID_CONTRACT_ID);
                 final var alias = transaction.contractIdOrThrow().evmAddressOrThrow();
