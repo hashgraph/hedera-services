@@ -115,6 +115,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
      * @param transactionConfig                     the transaction configuration
      * @param inFreeze                              indicates if the system is currently in a freeze
      * @param state                                 the genesis state
+     * @param softwareVersion                       the current software version
      */
     public SwirldStateManagerImpl(
             @NonNull final PlatformContext platformContext,

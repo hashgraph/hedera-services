@@ -740,7 +740,9 @@ public class Browser {
      * @param signedState the state that was loaded from disk
      * @param addressBook the address book specified in config.txt
      */
-    private static void updateLoadedStateAddressBook(final SignedState signedState, final AddressBook addressBook) {
+    private static void updateLoadedStateAddressBook(
+            @NonNull final SignedState signedState, @NonNull final AddressBook addressBook) {
+
         final State state = signedState.getState();
 
         // Update the address book with the current address book read from config.txt.
