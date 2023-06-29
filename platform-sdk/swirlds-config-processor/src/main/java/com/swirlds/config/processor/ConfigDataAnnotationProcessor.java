@@ -78,7 +78,12 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
             @NonNull final TypeElement typeElement, @NonNull final Path configDocumentationFile) {
         final String simpleClassName = typeElement.getSimpleName().toString();
         final String fileName = simpleClassName + ConfigProcessorConstants.JAVA_FILE_EXTENSION;
-        final String packageName = typeElement.getQualifiedName().toString().replace("." + simpleClassName, "");
+
+        final String packageName = processingEnv
+                .getElementUtils()
+                .getPackageOf(typeElement)
+                .getQualifiedName()
+                .toString();
         log("handling: " + fileName + " in " + packageName);
         try {
             final FileObject recordSource = getSource(fileName, packageName);
