@@ -397,8 +397,11 @@ public class Browser {
             final Map<NodeId, SwirldMain> appMains = new HashMap<>();
             final AddressBook addressBook = appDefinition.getAddressBook();
             for (final Address address : addressBook) {
-                if (localNodesToStart.contains(address.getNodeId()) || AddressBookNetworkUtils.isLocal(address)) {
-                    appMains.put(address.getNodeId(), buildAppMain(appDefinition, appLoader));
+                if (AddressBookNetworkUtils.isLocal(address)) {
+                    // if the local nodes to start are not specified, start all local nodes. Otherwise, start specified.
+                    if (localNodesToStart.isEmpty() || localNodesToStart.contains(address.getNodeId())) {
+                        appMains.put(address.getNodeId(), buildAppMain(appDefinition, appLoader));
+                    }
                 }
             }
             return appMains;

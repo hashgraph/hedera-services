@@ -52,7 +52,7 @@ public class HelloSwirldDemoMain implements SwirldMain {
     /** the platform running this app */
     public SwirldsPlatform platform;
     /** ID number for this member */
-    public long selfId;
+    public NodeId selfId;
     /** a console window for text output */
     public Console console;
     /** sleep this many milliseconds after each sync */
@@ -78,7 +78,7 @@ public class HelloSwirldDemoMain implements SwirldMain {
         platform.getNotificationEngine().register(PlatformStatusChangeListener.class, this::platformStatusChange);
 
         this.platform = (SwirldsPlatform) platform;
-        this.selfId = id.id();
+        this.selfId = id;
         this.console = createConsole(platform, true); // create the window, make it visible
         GuiPlatformAccessor.getInstance().setAbout(platform.getSelfId(), "Hello Swirld v. 1.0\n");
     }
