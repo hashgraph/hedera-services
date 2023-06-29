@@ -201,7 +201,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
         final var expectedInfo = getExpectedInfo();
 
         nftSl1 = nftSl1.copyBuilder()
-                .spenderNumber(spenderId.accountNum())
+                .spenderId(spenderId)
                 .mintTime(consensusTimestamp)
                 .metadata(Bytes.wrap(evmAddress))
                 .build();
@@ -222,7 +222,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
         final var expectedInfo = getExpectedInfo();
         nftSl1 = nftSl1.copyBuilder()
-                .spenderNumber(spenderId.accountNum())
+                .spenderId(spenderId)
                 .mintTime(consensusTimestamp)
                 .metadata(Bytes.wrap(evmAddress))
                 .build();

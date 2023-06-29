@@ -47,6 +47,7 @@ dependencies {
         itestImplementation(project(":config"))
         itestImplementation(project(":hapi"))
         itestImplementation(testFixtures(project(":app-spi")))
+        itestImplementation(testFixtures(project(":config")))
         itestImplementation(gav("com.github.spotbugs.annotations"))
         itestImplementation(gav("com.hedera.pbj.runtime"))
         itestImplementation(gav("com.swirlds.common"))

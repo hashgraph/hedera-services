@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.system.status.IllegalPlatformStatusException;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.actions.PlatformStatusAction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * Utility methods for testing {@link PlatformStatusLogic} implementations.

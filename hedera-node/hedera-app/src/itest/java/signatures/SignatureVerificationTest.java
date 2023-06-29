@@ -16,23 +16,24 @@
 
 package signatures;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.impl.SignatureExpanderImpl;
 import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.TestKeyInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.hedera.node.app.workflows.handle.HandleContextVerifier;
+import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -45,7 +46,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
@@ -70,6 +70,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 class SignatureVerificationTest implements Scenarios {
 
     private static final long DEFAULT_CONFIG_VERSION = 1L;
+    private static final VersionedConfiguration CONFIGURATION =
+            new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), DEFAULT_CONFIG_VERSION);
 
     @Test
     @DisplayName("Verify Hollow Account")
@@ -89,18 +91,10 @@ class SignatureVerificationTest implements Scenarios {
         final var verificationResults = verifier.verify(testCase.signedBytes, expanded);
 
         // Finally, assert that the verification results are as expected
-        final var result = new PreHandleResult(
-                AccountID.DEFAULT,
-                testCase.keyToVerify,
-                SO_FAR_SO_GOOD,
-                OK,
-                null,
-                verificationResults,
-                null,
-                DEFAULT_CONFIG_VERSION);
-        assertThat(result.verificationFor(ERIN.account().alias()))
+        final var hederaConfig = CONFIGURATION.getConfigData(HederaConfig.class);
+        final var handleContextVerifier = new HandleContextVerifier(hederaConfig, verificationResults);
+        assertThat(handleContextVerifier.verificationFor(ERIN.account().alias()))
                 .isNotNull()
-                .succeedsWithin(1, TimeUnit.MINUTES)
                 .extracting(SignatureVerification::passed)
                 .isEqualTo(true);
     }
@@ -125,18 +119,10 @@ class SignatureVerificationTest implements Scenarios {
         final var verificationResults = verifier.verify(signedBytes, expanded);
 
         // Finally, assert that the verification results are as expected
-        final var result = new PreHandleResult(
-                AccountID.DEFAULT,
-                keyToVerify,
-                SO_FAR_SO_GOOD,
-                OK,
-                null,
-                verificationResults,
-                null,
-                DEFAULT_CONFIG_VERSION);
-        assertThat(result.verificationFor(keyToVerify))
+        final var hederaConfig = CONFIGURATION.getConfigData(HederaConfig.class);
+        final var handleContextVerifier = new HandleContextVerifier(hederaConfig, verificationResults);
+        assertThat(handleContextVerifier.verificationFor(keyToVerify))
                 .isNotNull()
-                .succeedsWithin(1, TimeUnit.MINUTES)
                 .extracting(SignatureVerification::passed)
                 .isEqualTo(shouldPass);
     }

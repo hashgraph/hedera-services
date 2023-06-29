@@ -24,7 +24,6 @@ import static com.swirlds.platform.util.FileSigningUtils.signData;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SignatureType;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.stream.internal.InvalidStreamFileException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -52,7 +51,7 @@ public class EventStreamSigningUtils {
     private static final int SUPPORTED_STREAM_FILE_VERSION = 5;
 
     /**
-     * Sets up the constructable registry, and configures {@link SettingsCommon}
+     * Sets up the constructable registry
      * <p>
      * Should be called before using stream utilities
      * <p>
@@ -60,12 +59,6 @@ public class EventStreamSigningUtils {
      */
     public static void initializeSystem() {
         BootstrapUtils.setupConstructableRegistry();
-
-        // we don't want deserialization to fail based on any of these settings
-        SettingsCommon.maxTransactionCountPerEvent = Integer.MAX_VALUE;
-        SettingsCommon.maxTransactionBytesPerEvent = Integer.MAX_VALUE;
-        SettingsCommon.transactionMaxBytes = Integer.MAX_VALUE;
-        SettingsCommon.maxAddressSizeAllowed = Integer.MAX_VALUE;
     }
 
     /**

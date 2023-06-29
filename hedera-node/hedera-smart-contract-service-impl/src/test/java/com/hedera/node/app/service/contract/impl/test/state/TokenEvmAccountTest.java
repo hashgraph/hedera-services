@@ -20,8 +20,10 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pb
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.TokenEvmAccount;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -54,6 +56,17 @@ class TokenEvmAccountTest {
     @Test
     void tokenFacade() {
         assertTrue(subject.isTokenFacade());
+    }
+
+    @Test
+    void doesntSupportGettingId() {
+        assertThrows(IllegalStateException.class, subject::hederaId);
+    }
+
+    @Test
+    void doesSupportGettingContractId() {
+        final var tokenNum = ConversionUtils.numberOfLongZero(TOKEN_ADDRESS);
+        assertEquals(ContractID.newBuilder().contractNum(tokenNum).build(), subject.hederaContractId());
     }
 
     @Test

@@ -236,7 +236,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
                         .tokenId(tokenId)
                         .serialNumber(currentSerialNumber)
                         .build())
-                .ownerNumber(0L)
+                // ownerID is null to indicate owned by treasury
                 .mintTime(Timestamp.newBuilder()
                         .seconds(consensusTime.getEpochSecond())
                         .nanos(consensusTime.getNano())
