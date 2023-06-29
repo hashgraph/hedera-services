@@ -18,9 +18,7 @@ package com.swirlds.platform.uptime;
 
 import static com.swirlds.common.system.UptimeData.NO_ROUND;
 import static com.swirlds.common.units.TimeUnit.UNIT_MICROSECONDS;
-import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
-import static com.swirlds.common.units.TimeUnit.UNIT_SECONDS;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -248,9 +246,6 @@ public class UptimeTracker {
             final Instant lastConsensusEventTime = uptimeData.getLastEventTime(id);
             if (lastConsensusEventTime != null) {
                 final Duration timeSinceLastConsensusEvent = Duration.between(lastConsensusEventTime, lastRoundEndTime);
-                uptimeMetrics
-                        .getTimeSinceLastConsensusEventMetric(id)
-                        .update(UNIT_MILLISECONDS.convertTo(timeSinceLastConsensusEvent.toMillis(), UNIT_SECONDS));
 
                 if (CompareTo.isLessThanOrEqualTo(timeSinceLastConsensusEvent, degradationThreshold)) {
                     nonDegradedConsensusWeight += addressBook.getAddress(id).getWeight();
@@ -260,14 +255,6 @@ public class UptimeTracker {
             final long lastEventRound = uptimeData.getLastEventRound(id);
             if (lastEventRound != NO_ROUND) {
                 uptimeMetrics.getRoundsSinceLastConsensusEventMetric(id).update(currentRound - lastEventRound);
-            }
-
-            final Instant lastJudgeTime = uptimeData.getLastJudgeTime(id);
-            if (lastJudgeTime != null) {
-                final Duration timeSinceLastJudge = Duration.between(lastJudgeTime, lastRoundEndTime);
-                uptimeMetrics
-                        .getTimeSinceLastJudgeMetric(id)
-                        .update(UNIT_MILLISECONDS.convertTo(timeSinceLastJudge.toMillis(), UNIT_SECONDS));
             }
 
             final long lastJudgeRound = uptimeData.getLastJudgeRound(id);

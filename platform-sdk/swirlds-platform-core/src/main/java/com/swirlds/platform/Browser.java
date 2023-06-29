@@ -91,6 +91,7 @@ import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
+import com.swirlds.platform.event.tipset.EventCreationConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
@@ -245,6 +246,7 @@ public class Browser {
                 .withConfigDataType(UptimeConfig.class)
                 .withConfigDataType(RecycleBinConfig.class)
                 .withConfigDataType(EventConfig.class)
+                .withConfigDataType(EventCreationConfig.class)
                 .withConfigDataType(PathsConfig.class)
                 .withConfigDataType(SocketConfig.class)
                 .withConfigDataType(PlatformStatusConfig.class)

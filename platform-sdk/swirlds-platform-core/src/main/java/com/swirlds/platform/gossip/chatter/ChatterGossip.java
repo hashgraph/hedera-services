@@ -307,6 +307,7 @@ public class ChatterGossip extends AbstractGossip {
                         new AncientParentsRule(consensusRef::get),
                         criticalQuorum));
         final ChatterEventCreator chatterEventCreator = new ChatterEventCreator(
+                platformContext,
                 appVersion,
                 selfId,
                 PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
