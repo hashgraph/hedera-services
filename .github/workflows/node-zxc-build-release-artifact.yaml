@@ -338,7 +338,7 @@ jobs:
             exit 1
           fi
 
-  publish-local-node:
+  local-node-images:
     name: Local Node Images
     runs-on: [ self-hosted, Linux, large, ephemeral ]
     needs:
@@ -372,6 +372,7 @@ jobs:
       - name: Cache Build Artifacts
         uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # pin@v3
         with:
+          fail-on-cache-miss: true
           path: ${{ env.HOME }}/artifact-build
           key: node-build-artifacts-${{ needs.Artifact.outputs.version }}-${{ github.sha }}
 
