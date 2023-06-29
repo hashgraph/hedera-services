@@ -30,14 +30,10 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -50,7 +46,8 @@ public class TokenStateTranslator {
      * @param token {@link com.hedera.node.app.service.mono.state.merkle.MerkleToken}
      * @return  {@link Token}
      */
-    public static Token tokenFromMerkle(@NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleToken token) {
+    public static Token tokenFromMerkle(
+            @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleToken token) {
         final var builder = Token.newBuilder()
                 .tokenNumber(token.getKey().longValue())
                 .name(token.name())
@@ -98,7 +95,8 @@ public class TokenStateTranslator {
     }
 
     @NonNull
-    static List<CustomFee> convertMonoCustomFees(@Nullable final List<com.hedera.node.app.service.mono.state.submerkle.FcCustomFee> monoCustomFees) {
+    static List<CustomFee> convertMonoCustomFees(
+            @Nullable final List<com.hedera.node.app.service.mono.state.submerkle.FcCustomFee> monoCustomFees) {
         final List<CustomFee> customFees = new ArrayList<>();
         if (monoCustomFees != null) {
             for (var customFee : monoCustomFees) {
@@ -111,12 +109,17 @@ public class TokenStateTranslator {
 
     @NonNull
     static TokenType fromMerkleType(@NonNull com.hedera.node.app.service.evm.store.tokens.TokenType tokenType) {
-        return (tokenType.equals(com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE)) ? TokenType.NON_FUNGIBLE_UNIQUE : TokenType.FUNGIBLE_COMMON;
+        return (tokenType.equals(com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE))
+                ? TokenType.NON_FUNGIBLE_UNIQUE
+                : TokenType.FUNGIBLE_COMMON;
     }
 
     @NonNull
-    static TokenSupplyType fromMerkleSupplyType(@NonNull com.hedera.node.app.service.mono.state.enums.TokenSupplyType tokenSupplyType) {
-        return (tokenSupplyType.equals(com.hedera.node.app.service.mono.state.enums.TokenSupplyType.INFINITE)) ? TokenSupplyType.INFINITE : TokenSupplyType.FINITE;
+    static TokenSupplyType fromMerkleSupplyType(
+            @NonNull com.hedera.node.app.service.mono.state.enums.TokenSupplyType tokenSupplyType) {
+        return (tokenSupplyType.equals(com.hedera.node.app.service.mono.state.enums.TokenSupplyType.INFINITE))
+                ? TokenSupplyType.INFINITE
+                : TokenSupplyType.FINITE;
     }
 
     @NonNull
@@ -126,7 +129,8 @@ public class TokenStateTranslator {
      * @param readableTokenStore the {@link com.hedera.node.app.service.token.ReadableTokenStore} to use to retrieve the token
      * @return the {@link com.hedera.node.app.service.mono.state.merkle.MerkleToken} corresponding to the tokenId
      */
-    public static com.hedera.node.app.service.mono.state.merkle.MerkleToken merkleTokenFromToken(@NonNull TokenID tokenId, @NonNull ReadableTokenStore readableTokenStore) {
+    public static com.hedera.node.app.service.mono.state.merkle.MerkleToken merkleTokenFromToken(
+            @NonNull TokenID tokenId, @NonNull ReadableTokenStore readableTokenStore) {
         requireNonNull(tokenId);
         requireNonNull(readableTokenStore);
         final var optionalToken = readableTokenStore.get(tokenId);
@@ -151,7 +155,8 @@ public class TokenStateTranslator {
         merkleToken.setDeleted(token.deleted());
         merkleToken.setTokenType(toMerkleType(token.tokenType()));
         merkleToken.setSupplyType(toMerkleSupplyType(token.supplyType()));
-        merkleToken.setAutoRenewAccount((token.autoRenewAccountNumber() > 0) ? new EntityId(0, 0, token.autoRenewAccountNumber()) : null);
+        merkleToken.setAutoRenewAccount(
+                (token.autoRenewAccountNumber() > 0) ? new EntityId(0, 0, token.autoRenewAccountNumber()) : null);
         merkleToken.setAutoRenewPeriod(token.autoRenewSecs());
         merkleToken.setExpiry(token.expiry());
         merkleToken.setMemo(token.memo());
@@ -179,16 +184,22 @@ public class TokenStateTranslator {
 
     @NonNull
     static com.hedera.node.app.service.evm.store.tokens.TokenType toMerkleType(@NonNull TokenType tokenType) {
-        return (tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE)) ? com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE : com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
+        return (tokenType.equals(TokenType.NON_FUNGIBLE_UNIQUE))
+                ? com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE
+                : com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
     }
 
     @NonNull
-    static com.hedera.node.app.service.mono.state.enums.TokenSupplyType toMerkleSupplyType(@NonNull TokenSupplyType tokenSupplyType) {
-        return (tokenSupplyType.equals(TokenSupplyType.INFINITE)) ? com.hedera.node.app.service.mono.state.enums.TokenSupplyType.INFINITE : com.hedera.node.app.service.mono.state.enums.TokenSupplyType.FINITE;
+    static com.hedera.node.app.service.mono.state.enums.TokenSupplyType toMerkleSupplyType(
+            @NonNull TokenSupplyType tokenSupplyType) {
+        return (tokenSupplyType.equals(TokenSupplyType.INFINITE))
+                ? com.hedera.node.app.service.mono.state.enums.TokenSupplyType.INFINITE
+                : com.hedera.node.app.service.mono.state.enums.TokenSupplyType.FINITE;
     }
 
     @NonNull
-    static List<com.hedera.node.app.service.mono.state.submerkle.FcCustomFee> convertCustomFees(@Nullable final List<CustomFee> customFees) {
+    static List<com.hedera.node.app.service.mono.state.submerkle.FcCustomFee> convertCustomFees(
+            @Nullable final List<CustomFee> customFees) {
         final List<com.hedera.node.app.service.mono.state.submerkle.FcCustomFee> monoCustomFees = new ArrayList<>();
         if (customFees != null) {
             for (var customFee : customFees) {
@@ -198,6 +209,4 @@ public class TokenStateTranslator {
 
         return monoCustomFees;
     }
-
-
 }
