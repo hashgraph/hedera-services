@@ -312,8 +312,8 @@ public class InternalEventData {
 
     /**
      * @param m
-     * 		the member ID
-     * @return last ancestor created by m (memoizes lastSee function from Swirlds-TR-2020-01)
+     * 		the index of the member ID
+     * @return last ancestor created by the member at index m (memoizes lastSee function from Swirlds-TR-2020-01)
      */
     public EventImpl getLastSee(int m) {
         return lastSee[m];
@@ -323,9 +323,9 @@ public class InternalEventData {
      * remember event, the last ancestor created by m (memoizes lastSee function from Swirlds-TR-2020-01)
      *
      * @param m
-     * 		the member ID
+     * 		the index of the member ID
      * @param event
-     * 		the last seen {@link EventImpl} object created by m
+     * 		the last seen {@link EventImpl} object created by the member at index m
      */
     public void setLastSee(int m, EventImpl event) {
         lastSee[m] = event;
@@ -351,8 +351,8 @@ public class InternalEventData {
 
     /**
      * @param m
-     * 		the member ID
-     * @return strongly-seen witness in parent round by m (memoizes stronglySeeP function from Swirlds-TR-2020-01)
+     * 		the index of the member ID
+     * @return strongly-seen witness in parent round by the member at index m (memoizes stronglySeeP function from Swirlds-TR-2020-01)
      */
     public EventImpl getStronglySeeP(int m) {
         return stronglySeeP[m];
@@ -363,9 +363,9 @@ public class InternalEventData {
      * Swirlds-TR-2020-01)
      *
      * @param m
-     * 		the member ID
+     * 		the index of the member ID
      * @param event
-     * 		the strongly-seen witness in parent round created by m
+     * 		the strongly-seen witness in parent round created by the member at index m
      */
     public void setStronglySeeP(int m, EventImpl event) {
         stronglySeeP[m] = event;

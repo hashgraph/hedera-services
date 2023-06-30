@@ -19,6 +19,7 @@ package com.swirlds.platform.test.consensus;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 
 import com.swirlds.common.config.ConsensusConfig;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.EventConstants;
@@ -30,8 +31,11 @@ import com.swirlds.platform.test.event.source.EventSource;
 import com.swirlds.platform.test.event.source.StandardEventSource;
 import com.swirlds.platform.test.graph.OtherParentMatrixFactory;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
@@ -200,7 +204,9 @@ class IntakeAndConsensusTests {
         }
 
         @Override
-        public EventSource<?> getSource(final int nodeID) {
+        @Nullable
+        public EventSource<?> getSource(@NonNull final NodeId nodeID) {
+            Objects.requireNonNull(nodeID);
             return generator.getSource(nodeID);
         }
 
@@ -230,7 +236,8 @@ class IntakeAndConsensusTests {
         }
 
         @Override
-        public long getMaxGeneration(final long creatorId) {
+        public long getMaxGeneration(@NonNull final NodeId creatorId) {
+            Objects.requireNonNull(creatorId);
             return generator.getMaxGeneration(creatorId);
         }
 

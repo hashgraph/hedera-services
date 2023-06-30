@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.internal;
+package com.swirlds.platform.event.tipset.rules;
 
 /**
- * @deprecated this is not a good access pattern, don't add to this mess by increasing the places where its used
+ * An object used to limit or prevent the creation of new events.
  */
-@Deprecated
-public class SettingsCommon {
-    // used by AbstractStatistics
-    public static boolean showInternalStats;
-    public static boolean verboseStatistics;
+public interface TipsetEventCreationRule {
+
+    /**
+     * Check if event creation is currently permitted.
+     *
+     * @return true if event creation is permitted, false otherwise
+     */
+    boolean isEventCreationPermitted();
+
+    /**
+     * This method is called whenever an event is created.
+     */
+    void eventWasCreated();
 }

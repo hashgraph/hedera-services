@@ -7,7 +7,7 @@ doUpnp,                                        false
 maxOutgoingSyncs,                              4                          # differs from mainnet
 numConnections,                                1000
 sync.syncAsProtocolEnabled,                    true
-sync.syncProtocolPermitCount,                  17
+sync.syncProtocolPermitCount,                  4                          # differs from mainnet
 useLoopbackIp,                                 false
 
                                           #############################
