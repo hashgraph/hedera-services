@@ -309,10 +309,10 @@ public class TokenRelListCalculator {
             }
         } while (currentWalkedTokenRel != null && currentTokenId != null);
 
-        // At this point, `currentTokenNum` is either null (if we reached the end of the linked token rel pointers chain),
-        // zero if a token rel's previous or next pointer was incorrectly set to zero (e.g. initialized by default to
-        // zero and not set), or the token number of the first token rel that will NOT be deleted. In the first two
-        // cases, this value is the account's new head token number. Otherwise, return null
+        // At this point, `currentTokenNum` is either null (if we reached the end of the linked token rel pointers
+        // chain), zero if a token rel's previous or next pointer was incorrectly set to zero (e.g. initialized by
+        // default to zero and not set), or the token number of the first token rel that will NOT be deleted. In the
+        // first two cases, this value is the account's new head token number. Otherwise, return null
         return currentTokenId != null && currentTokenId.tokenNum() > 0 ? currentTokenId : null;
     }
 
