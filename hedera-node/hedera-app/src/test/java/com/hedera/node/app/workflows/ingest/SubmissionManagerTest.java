@@ -28,14 +28,19 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.StatsConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.Platform;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,21 +59,31 @@ final class SubmissionManagerTest extends AppTestBase {
     /** Mocked global properties to verify default transaction duration */
     @Mock
     private DeduplicationCache deduplicationCache;
-    /** Mocked local properties to verify that we ONLY support Unchecked Submit when in PROD mode */
-    @Mock
-    private NodeLocalProperties nodeProps;
+    /** Configuration */
+    private ConfigProvider config;
+
+    @BeforeEach
+    void setUp() {
+        config = () -> new VersionedConfigImpl(
+                HederaTestConfigBuilder.create(false)
+                        .withConfigDataType(HederaConfig.class)
+                        .withConfigDataType(StatsConfig.class)
+                        .withConfigDataType(MetricsConfig.class)
+                        .getOrCreateConfig(),
+                1);
+    }
 
     @Test
     @DisplayName("Null cannot be provided as any of the constructor args")
     @SuppressWarnings("ConstantConditions")
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new SubmissionManager(null, deduplicationCache, nodeProps, metrics))
+        assertThatThrownBy(() -> new SubmissionManager(null, deduplicationCache, config, metrics))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new SubmissionManager(platform, null, nodeProps, metrics))
+        assertThatThrownBy(() -> new SubmissionManager(platform, null, config, metrics))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new SubmissionManager(platform, deduplicationCache, null, metrics))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new SubmissionManager(platform, deduplicationCache, nodeProps, null))
+        assertThatThrownBy(() -> new SubmissionManager(platform, deduplicationCache, config, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -102,7 +117,7 @@ final class SubmissionManagerTest extends AppTestBase {
         void setup() {
             bytes = randomBytes(25);
             when(mockedMetrics.getOrCreate(any())).thenReturn(platformTxnRejections);
-            submissionManager = new SubmissionManager(platform, deduplicationCache, nodeProps, mockedMetrics);
+            submissionManager = new SubmissionManager(platform, deduplicationCache, config, mockedMetrics);
             txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder()
                             .transactionValidStart(asTimestamp(Instant.now()))
@@ -193,9 +208,16 @@ final class SubmissionManagerTest extends AppTestBase {
 
         @BeforeEach
         void setup() {
-            when(nodeProps.activeProfile()).thenReturn(Profile.TEST);
+            config = () -> new VersionedConfigImpl(
+                    HederaTestConfigBuilder.create(false)
+                            .withConfigDataType(HederaConfig.class)
+                            .withConfigDataType(StatsConfig.class)
+                            .withConfigDataType(MetricsConfig.class)
+                            .withValue("hedera.profiles.active", Profile.TEST.toString())
+                            .getOrCreateConfig(),
+                    1);
             when(mockedMetrics.getOrCreate(any())).thenReturn(platformTxnRejections);
-            submissionManager = new SubmissionManager(platform, deduplicationCache, nodeProps, mockedMetrics);
+            submissionManager = new SubmissionManager(platform, deduplicationCache, config, mockedMetrics);
 
             bytes = randomBytes(25);
 
@@ -232,8 +254,15 @@ final class SubmissionManagerTest extends AppTestBase {
         @DisplayName("An unchecked transaction in PROD mode WILL FAIL")
         void testUncheckedSubmitInProdFails() {
             // Given we are in PROD mode
-            when(nodeProps.activeProfile()).thenReturn(Profile.PROD);
-            submissionManager = new SubmissionManager(platform, deduplicationCache, nodeProps, mockedMetrics);
+            config = () -> new VersionedConfigImpl(
+                    HederaTestConfigBuilder.create(false)
+                            .withConfigDataType(HederaConfig.class)
+                            .withConfigDataType(StatsConfig.class)
+                            .withConfigDataType(MetricsConfig.class)
+                            .withValue("hedera.profiles.active", Profile.PROD.toString())
+                            .getOrCreateConfig(),
+                    1);
+            submissionManager = new SubmissionManager(platform, deduplicationCache, config, mockedMetrics);
 
             // When we submit an unchecked transaction, and separate bytes, then the
             // submission FAILS because we are in PROD mode
@@ -255,8 +284,15 @@ final class SubmissionManagerTest extends AppTestBase {
         @DisplayName("Send bogus bytes as an unchecked transaction and verify it fails with a PreCheckException")
         void testBogusBytes() {
             // Given we are in TEST mode and have a transaction with bogus bytes
-            when(nodeProps.activeProfile()).thenReturn(Profile.TEST);
-            submissionManager = new SubmissionManager(platform, deduplicationCache, nodeProps, mockedMetrics);
+            config = () -> new VersionedConfigImpl(
+                    HederaTestConfigBuilder.create(false)
+                            .withConfigDataType(HederaConfig.class)
+                            .withConfigDataType(StatsConfig.class)
+                            .withConfigDataType(MetricsConfig.class)
+                            .withValue("hedera.profiles.active", Profile.TEST.toString())
+                            .getOrCreateConfig(),
+                    1);
+            submissionManager = new SubmissionManager(platform, deduplicationCache, config, mockedMetrics);
             txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder()
                             .transactionValidStart(asTimestamp(Instant.now()))

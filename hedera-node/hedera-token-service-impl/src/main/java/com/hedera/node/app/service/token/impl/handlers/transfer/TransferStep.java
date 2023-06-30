@@ -28,7 +28,7 @@ public interface TransferStep {
      * @param transferContext the context of the transfer
      * @return the set of keys that are authorized to perform this step
      */
-    // TODO: all the logic in prehandle can be moved into appropriate steps
+    // FUTURE: all the logic in prehandle can be moved into appropriate steps
     default Set<Key> authorizingKeysIn(TransferContext transferContext) {
         return Set.of();
     }

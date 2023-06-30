@@ -138,7 +138,7 @@ public class CryptoTransferValidator {
 
         // Validate that allowances are enabled, or that no hbar transfers are an allowance transfer
         final var allowancesEnabled = hederaConfig.allowancesIsEnabled();
-        validateTrue(allowancesEnabled || isTransferWithApproval(hbarTransfers), NOT_SUPPORTED);
+        validateTrue(allowancesEnabled || !isTransferWithApproval(hbarTransfers), NOT_SUPPORTED);
 
         // The loop below will validate the counts for token transfers (both fungible and non-fungible)
         final var tokenTransfers = op.tokenTransfersOrElse(emptyList());
@@ -148,7 +148,7 @@ public class CryptoTransferValidator {
         for (final TokenTransferList tokenTransfer : tokenTransfers) {
             // Validate the fungible token transfer(s) (if present)
             final var fungibleTransfers = tokenTransfer.transfersOrElse(emptyList());
-            validateTrue(allowancesEnabled || isTransferWithApproval(fungibleTransfers), NOT_SUPPORTED);
+            validateTrue(allowancesEnabled || !isTransferWithApproval(fungibleTransfers), NOT_SUPPORTED);
             totalFungibleTransfers += fungibleTransfers.size();
 
             // Validate the nft transfer(s) (if present)

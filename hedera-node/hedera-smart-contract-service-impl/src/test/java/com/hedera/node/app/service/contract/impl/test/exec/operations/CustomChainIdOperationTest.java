@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.exec.TransactionProcessor.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 

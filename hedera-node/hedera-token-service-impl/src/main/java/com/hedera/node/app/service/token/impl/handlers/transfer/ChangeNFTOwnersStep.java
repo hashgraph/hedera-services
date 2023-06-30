@@ -111,7 +111,7 @@ public class ChangeNFTOwnersStep extends BaseTokenHandler implements TransferSte
                             .tokenNum(tokenId.tokenNum())
                             .build();
                     if(!senderApproveForAllAllowances.contains(allowance)) {
-                        senderApproveForAllAllowances.set(receiverId, 0L);
+//                        senderApproveForAllAllowances.set(receiverId, 0L);
                     }
                     final var uniqueToken = nftStore.get(tokenId, serial);
                     final var copy = uniqueToken.copyBuilder();

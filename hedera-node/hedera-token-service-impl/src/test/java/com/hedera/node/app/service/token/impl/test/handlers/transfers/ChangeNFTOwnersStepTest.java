@@ -43,9 +43,7 @@ public class ChangeNFTOwnersStepTest extends StepsBase{
     @Test
     void replacesAliasesInOp() {
         final var replacedOp = getReplacedOp();
-        changeNFTOwnersStep = new ChangeNFTOwnersStep(replacedOp, topLevelPayer);
-
-        assertThat(nftSt)
+        changeNFTOwnersStep = new ChangeNFTOwnersStep(replacedOp, payerId);
         changeNFTOwnersStep.doIn(transferContext);
     }
 

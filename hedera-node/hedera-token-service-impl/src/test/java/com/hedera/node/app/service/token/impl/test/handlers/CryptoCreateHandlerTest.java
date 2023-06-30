@@ -63,7 +63,7 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTe
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -104,7 +104,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     private CryptoCreateRecordBuilder recordBuilder;
 
     @Mock
-    private NodeInfo nodeInfo;
+    private NetworkInfo networkInfo;
 
     @Mock(strictness = LENIENT)
     private ExpiryValidator expiryValidator;
@@ -136,7 +136,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         cryptoCreateValidator = new CryptoCreateValidator();
         stakingValidator = new StakingValidator();
-        subject = new CryptoCreateHandler(cryptoCreateValidator, stakingValidator, nodeInfo);
+        subject = new CryptoCreateHandler(cryptoCreateValidator, stakingValidator, networkInfo);
     }
 
     @Test

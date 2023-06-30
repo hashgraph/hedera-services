@@ -16,19 +16,19 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.LAZY_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.Utils.asKeyFromAlias;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.asKeyFromAlias;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl.isOfEvmAddressSize;
 import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -43,8 +43,6 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
-import com.hedera.node.config.data.AutoCreationConfig;
-import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -65,6 +63,9 @@ public class AutoAccountCreator {
     // iteration of the token transfer list. This map is used to count number of
     // maxAutoAssociations needed on auto created account
     protected final Map<Bytes, Set<TokenID>> tokenAliasMap = new HashMap<>();
+    private static final CryptoUpdateTransactionBody.Builder UPDATE_TXN_BODY_BUILDER =
+            CryptoUpdateTransactionBody.newBuilder()
+                    .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
 
     @Inject
     public AutoAccountCreator(@NonNull final HandleContext handleContext) {
@@ -77,27 +78,16 @@ public class AutoAccountCreator {
      * @param alias the alias to create the account for
      * @param isByTokenTransfer whether the account is being created by a token transfer
      */
-    public void create(@NonNull final Bytes alias, final boolean isByTokenTransfer) {
+    public AccountID create(@NonNull final Bytes alias, final boolean isByTokenTransfer) {
         final var accountsConfig = handleContext.configuration().getConfigData(AccountsConfig.class);
 
         validateTrue(
                 accountStore.sizeOfAccountState() + 1 <= accountsConfig.maxNumber(),
                 ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
-        final var config = handleContext.configuration().getConfigData(AutoCreationConfig.class);
-        validateTrue(config.enabled(), NOT_SUPPORTED);
-
-        final var tokensConfig = handleContext.configuration().getConfigData(TokensConfig.class);
-        if (isByTokenTransfer) {
-            validateTrue(tokensConfig.autoCreationsIsEnabled(), ResponseCodeEnum.NOT_SUPPORTED);
-        }
-
         final TransactionBody.Builder syntheticCreation;
         String memo;
 
-        // checks tokenAliasMap if the change consists an alias that is already used in previous
-        // iteration of the token transfer list. This map is used to count number of
-        // maxAutoAssociations needed on auto created account
         if (isByTokenTransfer) {
             tokenAliasMap.putIfAbsent(alias, Collections.emptySet());
         }
@@ -141,6 +131,10 @@ public class AutoAccountCreator {
             }
         }
         // TODO: Not sure if fee should be set here childRecord.transactionFee(fee);
+
+        final var createdAccountId = accountStore.getAccountIDByAlias(alias);
+        validateTrue(createdAccountId != null, FAIL_INVALID);
+        return createdAccountId;
     }
 
     /**
@@ -148,9 +142,7 @@ public class AutoAccountCreator {
      * @return fee for finalization of lazy creation
      */
     private long getLazyCreationFinalizationFee() {
-        final var updateTxnBody = CryptoUpdateTransactionBody.newBuilder()
-                .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
-        return autoCreationFeeFor(TransactionBody.newBuilder().cryptoUpdateAccount(updateTxnBody));
+        return autoCreationFeeFor(TransactionBody.newBuilder().cryptoUpdateAccount(UPDATE_TXN_BODY_BUILDER));
     }
 
     /**
@@ -225,7 +217,7 @@ public class AutoAccountCreator {
             if (keyBytes.length() == ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
                 final var keyBytesArray = keyBytes.toByteArray();
                 final var evmAddress = addressRecovery.apply(keyBytesArray);
-                if (isRecoveredEvmAddress(Bytes.wrap(evmAddress))) {
+                if (isEvmAddress(Bytes.wrap(evmAddress))) {
                     return evmAddress;
                 } else {
                     // Not ever expected, since above checks should imply a valid input to the
@@ -242,7 +234,7 @@ public class AutoAccountCreator {
      * @param address address to check
      * @return true if the given address is a valid EVM address length, false otherwise
      */
-    private boolean isRecoveredEvmAddress(final Bytes address) {
-        return address != null && address.length() == EVM_ADDRESS_LEN;
+    private boolean isEvmAddress(final Bytes address) {
+        return address != null && isOfEvmAddressSize(address);
     }
 }

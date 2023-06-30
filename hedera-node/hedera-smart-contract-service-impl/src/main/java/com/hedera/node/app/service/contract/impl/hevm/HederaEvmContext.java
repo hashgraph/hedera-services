@@ -16,4 +16,22 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
-public record HederaEvmContext(long gasPrice, boolean staticCall, HederaEvmBlocks blocks) {}
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.frame.BlockValues;
+
+public record HederaEvmContext(long gasPrice, boolean staticCall, HederaEvmCode code, HederaEvmBlocks blocks) {
+    public Code load(@NonNull final Address contract) {
+        return code.load(Objects.requireNonNull(contract));
+    }
+
+    public Code loadIfPresent(@NonNull final Address contract) {
+        return code.loadIfPresent(Objects.requireNonNull(contract));
+    }
+
+    public BlockValues blockValuesOf(final long gasLimit) {
+        return blocks.blockValuesOf(gasLimit);
+    }
+}

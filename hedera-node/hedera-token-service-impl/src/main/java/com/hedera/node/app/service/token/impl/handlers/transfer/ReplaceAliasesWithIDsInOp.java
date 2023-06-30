@@ -28,11 +28,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Replaces aliases with IDs in the crypto transfer operation.
+ * Replaces aliases with IDs in the crypto transfer operation. This is needed to make rest of the steps in the
+ * transfer handler to process easily .
  */
 public class ReplaceAliasesWithIDsInOp {
-    public ReplaceAliasesWithIDsInOp() {}
-
+    /**
+     * Replaces aliases with IDs in the crypto transfer operation.It looks at the resolutions happened in {@link EnsureAliasesStep}
+     * which are stored in {@link TransferContextImpl} and replaces aliases with IDs.
+     * @param op the crypto transfer operation
+     * @param transferContext the transfer context
+     * @return the crypto transfer operation with aliases replaced with IDs
+     */
     public CryptoTransferTransactionBody replaceAliasesWithIds(
             final CryptoTransferTransactionBody op, final TransferContextImpl transferContext) {
         final var resolutions = transferContext.resolutions();
@@ -69,17 +75,19 @@ public class ReplaceAliasesWithIDsInOp {
             if (!replacedTokenAdjusts.isEmpty()) {
                 tokenTransferList.transfers(replacedTokenAdjusts);
             }
-
+            // replace aliases in nft adjusts
             final List<NftTransfer> replacedNftAdjusts = new ArrayList<>();
             for (final var nftAdjust : adjust.nftTransfersOrElse(emptyList())) {
                 final var nftAdjustCopy = nftAdjust.copyBuilder();
-                if (isAlias(nftAdjust.receiverAccountIDOrThrow()) || isAlias(nftAdjust.senderAccountIDOrThrow())) {
-                    if (isAlias(nftAdjust.receiverAccountIDOrThrow())) {
+                final var isReceiverAlias = isAlias(nftAdjust.receiverAccountIDOrThrow());
+                final var isSenderAlias = isAlias(nftAdjust.senderAccountIDOrThrow());
+                if (isReceiverAlias || isSenderAlias) {
+                    if (isReceiverAlias) {
                         final var resolvedId = resolutions.get(
                                 nftAdjust.receiverAccountIDOrThrow().alias());
                         nftAdjustCopy.receiverAccountID(resolvedId);
                     }
-                    if (isAlias(nftAdjust.senderAccountIDOrThrow())) {
+                    if (isSenderAlias) {
                         final var resolvedId = resolutions.get(
                                 nftAdjust.senderAccountIDOrThrow().alias());
                         nftAdjustCopy.receiverAccountID(resolvedId);
@@ -89,6 +97,7 @@ public class ReplaceAliasesWithIDsInOp {
                     replacedNftAdjusts.add(nftAdjust);
                 }
             }
+            // if there are any transfers or nft adjusts, add them to the token transfer list
             if (!replacedNftAdjusts.isEmpty()) {
                 tokenTransferList.nftTransfers(replacedNftAdjusts);
             }

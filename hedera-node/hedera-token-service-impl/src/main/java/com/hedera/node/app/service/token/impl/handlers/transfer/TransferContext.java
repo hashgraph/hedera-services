@@ -23,6 +23,12 @@ import java.util.Map;
 
 /**
  * Context for the current CryptoTransfer transaction.
+ * Each CryptoTransfer transaction goes through different steps in handling. The output of one step will
+ * be needed as input to other steps. For example, in the first step we resolve all the aliases in the transaction body.
+ * The resolutions are needed in further steps to is IDs instead of aliases.
+ * It also has helper function to create accounts from alias.
+ * This class stores all the needed information that is shared between steps in handling a CryptoTransfer transaction.
+ * The lifecycle of this clas is the same as the lifecycle of a CryptoTransfer transaction.
  */
 public interface TransferContext {
     /**
