@@ -85,7 +85,7 @@ public class TokenDeleteHandler implements TransactionHandler {
         tokenStore.put(updatedToken);
 
         // Update the token treasury account's treasury titles count
-        final var account = accountStore.get(BaseCryptoHandler.asAccount(token.treasuryAccountNumber()));
+        final var account = accountStore.get(token.treasuryAccountId());
         final var updatedAccount = account.copyBuilder()
                 .numberTreasuryTitles(account.numberTreasuryTitles() - 1)
                 .build();
