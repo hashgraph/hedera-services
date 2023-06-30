@@ -80,6 +80,7 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
             ContractsV_0_38Module.class
         })
 public interface ContractsModule {
+    int SYSTEM_ACCOUNT_BOUNDARY = 750;
 
     @Qualifier
     @interface V_0_30 {}
@@ -261,8 +262,8 @@ public interface ContractsModule {
     static Predicate<Address> provideHederaSystemAccountDetector() {
         // all addresses between 0-750 (inclusive) are treated as system accounts
         // from the perspective of the EVM when executing Call, Balance, and SelfDestruct operations
-        return address ->
-                address.numberOfLeadingZeroBytes() >= 18 && Integer.compareUnsigned(address.getInt(16), 750) <= 0;
+        return address -> address.numberOfLeadingZeroBytes() >= 18
+                && Integer.compareUnsigned(address.getInt(16), SYSTEM_ACCOUNT_BOUNDARY) <= 0;
     }
 
     @Provides

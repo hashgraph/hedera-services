@@ -17,9 +17,9 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalseOrRevert;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.node.app.service.mono.contracts.ContractsModule.SYSTEM_ACCOUNT_BOUNDARY;
 import static com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.NO_FUNGIBLE_TRANSFERS;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.NO_NFT_EXCHANGES;
@@ -34,9 +34,9 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -259,12 +259,12 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 replaceAliasWithId(change, changes, completedLazyCreates);
             }
 
-            // check whether the balance change is negative e.g. for "from" field, if not validate the "to" field.
+            // Checks whether the balance modification targets the receiver account (i.e. credit operation).
             if (isCredit && !change.isForCustomFee()) {
-                validateFalseOrRevert(isSystemAccountDetected(change), CONTRACT_REVERT_EXECUTED);
+                revertIfReceiverIsSystemAccount(change);
             }
 
-            if (change.isForCustomFee() && isDebit) {
+            if (isDebit && change.isForCustomFee()) {
                 if (change.includesFallbackFee())
                     validateTrue(allowRoyaltyFallbackCustomFeeTransfers, NOT_SUPPORTED, "royalty fee");
                 else validateTrue(allowFixedCustomFeeTransfers, NOT_SUPPORTED, "fixed fee");
@@ -845,11 +845,11 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         log.error(CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN, switchedChange, opBuilder);
     }
 
-    private boolean isSystemAccountDetected(final BalanceChange change) {
+    private void revertIfReceiverIsSystemAccount(final BalanceChange change) {
         final var accountNum = change.counterPartyAccountId() != null
                 ? change.counterPartyAccountId().getAccountNum()
                 : change.getAccount().num();
 
-        return accountNum <= 750;
+        validateTrueOrRevert(accountNum >= SYSTEM_ACCOUNT_BOUNDARY, INVALID_RECEIVING_NODE_ACCOUNT);
     }
 }
