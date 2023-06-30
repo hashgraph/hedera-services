@@ -22,12 +22,15 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.node.app.service.evm.utils.ValidationUtils;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -36,9 +39,12 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 
 public class ChangeNFTOwnersStep extends BaseTokenHandler implements TransferStep {
     private final CryptoTransferTransactionBody op;
+    private final AccountID topLevelPayer;
 
-    public ChangeNFTOwnersStep(final CryptoTransferTransactionBody op) {
+    public ChangeNFTOwnersStep(final CryptoTransferTransactionBody op,
+                               final AccountID topLevelPayer) {
         this.op = op;
+        this.topLevelPayer = topLevelPayer;
     }
 
     @Override
@@ -53,6 +59,10 @@ public class ChangeNFTOwnersStep extends BaseTokenHandler implements TransferSte
         for (var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.token();
             final var token = getIfUsable(tokenId, tokenStore);
+
+            if (xfers.hasExpectedDecimals()) {
+                ValidationUtils.validateTrue(token.decimals() == xfers.expectedDecimals().intValue(), UNEXPECTED_TOKEN_DECIMALS);
+            }
 
             for (var oc : xfers.nftTransfers()) {
                 final var senderId = oc.senderAccountID();
@@ -90,6 +100,19 @@ public class ChangeNFTOwnersStep extends BaseTokenHandler implements TransferSte
                         tokenRelStore,
                         nftStore);
                 if (oc.isApproval()) {
+                    // If isApproval flag is set then the spender account must have paid for the transaction.
+                    // The transfer list specifies the owner who granted allowance as sender
+                    // check if the allowances from the sender account has the payer account as spender
+
+                    final var senderApproveForAllAllowances = senderAccount.approveForAllNftAllowances();
+                    final var allowance = AccountApprovalForAllAllowance
+                            .newBuilder()
+                            .spenderNum(topLevelPayer.accountNum())
+                            .tokenNum(tokenId.tokenNum())
+                            .build();
+                    if(!senderApproveForAllAllowances.contains(allowance)) {
+                        senderApproveForAllAllowances.set(receiverId, 0L);
+                    }
                     final var uniqueToken = nftStore.get(tokenId, serial);
                     final var copy = uniqueToken.copyBuilder();
                     nftStore.put(copy.spenderId(AccountID.DEFAULT).build());

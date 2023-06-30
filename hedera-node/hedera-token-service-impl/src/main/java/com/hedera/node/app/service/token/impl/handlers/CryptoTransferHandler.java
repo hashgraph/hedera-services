@@ -112,6 +112,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.cryptoTransferOrThrow();
+        final var topLevelPayer = txn.transactionIDOrThrow().accountIDOrThrow();
 
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
@@ -124,7 +125,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         // Replace all aliases in the transaction body with its account ids
         final var replacedOp = ensureAndReplaceAliasesInOp(txn, transferContext, context);
 
-        final var steps = decomposeIntoSteps(replacedOp);
+        final var steps = decomposeIntoSteps(replacedOp, topLevelPayer);
         for (final var step : steps) {
             // Apply all changes to the handleContext's States
             step.doIn(transferContext);
@@ -191,10 +192,13 @@ public class CryptoTransferHandler implements TransactionHandler {
      * LEGEND: '+' = creates new BalanceChange(s) from either the transaction body, custom fee schedule, or staking reward situation
      *        'c' = updates an existing BalanceChange
      *        'o' = causes a side effect not represented as BalanceChange
-     * @param op The crypto transfer transaction body
+     *
+     * @param op            The crypto transfer transaction body
+     * @param topLevelPayer
      * @return A list of steps to execute
      */
-    private List<TransferStep> decomposeIntoSteps(final CryptoTransferTransactionBody op) {
+    private List<TransferStep> decomposeIntoSteps(final CryptoTransferTransactionBody op,
+                                                  final AccountID topLevelPayer) {
         final List<TransferStep> steps = new ArrayList<>();
         // Step 1: associate any token recipients that are not already associated and have
         // auto association slots open
@@ -203,11 +207,11 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var customFeeAssessmentStep = new CustomFeeAssessmentStep(op);
 
         // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
-        final var assessHbarTransfers = new ZeroSumHbarChangesStep(op);
+        final var assessHbarTransfers = new ZeroSumHbarChangesStep(op, topLevelPayer);
         // Step 4: Charge token transfers with an approval. Modify the allowances map on account
-        final var assessFungibleTokenTransfers = new ZeroSumFungibleTransfersStep(op);
+        final var assessFungibleTokenTransfers = new ZeroSumFungibleTransfersStep(op, topLevelPayer);
         // Step 5: Change NFT owners and also ones with isApproval. Clear the spender on NFT
-        final var changeNftOwners = new ChangeNFTOwnersStep(op);
+        final var changeNftOwners = new ChangeNFTOwnersStep(op, topLevelPayer);
 
         // Step 6: TODO Pay staking rewards
 

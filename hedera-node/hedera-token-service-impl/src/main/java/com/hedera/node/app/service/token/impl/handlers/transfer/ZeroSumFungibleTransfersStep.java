@@ -26,6 +26,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static java.util.Collections.emptyList;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
@@ -46,9 +47,12 @@ public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements Tr
     // The CryptoTransferTransactionBody here is obtained by replacing aliases with their
     // corresponding accountIds.
     final CryptoTransferTransactionBody op;
+    private final AccountID topLevelPayer;
 
-    public ZeroSumFungibleTransfersStep(final CryptoTransferTransactionBody op) {
+    public ZeroSumFungibleTransfersStep(final CryptoTransferTransactionBody op,
+                                        final AccountID topLevelPayer) {
         this.op = op;
+        this.topLevelPayer = topLevelPayer;
     }
 
     @Override
@@ -156,7 +160,11 @@ public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements Tr
             for (int i = 0; i < tokenAllowances.size(); i++) {
                 final var allowance = tokenAllowances.get(i);
                 final var allowanceCopy = allowance.copyBuilder();
-                if (allowance.spenderNum() == accountId.accountNum() && allowance.tokenNum() == tokenId.tokenNum()) {
+                // If isApproval flag is set then the spender account must have paid for the transaction.
+                // The transfer list specifies the owner who granted allowance as sender
+                // check if the allowances from the sender account has the payer account as spender
+                if (allowance.spenderNum() == topLevelPayer.accountNum()
+                        && allowance.tokenNum() == tokenId.tokenNum()) {
                     final var newAllowance = allowance.amount() + allowanceTransfers.get(account);
                     validateTrue(newAllowance >= 0, AMOUNT_EXCEEDS_ALLOWANCE);
                     allowanceCopy.amount(newAllowance);
@@ -166,7 +174,7 @@ public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements Tr
                         tokenAllowances.remove(i);
                     }
                     break;
-                }else if(i == tokenAllowances.size() - 1){
+                } else if(i == tokenAllowances.size() - 1) {
                     throw new HandleException(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
                 }
             }

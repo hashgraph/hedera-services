@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANC
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
@@ -28,9 +27,7 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.spi.workflows.HandleException;
 
@@ -40,9 +37,12 @@ import java.util.Map;
 
 public class ZeroSumHbarChangesStep extends BaseTokenHandler implements TransferStep {
     final CryptoTransferTransactionBody op;
+    private final AccountID topLevelPayer;
 
-    public ZeroSumHbarChangesStep(final CryptoTransferTransactionBody op) {
+    public ZeroSumHbarChangesStep(final CryptoTransferTransactionBody op,
+                                  final AccountID topLevelPayer) {
         this.op = op;
+        this.topLevelPayer = topLevelPayer;
     }
 
     @Override
@@ -96,6 +96,8 @@ public class ZeroSumHbarChangesStep extends BaseTokenHandler implements Transfer
 
     /**
      * Puts all the aggregated token allowances changes into the accountStore.
+     * For isApproval flag to work the spender account who was granted allowance
+     * should be the payer for the transaction.
      * @param allowanceTransfers - map of aggregated token allowances to be put into state
      * @param accountStore  - account store
      * @param transferContext - transfer context
@@ -112,7 +114,10 @@ public class ZeroSumHbarChangesStep extends BaseTokenHandler implements Transfer
             for (int i = 0; i < cryptoAllowances.size(); i++) {
                 final var allowance = cryptoAllowances.get(i);
                 final var allowanceCopy = allowance.copyBuilder();
-                if (allowance.spenderNum() == accountId.accountNum()) {
+                // If isApproval flag is set then the spender account must have paid for the transaction.
+                // The transfer list specifies the owner who granted allowance as sender
+                // check if the allowances from the sender account has the payer account as spender
+                if (allowance.spenderNum() == topLevelPayer.accountNum()) {
                     final var newAllowance = allowance.amount() + allowanceTransfers.get(account);
                     validateTrue(newAllowance >= 0, AMOUNT_EXCEEDS_ALLOWANCE);
 

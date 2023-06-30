@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.transfers;
 
-import com.hedera.hapi.node.base.TokenTransferList;
-import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ChangeNFTOwnersStep;
@@ -27,11 +25,6 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextI
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.aaWith;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.nftTransferWith;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ChangeNFTOwnersStepTest extends StepsBase{
@@ -50,7 +43,7 @@ public class ChangeNFTOwnersStepTest extends StepsBase{
     @Test
     void replacesAliasesInOp() {
         final var replacedOp = getReplacedOp();
-        changeNFTOwnersStep = new ChangeNFTOwnersStep(replacedOp);
+        changeNFTOwnersStep = new ChangeNFTOwnersStep(replacedOp, topLevelPayer);
 
         assertThat(nftSt)
         changeNFTOwnersStep.doIn(transferContext);
