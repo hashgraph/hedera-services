@@ -18,7 +18,7 @@ package com.swirlds.common.metrics.noop.internal;
 
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricConfig;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.EnumSet;
 
 /**
