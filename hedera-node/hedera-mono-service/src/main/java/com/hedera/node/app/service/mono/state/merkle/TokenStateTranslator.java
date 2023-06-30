@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.state.migration;
+package com.hedera.node.app.service.mono.state.merkle;
 
 import static java.util.Objects.requireNonNull;
 
@@ -39,6 +39,9 @@ import java.util.List;
  * Translates between the legacy {@link com.hedera.node.app.service.mono.state.merkle.MerkleToken} and the {@link Token} and vise versa.
  */
 public class TokenStateTranslator {
+    private TokenStateTranslator() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
 
     /**
      * Translates the {@link com.hedera.node.app.service.mono.state.merkle.MerkleToken} to the {@link Token}.
