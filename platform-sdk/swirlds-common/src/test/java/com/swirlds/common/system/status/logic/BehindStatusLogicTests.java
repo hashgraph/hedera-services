@@ -20,7 +20,7 @@ import static com.swirlds.common.system.status.logic.StatusLogicTestUtils.trigge
 import static com.swirlds.common.system.status.logic.StatusLogicTestUtils.triggerActionAndAssertNoTransition;
 import static com.swirlds.common.system.status.logic.StatusLogicTestUtils.triggerActionAndAssertTransition;
 
-import com.swirlds.base.time.fixtures.FakeTime;
+import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.common.system.status.actions.CatastrophicFailureAction;

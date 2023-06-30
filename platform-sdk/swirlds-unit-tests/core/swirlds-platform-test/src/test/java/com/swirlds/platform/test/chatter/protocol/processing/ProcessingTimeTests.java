@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.swirlds.base.time.fixtures.FakeTime;
+import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.platform.gossip.chatter.protocol.processing.ProcessingTimeMessage;
 import com.swirlds.platform.gossip.chatter.protocol.processing.ProcessingTimeSendReceive;
 import java.time.Duration;

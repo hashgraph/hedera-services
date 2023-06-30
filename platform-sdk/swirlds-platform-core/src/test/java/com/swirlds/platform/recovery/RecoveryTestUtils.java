@@ -25,7 +25,7 @@ import static com.swirlds.common.utility.Units.SECONDS_TO_NANOSECONDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 
-import com.swirlds.base.time.fixtures.FakeTime;
+import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
