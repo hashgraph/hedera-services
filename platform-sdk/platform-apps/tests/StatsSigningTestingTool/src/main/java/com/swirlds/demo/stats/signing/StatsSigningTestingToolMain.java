@@ -282,7 +282,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public SwirldState newState() {
-        return new StatsSigningTestingToolState(selfId, () -> transactionPool);
+        return new StatsSigningTestingToolState(() -> transactionPool);
     }
 
     /**
