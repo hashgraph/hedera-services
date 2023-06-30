@@ -51,7 +51,7 @@ import com.hedera.node.app.service.mono.sigs.utils.ImmutableKeyUtils;
 import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
 import com.hedera.node.app.service.mono.sigs.utils.PrecheckUtils;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.state.merkle.TokenStateTranslator;
+import com.hedera.node.app.service.mono.state.migration.TokenStateTranslator;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.merkle.internals.ByteUtils;
 import com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.mono.state.merkle;
+package com.hedera.node.app.service.mono.state.migration;
 
 import static java.util.Objects.requireNonNull;
 
