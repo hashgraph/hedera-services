@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -43,7 +44,7 @@ public final class NftStateTranslator {
     public static Nft nftFromMerkleUniqueToken(
             @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken merkleUniqueToken) {
         requireNonNull(merkleUniqueToken);
-        var builder = Nft.newBuilder();
+        final var builder = Nft.newBuilder();
         final var nftIdPair = merkleUniqueToken.getKey().asNftNumPair();
         builder.id(merkelUniqueTokenToUniqueTokenId(nftIdPair));
 
@@ -107,7 +108,7 @@ public final class NftStateTranslator {
     public static com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken merkleUniqueTokenFromNft(
             @NonNull Nft nft) {
         requireNonNull(nft);
-        com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken merkleUniqueToken =
+        final com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken merkleUniqueToken =
                 new com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken();
 
         if (nft.hasId()) {
@@ -115,8 +116,8 @@ public final class NftStateTranslator {
                     EntityNum.fromLong(nft.id().tokenId().tokenNum()),
                     EntityNum.fromLong(nft.id().serialNumber())));
         }
-        merkleUniqueToken.setOwner(EntityId.fromNum(nft.ownerId().accountNum()));
-        merkleUniqueToken.setSpender(EntityId.fromNum(nft.spenderId().accountNum()));
+        merkleUniqueToken.setOwner(EntityId.fromGrpcAccountId(PbjConverter.fromPbj(nft.ownerId())));
+        merkleUniqueToken.setSpender(EntityId.fromGrpcAccountId(PbjConverter.fromPbj(nft.spenderId())));
         merkleUniqueToken.setPackedCreationTime(
                 BitPackUtils.packedTime(nft.mintTime().seconds(), nft.mintTime().nanos()));
         merkleUniqueToken.setMetadata(nft.metadata().toByteArray());
