@@ -78,12 +78,14 @@ public class RateLimiter {
     }
 
     /**
-     * Request permission to perform an operation. Returns true if it is ok to perform the operation, returns false if
-     * the operation has been performed too recently in the past.
+     * Request permission to trigger an operation, and immediately trigger if permitted. Returns true if it is ok to
+     * perform the operation, returns false if
+     * the operation has been performed too recently in the past. Once this
+     * method returns true, it will return false for the remainder of the time span specified by the minimum period.
      *
-     * @return true if the operation can be performed without violating rate limits, otherwise false
+     * @return true if the operation can be triggered without violating rate limits, otherwise false
      */
-    public boolean request() {
+    public boolean requestAndTrigger() {
         final Instant now = time.now();
         final Duration elapsed = Duration.between(lastOperation, now);
         if (isGreaterThanOrEqualTo(elapsed, minimumPeriod)) {
@@ -96,8 +98,38 @@ public class RateLimiter {
     }
 
     /**
-     * Get the number of times {@link #request()} has returned false since the last time it returned true. Immediately
-     * after {@link #request()} returns true, this method will always return 0.
+     * Check if it is legal to trigger the rate limited action. Unlike {@link #requestAndTrigger()}, this method can
+     * return true over and over in a time span smaller than the desired rate limit. In order to cause this method to
+     * return false for the remainder of the time span specified by the rate limit, call {@link #trigger()}.
+     *
+     * @return true if it is currently legal to trigger the rate limited action
+     */
+    public boolean request() {
+        final Instant now = time.now();
+        final Duration elapsed = Duration.between(lastOperation, now);
+        if (isGreaterThanOrEqualTo(elapsed, minimumPeriod)) {
+            deniedRequests = 0;
+            return true;
+        }
+        deniedRequests++;
+        return false;
+    }
+
+    /**
+     * Trigger the action that is being rate limited. Calling this method will cause {@link #request()} and
+     * {@link #requestAndTrigger()} to return false for the remainder of the desired rate limit. This method
+     * does not actually check if enough time has passed to permit the action being triggered. Calling this method
+     * before the end of a rate limit period will reset the rate limit period.
+     */
+    public void trigger() {
+        deniedRequests = 0;
+        lastOperation = time.now();
+    }
+
+    /**
+     * Get the number of times {@link #requestAndTrigger()} and/or {@link #request()} has returned false since the last
+     * time one of these methods returned true. Immediately after {@link #requestAndTrigger()} or {@link #request()}
+     * returns true, this method will return 0.
      *
      * @return the number of recently denied requests
      */

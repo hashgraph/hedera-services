@@ -20,8 +20,8 @@ import com.swirlds.common.sequence.Shiftable;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
-import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import org.apache.commons.lang3.ObjectUtils;
 
 /**

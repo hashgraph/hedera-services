@@ -51,6 +51,8 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.MalformedProtobufException;
 import com.hedera.pbj.runtime.UnknownFieldException;
@@ -97,8 +99,8 @@ public class TransactionChecker {
 
     /** The maximum number of bytes that can exist in the transaction */
     private final int maxSignedTxnSize;
-    /** The {@link GlobalDynamicProperties} used to get properties needed for these checks. */
-    private final GlobalDynamicProperties props;
+    /** The {@link ConfigProvider} used to get properties needed for these checks. */
+    private final ConfigProvider props;
     /** The {@link Counter} used to track the number of deprecated transactions (bodyBytes, sigMap) received. */
     private final Counter deprecatedCounter;
     /** The {@link Counter} used to track the number of super deprecated transactions (body, sigs) received. */
@@ -114,7 +116,7 @@ public class TransactionChecker {
      * Create a new {@link TransactionChecker}
      *
      * @param maxSignedTxnSize the maximum transaction size
-     * @param dynamicProperties the {@link GlobalDynamicProperties}
+     * @param configProvider access to configuration
      * @param metrics metrics related to workflows
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws IllegalArgumentException if {@code maxSignedTxnSize} is not positive
@@ -123,7 +125,7 @@ public class TransactionChecker {
     public TransactionChecker(
             @MaxSignedTxnSize final int maxSignedTxnSize,
             @NodeSelfId @NonNull final AccountID nodeAccount,
-            @NonNull final GlobalDynamicProperties dynamicProperties,
+            @NonNull final ConfigProvider configProvider,
             @NonNull final Metrics metrics) {
         if (maxSignedTxnSize <= 0) {
             throw new IllegalArgumentException("maxSignedTxnSize must be > 0");
@@ -131,7 +133,7 @@ public class TransactionChecker {
 
         this.nodeAccount = requireNonNull(nodeAccount);
         this.maxSignedTxnSize = maxSignedTxnSize;
-        this.props = requireNonNull(dynamicProperties);
+        this.props = requireNonNull(configProvider);
         this.deprecatedCounter = metrics.getOrCreate(new Counter.Config("app", COUNTER_DEPRECATED_TXNS_NAME)
                 .withDescription(COUNTER_RECEIVED_DEPRECATED_DESC));
         this.superDeprecatedCounter = metrics.getOrCreate(new Counter.Config("app", COUNTER_SUPER_DEPRECATED_TXNS_NAME)
@@ -314,8 +316,9 @@ public class TransactionChecker {
             throw new PreCheckException(INVALID_NODE_ACCOUNT);
         }
 
+        final var config = props.getConfiguration().getConfigData(HederaConfig.class);
         checkTransactionID(txBody.transactionID());
-        checkMemo(txBody.memo());
+        checkMemo(txBody.memo(), config.transactionMaxMemoUtf8Bytes());
 
         // You cannot have a negative transaction fee!! We're not paying you, buddy.
         if (txBody.transactionFee() < 0) {
@@ -324,7 +327,10 @@ public class TransactionChecker {
 
         checkTimeBox(
                 txBody.transactionID().transactionValidStart(),
-                txBody.transactionValidDurationOrElse(Duration.DEFAULT));
+                txBody.transactionValidDurationOrElse(Duration.DEFAULT),
+                config.transactionMinValidDuration(),
+                config.transactionMaxValidDuration(),
+                config.transactionMinValidityBufferSecs());
     }
 
     /**
@@ -364,12 +370,12 @@ public class TransactionChecker {
      * @param memo The memo to check.
      * @throws PreCheckException if the memo is too long, or otherwise fails the check.
      */
-    private void checkMemo(@Nullable final String memo) throws PreCheckException {
+    private void checkMemo(@Nullable final String memo, final int maxMemoUtf8Bytes) throws PreCheckException {
         if (memo == null) return; // Nothing to do, a null memo is valid.
         // Verify the number of bytes does not exceed the maximum allowed.
         // Note that these bytes are counted in UTF-8.
         final var buffer = memo.getBytes(StandardCharsets.UTF_8);
-        if (buffer.length > props.maxMemoUtf8Bytes()) {
+        if (buffer.length > maxMemoUtf8Bytes) {
             throw new PreCheckException(MEMO_TOO_LONG);
         }
         // FUTURE: This check should be removed after mirror node supports 0x00 in memo fields
@@ -390,18 +396,26 @@ public class TransactionChecker {
      *                 select a duration that is <strong>shorter</strong> than the network's configuration
      *                 for max duration, but cannot exceed it, as long as it is not shorter than the network's
      *                 configuration for min duration.
+     * @param min The minimum duration allowed by the network configuration.
+     * @param max The maximum duration allowed by the network configuration.
      * @throws PreCheckException if the transaction duration is invalid, or if the start time is too old, or in the future.
      */
-    private void checkTimeBox(final Timestamp start, final Duration duration) throws PreCheckException {
+    private void checkTimeBox(
+            final Timestamp start,
+            final Duration duration,
+            final long min,
+            final long max,
+            final long minValidityBufferSecs)
+            throws PreCheckException {
         // The transaction duration must not be longer than the configured maximum transaction duration
         // or less than the configured minimum transaction duration.
         final var validForSecs = duration.seconds();
-        if (validForSecs < props.minTxnDuration() || validForSecs > props.maxTxnDuration()) {
+        if (validForSecs < min || validForSecs > max) {
             throw new PreCheckException(INVALID_TRANSACTION_DURATION);
         }
 
         final var validStart = toInstant(start);
-        final var validDuration = toSecondsDuration(validForSecs, validStart);
+        final var validDuration = toSecondsDuration(validForSecs, validStart, minValidityBufferSecs);
         final var currentTime = Instant.now(Clock.systemUTC());
         if (validStart.plusSeconds(validDuration).isBefore(currentTime)) {
             throw new PreCheckException(TRANSACTION_EXPIRED);
@@ -432,11 +446,11 @@ public class TransactionChecker {
      *
      * @param validForSecs the duration in seconds
      * @param validStart the {@link Instant} that is used to calculate the maximum
+     * @param minValidBufferSecs the minimum buffer in seconds
      * @return the valid duration given in seconds
      */
-    private long toSecondsDuration(final long validForSecs, final Instant validStart) {
-        return Math.min(
-                validForSecs - props.minValidityBuffer(), Instant.MAX.getEpochSecond() - validStart.getEpochSecond());
+    private long toSecondsDuration(final long validForSecs, final Instant validStart, final long minValidBufferSecs) {
+        return Math.min(validForSecs - minValidBufferSecs, Instant.MAX.getEpochSecond() - validStart.getEpochSecond());
     }
 
     /** A simple utility method replaced in Java 21 with {@code Math.clamp(long, long long)} */

@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.R
 import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.RELEASE_0270_VERSION;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.RELEASE_0320_VERSION;
 
+import com.hedera.node.app.service.mono.state.migration.AccountStateTranslator;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
@@ -69,7 +70,10 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
                     seededAccount.setStakeAtStartOfLastRewardedPeriod(-1);
                 }
             }
-            return seededAccount;
+            final var wrapperAccount = new MerkleAccount(java.util.List.of(seededAccount));
+            final var pbjAccount = AccountStateTranslator.accountFromMerkle(wrapperAccount);
+            final var merkleAccount = AccountStateTranslator.merkleAccountFromAccount(pbjAccount);
+            return merkleAccount.state();
         }
     }
 

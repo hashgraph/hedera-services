@@ -38,7 +38,7 @@ import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
-import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -61,17 +61,17 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
     private final CryptoSignatureWaivers waivers;
     private StakingValidator stakingValidator;
-    private NodeInfo nodeInfo;
+    private NetworkInfo networkInfo;
 
     @Inject
     public CryptoUpdateHandler(
             @NonNull final CryptoSignatureWaivers waivers,
             @NonNull final StakingValidator stakingValidator,
-            @NonNull final NodeInfo nodeInfo) {
+            @NonNull final NetworkInfo networkInfo) {
         this.waivers = requireNonNull(waivers, "The supplied argument 'waivers' must not be null");
         this.stakingValidator =
                 requireNonNull(stakingValidator, "The supplied argument 'stakingValidator' must not be null");
-        this.nodeInfo = requireNonNull(nodeInfo, "The supplied argument 'nodeInfo' must not be null");
+        this.networkInfo = requireNonNull(networkInfo, "The supplied argument 'networkInfo' must not be null");
     }
 
     @Override
@@ -272,6 +272,6 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 op.stakedNodeId(),
                 accountStore,
                 context,
-                nodeInfo);
+                networkInfo);
     }
 }

@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.mono.state.logic;
 
-import static com.swirlds.common.system.PlatformStatus.ACTIVE;
-import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
+import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.common.system.status.PlatformStatus.FREEZE_COMPLETE;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;

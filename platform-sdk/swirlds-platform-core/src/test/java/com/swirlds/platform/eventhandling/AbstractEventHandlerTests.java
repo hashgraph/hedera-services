@@ -24,7 +24,6 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
 import com.swirlds.platform.internal.EventImpl;
@@ -51,7 +50,6 @@ public abstract class AbstractEventHandlerTests {
     protected PreConsensusSystemTransactionManager preConsensusSystemTransactionManager;
     protected PostConsensusSystemTransactionManager postConsensusSystemTransactionManager;
     protected Supplier<Instant> consEstimateSupplier;
-    protected SettingsProvider settingsProvider;
     protected Random random;
 
     protected void setup() {
@@ -64,7 +62,6 @@ public abstract class AbstractEventHandlerTests {
         preConsensusSystemTransactionManager = mock(PreConsensusSystemTransactionManager.class);
         postConsensusSystemTransactionManager = mock(PostConsensusSystemTransactionManager.class);
         consEstimateSupplier = Instant::now;
-        settingsProvider = mock(SettingsProvider.class);
         random = ThreadLocalRandom.current();
     }
 

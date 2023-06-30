@@ -26,6 +26,7 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.logging.LogMarker;
+import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -352,7 +353,8 @@ public final class CryptoStatic {
         final Map<NodeId, KeysAndCerts> keysAndCerts = new HashMap<>();
         for (int i = 0; i < n; i++) {
             final NodeId nodeId = addressBook.getNodeId(i);
-            if (!addressBook.getAddress(nodeId).isOwnHost()) {
+            final Address address = addressBook.getAddress(nodeId);
+            if (!AddressBookNetworkUtils.isLocal(address)) {
                 // in case we are not creating keys but loading them from disk, we do not need to create
                 // a KeysAndCerts object for every node, just the local ones
                 continue;
