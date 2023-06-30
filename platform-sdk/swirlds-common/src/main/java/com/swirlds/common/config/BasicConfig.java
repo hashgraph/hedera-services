@@ -27,6 +27,11 @@ import java.time.Duration;
  * Basic configuration data record. This record contains all general config properties that can not be defined for a
  * specific subsystem. The record is based on the definition of config data objects as described in {@link ConfigData}.
  *
+ * <p>
+ * Do not add new settings to this record unless you have a very good reason. New settings should go
+ * into config records with a prefix defined by a {@link ConfigData @ConfigData("prefix")} tag. Adding
+ * settings to this record pollutes the top level namespace.
+ *
  * @param configsUsedFilename
  *      the name of the file that contains the list of config files used to create this config
  * @param verifyEventSigs

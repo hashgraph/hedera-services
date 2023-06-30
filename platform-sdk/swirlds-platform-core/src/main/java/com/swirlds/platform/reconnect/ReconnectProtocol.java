@@ -122,15 +122,7 @@ public class ReconnectProtocol implements Protocol {
             return false;
         }
 
-        if (!teacherState.get().getState().isInitialized()) {
-            teacherState.close();
-            teacherState = null;
-            logger.warn(
-                    RECONNECT.getMarker(),
-                    "Rejecting reconnect request from node {} " + "due to lack of an initialized signed state.",
-                    peerId);
-            return false;
-        } else if (!teacherState.get().isComplete()) {
+        if (!teacherState.get().isComplete()) {
             // this is only possible if signed state manager violates its contractual obligations
             teacherState.close();
             teacherState = null;
