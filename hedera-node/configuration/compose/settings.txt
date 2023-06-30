@@ -6,6 +6,7 @@ numConnections,                                1000
 socket.doUpnp,                                 false
 socket.useLoopbackIp,                          false
 sync.maxOutgoingSyncs,                         1                            # differs from mainnet
+sync.syncAsProtocolEnabled,                    true
 sync.syncProtocolPermitCount,                  2                            # differs from mainnet
 
                                           #############################
