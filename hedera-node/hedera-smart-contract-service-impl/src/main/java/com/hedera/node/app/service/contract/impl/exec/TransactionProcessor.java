@@ -104,7 +104,7 @@ public class TransactionProcessor {
                 context,
                 config,
                 parties.sender().getAddress(),
-                parties.toAddress(),
+                parties.receiverAddress(),
                 gasCharges.intrinsicGas());
 
         // Compute the result of running the frame to completion
@@ -145,7 +145,7 @@ public class TransactionProcessor {
     }
 
     private record InvolvedParties(
-            @NonNull HederaEvmAccount sender, @Nullable HederaEvmAccount relayer, @NonNull Address toAddress) {}
+            @NonNull HederaEvmAccount sender, @Nullable HederaEvmAccount relayer, @NonNull Address receiverAddress) {}
 
     /**
      * Given an input {@link HederaEvmTransaction}, the {@link HederaWorldUpdater} for the transaction, and the
