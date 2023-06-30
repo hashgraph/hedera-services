@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.state.migration;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
@@ -51,20 +52,23 @@ public final class TokenStateTranslator {
     public static Token tokenFromMerkle(
             @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleToken token) {
         final var builder = Token.newBuilder()
-                .tokenNumber(token.getKey().longValue())
+                .tokenId(TokenID.newBuilder().tokenNum(token.getKey().longValue()))
                 .name(token.name())
                 .symbol(token.symbol())
                 .decimals(token.decimals())
                 .totalSupply(token.totalSupply())
-                .treasuryAccountNumber(token.treasury().num())
+                .treasuryAccountId(AccountID.newBuilder()
+                        .accountNum(token.treasury().num())
+                        .build())
                 .lastUsedSerialNumber(token.getLastUsedSerialNumber())
                 .deleted(token.isDeleted())
                 .tokenType(fromMerkleType(token.tokenType()))
                 .supplyType(fromMerkleSupplyType(token.supplyType()))
-                .autoRenewAccountNumber(
-                        token.autoRenewAccount() != null
-                                ? token.autoRenewAccount().num()
-                                : 0L)
+                .autoRenewAccountId(AccountID.newBuilder()
+                        .accountNum(
+                                token.autoRenewAccount() != null
+                                        ? token.autoRenewAccount().num()
+                                        : 0L))
                 .autoRenewSecs(token.autoRenewPeriod())
                 .expiry(token.expiry())
                 .memo(token.memo())
@@ -148,18 +152,22 @@ public final class TokenStateTranslator {
         requireNonNull(token);
         com.hedera.node.app.service.mono.state.merkle.MerkleToken merkleToken =
                 new com.hedera.node.app.service.mono.state.merkle.MerkleToken();
-        merkleToken.setKey(EntityNum.fromLong(token.tokenNumber()));
+        merkleToken.setKey(
+                EntityNum.fromLong(token.tokenIdOrElse(TokenID.DEFAULT).tokenNum()));
         merkleToken.setName(token.name());
         merkleToken.setSymbol(token.symbol());
         merkleToken.setDecimals(token.decimals());
         merkleToken.setTotalSupply(token.totalSupply());
-        merkleToken.setTreasury(EntityId.fromNum(token.treasuryAccountNumber()));
+        merkleToken.setTreasury(EntityId.fromNum(
+                token.treasuryAccountIdOrElse(AccountID.DEFAULT).accountNumOrElse(0L)));
         merkleToken.setLastUsedSerialNumber(token.lastUsedSerialNumber());
         merkleToken.setDeleted(token.deleted());
         merkleToken.setTokenType(toMerkleType(token.tokenType()));
         merkleToken.setSupplyType(toMerkleSupplyType(token.supplyType()));
+        final var autoRenewAccountNumber =
+                token.autoRenewAccountIdOrElse(AccountID.DEFAULT).accountNumOrElse(0L);
         merkleToken.setAutoRenewAccount(
-                (token.autoRenewAccountNumber() > 0) ? new EntityId(0, 0, token.autoRenewAccountNumber()) : null);
+                (autoRenewAccountNumber > 0) ? new EntityId(0, 0, autoRenewAccountNumber) : null);
         merkleToken.setAutoRenewPeriod(token.autoRenewSecs());
         merkleToken.setExpiry(token.expiry());
         merkleToken.setMemo(token.memo());
