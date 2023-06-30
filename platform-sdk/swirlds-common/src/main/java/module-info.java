@@ -155,7 +155,6 @@ module com.swirlds.common {
     exports com.swirlds.common.system.status;
     exports com.swirlds.common.system.status.actions;
 
-
     requires transitive com.swirlds.base;
     requires com.swirlds.config;
     requires com.swirlds.logging;
