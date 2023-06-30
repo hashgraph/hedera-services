@@ -31,7 +31,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -135,7 +135,7 @@ public class FileServiceUtils {
      */
     public static @NonNull File verifySystemFile(
             @NonNull final LedgerConfig ledgerConfig,
-            @NonNull final WritableFileStoreImpl fileStore,
+            @NonNull final WritableFileStore fileStore,
             @NonNull final FileID fileId,
             final boolean canBeDeleted) {
 
@@ -179,7 +179,7 @@ public class FileServiceUtils {
      */
     public static @NonNull File verifySystemFile(
             @NonNull final LedgerConfig ledgerConfig,
-            @NonNull final WritableFileStoreImpl fileStore,
+            @NonNull final WritableFileStore fileStore,
             @NonNull final FileID fileId) {
         return verifySystemFile(ledgerConfig, fileStore, fileId, false);
     }

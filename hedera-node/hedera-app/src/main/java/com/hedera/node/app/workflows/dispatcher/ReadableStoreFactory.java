@@ -34,6 +34,8 @@ import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.TokenService;
@@ -58,6 +60,8 @@ public class ReadableStoreFactory {
     // e.g. services have to register their stores
     private static final Map<Class<?>, StoreEntry> STORE_FACTORY = Map.of(
             ReadableAccountStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new),
+            ReadableNftStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new),
+            ReadableStakingInfoStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new),
             ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStoreImpl::new),
             ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStoreImpl::new),
             ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStoreImpl::new),

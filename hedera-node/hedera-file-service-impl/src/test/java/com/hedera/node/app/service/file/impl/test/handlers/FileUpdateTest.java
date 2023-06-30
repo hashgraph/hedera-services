@@ -35,7 +35,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -138,7 +138,7 @@ class FileUpdateTest extends FileTestBase {
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         subject.handle(handleContext);
 

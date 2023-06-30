@@ -26,7 +26,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -80,7 +80,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
 
         final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
 
-        final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
+        final var fileStore = handleContext.writableStore(WritableFileStore.class);
         final File file = verifySystemFile(ledgerConfig, fileStore, fileId);
 
         final var newExpiry = systemDeleteTransactionBody
