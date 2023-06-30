@@ -164,7 +164,7 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
                 info.feeScheduleKey(token.feeScheduleKey());
             }
 
-            if (token.autoRenewAccountId().accountNum() != 0) {
+            if (token.autoRenewAccountId() != null) {
                 info.autoRenewAccount(token.autoRenewAccountId());
                 info.autoRenewPeriod(Duration.newBuilder().seconds(token.autoRenewSecs()));
             }

@@ -172,7 +172,6 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
         // validate token number from treasury relation
         final var tokenId = treasuryRel.tokenId();
-        validateTrue(treasuryRel.tokenId().equals(tokenId), FAIL_INVALID);
 
         // get the treasury account
         final var treasuryAccount = accountStore.get(treasuryRel.accountId());

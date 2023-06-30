@@ -127,7 +127,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                 // Handle active tokens
                 validateFalse(
                         token.treasuryAccountId() != null
-                                && tokenRel.accountId().equals(token.treasuryAccountId()),
+                                && token.treasuryAccountId().equals(tokenRel.accountId()),
                         ACCOUNT_IS_TREASURY);
                 validateFalse(tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
 
@@ -170,8 +170,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         // get changes to account and token relations
         final var updatedTokenRels =
                 new TokenRelListCalculator(tokenRelStore).removeTokenRels(account, tokenRelsToRemove);
-        final var newHeadTokenId =
-                updatedTokenRels.updatedHeadTokenId() != null ? updatedTokenRels.updatedHeadTokenId() : null;
+        final var newHeadTokenId = updatedTokenRels.updatedHeadTokenId();
 
         // Update the account with the aggregate number of NFTs, auto associations, associations, and positive balances
         // to remove, as well as the new head token number
