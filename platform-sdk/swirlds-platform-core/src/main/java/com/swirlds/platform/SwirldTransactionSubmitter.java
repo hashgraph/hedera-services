@@ -19,7 +19,8 @@ package com.swirlds.platform;
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
 
 import com.swirlds.base.function.BooleanFunction;
-import com.swirlds.common.system.platformstatus.PlatformStatus;
+import com.swirlds.common.config.TransactionConfig;
+import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.metrics.TransactionMetrics;
 import java.util.function.Supplier;
@@ -30,7 +31,7 @@ import java.util.function.Supplier;
 public class SwirldTransactionSubmitter {
 
     private final Supplier<PlatformStatus> platformStatusSupplier;
-    private final SettingsProvider settings;
+    private final TransactionConfig transactionConfig;
     private final BooleanFunction<SwirldTransaction> addToTransactionPool;
     private final TransactionMetrics transactionMetrics;
 
@@ -39,7 +40,7 @@ public class SwirldTransactionSubmitter {
      *
      * @param platformStatusSupplier
      * 		supplier of the current status of the platform
-     * @param settings
+     * @param transactionConfig
      * 		provider of static settings
      * @param addToTransactionPool
      * 		a function that adds the transaction to the transaction pool, if room is available
@@ -48,12 +49,12 @@ public class SwirldTransactionSubmitter {
      */
     public SwirldTransactionSubmitter(
             final Supplier<PlatformStatus> platformStatusSupplier,
-            final SettingsProvider settings,
+            final TransactionConfig transactionConfig,
             final BooleanFunction<SwirldTransaction> addToTransactionPool,
             final TransactionMetrics transactionMetrics) {
 
         this.platformStatusSupplier = platformStatusSupplier;
-        this.settings = settings;
+        this.transactionConfig = transactionConfig;
         this.addToTransactionPool = addToTransactionPool;
         this.transactionMetrics = transactionMetrics;
     }
@@ -77,7 +78,7 @@ public class SwirldTransactionSubmitter {
         }
 
         // check if system transaction serialized size is above the required threshold
-        if (trans.getSize() > settings.getTransactionMaxBytes()) {
+        if (trans.getSize() > transactionConfig.transactionMaxBytes()) {
             return false;
         }
 

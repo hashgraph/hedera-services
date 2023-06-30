@@ -51,6 +51,7 @@ import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.event.EventCreatorThread;
 import com.swirlds.platform.event.EventIntakeTask;
@@ -247,10 +248,10 @@ public class ChatterGossip extends AbstractGossip {
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
                             chatterConfig.sleepAfterFailedNegotiation(),
                             List.of(
-                                    new VersionCompareHandshake(appVersion, !settings.isGossipWithDifferentVersions()),
+                                    new VersionCompareHandshake(appVersion, !basicConfig.gossipWithDifferentVersions()),
                                     new VersionCompareHandshake(
                                             PlatformVersion.locateOrDefault(),
-                                            !settings.isGossipWithDifferentVersions())),
+                                            !basicConfig.gossipWithDifferentVersions())),
                             new NegotiationProtocols(List.of(
                                     new EmergencyReconnectProtocol(
                                             threadManager,
@@ -305,6 +306,7 @@ public class ChatterGossip extends AbstractGossip {
                         new AncientParentsRule(consensusRef::get),
                         criticalQuorum));
         final ChatterEventCreator chatterEventCreator = new ChatterEventCreator(
+                platformContext,
                 appVersion,
                 selfId,
                 PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
@@ -321,8 +323,10 @@ public class ChatterGossip extends AbstractGossip {
             // ever be created without an other-parent
             chatterEventCreator.createGenesisEvent();
         }
+        final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         final EventCreatorThread eventCreatorThread = new EventCreatorThread(
                 threadManager,
+                threadConfig,
                 selfId,
                 chatterConfig.attemptedChatterEventPerSecond(),
                 addressBook,

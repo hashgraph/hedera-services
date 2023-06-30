@@ -271,7 +271,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     @BeforeEach
     public void setUp() {
-        configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        configuration = HederaTestConfigBuilder.createConfig();
         versionedConfig = new VersionedConfigImpl(configuration, 1);
         givenValidAccounts();
         givenValidTokens();
@@ -646,10 +646,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     protected Nft givenNft(UniqueTokenId uniqueTokenId) {
-        return Nft.newBuilder()
-                .ownerNumber(ownerId.accountNum())
-                .id(uniqueTokenId)
-                .build();
+        return Nft.newBuilder().ownerId(ownerId).id(uniqueTokenId).build();
     }
 
     protected CustomFee withFixedFee(final FixedFee fixedFee) {
@@ -677,7 +674,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     protected void givenStoresAndConfig(final HandleContext handleContext) {
-        configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        configuration = HederaTestConfigBuilder.createConfig();
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);

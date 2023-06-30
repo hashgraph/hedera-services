@@ -26,7 +26,6 @@ import static com.hedera.hapi.node.base.TokenKycStatus.REVOKED;
 import static com.hedera.hapi.node.base.TokenPauseStatus.PAUSED;
 import static com.hedera.hapi.node.base.TokenPauseStatus.PAUSE_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenPauseStatus.UNPAUSED;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKENS;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -149,7 +148,7 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 1000)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
@@ -173,7 +172,7 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(store);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 1000)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
@@ -246,7 +245,7 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
 
         final var config =
-                new HederaTestConfigBuilder().withValue("ledger.id", "0x03").getOrCreateConfig();
+                HederaTestConfigBuilder.create().withValue("ledger.id", "0x03").getOrCreateConfig();
         given(context.configuration()).willReturn(config);
 
         final var response = subject.findResponse(context, responseHeader);

@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -33,7 +34,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
-import com.swirlds.platform.SettingsProvider;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
@@ -41,6 +42,8 @@ import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
+import com.swirlds.test.framework.config.TestConfigBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -66,7 +69,6 @@ class OutboundConnectionCreatorTest {
                 .setSize(numNodes)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
-                .setSequentialIds(false)
                 .build();
         final int thisNodeIndex = r.nextInt(numNodes);
         final int otherNodeIndex = r.nextInt(numNodes);
@@ -97,12 +99,11 @@ class OutboundConnectionCreatorTest {
         final SocketFactory socketFactory = mock(SocketFactory.class);
         doAnswer(i -> socket).when(socketFactory).createClientSocket(any(), anyInt());
 
-        final SettingsProvider settings = mock(SettingsProvider.class);
-        doAnswer(i -> 100).when(settings).connectionStreamBufferSize();
+        final SocketConfig socketConfig = getSocketConfig();
 
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
                 thisNode,
-                settings,
+                socketConfig,
                 mock(ConnectionTracker.class),
                 socketFactory,
                 addressBook,
@@ -164,7 +165,6 @@ class OutboundConnectionCreatorTest {
                 .setSize(numNodes)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
-                .setSequentialIds(false)
                 .build();
         final int thisNodeIndex = r.nextInt(numNodes);
         final int otherNodeIndex = r.nextInt(numNodes);
@@ -195,12 +195,11 @@ class OutboundConnectionCreatorTest {
         final SocketFactory socketFactory = mock(SocketFactory.class);
         doAnswer(i -> socket).when(socketFactory).createClientSocket(any(), anyInt());
 
-        final SettingsProvider settings = mock(SettingsProvider.class);
-        doAnswer(i -> 100).when(settings).connectionStreamBufferSize();
+        final SocketConfig socketConfig = getSocketConfig();
 
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
                 thisNode,
-                settings,
+                socketConfig,
                 mock(ConnectionTracker.class),
                 socketFactory,
                 addressBook,
@@ -225,7 +224,6 @@ class OutboundConnectionCreatorTest {
                 .setSize(numNodes)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
-                .setSequentialIds(false)
                 .build();
         final int thisNodeIndex = r.nextInt(numNodes);
         final int otherNodeIndex = r.nextInt(numNodes);
@@ -255,12 +253,11 @@ class OutboundConnectionCreatorTest {
         final SocketFactory socketFactory = mock(SocketFactory.class);
         doAnswer(i -> socket).when(socketFactory).createClientSocket(any(), anyInt());
 
-        final SettingsProvider settings = mock(SettingsProvider.class);
-        doAnswer(i -> 100).when(settings).connectionStreamBufferSize();
+        final SocketConfig socketConfig = getSocketConfig();
 
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
                 thisNode,
-                settings,
+                socketConfig,
                 mock(ConnectionTracker.class),
                 socketFactory,
                 addressBook,
@@ -274,5 +271,12 @@ class OutboundConnectionCreatorTest {
         assertTrue(connection.connected(), "a new connection should be connected");
         connection.disconnect();
         assertFalse(connection.connected(), "should not be connected after calling disconnect()");
+    }
+
+    @NonNull
+    private static SocketConfig getSocketConfig() {
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("socket.bufferSize", "100").getOrCreateConfig();
+        return configuration.getConfigData(SocketConfig.class);
     }
 }

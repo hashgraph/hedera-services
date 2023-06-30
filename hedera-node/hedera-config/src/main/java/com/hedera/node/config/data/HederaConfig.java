@@ -54,6 +54,8 @@ public record HederaConfig(
         @ConfigProperty(value = "recordStream.logPeriod", defaultValue = "2") long recordStreamLogPeriod,
         @ConfigProperty(value = "recordStream.queueCapacity", defaultValue = "5000") int recordStreamQueueCapacity,
         @ConfigProperty(value = "recordStream.logEveryTransaction", defaultValue = "false")
-                boolean recordStreamLogEveryTransaction
+                boolean recordStreamLogEveryTransaction,
+        @ConfigProperty(value = "workflow.verificationTimeoutMS", defaultValue = "20000")
+                long workflowVerificationTimeoutMS
         // @ConfigProperty("workflows.enabled", defaultValue = "") Set<HederaFunctionality> workflowsEnabled
         ) {}

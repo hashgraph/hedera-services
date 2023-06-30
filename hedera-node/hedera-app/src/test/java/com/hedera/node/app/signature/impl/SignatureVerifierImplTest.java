@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.signature.impl;
 
+import static com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory.ecdsaPair;
+import static com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory.ed25519Pair;
+import static com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory.hollowPair;
 import static java.util.Collections.emptySet;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,9 +27,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.SignaturePair;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
@@ -36,7 +36,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -180,40 +179,5 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
                             .matchesPrefix(expandedSigPair.keyBytes()))
                     .isTrue();
         }
-    }
-
-    /** Simple utility to create an ECDSA_SECP256K1 expanded signature */
-    private ExpandedSignaturePair ecdsaPair(final Key key) {
-        final var compressed = key.ecdsaSecp256k1OrThrow();
-        final var array = new byte[(int) compressed.length()];
-        compressed.getBytes(0, array);
-        final var decompressed = MiscCryptoUtils.decompressSecp256k1(array);
-        final var sigPair = SignaturePair.newBuilder()
-                .pubKeyPrefix(key.ecdsaSecp256k1OrThrow())
-                .ecdsaSecp256k1(key.ecdsaSecp256k1OrThrow())
-                .build();
-        return new ExpandedSignaturePair(key, Bytes.wrap(decompressed), null, sigPair);
-    }
-
-    /** Simple utility to create an ED25519 expanded signature */
-    private ExpandedSignaturePair ed25519Pair(final Key key) {
-        final var sigPair = SignaturePair.newBuilder()
-                .pubKeyPrefix(key.ed25519OrThrow())
-                .ed25519(key.ed25519OrThrow())
-                .build();
-        return new ExpandedSignaturePair(key, key.ed25519OrThrow(), null, sigPair);
-    }
-
-    /** Simple utility to create an ECDSA_SECP256K1 hollow account based expanded signature */
-    private ExpandedSignaturePair hollowPair(final Key key, @NonNull final Account hollowAccount) {
-        final var compressed = key.ecdsaSecp256k1OrThrow();
-        final var array = new byte[(int) compressed.length()];
-        compressed.getBytes(0, array);
-        final var decompressed = MiscCryptoUtils.decompressSecp256k1(array);
-        final var sigPair = SignaturePair.newBuilder()
-                .pubKeyPrefix(key.ecdsaSecp256k1OrThrow())
-                .ecdsaSecp256k1(key.ecdsaSecp256k1OrThrow())
-                .build();
-        return new ExpandedSignaturePair(key, Bytes.wrap(decompressed), hollowAccount.alias(), sigPair);
     }
 }

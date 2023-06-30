@@ -29,9 +29,10 @@ import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.platformstatus.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.logging.payloads.InsufficientSignaturesPayload;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
 import com.swirlds.platform.components.state.output.IssConsumer;
@@ -303,12 +304,15 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
             logger.error(
                     EXCEPTION.getMarker(),
-                    "state written to disk for round {} did not have enough signatures. "
-                            + "Collected signatures representing {}/{} weight. Total unsigned disk states so far: {}.",
-                    signedState.getRound(),
-                    signedState.getSigningWeight(),
-                    signedState.getAddressBook().getTotalWeight(),
-                    newCount);
+                    new InsufficientSignaturesPayload(
+                            ("state written to disk for round %d did not have enough signatures. "
+                                            + "Collected signatures representing %d/%d weight. "
+                                            + "Total unsigned disk states so far: %d.")
+                                    .formatted(
+                                            signedState.getRound(),
+                                            signedState.getSigningWeight(),
+                                            signedState.getAddressBook().getTotalWeight(),
+                                            newCount)));
             signedStateFileManager.saveSignedStateToDisk(signedState);
         }
     }

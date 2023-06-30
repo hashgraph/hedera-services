@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestBase;
@@ -48,12 +49,12 @@ class WritableTopicStoreTest extends ConsensusTestBase {
     @Test
     void commitsTopicChanges() {
         topic = createTopic();
-        assertFalse(writableTopicState.contains(topicEntityNum));
+        assertFalse(writableTopicState.contains(topicId));
 
         writableStore.put(topic);
 
-        assertTrue(writableTopicState.contains(topicEntityNum));
-        final var writtenTopic = writableTopicState.get(topicEntityNum);
+        assertTrue(writableTopicState.contains(topicId));
+        final var writtenTopic = writableTopicState.get(topicId);
         assertEquals(topic, writtenTopic);
     }
 
@@ -62,7 +63,8 @@ class WritableTopicStoreTest extends ConsensusTestBase {
         topic = createTopic();
         writableStore.put(topic);
 
-        final var maybeReadTopic = writableStore.get(topicEntityNum.longValue());
+        final var maybeReadTopic = writableStore.get(
+                TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build());
 
         assertTrue(maybeReadTopic.isPresent());
         final var readTopic = maybeReadTopic.get();

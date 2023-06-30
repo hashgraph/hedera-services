@@ -64,7 +64,27 @@ public final class ConfigMappings {
             new ConfigMapping("paths.settingsUsedDir", "settingsUsedDir"),
             new ConfigMapping("paths.keysDirPath", "keysDirPath"),
             new ConfigMapping("paths.appsDirPath", "appsDirPath"),
-            new ConfigMapping("paths.logPath", "logPath"));
+            new ConfigMapping("paths.logPath", "logPath"),
+            new ConfigMapping("socket.ipTos", "socketIpTos"),
+            new ConfigMapping("socket.bufferSize", "bufferSize"),
+            new ConfigMapping("socket.timeoutSyncClientSocket", "timeoutSyncClientSocket"),
+            new ConfigMapping("socket.timeoutSyncClientConnect", "timeoutSyncClientConnect"),
+            new ConfigMapping("socket.timeoutServerAcceptConnect", "timeoutServerAcceptConnect"),
+            new ConfigMapping("socket.useTLS", "useTLS"),
+            new ConfigMapping("socket.doUpnp", "doUpnp"),
+            new ConfigMapping("socket.useLoopbackIp", "useLoopbackIp"),
+            new ConfigMapping("socket.tcpNoDelay", "tcpNoDelay"),
+            new ConfigMapping("socket.deadlockCheckPeriod", "deadlockCheckPeriod"),
+            new ConfigMapping("sync.maxOutgoingSyncs", "maxOutgoingSyncs"),
+            new ConfigMapping("sync.maxIncomingSyncsInc", "maxIncomingSyncsInc"),
+            new ConfigMapping("sync.callerSkipsBeforeSleep", "callerSkipsBeforeSleep"),
+            new ConfigMapping("sync.sleepCallerSkips", "sleepCallerSkips"),
+            new ConfigMapping("jvmPauseDetectorSleepMs", "jVMPauseDetectorSleepMs"),
+            new ConfigMapping("jvmPauseReportMs", "jVMPauseReportMs"),
+            new ConfigMapping("thread.threadPrioritySync", "threadPrioritySync"),
+            new ConfigMapping("thread.threadPriorityNonSync", "threadPriorityNonSync"),
+            new ConfigMapping("thread.threadDumpPeriodMs", "threadDumpPeriodMs"),
+            new ConfigMapping("thread.threadDumpLogDir", "threadDumpLogDir"));
 
     /**
      * Add all known aliases to the provided config source
@@ -74,6 +94,7 @@ public final class ConfigMappings {
      */
     @NonNull
     public static ConfigSource addConfigMapping(@NonNull final ConfigSource configSource) {
+        PlatformConfigUtils.logAppliedMappedProperties(configSource.getPropertyNames());
         final MappedConfigSource withAliases = new MappedConfigSource(configSource);
         MAPPINGS.forEach(withAliases::addMapping);
 

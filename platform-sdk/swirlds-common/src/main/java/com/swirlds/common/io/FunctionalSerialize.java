@@ -17,6 +17,7 @@
 package com.swirlds.common.io;
 
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 @FunctionalInterface
@@ -30,5 +31,5 @@ public interface FunctionalSerialize {
      * @throws IOException
      * 		Thrown in case of an IO exception.
      */
-    void serialize(SerializableDataOutputStream out) throws IOException;
+    void serialize(@NonNull SerializableDataOutputStream out) throws IOException;
 }

@@ -582,7 +582,7 @@ public final class Hedera implements SwirldMain {
         final long maxStakePerNode = bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT) / numberOfNodes;
         final long minStakePerNode = maxStakePerNode / 2;
         for (int i = 0; i < numberOfNodes; i++) {
-            final var nodeNum = EntityNum.fromLong(addressBook.getAddress(i).getId());
+            final var nodeNum = EntityNum.fromLong(addressBook.getNodeId(i).id());
             final var info = new MerkleStakingInfo(bootstrapProperties);
             info.setMinStake(minStakePerNode);
             info.setMaxStake(maxStakePerNode);
@@ -671,7 +671,7 @@ public final class Hedera implements SwirldMain {
 
     private void initializeDagger(@NonNull final MerkleHederaState state, @NonNull final InitTrigger trigger) {
         logger.debug("Initializing dagger");
-        final var selfId = platform.getSelfId().getIdAsInt();
+        final var selfId = platform.getSelfId();
         if (daggerApp == null) {
             stateChildren = state.getStateChildrenProvider(platform);
             final var nodeAddress = stateChildren.addressBook().getAddress(selfId);

@@ -17,9 +17,9 @@
 package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getInsets;
-import static com.swirlds.platform.state.address.AddressBookUtils.getOwnHostCount;
 
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import java.awt.Color;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
@@ -106,7 +106,7 @@ public final class GuiUtils {
         final int rightGap = (SystemUtils.IS_OS_WINDOWS ? 50 : 0); // extra space at right screen edge
         final Rectangle screenSize =
                 GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
-        final int winCount = getOwnHostCount(addressBook);
+        final int winCount = AddressBookNetworkUtils.getLocalAddressCount(addressBook);
         final int contentWidth =
                 (screenSize.width - leftGap - rightGap - getInsets().left - getInsets().right) / winCount;
         final int x = screenSize.x + leftGap + contentWidth * winNum;

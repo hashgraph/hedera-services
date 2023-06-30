@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.stream;
 
+import com.hedera.node.app.service.mono.state.logic.BlockManager;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -56,7 +57,7 @@ public class RecordStreamObject extends AbstractSerializableHashable
     // Whether this is the first record in a block (i.e., .rcd file)
     private boolean writeNewFile;
     // The number of the ETH JSON-RPC bridge block containing this record
-    private long blockNumber;
+    private long blockNumber = BlockManager.UNKNOWN_BLOCK_NO;
 
     /* The gRPC transaction and records for the record stream file */
     private Transaction transaction;
