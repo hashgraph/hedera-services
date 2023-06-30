@@ -21,8 +21,10 @@ import static com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken.RE
 
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
+import com.hedera.test.serde.EqualityType;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class MerkleUniqueTokenSerdeTest extends SelfSerializableDataTest<MerkleUniqueToken> {
     public static final int NUM_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
@@ -38,7 +40,8 @@ public class MerkleUniqueTokenSerdeTest extends SelfSerializableDataTest<MerkleU
     }
 
     @Override
-    protected MerkleUniqueToken getExpectedObject(final int version, final int testCaseNo) {
+    protected MerkleUniqueToken getExpectedObject(
+            final int version, final int testCaseNo, @NonNull final EqualityType equalityType) {
         final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
         final var seededObject = getExpectedObject(propertySource);
         if (version <= RELEASE_0180_VERSION) {
