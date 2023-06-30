@@ -88,10 +88,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
      */
     private int signedTransPoolSize = 1024;
     /**
-     * ID number for this member
-     */
-    private NodeId selfId;
-    /**
      * the app is run by this
      */
     private Platform platform;
@@ -152,9 +148,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public void init(final Platform platform, final NodeId id) {
-
         this.platform = platform;
-        selfId = id;
         // parse the config.txt parameters, and allow optional _ as in 1_000_000
         final String[] parameters = ParameterProvider.getInstance().getParameters();
         headless = (parameters[0].equals("1"));
