@@ -28,6 +28,7 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
+import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.jetbrains.annotations.NotNull;
@@ -77,6 +78,25 @@ public final class NftStateTranslator {
                 .tokenId(TokenID.newBuilder().tokenNum(tokenTypeNumber).build())
                 .serialNumber(serialNumber)
                 .build();
+    }
+
+    @NonNull
+    /**
+     * Converts a {@link com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken} to a {@link Nft}.
+     *  @param tokenID the {@link UniqueTokenId}
+     *  @param tokenID the {@link ReadableNftStore}
+     *
+     *
+     */
+    public static com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken merkleUniqueTokenFromNft(
+            @NonNull UniqueTokenId tokenID, @NonNull ReadableNftStore readableNftStore) {
+        requireNonNull(tokenID);
+        requireNonNull(readableNftStore);
+        final var optionalNFT = readableNftStore.get(tokenID);
+        if (optionalNFT == null) {
+            throw new IllegalArgumentException("Token not found");
+        }
+        return merkleUniqueTokenFromNft(optionalNFT);
     }
 
     @NonNull
