@@ -1380,7 +1380,7 @@ public final class PbjConverter {
     }
 
     @NonNull
-    public static com.hederahashgraph.api.proto.java.RoyaltyFee fromPbj(@Nullable final RoyaltyFee royaltyFee) {
+    public static com.hederahashgraph.api.proto.java.RoyaltyFee fromPbj(@NonNull final RoyaltyFee royaltyFee) {
         var builder = com.hederahashgraph.api.proto.java.RoyaltyFee.newBuilder();
         builder.setExchangeValueFraction(fromPbj(royaltyFee.exchangeValueFraction()));
         if (royaltyFee.hasFallbackFee()) builder.setFallbackFee(fromPbj(royaltyFee.fallbackFee()));
@@ -1388,7 +1388,7 @@ public final class PbjConverter {
     }
 
     @NonNull
-    public static com.hederahashgraph.api.proto.java.Fraction fromPbj(@Nullable final Fraction fraction) {
+    public static com.hederahashgraph.api.proto.java.Fraction fromPbj(@NonNull final Fraction fraction) {
         var builder = com.hederahashgraph.api.proto.java.Fraction.newBuilder();
         builder.setNumerator(fraction.numerator());
         builder.setDenominator(fraction.denominator());
@@ -1396,8 +1396,7 @@ public final class PbjConverter {
     }
 
     @NonNull
-    public static com.hederahashgraph.api.proto.java.FractionalFee fromPbj(
-            @Nullable final FractionalFee fractionalFee) {
+    public static com.hederahashgraph.api.proto.java.FractionalFee fromPbj(@NonNull final FractionalFee fractionalFee) {
         var builder = com.hederahashgraph.api.proto.java.FractionalFee.newBuilder();
         builder.setFractionalAmount(fromPbj(fractionalFee.fractionalAmount()));
         builder.setMinimumAmount(fractionalFee.minimumAmount());
@@ -1407,7 +1406,7 @@ public final class PbjConverter {
     }
 
     @NonNull
-    public static com.hederahashgraph.api.proto.java.FixedFee fromPbj(@Nullable FixedFee fixedFee) {
+    public static com.hederahashgraph.api.proto.java.FixedFee fromPbj(@NonNull FixedFee fixedFee) {
         var builder = com.hederahashgraph.api.proto.java.FixedFee.newBuilder();
         if (fixedFee != null) {
             builder.setAmount(fixedFee.amount());
