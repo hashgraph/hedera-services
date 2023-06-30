@@ -103,7 +103,7 @@ public class DeleteAllowanceValidator extends AllowanceValidator {
                     AccountID.newBuilder()
                             .accountNum(effectiveOwner.accountNumber())
                             .build(),
-                    TokenID.newBuilder().tokenNum(token.tokenNumber()).build());
+                    token.tokenId());
             validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
             validateDeleteSerialNums(serialNums, tokenId, nftStore);
