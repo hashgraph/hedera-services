@@ -117,6 +117,7 @@ public record HederaEvmTransactionResult(
 
     public static HederaEvmTransactionResult resourceExhaustionFrom(
             final long gasUsed, final long gasPrice, @NonNull final ResponseCodeEnum reason) {
+        requireNonNull(reason);
         return new HederaEvmTransactionResult(
                 gasUsed,
                 gasPrice,
@@ -125,7 +126,7 @@ public record HederaEvmTransactionResult(
                 Bytes.EMPTY,
                 null,
                 null,
-                Bytes.wrap(requireNonNull(reason).name()),
+                Bytes.wrap(reason.name()),
                 Collections.emptyList());
     }
 

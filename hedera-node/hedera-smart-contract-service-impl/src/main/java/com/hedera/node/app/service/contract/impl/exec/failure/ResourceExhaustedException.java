@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.failure;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -27,6 +29,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class ResourceExhaustedException extends HandleException {
     public ResourceExhaustedException(@NonNull final ResponseCodeEnum status) {
-        super(status);
+        super(requireNonNull(status));
     }
 }

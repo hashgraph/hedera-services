@@ -38,8 +38,4 @@ public record HederaEvmContext(long gasPrice, boolean staticCall, HederaEvmCode 
     public boolean isNoopGasContext() {
         return staticCall || gasPrice == 0;
     }
-
-    public boolean usesGasCharging() {
-        return gasPrice > 0;
-    }
 }

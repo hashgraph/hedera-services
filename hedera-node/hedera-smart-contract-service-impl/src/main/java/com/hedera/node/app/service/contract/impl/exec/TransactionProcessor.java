@@ -87,7 +87,7 @@ public class TransactionProcessor {
         final GasCharges gasCharges;
         try {
             // Compute the sender, relayer, and to address (throws if invalid)
-            parties = computeInvolvedParties(transaction, updater, config);
+            parties = setup(transaction, updater, config);
             if (transaction.isEthereumTransaction()) {
                 parties.sender().incrementNonce();
             }
@@ -147,7 +147,25 @@ public class TransactionProcessor {
     private record InvolvedParties(
             @NonNull HederaEvmAccount sender, @Nullable HederaEvmAccount relayer, @NonNull Address toAddress) {}
 
-    private InvolvedParties computeInvolvedParties(
+    /**
+     * Given an input {@link HederaEvmTransaction}, the {@link HederaWorldUpdater} for the transaction, and the
+     * current node {@link Configuration}, sets up the transaction and returns the three "involved parties":
+     * <ol>
+     *     <li>The sender account.</li>
+     *     <li>The (possibly missing) relayer account.</li>
+     *     <li>The "to" address receiving the top-level call.</li>
+     * </ol>
+     *
+     * <p>Note that if the transaction is a {@code CONTRACT_CREATION}, setup includes calling either
+     * {@link HederaWorldUpdater#setupCreate(Address)} or
+     * {@link HederaWorldUpdater#setupAliasedCreate(Address, Address)}.
+     *
+     * @param transaction the transaction to set up
+     * @param updater the updater for the transaction
+     * @param config the current node configuration
+     * @return the involved parties determined while setting up the transaction
+     */
+    private InvolvedParties setup(
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final HederaWorldUpdater updater,
             @NonNull final Configuration config) {
@@ -172,6 +190,8 @@ public class TransactionProcessor {
         } else {
             final var to = updater.getHederaAccount(transaction.contractIdOrThrow());
             if (maybeLazyCreate(transaction, to, config)) {
+                // Presumably these checks _could_ be done later as part of the message
+                // call, but historically we have failed fast when they do not pass
                 validateTrue(transaction.hasValue(), INVALID_CONTRACT_ID);
                 final var alias = transaction.contractIdOrThrow().evmAddressOrThrow();
                 validateTrue(isEvmAddress(alias), INVALID_CONTRACT_ID);

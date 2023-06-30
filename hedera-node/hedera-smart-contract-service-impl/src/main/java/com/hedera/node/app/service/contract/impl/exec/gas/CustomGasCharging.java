@@ -73,7 +73,9 @@ public class CustomGasCharging {
             @Nullable final HederaEvmAccount relayer,
             @NonNull final HederaEvmContext context,
             @NonNull final HederaWorldUpdater worldUpdater) {
-        requireAllNonNull(sender, context, worldUpdater);
+        requireNonNull(sender);
+        requireNonNull(context);
+        requireNonNull(worldUpdater);
         if (context.isNoopGasContext() || unusedGas == 0) {
             return;
         }
@@ -173,14 +175,5 @@ public class CustomGasCharging {
         validateTrue(bPayer.getBalance().toLong() >= bAmount, INSUFFICIENT_PAYER_BALANCE);
         worldUpdater.collectFee(aPayer.hederaId(), aAmount);
         worldUpdater.collectFee(bPayer.hederaId(), bAmount);
-    }
-
-    private void requireAllNonNull(
-            @NonNull final HederaEvmAccount sender,
-            @NonNull final HederaEvmContext context,
-            @NonNull final HederaWorldUpdater worldUpdater) {
-        requireNonNull(sender);
-        requireNonNull(context);
-        requireNonNull(worldUpdater);
     }
 }
