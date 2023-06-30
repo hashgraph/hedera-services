@@ -12,11 +12,11 @@
                                           #############################
 
 chatter.useChatter,                       false
-doUpnp,                                   false
-maxOutgoingSyncs,                         1
+socket.doUpnp,                            false
+socket.useLoopbackIp,                     false
+sync.maxOutgoingSyncs,                    1
 sync.syncAsProtocolEnabled,               true
 sync.syncProtocolPermitCount,             2
-useLoopbackIp,                            false
 
                                           #############################
                                           #      Event Creation       #
@@ -27,17 +27,13 @@ event.creation.maxCreationRate,           5
 event.creation.useTipsetAlgorithm,        true
 
                                           #############################
-                                          # Preconsensus Event Stream #
+                                          #        Event Stream       #
                                           #############################
 
+event.enableEventStreaming,               false
 event.preconsensus.enableReplay,          false
 event.preconsensus.enableStorage,         false
 
-                                          #############################
-                                          #  Consensus Event Stream   #
-                                          #############################
-
-enableEventStreaming,                     false
 
                                           #############################
                                           #         Reconnect         #
@@ -50,14 +46,15 @@ state.saveReconnectStateToDisk,           false
                                           #          Metrics          #
                                           #############################
 
-csvFileName,                              PlatformTesting
+metrics.csvFileName,                      PlatformTesting
 showInternalStats,                        true
 
                                           #############################
                                           #           State           #
                                           #############################
 
-checkSignedStateFromDisk,                 true
+
+state.checkSignedStateFromDisk,           true
 state.saveStatePeriod,                    0
 
                                           #############################
