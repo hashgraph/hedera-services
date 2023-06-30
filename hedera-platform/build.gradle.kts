@@ -90,6 +90,7 @@ dependencies.constraints {
         api(gav("org.apache.commons.lang3", "3.12.0"))
         api(gav("org.apache.logging.log4j", log4jVersion))
         api(gav("org.apache.logging.log4j.core", log4jVersion))
+        api(gav("org.apache.logging.log4j.jul", log4jVersion))
         api(gav("org.assertj.core", "3.23.1"))
         api(gav("org.bouncycastle.pkix", bouncycastleVersion))
         api(gav("org.bouncycastle.provider", bouncycastleVersion))

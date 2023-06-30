@@ -23,6 +23,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 
 /**
@@ -129,5 +130,19 @@ public class HederaSoftwareVersion implements SoftwareVersion {
             out.writeBoolean(true);
             out.writeNormalisedString(semVerPart);
         }
+    }
+
+    public boolean isAfter(@Nullable final SoftwareVersion deserializedVersion) {
+        if (deserializedVersion == null) {
+            return true;
+        }
+        return compareTo(deserializedVersion) > 0;
+    }
+
+    public boolean isBefore(@Nullable final SoftwareVersion deserializedVersion) {
+        if (deserializedVersion == null) {
+            return false;
+        }
+        return compareTo(deserializedVersion) < 0;
     }
 }

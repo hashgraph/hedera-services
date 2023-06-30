@@ -31,7 +31,7 @@ import org.testcontainers.utility.DockerImageName;
 
 /** Base class for integration tests */
 @Testcontainers
-public abstract class IntegrationTestBase extends TestBase {
+public abstract class DockerIntegrationTestBase extends TestBase {
     private static final File WORKSPACE = new File(System.getProperty("networkWorkspaceDir"));
 
     private static final DockerImageName IMAGE = DockerImageName.parse(System.getProperty("TAG"));

@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * A type that any {@link TransactionHandler} can use to validate entity
@@ -35,7 +36,7 @@ public interface AttributeValidator {
      * @param key the key to validate
      * @throws HandleException if the key is invalid or more than {@value MAX_NESTED_KEY_LEVELS}
      */
-    void validateKey(Key key);
+    void validateKey(@NonNull Key key);
 
     /**
      * Validates the given memo.
@@ -43,7 +44,7 @@ public interface AttributeValidator {
      * @param memo the memo to validate
      * @throws HandleException if the key is invalid
      */
-    void validateMemo(String memo);
+    void validateMemo(@Nullable String memo);
 
     /**
      * Validates the given expiry.

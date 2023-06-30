@@ -24,9 +24,11 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class StateBuilderUtil {
@@ -78,12 +80,12 @@ public class StateBuilderUtil {
     }
 
     @NonNull
-    protected MapWritableKVState.Builder<String, EntityNumValue> emptyWritableAliasStateBuilder() {
+    protected MapWritableKVState.Builder<Bytes, AccountID> emptyWritableAliasStateBuilder() {
         return MapWritableKVState.builder(ALIASES);
     }
 
     @NonNull
-    protected MapReadableKVState.Builder<String, EntityNumValue> emptyReadableAliasStateBuilder() {
+    protected MapReadableKVState.Builder<Bytes, AccountID> emptyReadableAliasStateBuilder() {
         return MapReadableKVState.builder(ALIASES);
     }
 

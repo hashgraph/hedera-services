@@ -288,7 +288,9 @@ public class SingleTransactionRecordBuilder
         return entropy;
     }
 
-    public SingleTransactionRecordBuilder evmAddress(Bytes evmAddress) {
+    @Override
+    @NonNull
+    public SingleTransactionRecordBuilder evmAddress(@NonNull Bytes evmAddress) {
         this.evmAddress = evmAddress;
         return this;
     }
