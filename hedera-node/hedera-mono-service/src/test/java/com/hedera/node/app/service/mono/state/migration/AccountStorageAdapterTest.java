@@ -40,6 +40,7 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.merkle.map.MerkleMap;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import org.apache.commons.lang3.tuple.Pair;
@@ -213,6 +214,36 @@ class AccountStorageAdapterTest {
                 .given(onDiskAccounts)
                 .extractVirtualMapData(eq(getStaticThreadManager()), any(InterruptableConsumer.class), eq(32));
         assertThrows(IllegalStateException.class, () -> subject.forEach(visitor));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void onDiskForEachParallel() throws InterruptedException {
+        withOnDiskSubject();
+        willAnswer(invocation -> {
+                    final var observer = invocation.getArgument(1, InterruptableConsumer.class);
+                    observer.accept(Pair.of(SOME_KEY, onDiskStandIn));
+                    observer.accept(Pair.of(EntityNumVirtualKey.from(SOME_OTHER_NUM), onDiskStandIn));
+                    observer.accept(Pair.of(EntityNumVirtualKey.from(YET_ANOTHER_NUM), onDiskStandIn));
+                    return null;
+                })
+                .given(onDiskAccounts)
+                .extractVirtualMapDataC(eq(getStaticThreadManager()), any(InterruptableConsumer.class), eq(32));
+
+        final var actual = new HashSet<>();
+        subject.forEachParallel((num, account) -> actual.add(num));
+
+        assertEquals(SOME_ON_DISK_KEY_SET, actual);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void onDiskPropagatesInterruptionC() throws InterruptedException {
+        withOnDiskSubject();
+        willThrow(InterruptedException.class)
+                .given(onDiskAccounts)
+                .extractVirtualMapDataC(eq(getStaticThreadManager()), any(InterruptableConsumer.class), eq(32));
+        assertThrows(IllegalStateException.class, () -> subject.forEachParallel(visitor));
     }
 
     private void withInMemorySubject() {

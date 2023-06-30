@@ -33,7 +33,6 @@ import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalseP
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
@@ -149,7 +148,7 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
             info.symbol(token.symbol());
             info.name(token.name());
             info.memo(token.memo());
-            info.treasury(AccountID.newBuilder().accountNum(token.treasuryAccountNumber()));
+            info.treasury(token.treasuryAccountId());
             info.totalSupply(token.totalSupply());
             info.maxSupply(token.maxSupply());
             info.decimals(token.decimals());
@@ -165,8 +164,8 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
                 info.feeScheduleKey(token.feeScheduleKey());
             }
 
-            if (token.autoRenewAccountNumber() != 0) {
-                info.autoRenewAccount(AccountID.newBuilder().accountNum(token.autoRenewAccountNumber()));
+            if (token.autoRenewAccountId() != null) {
+                info.autoRenewAccount(token.autoRenewAccountId());
                 info.autoRenewPeriod(Duration.newBuilder().seconds(token.autoRenewSecs()));
             }
 
