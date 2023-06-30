@@ -65,7 +65,7 @@ public final class TokenStateTranslator {
                 .autoRenewAccountId(
                         token.autoRenewAccount() != null
                                 ? asAccount(token.autoRenewAccount().num())
-                                : asAccount(0L))
+                                : null)
                 .autoRenewSecs(token.autoRenewPeriod())
                 .expiry(token.expiry())
                 .memo(token.memo())
