@@ -1363,7 +1363,7 @@ public final class PbjConverter {
     }
 
     @NonNull
-    public static com.hederahashgraph.api.proto.java.CustomFee fromPbj(@Nullable final CustomFee customFee) {
+    public static com.hederahashgraph.api.proto.java.CustomFee fromPbj(@NonNull final CustomFee customFee) {
         var builder = com.hederahashgraph.api.proto.java.CustomFee.newBuilder();
         if (customFee.hasFixedFee()) {
             builder.setFixedFee(fromPbj(customFee.fixedFee()));
@@ -1406,7 +1406,7 @@ public final class PbjConverter {
     }
 
     @NonNull
-    public static com.hederahashgraph.api.proto.java.FixedFee fromPbj(@NonNull FixedFee fixedFee) {
+    public static com.hederahashgraph.api.proto.java.FixedFee fromPbj(@Nullable FixedFee fixedFee) {
         var builder = com.hederahashgraph.api.proto.java.FixedFee.newBuilder();
         if (fixedFee != null) {
             builder.setAmount(fixedFee.amount());

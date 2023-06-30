@@ -203,7 +203,9 @@ public class TokenStateTranslator {
         final List<com.hedera.node.app.service.mono.state.submerkle.FcCustomFee> monoCustomFees = new ArrayList<>();
         if (customFees != null) {
             for (var customFee : customFees) {
-                monoCustomFees.add(FcCustomFee.fromGrpc(PbjConverter.fromPbj(customFee)));
+                if (customFee != null) {
+                    monoCustomFees.add(FcCustomFee.fromGrpc(PbjConverter.fromPbj(customFee)));
+                }
             }
         }
 
