@@ -52,26 +52,20 @@ public final class TokenStateTranslator {
     public static Token tokenFromMerkle(
             @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleToken token) {
         final var builder = Token.newBuilder()
-                .tokenId(TokenID.newBuilder()
-                        .tokenNum(token.getKey().longValue())
-                        .build())
+                .tokenId(TokenID.newBuilder().tokenNum(token.getKey().longValue()))
                 .name(token.name())
                 .symbol(token.symbol())
                 .decimals(token.decimals())
                 .totalSupply(token.totalSupply())
-                .treasuryAccountId(AccountID.newBuilder()
-                        .accountNum(token.treasury().num())
-                        .build())
+                .treasuryAccountId(asAccount(token.treasury().num()))
                 .lastUsedSerialNumber(token.getLastUsedSerialNumber())
                 .deleted(token.isDeleted())
                 .tokenType(fromMerkleType(token.tokenType()))
                 .supplyType(fromMerkleSupplyType(token.supplyType()))
                 .autoRenewAccountId(
                         token.autoRenewAccount() != null
-                                ? AccountID.newBuilder()
-                                        .accountNum(token.autoRenewAccount().num())
-                                        .build()
-                                : AccountID.DEFAULT)
+                                ? asAccount(token.autoRenewAccount().num())
+                                : null)
                 .autoRenewSecs(token.autoRenewPeriod())
                 .expiry(token.expiry())
                 .memo(token.memo())
@@ -166,8 +160,11 @@ public final class TokenStateTranslator {
         merkleToken.setTokenType(toMerkleType(token.tokenType()));
         merkleToken.setSupplyType(toMerkleSupplyType(token.supplyType()));
         merkleToken.setAutoRenewAccount(
-                (token.autoRenewAccountId().accountNum() > 0)
-                        ? new EntityId(0, 0, token.autoRenewAccountId().accountNum())
+                (token.autoRenewAccountId() != null)
+                        ? new EntityId(
+                                token.autoRenewAccountId().shardNum(),
+                                token.autoRenewAccountId().realmNum(),
+                                token.autoRenewAccountId().accountNum())
                         : null);
         merkleToken.setAutoRenewPeriod(token.autoRenewSecs());
         merkleToken.setExpiry(token.expiry());
@@ -222,5 +219,13 @@ public final class TokenStateTranslator {
         }
 
         return monoCustomFees;
+    }
+
+    private static AccountID asAccount(final long num) {
+        return AccountID.newBuilder().accountNum(num).build();
+    }
+
+    private static TokenID asToken(final long num) {
+        return TokenID.newBuilder().tokenNum(num).build();
     }
 }
