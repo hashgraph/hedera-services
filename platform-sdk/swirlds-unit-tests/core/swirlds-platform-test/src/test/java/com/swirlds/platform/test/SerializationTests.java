@@ -21,12 +21,10 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.TransactionUtils;
 import com.swirlds.common.test.io.SerializationUtils;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.test.event.RandomEventUtils;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -45,8 +43,6 @@ public class SerializationTests {
     public static void setUp() throws ConstructableRegistryException {
         new TestConfigBuilder().withValue("transactionMaxBytes", 1_000_000).getOrCreateConfig();
 
-        Settings.populateSettingsCommon();
-        SettingsCommon.transactionMaxBytes = 1000000;
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
     }
 

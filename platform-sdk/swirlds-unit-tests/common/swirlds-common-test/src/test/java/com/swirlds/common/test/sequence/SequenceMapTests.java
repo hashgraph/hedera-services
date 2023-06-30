@@ -44,7 +44,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -77,8 +76,13 @@ public class SequenceMapTests {
         }
     }
 
-    private record MapBuilder(
-            String name, BiFunction<Long, Integer, SequenceMap<SequenceMapKey, Integer>> constructor) {
+    @FunctionalInterface
+    private interface MapConstructor {
+        SequenceMap<SequenceMapKey, Integer> newMap(
+                final long initialFirstSequenceNumber, final int sequenceNumberCapacity, final boolean allowExpansion);
+    }
+
+    private record MapBuilder(String name, MapConstructor constructor) {
         @Override
         public String toString() {
             return name;
@@ -89,10 +93,12 @@ public class SequenceMapTests {
         return Stream.of(
                 Arguments.of(new MapBuilder(
                         "standard",
-                        (min, capacity) -> new StandardSequenceMap<>(min, capacity, SequenceMapKey::sequence))),
+                        (min, capacity, allowExpansion) ->
+                                new StandardSequenceMap<>(min, capacity, allowExpansion, SequenceMapKey::sequence))),
                 Arguments.of(new MapBuilder(
                         "concurrent",
-                        (min, capacity) -> new ConcurrentSequenceMap<>(min, capacity, SequenceMapKey::sequence))));
+                        (min, capacity, allowExpansion) ->
+                                new ConcurrentSequenceMap<>(min, capacity, allowExpansion, SequenceMapKey::sequence))));
     }
 
     private static boolean isKeyPresent(final SequenceMap<SequenceMapKey, Integer> map, final Long sequenceNumber) {
@@ -104,17 +110,13 @@ public class SequenceMapTests {
     /**
      * Do validation on a map.
      *
-     * @param map
-     * 		the map being validated
-     * @param smallestKeyToCheck
-     * 		the smallest key to check
-     * @param keyToCheckUpperBound
-     * 		the upper bound (exclusive) of keys to check
-     * @param getSequenceNumber
-     * 		provides the expected sequence number for a key, or null if the key is not expected to be in the map
-     * @param getValue
-     * 		provides the expected value for a key (result is ignored if sequence number is reported as null or the
-     * 		sequence number falls outside the map's bounds)
+     * @param map                  the map being validated
+     * @param smallestKeyToCheck   the smallest key to check
+     * @param keyToCheckUpperBound the upper bound (exclusive) of keys to check
+     * @param getSequenceNumber    provides the expected sequence number for a key, or null if the key is not expected
+     *                             to be in the map
+     * @param getValue             provides the expected value for a key (result is ignored if sequence number is
+     *                             reported as null or the sequence number falls outside the map's bounds)
      */
     private void validateMapContents(
             final SequenceMap<SequenceMapKey, Integer> map,
@@ -150,7 +152,7 @@ public class SequenceMapTests {
                 // Note: the sequence number in the key is unused when we are just querying. So it's
                 // ok to lie and provide a sequence number of 0 here, even though 0 may not be the
                 // correct sequence number for the given key.
-                assertNull(map.get(new SequenceMapKey(key, 0)), "unexpected value");
+                assertNull(map.get(new SequenceMapKey(key, 0)), "unexpected value for key " + key);
                 assertFalse(map.containsKey(new SequenceMapKey(key, 0)), "should not contain key");
             }
         }
@@ -205,7 +207,7 @@ public class SequenceMapTests {
         // The number of things inserted into the map
         final int size = 100;
 
-        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.apply(0L, size);
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(0, size, false);
 
         // The number of keys for each sequence number
         final int keysPerSeq = 5;
@@ -240,8 +242,7 @@ public class SequenceMapTests {
         // The number of keys for each sequence number
         final int keysPerSeq = 5;
 
-        final SequenceMap<SequenceMapKey, Integer> map =
-                mapBuilder.constructor.apply((long) (start / keysPerSeq), size);
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(start / keysPerSeq, size, false);
 
         for (int offset = 0; offset < size; offset++) {
 
@@ -265,8 +266,6 @@ public class SequenceMapTests {
                 },
                 key -> -key);
     }
-
-    // FUTURE WORK negative sequence number tests
 
     @ParameterizedTest
     @MethodSource("testConfiguration")
@@ -279,8 +278,7 @@ public class SequenceMapTests {
         // The number of keys for each sequence number
         final int keysPerSeq = 5;
 
-        final SequenceMap<SequenceMapKey, Integer> map =
-                mapBuilder.constructor.apply((long) (start / keysPerSeq), size);
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(start / keysPerSeq, size, false);
 
         for (int offset = 0; offset < size; offset++) {
 
@@ -305,8 +303,6 @@ public class SequenceMapTests {
                 key -> -key);
     }
 
-    // FUTURE WORK start at high positive number
-
     @ParameterizedTest
     @MethodSource("testConfiguration")
     @DisplayName("Single Shift Test")
@@ -317,7 +313,7 @@ public class SequenceMapTests {
         final int keysPerSeq = 5;
         final int capacity = size / keysPerSeq;
 
-        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.apply(0L, capacity);
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(0, capacity, false);
         assertEquals(0, map.getFirstSequenceNumberInWindow(), "unexpected lower bound");
 
         for (int i = 0; i < size; i++) {
@@ -358,7 +354,7 @@ public class SequenceMapTests {
         final int keysPerSeq = 5;
         final int capacity = size / keysPerSeq;
 
-        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.apply(0L, capacity);
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(0, capacity, false);
         assertEquals(0, map.getFirstSequenceNumberInWindow(), "unexpected lower bound");
 
         for (int i = 0; i < size; i++) {
@@ -397,7 +393,7 @@ public class SequenceMapTests {
         // The number of things inserted into the map
         final int size = 100;
 
-        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.apply(0L, size);
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(0, size, false);
         assertEquals(0, map.getFirstSequenceNumberInWindow(), "unexpected lower bound");
 
         // The number of keys for each sequence number
@@ -446,7 +442,7 @@ public class SequenceMapTests {
         // The number of keys for each sequence number
         final int keysPerSeq = 5;
 
-        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.apply(5L, 5);
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(5, 5, false);
 
         assertEquals(5, map.getFirstSequenceNumberInWindow(), "unexpected lower bound");
         assertEquals(9, map.getLastSequenceNumberInWindow(), "unexpected upper bound");
@@ -474,7 +470,7 @@ public class SequenceMapTests {
         int initialLowerBound = -10;
         int lowerBound = initialLowerBound;
 
-        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.apply((long) lowerBound, capacity);
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(lowerBound, capacity, false);
 
         for (int iteration = 0; iteration < 10; iteration++) {
             // shift the lower bound
@@ -515,7 +511,7 @@ public class SequenceMapTests {
     @MethodSource("testConfiguration")
     @DisplayName("One Directional Shift Test")
     void oneDirectionalShiftTest(final MapBuilder mapBuilder) {
-        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.apply(-10L, 10);
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(-10, 10, false);
 
         // Shifting in the positive direction should not cause problems
         map.shiftWindow(-5);
@@ -547,7 +543,7 @@ public class SequenceMapTests {
         final int lowerBound = 50;
         final int capacity = 5;
 
-        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.apply((long) lowerBound, capacity);
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(lowerBound, capacity, false);
 
         assertEquals(lowerBound, map.getFirstSequenceNumberInWindow(), "unexpected lower bound");
 
@@ -617,7 +613,7 @@ public class SequenceMapTests {
         final int lowerBound = 0;
         final int capacity = 20;
 
-        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.apply((long) lowerBound, capacity);
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(lowerBound, capacity, false);
 
         // removing values from an empty map shouldn't cause problems
         assertNull(map.remove(new SequenceMapKey(-100, 0)), "value should not be in map");
@@ -675,7 +671,7 @@ public class SequenceMapTests {
         final int lowerBound = 0;
         final int capacity = 20;
 
-        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.apply((long) lowerBound, capacity);
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(lowerBound, capacity, false);
 
         assertNull(map.put(new SequenceMapKey(10, 2), -10), "no value should currently be in map");
 
@@ -724,7 +720,7 @@ public class SequenceMapTests {
         // The highest permitted sequence number
         final int upperBound = 100;
 
-        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.apply((long) lowerBound, capacity);
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(lowerBound, capacity, false);
 
         // Value that is in a legal range and not present
         assertEquals(-10, map.computeIfAbsent(new SequenceMapKey(10, 2), key -> -key.key), "incorrect value returned");
@@ -802,7 +798,7 @@ public class SequenceMapTests {
         // The highest permitted sequence number
         final int upperBound = 100;
 
-        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.apply((long) lowerBound, capacity);
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(lowerBound, capacity, false);
 
         // Value that is in a legal range and not present
         assertTrue(map.putIfAbsent(new SequenceMapKey(10, 2), -10), "value is not yet in the map");
@@ -864,7 +860,7 @@ public class SequenceMapTests {
     @MethodSource("testConfiguration")
     @DisplayName("removeSequenceNumber() Test")
     void removeSequenceNumberTest(final MapBuilder mapBuilder) {
-        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.apply(0L, 100);
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(0, 100, false);
 
         // The number of things inserted into the map
         final int size = 100;
@@ -982,7 +978,7 @@ public class SequenceMapTests {
     @MethodSource("testConfiguration")
     @DisplayName("removeSequenceNumber() With Callback Test")
     void removeSequenceNumberWithCallbackTest(final MapBuilder mapBuilder) {
-        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.apply(0L, 100);
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(0, 100, false);
 
         // The number of things inserted into the map
         final int size = 100;
@@ -1190,5 +1186,230 @@ public class SequenceMapTests {
         });
 
         assertFalse(error.get(), "error(s) encountered");
+    }
+
+    @ParameterizedTest
+    @MethodSource("testConfiguration")
+    @DisplayName("Expand Start From Sequence 0 Test")
+    void expandStartFromSequence0Test(final MapBuilder mapBuilder) {
+        final Random random = getRandomPrintSeed();
+
+        // The number of things inserted into the map
+        final int size = 10_000;
+
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(0, 1, true);
+
+        // The number of keys for each sequence number
+        final int keysPerSeq = 5;
+
+        for (int i = 0; i < size; i++) {
+            if (random.nextBoolean()) {
+                map.put(new SequenceMapKey(i, i / keysPerSeq), -i);
+            } else {
+                map.putIfAbsent(new SequenceMapKey(i, i / keysPerSeq), -i);
+            }
+            assertEquals(i + 1, map.getSize(), "unexpected size");
+        }
+
+        validateMapContents(
+                map,
+                -size,
+                2 * size,
+                key -> {
+                    if (key >= 0 && key < size) {
+                        return (long) key / keysPerSeq;
+                    } else {
+                        // key is not present
+                        return null;
+                    }
+                },
+                key -> -key);
+    }
+
+    @ParameterizedTest
+    @MethodSource("testConfiguration")
+    @DisplayName("Expand Start From Negative Sequence Test")
+    void expandStartFromNegativeSequenceTest(final MapBuilder mapBuilder) {
+        final Random random = getRandomPrintSeed();
+
+        // The number of things inserted into the map
+        final int size = 10_000;
+
+        final int initialSequenceNumber = -42;
+
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(initialSequenceNumber, 1, true);
+
+        // The number of keys for each sequence number
+        final int keysPerSeq = 5;
+
+        for (int i = 0; i < size; i++) {
+            if (random.nextBoolean()) {
+                map.put(new SequenceMapKey(i, i / keysPerSeq + initialSequenceNumber), -i);
+            } else {
+                map.putIfAbsent(new SequenceMapKey(i, i / keysPerSeq + initialSequenceNumber), -i);
+            }
+            assertEquals(i + 1, map.getSize(), "unexpected size");
+        }
+
+        validateMapContents(
+                map,
+                -size,
+                2 * size,
+                key -> {
+                    if (key >= 0 && key < size) {
+                        return (long) key / keysPerSeq + initialSequenceNumber;
+                    } else {
+                        // key is not present
+                        return null;
+                    }
+                },
+                key -> -key);
+    }
+
+    @ParameterizedTest
+    @MethodSource("testConfiguration")
+    @DisplayName("Expand Start From Positive Sequence Test")
+    void expandStartFromPositiveSequenceTest(final MapBuilder mapBuilder) {
+        final Random random = getRandomPrintSeed();
+
+        // The number of things inserted into the map
+        final int size = 10_000;
+
+        final int initialSequenceNumber = 42;
+
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(initialSequenceNumber, 1, true);
+
+        // The number of keys for each sequence number
+        final int keysPerSeq = 5;
+
+        for (int i = 0; i < size; i++) {
+            if (random.nextBoolean()) {
+                map.put(new SequenceMapKey(i, i / keysPerSeq + initialSequenceNumber), -i);
+            } else {
+                map.putIfAbsent(new SequenceMapKey(i, i / keysPerSeq + initialSequenceNumber), -i);
+            }
+            assertEquals(i + 1, map.getSize(), "unexpected size");
+        }
+
+        validateMapContents(
+                map,
+                -size,
+                2 * size,
+                key -> {
+                    if (key >= 0 && key < size) {
+                        return (long) key / keysPerSeq + initialSequenceNumber;
+                    } else {
+                        // key is not present
+                        return null;
+                    }
+                },
+                key -> -key);
+    }
+
+    @ParameterizedTest
+    @MethodSource("testConfiguration")
+    @DisplayName("Expand And Shift Test")
+    void expandAndShiftTest(final MapBuilder mapBuilder) {
+        final Random random = getRandomPrintSeed();
+
+        final int phaseOneCount = 1_000;
+        final int phaseTwoCount = 10_000;
+
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(0, 1, true);
+
+        // The number of keys for each sequence number
+        final int keysPerSeq = 5;
+
+        for (int i = 0; i < phaseOneCount; i++) {
+            if (random.nextBoolean()) {
+                map.put(new SequenceMapKey(i, i / keysPerSeq), -i);
+            } else {
+                map.putIfAbsent(new SequenceMapKey(i, i / keysPerSeq), -i);
+            }
+            assertEquals(i + 1, map.getSize(), "unexpected size");
+        }
+
+        // This shift will cause us to remove half of the elements added during phase 1
+        final long firstSeqAfterShift = phaseOneCount / keysPerSeq / 2;
+        map.shiftWindow(firstSeqAfterShift);
+        final int countAfterPhase1 = map.getSize();
+
+        for (int i = 0; i < phaseTwoCount; i++) {
+            final int key = i + phaseOneCount;
+            if (random.nextBoolean()) {
+                map.put(new SequenceMapKey(key, key / keysPerSeq), -key);
+            } else {
+                map.putIfAbsent(new SequenceMapKey(key, key / keysPerSeq), -key);
+            }
+            assertEquals(countAfterPhase1 + i + 1, map.getSize(), "unexpected size");
+        }
+
+        validateMapContents(
+                map,
+                -phaseOneCount,
+                2 * phaseTwoCount,
+                key -> {
+                    if (key < (phaseTwoCount + phaseOneCount) && (key / keysPerSeq) >= firstSeqAfterShift) {
+                        return (long) key / keysPerSeq;
+                    } else {
+                        // key is not present
+                        return null;
+                    }
+                },
+                key -> -key);
+    }
+
+    @ParameterizedTest
+    @MethodSource("testConfiguration")
+    @DisplayName("Sudden Expansion Test")
+    void suddenExpansionTest(final MapBuilder mapBuilder) {
+        final Random random = getRandomPrintSeed();
+
+        // The number of things inserted into the map
+        final int size = 10_000;
+
+        final SequenceMap<SequenceMapKey, Integer> map = mapBuilder.constructor.newMap(0, 1, true);
+
+        // The number of keys for each sequence number
+        final int keysPerSeq = 5;
+
+        // Intentionally start inserting high sequence numbers first
+        for (int i = size - 1; i >= 0; i--) {
+            if (random.nextBoolean()) {
+                map.put(new SequenceMapKey(i, i / keysPerSeq), -i);
+            } else {
+                map.putIfAbsent(new SequenceMapKey(i, i / keysPerSeq), -i);
+            }
+            assertEquals(size - i, map.getSize(), "unexpected size");
+        }
+
+        validateMapContents(
+                map,
+                -size,
+                2 * size,
+                key -> {
+                    if (key >= 0 && key < size) {
+                        return (long) key / keysPerSeq;
+                    } else {
+                        // key is not present
+                        return null;
+                    }
+                },
+                key -> -key);
+    }
+
+    @ParameterizedTest
+    @MethodSource("testConfiguration")
+    @DisplayName("Expansion Limits Test")
+    void expansionLimitsTest(final MapBuilder mapBuilder) {
+        final SequenceMap<SequenceMapKey, Integer> map1 = mapBuilder.constructor.newMap(0, 1, true);
+        assertThrows(IllegalStateException.class, () -> map1.put(new SequenceMapKey(1, Integer.MAX_VALUE - 7), 1));
+        assertThrows(IllegalStateException.class, () -> map1.put(new SequenceMapKey(1, Integer.MAX_VALUE), 1));
+        assertThrows(IllegalStateException.class, () -> map1.put(new SequenceMapKey(1, Long.MAX_VALUE), 1));
+
+        final SequenceMap<SequenceMapKey, Integer> map2 = mapBuilder.constructor.newMap(Long.MIN_VALUE, 1, true);
+        assertThrows(IllegalStateException.class, () -> map2.put(new SequenceMapKey(1, Integer.MAX_VALUE - 7), 1));
+        assertThrows(IllegalStateException.class, () -> map2.put(new SequenceMapKey(1, Integer.MAX_VALUE), 1));
+        assertThrows(IllegalStateException.class, () -> map2.put(new SequenceMapKey(1, Long.MAX_VALUE), 1));
     }
 }

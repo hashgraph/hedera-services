@@ -17,9 +17,7 @@
 package com.hedera.node.app;
 
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
-import static com.swirlds.common.system.PlatformStatus.ACTIVE;
-import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
-import static com.swirlds.common.system.PlatformStatus.STARTING_UP;
+import static com.swirlds.common.system.status.PlatformStatus.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -66,10 +64,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 final class ServicesMainTest {
-    private final long selfId = 123L;
-    private final long unselfId = 666L;
-    private final NodeId nodeId = new NodeId(selfId);
-    private final NodeId edonId = new NodeId(unselfId);
+    private final NodeId selfId = new NodeId(123L);
+    private final NodeId unselfId = new NodeId(666L);
 
     @Mock
     private Platform platform;
@@ -139,7 +135,7 @@ final class ServicesMainTest {
     @Test
     void throwsErrorOnMissingApp() {
         // expect:
-        Assertions.assertThrows(AssertionError.class, () -> subject.init(platform, edonId));
+        Assertions.assertThrows(AssertionError.class, () -> subject.init(platform, unselfId));
     }
 
     @Test
@@ -154,7 +150,7 @@ final class ServicesMainTest {
         given(nativeCharset.get()).willReturn(StandardCharsets.US_ASCII);
 
         // when:
-        subject.init(platform, nodeId);
+        subject.init(platform, selfId);
 
         // then:
         verify(systemExits).fail(1);
@@ -169,7 +165,7 @@ final class ServicesMainTest {
         given(app.digestFactory()).willReturn(namedDigestFactory);
 
         // when:
-        subject.init(platform, nodeId);
+        subject.init(platform, selfId);
 
         // then:
         verify(systemExits).fail(1);
@@ -181,7 +177,7 @@ final class ServicesMainTest {
         withChangeableApp();
 
         // when:
-        subject.init(platform, nodeId);
+        subject.init(platform, selfId);
 
         // then:
         verify(ledgerValidator).validate(accounts);
@@ -211,12 +207,12 @@ final class ServicesMainTest {
 
     @Test
     void updatesCurrentMiscPlatformStatus() throws NoSuchAlgorithmException {
-        final var listener = new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
+        final var listener = new StatusChangeListener(currentPlatformStatus, selfId, recordStreamManager);
         withRunnableApp(app);
         withChangeableApp();
         withNotificationEngine();
 
-        subject.init(platform, nodeId);
+        subject.init(platform, selfId);
         listener.notify(new PlatformStatusChangeNotification(STARTING_UP));
 
         verify(currentPlatformStatus).set(STARTING_UP);
@@ -224,12 +220,12 @@ final class ServicesMainTest {
 
     @Test
     void updatesCurrentActivePlatformStatus() throws NoSuchAlgorithmException {
-        final var listener = new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
+        final var listener = new StatusChangeListener(currentPlatformStatus, selfId, recordStreamManager);
         withRunnableApp(app);
         withChangeableApp();
         withNotificationEngine();
 
-        subject.init(platform, nodeId);
+        subject.init(platform, selfId);
         listener.notify(new PlatformStatusChangeNotification(ACTIVE));
 
         verify(currentPlatformStatus).set(ACTIVE);
@@ -238,12 +234,12 @@ final class ServicesMainTest {
 
     @Test
     void updatesCurrentMaintenancePlatformStatus() throws NoSuchAlgorithmException {
-        final var listener = new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
+        final var listener = new StatusChangeListener(currentPlatformStatus, selfId, recordStreamManager);
         withRunnableApp(app);
         withChangeableApp();
         withNotificationEngine();
 
-        subject.init(platform, nodeId);
+        subject.init(platform, selfId);
         listener.notify(new PlatformStatusChangeNotification(FREEZE_COMPLETE));
 
         verify(currentPlatformStatus).set(FREEZE_COMPLETE);
@@ -255,7 +251,7 @@ final class ServicesMainTest {
         withFailingApp();
 
         // when:
-        subject.init(platform, nodeId);
+        subject.init(platform, selfId);
 
         // then:
         verify(systemExits).fail(1);
@@ -300,7 +296,7 @@ final class ServicesMainTest {
     }
 
     private void withChangeableApp() {
-        given(app.nodeId()).willReturn(nodeId);
+        given(app.nodeId()).willReturn(selfId);
     }
 
     private void withNotificationEngine() {

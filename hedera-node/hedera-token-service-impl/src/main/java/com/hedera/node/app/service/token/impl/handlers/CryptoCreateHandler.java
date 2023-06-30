@@ -23,26 +23,33 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_I
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
+import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
+import com.hedera.node.config.data.EntitiesConfig;
+import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -54,9 +61,21 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoCreateHandler extends BaseCryptoHandler implements TransactionHandler {
+    private final CryptoCreateValidator cryptoCreateValidator;
+
+    private StakingValidator stakingValidator;
+    private NetworkInfo networkInfo;
+
     @Inject
-    public CryptoCreateHandler() {
-        // Exists for injection
+    public CryptoCreateHandler(
+            @NonNull final CryptoCreateValidator cryptoCreateValidator,
+            @NonNull final StakingValidator stakingValidator,
+            @NonNull final NetworkInfo networkInfo) {
+        this.cryptoCreateValidator =
+                requireNonNull(cryptoCreateValidator, "The supplied argument 'cryptoCreateValidator' must not be null");
+        this.stakingValidator =
+                requireNonNull(stakingValidator, "The supplied argument 'stakingValidator' must not be null");
+        this.networkInfo = requireNonNull(networkInfo, "The supplied argument 'nodeInfo' must not be null");
     }
 
     @Override
@@ -66,7 +85,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         pureChecks(context.body());
         if (op.hasKey()) {
             final var receiverSigReq = op.receiverSigRequired();
-            if (receiverSigReq && op.hasKey()) {
+            if (receiverSigReq) {
                 context.requireKey(op.keyOrThrow());
             }
         }
@@ -92,25 +111,16 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var txnBody = handleContext.body();
         final var op = txnBody.cryptoCreateAccount();
 
-        // validate fields in the transaction body that involves checking with
-        // dynamic properties or state
-        final ResponseCodeEnum validationResult = validateSemantics();
-        if (validationResult != OK) {
-            throw new HandleException(validationResult);
-        }
+        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
 
         // FUTURE: Use the config and check if accounts can be created.
         //  Currently, this check is being done in `finishCryptoCreate` before `commit`
 
-        // validate payer account exists and has enough balance
-        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
-        final var payer = accountStore.getForModify(
-                txnBody.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT));
+        // validate fields in the transaction body that involves checking with
+        // dynamic properties or state
+        final var payer = validateSemantics(handleContext, accountStore, op);
 
-        validateTrue(payer != null, INVALID_PAYER_ACCOUNT_ID);
         final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
-        validatePayer(payer, newPayerBalance);
-
         // Change payer's balance to reflect the deduction of the initial balance for the new
         // account
         final var modifiedPayer =
@@ -156,11 +166,54 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
     /**
      * Validate the fields in the transaction body that involves checking with dynamic
      * properties or state. This check is done as part of the handle workflow.
-     * @return OK if the transaction body is valid, otherwise return the appropriate error code
+     * @param context handle context
+     * @param accountStore account store
+     * @param op crypto create transaction body
+     * @return the payer account if validated successfully
      */
-    private ResponseCodeEnum validateSemantics() {
-        // FUTURE : Need to add validations that involve dynamic properties or state
-        return OK;
+    private Account validateSemantics(
+            @NonNull final HandleContext context,
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final CryptoCreateTransactionBody op) {
+        final var cryptoCreateWithAliasConfig =
+                context.configuration().getConfigData(CryptoCreateWithAliasConfig.class);
+        final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
+        final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+
+        // validate payer account exists and has enough balance
+        final var payer = getIfUsable(
+                context.body().transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
+                accountStore,
+                context.expiryValidator(),
+                INVALID_PAYER_ACCOUNT_ID);
+
+        final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
+        validatePayer(payer, newPayerBalance);
+
+        context.attributeValidator().validateMemo(op.memo());
+        cryptoCreateValidator.validateKeyAliasAndEvmAddressCombinations(
+                op, context.attributeValidator(), cryptoCreateWithAliasConfig, accountStore);
+        context.attributeValidator()
+                .validateAutoRenewPeriod(op.autoRenewPeriod().seconds());
+        validateFalse(
+                cryptoCreateValidator.tooManyAutoAssociations(
+                        op.maxAutomaticTokenAssociations(), ledgerConfig, entitiesConfig, tokensConfig),
+                REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+        validateFalse(
+                op.hasProxyAccountID() && !op.proxyAccountID().equals(AccountID.DEFAULT),
+                PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
+
+        stakingValidator.validateStakedId(
+                op.declineReward(),
+                op.stakedId().kind().name(),
+                op.stakedAccountId(),
+                op.stakedNodeId(),
+                accountStore,
+                context,
+                networkInfo);
+
+        return payer;
     }
 
     /**

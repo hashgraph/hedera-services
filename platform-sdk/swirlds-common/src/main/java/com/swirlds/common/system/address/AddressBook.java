@@ -16,10 +16,7 @@
 
 package com.swirlds.common.system.address;
 
-import static com.swirlds.common.system.address.Address.ipString;
-
 import com.swirlds.base.state.MutabilityException;
-import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -333,27 +330,13 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
-     * Get the address for the member with the given ID
-     *
-     * @param id the member ID of the address to get
-     * @return the address if it exists, null otherwise.
-     * @deprecated use {@link #getAddress(NodeId)} instead
-     */
-    @Deprecated(since = "0.39.0", forRemoval = true)
-    @NonNull
-    public Address getAddress(final long id) {
-        return getAddress(new NodeId(id));
-    }
-
-    /**
      * Check if an address for a given node ID is contained within this address book.
      *
      * @param id a node ID
      * @return true if this address book contains an address for the given node ID
      */
-    public boolean contains(@NonNull final NodeId id) {
-        Objects.requireNonNull(id, "nodeId is null");
-        return addresses.containsKey(id);
+    public boolean contains(@Nullable final NodeId id) {
+        return id != null && addresses.containsKey(id);
     }
 
     /**
@@ -616,24 +599,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      */
     @NonNull
     public String toConfigText() {
-        final TextTable table = new TextTable().setBordersEnabled(false);
-        for (final Address address : this) {
-            final String memo = address.getMemo();
-            final boolean hasMemo = !memo.trim().isEmpty();
-            final boolean hasInternalIpv4 = address.getAddressInternalIpv4() != null;
-            final boolean hasExternalIpv4 = address.getAddressExternalIpv4() != null;
-            table.addRow(
-                    "address,",
-                    address.getNickname() + ",",
-                    address.getSelfName() + ",",
-                    address.getWeight() + ",",
-                    (hasInternalIpv4 ? ipString(address.getAddressInternalIpv4()) : "") + ",",
-                    address.getPortInternalIpv4() + ",",
-                    (hasExternalIpv4 ? ipString(address.getAddressExternalIpv4()) : "") + ",",
-                    address.getPortExternalIpv4() + (hasMemo ? "," : ""),
-                    memo);
-        }
-        return table.render();
+        return AddressBookUtils.addressBookConfigText(this);
     }
 
     /**

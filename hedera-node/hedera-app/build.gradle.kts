@@ -47,6 +47,7 @@ dependencies {
         itestImplementation(project(":config"))
         itestImplementation(project(":hapi"))
         itestImplementation(testFixtures(project(":app-spi")))
+        itestImplementation(testFixtures(project(":config")))
         itestImplementation(gav("com.github.spotbugs.annotations"))
         itestImplementation(gav("com.hedera.pbj.runtime"))
         itestImplementation(gav("com.swirlds.common"))
@@ -122,6 +123,14 @@ tasks.register<JavaExec>("run") {
     dependsOn(tasks.assemble)
     workingDir = project(":hedera-node").projectDir
     jvmArgs = listOf("-cp", "data/lib/*")
+    mainClass.set("com.swirlds.platform.Browser")
+}
+
+tasks.register<JavaExec>("modrun") {
+    group = "application"
+    dependsOn(tasks.assemble)
+    workingDir = project(":hedera-node").projectDir
+    jvmArgs = listOf("-cp", "data/lib/*", "-Dhedera.workflows.enabled=true")
     mainClass.set("com.swirlds.platform.Browser")
 }
 

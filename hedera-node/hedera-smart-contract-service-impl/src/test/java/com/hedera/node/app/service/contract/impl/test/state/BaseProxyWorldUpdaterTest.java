@@ -20,11 +20,11 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
 import com.hedera.node.app.service.contract.impl.state.BaseProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.ContractSchema;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.RentFactors;
@@ -122,7 +122,7 @@ class BaseProxyWorldUpdaterTest {
         given(fees.costInTinybars(rentInTinycents)).willReturn(rentInTinybars);
 
         given(scope.writableContractState()).willReturn(writableStates);
-        given(writableStates.<SlotKey, SlotValue>get(ContractServiceImpl.STORAGE_KEY))
+        given(writableStates.<SlotKey, SlotValue>get(ContractSchema.STORAGE_KEY))
                 .willReturn(storage);
 
         subject.commit();

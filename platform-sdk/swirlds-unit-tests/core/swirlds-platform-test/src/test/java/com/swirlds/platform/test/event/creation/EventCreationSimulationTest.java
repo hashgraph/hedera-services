@@ -106,7 +106,6 @@ public class EventCreationSimulationTest {
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setNodeIds(nodeConfigs.keySet())
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
-                .setSequentialIds(false)
                 .build();
 
         final FakeTime time = new FakeTime();

@@ -18,7 +18,6 @@ package com.swirlds.platform.test;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.TestComponentTags;
@@ -43,9 +42,6 @@ public class SignedStateSynchronizationTests {
     @Tag(TestComponentTags.PLATFORM)
     @DisplayName("Signed State Synchronization")
     public void SignedStateSynchronization() throws Exception {
-
-        SettingsCommon.transactionMaxBytes = 1024;
-
         SignedState state = SignedStateUtils.randomSignedState(1234);
         state.getState().setHash(null); // FUTURE WORK root has a hash but other parts do not...
         MerkleTestUtils.hashAndTestSynchronization(null, state.getState());

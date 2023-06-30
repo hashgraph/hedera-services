@@ -42,6 +42,7 @@ dependencies {
     implementation(libs.bundles.jackson)
 
     // Test Dependencies
+    testCompileOnly(libs.spotbugs.annotations)
 
     // These should not be implementation() based deps, but this requires refactoring to eliminate.
     implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))

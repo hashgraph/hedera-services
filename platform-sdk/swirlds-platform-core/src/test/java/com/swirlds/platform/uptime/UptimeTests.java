@@ -38,6 +38,7 @@ import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -49,7 +50,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -107,10 +107,8 @@ class UptimeTests {
                 TestPlatformContextBuilder.create().build();
         final FakeTime time = new FakeTime();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(10)
-                .setSequentialIds(false)
-                .build();
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(10).build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final UptimeTracker uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, time);
@@ -242,10 +240,8 @@ class UptimeTests {
                 TestPlatformContextBuilder.create().build();
         final FakeTime time = new FakeTime();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(10)
-                .setSequentialIds(false)
-                .build();
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(10).build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final UptimeTracker uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, time);
@@ -589,10 +585,8 @@ class UptimeTests {
                 TestPlatformContextBuilder.create().build();
         final FakeTime time = new FakeTime();
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(3)
-                .setSequentialIds(false)
-                .build();
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(3).build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final UptimeTracker uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, time);
