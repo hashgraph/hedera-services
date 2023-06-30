@@ -94,7 +94,7 @@ public final class NftStateTranslator {
         requireNonNull(readableNftStore);
         final var optionalNFT = readableNftStore.get(tokenID);
         if (optionalNFT == null) {
-            throw new IllegalArgumentException("Token not found");
+            throw new IllegalArgumentException("NFT not found");
         }
         return merkleUniqueTokenFromNft(optionalNFT);
     }
