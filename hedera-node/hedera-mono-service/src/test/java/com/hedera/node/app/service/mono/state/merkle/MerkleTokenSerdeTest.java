@@ -38,14 +38,8 @@ public class MerkleTokenSerdeTest extends SelfSerializableDataTest<MerkleToken> 
     protected MerkleToken getExpectedObject(
             final SeededPropertySource propertySource, @NonNull final EqualityType equalityType) {
         final var strictExpectation = getExpectedObject(propertySource);
-        // The to-and-from PBJ conversion will lose some shard/realm information for now; so don't do
-        // it when running a test that requires the serialized bytes to be identical
-        if (equalityType == EqualityType.SERIALIZED_EQUALITY) {
-            return strictExpectation;
-        } else {
-            final var pbjToken = TokenStateTranslator.tokenFromMerkle(strictExpectation);
-            return TokenStateTranslator.merkleTokenFromToken(pbjToken);
-        }
+        final var pbjToken = TokenStateTranslator.tokenFromMerkle(strictExpectation);
+        return TokenStateTranslator.merkleTokenFromToken(pbjToken);
     }
 
     @Override
