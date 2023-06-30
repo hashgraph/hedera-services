@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.nio.file.FileSystems;
 import org.junit.jupiter.api.Test;
 
-public class RecordsInjectionModuleTest {
+final class RecordsInjectionModuleTest {
     @Test
-    public void testProvideFileSystem() {
-        assertEquals(FileSystems.getDefault(), RecordsInjectionModule.provideFileSystem());
+    void testProvideFileSystem() {
+        assertEquals(FileSystems.getDefault(), BlockRecordInjectionModule.provideFileSystem());
     }
 }

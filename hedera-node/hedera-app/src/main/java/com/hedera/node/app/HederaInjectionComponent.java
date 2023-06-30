@@ -16,9 +16,7 @@
 
 package com.hedera.node.app;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
-import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
 import com.hedera.node.app.components.QueryInjectionComponent;
@@ -29,10 +27,10 @@ import com.hedera.node.app.info.CurrentPlatformStatus;
 import com.hedera.node.app.info.InfoInjectionModule;
 import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.platform.PlatformModule;
-import com.hedera.node.app.records.RecordsInjectionModule;
+import com.hedera.node.app.records.BlockRecordInjectionModule;
+import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.mono.LegacyMonoInjectionModule;
 import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
-import com.hedera.node.app.service.mono.context.annotations.StaticAccountMemo;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.mono.utils.SystemExits;
@@ -40,6 +38,7 @@ import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.solvency.SolvencyInjectionModule;
 import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.LedgerValidator;
@@ -79,7 +78,7 @@ import javax.inject.Singleton;
             MetricsInjectionModule.class,
             AuthorizerInjectionModule.class,
             InfoInjectionModule.class,
-            RecordsInjectionModule.class,
+            BlockRecordInjectionModule.class,
             ThrottleInjectionModule.class,
             SolvencyInjectionModule.class,
             PlatformModule.class
@@ -112,6 +111,8 @@ public interface HederaInjectionComponent {
 
     HandleWorkflow handleWorkflow();
 
+    BlockRecordManager blockRecordManager();
+
     @Component.Builder
     interface Builder {
         @BindsInstance
@@ -130,10 +131,7 @@ public interface HederaInjectionComponent {
         Builder platform(Platform platform);
 
         @BindsInstance
-        Builder selfId(@NodeSelfId final AccountID selfId);
-
-        @BindsInstance
-        Builder staticAccountMemo(@StaticAccountMemo String accountMemo);
+        Builder self(final SelfNodeInfo self);
 
         @BindsInstance
         Builder bootstrapProps(@BootstrapProps PropertySource bootstrapProps);

@@ -19,18 +19,31 @@ package com.hedera.node.app.records;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.*;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import javax.inject.Singleton;
 
+/**
+ * A {@link Service} for managing the state of the running hashes and block information. Used by the
+ * {@link BlockRecordManagerImpl}. This service is not exposed outside `hedera-app`.
+ */
 @SuppressWarnings("rawtypes")
-public class BlockRecordService implements Service {
+@Singleton
+public final class BlockRecordService implements Service {
+    /** The name of this service */
     public static final String NAME = "BlockRecordService";
+    /** The key for the {@link RunningHashes} object in state */
+    public static final String RUNNING_HASHES_STATE_KEY = "RUNNING_HASHES";
+    /** The key for the {@link BlockInfo} object in state */
+    public static final String BLOCK_INFO_STATE_KEY = "BLOCKS";
+
+    /** The original version of the state */
     private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
-    static final String RUNNING_HASHES_STATE_KEY = "RUNNING_HASHES";
-    static final String BLOCK_INFO_STATE_KEY = "BLOCKS";
+    /** The original hash, only used at genesis */
     private static final Bytes GENESIS_HASH = Bytes.wrap(new byte[48]);
 
     @NonNull
@@ -42,13 +55,7 @@ public class BlockRecordService implements Service {
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
         registry.register(new Schema(GENESIS_VERSION) {
-            /**
-             * Gets a {@link Set} of state definitions for states to create in this schema. For example,
-             * perhaps in this version of the schema, you need to create a new state FOO. The set will have
-             * a {@link StateDefinition} specifying the metadata for that state.
-             *
-             * @return A map of all states to be created. Possibly empty.
-             */
+            /** {@inheritDoc} */
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {
@@ -57,23 +64,16 @@ public class BlockRecordService implements Service {
                         StateDefinition.singleton(BLOCK_INFO_STATE_KEY, BlockInfo.PROTOBUF));
             }
 
-            /**
-             * Called after all new states have been created (as per {@link #statesToCreate()}), this method
-             * is used to perform all <b>synchronous</b> migrations of state. This method will always be
-             * called with the {@link ReadableStates} of the previous version of the {@link Schema}. If
-             * there was no previous version, then {@code previousStates} will be empty, but not null.
-             *
-             * @param ctx {@link MigrationContext} for this schema migration
-             */
+            /** {@inheritDoc} */
             @Override
-            public void migrate(@NonNull MigrationContext ctx) {
+            public void migrate(@NonNull final MigrationContext ctx) {
                 final var runningHashState = ctx.newStates().getSingleton(RUNNING_HASHES_STATE_KEY);
                 final var runningHashes = new RunningHashes(GENESIS_HASH, null, null, null);
                 runningHashState.put(runningHashes);
 
                 final var blocksState = ctx.newStates().getSingleton(BLOCK_INFO_STATE_KEY);
-                // Last block is set to -1 because the first valid block is 0
-                final var blocks = new BlockInfo(-1, null, Bytes.EMPTY);
+                // Last block is set to 0 because the first valid block is 1
+                final var blocks = new BlockInfo(0, null, Bytes.EMPTY);
                 blocksState.put(blocks);
             }
         });

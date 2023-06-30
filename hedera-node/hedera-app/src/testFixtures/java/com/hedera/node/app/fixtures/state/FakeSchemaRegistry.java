@@ -16,11 +16,10 @@
 
 package com.hedera.node.app.fixtures.state;
 
-import com.hedera.node.app.spi.fixtures.state.ListReadableQueueState;
 import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.fixtures.state.ObjectWritableSingletonState;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -33,6 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class FakeSchemaRegistry implements SchemaRegistry {
 
@@ -47,26 +47,27 @@ public class FakeSchemaRegistry implements SchemaRegistry {
             // Collect the data sources and the writable states
             final var dataSources = new HashMap<String, Object>();
             final var writables = new HashMap<String, Object>();
-            final var readables = new HashMap<String, Object>();
             for (final var sd : schema.statesToCreate()) {
                 if (sd.queue()) {
                     final var dataSource = new LinkedList<>();
                     dataSources.put(sd.stateKey(), dataSource);
                     writables.put(sd.stateKey(), new ListWritableQueueState<>(sd.stateKey(), dataSource));
-                    readables.put(sd.stateKey(), new ListReadableQueueState<>(sd.stateKey(), dataSource));
                 } else if (sd.singleton()) {
-                    throw new RuntimeException("Not yet supported here");
+                    final var dataSource = new AtomicReference();
+                    dataSources.put(sd.stateKey(), dataSource);
+                    writables.put(
+                            sd.stateKey(),
+                            new ObjectWritableSingletonState<>(sd.stateKey(), dataSource::get, dataSource::set));
                 } else {
                     final var dataSource = new HashMap<String, Object>();
                     dataSources.put(sd.stateKey(), dataSource);
                     writables.put(sd.stateKey(), new MapWritableKVState<>(sd.stateKey(), dataSource));
-                    readables.put(sd.stateKey(), new MapReadableKVState<>(sd.stateKey(), dataSource));
                 }
             }
 
             // Run the migration which will populate the writable states
             final var previousStates = new EmptyReadableStates();
-            final var writableStates = new MapWritableStates(dataSources);
+            final var writableStates = new MapWritableStates(writables);
             schema.migrate(new MigrationContext() {
                 @NonNull
                 @Override
@@ -93,6 +94,8 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                     listState.commit();
                 } else if (s instanceof MapWritableKVState mapState) {
                     mapState.commit();
+                } else if (s instanceof ObjectWritableSingletonState singletonState) {
+                    singletonState.commit();
                 } else {
                     throw new RuntimeException("Not yet supported here");
                 }

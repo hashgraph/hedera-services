@@ -17,7 +17,6 @@
 package com.hedera.node.app.spi.info;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.system.address.AddressBook;
 
 /**
@@ -35,10 +34,28 @@ public interface NodeInfo {
     boolean zeroStake();
 
     /**
+     * Gets the node ID. This is a separate identifier from the node's account. This IS NOT IN ANY WAY related to the
+     * node AccountID.
+     *
+     * <p>FUTURE: Should we expose NodeId from the platform? It would make this really hard to misuse as the node
+     * accountID, whereas as a long, it could be.
+     *
+     * @return The node ID.
+     */
+    long nodeId();
+
+    /**
      * Returns the account ID corresponding with this node.
      *
      * @return the account ID of the node.
      * @throws IllegalStateException if the book did not contain the id, or was missing an account for the id
      */
     AccountID accountId();
+
+    /**
+     * Convenience method to get the memo of this node's account which is in the address book.
+     *
+     * @return this node's account memo
+     */
+    String memo();
 }

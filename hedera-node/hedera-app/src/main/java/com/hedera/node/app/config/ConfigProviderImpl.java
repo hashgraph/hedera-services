@@ -18,6 +18,7 @@ package com.hedera.node.app.config;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.records.BlockRecordStreamConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.AccountIDConverter;
@@ -168,6 +169,7 @@ public class ConfigProviderImpl implements ConfigProvider {
                 .withConfigDataType(AutoRenew2Config.class)
                 .withConfigDataType(AutoRenewConfig.class)
                 .withConfigDataType(BalancesConfig.class)
+                .withConfigDataType(BlockRecordStreamConfig.class)
                 .withConfigDataType(BootstrapConfig.class)
                 .withConfigDataType(CacheConfig.class)
                 .withConfigDataType(ConsensusConfig.class)

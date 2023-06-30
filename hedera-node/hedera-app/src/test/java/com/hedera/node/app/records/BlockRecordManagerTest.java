@@ -16,100 +16,99 @@
 
 package com.hedera.node.app.records;
 
-import static com.hedera.node.app.records.files.RecordStreamV6Verifier.validateRecordStreamFiles;
-import static com.hedera.node.app.records.files.RecordTestData.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.when;
+import static com.hedera.node.app.records.BlockRecordService.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.records.BlockRecordService.NAME;
+import static com.hedera.node.app.records.BlockRecordService.RUNNING_HASHES_STATE_KEY;
+import static com.hedera.node.app.records.RecordTestData.BLOCK_NUM;
+import static com.hedera.node.app.records.RecordTestData.ENDING_RUNNING_HASH;
+import static com.hedera.node.app.records.RecordTestData.SIGNER;
+import static com.hedera.node.app.records.RecordTestData.STARTING_RUNNING_HASH_OBJ;
+import static com.hedera.node.app.records.RecordTestData.TEST_BLOCKS;
+import static com.hedera.node.app.records.RecordTestData.USER_PUBLIC_KEY;
+import static com.hedera.node.app.records.impl.producers.formats.v6.RecordStreamV6Verifier.validateRecordStreamFiles;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.node.app.records.files.RecordFileReaderV6;
-import com.hedera.node.app.spi.info.NodeInfo;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.VersionedConfiguration;
+import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
+import com.hedera.node.app.records.impl.producers.BlockRecordFormat;
+import com.hedera.node.app.records.impl.producers.BlockRecordWriterFactory;
+import com.hedera.node.app.records.impl.producers.StreamFileProducerConcurrent;
+import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThreaded;
+import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
+import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mock;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings({"rawtypes", "unchecked", "DataFlowIssue"})
-public class BlockRecordManagerTest {
-    /** Make it small enough to trigger roll over code with num of test blocks we have */
+@SuppressWarnings({"DataFlowIssue"})
+final class BlockRecordManagerTest extends AppTestBase {
+    /** Make it small enough to trigger roll over code with the number of test blocks we have */
     private static final int NUM_BLOCK_HASHES_TO_KEEP = 4;
-
-    private @Mock ConfigProvider configProvider;
-    private @Mock VersionedConfiguration versionedConfiguration;
-    private @Mock NodeInfo nodeInfo;
-    private @Mock WritableStates blockManagerWritableStates;
-    private @Mock HederaState hederaState;
-    private @Mock WorkingStateAccessor workingStateAccessor;
 
     /** Temporary in memory file system used for testing */
     private FileSystem fs;
+
+    private App app;
+
+    private BlockRecordFormat blockRecordFormat;
+    private BlockRecordWriterFactory blockRecordWriterFactory;
 
     @BeforeEach
     void setUpEach() throws Exception {
         // create in memory temp dir
         fs = Jimfs.newFileSystem(Configuration.unix());
-        Path tempDir = fs.getPath("/temp");
+        final var tempDir = fs.getPath("/temp");
         Files.createDirectory(tempDir);
 
-        // setup config
-        final BlockRecordStreamConfig recordStreamConfig = new BlockRecordStreamConfig(
-                true, tempDir.toString(), "sidecar", 2, 5000, true, 256, 6, 6, true, true, NUM_BLOCK_HASHES_TO_KEEP);
-        // setup mocks
-        when(versionedConfiguration.getConfigData(BlockRecordStreamConfig.class))
-                .thenReturn(recordStreamConfig);
-        when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
-        when(nodeInfo.accountMemo()).thenReturn("test-node");
-        when(nodeInfo.hapiVersion()).thenReturn(new SemanticVersion(1, 2, 3, "", ""));
-        // create a BlockInfo state
-        WritableSingletonState<BlockInfo> blockInfoWritableSingletonState = new BlockInfoWritableSingletonState();
-        // create a RunningHashes state
-        WritableSingletonState<RunningHashes> runningHashesWritableSingletonState =
-                new RunningHashesWritableSingletonState();
-        // setup initial block info
-        when(blockManagerWritableStates.getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY))
-                .thenReturn((WritableSingletonState) blockInfoWritableSingletonState);
-        // setup initial running hashes
-        runningHashesWritableSingletonState.put(new RunningHashes(STARTING_RUNNING_HASH_OBJ.hash(), null, null, null));
-        when(blockManagerWritableStates.getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY))
-                .thenReturn((WritableSingletonState) runningHashesWritableSingletonState);
-        // setup hedera state to get blockManagerWritableStates
-        when(hederaState.createWritableStates(BlockRecordService.NAME)).thenReturn(blockManagerWritableStates);
-        when(hederaState.createReadableStates(BlockRecordService.NAME)).thenReturn(blockManagerWritableStates);
-        // setup workingStateAccessor to get hedera state
-        when(workingStateAccessor.getHederaState()).thenReturn(hederaState);
+        // This test is for V6 files at this time.
+        blockRecordFormat = BlockRecordFormatV6.INSTANCE;
+
+        // Configure the application configuration and state we want to test with
+        app = appBuilder()
+                .withConfigDataType(BlockRecordStreamConfig.class)
+                .withConfigValue("hedera.recordStream.enabled", true)
+                .withConfigValue("hedera.recordStream.logDir", tempDir.toString())
+                .withConfigValue("hedera.recordStream.sidecarDir", "sidecar")
+                .withConfigValue("hedera.recordStream.recordFileVersion", 6)
+                .withConfigValue("hedera.recordStream.signatureFileVersion", 6)
+                .withConfigValue("hedera.recordStream.compressFilesOnCreation", true)
+                .withConfigValue("hedera.recordStream.sidecarMaxSizeMb", 256)
+                .withService(new BlockRecordService())
+                .build();
+
+        // Preload the specific state we want to test with
+        app.stateMutator(BlockRecordService.NAME)
+                .withSingletonState(
+                        RUNNING_HASHES_STATE_KEY, new RunningHashes(STARTING_RUNNING_HASH_OBJ.hash(), null, null, null))
+                .withSingletonState(
+                        BLOCK_INFO_STATE_KEY, new BlockInfo(0, new Timestamp(0, 0), STARTING_RUNNING_HASH_OBJ.hash()))
+                .commit();
+
+        blockRecordWriterFactory = new BlockRecordWriterFactoryImpl(
+                app.configProvider(), app.networkInfo().selfNodeInfo(), SIGNER, fs);
     }
 
     @AfterEach
-    public void shutdown() throws Exception {
+    void shutdown() throws Exception {
         fs.close();
     }
 
@@ -118,38 +117,45 @@ public class BlockRecordManagerTest {
      * way the code runs and are tested in other tests. The normal case is they are not called often.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"GENESIS", "NON_GENESIS"})
-    public void testRecordStreamProduction(final String startMode) throws Exception {
+    @CsvSource({"GENESIS, false", "NON_GENESIS, false", "GENESIS, true", "NON_GENESIS, true"})
+    void testRecordStreamProduction(final String startMode, final boolean concurrent) throws Exception {
         // setup initial block info,
         final long STARTING_BLOCK;
         if (startMode.equals("GENESIS")) {
-            // start with genesis block
             STARTING_BLOCK = 1;
-            blockManagerWritableStates
-                    .getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY)
-                    .put(new BlockInfo(STARTING_BLOCK - 1, new Timestamp(0, 0), STARTING_RUNNING_HASH_OBJ.hash()));
         } else {
             // pretend that previous block was 2 seconds before first test transaction
             STARTING_BLOCK = BLOCK_NUM;
-            blockManagerWritableStates
-                    .getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY)
-                    .put(new BlockInfo(
-                            STARTING_BLOCK - 1,
-                            new Timestamp(
-                                    TEST_BLOCKS
-                                                    .get(0)
-                                                    .get(0)
-                                                    .record()
-                                                    .consensusTimestamp()
-                                                    .seconds()
-                                            - 2,
-                                    0),
-                            STARTING_RUNNING_HASH_OBJ.hash()));
+            app.stateMutator(NAME)
+                    .withSingletonState(
+                            BLOCK_INFO_STATE_KEY,
+                            new BlockInfo(
+                                    STARTING_BLOCK - 1,
+                                    new Timestamp(
+                                            TEST_BLOCKS
+                                                            .get(0)
+                                                            .get(0)
+                                                            .record()
+                                                            .consensusTimestamp()
+                                                            .seconds()
+                                                    - 2,
+                                            0),
+                                    STARTING_RUNNING_HASH_OBJ.hash()))
+                    .commit();
         }
 
+        final var hederaState = app.workingStateAccessor().getHederaState();
+        final var producer = concurrent
+                ? new StreamFileProducerConcurrent(
+                        app.networkInfo().selfNodeInfo(),
+                        blockRecordFormat,
+                        blockRecordWriterFactory,
+                        ForkJoinPool.commonPool())
+                : new StreamFileProducerSingleThreaded(
+                        app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
         Bytes finalRunningHash;
-        try (BlockRecordManager blockRecordManager =
-                new BlockRecordManagerImpl(configProvider, nodeInfo, SIGNER, fs, workingStateAccessor)) {
+        try (final var blockRecordManager = new BlockRecordManagerImpl(
+                app.configProvider(), app.workingStateAccessor().getHederaState(), producer)) {
 
             // write a blocks & record files
             int transactionCount = 0;
@@ -163,9 +169,8 @@ public class BlockRecordManagerTest {
                     // check start hash if first transaction
                     if (transactionCount == 0) {
                         // check starting hash, we need to be using the correct starting hash for the tests to work
-                        assertEquals(
-                                STARTING_RUNNING_HASH_OBJ.hash().toHex(),
-                                blockRecordManager.getRunningHash().toHex());
+                        assertThat(blockRecordManager.getRunningHash().toHex())
+                                .isEqualTo(STARTING_RUNNING_HASH_OBJ.hash().toHex());
                     }
                     blockRecordManager.endUserTransaction(Stream.of(record), hederaState);
                     transactionCount++;
@@ -174,12 +179,11 @@ public class BlockRecordManagerTest {
                         blockRecordManager.endRound(hederaState);
                     }
                 }
-                assertEquals(block - 1, blockRecordManager.lastBlockNo());
+                assertThat(block - 1).isEqualTo(blockRecordManager.lastBlockNo());
                 // check block hashes
                 if (endOfBlockHashes.size() > 1) {
-                    assertEquals(
-                            endOfBlockHashes.get(endOfBlockHashes.size() - 1).toHex(),
-                            blockRecordManager.lastBlockHash().toHex());
+                    assertThat(endOfBlockHashes.get(endOfBlockHashes.size() - 1).toHex())
+                            .isEqualTo(blockRecordManager.lastBlockHash().toHex());
                 }
                 endOfBlockHashes.add(blockRecordManager.getRunningHash());
             }
@@ -191,33 +195,13 @@ public class BlockRecordManagerTest {
             // finish and close any open files. No collect block record manager info to be validated
         }
         // check running hash
-        assertEquals(ENDING_RUNNING_HASH.toHex(), finalRunningHash.toHex());
-        // print out all files
-        try (var pathStream = Files.walk(fs.getPath("/temp"))) {
-            pathStream.filter(Files::isRegularFile).forEach(file -> {
-                try {
-                    if (file.getFileName().toString().endsWith("Z.rcd.gz")) {
-                        try {
-                            int count = RecordFileReaderV6.read(file)
-                                    .recordStreamItems()
-                                    .size();
-                            System.out.println(
-                                    file.toAbsolutePath() + " - (" + Files.size(file) + ")   count = " + count);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    } else {
-                        System.out.println(file.toAbsolutePath() + " - (" + Files.size(file) + ")");
-                    }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        }
+        assertThat(ENDING_RUNNING_HASH.toHex()).isEqualTo(finalRunningHash.toHex());
         // check record files
-        final var recordStreamConfig = versionedConfiguration.getConfigData(BlockRecordStreamConfig.class);
+        final var recordStreamConfig =
+                app.configProvider().getConfiguration().getConfigData(BlockRecordStreamConfig.class);
         validateRecordStreamFiles(
-                fs.getPath(recordStreamConfig.logDir()).resolve("record" + nodeInfo.accountMemo()),
+                fs.getPath(recordStreamConfig.logDir())
+                        .resolve("record" + app.networkInfo().selfNodeInfo().memo()),
                 recordStreamConfig,
                 USER_PUBLIC_KEY,
                 TEST_BLOCKS,
@@ -225,27 +209,32 @@ public class BlockRecordManagerTest {
     }
 
     @Test
-    public void testBlockInfoMethods() throws Exception {
+    void testBlockInfoMethods() throws Exception {
         // setup initial block info, pretend that previous block was 2 seconds before first test transaction
-        blockManagerWritableStates
-                .getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY)
-                .put(new BlockInfo(
-                        BLOCK_NUM - 1,
-                        new Timestamp(
-                                TEST_BLOCKS
-                                                .get(0)
-                                                .get(0)
-                                                .record()
-                                                .consensusTimestamp()
-                                                .seconds()
-                                        - 2,
-                                0),
-                        STARTING_RUNNING_HASH_OBJ.hash()));
+        app.stateMutator(NAME)
+                .withSingletonState(
+                        BLOCK_INFO_STATE_KEY,
+                        new BlockInfo(
+                                BLOCK_NUM - 1,
+                                new Timestamp(
+                                        TEST_BLOCKS
+                                                        .get(0)
+                                                        .get(0)
+                                                        .record()
+                                                        .consensusTimestamp()
+                                                        .seconds()
+                                                - 2,
+                                        0),
+                                STARTING_RUNNING_HASH_OBJ.hash()))
+                .commit();
 
         final Random random = new Random(82792874);
+        final var hederaState = app.workingStateAccessor().getHederaState();
+        final var producer = new StreamFileProducerSingleThreaded(
+                app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
         Bytes finalRunningHash;
-        try (BlockRecordManager blockRecordManager =
-                new BlockRecordManagerImpl(configProvider, nodeInfo, SIGNER, fs, workingStateAccessor)) {
+        try (final var blockRecordManager = new BlockRecordManagerImpl(
+                app.configProvider(), app.workingStateAccessor().getHederaState(), producer)) {
             // write a blocks & record files
             int transactionCount = 0;
             Bytes runningHash = STARTING_RUNNING_HASH_OBJ.hash();
@@ -277,13 +266,14 @@ public class BlockRecordManagerTest {
                         // check running hash N - 3
                         if (runningHashNMinus3 != null) {
                             // check running hash N - 3
-                            assertEquals(
-                                    runningHashNMinus3.toHex(),
-                                    blockRecordManager.getNMinus3RunningHash().toHex());
+                            assertThat(runningHashNMinus3.toHex())
+                                    .isEqualTo(blockRecordManager
+                                            .getNMinus3RunningHash()
+                                            .toHex());
                         } else {
                             // check nulls as well
-                            assertNull(
-                                    blockRecordManager.getNMinus3RunningHash(), "Running Hash N - 3 should be null.");
+                            assertThat(blockRecordManager.getNMinus3RunningHash())
+                                    .isNull();
                         }
                     }
                     j += batchSize;
@@ -294,10 +284,11 @@ public class BlockRecordManagerTest {
                 }
                 // VALIDATE BLOCK INFO METHODS
                 // check last block number
-                assertEquals(block - 1, blockRecordManager.lastBlockNo());
+                assertThat(block - 1).isEqualTo(blockRecordManager.lastBlockNo());
                 // check last block first transaction timestamp
                 if (lastBlockFirstTransactionTimestamp != null) {
-                    assertEquals(lastBlockFirstTransactionTimestamp, blockRecordManager.firstConsTimeOfLastBlock());
+                    assertThat(lastBlockFirstTransactionTimestamp)
+                            .isEqualTo(blockRecordManager.firstConsTimeOfLastBlock());
                 }
                 lastBlockFirstTransactionTimestamp =
                         fromTimestamp(blockData.get(0).record().consensusTimestamp());
@@ -307,18 +298,17 @@ public class BlockRecordManagerTest {
                     while (endOfBlockHashes.size() > NUM_BLOCK_HASHES_TO_KEEP) {
                         endOfBlockHashes.remove(0);
                     }
-                    assertEquals(
-                            endOfBlockHashes.get(endOfBlockHashes.size() - 1).toHex(),
-                            blockRecordManager.lastBlockHash().toHex());
-                    assertEquals(
-                            endOfBlockHashes.get(endOfBlockHashes.size() - 1).toHex(),
-                            blockRecordManager.blockHashByBlockNumber(block - 1).toHex());
+                    assertThat(endOfBlockHashes.get(endOfBlockHashes.size() - 1).toHex())
+                            .isEqualTo(blockRecordManager.lastBlockHash().toHex());
+                    assertThat(endOfBlockHashes.get(endOfBlockHashes.size() - 1).toHex())
+                            .isEqualTo(blockRecordManager
+                                    .blockHashByBlockNumber(block - 1)
+                                    .toHex());
                     final int numBlockHashesToCheck = Math.min(NUM_BLOCK_HASHES_TO_KEEP, endOfBlockHashes.size());
                     for (int k = (numBlockHashesToCheck - 1); k >= 0; k--) {
                         var blockNumToCheck = block - (numBlockHashesToCheck - k);
-                        assertEquals(
-                                endOfBlockHashes.get(k).toHex(),
-                                blockRecordManager
+                        assertThat(endOfBlockHashes.get(k).toHex())
+                                .isEqualTo(blockRecordManager
                                         .blockHashByBlockNumber(blockNumToCheck)
                                         .toHex());
                     }
@@ -333,11 +323,13 @@ public class BlockRecordManagerTest {
             // finish and close any open files. No collect block record manager info to be validated
         }
         // check running hash
-        assertEquals(ENDING_RUNNING_HASH.toHex(), finalRunningHash.toHex());
+        assertThat(ENDING_RUNNING_HASH.toHex()).isEqualTo(finalRunningHash.toHex());
         // check record files
-        final var recordStreamConfig = versionedConfiguration.getConfigData(BlockRecordStreamConfig.class);
+        final var recordStreamConfig =
+                app.configProvider().getConfiguration().getConfigData(BlockRecordStreamConfig.class);
         validateRecordStreamFiles(
-                fs.getPath(recordStreamConfig.logDir()).resolve("record" + nodeInfo.accountMemo()),
+                fs.getPath(recordStreamConfig.logDir())
+                        .resolve("record" + app.networkInfo().selfNodeInfo().memo()),
                 recordStreamConfig,
                 USER_PUBLIC_KEY,
                 TEST_BLOCKS,
@@ -347,73 +339,4 @@ public class BlockRecordManagerTest {
     private static Instant fromTimestamp(final Timestamp timestamp) {
         return Instant.ofEpochSecond(timestamp.seconds(), timestamp.nanos());
     }
-
-    /**
-     * Block Info Writeable Singleton State Implementation
-     */
-    static class BlockInfoWritableSingletonState implements WritableSingletonState<BlockInfo> {
-        private BlockInfo blockInfo;
-
-        @Override
-        public void put(@Nullable BlockInfo value) {
-            this.blockInfo = value;
-        }
-
-        @Override
-        public boolean isModified() {
-            return true;
-        }
-
-        @NotNull
-        @Override
-        public String getStateKey() {
-            return BlockRecordService.BLOCK_INFO_STATE_KEY;
-        }
-
-        @Nullable
-        @Override
-        public BlockInfo get() {
-            return blockInfo;
-        }
-
-        @Override
-        public boolean isRead() {
-            return true;
-        }
-    }
-
-    /**
-     * Running Hashes Writeable Singleton State Implementation
-     */
-    static class RunningHashesWritableSingletonState implements WritableSingletonState<RunningHashes> {
-        private RunningHashes runningHashes;
-
-        @Override
-        public void put(@Nullable RunningHashes value) {
-            this.runningHashes = value;
-        }
-
-        @Override
-        public boolean isModified() {
-            return true;
-        }
-
-        @NotNull
-        @Override
-        public String getStateKey() {
-            return BlockRecordService.BLOCK_INFO_STATE_KEY;
-        }
-
-        @Nullable
-        @Override
-        public RunningHashes get() {
-            return runningHashes;
-        }
-
-        @Override
-        public boolean isRead() {
-            return true;
-        }
-    }
-    ;
 }

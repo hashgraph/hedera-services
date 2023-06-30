@@ -38,7 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 @ExtendWith(MockitoExtension.class)
-public class BlockRecordServiceTest {
+final class BlockRecordServiceTest {
     private static final Bytes GENESIS_HASH = Bytes.wrap(new byte[48]);
     private @Mock SchemaRegistry schemaRegistry;
     private @Mock MigrationContext migrationContext;
@@ -47,13 +47,13 @@ public class BlockRecordServiceTest {
     private @Mock WritableStates writableStates;
 
     @Test
-    public void testGetServiceName() {
+    void testGetServiceName() {
         BlockRecordService blockRecordService = new BlockRecordService();
         assertEquals("BlockRecordService", blockRecordService.getServiceName());
     }
 
     @Test
-    public void testRegisterSchemas() {
+    void testRegisterSchemas() {
         when(schemaRegistry.register(any())).then(invocation -> {
             Object[] args = invocation.getArguments();
             assertEquals(1, args.length);
@@ -75,7 +75,7 @@ public class BlockRecordServiceTest {
 
             schema.migrate(migrationContext);
             assertEquals(new RunningHashes(GENESIS_HASH, null, null, null), runningHashesCapture.getValue());
-            assertEquals(new BlockInfo(-1, null, Bytes.EMPTY), blockInfoCapture.getValue());
+            assertEquals(new BlockInfo(0, null, Bytes.EMPTY), blockInfoCapture.getValue());
             return null;
         });
         BlockRecordService blockRecordService = new BlockRecordService();

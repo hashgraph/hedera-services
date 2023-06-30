@@ -22,8 +22,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.records.RecordListBuilder;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
@@ -38,6 +36,8 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -112,7 +112,16 @@ public class HandleWorkflow {
      */
     public void handleRound(@NonNull final HederaState state, @NonNull final Round round) {
         // handle each transaction in the round
-        round.forEachEventTransaction((event, txn) -> handlePlatformTransaction(state, event, txn));
+        round.forEachEventTransaction((event, txn) -> {
+            try {
+                handlePlatformTransaction(state, event, txn);
+            } catch (final Throwable e) {
+                logger.fatal(
+                        "A fatal unhandled exception occurred during transaction handling. "
+                                + "While this node may not die right away, it is in a bad way, most likely fatally.",
+                        e);
+            }
+        });
         // inform BlockRecordManager that the round is complete, so it can update running-hashes in state
         // that have been being computed in background threads. The running hash has to be included in
         // state, but we want to synchronize with background threads as infrequently as possible. So once per

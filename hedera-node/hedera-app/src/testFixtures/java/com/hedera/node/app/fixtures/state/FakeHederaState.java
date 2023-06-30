@@ -22,6 +22,8 @@ import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.fixtures.state.ObjectReadableSingletonState;
+import com.hedera.node.app.spi.fixtures.state.ObjectWritableSingletonState;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -30,6 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicReference;
 
 /** A useful test double for {@link HederaState}. Works together with {@link MapReadableStates} and other fixtures. */
 public class FakeHederaState implements HederaState {
@@ -50,10 +53,12 @@ public class FakeHederaState implements HederaState {
         for (final var entry : serviceStates.entrySet()) {
             final var stateName = entry.getKey();
             final var state = entry.getValue();
-            if (state instanceof Queue) {
-                data.put(stateName, new ListReadableQueueState(stateName, (Queue) state));
-            } else if (state instanceof Map) {
-                data.put(stateName, new MapReadableKVState(stateName, (Map) state));
+            if (state instanceof Queue queue) {
+                data.put(stateName, new ListReadableQueueState(stateName, queue));
+            } else if (state instanceof Map map) {
+                data.put(stateName, new MapReadableKVState(stateName, map));
+            } else if (state instanceof AtomicReference ref) {
+                data.put(stateName, new ObjectReadableSingletonState(stateName, ref::get));
             }
         }
         return new MapReadableStates(data);
@@ -67,10 +72,12 @@ public class FakeHederaState implements HederaState {
         for (final var entry : serviceStates.entrySet()) {
             final var stateName = entry.getKey();
             final var state = entry.getValue();
-            if (state instanceof Queue) {
-                data.put(stateName, new ListWritableQueueState(stateName, (Queue) state));
-            } else if (state instanceof Map) {
-                data.put(stateName, new MapWritableKVState(stateName, (Map) state));
+            if (state instanceof Queue queue) {
+                data.put(stateName, new ListWritableQueueState(stateName, queue));
+            } else if (state instanceof Map map) {
+                data.put(stateName, new MapWritableKVState(stateName, map));
+            } else if (state instanceof AtomicReference ref) {
+                data.put(stateName, new ObjectWritableSingletonState(stateName, ref::get, ref::set));
             }
         }
         return new MapWritableStates(data);

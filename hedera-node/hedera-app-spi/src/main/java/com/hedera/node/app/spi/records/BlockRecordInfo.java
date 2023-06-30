@@ -32,8 +32,9 @@ public interface BlockRecordInfo {
      * Get the runningHash of all RecordStreamObject. This will block if the running hash has not yet
      * been computed for the most recent user transaction.
      *
-     * @return the runningHash of all RecordStreamObject
+     * @return the runningHash of all RecordStreamObject, or null if there are no running hashes yet
      */
+    @Nullable
     Bytes getRunningHash();
 
     /**
@@ -51,14 +52,14 @@ public interface BlockRecordInfo {
     /**
      * Get the last block number, this is the last completed immutable block.
      *
-     * @return the current block number
+     * @return the most recent immutable block number, 0 of there is no blocks yet, since block numbers start with 1.
      */
     long lastBlockNo();
 
     /**
      * Get the consensus time of the first transaction of the last block, this is the last completed immutable block.
      *
-     * @return the consensus time of the first transaction of the last block
+     * @return the consensus time of the first transaction of the last block, null if there was no previous block
      */
     @Nullable
     Instant firstConsTimeOfLastBlock();
@@ -75,7 +76,7 @@ public interface BlockRecordInfo {
      * Returns the hash of the given block number, or {@code null} if unavailable.
      *
      * @param blockNo the block number of interest, must be within range of (current_block - 1) -> (current_block - 254)
-     * @return its hash, if available otherwise null
+     * @return its hash, if available otherwise null. If the {@code blockNo} is negative, then null is also returned.
      */
     @Nullable
     Bytes blockHashByBlockNumber(final long blockNo);

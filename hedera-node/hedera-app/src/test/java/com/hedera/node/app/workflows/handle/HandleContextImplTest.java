@@ -33,8 +33,6 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.records.RecordListBuilder;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -56,6 +54,8 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -298,7 +298,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         checker,
                         dispatcher,
                         serviceScopeLookup,
-                null))
+                        null))
                 .isInstanceOf(NullPointerException.class);
     }
 
