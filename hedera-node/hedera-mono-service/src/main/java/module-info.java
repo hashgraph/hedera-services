@@ -247,7 +247,9 @@ module com.hedera.node.app.service.mono {
             com.swirlds.common;
 
     exports com.hedera.node.app.service.mono.state.merkle;
-    opens com.hedera.node.app.service.mono.state.migration to com.swirlds.common;
+
+    opens com.hedera.node.app.service.mono.state.migration to
+            com.swirlds.common;
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
