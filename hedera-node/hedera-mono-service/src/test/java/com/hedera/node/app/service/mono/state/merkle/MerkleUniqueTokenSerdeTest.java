@@ -53,9 +53,9 @@ public class MerkleUniqueTokenSerdeTest extends SelfSerializableDataTest<MerkleU
             seededObject.setNext(NftNumPair.MISSING_NFT_NUM_PAIR);
             return seededObject;
         } else {
-            final var pbjNft = NftStateTranslator.accountFromMerkle(seededObject);
-            final var merkleUniqueToke = NftStateTranslator.merkleUniqueTokenFromNft(pbjNft);
-            return merkleUniqueToke;
+            final var pbjNft = NftStateTranslator.nftFromMerkleUniqueToken(seededObject);
+            final var merkleUniqueToken = NftStateTranslator.merkleUniqueTokenFromNft(pbjNft);
+            return merkleUniqueToken;
         }
     }
 }

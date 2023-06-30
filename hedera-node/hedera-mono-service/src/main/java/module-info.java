@@ -294,5 +294,4 @@ module com.hedera.node.app.service.mono {
     requires org.slf4j;
     requires static com.github.spotbugs.annotations;
     requires com.hedera.node.app.service.token;
-    requires org.jetbrains.annotations;
 }

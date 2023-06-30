@@ -31,7 +31,6 @@ import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.jetbrains.annotations.NotNull;
 
 public final class NftStateTranslator {
 
@@ -71,7 +70,7 @@ public final class NftStateTranslator {
         return builder.build();
     }
 
-    private static @NonNull UniqueTokenId merkelUniqueTokenToUniqueTokenId(@NotNull NftNumPair merkleUniqueToken) {
+    private static @NonNull UniqueTokenId merkelUniqueTokenToUniqueTokenId(@NonNull NftNumPair merkleUniqueToken) {
         final var tokenTypeNumber = merkleUniqueToken.tokenNum();
         final var serialNumber = merkleUniqueToken.serialNum();
         return UniqueTokenId.newBuilder()
