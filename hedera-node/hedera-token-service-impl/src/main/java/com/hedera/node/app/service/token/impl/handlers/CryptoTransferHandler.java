@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.isAlias;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
@@ -43,14 +44,14 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
-import com.hedera.node.app.service.token.impl.handlers.transfer.ChangeNFTOwnersStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.CustomFeeAssessmentStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferStep;
-import com.hedera.node.app.service.token.impl.handlers.transfer.ZeroSumFungibleTransfersStep;
-import com.hedera.node.app.service.token.impl.handlers.transfer.ZeroSumHbarChangesStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustHbarChangesStep;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -196,8 +197,8 @@ public class CryptoTransferHandler implements TransactionHandler {
      * @param topLevelPayer
      * @return A list of steps to execute
      */
-    private List<TransferStep> decomposeIntoSteps(final CryptoTransferTransactionBody op,
-                                                  final AccountID topLevelPayer) {
+    private List<TransferStep> decomposeIntoSteps(
+            final CryptoTransferTransactionBody op, final AccountID topLevelPayer) {
         final List<TransferStep> steps = new ArrayList<>();
         // Step 1: associate any token recipients that are not already associated and have
         // auto association slots open
@@ -205,11 +206,11 @@ public class CryptoTransferHandler implements TransactionHandler {
         // Step 2: Charge custom fees for token transfers. yet to be implemented
         final var customFeeAssessmentStep = new CustomFeeAssessmentStep(op);
         // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
-        final var assessHbarTransfers = new ZeroSumHbarChangesStep(op, topLevelPayer);
+        final var assessHbarTransfers = new AdjustHbarChangesStep(op, topLevelPayer);
         // Step 4: Charge token transfers with an approval. Modify the allowances map on account
-        final var assessFungibleTokenTransfers = new ZeroSumFungibleTransfersStep(op, topLevelPayer);
+        final var assessFungibleTokenTransfers = new AdjustFungibleTokenChangesStep(op, topLevelPayer);
         // Step 5: Change NFT owners and also ones with isApproval. Clear the spender on NFT
-        final var changeNftOwners = new ChangeNFTOwnersStep(op, topLevelPayer);
+        final var changeNftOwners = new NFTOwnersChangeStep(op, topLevelPayer);
         // Step 6: TODO Pay staking rewards
 
         steps.add(associateTokenRecepients);
@@ -391,9 +392,5 @@ public class CryptoTransferHandler implements TransactionHandler {
             }
         }
         return false;
-    }
-
-    public static boolean isAlias(final AccountID idOrAlias) {
-        return !idOrAlias.hasAccountNum() && idOrAlias.hasAlias();
     }
 }

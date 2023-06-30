@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -63,5 +64,9 @@ public final class AliasUtils {
         } catch (final IOException e) {
             throw new HandleException(ResponseCodeEnum.INVALID_ALIAS_KEY);
         }
+    }
+
+    public static boolean isAlias(final AccountID idOrAlias) {
+        return !idOrAlias.hasAccountNum() && idOrAlias.hasAlias();
     }
 }

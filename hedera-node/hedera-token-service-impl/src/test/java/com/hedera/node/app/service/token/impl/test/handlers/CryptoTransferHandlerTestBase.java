@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftTransfer;
@@ -28,13 +31,9 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.transfers.StepsBase;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
-import org.junit.jupiter.api.BeforeEach;
-
 import java.util.Arrays;
 import java.util.List;
-
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import org.junit.jupiter.api.BeforeEach;
 
 class CryptoTransferHandlerTestBase extends StepsBase {
     protected static final AccountID ACCOUNT_3333 = asAccount(3333);

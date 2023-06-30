@@ -18,16 +18,14 @@ package com.hedera.node.app.service.token.impl.test.handlers.transfers;
 
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
-import com.hedera.node.app.service.token.impl.handlers.transfer.ChangeNFTOwnersStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class ChangeNFTOwnersStepTest extends StepsBase{
+public class ChangeNFTOwnersStepTest extends StepsBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
@@ -43,11 +41,11 @@ public class ChangeNFTOwnersStepTest extends StepsBase{
     @Test
     void replacesAliasesInOp() {
         final var replacedOp = getReplacedOp();
-        changeNFTOwnersStep = new ChangeNFTOwnersStep(replacedOp, payerId);
+        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, payerId);
         changeNFTOwnersStep.doIn(transferContext);
     }
 
-    CryptoTransferTransactionBody getReplacedOp(){
+    CryptoTransferTransactionBody getReplacedOp() {
         givenConditions();
         ensureAliasesStep.doIn(transferContext);
         return replaceAliasesWithIDsInOp.replaceAliasesWithIds(body, transferContext);

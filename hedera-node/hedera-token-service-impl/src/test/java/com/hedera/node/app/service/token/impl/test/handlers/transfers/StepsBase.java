@@ -35,7 +35,7 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.handlers.transfer.ChangeNFTOwnersStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
@@ -62,7 +62,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
 
     protected EnsureAliasesStep ensureAliasesStep;
     protected ReplaceAliasesWithIDsInOp replaceAliasesWithIDsInOp;
-    protected ChangeNFTOwnersStep changeNFTOwnersStep;
+    protected NFTOwnersChangeStep changeNFTOwnersStep;
     protected CryptoTransferTransactionBody body;
     protected TransactionBody txn;
     protected TransferContextImpl transferContext;
@@ -136,7 +136,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         //        given(fees.computePayment(any(), any())).willReturn(new FeeObject(100, 100, 100));
     }
 
-    protected void givenConditions(){
+    protected void givenConditions() {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
@@ -154,6 +154,5 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                     return recordBuilder.accountID(asAccount(createdNumber + 1));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-
     }
 }

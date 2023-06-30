@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -59,7 +58,6 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -221,43 +219,6 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         adjustBalance(toTreasuryRel, toTreasury, adjustment, tokenRelStore, accountStore);
         // TODO: If any of the above fail, need to rollback only token transfer balances for record.
         // Not sure how it will be done yet
-    }
-
-    /**
-     * Adjust fungible balances for the given token relationship and account by the given adjustment.
-     * NOTE: This updates account's numOfPositiveBalances and puts to modifications on state.
-     * @param tokenRel token relationship
-     * @param account account to be adjusted
-     * @param adjustment adjustment to be made
-     * @param tokenRelStore token relationship store
-     * @param accountStore account store
-     */
-    protected void adjustBalance(
-            final TokenRelation tokenRel,
-            final Account account,
-            final long adjustment,
-            final WritableTokenRelationStore tokenRelStore,
-            @NonNull final WritableAccountStore accountStore) {
-        final var originalBalance = tokenRel.balance();
-        final var newBalance = originalBalance + adjustment;
-        validateTrue(newBalance >= 0, INSUFFICIENT_TOKEN_BALANCE);
-
-        final var copyRel = tokenRel.copyBuilder();
-        tokenRelStore.put(copyRel.balance(newBalance).build());
-
-        var numPositiveBalances = account.numberPositiveBalances();
-        // If the original balance is zero, then the receiving account's numPositiveBalances has to
-        // be increased
-        // and if the newBalance is zero, then the sending account's numPositiveBalances has to be
-        // decreased
-        if (newBalance == 0 && adjustment < 0) {
-            numPositiveBalances--;
-        } else if (originalBalance == 0 && adjustment > 0) {
-            numPositiveBalances++;
-        }
-        final var copyAccount = account.copyBuilder();
-        accountStore.put(copyAccount.numberPositiveBalances(numPositiveBalances).build());
-        // TODO: Need to track units change in record in finalize method for this
     }
 
     /**

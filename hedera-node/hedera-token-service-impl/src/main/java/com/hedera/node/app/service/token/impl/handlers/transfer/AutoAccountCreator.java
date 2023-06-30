@@ -108,15 +108,15 @@ public class AutoAccountCreator {
         if (isAliasEVMAddress) {
             fee += getLazyCreationFinalizationFee();
         }
-            // TODO : distribute autocreation fee and deduct payer balance
-//        final var payer = handleContext.body().transactionID().accountID();
-//        final var payerAccount = accountStore.get(payer);
-//        final var currentBalance = payerAccount.tinybarBalance();
-//        validateTrue(currentBalance >= fee, INSUFFICIENT_PAYER_BALANCE);
-//        final var payerCopy = payerAccount.copyBuilder()
-//                .tinybarBalance(currentBalance - fee)
-//                .build();
-//        accountStore.put(payerCopy.copyBuilder().build());
+        // TODO : distribute autocreation fee and deduct payer balance
+        //        final var payer = handleContext.body().transactionID().accountID();
+        //        final var payerAccount = accountStore.get(payer);
+        //        final var currentBalance = payerAccount.tinybarBalance();
+        //        validateTrue(currentBalance >= fee, INSUFFICIENT_PAYER_BALANCE);
+        //        final var payerCopy = payerAccount.copyBuilder()
+        //                .tinybarBalance(currentBalance - fee)
+        //                .build();
+        //        accountStore.put(payerCopy.copyBuilder().build());
 
         final var childRecord = handleContext.dispatchRemovableChildTransaction(
                 syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class);
