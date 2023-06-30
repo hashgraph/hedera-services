@@ -34,7 +34,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Translates between the legacy {@link com.hedera.node.app.service.mono.state.merkle.MerkleToken} and the {@link Token} and vise versa.
@@ -59,9 +58,10 @@ public class TokenStateTranslator {
                 .deleted(token.isDeleted())
                 .tokenType(fromMerkleType(token.tokenType()))
                 .supplyType(fromMerkleSupplyType(token.supplyType()))
-                .autoRenewAccountNumber(Optional.ofNullable(token.autoRenewAccount())
-                        .map(EntityId::num)
-                        .orElse(0L))
+                .autoRenewAccountNumber(
+                        token.autoRenewAccount() != null
+                                ? token.autoRenewAccount().num()
+                                : 0L)
                 .autoRenewSecs(token.autoRenewPeriod())
                 .expiry(token.expiry())
                 .memo(token.memo())
