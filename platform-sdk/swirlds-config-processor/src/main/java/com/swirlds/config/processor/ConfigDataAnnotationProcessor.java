@@ -21,6 +21,7 @@ import static com.swirlds.config.processor.ConfigProcessorConstants.CONSTANTS_CL
 import com.google.auto.service.AutoService;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
@@ -53,8 +54,10 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
         }
         String executionPath = System.getProperty("user.dir");
         Path configDocumentationFile = Paths.get(executionPath, "build/docs/config.md");
-        if (configDocumentationFile.toFile().exists()) {
-            configDocumentationFile.toFile().delete();
+        try {
+            Files.deleteIfExists(configDocumentationFile);
+        } catch (IOException e) {
+            throw new RuntimeException("Error while deleting " + configDocumentationFile, e);
         }
         configDocumentationFile.toFile().getParentFile().mkdirs();
 
@@ -63,8 +66,8 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
             annotations.stream()
                     .flatMap(annotation -> roundEnv.getElementsAnnotatedWith(annotation).stream())
                     .filter(element -> element.getKind() == ElementKind.RECORD)
-                    .filter(element -> element instanceof TypeElement typeElement)
-                    .map(typeElement -> (TypeElement) typeElement)
+                    .filter(element -> element instanceof TypeElement)
+                    .map(TypeElement.class::cast)
                     .forEach(typeElement -> handleTypeElement(typeElement, configDocumentationFile));
             return true;
         } catch (final Exception e) {

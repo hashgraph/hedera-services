@@ -24,6 +24,8 @@ import java.util.Objects;
 
 public class DocumentationFactory {
 
+    private DocumentationFactory() {}
+
     public static void doWork(
             @NonNull final ConfigDataRecordDefinition configDataRecordDefinition,
             @NonNull final Path configDocumentationFile)
@@ -40,12 +42,11 @@ public class DocumentationFactory {
                     writer.write("**description:** " + propertyDefinition.description() + "\n\n");
                     writer.write("\n");
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    throw new RuntimeException("Error while writing doc", e);
                 }
             });
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error while writing doc", e);
         }
-        System.out.println("Result for config data record '" + configDataRecordDefinition.simpleClassName() + "':");
     }
 }

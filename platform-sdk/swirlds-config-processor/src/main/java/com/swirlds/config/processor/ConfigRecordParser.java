@@ -59,8 +59,8 @@ public class ConfigRecordParser {
             final Annotation<?> annotation = type.getAnnotation(ConfigData.class);
             final String configDataValue = annotation.getStringValue(ConfigProcessorConstants.VALUE_FIELD_NAME);
             final Map<String, String> paramDoc = getJavaDocParams(type);
-            if (type instanceof JavaRecord<?> record) {
-                final Set<ConfigDataPropertyDefinition> propertyDefinitions = record.getRecordComponents().stream()
+            if (type instanceof JavaRecord<?> javaRecord) {
+                final Set<ConfigDataPropertyDefinition> propertyDefinitions = javaRecord.getRecordComponents().stream()
                         .map(javaRecordComponent ->
                                 getConfigDataPropertyDefinition(configDataValue, paramDoc, javaRecordComponent))
                         .collect(Collectors.toSet());
