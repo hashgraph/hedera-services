@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
@@ -117,7 +118,15 @@ public class AutoAccountCreator {
         if (isAliasEVMAddress) {
             fee += getLazyCreationFinalizationFee();
         }
-        // TODO: Check if payer has enough balance to pay for the fee
+            // TODO : distribute autocreation fee and deduct payer balance
+//        final var payer = handleContext.body().transactionID().accountID();
+//        final var payerAccount = accountStore.get(payer);
+//        final var currentBalance = payerAccount.tinybarBalance();
+//        validateTrue(currentBalance >= fee, INSUFFICIENT_PAYER_BALANCE);
+//        final var payerCopy = payerAccount.copyBuilder()
+//                .tinybarBalance(currentBalance - fee)
+//                .build();
+//        accountStore.put(payerCopy.copyBuilder().build());
 
         final var childRecord = handleContext.dispatchRemovableChildTransaction(
                 syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class);

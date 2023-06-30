@@ -17,10 +17,12 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static java.util.Collections.emptyList;
 
@@ -31,11 +33,18 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
+import com.hedera.node.app.spi.workflows.HandleException;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Puts all fungible token changes from CryptoTransfer into state's modifications map.
+ */
 public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements TransferStep {
+    // The CryptoTransferTransactionBody here is obtained by replacing aliases with their
+    // corresponding accountIds.
     final CryptoTransferTransactionBody op;
 
     public ZeroSumFungibleTransfersStep(final CryptoTransferTransactionBody op) {
@@ -48,11 +57,14 @@ public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements Tr
         final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
+
+        // two maps for aggregating the changes to the token balances and allowances.
         final Map<EntityNumPair, Long> aggregatedFungibleTokenChanges = new HashMap<>();
         final Map<EntityNumPair, Long> allowanceTransfers = new HashMap<>();
-        // Look at all fungible token transfers and put into agrragatedFungibleTokenChanges map.
+
+        // Look at all fungible token transfers and put into aggregatedFungibleTokenChanges map.
         // Also, put any transfers happening with allowances in allowanceTransfers map.
-        for (var xfers : op.tokenTransfers()) {
+        for (var xfers : op.tokenTransfersOrElse(emptyList())) {
             final var tokenId = xfers.token();
             final var token = getIfUsable(tokenId, tokenStore);
             validateTrue(
@@ -60,42 +72,77 @@ public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements Tr
                     ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
 
             if (xfers.hasExpectedDecimals()) {
-                validateTrue(token.decimals() == xfers.expectedDecimals().intValue(), UNEXPECTED_TOKEN_DECIMALS);
+                validateTrue(token.decimals() == xfers.expectedDecimalsOrThrow(), UNEXPECTED_TOKEN_DECIMALS);
             }
 
-            for (var aa : xfers.transfersOrElse(emptyList())) {
-                final var accountId = aa.accountID();
+            for (final var aa : xfers.transfersOrElse(emptyList())) {
+                final var accountId = aa.accountIDOrThrow();
                 getIfUsable(accountId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
-
-                final var amount = aa.amount();
                 final var pair = EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum());
-                if (!aggregatedFungibleTokenChanges.containsKey(pair)) {
-                    aggregatedFungibleTokenChanges.put(pair, amount);
-                } else {
-                    var existingChange = aggregatedFungibleTokenChanges.get(pair);
-                    aggregatedFungibleTokenChanges.put(pair, existingChange + amount);
-                }
-                // If the transfer is happening with an allowance, add it to the allowanceTransfers map.
+
+                // Add the amount to the aggregatedFungibleTokenChanges map.
+                // If the accountId tokenId pair doesn't exist in the map, add it.
+                // Else, update the aggregated transfer amount
+                addOrUpdateAggregatedBalances(aggregatedFungibleTokenChanges, pair, aa.amount());
+
+                // If the transfer is happening with an allowance,
+                // add it to the allowanceTransfers map.
+                // If the accountId tokenId pair doesn't exist in the map, add it.
+                // Else, update the aggregated transfer amount
                 if (aa.isApproval() && aa.amount() < 0) {
-                    if (!allowanceTransfers.containsKey(pair)) {
-                        allowanceTransfers.put(pair, amount);
-                    } else {
-                        var existingChange = allowanceTransfers.get(pair);
-                        allowanceTransfers.put(pair, existingChange + amount);
-                    }
+                    addOrUpdateAllowances(allowanceTransfers, pair, aa.amount());
                 }
             }
         }
 
-        // Look at all the aggregatedFungibleTokenChanges and adjust the balances in the tokenRelStore.
-        for (final var atPair : aggregatedFungibleTokenChanges.keySet()) {
-            final var rel = getIfUsable(
-                    asAccount(atPair.getHiOrderAsLong()), asToken(atPair.getLowOrderAsLong()), tokenRelStore);
-            final var account = accountStore.get(asAccount(atPair.getHiOrderAsLong()));
-            final var amount = aggregatedFungibleTokenChanges.get(atPair);
-            adjustBalance(rel, account, amount, tokenRelStore, accountStore);
-        }
+        modifyAggregatedTokenBalances(aggregatedFungibleTokenChanges, tokenRelStore, accountStore);
+        modifyAggregatedAllowances(allowanceTransfers, accountStore, transferContext);
+    }
 
+    /**
+     * Aggregates all token allowances from the changes that have isApproval flag set in
+     * {@link CryptoTransferTransactionBody}.
+     * @param allowanceTransfers - map of aggregated token allowances to be modified
+     * @param pair - account id and token id pair
+     * @param amount - amount to be added to the aggregated balance
+     */
+    private void addOrUpdateAllowances(final Map<EntityNumPair, Long> allowanceTransfers,
+                                       final EntityNumPair pair,
+                                       final long amount) {
+        if (!allowanceTransfers.containsKey(pair)) {
+            allowanceTransfers.put(pair, amount);
+        } else {
+            final var existingChange = allowanceTransfers.get(pair);
+            allowanceTransfers.put(pair, existingChange + amount);
+        }
+    }
+
+    /**
+     * Modifies the aggregated token balances for all the changes
+     * @param aggregatedFungibleTokenChanges - map of aggregated token balances to be modified
+     * @param pair - account id and token id pair
+     * @param amount - amount to be added to the aggregated balance
+     */
+    private void addOrUpdateAggregatedBalances(final Map<EntityNumPair, Long> aggregatedFungibleTokenChanges,
+                                               final EntityNumPair pair,
+                                               final long amount) {
+        if (!aggregatedFungibleTokenChanges.containsKey(pair)) {
+            aggregatedFungibleTokenChanges.put(pair, amount);
+        } else {
+            final var existingChange = aggregatedFungibleTokenChanges.get(pair);
+            aggregatedFungibleTokenChanges.put(pair, existingChange + amount);
+        }
+    }
+
+    /**
+     * Puts all the aggregated token allowances changes into the accountStore.
+     * @param allowanceTransfers - map of aggregated token allowances to be modified
+     * @param accountStore  - account store
+     * @param transferContext - transfer context
+     */
+    private void modifyAggregatedAllowances(final Map<EntityNumPair, Long> allowanceTransfers,
+                                            final WritableAccountStore accountStore,
+                                            final TransferContext transferContext) {
         // Look at all the allowanceTransfers and adjust the allowances in the accountStore.
         for (final var atPair : allowanceTransfers.keySet()) {
             final var accountId = asAccount(atPair.getHiOrderAsLong());
@@ -111,16 +158,39 @@ public class ZeroSumFungibleTransfersStep extends BaseTokenHandler implements Tr
                 final var allowanceCopy = allowance.copyBuilder();
                 if (allowance.spenderNum() == accountId.accountNum() && allowance.tokenNum() == tokenId.tokenNum()) {
                     final var newAllowance = allowance.amount() + allowanceTransfers.get(account);
+                    validateTrue(newAllowance >= 0, AMOUNT_EXCEEDS_ALLOWANCE);
                     allowanceCopy.amount(newAllowance);
                     if (newAllowance != 0) {
                         tokenAllowances.set(i, allowanceCopy.build());
                     } else {
                         tokenAllowances.remove(i);
                     }
+                    break;
+                }else if(i == tokenAllowances.size() - 1){
+                    throw new HandleException(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
                 }
             }
             accountCopy.tokenAllowances(tokenAllowances);
             accountStore.put(accountCopy.build());
+        }
+    }
+
+    /**
+     * Puts all the aggregated token balances changes into the tokenRelStore and accountStore.
+     * @param aggregatedFungibleTokenChanges - map of aggregated token balances to be modified
+     * @param tokenRelStore - token relation store
+     * @param accountStore - account store
+     */
+    private void modifyAggregatedTokenBalances(final Map<EntityNumPair, Long> aggregatedFungibleTokenChanges,
+                                               final WritableTokenRelationStore tokenRelStore,
+                                               final WritableAccountStore accountStore) {
+        // Look at all the aggregatedFungibleTokenChanges and adjust the balances in the tokenRelStore.
+        for (final var atPair : aggregatedFungibleTokenChanges.keySet()) {
+            final var rel = getIfUsable(
+                    asAccount(atPair.getHiOrderAsLong()), asToken(atPair.getLowOrderAsLong()), tokenRelStore);
+            final var account = accountStore.get(asAccount(atPair.getHiOrderAsLong()));
+            final var amount = aggregatedFungibleTokenChanges.get(atPair);
+            adjustBalance(rel, account, amount, tokenRelStore, accountStore);
         }
     }
 }

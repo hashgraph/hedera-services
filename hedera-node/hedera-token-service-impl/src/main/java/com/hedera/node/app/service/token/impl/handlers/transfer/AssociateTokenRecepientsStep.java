@@ -51,7 +51,7 @@ public class AssociateTokenRecepientsStep extends BaseTokenHandler implements Tr
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
 
         for (var xfers : op.tokenTransfersOrElse(emptyList())) {
-            final var tokenId = xfers.token();
+            final var tokenId = xfers.tokenOrThrow();
             final var token = getIfUsable(tokenId, tokenStore);
 
             for (final var aa : xfers.transfersOrElse(emptyList())) {

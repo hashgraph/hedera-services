@@ -60,6 +60,11 @@ public class CryptoTransferValidator {
         // For Dagger injection
     }
 
+    /**
+     * Performs pure checks that validates basic fields in the crypto transfer transaction.
+     * @param op the crypto transfer transaction body
+     * @throws PreCheckException if any of the checks fail
+     */
     public void pureChecks(@NonNull final CryptoTransferTransactionBody op) throws PreCheckException {
         final var acctAmounts = op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
         final var uniqueAcctIds = new HashSet<AccountID>();
@@ -113,6 +118,13 @@ public class CryptoTransferValidator {
         }
     }
 
+    /**
+     * All validations needed for the crypto transfer operation, that include state or config.
+     * @param op the crypto transfer operation
+     * @param ledgerConfig the ledger config
+     * @param hederaConfig the hedera config
+     * @param tokensConfig the tokens config
+     */
     public void validateSemantics(
             @NonNull final CryptoTransferTransactionBody op,
             @NonNull final LedgerConfig ledgerConfig,
@@ -126,7 +138,7 @@ public class CryptoTransferValidator {
 
         // Validate that allowances are enabled, or that no hbar transfers are an allowance transfer
         final var allowancesEnabled = hederaConfig.allowancesIsEnabled();
-        validateTrue(allowancesEnabled || !hasAllowance(hbarTransfers), NOT_SUPPORTED);
+        validateTrue(allowancesEnabled || isTransferWithApproval(hbarTransfers), NOT_SUPPORTED);
 
         // The loop below will validate the counts for token transfers (both fungible and non-fungible)
         final var tokenTransfers = op.tokenTransfersOrElse(emptyList());
@@ -136,13 +148,13 @@ public class CryptoTransferValidator {
         for (final TokenTransferList tokenTransfer : tokenTransfers) {
             // Validate the fungible token transfer(s) (if present)
             final var fungibleTransfers = tokenTransfer.transfersOrElse(emptyList());
-            validateTrue(allowancesEnabled || !hasAllowance(fungibleTransfers), NOT_SUPPORTED);
+            validateTrue(allowancesEnabled || isTransferWithApproval(fungibleTransfers), NOT_SUPPORTED);
             totalFungibleTransfers += fungibleTransfers.size();
 
             // Validate the nft transfer(s) (if present)
             final var nftTransfers = tokenTransfer.nftTransfersOrElse(emptyList());
             validateTrue(nftsEnabled || nftTransfers.isEmpty(), NOT_SUPPORTED);
-            validateTrue(allowancesEnabled || !hasNftAllowance(nftTransfers), NOT_SUPPORTED);
+            validateTrue(allowancesEnabled || !isNftTransferWithApproval(nftTransfers), NOT_SUPPORTED);
             totalNftTransfers += nftTransfers.size();
 
             // Verify that the current total number of (counted) fungible transfers does not exceed the limit
@@ -154,17 +166,26 @@ public class CryptoTransferValidator {
         }
     }
 
-    private boolean hasAllowance(@NonNull final List<AccountAmount> transfers) {
+    /**
+     * Checks if any of the transfers is with approval flag set.
+     * @param transfers the transfers
+     * @return true if any of the transfers is with approval flag set, false otherwise
+     */
+    private boolean isTransferWithApproval(@NonNull final List<AccountAmount> transfers) {
         for (final AccountAmount transfer : transfers) {
             if (transfer.isApproval()) {
                 return true;
             }
         }
-
         return false;
     }
 
-    private boolean hasNftAllowance(@NonNull final List<NftTransfer> nftTransfers) {
+    /**
+     * Checks if any of the nft transfers is with approval flag set.
+     * @param nftTransfers the nft transfers
+     * @return true if any of the nft transfers is with approval flag set, false otherwise
+     */
+    private boolean isNftTransferWithApproval(@NonNull final List<NftTransfer> nftTransfers) {
         for (final NftTransfer nftTransfer : nftTransfers) {
             if (nftTransfer.isApproval()) {
                 return true;

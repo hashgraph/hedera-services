@@ -16,19 +16,29 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
+import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
+import com.hedera.node.app.spi.workflows.HandleException;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ZeroSumHbarChangesStep implements TransferStep {
+public class ZeroSumHbarChangesStep extends BaseTokenHandler implements TransferStep {
     final CryptoTransferTransactionBody op;
 
     public ZeroSumHbarChangesStep(final CryptoTransferTransactionBody op) {
@@ -40,34 +50,59 @@ public class ZeroSumHbarChangesStep implements TransferStep {
         final var accountStore = transferContext.getHandleContext().writableStore(WritableAccountStore.class);
         final Map<AccountID, Long> netHbarTransfers = new HashMap<>();
         final Map<AccountID, Long> allowanceTransfers = new HashMap<>();
-        for (var aa : op.transfers().accountAmounts()) {
-            if (!netHbarTransfers.containsKey(aa.accountID())) {
-                netHbarTransfers.put(aa.accountID(), aa.amount());
-            } else {
-                final var existingChange = netHbarTransfers.get(aa.accountID());
-                netHbarTransfers.put(aa.accountID(), existingChange + aa.amount());
-            }
-
+        for (var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
+            addOrUpdateAggregatedBalances(netHbarTransfers, aa);
             if (aa.isApproval() && aa.amount() < 0) {
-                if (!allowanceTransfers.containsKey(aa.accountID())) {
-                    allowanceTransfers.put(aa.accountID(), aa.amount());
-                } else {
-                    var existingChange = allowanceTransfers.get(aa.accountID());
-                    allowanceTransfers.put(aa.accountID(), existingChange + aa.amount());
-                }
+                addOrUpdateAllowances(allowanceTransfers, aa);
             }
         }
 
-        for (final var accountId : netHbarTransfers.keySet()) {
-            final var account = getIfUsable(
-                    accountId, accountStore, transferContext.getHandleContext().expiryValidator(), INVALID_ACCOUNT_ID);
-            final var currentBalance = account.tinybarBalance();
-            final var newBalance = currentBalance + netHbarTransfers.get(account);
-            validateTrue(newBalance >= 0, INSUFFICIENT_ACCOUNT_BALANCE);
-            final var copy = account.copyBuilder();
-            accountStore.put(copy.tinybarBalance(newBalance).build());
+        modifyAggregatedTransfers(netHbarTransfers, accountStore, transferContext);
+        modifyAggregatedAllowances(allowanceTransfers, accountStore, transferContext);
+    }
+
+
+    /**
+     * Aggregates all token allowances from the changes that have isApproval flag set in
+     * {@link CryptoTransferTransactionBody}.
+     * @param allowanceTransfers - map of aggregated token allowances to be modified
+     * @param aa - account amount
+     */
+    private void addOrUpdateAllowances(final Map<AccountID, Long> allowanceTransfers,
+                                       final AccountAmount aa) {
+        if (!allowanceTransfers.containsKey(aa.accountID())) {
+            allowanceTransfers.put(aa.accountID(), aa.amount());
+        } else {
+            final var existingChange = allowanceTransfers.get(aa.accountID());
+            allowanceTransfers.put(aa.accountID(), existingChange + aa.amount());
+        }
+    }
+
+    /**
+     * Modifies the aggregated token balances for all the changes
+     * @param netHbarTransfers - map of aggregated hbar balances to be modified
+     * @param aa - account amount
+     */
+    private void addOrUpdateAggregatedBalances(final Map<AccountID, Long> netHbarTransfers,
+                                               final AccountAmount aa) {
+        if (!netHbarTransfers.containsKey(aa.accountID())) {
+            netHbarTransfers.put(aa.accountID(), aa.amount());
+        } else {
+            final var existingChange = netHbarTransfers.get(aa.accountID());
+            netHbarTransfers.put(aa.accountID(), existingChange + aa.amount());
         }
 
+    }
+
+    /**
+     * Puts all the aggregated token allowances changes into the accountStore.
+     * @param allowanceTransfers - map of aggregated token allowances to be put into state
+     * @param accountStore  - account store
+     * @param transferContext - transfer context
+     */
+    private void modifyAggregatedAllowances(final Map<AccountID, Long> allowanceTransfers,
+                                            final WritableAccountStore accountStore,
+                                            final TransferContext transferContext) {
         for (final var accountId : allowanceTransfers.keySet()) {
             final var account = getIfUsable(
                     accountId, accountStore, transferContext.getHandleContext().expiryValidator(), INVALID_ACCOUNT_ID);
@@ -79,16 +114,42 @@ public class ZeroSumHbarChangesStep implements TransferStep {
                 final var allowanceCopy = allowance.copyBuilder();
                 if (allowance.spenderNum() == accountId.accountNum()) {
                     final var newAllowance = allowance.amount() + allowanceTransfers.get(account);
+                    validateTrue(newAllowance >= 0, AMOUNT_EXCEEDS_ALLOWANCE);
+
                     allowanceCopy.amount(newAllowance);
                     if (newAllowance != 0) {
                         cryptoAllowances.set(i, allowanceCopy.build());
                     } else {
                         cryptoAllowances.remove(i);
                     }
+                    break;
+                } else if (i == cryptoAllowances.size() - 1) {
+                    throw new HandleException(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
                 }
             }
             accountCopy.cryptoAllowances(cryptoAllowances);
             accountStore.put(accountCopy.build());
+        }
+    }
+
+
+    /**
+     * Puts all the aggregated hbar balances changes into the accountStore.
+     * @param netHbarTransfers - map of aggregated hbar balances to be put into state
+     * @param accountStore - account store
+     * @param transferContext - transfer context
+     */
+    private void modifyAggregatedTransfers(final Map<AccountID, Long> netHbarTransfers,
+                                           final WritableAccountStore accountStore,
+                                           final TransferContext transferContext) {
+        for (final var accountId : netHbarTransfers.keySet()) {
+            final var account = getIfUsable(
+                    accountId, accountStore, transferContext.getHandleContext().expiryValidator(), INVALID_ACCOUNT_ID);
+            final var currentBalance = account.tinybarBalance();
+            final var newBalance = currentBalance + netHbarTransfers.get(account);
+            validateTrue(newBalance >= 0, INSUFFICIENT_ACCOUNT_BALANCE);
+            final var copy = account.copyBuilder();
+            accountStore.put(copy.tinybarBalance(newBalance).build());
         }
     }
 }
