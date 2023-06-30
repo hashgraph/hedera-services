@@ -37,13 +37,13 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.FreezeManager;
 import com.swirlds.platform.PlatformConstructor;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.EventTaskCreator;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
@@ -84,12 +84,12 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     private static final Logger logger = LogManager.getLogger(AbstractGossip.class);
 
     private LifecyclePhase lifecyclePhase = LifecyclePhase.NOT_STARTED;
+    private final ThreadConfig threadConfig;
 
     protected final PlatformContext platformContext;
     protected final AddressBook addressBook;
     protected final NodeId selfId;
     protected final NetworkTopology topology;
-    protected final Settings settings = Settings.getInstance();
     protected final CriticalQuorum criticalQuorum;
     protected final NetworkMetrics networkMetrics;
     protected final SyncMetrics syncMetrics;
@@ -151,6 +151,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         this.selfId = Objects.requireNonNull(selfId);
         this.updatePlatformStatus = Objects.requireNonNull(updatePlatformStatus);
 
+        threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         criticalQuorum = buildCriticalQuorum();
         eventObserverDispatcher.addObserver(criticalQuorum);
 
@@ -184,7 +185,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 socketFactory,
                 inboundConnectionHandler::handle);
         thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
-                .setPriority(settings.getThreadPrioritySync())
+                .setPriority(threadConfig.threadPrioritySync())
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("connectionServer")

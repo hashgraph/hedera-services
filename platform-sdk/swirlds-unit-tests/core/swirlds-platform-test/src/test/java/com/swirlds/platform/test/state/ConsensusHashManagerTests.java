@@ -79,7 +79,6 @@ class ConsensusHashManagerTests {
                 .setSize(100)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
-                .setSequentialIds(false)
                 .build();
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
@@ -118,7 +117,6 @@ class ConsensusHashManagerTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
-                .setSequentialIds(false)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
                 .build();
@@ -317,7 +315,6 @@ class ConsensusHashManagerTests {
                 .setSize(100)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
-                .setSequentialIds(false)
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
@@ -381,7 +378,6 @@ class ConsensusHashManagerTests {
                 .setSize(100)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
-                .setSequentialIds(false)
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
@@ -431,7 +427,6 @@ class ConsensusHashManagerTests {
                 .setSize(100)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
-                .setSequentialIds(false)
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
@@ -521,7 +516,6 @@ class ConsensusHashManagerTests {
                 .setSize(100)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
-                .setSequentialIds(false)
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
@@ -584,7 +578,6 @@ class ConsensusHashManagerTests {
                 .setSize(100)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
-                .setSequentialIds(false)
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 

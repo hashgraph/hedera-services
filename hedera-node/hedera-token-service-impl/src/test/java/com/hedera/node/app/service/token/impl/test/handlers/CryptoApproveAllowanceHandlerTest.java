@@ -156,10 +156,10 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThat(writableNftStore.get(uniqueTokenIdSl1)).isNotNull();
         assertThat(writableNftStore.get(uniqueTokenIdSl2)).isNotNull();
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isZero();
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isZero();
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isNull();
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isNull();
 
         subject.handle(handleContext);
 
@@ -180,10 +180,10 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThat(writableNftStore.get(uniqueTokenIdSl1)).isNotNull();
         assertThat(writableNftStore.get(uniqueTokenIdSl2)).isNotNull();
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isEqualTo(spenderId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isEqualTo(spenderId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isEqualTo(spenderId);
     }
 
     @Test
@@ -209,10 +209,10 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThat(writableNftStore.get(uniqueTokenIdSl1)).isNotNull();
         assertThat(writableNftStore.get(uniqueTokenIdSl2)).isNotNull();
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isZero();
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isZero();
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isNull();
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isNull();
 
         subject.handle(handleContext);
 
@@ -233,10 +233,10 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThat(writableNftStore.get(uniqueTokenIdSl1)).isNotNull();
         assertThat(writableNftStore.get(uniqueTokenIdSl2)).isNotNull();
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isEqualTo(spenderId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isEqualTo(spenderId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isEqualTo(spenderId);
     }
 
     @Test
@@ -251,20 +251,20 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         final var existingOwner = writableAccountStore.getAccountById(ownerId);
         assertThat(existingOwner.approveForAllNftAllowances()).hasSize(1);
 
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isZero();
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isZero();
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isNull();
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isNull();
 
         subject.handle(handleContext);
 
         final var modifiedOwner = writableAccountStore.getAccountById(ownerId);
 
         assertThat(modifiedOwner.approveForAllNftAllowances()).isEmpty();
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isEqualTo(spenderId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isEqualTo(spenderId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isEqualTo(spenderId);
     }
 
     @Test
@@ -293,12 +293,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         // change the state to have the payer as owner for NFTs for a passing test.
         // If not it fails since those NFTs are not owned by the payer.
         writableNftState = emptyWritableNftStateBuilder()
-                .value(
-                        uniqueTokenIdSl1,
-                        nftSl1.copyBuilder().ownerNumber(accountNum).build())
-                .value(
-                        uniqueTokenIdSl2,
-                        nftSl2.copyBuilder().ownerNumber(accountNum).build())
+                .value(uniqueTokenIdSl1, nftSl1.copyBuilder().ownerId(payerId).build())
+                .value(uniqueTokenIdSl2, nftSl2.copyBuilder().ownerId(payerId).build())
                 .build();
         given(writableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(writableNftState);
         writableNftStore = new WritableNftStore(writableStates);

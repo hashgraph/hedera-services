@@ -21,6 +21,7 @@ import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyFalse;
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.test.AssertionUtils.completeBeforeTimeout;
+import static com.swirlds.common.threading.framework.internal.AbstractQueueThreadConfiguration.UNLIMITED_CAPACITY;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -1051,23 +1052,23 @@ class QueueThreadTests {
         });
         queue.start();
 
-        // The queue should call the idle callback during this time,
+        // The queue should not call the idle callback during this time,
         // but give it some time to do bad things if it's going to do bad things.
         MILLISECONDS.sleep(10);
 
         latch1.countDown();
 
-        // The queue should call the idle callback during this time,
+        // The queue should not call the idle callback during this time,
         // but give it some time to do bad things if it's going to do bad things.
         MILLISECONDS.sleep(10);
 
         latch2.countDown();
 
-        // The queue should call the idle callback during this time,
+        // The queue should not call the idle callback during this time,
         // but give it some time to do bad things if it's going to do bad things.
         MILLISECONDS.sleep(10);
 
-        // Once job 3 is permitted to complete, we expect for the idle callback to be invoked shortly afterwards.
+        // Once job 3 is permitted to complete, we expect for the idle callback to be invoked shortly afterward.
         idleCallbackPermitted.set(true);
 
         latch3.countDown();
@@ -1077,5 +1078,69 @@ class QueueThreadTests {
         queue.stop();
 
         assertFalse(error.get());
+    }
+
+    @Test
+    void batchCompletedCallbackTest() throws InterruptedException {
+        final AtomicInteger count = new AtomicInteger(0);
+
+        final int bufferSize = 100;
+
+        final QueueThread<Integer> queue = new QueueThreadConfiguration<Integer>(getStaticThreadManager())
+                .setThreadName("test")
+                .setBatchHandledCallback(count::getAndIncrement)
+                .setHandler(x -> {})
+                .setCapacity(UNLIMITED_CAPACITY)
+                .setMaxBufferSize(bufferSize)
+                .build();
+
+        // Add a bunch of stuff to the queue. Things haven't started yet, so we shouldn't have any callbacks.
+        for (int i = 0; i < bufferSize; i++) {
+            queue.add(i);
+        }
+
+        assertEquals(0, count.get());
+
+        // Start the queue. We should see the batch complete callback exactly once, since all 100 items will fit
+        // into the buffer.
+
+        queue.start();
+
+        assertEventuallyEquals(1, count::get, Duration.ofSeconds(1), "Batch completed callback was not called");
+
+        // Wait for a while. Callback should not be called, but give the thread time to misbehave it wants to.
+        MILLISECONDS.sleep(10);
+        assertEquals(1, count.get());
+
+        // Adding just a single element should cause the callback to be called again.
+        queue.add(42);
+
+        assertEventuallyEquals(2, count::get, Duration.ofSeconds(1), "Batch completed callback was not called");
+
+        // Wait for a while. Callback should not be called, but give the thread time to misbehave it wants to.
+        MILLISECONDS.sleep(10);
+        assertEquals(2, count.get());
+
+        // Add a bunch of stuff. Any number of callbacks between 1
+        // and the number of elements divided by buffer size is legal.
+        final int amountToAdd = 10_000;
+        for (int i = 0; i < amountToAdd; i++) {
+            queue.add(i);
+        }
+
+        final int minCount = 2 + (amountToAdd / bufferSize);
+        final int maxCount = 2 + amountToAdd;
+
+        assertEventuallyTrue(
+                () -> count.get() >= minCount,
+                Duration.ofSeconds(1),
+                "Batch completed callback was not called enough times");
+
+        // Give the thread some time to misbehave if it wants to.
+        MILLISECONDS.sleep(10);
+
+        assertTrue(count.get() <= maxCount, "Batch completed callback was called too many times");
+
+        queue.stop();
     }
 }

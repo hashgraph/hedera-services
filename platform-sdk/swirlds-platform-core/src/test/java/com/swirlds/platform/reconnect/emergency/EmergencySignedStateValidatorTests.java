@@ -50,7 +50,6 @@ public class EmergencySignedStateValidatorTests {
                 .setSize(NUM_NODES)
                 .setAverageWeight(WEIGHT_PER_NODE)
                 .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(false)
                 .build();
     }
 

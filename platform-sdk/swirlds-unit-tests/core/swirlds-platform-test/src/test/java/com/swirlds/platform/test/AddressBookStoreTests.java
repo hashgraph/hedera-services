@@ -542,17 +542,14 @@ class AddressBookStoreTests {
                 IllegalStateException.class, () -> store.add(addressBook), "invalid genesis book should be rejected");
 
         // Add an address book that has a high next ID
-        final RandomAddressBookGenerator generator =
-                new RandomAddressBookGenerator().setSize(100).setSequentialIds(false);
+        final RandomAddressBookGenerator generator = new RandomAddressBookGenerator().setSize(100);
         final AddressBook firstAddressBook = generator.build().setRound(0);
         store.add(firstAddressBook);
         assertEquals(1, store.getSize(), "store is the wrong size");
 
         // Attempting to add an address book store with a low next ID should fail
-        final RandomAddressBookGenerator invalidGenerator =
-                new RandomAddressBookGenerator().setSize(10).setSequentialIds(false);
-        final AddressBook invalidBook =
-                invalidGenerator.setSequentialIds(false).build().setRound(1);
+        final RandomAddressBookGenerator invalidGenerator = new RandomAddressBookGenerator().setSize(10);
+        final AddressBook invalidBook = invalidGenerator.build().setRound(1);
         store.add(invalidBook);
         assertEquals(2, store.getSize(), "store is the wrong size");
 

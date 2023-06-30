@@ -19,17 +19,21 @@ package com.swirlds.platform.config.legacy;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.internal.ConfigurationException;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.address.AddressBookUtils;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.Settings;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Scanner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,10 +79,11 @@ public final class LegacyConfigPropertiesLoader {
         final LegacyConfigProperties configurationProperties = new LegacyConfigProperties();
 
         try (final Scanner scanner = new Scanner(configPath, StandardCharsets.UTF_8)) {
+            final AddressBook addressBook = new AddressBook();
             while (scanner.hasNextLine()) {
                 final String line = readNextLine(scanner);
                 if (!line.isEmpty()) {
-                    final String[] lineParameters = Settings.splitLine(line);
+                    final String[] lineParameters = splitLine(line);
                     final int len = Math.max(10, lineParameters.length);
                     // pars is the comma-separated parameters, trimmed, lower-cased, then padded with "" to have
                     // at least 10 parameters
@@ -100,18 +105,12 @@ public final class LegacyConfigPropertiesLoader {
                             configurationProperties.setAppConfig(appConfig);
                         }
                         case ADDRESS_PROPERTY_NAME -> {
-                            if (lineParameters.length >= 8) {
-                                final AddressConfig addressConfig = new AddressConfig(
-                                        parsOriginalCase[1],
-                                        parsOriginalCase[2],
-                                        Long.parseLong(pars[3]),
-                                        InetAddress.getByName(pars[4]),
-                                        Integer.parseInt(pars[5]),
-                                        InetAddress.getByName(pars[6]),
-                                        Integer.parseInt(pars[7]),
-                                        parsOriginalCase[8]);
-                                configurationProperties.addAddressConfig(addressConfig);
-                            } else {
+                            try {
+                                final Address address = AddressBookUtils.parseAddressText(line);
+                                if (address != null) {
+                                    addressBook.add(address);
+                                }
+                            } catch (final ParseException ex) {
                                 onError(ERROR_ADDRESS_NOT_ENOUGH_PARAMETERS);
                             }
                         }
@@ -121,6 +120,9 @@ public final class LegacyConfigPropertiesLoader {
                         default -> onError(ERROR_PROPERTY_NOT_KNOWN.formatted(pars[0]));
                     }
                 }
+            }
+            if (addressBook.getSize() > 0) {
+                configurationProperties.setAddressBook(addressBook);
             }
             return configurationProperties;
         } catch (final FileNotFoundException ex) {
@@ -164,5 +166,23 @@ public final class LegacyConfigPropertiesLoader {
 
     private static void onError(String message) {
         CommonUtils.tellUserConsolePopup("Error", message);
+    }
+
+    /**
+     * Split the given string on its commas, and trim each result
+     *
+     * @param line the string of comma-separated values to split
+     * @return the array of trimmed elements.
+     */
+    @NonNull
+    private static String[] splitLine(@NonNull final String line) {
+        Objects.requireNonNull(line);
+
+        final String[] elms = line.split(",");
+        for (int i = 0; i < elms.length; i++) {
+            elms[i] = elms[i].trim();
+        }
+
+        return elms;
     }
 }

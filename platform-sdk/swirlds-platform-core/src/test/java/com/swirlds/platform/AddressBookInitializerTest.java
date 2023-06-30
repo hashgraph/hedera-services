@@ -43,6 +43,8 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -51,8 +53,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -393,7 +393,6 @@ class AddressBookInitializerTest {
     @NonNull
     private AddressBook getRandomAddressBook() {
         return new RandomAddressBookGenerator()
-                .setSequentialIds(false)
                 .setSize(5)
                 .setCustomWeightGenerator(i -> i.id())
                 .build();

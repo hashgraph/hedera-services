@@ -28,7 +28,6 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -72,11 +71,6 @@ class SyncPreconsensusEventWriterTests {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
-
-        SettingsCommon.maxTransactionBytesPerEvent = Integer.MAX_VALUE;
-        SettingsCommon.maxTransactionCountPerEvent = Integer.MAX_VALUE;
-        SettingsCommon.transactionMaxBytes = Integer.MAX_VALUE;
-        SettingsCommon.maxAddressSizeAllowed = Integer.MAX_VALUE;
     }
 
     @BeforeEach
@@ -94,6 +88,10 @@ class SyncPreconsensusEventWriterTests {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("event.preconsensus.databaseDirectory", testDirectory)
                 .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
+                .withValue("transaction.maxTransactionBytesPerEvent", Integer.MAX_VALUE)
+                .withValue("transaction.maxTransactionCountPerEvent", Integer.MAX_VALUE)
+                .withValue("transaction.transactionMaxBytes", Integer.MAX_VALUE)
+                .withValue("transaction.maxAddressSizeAllowed", Integer.MAX_VALUE)
                 .getOrCreateConfig();
 
         final Metrics metrics = new NoOpMetrics();

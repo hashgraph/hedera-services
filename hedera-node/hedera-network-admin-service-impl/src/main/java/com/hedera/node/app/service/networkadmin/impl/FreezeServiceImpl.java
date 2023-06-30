@@ -35,9 +35,7 @@ public final class FreezeServiceImpl implements FreezeService {
     public static final String UPGRADE_FILE_HASH_KEY = "UPGRADE_FILE_HASH";
 
     public static final String DUAL_STATE_KEY = "DUAL_STATE";
-
-    private static final SemanticVersion CURRENT_VERSION =
-            SemanticVersion.newBuilder().minor(34).build();
+    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
@@ -45,7 +43,7 @@ public final class FreezeServiceImpl implements FreezeService {
     }
 
     private Schema networkAdminSchema() {
-        return new Schema(CURRENT_VERSION) {
+        return new Schema(GENESIS_VERSION) {
             @NonNull
             @Override
             @SuppressWarnings("rawtypes")
