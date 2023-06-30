@@ -29,10 +29,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.base.time.fixtures.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.status.PlatformStatus;
-import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.event.GossipEvent;

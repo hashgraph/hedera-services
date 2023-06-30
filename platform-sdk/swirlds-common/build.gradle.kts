@@ -42,7 +42,8 @@ dependencies {
     compileOnly(libs.spotbugs.annotations)
 
     // Test Dependencies
-    testCompileOnly(libs.spotbugs.annotations)testImplementation(testLibs.bundles.junit)
+    testCompileOnly(libs.spotbugs.annotations)
+    testImplementation(testLibs.bundles.junit)
     testImplementation(testLibs.bundles.mocking)
     testImplementation(testLibs.bundles.utils)
     testImplementation(testFixtures(project(":swirlds-base")))
