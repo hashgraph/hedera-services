@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.state.migration;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.UniqueTokenId;
@@ -48,14 +47,8 @@ public final class NftStateTranslator {
         final var nftIdPair = merkleUniqueToken.getKey().asNftNumPair();
         builder.id(merkelUniqueTokenToUniqueTokenId(nftIdPair));
 
-        builder.ownerId(AccountID.newBuilder()
-                        .accountNum(
-                                merkleUniqueToken.getOwner().toGrpcAccountId().getAccountNum())
-                        .build())
-                .spenderId(AccountID.newBuilder()
-                        .accountNum(
-                                merkleUniqueToken.getSpender().toGrpcAccountId().getAccountNum())
-                        .build())
+        builder.ownerId(PbjConverter.toPbj(merkleUniqueToken.getOwner().toGrpcAccountId()))
+                .spenderId(PbjConverter.toPbj(merkleUniqueToken.getSpender().toGrpcAccountId()))
                 .mintTime(Timestamp.newBuilder()
                         .seconds(merkleUniqueToken.getCreationTime().getSeconds())
                         .nanos(merkleUniqueToken.getCreationTime().getNanos())
