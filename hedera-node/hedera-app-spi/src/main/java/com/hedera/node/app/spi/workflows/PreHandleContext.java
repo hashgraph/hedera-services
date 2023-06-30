@@ -46,7 +46,7 @@ import java.util.Set;
  * key was added when the context was created). Some basic validation is performed (the key cannot be null or empty).
  */
 @SuppressWarnings("UnusedReturnValue")
-public interface PreHandleContext {
+public interface PreHandleContext extends TransactionKeys {
 
     /**
      * Gets the {@link TransactionBody}
@@ -71,46 +71,6 @@ public interface PreHandleContext {
      */
     @NonNull
     Configuration configuration();
-
-    /**
-     * Returns an immutable copy of the set of required non-payer keys.
-     *
-     * @return the {@link Set} with the required non-payer keys
-     */
-    @NonNull
-    Set<Key> requiredNonPayerKeys();
-
-    /**
-     * Gets an immutable copy of the set of required hollow accounts that need signatures.
-     *
-     * @return the {@link Set} of hollow accounts required
-     */
-    @NonNull
-    Set<Account> requiredHollowAccounts();
-
-    /**
-     * Returns an immutable copy of the set of optional non-payer keys.
-     *
-     * @return the {@link Set} with the optional non-payer keys.  This set may be empty.
-     */
-    @NonNull
-    Set<Key> optionalNonPayerKeys();
-
-    /**
-     * Gets an immutable copy of the set of optional hollow accounts that may need signatures.
-     *
-     * @return the {@link Set} of hollow accounts possibly required
-     */
-    @NonNull
-    Set<Account> optionalHollowAccounts();
-
-    /**
-     * Getter for the payer key
-     *
-     * @return the payer key
-     */
-    @Nullable
-    Key payerKey();
 
     /**
      * Create a new store given the store's interface. This gives read-only access to the store.
@@ -259,6 +219,20 @@ public interface PreHandleContext {
      */
     @NonNull
     PreHandleContext requireSignatureForHollowAccount(@NonNull final Account hollowAccount);
+
+    /**
+     * Returns all (required and optional) keys of a nested transaction.
+     *
+     * @param nestedTxn the {@link TransactionBody} which keys are needed
+     * @param payerForNested the payer for the nested transaction
+     * @return the set of keys
+     * @throws PreCheckException If there is a problem with the nested transaction
+     */
+    @NonNull
+    default TransactionKeys allKeysForTransaction(@NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested)
+            throws PreCheckException {
+        throw new UnsupportedOperationException("Not implemented");
+    }
 
     /**
      * Creates a new {@link PreHandleContext} for a nested transaction. The nested transaction will be set on

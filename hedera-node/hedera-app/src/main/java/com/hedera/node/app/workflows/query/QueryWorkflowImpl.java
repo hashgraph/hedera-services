@@ -38,6 +38,7 @@ import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
@@ -84,6 +85,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final FeeAccumulator feeAccumulator;
     private final Codec<Query> queryParser;
     private final ConfigProvider configProvider;
+    private final RecordCache recordCache;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -107,7 +109,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final QueryDispatcher dispatcher,
             @NonNull final FeeAccumulator feeAccumulator,
             @NonNull final Codec<Query> queryParser,
-            @NonNull final ConfigProvider configProvider) {
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final RecordCache recordCache) {
         this.stateAccessor = requireNonNull(stateAccessor);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.submissionManager = requireNonNull(submissionManager);
@@ -117,6 +120,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.feeAccumulator = requireNonNull(feeAccumulator);
         this.queryParser = requireNonNull(queryParser);
         this.configProvider = requireNonNull(configProvider);
+        this.recordCache = requireNonNull(recordCache);
     }
 
     @Override
@@ -190,7 +194,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 5. Check validity of query
-            final var context = new QueryContextImpl(storeFactory, query, configProvider.getConfiguration());
+            final var context =
+                    new QueryContextImpl(storeFactory, query, configProvider.getConfiguration(), recordCache);
             handler.validate(context);
 
             if (handler.needsAnswerOnlyCost(responseType)) {

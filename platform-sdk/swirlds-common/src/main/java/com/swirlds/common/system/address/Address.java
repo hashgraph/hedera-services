@@ -678,35 +678,6 @@ public class Address implements SelfSerializable {
     }
 
     /**
-     * Write the Address to the given stream. It should later be read from the stream with readAddress().
-     *
-     * @param outStream the stream to write to.
-     * @throws IOException thrown if there any problems during operation
-     */
-    @Deprecated
-    public void writeAddress(SerializableDataOutputStream outStream) throws IOException {
-        serialize(outStream);
-    }
-
-    /**
-     * Return a new Address object read from the given stream. It should have been written to the stream with
-     * writeAddress().
-     *
-     * @param inStream the stream to read from
-     * @param version  the version of the serialized address
-     * @return the new Address object that was read.
-     * @throws IOException thrown if there are any problems in operation
-     * @deprecated 0.6.6
-     */
-    @Deprecated(forRemoval = true)
-    public static Address readAddress(SerializableDataInputStream inStream, long version) throws IOException {
-        Address address = new Address();
-        address.deserialize(inStream, (int) version);
-
-        return address;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override

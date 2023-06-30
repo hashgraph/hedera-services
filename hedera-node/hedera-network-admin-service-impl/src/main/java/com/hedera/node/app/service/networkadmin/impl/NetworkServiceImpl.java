@@ -46,8 +46,7 @@ public final class NetworkServiceImpl implements NetworkService {
     public static final String CONTEXT_KEY = "CONTEXT";
     public static final String STAKING_KEY = "STAKING";
     public static final String RUNNING_HASHES_KEY = "RUNNING_HASHES";
-    private static final SemanticVersion CURRENT_VERSION =
-            SemanticVersion.newBuilder().minor(34).build();
+    private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
     private static final ImmutableHash GENESIS_HASH = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
 
     @Override
@@ -56,7 +55,7 @@ public final class NetworkServiceImpl implements NetworkService {
     }
 
     private Schema networkSchema() {
-        return new Schema(CURRENT_VERSION) {
+        return new Schema(GENESIS_VERSION) {
             @NonNull
             @Override
             public Set<StateDefinition> statesToCreate() {

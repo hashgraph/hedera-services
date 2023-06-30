@@ -26,7 +26,6 @@ import com.hedera.hapi.streams.SidecarType;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.node.app.service.mono.context.properties.EntityType;
-import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
 import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
@@ -45,7 +44,6 @@ import com.hedera.node.config.converter.KnownBlockValuesConverter;
 import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
 import com.hedera.node.config.converter.MapAccessTypeConverter;
 import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
-import com.hedera.node.config.converter.ProfileConverter;
 import com.hedera.node.config.converter.RecomputeTypeConverter;
 import com.hedera.node.config.converter.ScaleFactorConverter;
 import com.hedera.node.config.converter.SidecarTypeConverter;
@@ -109,7 +107,6 @@ class PropertySourceBasedConfigTest {
                 .withConverter(new ContractIDConverter())
                 .withConverter(new FileIDConverter())
                 .withConverter(new HederaFunctionalityConverter())
-                .withConverter(new ProfileConverter())
                 .withConverter(new SidecarTypeConverter())
                 .withConverter(new BytesConverter())
                 .withSource(new PropertySourceBasedConfigSource(propertySource))
@@ -133,7 +130,7 @@ class PropertySourceBasedConfigTest {
         final FileID fileID = configuration.getValue("test.fileID", FileID.class);
         final HederaFunctionality hederaFunctionality =
                 configuration.getValue("test.hederaFunctionality", HederaFunctionality.class);
-        final Profile profile = configuration.getValue("test.profile", Profile.class);
+        final String profile = configuration.getValue("test.profile", String.class);
         final SidecarType sidecarType = configuration.getValue("test.sidecarType", SidecarType.class);
 
         // then

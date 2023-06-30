@@ -40,7 +40,7 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
-import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -104,7 +104,7 @@ class HandleWorkflowTest extends AppTestBase {
     }
 
     @Mock
-    private NodeInfo nodeInfo;
+    private NetworkInfo networkInfo;
 
     @Mock(strictness = LENIENT)
     private PreHandleWorkflow preHandleWorkflow;
@@ -172,7 +172,7 @@ class HandleWorkflowTest extends AppTestBase {
                 .dispatchHandle(any());
 
         workflow = new HandleWorkflow(
-                nodeInfo,
+                networkInfo,
                 preHandleWorkflow,
                 dispatcher,
                 recordManager,
@@ -201,7 +201,7 @@ class HandleWorkflowTest extends AppTestBase {
                         instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                        nodeInfo,
+                        networkInfo,
                         null,
                         dispatcher,
                         recordManager,
@@ -213,7 +213,7 @@ class HandleWorkflowTest extends AppTestBase {
                         instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                        nodeInfo,
+                        networkInfo,
                         preHandleWorkflow,
                         null,
                         recordManager,
@@ -225,7 +225,7 @@ class HandleWorkflowTest extends AppTestBase {
                         instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                        nodeInfo,
+                        networkInfo,
                         preHandleWorkflow,
                         dispatcher,
                         null,
@@ -237,7 +237,7 @@ class HandleWorkflowTest extends AppTestBase {
                         instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                        nodeInfo,
+                        networkInfo,
                         preHandleWorkflow,
                         dispatcher,
                         recordManager,
@@ -249,7 +249,7 @@ class HandleWorkflowTest extends AppTestBase {
                         instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                        nodeInfo,
+                        networkInfo,
                         preHandleWorkflow,
                         dispatcher,
                         recordManager,
@@ -261,7 +261,7 @@ class HandleWorkflowTest extends AppTestBase {
                         instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                        nodeInfo,
+                        networkInfo,
                         preHandleWorkflow,
                         dispatcher,
                         recordManager,
@@ -273,7 +273,7 @@ class HandleWorkflowTest extends AppTestBase {
                         instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                        nodeInfo,
+                        networkInfo,
                         preHandleWorkflow,
                         dispatcher,
                         recordManager,
@@ -285,7 +285,7 @@ class HandleWorkflowTest extends AppTestBase {
                         instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                        nodeInfo,
+                        networkInfo,
                         preHandleWorkflow,
                         dispatcher,
                         recordManager,
@@ -297,7 +297,7 @@ class HandleWorkflowTest extends AppTestBase {
                         instantSource))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                        nodeInfo,
+                        networkInfo,
                         preHandleWorkflow,
                         dispatcher,
                         recordManager,

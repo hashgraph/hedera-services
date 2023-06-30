@@ -16,22 +16,26 @@
 
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
-import static com.hedera.node.app.service.contract.impl.exec.TransactionProcessor.CONFIG_CONTEXT_VARIABLE;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.Predicate;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class FrameUtils {
+    public static final String CONFIG_CONTEXT_VARIABLE = "contractsConfig";
+
+    private FrameUtils() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
     public static @NonNull Configuration configOf(@NonNull final MessageFrame frame) {
         return requireNonNull(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE));
     }
 
-    public static boolean testConfigOf(
-            @NonNull final MessageFrame frame, @NonNull final Predicate<Configuration> test) {
-        return test.test(configOf(frame));
+    public static @NonNull ContractsConfig contractsConfigOf(@NonNull final MessageFrame frame) {
+        return configOf(frame).getConfigData(ContractsConfig.class);
     }
 
     public static boolean isDelegateCall(@NonNull final MessageFrame frame) {
