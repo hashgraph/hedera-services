@@ -1,6 +1,6 @@
 # Introduction
 
-The "tipset algorithm" is a strategy for creating events that provides several key properties:
+The tipset algorithm is a strategy for creating events that provides several key properties:
 
 - partition resiliency, provided by stopping the creation of events when a quorum is lost
 - improved consensus latency, provided by choosing hashgraph topologies that cause consensus to quickly advance
@@ -103,9 +103,8 @@ of [7, 3, 5, 11]. Then, update the self generation to 12 and get [7, 12, 5, 11].
 
 # Tipset Advancement Score
 
-A tipset advancement score between two tipsets X and Y is defined as the number of entries in tipset Y that are
-strictly greater than the corresponding entry in tipset X.
-
+A tipset advancement score between two tipsets `X` and `Y` is defined as the number of entries in tipset `Y` that are
+strictly greater than the corresponding entry in tipset `X`.
 
 ```
 Example
@@ -139,57 +138,66 @@ Find the weighed advancement score between X and Y.
 X = [1, 3, 5, 2]
 Y = [7, 3, 2, 11]
 
-The entry for node A advances, add 5. The entry for D advances, add 2. Total weighted advancement score is 7 (5+2).
+The entry for node `A` advances, add 5. The entry for `D` advances, add 2. Total weighted advancement score is 7 (5+2).
 ```
 
 # Partial Weighted Tipset Advancement Score
 
 This is similar to the weighed advancement score with one minor tweak. A partial weighted advancement score
 is always calculated from the perspective of a particular node. When computing a partial advancement score,
-ignore the advancement provided by a target node.
+ignore the advancement provided by the self generation.
 
 ```
 Example
 
 Suppose an address book has the following consensus weights: A = 5, B = 9, C = 11, D = 2
 
-Find the partial weighted advancement score between X and Y with a target of node A.
+Find the partial weighted advancement score between X and Y from node A's perspective.
 
 X = [1, 3, 5, 2]
 Y = [7, 3, 2, 11]
 
-The entry for node A advances, but we ignore it because A is the target.
+The entry for node A advances, but we ignore it because A is ourselves.
 The entry for D advances, add 2. Total weighted advancement score is 2.
 
 ----
 
-Now, for the same tipsets, suppose that B is the target. A and D advance, yielding
+Now, for the same tipsets, consider from B's perspective. A and D advance, yielding
 a total weighted advancement score of 7 (5+2).
 ```
 
-# Snapshot Improvement Scores
+# Advancement Score Improvement Relative to the Snapshot
 
-Each new event is assigned a tipset improvement score. Each node assigns the events that it creates an
-improvement score. Nodes do not assign events created by other nodes an improvement score.
+For each self event, we compute a special partial weighted advancement score. This score is taken relative to a
+special tipset called the "snapshot". We then compare the advancement weight of this new event (relative to the
+snapshot) to the advancement weight calculated for the previous event (also relative to the snapshot).
+The difference between those two advancement weights, i.e. the improvement, is required to be strictly positive.
+Nodes are not permitted to create events unless each new event improves on the advancement weight compared to
+the previous event created.
 
-Keep track of a special tipset, called the "snapshot" tipset. The snapshot starts out empty, i.e.
-`[-1, -1, -1, ..., -1]` at genesis (in the current code, generations start at 0). Periodically, the snapshot is
-updated to a more recent tipset (how this happens is described below).
+The snapshot tipset is defined as follows.
 
-Each time a node creates a new event, compare that event's tipset to the snapshot tipset, and find the partial
-weighted advancement score of that new event targeting the event's creator.
+The snapshot starts out empty, i.e. `[-1, -1, -1, ..., -1]` at genesis (in the current code, generations start at 0).
+Periodically, the snapshot is updated to a more recent tipset.
 
-There is a special threshold that causes the snapshot to advance. The threshold for each node is slightly different,
-unless nodes have the same consensus weight. To calculate the threshold, find the minimum weight required to have >2/3
-of the total weight, and then subtract the node's weight.
+Each time a node creates a new event, compare that new event's tipset to the snapshot tipset and find the partial
+weighted advancement score of that new event.
+
+There is a special threshold, called the snapshot threshold, that is used when deciding when the snapshot gets updated.
+Whenever the total weighted advancement of a new event, relative to the snapshot, exceeds this threshold, the
+tipset is updated to equal the tipset of the new event.
+
+The snapshot threshold for each node is slightly different, unless nodes have the same consensus weight.
+To calculate the threshold, find the minimum weight required to have >2/3 of the total weight,
+and then subtract the node's weight.
 
 ```
 Example of computing snapshot advancement threshold
 
-Suppose an address book has the following consnesus weights: A = 5, B = 9, C = 11, D = 2. Compute the snapshot
+Suppose an address book has the following consensus weights: A = 5, B = 9, C = 11, D = 2. Compute the snapshot
 advancement threshold for node A.
 
-Total consensus weight is 27 (5+9+11+ 2). The amount of stake required to have >2/3 of the total weight is 19.
+Total consensus weight is 27 (5+9+11+2). The amount of stake required to have >2/3 of the total weight is 19.
 Subtract A's weight, and A's snapshot advancement threshold is 14 (19-5).
 ```
 
@@ -205,8 +213,8 @@ Nodes are not permitted to create a new event unless one of the following two co
 3) the snapshot improvement score is greater than zero and this is the first event created since
    we last updated the snapshot
 
-By following this rule, this ensures that each node stops creating new events in a finite amount of time if that
-node no longer is in communicating with a quorum of its peers.
+By following this rule, this ensures that a given node stops creating new events in a finite amount of time if that
+node no longer is in communication with a quorum of its peers.
 
 ```
 Example
@@ -220,8 +228,10 @@ A creates a genesis event with tipset [0, -1, -1, -1] (A's first event has gener
 The snapshot improvement score is 0, which is ok since this is a genesis event.
 (It will never again be ok to have an advancement score of 0.)
 
-Next, A creates an event with self parent [0, -1, -1, -1] and other parent [0, 2, -1, -1] with generation 2.
-(Note: use of this particular tipset for the other parent is arbitrary and was just chosen for this example.)
+Next, A creates an event with self parent [0, -1, -1, -1] and other parent [0, 2, -1, -1]. The other parent has
+a generation of 2. (Note: use of this particular tipset for the other parent is arbitrary
+and was just chosen for this example.)
+
 The tipset of the new event is [3, 2, -1, -1]. (Note that the generation for A is now 3, since that is the
 generation of the newly created self event.) The partial weighted snapshot advancement score is 9.
 
@@ -246,9 +256,9 @@ to reach consensus.
 A bully score is a numeric value that increases the more a "nerd" is getting ignored. The more time that passes
 without putting a nerd's event into the ancestry of recent events, the higher the bully score is against that node.
 
-To compute the bully score against a node X, look at recent snapshot tipsets. Starting with the current snapshot
+To compute the bully score against a node `X`, look at recent snapshot tipsets. Starting with the current snapshot
 and going backwards towards older snapshots, count the number of snapshots that need to be iterated over before an
-advancement in X's generation is observed. That count is the bully score against X.
+advancement in `X`'s generation is observed. That count is the bully score against `X`.
 
 In order to prevent nodes from being bullied too badly, it is important to periodically choose a nerdy event as an
 other parent, even if that choice of other parent does not improve the snapshot advancement score much. The exact
