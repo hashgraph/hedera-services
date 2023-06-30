@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asToken;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
@@ -271,11 +271,11 @@ public class NetworkAdminHandlerTestBase {
     }
 
     protected void givenValidFungibleToken() {
-        givenValidFungibleToken(autoRenewId.accountNum());
+        givenValidFungibleToken(autoRenewId);
     }
 
-    protected void givenValidFungibleToken(long autoRenewAccountNumber) {
-        givenValidFungibleToken(autoRenewAccountNumber, false, false, false, false, true, true);
+    protected void givenValidFungibleToken(AccountID autoRenewAccountId) {
+        givenValidFungibleToken(autoRenewAccountId, false, false, false, false, true, true);
     }
 
     protected void givenValidNonFungibleToken() {
@@ -289,7 +289,7 @@ public class NetworkAdminHandlerTestBase {
     }
 
     protected void givenValidFungibleToken(
-            long autoRenewAccountNumber,
+            AccountID autoRenewAccountId,
             boolean deleted,
             boolean paused,
             boolean accountsFrozenByDefault,
@@ -314,7 +314,7 @@ public class NetworkAdminHandlerTestBase {
                 deleted,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.INFINITE,
-                AccountID.newBuilder().accountNum(autoRenewAccountNumber).build(),
+                autoRenewAccountId,
                 autoRenewSecs,
                 expirationTime,
                 memo,

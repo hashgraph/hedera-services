@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.test;
 
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
@@ -164,7 +163,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
         writableNftStore = new WritableNftStore(writableStates);
         assertNotNull(writableNftStore.get(nftToRemove));
 
-        writableNftStore.remove(asToken(nftToRemove.tokenId().tokenNum()), nftToRemove.serialNumber());
+        writableNftStore.remove(nftToRemove.tokenId(), nftToRemove.serialNumber());
 
         // Assert the NFT is removed
         assertNull(writableNftStore.get(nftToRemove));

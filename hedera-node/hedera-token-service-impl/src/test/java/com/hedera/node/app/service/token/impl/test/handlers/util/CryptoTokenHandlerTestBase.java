@@ -532,15 +532,15 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     protected Token givenValidFungibleToken() {
-        return givenValidFungibleToken(spenderId.accountNum());
+        return givenValidFungibleToken(spenderId);
     }
 
-    protected Token givenValidFungibleToken(long autoRenewAccountNumber) {
-        return givenValidFungibleToken(autoRenewAccountNumber, false, false, false, false);
+    protected Token givenValidFungibleToken(AccountID autoRenewAccountId) {
+        return givenValidFungibleToken(autoRenewAccountId, false, false, false, false);
     }
 
     protected Token givenValidFungibleToken(
-            long autoRenewAccountNumber,
+            AccountID autoRenewAccountId,
             boolean deleted,
             boolean paused,
             boolean accountsFrozenByDefault,
@@ -563,7 +563,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 deleted,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.FINITE,
-                AccountID.newBuilder().accountNum(autoRenewAccountNumber).build(),
+                autoRenewAccountId,
                 autoRenewSecs,
                 expirationTime,
                 memo,

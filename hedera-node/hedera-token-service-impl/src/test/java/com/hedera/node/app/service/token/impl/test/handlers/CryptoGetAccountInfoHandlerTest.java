@@ -24,7 +24,7 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_K
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asToken;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

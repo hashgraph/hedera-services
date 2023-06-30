@@ -166,9 +166,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
 
         // This should exist as it is validated in validateSemantics
-        final var treasury = accountStore.get(AccountID.newBuilder()
-                .accountNum(newToken.treasuryAccountId().accountNum())
-                .build());
+        final var treasury = accountStore.get(newToken.treasuryAccountId());
         // Validate if token relation can be created between treasury and new token
         // If this succeeds, create and link token relation.
         tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, treasury, newToken, tokenRelStore);
@@ -194,7 +192,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     private Token buildToken(
             final long newTokenNum, final TokenCreateTransactionBody op, final ExpiryMeta resolvedExpiryMeta) {
         return new Token(
-                TokenID.newBuilder().tokenNum(newTokenNum).build(),
+                asToken(newTokenNum),
                 op.name(),
                 op.symbol(),
                 op.decimals(),

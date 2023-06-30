@@ -130,7 +130,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         // We allow existing treasuries to have any nft balances left over, but the new treasury should
         // not have any balances left over. Transfer all balances for the current token to new treasury
         if (op.hasTreasury()) {
-            final var existingTreasury = asAccount(token.treasuryAccountId().accountNum());
+            final var existingTreasury = token.treasuryAccountId();
             final var newTreasury = op.treasuryOrThrow();
             final var newTreasuryAccount = getIfUsable(
                     newTreasury, accountStore, context.expiryValidator(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
@@ -343,9 +343,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         if (op.hasMemo() && op.memo().length() > 0) {
             builder.memo(op.memo());
         }
-        if (op.hasTreasury()
-                && op.treasuryOrThrow().accountNum()
-                        != originalToken.treasuryAccountId().accountNum()) {
+        if (op.hasTreasury() && !op.treasuryOrThrow().equals(originalToken.treasuryAccountId())) {
             builder.treasuryAccountId(op.treasuryOrThrow());
         }
     }

@@ -99,11 +99,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var token = tokenStore.get(tokenId);
         validateTrue(token != null, INVALID_TOKEN_ID);
         // validate treasury relation exists
-        final var treasuryRel = tokenRelStore.get(
-                AccountID.newBuilder()
-                        .accountNum(token.treasuryAccountId().accountNum())
-                        .build(),
-                tokenId);
+        final var treasuryRel = tokenRelStore.get(token.treasuryAccountId(), tokenId);
         validateTrue(treasuryRel != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
@@ -176,7 +172,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
 
         // validate token number from treasury relation
         final var tokenId = treasuryRel.tokenId();
-        validateTrue(treasuryRel.tokenId().tokenNum() == tokenId.tokenNum(), FAIL_INVALID);
+        validateTrue(treasuryRel.tokenId().equals(tokenId), FAIL_INVALID);
 
         // get the treasury account
         final var treasuryAccount = accountStore.get(treasuryRel.accountId());

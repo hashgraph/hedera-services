@@ -346,8 +346,8 @@ public class CryptoTransferHandler implements TransactionHandler {
             // to check that the receiver signed the transaction, UNLESS the sender or receiver is
             // the treasury, in which case fallback fees will not be applied when the transaction is handled,
             // so the receiver key does not need to sign.
-            final var treasury = tokenMeta.treasuryNum();
-            if (treasury != senderId.accountNumOrThrow() && treasury != receiverId.accountNumOrThrow()) {
+            final var treasuryId = tokenMeta.treasuryAccountId();
+            if (!treasuryId.equals(senderId) && !treasuryId.equals(receiverId)) {
                 meta.requireKeyOrThrow(receiverId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
             }
         }

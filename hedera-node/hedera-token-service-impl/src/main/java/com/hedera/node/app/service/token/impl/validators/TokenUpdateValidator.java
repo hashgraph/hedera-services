@@ -18,12 +18,12 @@ package com.hedera.node.app.service.token.impl.validators;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -82,25 +82,26 @@ public class TokenUpdateValidator {
 
         final var resolvedExpiryMeta = resolveExpiry(token, op, context.expiryValidator());
         validateNewAndExistingAutoRenewAccount(
-                resolvedExpiryMeta.autoRenewNum(),
-                token.autoRenewAccountId().accountNum(),
+                AccountID.newBuilder()
+                        .accountNum(resolvedExpiryMeta.autoRenewNum())
+                        .build(),
+                token.autoRenewAccountId(),
                 readableAccountStore,
                 context.expiryValidator());
         return new ValidationResult(token, resolvedExpiryMeta);
     }
 
     private void validateNewAndExistingAutoRenewAccount(
-            final long resolvedAutoRenewNum,
-            final long existingAutoRenewNum,
+            final AccountID resolvedAutoRenewId,
+            final AccountID existingAutoRenewId,
             final ReadableAccountStore readableAccountStore,
             final ExpiryValidator expiryValidator) {
         // Get resolved auto-renewal account
-        getIfUsable(asAccount(resolvedAutoRenewNum), readableAccountStore, expiryValidator, INVALID_AUTORENEW_ACCOUNT);
+        getIfUsable(resolvedAutoRenewId, readableAccountStore, expiryValidator, INVALID_AUTORENEW_ACCOUNT);
         // If token has an existing auto-renewal account, validate its expiration
         // FUTURE : Not sure why we should validate existing auto-renew account. Retained as in mono-service
-        if (existingAutoRenewNum != 0) {
-            getIfUsable(
-                    asAccount(existingAutoRenewNum), readableAccountStore, expiryValidator, INVALID_AUTORENEW_ACCOUNT);
+        if (!resolvedAutoRenewId.equals(AccountID.DEFAULT)) {
+            getIfUsable(existingAutoRenewId, readableAccountStore, expiryValidator, INVALID_AUTORENEW_ACCOUNT);
         }
     }
 

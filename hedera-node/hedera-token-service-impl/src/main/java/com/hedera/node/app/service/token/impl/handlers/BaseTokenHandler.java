@@ -128,8 +128,7 @@ public class BaseTokenHandler {
             validateTrue(token.maxSupply() >= newTotalSupply, TOKEN_MAX_SUPPLY_REACHED);
         }
 
-        final var treasuryAccount =
-                accountStore.get(asAccount(treasuryRel.accountId().accountNum()));
+        final var treasuryAccount = accountStore.get(treasuryRel.accountId());
         validateTrue(treasuryAccount != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
         final long newTreasuryBalance = treasuryRel.balance() + amount;
@@ -260,20 +259,18 @@ public class BaseTokenHandler {
             // Link each of the new token IDs together in a doubly-linked list way by setting each
             // token relation's previous and next token IDs.
 
-            // Compute the previous and next token IDs. Unfortunately `TokenRelation` doesn't
-            // allow for null values, so a value of '0' will have to indicate a null pointer to
-            // the previous or next token (since no token number 0 can exist)
-            TokenID prevTokenId = TokenID.DEFAULT;
-            TokenID nextTokenId = TokenID.DEFAULT;
+            // Compute the previous and next token IDs.
+            TokenID prevTokenId = null;
+            TokenID nextTokenId = null;
             if (i - 1 >= 0) { // if there is a previous token
                 prevTokenId = Optional.ofNullable(tokens.get(i - 1))
                         .map(Token::tokenId)
-                        .orElse(TokenID.DEFAULT);
+                        .orElse(null);
             }
             if (i + 1 < tokens.size()) { // if there is a next token
                 nextTokenId = Optional.ofNullable(tokens.get(i + 1))
                         .map(Token::tokenId)
-                        .orElse(TokenID.DEFAULT);
+                        .orElse(null);
             }
 
             // Create the new token relation
@@ -281,7 +278,7 @@ public class BaseTokenHandler {
             final var kycGranted = !token.hasKycKey();
             final var newTokenRel = new TokenRelation(
                     token.tokenId(),
-                    AccountID.newBuilder().accountNum(account.accountNumber()).build(),
+                    asAccount(account.accountNumber()),
                     0,
                     isFrozen,
                     kycGranted,
@@ -337,7 +334,7 @@ public class BaseTokenHandler {
                 .automaticAssociation(true)
                 .kycGranted(!token.hasKycKey())
                 .frozen(token.hasFreezeKey() && token.accountsFrozenByDefault())
-                .previousToken(asToken(-1))
+                .previousToken((TokenID) null)
                 .nextToken(asToken(account.headTokenNumber()))
                 .build();
 

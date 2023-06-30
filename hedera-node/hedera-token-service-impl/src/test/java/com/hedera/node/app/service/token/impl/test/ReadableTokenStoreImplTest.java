@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
@@ -80,7 +79,7 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
         assertEquals(feeScheduleKey, meta.feeScheduleKey());
         assertEquals(pauseKey, meta.pauseKey());
         assertTrue(meta.hasRoyaltyWithFallback());
-        assertEquals(treasury.accountNum(), meta.treasuryNum());
+        assertEquals(treasury, meta.treasuryAccountId());
     }
 
     @Test
@@ -101,7 +100,7 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
         final var meta = subject.getTokenMeta(tokenId);
 
         assertTrue(meta.hasRoyaltyWithFallback());
-        assertSame(treasury.accountNum(), meta.treasuryNum());
+        assertEquals(treasury, meta.treasuryAccountId());
     }
 
     @Test
@@ -115,6 +114,6 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
         final var meta = subject.getTokenMeta(tokenId);
 
         assertFalse(meta.hasRoyaltyWithFallback());
-        assertSame(treasury.accountNum(), meta.treasuryNum());
+        assertEquals(treasury, meta.treasuryAccountId());
     }
 }

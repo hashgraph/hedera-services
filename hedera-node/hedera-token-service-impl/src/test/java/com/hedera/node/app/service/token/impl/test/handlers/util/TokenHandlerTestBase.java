@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers.util;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asToken;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
@@ -42,6 +42,7 @@ import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -86,8 +87,7 @@ public class TokenHandlerTestBase {
             Duration.newBuilder().seconds(100).build();
     protected final Timestamp WELL_KNOWN_EXPIRY =
             Timestamp.newBuilder().seconds(1_234_567L).build();
-    protected final TokenID WELL_KNOWN_TOKEN_ID =
-            TokenID.newBuilder().tokenNum(tokenId.tokenNum()).build();
+    protected final TokenID WELL_KNOWN_TOKEN_ID = tokenId;
     protected final String memo = "test memo";
     protected final long expirationTime = 1_234_567L;
     protected final long sequenceNumber = 1L;
@@ -208,7 +208,7 @@ public class TokenHandlerTestBase {
                 deleted,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.INFINITE,
-                AccountID.newBuilder().accountNum(autoRenewAccountNumber).build(),
+                BaseCryptoHandler.asAccount(autoRenewAccountNumber),
                 autoRenewSecs,
                 expirationTime,
                 memo,

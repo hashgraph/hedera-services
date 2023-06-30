@@ -176,8 +176,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(tokenRel.kycGranted()).isFalse();
         assertThat(tokenRel.automaticAssociation()).isFalse();
         assertThat(tokenRel.frozen()).isFalse();
-        assertThat(tokenRel.nextToken().tokenNum()).isZero();
-        assertThat(tokenRel.previousToken().tokenNum()).isZero();
+        assertThat(tokenRel.nextToken()).isNull();
+        assertThat(tokenRel.previousToken()).isNull();
     }
 
     @Test
@@ -230,8 +230,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(tokenRel.kycGranted()).isFalse();
         assertThat(tokenRel.automaticAssociation()).isFalse();
         assertThat(tokenRel.frozen()).isFalse();
-        assertThat(tokenRel.nextToken().tokenNum()).isZero();
-        assertThat(tokenRel.previousToken().tokenNum()).isZero();
+        assertThat(tokenRel.nextToken()).isNull();
+        assertThat(tokenRel.previousToken()).isNull();
 
         assertThat(writableTokenRelStore.get(payerId, newTokenId)).isNotNull();
         final var feeCollectorRel = writableTokenRelStore.get(payerId, newTokenId);
@@ -243,8 +243,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(feeCollectorRel.kycGranted()).isFalse();
         assertThat(feeCollectorRel.automaticAssociation()).isFalse();
         assertThat(feeCollectorRel.frozen()).isFalse();
-        assertThat(feeCollectorRel.nextToken().tokenNum()).isZero();
-        assertThat(feeCollectorRel.previousToken().tokenNum()).isZero();
+        assertThat(feeCollectorRel.nextToken()).isNull();
+        assertThat(feeCollectorRel.previousToken()).isNull();
     }
 
     @Test
@@ -414,8 +414,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(tokenRel.kycGranted()).isFalse();
         assertThat(tokenRel.automaticAssociation()).isFalse();
         assertThat(tokenRel.frozen()).isFalse();
-        assertThat(tokenRel.nextToken().tokenNum()).isZero();
-        assertThat(tokenRel.previousToken().tokenNum()).isZero();
+        assertThat(tokenRel.nextToken()).isNull();
+        assertThat(tokenRel.previousToken()).isNull();
     }
 
     @Test

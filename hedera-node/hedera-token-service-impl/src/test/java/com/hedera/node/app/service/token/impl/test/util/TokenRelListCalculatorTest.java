@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.test.util;
 
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asToken;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockStates;
 import static org.mockito.Mockito.mock;
 
@@ -140,7 +140,7 @@ class TokenRelListCalculatorTest {
         final var allLocalTokenRels =
                 List.of(LOCAL_TOKEN_REL_1, LOCAL_TOKEN_REL_2, LOCAL_TOKEN_REL_3, LOCAL_TOKEN_REL_4, LOCAL_TOKEN_REL_5);
         final var result = subject.removeTokenRels(ACCT_2300, allLocalTokenRels);
-        Assertions.assertThat(result.updatedHeadTokenId()).isEqualTo(NULL_TOKEN_ID);
+        Assertions.assertThat(result.updatedHeadTokenId()).isNull();
         Assertions.assertThat(result.updatedTokenRelsStillInChain()).isEmpty();
     }
 
@@ -154,7 +154,7 @@ class TokenRelListCalculatorTest {
         Assertions.assertThat(result.updatedTokenRelsStillInChain())
                 .containsExactly(LOCAL_TOKEN_REL_2
                         .copyBuilder()
-                        .previousToken(NULL_TOKEN_ID)
+                        .previousToken((TokenID)null)
                         .build());
     }
 
@@ -188,13 +188,13 @@ class TokenRelListCalculatorTest {
                 .containsExactlyInAnyOrder(
                         LOCAL_TOKEN_REL_2
                                 .copyBuilder()
-                                .previousToken(NULL_TOKEN_ID)
+                                .previousToken((TokenID)null)
                                 .nextToken(TOKEN_ID_4)
                                 .build(),
                         LOCAL_TOKEN_REL_4
                                 .copyBuilder()
                                 .previousToken(TOKEN_ID_2)
-                                .nextToken(NULL_TOKEN_ID)
+                                .nextToken((TokenID)null)
                                 .build());
     }
 
@@ -223,7 +223,7 @@ class TokenRelListCalculatorTest {
                 .containsExactlyInAnyOrder(
                         LOCAL_TOKEN_REL_3
                                 .copyBuilder()
-                                .previousToken(NULL_TOKEN_ID)
+                                .previousToken((TokenID) null)
                                 .nextToken(TOKEN_ID_5)
                                 .build(),
                         LOCAL_TOKEN_REL_5
@@ -275,7 +275,7 @@ class TokenRelListCalculatorTest {
         final var result = subject.removeTokenRels(ACCT_2300, List.of(selfPointingTokenRel));
         // Since the token rel points to itself, the calculation of the account's new head token number should loop
         // until it maxes out at a safety boundary, at which point we should default to a head token number of -1
-        Assertions.assertThat(result.updatedHeadTokenId().tokenNum()).isEqualTo(-1);
+        Assertions.assertThat(result.updatedHeadTokenId()).isNull();
     }
 
     private static ReadableTokenRelationStore localTokenRelsStore() {

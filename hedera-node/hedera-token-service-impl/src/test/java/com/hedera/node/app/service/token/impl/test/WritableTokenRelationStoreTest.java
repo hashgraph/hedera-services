@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token.impl.test;
 
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asToken;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;

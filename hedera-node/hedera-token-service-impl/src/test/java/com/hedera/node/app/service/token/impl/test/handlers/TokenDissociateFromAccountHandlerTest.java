@@ -25,7 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asToken;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenDissociateScenarios.TOKEN_DISSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET;
@@ -59,7 +59,6 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
-import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
@@ -508,7 +507,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         @Test
         void multipleTokenRelsAreRemoved() {
             // Represents a token that won't be found
-            final var token444Id = BaseTokenHandler.asToken(444);
+            final var token444Id = asToken(444);
             // Represents a token that is deleted
             final var token555 =
                     Token.newBuilder().tokenId(TOKEN_555_ID).deleted(true).build();
@@ -552,7 +551,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
                     .accountId(ACCOUNT_1339)
                     .tokenId(TOKEN_666_ID)
                     .previousToken(TOKEN_555_ID)
-                    .nextToken(asToken(-1)) // end of the account's token list
+                    .nextToken((TokenID) null) // end of the account's token list
                     .build());
 
             // Create the context and transaction

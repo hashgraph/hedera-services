@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.util;
 
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -23,7 +24,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
-import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -111,8 +111,8 @@ public class TokenRelListCalculator {
             @NonNull final Account account, @NonNull final List<TokenRelation> tokenRelsToDelete) {
         // Precondition: verify all token relation objects have the same account number as the given account object
         if (tokenRelsToDelete.stream()
-                .anyMatch(
-                        tokenRel -> tokenRel != null && tokenRel.accountId().accountNum() != account.accountNumber())) {
+                .anyMatch(tokenRel ->
+                        tokenRel != null && !tokenRel.accountId().equals(asAccount(account.accountNumber())))) {
             throw new IllegalArgumentException("All token relations must be for the same account");
         }
 
@@ -121,7 +121,7 @@ public class TokenRelListCalculator {
 
         final var currentHeadTokenId =
                 TokenID.newBuilder().tokenNum(account.headTokenNumber()).build();
-        final var accountId = BaseCryptoHandler.asAccount(account.accountNumber());
+        final var accountId = asAccount(account.accountNumber());
 
         // We'll create this mapping of (tokenId -> tokenRel) to make it easier to check if a token rel is in the list
         // of token rels to delete. It's only for ease of lookup and doesn't affect the algorithm
@@ -234,12 +234,8 @@ public class TokenRelListCalculator {
     @NonNull
     private TokenRelPointerUpdateResult updatePointersSurroundingTargetTokenRel(
             @Nullable TokenRelation prevTokenRel, @Nullable final TokenRelation nextTokenRel) {
-        final var prevTokenRelTokenId = prevTokenRel != null
-                ? prevTokenRel.tokenId()
-                : TokenID.newBuilder().tokenNum(-1L).build();
-        final var nextTokenRelTokenId = nextTokenRel != null
-                ? nextTokenRel.tokenId()
-                : TokenID.newBuilder().tokenNum(-1L).build();
+        final var prevTokenRelTokenId = prevTokenRel != null ? prevTokenRel.tokenId() : null;
+        final var nextTokenRelTokenId = nextTokenRel != null ? nextTokenRel.tokenId() : null;
 
         // Create a copy of `prevTokenRel` with `prevTokenRel.nextToken()` now pointing to `nextTokenRel.tokenNumber()`
         // instead of `targetTokenRel.tokenNumber()`. If `prevTokenRel` is null, then no updated token relation will be
@@ -275,7 +271,7 @@ public class TokenRelListCalculator {
             @NonNull final Account account,
             @NonNull final Map<TokenID, TokenRelation> updatedTokenRels,
             @NonNull final Map<TokenID, TokenRelation> tokenRelsToDeleteByTokenId) {
-        final var accountId = BaseCryptoHandler.asAccount(account.accountNumber());
+        final var accountId = asAccount(account.accountNumber());
 
         // Calculate the new head token id by walking the linked token rels until we find a token rel that is not in
         // the list of token rels to delete
@@ -300,7 +296,7 @@ public class TokenRelListCalculator {
                 // We reached the end of the linked token rel pointers chain; there is no token rel that will qualify as
                 // the new head token number. We therefore set the new head token number to -1 and exit the do-while
                 // loop (since `currentWalkedTokenRel` is null)
-                currentTokenId = TokenID.newBuilder().tokenNum(-1).build();
+                currentTokenId = null;
             }
 
             // Default to a null pointer (value of -1) for infinite looping cases
@@ -308,7 +304,7 @@ public class TokenRelListCalculator {
                 log.error(
                         "Encountered token rels list that exceeds total token associations for account {}",
                         account.accountNumber());
-                return TokenID.newBuilder().tokenNum(-1).build();
+                return null;
             }
         } while (currentWalkedTokenRel != null && currentTokenId != null);
 
@@ -316,9 +312,7 @@ public class TokenRelListCalculator {
         // zero if a token rel's previous or next pointer was incorrectly set to zero (e.g. initialized by default to
         // zero and not set), or the token number of the first token rel that will NOT be deleted. In the first two
         // cases, this value is the account's new head token number. Otherwise, return a fallback of number of -1
-        return currentTokenId != null && currentTokenId.tokenNum() > 0
-                ? currentTokenId
-                : TokenID.newBuilder().tokenNum(-1).build();
+        return currentTokenId != null && currentTokenId.tokenNum() > 0 ? currentTokenId : null;
     }
 
     /**
