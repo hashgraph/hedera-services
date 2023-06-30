@@ -213,6 +213,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         evmFrameState.finalizeHollowAccount(alias);
     }
 
+    @Override
+    public @NonNull List<StorageAccesses> pendingStorageChanges() {
+        return evmFrameState.getStorageChanges();
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -300,7 +305,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public @NonNull WorldUpdater updater() {
-        return new ProxyWorldUpdater(scope, evmFrameStateFactory, this);
+        return new ProxyWorldUpdater(scope.begin(), evmFrameStateFactory, this);
     }
 
     /**

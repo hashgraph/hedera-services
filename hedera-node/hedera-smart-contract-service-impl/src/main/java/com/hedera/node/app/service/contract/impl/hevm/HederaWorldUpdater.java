@@ -21,8 +21,10 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.PendingCreation;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -166,4 +168,13 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * @param alias the hollow account to be finalized as a contract
      */
     void finalizeHollowAccount(@NonNull Address alias);
+
+    /**
+     * Returns all storage changes that would be committed by this updater, necessary for constructing
+     * a {@link com.hedera.hapi.streams.SidecarType#CONTRACT_STATE_CHANGE} sidecar.
+     *
+     * @return the full list of account-scoped storage changes
+     */
+    @NonNull
+    List<StorageAccesses> pendingStorageChanges();
 }

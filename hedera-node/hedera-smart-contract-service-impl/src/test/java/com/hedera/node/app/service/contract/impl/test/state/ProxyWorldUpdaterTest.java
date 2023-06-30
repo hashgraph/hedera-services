@@ -29,14 +29,12 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
-import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
-import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.*;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
 import com.hedera.node.app.spi.meta.bni.Scope;
 import java.util.List;
 import java.util.Optional;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
@@ -183,6 +181,17 @@ class ProxyWorldUpdaterTest {
     }
 
     @Test
+    void providesAccessToPendingStorageChanges() {
+        final var someChanges = new StorageAccesses(
+                123L, List.of(new StorageAccess(UInt256.ONE, UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
+        final var expected = List.of(someChanges);
+
+        given(evmFrameState.getStorageChanges()).willReturn(expected);
+
+        assertSame(expected, subject.pendingStorageChanges());
+    }
+
+    @Test
     void cannotCreateUnlessPendingCreationHasExpectedAddress() {
         givenDispatch();
         given(dispatch.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
@@ -317,6 +326,7 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void updaterHasExpectedProperties() {
+        given(scope.begin()).willReturn(scope);
         final var updater = subject.updater();
         assertInstanceOf(ProxyWorldUpdater.class, updater);
         assertTrue(updater.parentUpdater().isPresent());
