@@ -69,15 +69,16 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
         for (final var transfers : op.tokenTransfersOrElse(emptyList())) {
             final var tokenId = transfers.tokenOrThrow();
             final var token = getIfUsable(tokenId, tokenStore);
-            validateTrue(
-                    token.tokenType().equals(TokenType.FUNGIBLE_COMMON),
-                    ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
 
             if (transfers.hasExpectedDecimals()) {
                 validateTrue(token.decimals() == transfers.expectedDecimalsOrThrow(), UNEXPECTED_TOKEN_DECIMALS);
             }
 
             for (final var aa : transfers.transfersOrElse(emptyList())) {
+                validateTrue(
+                        token.tokenType().equals(TokenType.FUNGIBLE_COMMON),
+                        ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
+
                 final var accountId = aa.accountIDOrThrow();
                 getIfUsable(accountId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
                 final var pair = EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum());

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
@@ -38,28 +39,43 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.config.HederaNumbers;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
+import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidator;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
+import java.util.function.LongSupplier;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     private static final TokenID TOKEN_1357 = asToken(1357);
     private static final TokenID TOKEN_9191 = asToken(9191);
-
     private Configuration config;
 
     @BeforeEach
@@ -218,7 +234,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     }
 
     @Test
-    void autoCreatesAndReplacesAliasesInOp() {
+    void failsWhenAutoAssociatedTokenHasKycKey() {
         givenTxn();
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
@@ -241,15 +257,58 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN));
+    }
+
+    @Test
+    void happyPathWorksWithAutoCreation() {
+        givenTxn();
+        refreshWritableStores();
+        writableTokenStore.put(nonFungibleToken
+                .copyBuilder()
+                .kycKey((Key) null)
+                .build());
+        givenStoresAndConfig(handleContext);
+
+        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
+                .will((invocation) -> {
+                    final var copy =
+                            account.copyBuilder().accountNumber(createdNumber).build();
+                    writableAccountStore.put(copy);
+                    writableAliases.put(ecKeyAlias, asAccount(createdNumber));
+                    return recordBuilder.accountID(asAccount(createdNumber));
+                })
+                .will((invocation) -> {
+                    final var copy = account.copyBuilder()
+                            .accountNumber(createdNumber + 1)
+                            .build();
+                    writableAccountStore.put(copy);
+                    writableAliases.put(edKeyAlias, asAccount(createdNumber + 1));
+                    return recordBuilder.accountID(asAccount(createdNumber + 1));
+                });
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+
+        final var initialSenderBalance = writableAccountStore.get(ownerId).tinybarBalance();
+
         subject.handle(handleContext);
 
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(2);
-        assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(2);
+        assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(3);
+        assertThat(writableAccountStore.modifiedAccountsInState()).contains(ownerId,
+                asAccount(createdNumber),
+                asAccount(createdNumber + 1));
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(4);
+
         assertThat(writableAccountStore.get(asAccount(createdNumber))).isNotNull();
         assertThat(writableAccountStore.get(asAccount(createdNumber + 1))).isNotNull();
         assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(createdNumber);
         assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(createdNumber + 1);
+
+        final var endSenderBalance = writableAccountStore.get(ownerId).tinybarBalance();
+        assertThat(endSenderBalance).isEqualTo(initialSenderBalance - 1_000);
+
     }
 
     @Test

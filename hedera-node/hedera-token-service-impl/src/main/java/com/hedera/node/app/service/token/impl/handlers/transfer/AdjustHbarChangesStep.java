@@ -148,7 +148,7 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
             final var account = getIfUsable(
                     accountId, accountStore, transferContext.getHandleContext().expiryValidator(), INVALID_ACCOUNT_ID);
             final var currentBalance = account.tinybarBalance();
-            final var newBalance = currentBalance + netHbarTransfers.get(account);
+            final var newBalance = currentBalance + netHbarTransfers.get(accountId);
             validateTrue(newBalance >= 0, INSUFFICIENT_ACCOUNT_BALANCE);
             final var copy = account.copyBuilder();
             accountStore.put(copy.tinybarBalance(newBalance).build());
