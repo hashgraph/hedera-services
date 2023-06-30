@@ -18,8 +18,11 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
 
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * A utility class with useful methods for implementations of {@link SwirldStateManager}.
@@ -32,17 +35,23 @@ public final class SwirldStateManagerUtils {
     /**
      * Performs a fast copy on a {@link State}. The {@code state} must not be modified during execution of this method.
      *
-     * @param state
-     * 		the state object to fast copy
-     * @param stats
-     * 		object to record stats in
+     * @param state           the state object to fast copy
+     * @param stats           object to record stats in
+     * @param softwareVersion the current software version
      * @return the newly created state copy
      */
-    public static State fastCopy(final State state, final SwirldStateMetrics stats) {
+    public static State fastCopy(
+            @NonNull final State state,
+            @NonNull final SwirldStateMetrics stats,
+            @NonNull final SoftwareVersion softwareVersion) {
+
+        Objects.requireNonNull(softwareVersion);
+
         final long copyStart = System.nanoTime();
 
         // Create a fast copy
         final State copy = state.copy();
+        state.getPlatformState().getPlatformData().setCreationSoftwareVersion(softwareVersion);
 
         // Increment the reference count because this reference becomes the new value
         copy.reserve();
@@ -57,10 +66,8 @@ public final class SwirldStateManagerUtils {
     /**
      * Determines if a {@code timestamp} is in a freeze period according to the provided state.
      *
-     * @param timestamp
-     * 		the timestamp to check
-     * @param consensusState
-     * 		the state that contains the freeze periods
+     * @param timestamp      the timestamp to check
+     * @param consensusState the state that contains the freeze periods
      * @return true is the {@code timestamp} is in a freeze period
      */
     public static boolean isInFreezePeriod(final Instant timestamp, final State consensusState) {
