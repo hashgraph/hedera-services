@@ -21,6 +21,9 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
+import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.service.networkadmin.NetworkService;
 import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
@@ -58,6 +61,7 @@ public class ReadableStoreFactory {
             ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStoreImpl::new),
             ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStoreImpl::new),
             ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStoreImpl::new),
+            ReadableFileStore.class, new StoreEntry(FileService.NAME, ReadableFileStoreImpl::new),
             ReadableUpdateFileStore.class, new StoreEntry(FreezeService.NAME, ReadableUpdateFileStoreImpl::new),
             ReadableRunningHashLeafStore.class,
                     new StoreEntry(NetworkService.NAME, ReadableRunningHashLeafStoreImpl::new),

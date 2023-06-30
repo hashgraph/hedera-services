@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.solvency;
+package com.hedera.node.app.info;
 
-import dagger.Binds;
-import dagger.Module;
-import javax.inject.Singleton;
+import static com.hedera.node.app.spi.HapiUtils.parseAccount;
 
-@Module
-public interface SolvencyInjectionModule {
-    @Binds
-    @Singleton
-    SolvencyPreCheck bindSolvencyPreCheck(SolvencyPreCheckImpl solvencyPreCheck);
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.spi.info.NodeInfo;
+import com.swirlds.common.system.address.Address;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+public record NodeInfoImpl(AccountID accountId, boolean zeroStake) implements NodeInfo {
+    @NonNull
+    static NodeInfo fromAddress(@NonNull final Address address) {
+        return new NodeInfoImpl(parseAccount(address.getMemo()), address.getWeight() <= 0);
+    }
 }
