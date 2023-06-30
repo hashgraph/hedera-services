@@ -20,8 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -35,7 +35,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public class ReadableTokenRelationStoreImpl implements ReadableTokenRelationStore {
     /** The underlying data storage class that holds the token data. */
-    private final ReadableKVState<EntityNumPair, TokenRelation> readableTokenRelState;
+    private final ReadableKVState<EntityIDPair, TokenRelation> readableTokenRelState;
 
     /**
      * Create a new {@link ReadableTokenRelationStoreImpl} instance.
@@ -57,7 +57,8 @@ public class ReadableTokenRelationStoreImpl implements ReadableTokenRelationStor
 
         if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return null;
 
-        return readableTokenRelState.get(EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum()));
+        return readableTokenRelState.get(
+                EntityIDPair.newBuilder().accountId(accountId).tokenId(tokenId).build());
     }
 
     /**
