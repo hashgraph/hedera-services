@@ -128,18 +128,21 @@ class UptimeMetrics {
                         "The number of rounds since the last consensus event created by this node was observed");
         roundsSinceLastConsensusEvent.put(nodeId, metrics.getOrCreate(roundsSinceLastConensusEventConfig));
 
-        final RunningAverageMetric.Config timeSinceLastJudgeConfig = new RunningAverageMetric.Config(
-                        CATEGORY, TIME_SINCE_LAST_JUDGE + nodeId)
-                .withUnit("seconds")
-                .withDescription(
-                        "The consensus time in seconds since the last judge created by this node was observed");
-        timeSinceLastJudge.put(nodeId, metrics.getOrCreate(timeSinceLastJudgeConfig));
-
-        final RunningAverageMetric.Config roundsSinceLastJudgeConfig = new RunningAverageMetric.Config(
-                        CATEGORY, ROUNDS_SINCE_LAST_JUDGE + nodeId)
-                .withUnit("rounds")
-                .withDescription("The number of rounds since the last judge created by this node was observed");
-        roundsSinceLastJudge.put(nodeId, metrics.getOrCreate(roundsSinceLastJudgeConfig));
+        // Temporarily disabled until we properly detect judges in a round
+        //        final RunningAverageMetric.Config timeSinceLastJudgeConfig = new RunningAverageMetric.Config(
+        //                        CATEGORY, TIME_SINCE_LAST_JUDGE + nodeId)
+        //                .withUnit("seconds")
+        //                .withDescription(
+        //                        "The consensus time in seconds since the last judge created by this node was
+        // observed");
+        //        timeSinceLastJudge.put(nodeId, metrics.getOrCreate(timeSinceLastJudgeConfig));
+        //
+        //        final RunningAverageMetric.Config roundsSinceLastJudgeConfig = new RunningAverageMetric.Config(
+        //                        CATEGORY, ROUNDS_SINCE_LAST_JUDGE + nodeId)
+        //                .withUnit("rounds")
+        //                .withDescription("The number of rounds since the last judge created by this node was
+        // observed");
+        //        roundsSinceLastJudge.put(nodeId, metrics.getOrCreate(roundsSinceLastJudgeConfig));
     }
 
     /**
@@ -155,11 +158,12 @@ class UptimeMetrics {
         roundsSinceLastConsensusEvent.remove(nodeId);
         metrics.remove(new RunningAverageMetric.Config(CATEGORY, ROUNDS_SINCE_LAST_CONSENSUS_EVENT + nodeId));
 
-        timeSinceLastJudge.remove(nodeId);
-        metrics.remove(new RunningAverageMetric.Config(CATEGORY, TIME_SINCE_LAST_JUDGE + nodeId));
-
-        roundsSinceLastJudge.remove(nodeId);
-        metrics.remove(new RunningAverageMetric.Config(CATEGORY, ROUNDS_SINCE_LAST_JUDGE + nodeId));
+        // Temporarily disabled until we properly detect judges in a round
+        //        timeSinceLastJudge.remove(nodeId);
+        //        metrics.remove(new RunningAverageMetric.Config(CATEGORY, TIME_SINCE_LAST_JUDGE + nodeId));
+        //
+        //        roundsSinceLastJudge.remove(nodeId);
+        //        metrics.remove(new RunningAverageMetric.Config(CATEGORY, ROUNDS_SINCE_LAST_JUDGE + nodeId));
     }
 
     /**
