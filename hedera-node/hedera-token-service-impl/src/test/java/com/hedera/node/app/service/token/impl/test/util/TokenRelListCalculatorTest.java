@@ -48,13 +48,6 @@ class TokenRelListCalculatorTest {
         subject = new TokenRelListCalculator(localTokenRelsStore());
     }
 
-    /**
-     * This null token number will represent a null pointer to a token relation's prev or next token number, i.e. if
-     * tokenRel.prevToken() == -1L, then there is no previous token in the token rel list. If tokenRel.nextToken() ==
-     * -1L, there is no next token in the token rel list.
-     */
-    private static final TokenID NULL_TOKEN_ID = asToken(-1L);
-
     private static final TokenID TOKEN_ID_1 = asToken(1L);
     private static final TokenID TOKEN_ID_2 = asToken(2L);
     private static final TokenID TOKEN_ID_3 = asToken(3L);
@@ -76,7 +69,7 @@ class TokenRelListCalculatorTest {
     private static final TokenRelation LOCAL_TOKEN_REL_1 = TokenRelation.newBuilder()
             .accountId(ACCT_2300_ID)
             .tokenId(TOKEN_ID_1)
-            .previousToken(NULL_TOKEN_ID)
+            .previousToken((TokenID) null)
             .nextToken(TOKEN_ID_2)
             .build();
     private static final TokenRelation LOCAL_TOKEN_REL_2 = TokenRelation.newBuilder()
@@ -101,7 +94,7 @@ class TokenRelListCalculatorTest {
             .accountId(ACCT_2300_ID)
             .tokenId(TOKEN_ID_5)
             .previousToken(TOKEN_ID_4)
-            .nextToken(NULL_TOKEN_ID)
+            .nextToken((TokenID) null)
             .build();
 
     @SuppressWarnings("DataFlowIssue")
@@ -175,7 +168,7 @@ class TokenRelListCalculatorTest {
                         LOCAL_TOKEN_REL_5
                                 .copyBuilder()
                                 .previousToken(TOKEN_ID_3)
-                                .nextToken(NULL_TOKEN_ID)
+                                .nextToken((TokenID) null)
                                 .build());
     }
 
@@ -261,7 +254,7 @@ class TokenRelListCalculatorTest {
                         LOCAL_TOKEN_REL_5
                                 .copyBuilder()
                                 .previousToken(TOKEN_ID_3)
-                                .nextToken(NULL_TOKEN_ID)
+                                .nextToken((TokenID) null)
                                 .build());
     }
 

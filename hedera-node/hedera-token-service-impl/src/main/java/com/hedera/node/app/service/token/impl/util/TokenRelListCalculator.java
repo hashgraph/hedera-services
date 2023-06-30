@@ -64,10 +64,10 @@ public class TokenRelListCalculator {
      * Assume that valid account A has head token number 1, and that the following list of token
      * relations ({@code TR}'s) exists for account A:
      * <ol>
-     *     <li>TR(Account A, Token 1, prevToken = -1, nextToken = 2)</li>
+     *     <li>TR(Account A, Token 1, prevToken = null, nextToken = 2)</li>
      *     <li>TR(Account A, Token 2, prevToken = 1, nextToken = 3)</li>
      *     <li>TR(Account A, Token 3, prevToken = 2, nextToken = 4)</li>
-     *     <li>TR(Account A, Token 4, prevToken = 3, nextToken = -1)</li>
+     *     <li>TR(Account A, Token 4, prevToken = 3, nextToken = null)</li>
      * </ol>
      *
      * <p> <i>Case 1: removing a token relation in the middle of the list</i>
@@ -78,9 +78,9 @@ public class TokenRelListCalculator {
      *     {@code Token 1}. After this method performs its operation, the resulting list of token
      *     relations will be:
      * <ol>
-     *     <li>{@code TR(Account A, Token 1, prevToken = -1, nextToken = 3)}</li>
+     *     <li>{@code TR(Account A, Token 1, prevToken = null, nextToken = 3)}</li>
      *     <li>{@code TR(Account A, Token 3, prevToken = 1, nextToken = 4)}</li>
-     *     <li>{@code TR(Account A, Token 4, prevToken = 3, nextToken = -1)}</li>
+     *     <li>{@code TR(Account A, Token 4, prevToken = 3, nextToken = null)}</li>
      * </ol>
      *
      * TR(Account A, Token 2) is now removed from the list, and the prev/next pointers of the remaining
@@ -92,14 +92,14 @@ public class TokenRelListCalculator {
      *     token rel list, then the resulting list of token relations will be unchanged except for
      *     {@code TR(Account A, Token 1)} which has been removed from the list, and
      *     {@code TR(Account A, Token 2)}, which will now be the head of the list (i.e. it will have a
-     *     {@code prevToken} value of -1)
+     *     {@code prevToken} value of null)
      *
      * <p> <i>Case 3: removing the last/tail-end token relation</i>
      *     Finally, if we remove the token relation {@code TR(Account A, Token 4)} at the end of the
      *     account's token rel list, then the resulting list of token relations will also be unchanged
      *     except for {@code TR(Account A, Token 5)}, which has been removed from the list, and
      *     {@code TR(Account A, Token 4}), which is now the end of the list (i.e. it has a
-     *     {@code nextToken} value of -1)
+     *     {@code nextToken} value of null)
      *
      * @param account the account to remove the token relations from
      * @param tokenRelsToDelete the token relations to remove
@@ -259,7 +259,8 @@ public class TokenRelListCalculator {
      * this method computes the expected new head token number for the account.
      *
      * <p>
-     * <b>Note:</b> if the given token rels are in an illegal state, a fallback value of -1 will be returned
+     * <b>Note:</b> if the given token rels are in an illegal state, a fallback null value will be
+     * returned instead of throwing an exception
      *
      * @param currentHeadTokenId the account's current head token id, i.e. the head token number that may change
      * @param account the account (object, not ID) that the token is related to
@@ -294,12 +295,12 @@ public class TokenRelListCalculator {
                 }
             } else {
                 // We reached the end of the linked token rel pointers chain; there is no token rel that will qualify as
-                // the new head token number. We therefore set the new head token number to -1 and exit the do-while
+                // the new head token number. We therefore set the new head token number to null and exit the do-while
                 // loop (since `currentWalkedTokenRel` is null)
                 currentTokenId = null;
             }
 
-            // Default to a null pointer (value of -1) for infinite looping cases
+            // Default to a null pointer for infinite looping cases
             if (safetyCounter++ > account.numberAssociations()) {
                 log.error(
                         "Encountered token rels list that exceeds total token associations for account {}",
@@ -308,10 +309,10 @@ public class TokenRelListCalculator {
             }
         } while (currentWalkedTokenRel != null && currentTokenId != null);
 
-        // At this point, `currentTokenNum` is either -1 (if we reached the end of the linked token rel pointers chain),
+        // At this point, `currentTokenNum` is either null (if we reached the end of the linked token rel pointers chain),
         // zero if a token rel's previous or next pointer was incorrectly set to zero (e.g. initialized by default to
         // zero and not set), or the token number of the first token rel that will NOT be deleted. In the first two
-        // cases, this value is the account's new head token number. Otherwise, return a fallback of number of -1
+        // cases, this value is the account's new head token number. Otherwise, return null
         return currentTokenId != null && currentTokenId.tokenNum() > 0 ? currentTokenId : null;
     }
 
