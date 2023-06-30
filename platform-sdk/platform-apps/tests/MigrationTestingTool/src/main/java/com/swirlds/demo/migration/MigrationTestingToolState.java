@@ -24,6 +24,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
@@ -92,7 +93,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         public static final int CHILD_COUNT = 3;
     }
 
-    public long selfId;
+    public NodeId selfId;
 
     public MigrationTestingToolState() {
         super(ChildIndices.CHILD_COUNT);
@@ -219,7 +220,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
                 .preferDiskBasedIndexes(false);
 
         setVirtualMap(new VirtualMap<>("virtualMap", jasperDbBuilder));
-        selfId = platform.getSelfId().id();
+        selfId = platform.getSelfId();
     }
 
     /**
@@ -240,7 +241,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         if (virtualMap != null) {
             logger.info(MARKER, "VirtualMap initialized with {} values", virtualMap.size());
         }
-        selfId = platform.getSelfId().id();
+        selfId = platform.getSelfId();
 
         if (trigger == InitTrigger.GENESIS) {
             logger.error(MARKER, "InitTrigger was {} when expecting RESTART or RECONNECT", trigger);

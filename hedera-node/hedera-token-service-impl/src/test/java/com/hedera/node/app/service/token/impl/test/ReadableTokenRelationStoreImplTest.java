@@ -69,8 +69,8 @@ class ReadableTokenRelationStoreImplTest {
     @Test
     void testGet() {
         final var tokenRelation = TokenRelation.newBuilder()
-                .tokenNumber(TOKEN_10)
-                .accountNumber(ACCOUNT_20)
+                .tokenId(TOKEN_10_ID)
+                .accountId(ACCOUNT_20_ID)
                 .build();
         given(tokenRelState.get(notNull())).willReturn(tokenRelation);
 

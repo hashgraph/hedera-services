@@ -252,7 +252,6 @@ public final class EventRecoveryWorkflow {
                                 .getPlatformState()
                                 .getPlatformData()
                                 .getCreationSoftwareVersion());
-        initialState.get().getState().markAsInitialized();
 
         appMain.init(platform, platform.getSelfId());
 

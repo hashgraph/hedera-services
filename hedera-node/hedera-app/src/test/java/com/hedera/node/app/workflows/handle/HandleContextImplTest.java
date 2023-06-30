@@ -45,8 +45,6 @@ import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -346,43 +344,6 @@ class HandleContextImplTest extends StateTestBase {
             // then
             assertThat(actual1).isSameAs(1L);
             assertThat(actual2).isSameAs(2L);
-        }
-
-        @Test
-        void testAccessAttributeValidator(
-                @Mock AttributeValidator attributeValidator1, @Mock AttributeValidator attributeValidator2) {
-            // given
-            when(savepoint1.attributeValidator()).thenReturn(attributeValidator1);
-            when(savepoint2.attributeValidator()).thenReturn(attributeValidator2);
-            when(stack.peek()).thenReturn(savepoint1);
-            final var context = createContext(TransactionBody.DEFAULT);
-
-            // when
-            final var actual1 = context.attributeValidator();
-            when(stack.peek()).thenReturn(savepoint2);
-            final var actual2 = context.attributeValidator();
-
-            // then
-            assertThat(actual1).isSameAs(attributeValidator1);
-            assertThat(actual2).isSameAs(attributeValidator2);
-        }
-
-        @Test
-        void testAccessExpiryValidator(@Mock ExpiryValidator expiryValidator1, @Mock ExpiryValidator expiryValidator2) {
-            // given
-            when(savepoint1.expiryValidator()).thenReturn(expiryValidator1);
-            when(savepoint2.expiryValidator()).thenReturn(expiryValidator2);
-            when(stack.peek()).thenReturn(savepoint1);
-            final var context = createContext(TransactionBody.DEFAULT);
-
-            // when
-            final var actual1 = context.expiryValidator();
-            when(stack.peek()).thenReturn(savepoint2);
-            final var actual2 = context.expiryValidator();
-
-            // then
-            assertThat(actual1).isSameAs(expiryValidator1);
-            assertThat(actual2).isSameAs(expiryValidator2);
         }
 
         @Test
