@@ -23,7 +23,6 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Nft;
-import com.hedera.hapi.node.state.token.Nft.Builder;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -31,7 +30,6 @@ import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 
 public final class NftStateTranslator {
@@ -72,8 +70,7 @@ public final class NftStateTranslator {
         return builder.build();
     }
 
-    private static @NonNull UniqueTokenId merkelUniqueTokenToUniqueTokenId(
-            @NotNull NftNumPair merkleUniqueToken) {
+    private static @NonNull UniqueTokenId merkelUniqueTokenToUniqueTokenId(@NotNull NftNumPair merkleUniqueToken) {
         final var tokenTypeNumber = merkleUniqueToken.tokenNum();
         final var serialNumber = merkleUniqueToken.serialNum();
         return UniqueTokenId.newBuilder()
@@ -83,6 +80,11 @@ public final class NftStateTranslator {
     }
 
     @NonNull
+    /***
+     * Converts a {@link Nft} to a {@link com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken}.
+     * @param nft the {@link Nft} to convert
+     * @return the {@link com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken}
+     */
     public static com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken merkleUniqueTokenFromNft(
             @NonNull Nft nft) {
         requireNonNull(nft);
