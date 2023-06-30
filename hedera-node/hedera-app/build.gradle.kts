@@ -126,6 +126,14 @@ tasks.register<JavaExec>("run") {
     mainClass.set("com.swirlds.platform.Browser")
 }
 
+tasks.register<JavaExec>("modrun") {
+    group = "application"
+    dependsOn(tasks.assemble)
+    workingDir = project(":hedera-node").projectDir
+    jvmArgs = listOf("-cp", "data/lib/*", "-Dhedera.workflows.enabled=true")
+    mainClass.set("com.swirlds.platform.Browser")
+}
+
 val cleanRun =
     tasks.register("cleanRun") {
         val prj = project(":hedera-node")

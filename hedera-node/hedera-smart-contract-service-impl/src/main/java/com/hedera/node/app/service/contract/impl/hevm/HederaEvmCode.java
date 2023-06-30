@@ -14,24 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.config;
+package com.hedera.node.app.service.contract.impl.hevm;
 
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.account.Account;
 
 /**
- * Qualifier for Dagger to define the boolean value of whether the node is a genesis node.
+ * TODO - not sure this makes sense, why can't we just call {@link Account#getCode()} directly?
  *
- * @deprecated we need to define the correct workflow to define that genesis is used
+ * (Answer: we probably can. This class should be deleted in upcoming PR.)
  */
-@Deprecated(forRemoval = true)
-@Target({ElementType.METHOD, ElementType.PARAMETER})
-@Qualifier
-@Retention(RUNTIME)
-@Documented
-public @interface GenesisUsage {}
+public interface HederaEvmCode {
+    Code load(@NonNull Address contract);
+
+    Code loadIfPresent(@NonNull Address contract);
+}

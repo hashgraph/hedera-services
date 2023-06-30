@@ -16,9 +16,8 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.WORKFLOWS_ENABLED;
-
-import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -51,14 +50,14 @@ public class ServicesMain implements SwirldMain {
 
     /** Create a new instance */
     public ServicesMain() {
-        final var bootstrapProps = new BootstrapProperties(false);
-        final var enabledWorkflows = bootstrapProps.getFunctionsProperty(WORKFLOWS_ENABLED);
-        if (enabledWorkflows.isEmpty()) {
+        final var configProvider = new ConfigProviderImpl(false);
+        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        if (hederaConfig.workflowsEnabled().isEmpty()) {
             logger.info("No workflows enabled, using mono-service");
             delegate = new MonoServicesMain();
         } else {
             logger.info("One or more workflows enabled, using Hedera");
-            delegate = new Hedera(ConstructableRegistry.getInstance(), bootstrapProps);
+            delegate = new Hedera(ConstructableRegistry.getInstance());
         }
     }
 

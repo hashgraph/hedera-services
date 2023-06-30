@@ -37,14 +37,17 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
@@ -71,7 +74,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
     /** A running sum of transaction contents */
     private long runningSum = 0;
 
-    private final long selfId;
+    private final NodeId selfId;
 
     /** if true, artificially take {@link #HANDLE_MICROS} to handle each consensus transaction */
     private static final boolean SYNTHETIC_HANDLE_TIME = false;
@@ -80,17 +83,19 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
     private static final int HANDLE_MICROS = 100;
 
     public StatsSigningTestingToolState() {
-        this(0L, () -> null);
+        this(new NodeId(0L), () -> null);
     }
 
-    public StatsSigningTestingToolState(final long selfId, final Supplier<TransactionPool> transactionPoolSupplier) {
-        this.selfId = selfId;
-        this.transactionPoolSupplier = transactionPoolSupplier;
+    public StatsSigningTestingToolState(
+            @NonNull final NodeId selfId, @NonNull final Supplier<TransactionPool> transactionPoolSupplier) {
+        this.selfId = Objects.requireNonNull(selfId);
+        this.transactionPoolSupplier = Objects.requireNonNull(transactionPoolSupplier);
     }
 
-    private StatsSigningTestingToolState(final long selfId, final StatsSigningTestingToolState sourceState) {
+    private StatsSigningTestingToolState(
+            @NonNull final NodeId selfId, @NonNull final StatsSigningTestingToolState sourceState) {
         super(sourceState);
-        this.selfId = selfId;
+        this.selfId = Objects.requireNonNull(selfId);
         this.transactionPoolSupplier = sourceState.transactionPoolSupplier;
         setImmutable(false);
         sourceState.setImmutable(true);

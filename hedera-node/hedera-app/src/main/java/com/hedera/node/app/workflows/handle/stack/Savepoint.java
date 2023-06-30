@@ -18,11 +18,7 @@ package com.hedera.node.app.workflows.handle.stack;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.state.WrappedHederaState;
-import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
-import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -91,28 +87,6 @@ public class Savepoint {
      */
     public long newEntityNum() {
         // TODO: Implement Savepoint.newEntityNum (https://github.com/hashgraph/hedera-services/issues/6701)
-        return 1L;
-    }
-
-    /**
-     * Returns an {@link AttributeValidator} that is based on the current configuration and state.
-     *
-     * @return an {@link AttributeValidator}
-     */
-    @NonNull
-    public AttributeValidator attributeValidator() {
-        // TODO: Implement Savepoint.attributeValidator (https://github.com/hashgraph/hedera-services/issues/6701)
-        return new AttributeValidatorImpl();
-    }
-
-    /**
-     * Returns an {@link ExpiryValidator} that is based on the current configuration and state.
-     *
-     * @return an {@link ExpiryValidator}
-     */
-    @NonNull
-    public ExpiryValidator expiryValidator() {
-        // TODO: Implement Savepoint.expiryValidator (https://github.com/hashgraph/hedera-services/issues/6701)
-        return new ExpiryValidatorImpl();
+        return 1000L;
     }
 }
