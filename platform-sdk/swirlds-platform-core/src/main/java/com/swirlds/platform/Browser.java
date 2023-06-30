@@ -84,6 +84,7 @@ import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
+import com.swirlds.logging.payloads.SavedStateLoadedPayload;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.ThreadConfig;
@@ -801,6 +802,10 @@ public class Browser {
                 emergencyRecoveryManager);
 
         if (loadedState.isNotNull()) {
+            logger.info(
+                    STARTUP.getMarker(),
+                    new SavedStateLoadedPayload(
+                            loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
             return loadedState;
         }
 
