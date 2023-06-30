@@ -154,7 +154,7 @@ class TokenRelListCalculatorTest {
         Assertions.assertThat(result.updatedTokenRelsStillInChain())
                 .containsExactly(LOCAL_TOKEN_REL_2
                         .copyBuilder()
-                        .previousToken((TokenID)null)
+                        .previousToken((TokenID) null)
                         .build());
     }
 
@@ -188,13 +188,13 @@ class TokenRelListCalculatorTest {
                 .containsExactlyInAnyOrder(
                         LOCAL_TOKEN_REL_2
                                 .copyBuilder()
-                                .previousToken((TokenID)null)
+                                .previousToken((TokenID) null)
                                 .nextToken(TOKEN_ID_4)
                                 .build(),
                         LOCAL_TOKEN_REL_4
                                 .copyBuilder()
                                 .previousToken(TOKEN_ID_2)
-                                .nextToken((TokenID)null)
+                                .nextToken((TokenID) null)
                                 .build());
     }
 
