@@ -330,19 +330,6 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     }
 
     /**
-     * Get the address for the member with the given ID
-     *
-     * @param id the member ID of the address to get
-     * @return the address if it exists, null otherwise.
-     * @deprecated use {@link #getAddress(NodeId)} instead
-     */
-    @Deprecated(since = "0.39.0", forRemoval = true)
-    @NonNull
-    public Address getAddress(final long id) {
-        return getAddress(new NodeId(id));
-    }
-
-    /**
      * Check if an address for a given node ID is contained within this address book.
      *
      * @param id a node ID
