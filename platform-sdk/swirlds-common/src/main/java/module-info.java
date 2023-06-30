@@ -149,7 +149,12 @@ module com.swirlds.common {
     exports com.swirlds.common.system.status;
     exports com.swirlds.common.system.status.actions;
     exports com.swirlds.common.metrics.statistics;
-    exports com.swirlds.common.metrics.statistics.internal to com.swirlds.common.test, com.swirlds.demo.platform, com.swirlds.jrs, com.swirlds.platform, com.swirlds.platform.test;
+    exports com.swirlds.common.metrics.statistics.internal to
+            com.swirlds.common.test,
+            com.swirlds.demo.platform,
+            com.swirlds.jrs,
+            com.swirlds.platform,
+            com.swirlds.platform.test;
 
     requires transitive com.swirlds.base;
     requires com.swirlds.config;
