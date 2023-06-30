@@ -10,13 +10,11 @@ The "tipset algorithm" is a strategy for creating events that provides several k
 
 ## Tipset
 
-A tipset is similar to a vector clock. It is an array of integer values.
+A tipset is similar to a [vector clock](https://en.wikipedia.org/wiki/Vector_clock). It is an array of integer values.
 
 For a particular network, there will be one entry in a tipset for each node in the address book.
 The value of each entry corresponds to an event generation. The index in the tipset corresponds to
 each node's index in the address book.
-
-
 
 ```
 Example
@@ -44,42 +42,31 @@ Example
 
 Time starts at the bottom and moves forward as you go up the graph. Numbers for each event are generations.
 
- |         (4)         |          |
- |         /|          |          |
- |        / |          |          |
- |       /  |          |          |
- |      /   |          |          |
- |     /    |          |          |
- |    /     |          |          |
- |   /      |          |          |
- |  /       |          |          |
- | /        |          |          |
-(3)         |          |          |
- |\         |          |          |
- | \        |          |          |
- |  \       |          |          |
- |   \      |          |          |
- |    \     |          |          |
- |     \    |          |          |
- |      \   |          |          |
- |       \  |          |          |
- |        \ |          |          |
- |         \|          |          |
- |         (2)         |         (2)
- |          |\         |         /|
- |          | \        |        / |
- |          |  \       |       /  |
- |          |   \      |      /   |
- |          |    \     |     /    |
- |          |     \    |    /     |
- |          |      \   |   /      |
- |          |       \  |  /       |
- |          |        \ | /        |
- |          |         \|/         |
-(1)        (1)        (1)         |
- |          |          |          |
- |          |          |          |
- A          B          C          D
+ |      (4)      |       |
+ |      /|       |       |
+ |     / |       |       |
+ |    /  |       |       |
+ |   /   |       |       |
+ |  /    |       |       |
+ | /     |       |       |
+(3)      |       |       |
+ |\      |       |       |
+ | \     |       |       |
+ |  \    |       |       |
+ |   \   |       |       |
+ |    \  |       |       |
+ |     \ |       |       |
+ |      (2)      |      (2)
+ |       |\      |      /|
+ |       | \     |     / |
+ |       |  \    |    /  |
+ |       |   \   |   /   |
+ |       |    \  |  /    |
+ |       |     \ | /     |
+(1)     (1)     (1)      |
+ |       |       |       |
+ |       |       |       |
+ A       B       C       D
 
  The tipset of B's most recent event is [3, 4, 1, -1]
 
@@ -91,7 +78,8 @@ Although calculating an event tipset by iterating the graph is conceptually simp
 This section describes a faster algorithm.
 
 Merging two tipsets is defined as taking two or more tipsets, for each event creator selecting the maximum generation
-across all tipsets being merged, and constructing the resulting tipset using those generations.
+across all tipsets being merged, and constructing the resulting tipset using those generations. Or to put it another
+way, just take the maximum for each element in the list.
 
 ```
 Example
@@ -144,14 +132,14 @@ each entry that has a greater value, instead add the amount of consensus weight 
 ```
 Example
 
-Suppose an address book has the following weights: A = 5, B = 9, C = 11, D = 2
+Suppose an address book has the following consensus weights: A = 5, B = 9, C = 11, D = 2
 
 Find the weighed advancement score between X and Y.
 
 X = [1, 3, 5, 2]
 Y = [7, 3, 2, 11]
 
-The entry for node A advances, add 5. The entry for D advances, add 2. Total weighed advancement score is 7.
+The entry for node A advances, add 5. The entry for D advances, add 2. Total weighted advancement score is 7 (5+2).
 ```
 
 # Partial Weighted Tipset Advancement Score
@@ -163,7 +151,7 @@ ignore the advancement provided by a target node.
 ```
 Example
 
-Suppose an address book has the following weights: A = 5, B = 9, C = 11, D = 2
+Suppose an address book has the following consensus weights: A = 5, B = 9, C = 11, D = 2
 
 Find the partial weighted advancement score between X and Y with a target of node A.
 
@@ -171,7 +159,12 @@ X = [1, 3, 5, 2]
 Y = [7, 3, 2, 11]
 
 The entry for node A advances, but we ignore it because A is the target.
-The entry for D advances, add 2. Total weighed advancement score is 2.
+The entry for D advances, add 2. Total weighted advancement score is 2.
+
+----
+
+Now, for the same tipsets, suppose that B is the target. A and D advance, yielding
+a total weighted advancement score of 7 (5+2).
 ```
 
 # Snapshot Improvement Scores
@@ -180,8 +173,8 @@ Each new event is assigned a tipset improvement score. Each node assigns the eve
 improvement score. Nodes do not assign events created by other nodes an improvement score.
 
 Keep track of a special tipset, called the "snapshot" tipset. The snapshot starts out empty, i.e.
-`[-1, -1, -1, ..., -1]` at genesis. Periodically, the snapshot is updated to a more recent tipset
-(how this happens is described below).
+`[-1, -1, -1, ..., -1]` at genesis (in the current code, generations start at 0). Periodically, the snapshot is
+updated to a more recent tipset (how this happens is described below).
 
 Each time a node creates a new event, compare that event's tipset to the snapshot tipset, and find the partial
 weighted advancement score of that new event targeting the event's creator.
@@ -193,11 +186,11 @@ of the total weight, and then subtract the node's weight.
 ```
 Example of computing snapshot advancement threshold
 
-Suppose an address book has the following weights: A = 5, B = 9, C = 11, D = 2. Compute the snapshot advancement
-threshold for node A.
+Suppose an address book has the following consnesus weights: A = 5, B = 9, C = 11, D = 2. Compute the snapshot
+advancement threshold for node A.
 
-Total consensus weight is 27. The amount of stake required to have >2/3 of the total weight is 19. Subtract A's weight,
-and A's snapshot advancement threshold is 14.
+Total consensus weight is 27 (5+9+11+ 2). The amount of stake required to have >2/3 of the total weight is 19.
+Subtract A's weight, and A's snapshot advancement threshold is 14 (19-5).
 ```
 
 When a new event has a snapshot improvement score that is greater than or equal to the snapshot advancement threshold,
@@ -223,11 +216,14 @@ Consider from A's perspective. A's snapshot advancement threshold is 14.
 
 Initially, the snapshot is [-1, -1, -1, -1].
 
-A creates a genesis event with tipset [0, -1, -1, -1]. The snapshot improvement score is 0, which is ok since
-this is a genesis event. (It will never again be ok to have an advancement score of 0.)
+A creates a genesis event with tipset [0, -1, -1, -1] (A's first event has generation 0 and doesn't have any parents).
+The snapshot improvement score is 0, which is ok since this is a genesis event.
+(It will never again be ok to have an advancement score of 0.)
 
-Next, A creates an event with self parent [0, -1, -1, -1] and other parent [-1, 2, -1, -1] with generation 2.
-The tipset of the new event is [3, 2, -1, -1]. The partial weighted snapshot advancement score is 9.
+Next, A creates an event with self parent [0, -1, -1, -1] and other parent [0, 2, -1, -1] with generation 2.
+(Note: use of this particular tipset for the other parent is arbitrary and was just chosen for this example.)
+The tipset of the new event is [3, 2, -1, -1]. (Note that the generation for A is now 3, since that is the
+generation of the newly created self event.) The partial weighted snapshot advancement score is 9.
 
 Next, A creates an event with self parent [3, 2, -1, -1] and other parent [3, 2, 5, 3] with generation 3. The tipset
 of the new event is [4, 2, 5, 3]. The partial weighted snapshot advancement score is 22, which exceeds the threshold

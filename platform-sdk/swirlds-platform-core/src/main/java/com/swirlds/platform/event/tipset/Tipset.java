@@ -131,7 +131,8 @@ public class Tipset {
      *
      * <p>
      * A tip advancement is defined as an increase in the tip generation for a node ID. The exception to this rule is
-     * that an increase in generation for the self ID is never counted as a tip advancement. The tip advancement
+     * that an increase in generation for the self ID is never counted as a tip advancement (i.e. this is a "partial
+     * advancement" with self as the target, as defined by the document tipset-algorithm.md). The tip advancement
      * weight is defined as the sum of all remaining tip advancements after being appropriately weighted.
      * </p>
      *
