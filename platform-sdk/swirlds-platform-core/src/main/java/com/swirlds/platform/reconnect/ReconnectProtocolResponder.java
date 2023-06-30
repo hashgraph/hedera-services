@@ -97,14 +97,7 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
                 return;
             }
 
-            if (!state.get().getState().isInitialized()) {
-                ReconnectUtils.denyReconnect(connection);
-                logger.warn(
-                        RECONNECT.getMarker(),
-                        "Rejecting reconnect request from node {} due to lack of an initialized signed state.",
-                        connection.getOtherId());
-                return;
-            } else if (!state.get().isComplete()) {
+            if (!state.get().isComplete()) {
                 // this is only possible if signed state manager violates its contractual obligations
                 ReconnectUtils.denyReconnect(connection);
                 logger.error(
