@@ -40,7 +40,7 @@ public final class NftStateTranslator {
      * @param merkleUniqueToken the {@link com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken}
      * @return the {@link Nft} converted from the {@link com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken}
      */
-    public static Nft accountFromMerkle(
+    public static Nft nftFromMerkleUniqueToken(
             @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken merkleUniqueToken) {
         requireNonNull(merkleUniqueToken);
         var builder = Nft.newBuilder();
