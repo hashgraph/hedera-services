@@ -38,7 +38,7 @@ import java.util.List;
 /**
  * Translates between the legacy {@link com.hedera.node.app.service.mono.state.merkle.MerkleToken} and the {@link Token} and vise versa.
  */
-public class TokenStateTranslator {
+public final class TokenStateTranslator {
     private TokenStateTranslator() {
         throw new UnsupportedOperationException("Utility Class");
     }
@@ -138,7 +138,7 @@ public class TokenStateTranslator {
         requireNonNull(readableTokenStore);
         final var optionalToken = readableTokenStore.get(tokenId);
         if (optionalToken == null) {
-            throw new IllegalArgumentException("Account not found");
+            throw new IllegalArgumentException("Token not found");
         }
         return merkleTokenFromToken(optionalToken);
     }
