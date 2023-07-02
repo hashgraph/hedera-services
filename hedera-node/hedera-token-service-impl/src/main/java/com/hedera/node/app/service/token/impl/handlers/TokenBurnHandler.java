@@ -19,11 +19,11 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator.verifyTokenInstanceAmounts;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
@@ -121,7 +121,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
                 final var nft = nftStore.get(tokenId, nftSerial);
                 validateTrue(nft != null, INVALID_NFT_ID);
 
-                final var nftOwner = nft.ownerNumber();
+                final var nftOwner = nft.ownerId();
                 validateTrue(treasuryOwnsNft(nftOwner), TREASURY_MUST_OWN_BURNED_NFT);
             }
 
@@ -136,7 +136,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
                     tokenRelStore);
 
             // Update treasury's NFT count
-            final var treasuryAcct = accountStore.get(asAccount(token.treasuryAccountNumber()));
+            final var treasuryAcct = accountStore.get(token.treasuryAccountId());
             final var updatedTreasuryAcct = treasuryAcct
                     .copyBuilder()
                     .numberOwnedNfts(treasuryAcct.numberOwnedNfts() - nftSerialNums.size())
@@ -162,13 +162,13 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
         validateTrue(token.supplyKey() != null, TOKEN_HAS_NO_SUPPLY_KEY);
 
-        final var treasuryAcctId = asAccount(token.treasuryAccountNumber());
+        final var treasuryAcctId = token.treasuryAccountId();
         final var treasuryRel = TokenHandlerHelper.getIfUsable(treasuryAcctId, tokenId, tokenRelStore);
         return new ValidationResult(token, treasuryRel);
     }
 
-    private boolean treasuryOwnsNft(final long ownerNum) {
-        return ownerNum == 0;
+    private boolean treasuryOwnsNft(final AccountID ownerID) {
+        return ownerID == null;
     }
 
     private record ValidationResult(@NonNull Token token, @NonNull TokenRelation tokenTreasuryRel) {}

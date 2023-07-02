@@ -21,8 +21,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Instant;
@@ -40,7 +40,7 @@ public class SimulatedEvent implements ChatterEvent {
         public static final int ORIGINAL = 1;
     }
 
-    private ChatterEventDescriptor descriptor;
+    private EventDescriptor descriptor;
     private byte[] data;
     private Instant timeReceived;
 
@@ -72,20 +72,28 @@ public class SimulatedEvent implements ChatterEvent {
         random.nextBytes(hashBytes);
         final Hash hash = new Hash(hashBytes, DigestType.SHA_384);
 
-        this.descriptor = new ChatterEventDescriptor(hash, creator, round);
+        this.descriptor = new EventDescriptor(hash, creator, round);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public ChatterEventDescriptor getDescriptor() {
+    public EventDescriptor getDescriptor() {
         return descriptor;
     }
 
     @Override
     public Instant getTimeReceived() {
         return timeReceived;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getGeneration() {
+        return descriptor.getGeneration();
     }
 
     public void setTimeReceived(final Instant timeReceived) {
@@ -123,7 +131,7 @@ public class SimulatedEvent implements ChatterEvent {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        descriptor = in.readSerializable(false, ChatterEventDescriptor::new);
+        descriptor = in.readSerializable(false, EventDescriptor::new);
         data = in.readByteArray(Integer.MAX_VALUE);
     }
 

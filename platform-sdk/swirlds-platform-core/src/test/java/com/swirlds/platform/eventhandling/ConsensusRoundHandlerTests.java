@@ -27,6 +27,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.BasicSoftwareVersion;
@@ -41,6 +42,8 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.platform.state.PlatformData;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.SwirldStateManagerImpl;
@@ -188,6 +191,15 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         final State state = new State();
         state.setSwirldState(swirldState);
 
+        final PlatformState platformState = mock(PlatformState.class);
+        when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
+        when(platformState.copy()).thenReturn(platformState);
+
+        state.setPlatformState(platformState);
+
+        final PlatformData platformData = mock(PlatformData.class);
+        when(platformState.getPlatformData()).thenReturn(platformData);
+
         final AddressBook addressBook = new RandomAddressBookGenerator().build();
 
         final Configuration configuration = new TestConfigBuilder()
@@ -196,6 +208,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)
                 .build();
+        final TransactionConfig transactionConfig = configuration.getConfigData(TransactionConfig.class);
 
         final SwirldStateManager swirldStateManager = new SwirldStateManagerImpl(
                 platformContext,
@@ -204,9 +217,10 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
-                settingsProvider,
+                transactionConfig,
                 () -> false,
-                state);
+                state,
+                new BasicSoftwareVersion(1));
 
         consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,

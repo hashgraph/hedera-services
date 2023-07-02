@@ -44,7 +44,6 @@ import com.hedera.node.app.authorization.Authorizer;
 import com.hedera.node.app.fees.QueryFeeCheck;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.solvency.SolvencyPreCheck;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -58,9 +57,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class QueryCheckerTest {
-
-    @Mock
-    private HederaAccountNumbers accountNumbers;
 
     @Mock(strictness = LENIENT)
     private QueryFeeCheck queryFeeCheck;
@@ -78,22 +74,19 @@ class QueryCheckerTest {
 
     @BeforeEach
     void setup() {
-        checker = new QueryChecker(accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler, solvencyPreCheck);
+        checker = new QueryChecker(queryFeeCheck, authorizer, cryptoTransferHandler, solvencyPreCheck);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalArguments() {
-        assertThatThrownBy(() ->
-                        new QueryChecker(null, queryFeeCheck, authorizer, cryptoTransferHandler, solvencyPreCheck))
+        assertThatThrownBy(() -> new QueryChecker(null, authorizer, cryptoTransferHandler, solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new QueryChecker(accountNumbers, null, authorizer, cryptoTransferHandler, solvencyPreCheck))
+        assertThatThrownBy(() -> new QueryChecker(queryFeeCheck, null, cryptoTransferHandler, solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new QueryChecker(accountNumbers, queryFeeCheck, null, cryptoTransferHandler, solvencyPreCheck))
+        assertThatThrownBy(() -> new QueryChecker(queryFeeCheck, authorizer, null, solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(accountNumbers, queryFeeCheck, authorizer, null, solvencyPreCheck))
+        assertThatThrownBy(() -> new QueryChecker(queryFeeCheck, authorizer, cryptoTransferHandler, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -304,7 +297,7 @@ class QueryCheckerTest {
         final var transaction = Transaction.newBuilder().build();
         final var transactionInfo =
                 new TransactionInfo(transaction, txBody, signatureMap, Bytes.EMPTY, CONSENSUS_CREATE_TOPIC);
-        when(accountNumbers.isSuperuser(4711L)).thenReturn(true);
+        when(authorizer.isSuperUser(payer)).thenReturn(true);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, fee))
                 .when(queryFeeCheck)
                 .nodePaymentValidity(List.of(accountAmount), fee, nodeAccountId);

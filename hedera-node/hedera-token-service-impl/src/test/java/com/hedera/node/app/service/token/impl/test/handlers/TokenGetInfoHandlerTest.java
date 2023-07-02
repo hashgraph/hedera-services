@@ -35,7 +35,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.QueryHeader;
@@ -212,10 +211,10 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
         final var expectedInfo = getExpectInfoDefaultKeys();
 
         fungibleToken = setFungibleTokenKeys();
-        final var state = MapReadableKVState.<EntityNum, Token>builder(TOKENS)
-                .value(fungibleTokenNum, fungibleToken)
+        final var state = MapReadableKVState.<TokenID, Token>builder(TOKENS)
+                .value(fungibleTokenId, fungibleToken)
                 .build();
-        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(state);
+        given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(state);
         final var store = new ReadableTokenStoreImpl(readableStates);
 
         checkResponse(responseHeader, expectedInfo, store);
@@ -229,10 +228,10 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
         final var expectedInfo = getExpectInfoDefaultStatus();
 
         fungibleToken = setFungibleTokenDefaultStatus();
-        final var state = MapReadableKVState.<EntityNum, Token>builder(TOKENS)
-                .value(fungibleTokenNum, fungibleToken)
+        final var state = MapReadableKVState.<TokenID, Token>builder(TOKENS)
+                .value(fungibleTokenId, fungibleToken)
                 .build();
-        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(state);
+        given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(state);
         final var store = new ReadableTokenStoreImpl(readableStates);
 
         checkResponse(responseHeader, expectedInfo, store);
@@ -264,7 +263,7 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .symbol(fungibleToken.symbol())
                 .name(fungibleToken.name())
                 .memo(fungibleToken.memo())
-                .treasury(AccountID.newBuilder().accountNum(fungibleToken.treasuryAccountNumber()))
+                .treasury(fungibleToken.treasuryAccountId())
                 .totalSupply(fungibleToken.totalSupply())
                 .maxSupply(fungibleToken.maxSupply())
                 .decimals(fungibleToken.decimals())
@@ -277,7 +276,7 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .feeScheduleKey(fungibleToken.feeScheduleKey())
                 .pauseKey(fungibleToken.pauseKey())
                 .autoRenewPeriod(Duration.newBuilder().seconds(fungibleToken.autoRenewSecs()))
-                .autoRenewAccount(AccountID.newBuilder().accountNum(fungibleToken.autoRenewAccountNumber()))
+                .autoRenewAccount(fungibleToken.autoRenewAccountId())
                 .defaultFreezeStatus(fungibleToken.accountsFrozenByDefault() ? FROZEN : UNFROZEN)
                 .defaultKycStatus(fungibleToken.accountsKycGrantedByDefault() ? GRANTED : REVOKED)
                 .pauseStatus(fungibleToken.paused() ? PAUSED : UNPAUSED)

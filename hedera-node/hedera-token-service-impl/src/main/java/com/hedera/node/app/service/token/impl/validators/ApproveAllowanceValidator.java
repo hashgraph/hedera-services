@@ -22,7 +22,6 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
@@ -205,7 +204,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             final ReadableTokenRelationStore tokenRelStore) {
         final var ownerId =
                 AccountID.newBuilder().accountNum(owner.accountNumber()).build();
-        final var tokenId = TokenID.newBuilder().tokenNum(token.tokenNumber()).build();
+        final var tokenId = token.tokenId();
         // ONLY reject self-approval for NFT's; else allow to match OZ ERC-20
         validateFalse(
                 !token.tokenType().equals(TokenType.FUNGIBLE_COMMON)

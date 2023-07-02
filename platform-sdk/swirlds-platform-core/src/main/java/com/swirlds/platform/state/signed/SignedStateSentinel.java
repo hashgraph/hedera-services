@@ -30,7 +30,9 @@ import com.swirlds.common.utility.CompareTo;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.throttle.RateLimiter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,13 +58,16 @@ public class SignedStateSentinel implements Startable, Stoppable {
      * @param time            provides the wall clock time
      */
     public SignedStateSentinel(
-            final PlatformContext platformContext, final ThreadManager threadManager, final Time time) {
-        this.time = time;
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final Time time) {
+        this.time = Objects.requireNonNull(time);
         maxSignedStateAge = platformContext
                 .getConfiguration()
                 .getConfigData(StateConfig.class)
                 .suspiciousSignedStateAge();
 
+        Objects.requireNonNull(threadManager);
         thread = new StoppableThreadConfiguration<>(threadManager)
                 .setComponent("platform")
                 .setThreadName("signed-state-sentinel")
@@ -95,7 +100,8 @@ public class SignedStateSentinel implements Startable, Stoppable {
             return;
         }
 
-        if (CompareTo.isGreaterThan(objectRecord.getAge(time.now()), maxSignedStateAge) && rateLimiter.request()) {
+        if (CompareTo.isGreaterThan(objectRecord.getAge(time.now()), maxSignedStateAge)
+                && rateLimiter.requestAndTrigger()) {
             final SignedStateHistory history = objectRecord.getMetadata();
             logger.error(EXCEPTION.getMarker(), "old signed state detected, memory leak probable.\n{}", history);
         }

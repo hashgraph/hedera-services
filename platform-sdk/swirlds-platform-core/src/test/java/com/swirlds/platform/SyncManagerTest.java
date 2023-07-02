@@ -32,6 +32,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.config.EventConfig;
+import com.swirlds.common.config.TransactionConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
@@ -50,6 +52,7 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import java.util.Random;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -86,7 +89,9 @@ public class SyncManagerTest {
             startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
             final Random random = getRandomPrintSeed();
             hashgraph = new DummyHashgraph(random, 0);
-            eventTransactionPool = spy(new EventTransactionPool(new NoOpMetrics(), null, null));
+            final TransactionConfig transactionConfig =
+                    new TestConfigBuilder().getOrCreateConfig().getConfigData(TransactionConfig.class);
+            eventTransactionPool = spy(new EventTransactionPool(new NoOpMetrics(), transactionConfig, null));
 
             this.swirldStateManager = swirldStateManager;
 
@@ -138,9 +143,13 @@ public class SyncManagerTest {
         }
     }
 
-    protected void resetTestSettings() {
-        Settings.getInstance().setMaxIncomingSyncsInc(10);
-        Settings.getInstance().setMaxOutgoingSyncs(10);
+    @BeforeAll
+    static void beforeAll() {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("sync.maxIncomingSyncsInc", 10)
+                .withValue("sync.maxOutgoingSyncs", 10)
+                .getOrCreateConfig();
+        ConfigurationHolder.getInstance().setConfiguration(configuration);
     }
 
     /**
@@ -150,7 +159,6 @@ public class SyncManagerTest {
     @Order(0)
     void basicTest() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
 
         final int[] neighbors = test.connectionGraph.getNeighbors(0);
 
@@ -204,7 +212,6 @@ public class SyncManagerTest {
     @Order(1)
     void shouldAcceptSyncTest() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
 
         // We should accept a sync if the event queue is empty and we aren't exceeding the maximum number of syncs
         test.hashgraph.eventIntakeQueueSize = 0;
@@ -226,7 +233,6 @@ public class SyncManagerTest {
     @Order(2)
     void shouldInitiateSyncTest() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
 
         // It is ok to initiate a sync if the intake queue is not full.
         test.hashgraph.eventIntakeQueueSize = 0;
@@ -244,7 +250,6 @@ public class SyncManagerTest {
     @Order(3)
     void getNeighborsToCall() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId selfId = test.hashgraph.selfId;
         final NodeId firstNode = addressBook.getNodeId(0);
@@ -270,7 +275,6 @@ public class SyncManagerTest {
     @Order(5)
     void shouldCreateEventTest() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId ID = addressBook.getNodeId(0);
         final NodeId OTHER_ID = addressBook.getNodeId(1);
@@ -308,10 +312,7 @@ public class SyncManagerTest {
     @Test
     @Order(7)
     void shouldCreateEventFreeze() {
-        resetTestSettings();
-
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId ID = addressBook.getNodeId(0);
         final NodeId OTHER_ID = addressBook.getNodeId(1);
@@ -342,8 +343,6 @@ public class SyncManagerTest {
     @Order(8)
     void shouldCreateEventFallenBehind() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
-
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId OTHER_ID = addressBook.getNodeId(1);
 
@@ -359,7 +358,6 @@ public class SyncManagerTest {
     @Test
     @Order(9)
     void shouldCreateEventThrottled() {
-        resetTestSettings();
         final int eventsRead = 0;
         final int eventsWritten = 0;
 
@@ -394,8 +392,6 @@ public class SyncManagerTest {
     @Order(10)
     void shouldCreateEventLargeRead() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
-
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId ID = addressBook.getNodeId(0);
         final NodeId OTHER_ID = addressBook.getNodeId(1);

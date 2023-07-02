@@ -62,7 +62,6 @@ class StaticConnectionManagersTest {
             return new FakeConnection(selfId, peerId);
         });
         for (final Boolean unidirectional : List.of(true, false)) {
-
             final StaticTopology topology = new StaticTopology(addressBook, selfId, numNeighbors, unidirectional);
             final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
             final List<NodeId> neighbors = topology.getNeighbors();

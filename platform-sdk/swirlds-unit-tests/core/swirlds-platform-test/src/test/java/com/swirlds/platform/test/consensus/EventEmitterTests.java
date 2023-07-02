@@ -67,6 +67,8 @@ public class EventEmitterTests {
         System.out.println("Validate Reset");
         final int numberOfEvents = 1000;
 
+        emitter.reset();
+
         final List<IndexedEvent> events1 = emitter.emitEvents(numberOfEvents);
         assertEquals(numberOfEvents, events1.size());
 

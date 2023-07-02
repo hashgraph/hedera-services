@@ -88,10 +88,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
      */
     private int signedTransPoolSize = 1024;
     /**
-     * ID number for this member
-     */
-    private long selfId;
-    /**
      * the app is run by this
      */
     private Platform platform;
@@ -152,9 +148,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public void init(final Platform platform, final NodeId id) {
-
         this.platform = platform;
-        selfId = id.id();
         // parse the config.txt parameters, and allow optional _ as in 1_000_000
         final String[] parameters = ParameterProvider.getInstance().getParameters();
         headless = (parameters[0].equals("1"));
@@ -183,7 +177,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
                                 + " such as the number of transactions per second.");
 
         transactionPool = new TransactionPool(
-                platform.getSelfId().id(),
+                platform.getSelfId(),
                 signedTransPoolSize,
                 bytesPerTrans,
                 true,
@@ -282,7 +276,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public SwirldState newState() {
-        return new StatsSigningTestingToolState(selfId, () -> transactionPool);
+        return new StatsSigningTestingToolState(() -> transactionPool);
     }
 
     /**

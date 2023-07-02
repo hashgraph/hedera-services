@@ -82,23 +82,23 @@ public class ReconnectLearner {
      */
     public ReconnectLearner(
             @NonNull final PlatformContext platformContext,
-            final ThreadManager threadManager,
-            final Connection connection,
-            final AddressBook addressBook,
-            final State currentState,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final Connection connection,
+            @NonNull final AddressBook addressBook,
+            @NonNull final State currentState,
             final int reconnectSocketTimeout,
-            final ReconnectMetrics statistics) {
+            @NonNull final ReconnectMetrics statistics) {
 
         currentState.throwIfImmutable("Can not perform reconnect with immutable state");
         currentState.throwIfDestroyed("Can not perform reconnect with destroyed state");
 
         this.platformContext = Objects.requireNonNull(platformContext);
-        this.threadManager = threadManager;
-        this.connection = connection;
-        this.addressBook = addressBook;
-        this.currentState = currentState;
+        this.threadManager = Objects.requireNonNull(threadManager);
+        this.connection = Objects.requireNonNull(connection);
+        this.addressBook = Objects.requireNonNull(addressBook);
+        this.currentState = Objects.requireNonNull(currentState);
         this.reconnectSocketTimeout = reconnectSocketTimeout;
-        this.statistics = statistics;
+        this.statistics = Objects.requireNonNull(statistics);
 
         // Save some of the current state data for validation
         this.stateValidationData =
@@ -147,7 +147,8 @@ public class ReconnectLearner {
      * 		state is invalid
      * @return the state received from the other node
      */
-    public ReservedSignedState execute(final SignedStateValidator validator) throws ReconnectException {
+    @NonNull
+    public ReservedSignedState execute(@NonNull final SignedStateValidator validator) throws ReconnectException {
         increaseSocketTimeout();
         try {
             receiveSignatures();
@@ -170,6 +171,7 @@ public class ReconnectLearner {
      * @throws InterruptedException
      * 		if the current thread is interrupted
      */
+    @NonNull
     private ReservedSignedState reconnect() throws InterruptedException {
         statistics.incrementReceiverStartTimes();
 

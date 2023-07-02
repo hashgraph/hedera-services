@@ -16,46 +16,112 @@
 
 package com.swirlds.common.system.address;
 
+import static com.swirlds.common.system.address.Address.ipString;
+
+import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.Objects;
-import java.util.function.Function;
 
 /**
  * A utility class for AddressBook functionality.
+ * <p>
+ * Each line in the config.txt address book contains the following comma separated elements:
+ * <ul>
+ *     <li>the keyword "address"</li>
+ *     <li>node id</li>
+ *     <li>nickname</li>
+ *     <li>self name</li>
+ *     <li>weight</li>
+ *     <li>internal IP address</li>
+ *     <li>internal port</li>
+ *     <li>external IP address</li>
+ *     <li>external port</li>
+ *     <li>memo field (optional)</li>
+ * </ul>
+ * Example: `address, 22, node22, node22, 1, 10.10.11.12, 5060, 212.25.36.123, 5060, memo for node 22`
  */
 public class AddressBookUtils {
+
     private AddressBookUtils() {}
 
     /**
-     * Parses an address from a single line of text.  The address must be in the form used in config.txt
-     * <p>
-     * If the memo field can be parsed, the provided memo field is ignored.  If there is no memo field parsed, the
-     * provided memo field is used.
+     * Serializes an AddressBook to text in the form used by config.txt.
      *
-     * @param addressLine         the string to parse an Address form.
-     * @param id                  the id to give to the parsed Address.
-     * @param isOwnHostDeterminer a function to determine if isOwn should be true given an InetAddress.
-     * @param memo                the memo text for the address.
-     * @return the Address parsed from the addressLine.
-     * @throws ParseException if there is any problem with creating an Address from the addressLine.
+     * @param addressBook the address book to serialize.
+     * @return the config.txt compatible text representation of the address book.
      */
     @NonNull
-    public static Address parseAddressConfigText(
-            @NonNull final String addressLine,
-            @NonNull final NodeId id,
-            @NonNull final Function<InetAddress, Boolean> isOwnHostDeterminer,
-            @NonNull final String memo)
-            throws ParseException {
-        Objects.requireNonNull(addressLine, "The addressLine must not be null.");
-        Objects.requireNonNull(id, "The id must not be null.");
-        Objects.requireNonNull(isOwnHostDeterminer, "The isOwnHostDeterminer must not be null.");
-        Objects.requireNonNull(memo, "The memo must not be null.");
-        final String[] parts = addressLine.trim().split(",");
-        if (parts.length < 8 || parts.length > 9) {
+    public static String addressBookConfigText(@NonNull final AddressBook addressBook) {
+        Objects.requireNonNull(addressBook, "The addressBook must not be null.");
+        final TextTable table = new TextTable().setBordersEnabled(false);
+        for (final Address address : addressBook) {
+            final String memo = address.getMemo();
+            final boolean hasMemo = !memo.trim().isEmpty();
+            final boolean hasInternalIpv4 = address.getAddressInternalIpv4() != null;
+            final boolean hasExternalIpv4 = address.getAddressExternalIpv4() != null;
+            table.addRow(
+                    "address,",
+                    address.getNodeId() + ",",
+                    address.getNickname() + ",",
+                    address.getSelfName() + ",",
+                    address.getWeight() + ",",
+                    (hasInternalIpv4 ? ipString(address.getAddressInternalIpv4()) : "") + ",",
+                    address.getPortInternalIpv4() + ",",
+                    (hasExternalIpv4 ? ipString(address.getAddressExternalIpv4()) : "") + ",",
+                    address.getPortExternalIpv4() + (hasMemo ? "," : ""),
+                    memo);
+        }
+        return table.render();
+    }
+
+    /**
+     * Parses an address book from text in the form described by config.txt.  Comments are ignored.
+     *
+     * @param addressBookText the config.txt compatible serialized address book to parse.
+     * @return a parsed AddressBook.
+     * @throws ParseException if any Address throws a ParseException when being parsed.
+     */
+    @NonNull
+    public static AddressBook parseAddressBookText(@NonNull final String addressBookText) throws ParseException {
+        Objects.requireNonNull(addressBookText, "The addressBookText must not be null.");
+        final AddressBook addressBook = new AddressBook();
+        for (final String addressLine : addressBookText.split("\\r?\\n")) {
+            final Address address = parseAddressText(addressLine);
+            if (address != null) {
+                addressBook.add(address);
+            }
+        }
+        return addressBook;
+    }
+
+    /**
+     * Parse an address from a single line of text, if it exists.  Address lines may have comments which start with the
+     * `#` character.  Comments are ignored.  Lines which are just comments return null.  If there is content prior to a
+     * `#` character, parsing the address is attempted.  Any failure to generate an address will result in throwing a
+     * parse exception.  The address parts are comma separated.   The format of text addresses prevent the use of `#`
+     * and `,` characters in any of the text based fields, including the memo field.
+     *
+     * @param addressText the text to parse.
+     * @return the parsed address or null if the line is a comment.
+     * @throws ParseException if there is any problem with parsing the address.
+     */
+    @Nullable
+    public static Address parseAddressText(@NonNull final String addressText) throws ParseException {
+        Objects.requireNonNull(addressText, "The addressText must not be null.");
+        // lines may have comments which start with the first # character.
+        final String[] textAndComment = addressText.split("#");
+        if (textAndComment.length == 0
+                || textAndComment[0] == null
+                || textAndComment[0].trim().isEmpty()) {
+            return null;
+        }
+        final String[] parts = addressText.split(",");
+        if (parts.length < 9 || parts.length > 10) {
             throw new ParseException("Incorrect number of parts in the address line to parse correctly.", parts.length);
         }
         for (int i = 0; i < parts.length; i++) {
@@ -64,89 +130,55 @@ public class AddressBookUtils {
         if (!parts[0].equals("address")) {
             throw new ParseException("The address line must start with 'address' and not '" + parts[0] + "'", 0);
         }
-        final String nickname = parts[1];
-        final String selfname = parts[2];
-        final Long weight;
+        final NodeId nodeId;
         try {
-            weight = Long.parseLong(parts[3]);
+            nodeId = new NodeId(Long.parseLong(parts[1]));
+        } catch (final Exception e) {
+            throw new ParseException("Cannot parse node id from '" + parts[1] + "'", 1);
+        }
+        final String nickname = parts[2];
+        final String selfname = parts[3];
+        final long weight;
+        try {
+            weight = Long.parseLong(parts[4]);
         } catch (NumberFormatException e) {
-            throw new ParseException("Cannot parse value of weight from '" + parts[3] + "'", 3);
+            throw new ParseException("Cannot parse value of weight from '" + parts[4] + "'", 4);
         }
         final InetAddress internalIp;
         try {
-            internalIp = InetAddress.getByName(parts[4]);
+            internalIp = InetAddress.getByName(parts[5]);
         } catch (UnknownHostException e) {
-            throw new ParseException("Cannot parse ip address from '" + parts[4] + ",", 4);
+            throw new ParseException("Cannot parse ip address from '" + parts[5] + ",", 5);
         }
         final int internalPort;
         try {
-            internalPort = Integer.parseInt(parts[5]);
+            internalPort = Integer.parseInt(parts[6]);
         } catch (NumberFormatException e) {
-            throw new ParseException("Cannot parse ip port from '" + parts[5] + "'", 5);
+            throw new ParseException("Cannot parse ip port from '" + parts[6] + "'", 6);
         }
         final InetAddress externalIp;
         try {
-            externalIp = InetAddress.getByName(parts[6]);
+            externalIp = InetAddress.getByName(parts[7]);
         } catch (UnknownHostException e) {
-            throw new ParseException("Cannot parse ip address from '" + parts[6] + ",", 6);
+            throw new ParseException("Cannot parse ip address from '" + parts[7] + ",", 7);
         }
         final int externalPort;
         try {
-            externalPort = Integer.parseInt(parts[7]);
+            externalPort = Integer.parseInt(parts[8]);
         } catch (NumberFormatException e) {
-            throw new ParseException("Cannot parse ip port from '" + parts[7] + "'", 7);
+            throw new ParseException("Cannot parse ip port from '" + parts[8] + "'", 8);
         }
-        final String memoToUse;
-        if (parts.length == 9) {
-            memoToUse = parts[8];
-        } else {
-            memoToUse = memo;
-        }
-
-        final boolean isOwnHost = isOwnHostDeterminer.apply(internalIp);
+        final String memoToUse = parts.length == 10 ? parts[9] : "";
 
         return new Address(
-                id,
+                nodeId,
                 nickname,
                 selfname,
                 weight,
-                isOwnHost,
                 internalIp.getAddress(),
                 internalPort,
                 externalIp.getAddress(),
                 externalPort,
                 memoToUse);
-    }
-
-    /**
-     * Parses an address book from text in the form described by config.txt
-     *
-     * @param addressBookText the config.txt compatible serialized address book to parse.
-     * @param posToId         a function to determine the address id given the position of the address in the text.
-     * @param isOwnDeterminer a function to determine if the address isOwn property should be true given an
-     *                        InetAddress.
-     * @param memoSource      a function to render memo text given the address id.
-     * @return a parsed AddressBook.
-     * @throws ParseException if any Address throws a ParseException when being parsed.
-     */
-    @NonNull
-    public static AddressBook parseAddressBookConfigText(
-            @NonNull final String addressBookText,
-            @NonNull final Function<Long, NodeId> posToId,
-            @NonNull final Function<InetAddress, Boolean> isOwnDeterminer,
-            @NonNull final Function<NodeId, String> memoSource)
-            throws ParseException {
-        Objects.requireNonNull(addressBookText, "The addressBookText must not be null.");
-        Objects.requireNonNull(posToId, "The posToId must not be null.");
-        Objects.requireNonNull(isOwnDeterminer, "The isOwnDeterminer must not be null.");
-        Objects.requireNonNull(memoSource, "The memoSource must not be null.");
-        final AddressBook addressBook = new AddressBook();
-        long pos = 0;
-        for (final String addressLine : addressBookText.split("\\r?\\n")) {
-            final NodeId id = posToId.apply(pos);
-            addressBook.add(parseAddressConfigText(addressLine, id, isOwnDeterminer, memoSource.apply(id)));
-            pos++;
-        }
-        return addressBook;
     }
 }

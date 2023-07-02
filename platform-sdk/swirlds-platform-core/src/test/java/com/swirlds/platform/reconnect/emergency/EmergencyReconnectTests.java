@@ -307,7 +307,6 @@ public class EmergencyReconnectTests {
                 .setAverageWeight(100L)
                 .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
-                .setSequentialIds(false)
                 .build();
     }
 

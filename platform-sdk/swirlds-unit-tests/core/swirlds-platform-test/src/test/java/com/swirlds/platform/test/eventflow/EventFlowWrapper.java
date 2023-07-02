@@ -36,12 +36,14 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.test.consensus.ConsensusUtils;
 import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -62,21 +64,23 @@ public class EventFlowWrapper {
     /**
      * Creates new instances and starts the handlers.
      *
-     * @param random
-     * @param numNodes
-     * @param preConsensusEventHandler
-     * @param consensusEventHandler
+     * @param random                the random number generator
+     * @param addressBook            the address book to use
+     * @param preConsensusEventHandler the pre-consensus event handler
+     * @param consensusEventHandler the consensus event handler
      */
     public EventFlowWrapper(
-            final Random random,
-            final int numNodes,
-            final PreConsensusEventHandler preConsensusEventHandler,
-            final ConsensusRoundHandler consensusEventHandler,
-            final SwirldStateManager swirldStateManager) {
-        this.preConsensusEventHandler = preConsensusEventHandler;
-        this.consensusRoundHandler = consensusEventHandler;
-        this.swirldStateManager = swirldStateManager;
-        defaultEventGenerator = EventFlowTestUtils.createEventEmitter(random, numNodes);
+            @NonNull final Random random,
+            @NonNull final AddressBook addressBook,
+            @NonNull final PreConsensusEventHandler preConsensusEventHandler,
+            @NonNull final ConsensusRoundHandler consensusEventHandler,
+            @NonNull final SwirldStateManager swirldStateManager) {
+        Objects.requireNonNull(random);
+        Objects.requireNonNull(addressBook);
+        this.preConsensusEventHandler = Objects.requireNonNull(preConsensusEventHandler);
+        this.consensusRoundHandler = Objects.requireNonNull(consensusEventHandler);
+        this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
+        defaultEventGenerator = EventFlowTestUtils.createEventEmitter(random, addressBook);
         preConsensusEventHandler.start();
         consensusEventHandler.start();
     }
@@ -95,6 +99,10 @@ public class EventFlowWrapper {
         submitSelfTransactions(selfTransactions);
 
         return selfTransactions;
+    }
+
+    public void waitUntilAllRoundsAreHandled() throws InterruptedException {
+        consensusRoundHandler.waitUntilNotBusy();
     }
 
     public HashSet<ConsensusTransactionImpl> applyPreConsensusEvents(

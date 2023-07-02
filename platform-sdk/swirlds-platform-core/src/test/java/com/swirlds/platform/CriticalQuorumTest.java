@@ -35,6 +35,7 @@ import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,7 +45,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -274,7 +274,6 @@ class CriticalQuorumTest {
             final AtomicInteger index = new AtomicInteger(0);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(false)
                     .setCustomWeightGenerator(id -> weights.get(index.getAndIncrement()))
                     .build();
             final String name = numNodes + " nodes, one third of nodes are zero-weight, remaining have random weight "
@@ -297,7 +296,6 @@ class CriticalQuorumTest {
             final AtomicInteger index = new AtomicInteger(0);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(false)
                     .setCustomWeightGenerator(id -> weights.get(index.getAndIncrement()))
                     .build();
             final String name =
@@ -320,7 +318,6 @@ class CriticalQuorumTest {
             final AtomicInteger index = new AtomicInteger(0);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(false)
                     .setCustomWeightGenerator(id -> weights.get(index.getAndIncrement()))
                     .build();
             final String name = numNodes + " nodes, one node has strong minority, remaining weight evenly distributed";
@@ -342,7 +339,6 @@ class CriticalQuorumTest {
             final AtomicInteger index = new AtomicInteger(0);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(false)
                     .setCustomWeightGenerator(id -> weights.get(index.getAndIncrement()))
                     .build();
             final String name = numNodes + " node" + (numNodes == 1 ? "" : "s") + " unbalanced";
@@ -361,7 +357,6 @@ class CriticalQuorumTest {
         for (int numNodes = 1; numNodes <= 9; numNodes++) {
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(false)
                     .setCustomWeightGenerator(id -> 1L)
                     .build();
 

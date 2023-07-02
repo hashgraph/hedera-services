@@ -70,7 +70,8 @@ public class AdaptedMonoEventExpansion {
         });
         if (!forWorkflows.isEmpty()) {
             final var readableStoreFactory = new ReadableStoreFactory(state);
-            final var creatorAccountID = PbjConverter.toPbj(nodeInfo.accountOf(event.getCreatorId()));
+            final var creatorAccountID =
+                    PbjConverter.toPbj(nodeInfo.accountOf(event.getCreatorId().id()));
             preHandleWorkflow.preHandle(readableStoreFactory, creatorAccountID, forWorkflows.stream());
         }
     }

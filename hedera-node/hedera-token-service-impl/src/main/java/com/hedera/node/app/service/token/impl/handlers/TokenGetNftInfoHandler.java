@@ -25,7 +25,6 @@ import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalseP
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
@@ -134,10 +133,10 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
             final var info = TokenNftInfo.newBuilder()
                     .ledgerId(config.id())
                     .nftID(nftId)
-                    .accountID(AccountID.newBuilder().accountNum(nft.ownerNumber()))
+                    .accountID(nft.ownerId())
                     .creationTime(nft.mintTime())
                     .metadata(nft.metadata())
-                    .spenderId(AccountID.newBuilder().accountNum(nft.spenderNumber()))
+                    .spenderId(nft.spenderId())
                     .build();
             return Optional.of(info);
         }

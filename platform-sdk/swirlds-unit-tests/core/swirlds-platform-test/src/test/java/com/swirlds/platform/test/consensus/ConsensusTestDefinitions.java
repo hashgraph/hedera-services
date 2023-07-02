@@ -132,7 +132,8 @@ public final class ConsensusTestDefinitions {
         // events again. Event X will not have any children, because the node is shunned after event X is
         // created.
         for (int i = 0; i < standardGenerator.getNumberOfSources(); i++) {
-            final EventSource<?> source = standardGenerator.getSource(i);
+            final NodeId nodeId = standardGenerator.getAddressBook().getNodeId(i);
+            final EventSource<?> source = standardGenerator.getSource(nodeId);
 
             // This is the last source. Force it to stop creating events (go to sleep) after the event X
             if (i == standardGenerator.getNumberOfSources() - 1) {
@@ -635,7 +636,7 @@ public final class ConsensusTestDefinitions {
             final StandardGraphGenerator generator = new StandardGraphGenerator(0, eventSources);
 
             generator
-                    .getSource(staleNodeProvider)
+                    .getSourceByIndex(staleNodeProvider)
                     .setRecentEventRetentionSize(5000)
                     .setRequestedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300));
 
@@ -673,7 +674,7 @@ public final class ConsensusTestDefinitions {
             final StandardGraphGenerator generator = new StandardGraphGenerator(0, eventSources);
 
             generator
-                    .getSource(staleNodeProvider)
+                    .getSourceByIndex(staleNodeProvider)
                     .setRecentEventRetentionSize(5000)
                     .setProvidedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300));
 
@@ -981,7 +982,6 @@ public final class ConsensusTestDefinitions {
         final List<Long> nodeWeights = weightGenerator.getWeights(seed, numberOfNodes);
         final AtomicInteger index = new AtomicInteger(0);
         final AddressBook ab = new RandomAddressBookGenerator(random)
-                .setSequentialIds(true)
                 .setSize(numberOfNodes)
                 .setCustomWeightGenerator(id -> nodeWeights.get(index.getAndIncrement()))
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
@@ -990,7 +990,7 @@ public final class ConsensusTestDefinitions {
         // create an empty intake object
         final TestIntake intake = new TestIntake(ab);
 
-        final SimpleEventGenerator gen = new SimpleEventGenerator(numberOfNodes, random);
+        final SimpleEventGenerator gen = new SimpleEventGenerator(ab, random);
 
         final AtomicInteger numReturned = new AtomicInteger();
 
@@ -1089,7 +1089,6 @@ public final class ConsensusTestDefinitions {
         final List<Long> nodeWeights = weightGenerator.getWeights(seedToUse, numberOfNodes);
         final AtomicInteger index = new AtomicInteger(0);
         final AddressBook ab = new RandomAddressBookGenerator(random)
-                .setSequentialIds(true)
                 .setSize(numberOfNodes)
                 .setCustomWeightGenerator(id -> nodeWeights.get(index.getAndIncrement()))
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
@@ -1098,7 +1097,7 @@ public final class ConsensusTestDefinitions {
         // create an empty consensus object
         final Consensus cons = buildSimpleConsensus(ab);
 
-        final SimpleEventGenerator gen = new SimpleEventGenerator(numberOfNodes, random);
+        final SimpleEventGenerator gen = new SimpleEventGenerator(ab, random);
 
         for (int i = 0; i < numEventsBeforeExclude; i++) {
             cons.addEvent(gen.nextEvent(), ab);

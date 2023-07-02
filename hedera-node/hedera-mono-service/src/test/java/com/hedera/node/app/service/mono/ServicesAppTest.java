@@ -21,9 +21,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -133,7 +131,7 @@ class ServicesAppTest {
                 .platform(platform)
                 .consoleCreator((ignore, visible) -> null)
                 .crypto(cryptography)
-                .selfId(selfId)
+                .selfId(new NodeId(selfId))
                 .build();
 
         // Make sure the MutableStateChildren has the needed children to instantiate EntityMapWarmer
@@ -183,7 +181,7 @@ class ServicesAppTest {
         assertThat(subject.virtualMapFactory(), instanceOf(VirtualMapFactory.class));
         assertThat(subject.prefetchProcessor(), instanceOf(PrefetchProcessor.class));
         assertThat(subject.bootstrapProps(), instanceOf(ChainedSources.class));
-        assertSame(subject.nodeId(), selfNodeId);
+        assertEquals(subject.nodeId(), selfNodeId);
         assertSame(SLEEPING_PAUSE, subject.pause());
         assertTrue(subject.consoleOut().isEmpty());
         assertThat(subject.stakeStartupHelper(), instanceOf(StakeStartupHelper.class));
