@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -45,9 +44,6 @@ public class TransactionTest {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.common");
         registry.registerConstructables("com.swirlds.common.system.transaction.internal");
-        SettingsCommon.maxTransactionCountPerEvent = MAX_TRANSACTIONS;
-        SettingsCommon.transactionMaxBytes = MAX_TRANSACTION_BYTES;
-        SettingsCommon.maxAddressSizeAllowed = MAX_ADDRESSBOOK_SIZE;
     }
 
     /**

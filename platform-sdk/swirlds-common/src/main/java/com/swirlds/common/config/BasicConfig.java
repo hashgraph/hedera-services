@@ -27,21 +27,21 @@ import java.time.Duration;
  * Basic configuration data record. This record contains all general config properties that can not be defined for a
  * specific subsystem. The record is based on the definition of config data objects as described in {@link ConfigData}.
  *
+ * <p>
+ * Do not add new settings to this record unless you have a very good reason. New settings should go
+ * into config records with a prefix defined by a {@link ConfigData @ConfigData("prefix")} tag. Adding
+ * settings to this record pollutes the top level namespace.
+ *
  * @param configsUsedFilename
  *      the name of the file that contains the list of config files used to create this config
  * @param verifyEventSigs
  * 		verify event signatures (rather than just trusting they are correct)?
- * @param numCryptoThreads
- * 		number of threads used to verify signatures and generate keys, in parallel
  * @param showInternalStats
  * 		show the user all statistics, including those with category "internal"?
  * @param verboseStatistics
  * 		show expand statistics values, inlcude mean, min, max, stdDev
  * @param maxEventQueueForCons
  * 		max events that can be put in the forCons queue (q2) in ConsensusRoundHandler (0 for infinity)
- * @param throttleTransactionQueueSize
- * 		Stop accepting new non-system transactions into the 4 transaction queues if any of them have more than this
- * 		many.
  * @param throttle7
  * 		should we slow down when not behind? One of N members is "falling behind" when it receives at least (N +
  * 		throttle7threshold) events during a sync.
@@ -61,29 +61,14 @@ import java.time.Duration;
  * @param delayShuffle
  * 		the working state (stateWork) resets to a copy of the consensus state (stateCons) (which is called a shuffle)
  * 		when its queue is empty and the two are equal, but never twice within this many milliseconds
- * @param callerSkipsBeforeSleep
- * 		sleep sleepCallerSkips ms after the caller fails this many times to call a random member
- * @param sleepCallerSkips
- * 		caller sleeps this many milliseconds if it failed to connect to callerSkipsBeforeSleep in a row
  * @param statsSkipSeconds
  * 		number of seconds that the "all" history window skips at the start
- * @param threadPrioritySync
- * 		priority for threads that sync (in SyncCaller, SyncListener, SyncServer)
- * @param threadPriorityNonSync
- * 		priority for threads that don't sync (all but SyncCaller, SyncListener,SyncServer)
- * @param maxAddressSizeAllowed
- * 		the maximum number of address allowed in a address book, the same as the maximum allowed network size
  * @param freezeSecondsAfterStartup
  * 		do not create events for this many seconds after the platform has started (0 or less to not freeze at startup)
  * @param loadKeysFromPfxFiles
  * 		When enabled, the platform will try to load node keys from .pfx files located in the keysDirPath. If even a
  * 		single key is missing, the platform will warn and exit. If disabled, the platform will generate keys
  * 		deterministically.
- * @param maxTransactionBytesPerEvent
- * 		the maximum number of bytes that a single event may contain not including the event headers if a single
- * 		transaction exceeds this limit then the event will contain the single transaction only
- * @param maxTransactionCountPerEvent
- * 		the maximum number of transactions that a single event may contain
  * @param eventIntakeQueueSize
  * 		The size of the event intake queue,
  *        {@link com.swirlds.common.threading.framework.config.QueueThreadConfiguration#UNLIMITED_CAPACITY} for
@@ -108,10 +93,6 @@ import java.time.Duration;
  * 		period of generating eventStream file
  * @param eventsLogDir
  * 		eventStream files will be generated in this directory
- * @param threadDumpPeriodMs
- * 		period of generating thread dump file in the unit of milliseconds
- * @param threadDumpLogDir
- * 		thread dump files will be generated in this directory
  * @param jvmPauseDetectorSleepMs
  * 		period of JVMPauseDetectorThread sleeping in the unit of milliseconds
  * @param jvmPauseReportMs
@@ -138,16 +119,6 @@ import java.time.Duration;
  * 		sync, to reduce the probability of creating an event that will become stale.
  * @param eventIntakeQueueThrottleSize
  * 		The value for the event intake queue at which the node should stop syncing
- * @param transactionMaxBytes
- * 		maximum number of bytes allowed in a transaction
- * @param maxIncomingSyncsInc
- * 		maximum number of simultaneous incoming syncs initiated by others, minus maxOutgoingSyncs. If there is a moment
- * 		where each member has maxOutgoingSyncs outgoing syncs in progress, then a fraction of at least:
- * 		(1 / (maxOutgoingSyncs + maxIncomingSyncsInc)) members will be willing to accept another incoming sync. So
- * 		even in the worst case, it should be possible to find a partner to sync with in about (maxOutgoingSyncs +
- * 		maxIncomingSyncsInc) tries, on average.
- * @param maxOutgoingSyncs
- * 		maximum number of simultaneous outgoing syncs initiated by me
  * @param logPath
  * 		path to log4j2.xml (which might not exist)
  * @param hangingThreadDuration
@@ -159,16 +130,20 @@ import java.time.Duration;
  * @param genesisFreezeTime
  *      If this node starts from genesis, this value is used as the freeze time. This feature is deprecated and
  *      planned for removal in a future platform version.
+ * @param deadlockCheckPeriod
+ *      check for deadlocks every this many milliseconds (-1 for never)
+ * @param statsBufferSize
+ *      number of bins to store for the history (in StatsBuffer etc.)
+ * @param statsRecentSeconds
+ *      number of seconds covered by "recent" history (in StatsBuffer etc.)
  */
 @ConfigData
 public record BasicConfig(
         @ConfigProperty(defaultValue = "configsUsed.txt") String configsUsedFilename,
         @ConfigProperty(defaultValue = "true") boolean verifyEventSigs,
-        @ConfigProperty(defaultValue = "32") int numCryptoThreads,
         @ConfigProperty(defaultValue = "false") boolean showInternalStats,
         @ConfigProperty(defaultValue = "false") boolean verboseStatistics,
         @ConfigProperty(defaultValue = "10000") int maxEventQueueForCons,
-        @ConfigProperty(defaultValue = "100000") int throttleTransactionQueueSize,
         @ConfigProperty(defaultValue = "false") boolean throttle7,
         @ConfigProperty(defaultValue = "1.5") double throttle7threshold,
         @ConfigProperty(defaultValue = "0.05") double throttle7extra,
@@ -177,16 +152,9 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "true") boolean logStack,
         @ConfigProperty(defaultValue = "500") int sleepHeartbeat,
         @ConfigProperty(defaultValue = "200") long delayShuffle,
-        @ConfigProperty(defaultValue = "30") long callerSkipsBeforeSleep,
-        @ConfigProperty(defaultValue = "50") long sleepCallerSkips,
         @ConfigProperty(defaultValue = "60") double statsSkipSeconds,
-        @ConfigProperty(defaultValue = "5") int threadPrioritySync,
-        @ConfigProperty(defaultValue = "5") int threadPriorityNonSync,
-        @ConfigProperty(defaultValue = "1024") int maxAddressSizeAllowed,
         @ConfigProperty(defaultValue = "10") int freezeSecondsAfterStartup,
         @ConfigProperty(defaultValue = "true") boolean loadKeysFromPfxFiles,
-        @ConfigProperty(defaultValue = "245760") int maxTransactionBytesPerEvent,
-        @ConfigProperty(defaultValue = "245760") int maxTransactionCountPerEvent,
         @ConfigProperty(defaultValue = "10000") int eventIntakeQueueSize,
         @ConfigProperty(defaultValue = "0") int randomEventProbability,
         @ConfigProperty(defaultValue = "10") int rescueChildlessInverseProbability,
@@ -194,8 +162,6 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "500") int eventStreamQueueCapacity,
         @ConfigProperty(defaultValue = "60") long eventsLogPeriod,
         @ConfigProperty(defaultValue = "./eventstreams") String eventsLogDir,
-        @ConfigProperty(defaultValue = "0") long threadDumpPeriodMs,
-        @ConfigProperty(defaultValue = "data/threadDump") String threadDumpLogDir,
         @ConfigProperty(defaultValue = "1000") int jvmPauseDetectorSleepMs,
         @ConfigProperty(defaultValue = "1000") int jvmPauseReportMs,
         @ConfigProperty(defaultValue = "false") boolean enableStateRecovery,
@@ -206,13 +172,13 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "1") long pingTransFreq,
         @ConfigProperty(defaultValue = "5") int staleEventPreventionThreshold,
         @ConfigProperty(defaultValue = "1000") int eventIntakeQueueThrottleSize,
-        @ConfigProperty(defaultValue = "6144") int transactionMaxBytes,
-        @ConfigProperty(defaultValue = "1") int maxIncomingSyncsInc,
-        @ConfigProperty(defaultValue = "2") int maxOutgoingSyncs,
         @ConfigProperty(defaultValue = "log4j2.xml") Path logPath,
         @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration,
         @ConfigProperty(defaultValue = "data/saved") String emergencyRecoveryFileLoadDir,
-        @ConfigProperty(defaultValue = "0") long genesisFreezeTime) {
+        @ConfigProperty(defaultValue = "0") long genesisFreezeTime,
+        @ConfigProperty(defaultValue = "1000") int deadlockCheckPeriod,
+        @ConfigProperty(defaultValue = "100") int statsBufferSize,
+        @ConfigProperty(defaultValue = "63") double statsRecentSeconds) {
 
     /**
      * @return Absolute path to the emergency recovery file load directory.

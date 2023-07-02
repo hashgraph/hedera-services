@@ -17,8 +17,8 @@
 package com.swirlds.platform.components.state;
 
 import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A record of an attempt to write a signed state to disk.

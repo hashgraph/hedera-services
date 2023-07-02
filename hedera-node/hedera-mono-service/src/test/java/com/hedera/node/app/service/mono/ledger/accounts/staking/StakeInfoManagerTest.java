@@ -30,7 +30,7 @@ import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.List;
@@ -48,12 +48,6 @@ class StakeInfoManagerTest {
 
     @Mock
     private AddressBook addressBook;
-
-    @Mock
-    private Address address1;
-
-    @Mock
-    private Address address2;
 
     @Mock
     private BootstrapProperties bootstrapProperties;
@@ -155,10 +149,8 @@ class StakeInfoManagerTest {
         given(bootstrapProperties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS))
                 .willReturn(2);
         given(addressBook.getSize()).willReturn(2);
-        given(addressBook.getAddress(0)).willReturn(address1);
-        given(address1.getId()).willReturn(0L);
-        given(addressBook.getAddress(1)).willReturn(address2);
-        given(address2.getId()).willReturn(1L);
+        given(addressBook.getNodeId(0)).willReturn(new NodeId(0));
+        given(addressBook.getNodeId(1)).willReturn(new NodeId(1));
 
         final var info = buildStakingInfoMap(addressBook, bootstrapProperties);
         info.forEach((a, b) -> {

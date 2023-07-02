@@ -19,8 +19,6 @@ package com.hedera.node.app.workflows.query;
 import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.components.QueryInjectionComponent;
-import com.hedera.node.app.fees.FeeAccumulator;
-import com.hedera.node.app.fees.MonoFeeAccumulator;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.file.impl.handlers.FileHandlers;
@@ -46,10 +44,6 @@ public interface QueryWorkflowInjectionModule {
     @Binds
     @Singleton
     QueryWorkflow bindQueryWorkflow(QueryWorkflowImpl queryWorkflow);
-
-    @Binds
-    @Singleton
-    FeeAccumulator bindFeeAccumulator(MonoFeeAccumulator feeAccumulator);
 
     @Provides
     @Singleton

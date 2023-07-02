@@ -32,7 +32,6 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.Metrics;
@@ -57,6 +56,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.event.source.StandardEventSource;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -70,7 +70,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,11 +92,6 @@ class AsyncPreconsensusEventWriterTests {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
-
-        SettingsCommon.maxTransactionBytesPerEvent = Integer.MAX_VALUE;
-        SettingsCommon.maxTransactionCountPerEvent = Integer.MAX_VALUE;
-        SettingsCommon.transactionMaxBytes = Integer.MAX_VALUE;
-        SettingsCommon.maxAddressSizeAllowed = Integer.MAX_VALUE;
     }
 
     @BeforeEach
@@ -246,6 +240,10 @@ class AsyncPreconsensusEventWriterTests {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("event.preconsensus.databaseDirectory", testDirectory)
                 .withValue("event.preconsensus.preferredFileSizeMegabytes", 5)
+                .withValue("transaction.maxTransactionBytesPerEvent", Integer.MAX_VALUE)
+                .withValue("transaction.maxTransactionCountPerEvent", Integer.MAX_VALUE)
+                .withValue("transaction.transactionMaxBytes", Integer.MAX_VALUE)
+                .withValue("transaction.maxAddressSizeAllowed", Integer.MAX_VALUE)
                 .getOrCreateConfig();
 
         final Metrics metrics = new NoOpMetrics();

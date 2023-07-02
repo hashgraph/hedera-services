@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -37,6 +38,16 @@ public interface ReadableAccountStore {
      */
     @Nullable
     Account getAccountById(@NonNull final AccountID accountID);
+
+    /**
+     * Fetches an {@link Account} object from state with the given alias. If the account could not be
+     * fetched because the given account doesn't exist, returns {@code null}.
+     *
+     * @param alias alias
+     * @return AccountID object if successfully fetched or {@code null} if the account doesn't exist
+     */
+    @Nullable
+    AccountID getAccountIDByAlias(@NonNull final Bytes alias);
 
     /**
      * Fetches an {@link Account} object from state with the given {@link ContractID}. If the contract account could not

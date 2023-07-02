@@ -31,7 +31,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.SerializableWithKnownLength;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
@@ -57,9 +56,6 @@ class TransactionSerializationTest {
 
     @BeforeAll
     static void setUp() throws ConstructableRegistryException {
-        SettingsCommon.maxTransactionCountPerEvent = MAX_TRANSACTIONS;
-        SettingsCommon.transactionMaxBytes = MAX_TRANSACTION_BYTES;
-        SettingsCommon.maxAddressSizeAllowed = MAX_ADDRESSBOOK_SIZE;
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.common.system.transaction");
         registry.registerConstructables("com.swirlds.common");

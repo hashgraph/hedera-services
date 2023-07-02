@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.mono.state.merkle;
 
+import com.hedera.test.serde.EqualityType;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class MerkleTokenRelStatusSerdeTest extends SelfSerializableDataTest<MerkleTokenRelStatus> {
     @Override
@@ -31,7 +33,8 @@ public class MerkleTokenRelStatusSerdeTest extends SelfSerializableDataTest<Merk
     }
 
     @Override
-    protected MerkleTokenRelStatus getExpectedObject(final int version, final int testCaseNo) {
+    protected MerkleTokenRelStatus getExpectedObject(
+            final int version, final int testCaseNo, @NonNull final EqualityType equalityType) {
         var expected = super.getExpectedObject(version, testCaseNo);
         if (version < MerkleTokenRelStatus.RELEASE_0250_VERSION) {
             expected.setNext(0);

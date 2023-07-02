@@ -22,7 +22,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.FunctionGauge;
@@ -54,20 +53,21 @@ class LegacyCsvWriterTest {
     private static final NodeId NODE_ID = new NodeId(42L);
     private Metrics metrics;
     private MetricsConfig metricsConfig;
+    private Configuration configuration;
 
     @TempDir
     private Path tempDir;
 
     @BeforeEach
     void setStandardSettings() {
-        final Configuration configuration = new TestConfigBuilder()
+        configuration = new TestConfigBuilder()
                 .withValue("metrics.csvOutputFolder", tempDir.toString())
                 .withValue("metrics.csvAppend", "false")
+                .withValue("showInternalStats", "false")
+                .withValue("verboseStatistics", "false")
                 .getOrCreateConfig();
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
 
-        SettingsCommon.showInternalStats = false;
-        SettingsCommon.verboseStatistics = false;
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         metrics = new DefaultMetrics(
@@ -77,7 +77,7 @@ class LegacyCsvWriterTest {
     @Test
     void testToString() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
 
         // then
         assertThat(writer.toString()).matches("^LegacyCsvWriter\\[csvFilePath=" + tempDir + ".*]$");
@@ -88,7 +88,7 @@ class LegacyCsvWriterTest {
         // given
         final Path grandParentPath = Files.createTempDirectory(tempDir, null);
         final Path parentPath = Files.createTempDirectory(grandParentPath, null);
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, parentPath, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, parentPath, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
 
         Files.deleteIfExists(csvFilePath);
@@ -113,7 +113,7 @@ class LegacyCsvWriterTest {
     @Test
     void testWriteDefault() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createCompleteList();
         final List<Snapshot> snapshots1 = metrics.stream()
@@ -172,7 +172,7 @@ class LegacyCsvWriterTest {
     @Test
     void testWritingOfSpecialValues() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createShortList();
         final DoubleGauge gauge = (DoubleGauge) metrics.get(1);
@@ -205,17 +205,17 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-                (.*\\n){5}.*
-                ,,0,0.0,
-                ,,0,0.0,
-                ,,0,0.0,
-                """);
+                                (.*\\n){5}.*
+                                ,,0,0.0,
+                                ,,0,0.0,
+                                ,,0,0.0,
+                                """);
     }
 
     @Test
     void testWriteWithExistingFile() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         Files.writeString(csvFilePath, "Hello World");
         final List<Metric> metrics = createShortList();
@@ -250,8 +250,7 @@ class LegacyCsvWriterTest {
                 .withValue("metrics.csvOutputFolder", tempDir.toString())
                 .withValue("metrics.csvAppend", "true")
                 .getOrCreateConfig();
-        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         Files.writeString(
                 csvFilePath,
@@ -301,8 +300,7 @@ class LegacyCsvWriterTest {
                 .withValue("metrics.csvOutputFolder", tempDir.toString())
                 .withValue("metrics.csvAppend", "true")
                 .getOrCreateConfig();
-        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         Files.deleteIfExists(csvFilePath);
         final List<Metric> metrics = createShortList();
@@ -333,7 +331,7 @@ class LegacyCsvWriterTest {
     @Test
     void testWriteWithInternalIgnored() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createListWithInternals();
         final List<Snapshot> snapshots1 = metrics.stream()
@@ -377,9 +375,10 @@ class LegacyCsvWriterTest {
 
     @Test
     void testWriteWithInternalNotIgnored() throws IOException {
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("showInternalStats", "true").getOrCreateConfig();
         // given
-        SettingsCommon.showInternalStats = true;
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createListWithInternals();
         final List<Snapshot> snapshots1 = metrics.stream()
@@ -426,7 +425,7 @@ class LegacyCsvWriterTest {
     @Test
     void testWriteWithSecondaryValuesNotIncluded() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createListWithSecondaryValues();
         final List<Snapshot> snapshots1 = metrics.stream()
@@ -473,8 +472,9 @@ class LegacyCsvWriterTest {
     @Test
     void testWriteWithSecondaryValuesIncluded() throws IOException {
         // given
-        SettingsCommon.verboseStatistics = true;
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("verboseStatistics", "true").getOrCreateConfig();
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createListWithSecondaryValues();
         final List<Snapshot> snapshots1 = metrics.stream()
@@ -521,7 +521,7 @@ class LegacyCsvWriterTest {
     @Test
     void testBrokenFormatString() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final DoubleGauge gauge = metrics.getOrCreate(new DoubleGauge.Config(Metrics.PLATFORM_CATEGORY, "DoubleGauge")
                 .withFormat("%d")
@@ -543,7 +543,7 @@ class LegacyCsvWriterTest {
     @Test
     void testChangedEntriesWithSimpleMetrics() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createSimpleList();
 
@@ -591,7 +591,7 @@ class LegacyCsvWriterTest {
     @Test
     void testChangedEntriesWithComplexMetricsAndNoSecondaryValues() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createComplexList();
 
@@ -639,8 +639,9 @@ class LegacyCsvWriterTest {
     @Test
     void testChangedEntriesWithComplexMetricsAndSecondaryValues() throws IOException {
         // given
-        SettingsCommon.verboseStatistics = true;
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("verboseStatistics", "true").getOrCreateConfig();
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createComplexList();
 

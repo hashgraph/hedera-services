@@ -30,6 +30,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.spi.state.ReadableQueueState;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
@@ -75,7 +76,6 @@ public class RecordCacheImpl implements HederaRecordCache {
      * @param records Every {@link TransactionRecord} handled for every transaction that came to consensus with the txId
      */
     private record History(@NonNull Set<Long> nodeIds, @NonNull List<TransactionRecord> records) {
-
         History() {
             this(new HashSet<>(), new ArrayList<>());
         }
@@ -121,7 +121,7 @@ public class RecordCacheImpl implements HederaRecordCache {
         payerToTransactionIndex.clear();
         deduplicationCache.clear();
 
-        final var queue = getQueue();
+        final var queue = getReadableQueue();
         final var itr = queue.iterator();
         while (itr.hasNext()) {
             final var entry = itr.next();
@@ -258,13 +258,23 @@ public class RecordCacheImpl implements HederaRecordCache {
                 : records.stream().map(TransactionRecord::receipt).toList();
     }
 
-    /** Utility method that get the queue from the working state */
+    /** Utility method that get the writable queue from the working state */
     private WritableQueueState<TransactionRecordEntry> getQueue() {
         final var hederaState = workingStateAccessor.getHederaState();
         if (hederaState == null) {
             throw new RuntimeException("HederaState is null. This can only happen very early during bootstrapping");
         }
         final var states = hederaState.createWritableStates(NAME);
+        return states.getQueue(TXN_RECORD_QUEUE);
+    }
+
+    /** Utility method that get the readable queue from the working state */
+    private ReadableQueueState<TransactionRecordEntry> getReadableQueue() {
+        final var hederaState = workingStateAccessor.getHederaState();
+        if (hederaState == null) {
+            throw new RuntimeException("HederaState is null. This can only happen very early during bootstrapping");
+        }
+        final var states = hederaState.createReadableStates(NAME);
         return states.getQueue(TXN_RECORD_QUEUE);
     }
 }
