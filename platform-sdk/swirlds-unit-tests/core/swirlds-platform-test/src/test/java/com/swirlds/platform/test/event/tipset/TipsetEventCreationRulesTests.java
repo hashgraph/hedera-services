@@ -72,9 +72,9 @@ class TipsetEventCreationRulesTests {
         when(rule1.isEventCreationPermitted()).thenAnswer(invocation -> true);
         final AtomicInteger rule1Count = new AtomicInteger(0);
         doAnswer(invocation -> {
-            rule1Count.incrementAndGet();
-            return null;
-        })
+                    rule1Count.incrementAndGet();
+                    return null;
+                })
                 .when(rule1)
                 .eventWasCreated();
 
@@ -82,9 +82,9 @@ class TipsetEventCreationRulesTests {
         when(rule2.isEventCreationPermitted()).thenAnswer(invocation -> true);
         final AtomicInteger rule2Count = new AtomicInteger(0);
         doAnswer(invocation -> {
-            rule2Count.incrementAndGet();
-            return null;
-        })
+                    rule2Count.incrementAndGet();
+                    return null;
+                })
                 .when(rule2)
                 .eventWasCreated();
 
@@ -92,9 +92,9 @@ class TipsetEventCreationRulesTests {
         when(rule3.isEventCreationPermitted()).thenAnswer(invocation -> true);
         final AtomicInteger rule3Count = new AtomicInteger(0);
         doAnswer(invocation -> {
-            rule3Count.incrementAndGet();
-            return null;
-        })
+                    rule3Count.incrementAndGet();
+                    return null;
+                })
                 .when(rule3)
                 .eventWasCreated();
 
@@ -102,9 +102,9 @@ class TipsetEventCreationRulesTests {
         when(rule4.isEventCreationPermitted()).thenAnswer(invocation -> true);
         final AtomicInteger rule4Count = new AtomicInteger(0);
         doAnswer(invocation -> {
-            rule4Count.incrementAndGet();
-            return null;
-        })
+                    rule4Count.incrementAndGet();
+                    return null;
+                })
                 .when(rule4)
                 .eventWasCreated();
 
