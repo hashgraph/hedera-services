@@ -57,21 +57,6 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.store.models to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app;
-    exports com.hedera.node.app.service.mono.state.merkle to
-            com.hedera.node.app.service.mono.test.fixtures,
-            com.hedera.node.app.service.token.impl,
-            com.hedera.node.app.service.token.impl.test,
-            com.hedera.node.app.service.contract.impl.test,
-            com.hedera.node.app.service.contract.impl,
-            com.hedera.node.app.service.networkadmin.impl,
-            com.hedera.node.app.service.consensus.impl,
-            com.hedera.node.app.service.file.impl,
-            com.hedera.node.app,
-            com.hedera.node.app.service.schedule.impl,
-            com.hedera.node.app.service.networkadmin.impl.test,
-            com.hedera.node.app.service.schedule.impl.test,
-            com.hedera.node.app.service.consensus.impl.test,
-            com.hedera.node.app.service.network.admin.impl;
     exports com.hedera.node.app.service.mono.state.validation to
             com.hedera.node.app,
             com.hedera.node.app.service.consensus.impl,
@@ -259,6 +244,11 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.cache;
 
     opens com.hedera.node.app.service.mono.cache to
+            com.swirlds.common;
+
+    exports com.hedera.node.app.service.mono.state.merkle;
+
+    opens com.hedera.node.app.service.mono.state.migration to
             com.swirlds.common;
 
     requires transitive com.hedera.node.app.hapi.fees;

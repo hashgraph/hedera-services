@@ -84,6 +84,20 @@ public final class VirtualMapLikeAdapter {
             }
 
             @Override
+            public void extractVirtualMapDataC(
+                    final ThreadManager threadManager,
+                    final InterruptableConsumer<Pair<K, V>> handler,
+                    final int threadCount)
+                    throws InterruptedException {
+                VirtualMapMigration.extractVirtualMapDataC(
+                        threadManager,
+                        real,
+                        pair -> handler.accept(
+                                Pair.of(pair.getKey().getKey(), pair.getValue().getValue())),
+                        threadCount);
+            }
+
+            @Override
             public void registerMetrics(final Metrics metrics) {
                 real.registerMetrics(metrics);
             }

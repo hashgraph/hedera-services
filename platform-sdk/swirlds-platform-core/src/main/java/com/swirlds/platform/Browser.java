@@ -28,11 +28,13 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHie
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setInsets;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
+import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.address.AddressBookNetworkUtils.getLocalAddressCount;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
+import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.config.BasicConfig;
@@ -58,6 +60,9 @@ import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsProvider;
@@ -79,6 +84,7 @@ import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
+import com.swirlds.logging.payloads.SavedStateLoadedPayload;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.ThreadConfig;
@@ -107,17 +113,18 @@ import com.swirlds.platform.portforwarding.PortForwarder;
 import com.swirlds.platform.portforwarding.PortMapping;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
+import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.uptime.UptimeConfig;
-import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.MetricsDocUtils;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -539,8 +546,7 @@ public class Browser {
     }
 
     /**
-     * Instantiate and start the thread dump generator, if enabled via the {@link Settings#getThreadDumpPeriodMs()}
-     * setting.
+     * Instantiate and start the thread dump generator.
      */
     private void startThreadDumpGenerator() {
         final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
@@ -655,55 +661,55 @@ public class Browser {
                 final EmergencyRecoveryManager emergencyRecoveryManager =
                         new EmergencyRecoveryManager(shutdown::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
 
-                final ReservedSignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
+                final ReservedSignedState initialState = getInitialState(
                         platformContext,
+                        appMain,
                         mainClassName,
                         swirldName,
                         nodeId,
-                        appVersion,
-                        addressBook.copy(),
+                        addressBook,
                         emergencyRecoveryManager);
 
-                // check software version compatibility
-                final boolean softwareUpgrade =
-                        BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState.getNullable());
+                final SwirldsPlatform platform;
+                try (initialState) {
+                    // check software version compatibility
+                    final boolean softwareUpgrade = detectSoftwareUpgrade(appVersion, initialState.get());
 
-                if (softwareUpgrade) {
-                    try {
-                        logger.info(STARTUP.getMarker(), "Clearing recycle bin as part of software upgrade workflow.");
-                        recycleBin.clear();
-                    } catch (final IOException e) {
-                        throw new UncheckedIOException("Failed to clear recycle bin", e);
+                    if (softwareUpgrade) {
+                        try {
+                            logger.info(
+                                    STARTUP.getMarker(), "Clearing recycle bin as part of software upgrade workflow.");
+                            recycleBin.clear();
+                        } catch (final IOException e) {
+                            throw new UncheckedIOException("Failed to clear recycle bin", e);
+                        }
                     }
+
+                    // Initialize the address book from the configuration and platform saved state.
+                    final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
+                            appVersion, softwareUpgrade, initialState.get(), addressBook.copy(), platformContext);
+
+                    if (!initialState.get().isGenesisState()) {
+                        updateLoadedStateAddressBook(
+                                initialState.get(), addressBookInitializer.getInitialAddressBook());
+                    }
+
+                    GuiPlatformAccessor.getInstance().setPlatformName(nodeId, platformName);
+                    GuiPlatformAccessor.getInstance().setSwirldId(nodeId, appDefinition.getSwirldId());
+                    GuiPlatformAccessor.getInstance().setInstanceNumber(nodeId, instanceNumber);
+
+                    platform = new SwirldsPlatform(
+                            platformContext,
+                            crypto.get(nodeId),
+                            recycleBin,
+                            nodeId,
+                            mainClassName,
+                            swirldName,
+                            appVersion,
+                            initialState.get(),
+                            emergencyRecoveryManager);
                 }
 
-                // Initialize the address book from the configuration and platform saved state.
-                final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                        appVersion,
-                        softwareUpgrade,
-                        loadedSignedState.getNullable(),
-                        addressBook.copy(),
-                        platformContext);
-
-                // set here, then given to the state in run(). A copy of it is given to hashgraph.
-                final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
-
-                GuiPlatformAccessor.getInstance().setPlatformName(nodeId, platformName);
-                GuiPlatformAccessor.getInstance().setSwirldId(nodeId, appDefinition.getSwirldId());
-                GuiPlatformAccessor.getInstance().setInstanceNumber(nodeId, instanceNumber);
-
-                final SwirldsPlatform platform = new SwirldsPlatform(
-                        platformContext,
-                        crypto.get(nodeId),
-                        recycleBin,
-                        initialAddressBook,
-                        nodeId,
-                        mainClassName,
-                        swirldName,
-                        appVersion,
-                        appMain::newState,
-                        loadedSignedState,
-                        emergencyRecoveryManager);
                 platforms.add(platform);
 
                 new InfoMember(infoSwirld, instanceNumber, platform);
@@ -729,6 +735,91 @@ public class Browser {
         }
 
         return Collections.unmodifiableList(platforms);
+    }
+
+    /**
+     * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
+     * only transactions will be capable of modifying the address book.
+     *
+     * @param signedState the state that was loaded from disk
+     * @param addressBook the address book specified in config.txt
+     */
+    private static void updateLoadedStateAddressBook(
+            @NonNull final SignedState signedState, @NonNull final AddressBook addressBook) {
+
+        final State state = signedState.getState();
+
+        // Update the address book with the current address book read from config.txt.
+        // Eventually we will not do this, and only transactions will be capable of
+        // modifying the address book.
+        state.getPlatformState().setAddressBook(addressBook.copy());
+
+        // Invalidate a path down to the new address book
+        new MerkleRouteIterator(state, state.getPlatformState().getAddressBook().getRoute())
+                .forEachRemaining(MerkleNode::invalidateHash);
+
+        // We should only have to rehash a few nodes, so simpler to use the synchronous algorithm.
+        MerkleCryptoFactory.getInstance().digestTreeSync(state);
+
+        // If our hash changes as a result of the new address book then our old signatures may become invalid.
+        signedState.pruneInvalidSignatures();
+    }
+
+    /**
+     * Get the initial state to be used by this node. May return a state loaded from disk, or may return a genesis state
+     * if no valid state is found on disk.
+     *
+     * @param platformContext          the platform context
+     * @param appMain                  the app main
+     * @param mainClassName            the name of the app's SwirldMain class
+     * @param swirldName               the name of this swirld
+     * @param selfId                   the node id of this node
+     * @param configAddressBook        the address book from config.txt
+     * @param emergencyRecoveryManager the emergency recovery manager
+     * @return the initial state to be used by this node
+     */
+    @NonNull
+    private ReservedSignedState getInitialState(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final SwirldMain appMain,
+            @NonNull final String mainClassName,
+            @NonNull final String swirldName,
+            @NonNull final NodeId selfId,
+            @NonNull final AddressBook configAddressBook,
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
+
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(mainClassName);
+        Objects.requireNonNull(swirldName);
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(configAddressBook);
+        Objects.requireNonNull(emergencyRecoveryManager);
+
+        final ReservedSignedState loadedState = getUnmodifiedSignedStateFromDisk(
+                platformContext,
+                mainClassName,
+                swirldName,
+                selfId,
+                appMain.getSoftwareVersion(),
+                configAddressBook,
+                emergencyRecoveryManager);
+
+        if (loadedState.isNotNull()) {
+            logger.info(
+                    STARTUP.getMarker(),
+                    new SavedStateLoadedPayload(
+                            loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
+            return loadedState;
+        }
+
+        // Not strictly necessary to close a null reservation, but it's nice to be consistent.
+        loadedState.close();
+
+        final State genesisState =
+                buildGenesisState(platformContext, configAddressBook, appMain.getSoftwareVersion(), appMain.newState());
+
+        final SignedState signedState = new SignedState(platformContext, genesisState, "genesis state");
+        return signedState.reserve("genesis state");
     }
 
     /**

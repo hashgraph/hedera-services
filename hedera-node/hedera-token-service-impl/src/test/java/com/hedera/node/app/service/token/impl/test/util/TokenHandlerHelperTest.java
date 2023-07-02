@@ -218,7 +218,7 @@ class TokenHandlerHelperTest {
     void token_getIfUsable_deletedToken() {
         given(tokenStore.get(notNull()))
                 .willReturn(Token.newBuilder()
-                        .tokenNumber(TOKEN_ID_45.tokenNum())
+                        .tokenId(TOKEN_ID_45)
                         .deleted(true)
                         .paused(false)
                         .build());
@@ -232,7 +232,7 @@ class TokenHandlerHelperTest {
     void token_getIfUsable_pausedToken() {
         given(tokenStore.get(notNull()))
                 .willReturn(Token.newBuilder()
-                        .tokenNumber(TOKEN_ID_45.tokenNum())
+                        .tokenId(TOKEN_ID_45)
                         .deleted(false)
                         .paused(true)
                         .build());
@@ -246,7 +246,7 @@ class TokenHandlerHelperTest {
     void token_getIfUsable_usableToken() {
         given(tokenStore.get(notNull()))
                 .willReturn(Token.newBuilder()
-                        .tokenNumber(TOKEN_ID_45.tokenNum())
+                        .tokenId(TOKEN_ID_45)
                         .deleted(false)
                         .paused(false)
                         .build());
@@ -279,8 +279,8 @@ class TokenHandlerHelperTest {
     void tokenRel_getIfUsable_usableTokenRel() {
         given(tokenRelStore.get(notNull(), notNull()))
                 .willReturn(TokenRelation.newBuilder()
-                        .accountNumber(ACCT_2300.accountNumOrThrow())
-                        .tokenNumber(TOKEN_ID_45.tokenNum())
+                        .accountId(ACCT_2300)
+                        .tokenId(TOKEN_ID_45)
                         .deleted(false)
                         .balance(0)
                         .build());

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers.util;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
@@ -38,10 +39,10 @@ import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -79,17 +80,14 @@ public class TokenHandlerTestBase {
     protected final HederaKey freezeHederaKey = asHederaKey(freezeKey).get();
     protected final HederaKey feeScheduleHederaKey = asHederaKey(feeScheduleKey).get();
     protected final HederaKey pauseHederaKey = asHederaKey(A_COMPLEX_KEY).get();
-    protected final EntityNum tokenEntityNum = EntityNum.fromLong(1L);
-    protected final TokenID tokenId =
-            TokenID.newBuilder().tokenNum(tokenEntityNum.longValue()).build();
+    protected final TokenID tokenId = asToken(1L);
     protected final String tokenName = "test token";
     protected final String tokenSymbol = "TT";
     protected final Duration WELL_KNOWN_AUTO_RENEW_PERIOD =
             Duration.newBuilder().seconds(100).build();
     protected final Timestamp WELL_KNOWN_EXPIRY =
             Timestamp.newBuilder().seconds(1_234_567L).build();
-    protected final TokenID WELL_KNOWN_TOKEN_ID =
-            TokenID.newBuilder().tokenNum(tokenEntityNum.longValue()).build();
+    protected final TokenID WELL_KNOWN_TOKEN_ID = tokenId;
     protected final String memo = "test memo";
     protected final long expirationTime = 1_234_567L;
     protected final long sequenceNumber = 1L;
@@ -127,8 +125,8 @@ public class TokenHandlerTestBase {
     @Mock
     protected WritableStates writableStates;
 
-    protected MapReadableKVState<EntityNum, Token> readableTokenState;
-    protected MapWritableKVState<EntityNum, Token> writableTokenState;
+    protected MapReadableKVState<TokenID, Token> readableTokenState;
+    protected MapWritableKVState<TokenID, Token> writableTokenState;
 
     protected ReadableTokenStore readableTokenStore;
     protected WritableTokenStore writableTokenStore;
@@ -142,8 +140,8 @@ public class TokenHandlerTestBase {
     protected void refreshStoresWithCurrentTokenOnlyInReadable() {
         readableTokenState = readableTokenState();
         writableTokenState = emptyWritableTokenState();
-        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(readableTokenState);
-        given(writableStates.<EntityNum, Token>get(TOKENS)).willReturn(writableTokenState);
+        given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
+        given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
         writableTokenStore = new WritableTokenStore(writableStates);
     }
@@ -151,28 +149,28 @@ public class TokenHandlerTestBase {
     protected void refreshStoresWithCurrentTokenInWritable() {
         readableTokenState = readableTokenState();
         writableTokenState = writableTokenStateWithOneKey();
-        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(readableTokenState);
-        given(writableStates.<EntityNum, Token>get(TOKENS)).willReturn(writableTokenState);
+        given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
+        given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
         writableTokenStore = new WritableTokenStore(writableStates);
     }
 
     @NonNull
-    protected MapWritableKVState<EntityNum, Token> emptyWritableTokenState() {
-        return MapWritableKVState.<EntityNum, Token>builder(TOKENS).build();
+    protected MapWritableKVState<TokenID, Token> emptyWritableTokenState() {
+        return MapWritableKVState.<TokenID, Token>builder(TOKENS).build();
     }
 
     @NonNull
-    protected MapWritableKVState<EntityNum, Token> writableTokenStateWithOneKey() {
-        return MapWritableKVState.<EntityNum, Token>builder(TOKENS)
-                .value(tokenEntityNum, token)
+    protected MapWritableKVState<TokenID, Token> writableTokenStateWithOneKey() {
+        return MapWritableKVState.<TokenID, Token>builder(TOKENS)
+                .value(tokenId, token)
                 .build();
     }
 
     @NonNull
-    protected MapReadableKVState<EntityNum, Token> readableTokenState() {
-        return MapReadableKVState.<EntityNum, Token>builder(TOKENS)
-                .value(tokenEntityNum, token)
+    protected MapReadableKVState<TokenID, Token> readableTokenState() {
+        return MapReadableKVState.<TokenID, Token>builder(TOKENS)
+                .value(tokenId, token)
                 .build();
     }
 
@@ -193,12 +191,12 @@ public class TokenHandlerTestBase {
             boolean withAdminKey,
             boolean withSubmitKey) {
         token = new Token(
-                tokenId.tokenNum(),
+                tokenId,
                 tokenName,
                 tokenSymbol,
                 1000,
                 1000,
-                treasury.accountNum(),
+                AccountID.newBuilder().accountNum(treasury.accountNum()).build(),
                 adminKey,
                 kycKey,
                 freezeKey,
@@ -210,7 +208,7 @@ public class TokenHandlerTestBase {
                 deleted,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.INFINITE,
-                autoRenewAccountNumber,
+                BaseCryptoHandler.asAccount(autoRenewAccountNumber),
                 autoRenewSecs,
                 expirationTime,
                 memo,
@@ -223,7 +221,7 @@ public class TokenHandlerTestBase {
 
     protected Token createToken() {
         return new Token.Builder()
-                .tokenNumber(tokenId.tokenNum())
+                .tokenId(tokenId)
                 .adminKey(adminKey)
                 .supplyKey(supplyKey)
                 .kycKey(kycKey)
@@ -231,14 +229,15 @@ public class TokenHandlerTestBase {
                 .wipeKey(wipeKey)
                 .feeScheduleKey(feeScheduleKey)
                 .pauseKey(pauseKey)
-                .treasuryAccountNumber(treasury.accountNum())
+                .treasuryAccountId(
+                        AccountID.newBuilder().accountNum(treasury.accountNum()).build())
                 .name(tokenName)
                 .symbol(tokenSymbol)
                 .totalSupply(1000)
                 .decimals(1000)
                 .maxSupply(100000)
                 .autoRenewSecs(autoRenewSecs)
-                .autoRenewAccountNumber(autoRenewId.accountNum())
+                .autoRenewAccountId(autoRenewId)
                 .expiry(expirationTime)
                 .memo(memo)
                 .deleted(false)
