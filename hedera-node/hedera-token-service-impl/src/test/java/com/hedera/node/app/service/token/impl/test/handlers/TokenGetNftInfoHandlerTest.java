@@ -255,7 +255,8 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
         return TokenNftInfo.newBuilder()
                 .ledgerId(new BytesConverter().convert("0x03"))
                 .nftID(NftID.newBuilder()
-                        .tokenID(TokenID.newBuilder().tokenNum(uniqueTokenIdSl1.tokenTypeNumber()))
+                        .tokenID(TokenID.newBuilder()
+                                .tokenNum(uniqueTokenIdSl1.tokenId().tokenNum()))
                         .serialNumber(uniqueTokenIdSl1.serialNumber()))
                 .accountID(ownerId)
                 .creationTime(consensusTimestamp)
@@ -266,9 +267,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     private Query createTokenGetNftInfoQuery(final UniqueTokenId uniqueTokenId) {
         final var data = TokenGetNftInfoQuery.newBuilder()
-                .nftID(NftID.newBuilder()
-                        .tokenID(TokenID.newBuilder().tokenNum(uniqueTokenId.tokenTypeNumber()))
-                        .serialNumber(uniqueTokenId.serialNumber()))
+                .nftID(NftID.newBuilder().tokenID(uniqueTokenId.tokenId()).serialNumber(uniqueTokenId.serialNumber()))
                 .header(QueryHeader.newBuilder().build())
                 .build();
 
@@ -286,9 +285,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     private Query createTokenGetNftInfoQueryInvalidSerialNum(final UniqueTokenId uniqueTokenId) {
         final var data = TokenGetNftInfoQuery.newBuilder()
-                .nftID(NftID.newBuilder()
-                        .tokenID(TokenID.newBuilder().tokenNum(uniqueTokenId.tokenTypeNumber()))
-                        .serialNumber(-1L))
+                .nftID(NftID.newBuilder().tokenID(uniqueTokenId.tokenId()).serialNumber(-1L))
                 .header(QueryHeader.newBuilder().build())
                 .build();
 
