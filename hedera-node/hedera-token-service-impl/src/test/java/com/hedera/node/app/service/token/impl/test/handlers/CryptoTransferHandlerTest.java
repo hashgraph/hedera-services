@@ -45,31 +45,19 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.config.HederaNumbers;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
-import com.hedera.node.app.workflows.handle.validation.StandardizedExpiryValidator;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
-import java.util.function.LongSupplier;
-
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -266,10 +254,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     void happyPathWorksWithAutoCreation() {
         givenTxn();
         refreshWritableStores();
-        writableTokenStore.put(nonFungibleToken
-                .copyBuilder()
-                .kycKey((Key) null)
-                .build());
+        writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());
         givenStoresAndConfig(handleContext);
 
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
@@ -296,9 +281,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(3);
-        assertThat(writableAccountStore.modifiedAccountsInState()).contains(ownerId,
-                asAccount(createdNumber),
-                asAccount(createdNumber + 1));
+        assertThat(writableAccountStore.modifiedAccountsInState())
+                .contains(ownerId, asAccount(createdNumber), asAccount(createdNumber + 1));
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(4);
 
         assertThat(writableAccountStore.get(asAccount(createdNumber))).isNotNull();
@@ -308,7 +292,6 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         final var endSenderBalance = writableAccountStore.get(ownerId).tinybarBalance();
         assertThat(endSenderBalance).isEqualTo(initialSenderBalance - 1_000);
-
     }
 
     @Test

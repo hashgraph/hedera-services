@@ -38,6 +38,7 @@ import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
@@ -54,7 +55,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.LongSupplier;
-
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -65,23 +65,28 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class StepsBase extends CryptoTokenHandlerTestBase {
     @Mock
     private HederaNumbers hederaNumbers;
+
     @Mock(strictness = Mock.Strictness.LENIENT)
     private LongSupplier consensusSecondNow;
+
     @Mock
     private GlobalDynamicProperties dynamicProperties;
+
     @Mock
     private PropertySource compositeProps;
+
     @Mock(strictness = Mock.Strictness.LENIENT)
     private ConfigProvider configProvider;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected HandleContext handleContext;
+
     private AttributeValidator attributeValidator;
 
     protected ExpiryValidator expiryValidator;
-
     protected EnsureAliasesStep ensureAliasesStep;
     protected ReplaceAliasesWithIDsInOp replaceAliasesWithIDsInOp;
+    protected AssociateTokenRecepientsStep associateTokenRecepientsStep;
     protected NFTOwnersChangeStep changeNFTOwnersStep;
     protected CryptoTransferTransactionBody body;
     protected TransactionBody txn;
@@ -92,11 +97,9 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     public void setUp() {
         super.setUp();
         recordBuilder = new SingleTransactionRecordBuilder(consensusInstant);
-        attributeValidator = new StandardizedAttributeValidator(consensusSecondNow,
-                compositeProps, dynamicProperties);
+        attributeValidator = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
         expiryValidator = new StandardizedExpiryValidator(
-                System.out::println, attributeValidator, consensusSecondNow,
-                hederaNumbers, configProvider);
+                System.out::println, attributeValidator, consensusSecondNow, hederaNumbers, configProvider);
         refreshWritableStores();
     }
 
@@ -133,8 +136,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected void givenTxn() {
         body = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder()
-                        .accountAmounts(aaWith(ownerId, -1_000),
-                                aaWith(unknownAliasedId, +1_000))
+                        .accountAmounts(aaWith(ownerId, -1_000), aaWith(unknownAliasedId, +1_000))
                         .build())
                 .tokenTransfers(
                         TokenTransferList.newBuilder()
