@@ -85,7 +85,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
 
         final var query = createGetTransactionRecieptQuery(transactionID, false, false);
         given(context.query()).willReturn(query);
-        given(context.createStore(RecordCache.class)).willReturn(cache);
+        given(context.recordCache()).willReturn(cache);
 
         assertThatCode(() -> networkTransactionGetReceiptHandler.validate(context))
                 .doesNotThrowAnyException();

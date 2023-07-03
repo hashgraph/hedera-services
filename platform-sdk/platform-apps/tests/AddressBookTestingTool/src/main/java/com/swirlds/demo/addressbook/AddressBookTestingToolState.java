@@ -42,6 +42,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
@@ -92,7 +93,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
     private static final long CLASS_ID = 0xf052378c7364ef47L;
 
-    private long selfId;
+    private NodeId selfId;
 
     /** false until the test scenario has been validated, true afterwards. */
     private final AtomicBoolean validationPerformed = new AtomicBoolean(false);
@@ -153,7 +154,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         logger.info(STARTUP.getMarker(), "init called in State.");
         throwIfImmutable();
 
-        this.selfId = platform.getSelfId().id();
+        this.selfId = platform.getSelfId();
     }
 
     /**

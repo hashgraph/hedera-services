@@ -164,7 +164,7 @@ public class SeededPropertySource {
                 nextString(48),
                 nextBoolean(),
                 nextBoolean(),
-                nextEntityId(),
+                nextZeroShardZeroRealmEntityId(),
                 nextInt());
         seeded.setMemo(nextString(36));
         seeded.setDeleted(nextBoolean());
@@ -183,6 +183,7 @@ public class SeededPropertySource {
         seeded.setFeeScheduleKey(nextNullableKey());
         seeded.setPauseKey(nextNullableKey());
         seeded.setKey(nextNum());
+        seeded.setAutoRenewAccount(nextZeroShardZeroRealmEntityId());
         return seeded;
     }
 
@@ -1112,6 +1113,17 @@ public class SeededPropertySource {
 
     public ContractNonceInfo nextContractNonce() {
         return new ContractNonceInfo(nextEntityId(), nextUnsignedLong());
+    }
+
+    /**
+     * Return an entity id with the default shard and realm of {@code 0} so that when using
+     * PBJ converters inside {@link com.hedera.test.serde.SelfSerializableDataTest} object
+     * providers, we don't lose information.
+     *
+     * @return an entity id in the default shard and realm
+     */
+    public EntityId nextZeroShardZeroRealmEntityId() {
+        return new EntityId(0, 0, nextUnsignedLong());
     }
 
     public RichInstant nextRichInstant() {

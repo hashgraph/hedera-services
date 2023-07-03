@@ -80,7 +80,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
     public Nft getForModify(final TokenID tokenId, final long serialNumber) {
         requireNonNull(tokenId);
         return nftState.getForModify(UniqueTokenId.newBuilder()
-                .tokenTypeNumber(tokenId.tokenNum())
+                .tokenId(tokenId)
                 .serialNumber(serialNumber)
                 .build());
     }
@@ -119,7 +119,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      */
     public void remove(final @NonNull TokenID tokenId, final long serialNum) {
         remove(UniqueTokenId.newBuilder()
-                .tokenTypeNumber(tokenId.tokenNum())
+                .tokenId(tokenId)
                 .serialNumber(serialNum)
                 .build());
     }
