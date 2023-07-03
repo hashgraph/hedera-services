@@ -46,6 +46,15 @@ public class Utils {
                 .build();
     }
 
+    public static NftTransfer nftTransferWithAllowance(AccountID from, AccountID to, long serialNo) {
+        return NftTransfer.newBuilder()
+                .senderAccountID(from)
+                .receiverAccountID(to)
+                .serialNumber(serialNo)
+                .isApproval(true)
+                .build();
+    }
+
     public static AccountAmount aaAlias(final Bytes alias, final long amount) {
         return AccountAmount.newBuilder()
                 .amount(amount)

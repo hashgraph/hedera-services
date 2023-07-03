@@ -46,7 +46,9 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
     @Override
     public void doIn(final TransferContext transferContext) {
         final var accountStore = transferContext.getHandleContext().writableStore(WritableAccountStore.class);
+        // Aggregate all the hbar balances from the changes. It also includes allowance transfer amounts
         final Map<AccountID, Long> netHbarTransfers = new HashMap<>();
+        // Allowance transfers is only for negative amounts, it is used to reduce allowance for the spender
         final Map<AccountID, Long> allowanceTransfers = new HashMap<>();
         for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(Collections.emptyList())) {
             addOrUpdateAggregatedBalances(netHbarTransfers, aa);
@@ -100,7 +102,10 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
             final Map<AccountID, Long> allowanceTransfers,
             final WritableAccountStore accountStore,
             final TransferContext transferContext) {
-        for (final var accountId : allowanceTransfers.keySet()) {
+        for (final var entry : allowanceTransfers.entrySet()) {
+            final var accountId = entry.getKey();
+            final var amount = entry.getValue();
+
             final var ownerAccount = getIfUsable(
                     accountId, accountStore, transferContext.getHandleContext().expiryValidator(), INVALID_ACCOUNT_ID);
             final var accountCopy = ownerAccount.copyBuilder();
@@ -116,7 +121,7 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
                 // check if the allowances from the sender account has the payer account as spender
                 if (allowance.spenderNum() == topLevelPayer.accountNum()) {
                     haveSpenderAllowance = true;
-                    final var newAllowanceAmount = allowance.amount() + allowanceTransfers.get(ownerAccount);
+                    final var newAllowanceAmount = allowance.amount() + amount;
                     validateTrue(newAllowanceAmount >= 0, AMOUNT_EXCEEDS_ALLOWANCE);
 
                     allowanceCopy.amount(newAllowanceAmount);

@@ -53,10 +53,10 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(2);
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(4);
-        assertThat(writableAccountStore.get(asAccount(createdNumber))).isNotNull();
-        assertThat(writableAccountStore.get(asAccount(createdNumber + 1))).isNotNull();
-        assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(createdNumber);
-        assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(createdNumber + 1);
+        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
+        assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNotNull();
+        assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(hbarReceiver);
+        assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(tokenReceiver);
 
         assertThat(transferContext.numOfAutoCreations()).isEqualTo(2);
         assertThat(transferContext.numOfLazyCreations()).isZero();
@@ -67,17 +67,16 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
 
         final var expectedOp = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder()
-                        .accountAmounts(aaWith(ownerId, -1_000), aaWith(asAccount(createdNumber), +1_000))
+                        .accountAmounts(aaWith(ownerId, -1_000), aaWith(asAccount(hbarReceiver), +1_000))
                         .build())
                 .tokenTransfers(
                         TokenTransferList.newBuilder()
                                 .token(fungibleTokenId)
-                                .transfers(
-                                        List.of(aaWith(ownerId, -1_000), aaWith(asAccount(createdNumber + 1), +1_000)))
+                                .transfers(List.of(aaWith(ownerId, -1_000), aaWith(asAccount(tokenReceiver), +1_000)))
                                 .build(),
                         TokenTransferList.newBuilder()
                                 .token(nonFungibleTokenId)
-                                .nftTransfers(nftTransferWith(ownerId, asAccount(createdNumber + 1), 1))
+                                .nftTransfers(nftTransferWith(ownerId, asAccount(tokenReceiver), 1))
                                 .build())
                 .build();
         assertThat(replacedOp).isEqualTo(expectedOp);

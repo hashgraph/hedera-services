@@ -18,8 +18,10 @@ package com.hedera.node.app.service.token.impl.test.handlers.transfers;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWithAllowance;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.aaWith;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.nftTransferWith;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.nftTransferWithAllowance;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -38,6 +40,7 @@ import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustHbarChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
@@ -88,6 +91,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected ReplaceAliasesWithIDsInOp replaceAliasesWithIDsInOp;
     protected AssociateTokenRecepientsStep associateTokenRecepientsStep;
     protected NFTOwnersChangeStep changeNFTOwnersStep;
+    protected AdjustHbarChangesStep adjustHbarChangesStep;
     protected CryptoTransferTransactionBody body;
     protected TransactionBody txn;
     protected TransferContextImpl transferContext;
@@ -121,9 +125,10 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected static final Bytes mirrorAlias = Bytes.wrap(evmAddress);
     protected static final Bytes create2Alias = Bytes.wrap(create2Address);
     protected static final Long mirrorNum = Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20));
-    protected final int createdNumber = 10000000;
+    protected final int hbarReceiver = 10000000;
+    protected final int tokenReceiver = hbarReceiver + 1;
 
-    protected TransactionBody asTxn(final CryptoTransferTransactionBody body) {
+    protected TransactionBody asTxn(final CryptoTransferTransactionBody body, final AccountID payerId) {
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
                         .accountID(payerId)
@@ -148,12 +153,30 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                                 .nftTransfers(nftTransferWith(ownerId, unknownAliasedId1, 1))
                                 .build())
                 .build();
-        givenTxn(body);
+        givenTxn(body, payerId);
     }
 
-    protected void givenTxn(CryptoTransferTransactionBody txnBody) {
+    protected void givenTxnWithAllowances() {
+        body = CryptoTransferTransactionBody.newBuilder()
+                .transfers(TransferList.newBuilder()
+                        .accountAmounts(aaWithAllowance(ownerId, -1_000), aaWith(unknownAliasedId, +1_000))
+                        .build())
+                .tokenTransfers(
+                        TokenTransferList.newBuilder()
+                                .token(fungibleTokenId)
+                                .transfers(List.of(aaWithAllowance(ownerId, -1_000), aaWith(unknownAliasedId1, +1_000)))
+                                .build(),
+                        TokenTransferList.newBuilder()
+                                .token(nonFungibleTokenId)
+                                .nftTransfers(nftTransferWithAllowance(ownerId, unknownAliasedId1, 1))
+                                .build())
+                .build();
+        givenTxn(body, spenderId);
+    }
+
+    protected void givenTxn(CryptoTransferTransactionBody txnBody, AccountID payerId) {
         body = txnBody;
-        txn = asTxn(body);
+        txn = asTxn(body, payerId);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
@@ -169,18 +192,17 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(createdNumber).build();
+                            account.copyBuilder().accountNumber(hbarReceiver).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(createdNumber));
-                    return recordBuilder.accountID(asAccount(createdNumber));
+                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    return recordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
-                    final var copy = account.copyBuilder()
-                            .accountNumber(createdNumber + 1)
-                            .build();
+                    final var copy =
+                            account.copyBuilder().accountNumber(tokenReceiver).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(edKeyAlias, asAccount(createdNumber + 1));
-                    return recordBuilder.accountID(asAccount(createdNumber + 1));
+                    writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
+                    return recordBuilder.accountID(asAccount(tokenReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
     }

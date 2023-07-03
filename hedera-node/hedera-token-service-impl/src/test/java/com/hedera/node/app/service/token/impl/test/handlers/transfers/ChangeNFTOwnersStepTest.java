@@ -49,7 +49,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
 
     @Test
     void changesNftOwners() {
-        final var receiver = asAccount(createdNumber + 1);
+        final var receiver = asAccount(tokenReceiver);
         final var replacedOp = getReplacedOp();
         changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, payerId);
 
