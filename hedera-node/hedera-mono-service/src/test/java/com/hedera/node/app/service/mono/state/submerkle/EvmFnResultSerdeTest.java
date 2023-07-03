@@ -19,8 +19,8 @@ package com.hedera.node.app.service.mono.state.submerkle;
 import com.hedera.test.serde.EqualityType;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
-import java.util.Collections;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collections;
 
 public class EvmFnResultSerdeTest extends SelfSerializableDataTest<EvmFnResult> {
     public static final int NUM_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
