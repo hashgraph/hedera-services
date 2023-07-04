@@ -61,6 +61,9 @@ public class ReplaceAliasesWithIDsInOp {
         // replace all aliases in token transfers
         for (final var adjust : op.tokenTransfersOrElse(emptyList())) {
             final var tokenTransferList = TokenTransferList.newBuilder().token(adjust.token());
+            if (adjust.hasExpectedDecimals()) {
+                tokenTransferList.expectedDecimals(adjust.expectedDecimals());
+            }
             final List<AccountAmount> replacedTokenAdjusts = new ArrayList<>();
             for (final var tokenAdjust : adjust.transfersOrElse(emptyList())) {
                 if (isAlias(tokenAdjust.accountIDOrThrow())) {
@@ -103,7 +106,6 @@ public class ReplaceAliasesWithIDsInOp {
             }
             tokenTransfersList.add(tokenTransferList.build());
         }
-        replacedAliasesOp.transfers(transferList);
         replacedAliasesOp.tokenTransfers(tokenTransfersList);
         return replacedAliasesOp.build();
     }

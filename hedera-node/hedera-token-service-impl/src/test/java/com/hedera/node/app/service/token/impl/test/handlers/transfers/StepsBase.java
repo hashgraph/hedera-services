@@ -148,10 +148,12 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                 .tokenTransfers(
                         TokenTransferList.newBuilder()
                                 .token(fungibleTokenId)
+                                .expectedDecimals(1000)
                                 .transfers(List.of(aaWith(ownerId, -1_000), aaWith(unknownAliasedId1, +1_000)))
                                 .build(),
                         TokenTransferList.newBuilder()
                                 .token(nonFungibleTokenId)
+                                .expectedDecimals(1000)
                                 .nftTransfers(nftTransferWith(ownerId, unknownAliasedId1, 1))
                                 .build())
                 .build();
@@ -165,6 +167,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         .build())
                 .tokenTransfers(
                         TokenTransferList.newBuilder()
+                                .expectedDecimals(1000)
                                 .token(fungibleTokenId)
                                 .transfers(List.of(aaWithAllowance(ownerId, -1_000), aaWith(unknownAliasedId1, +1_000)))
                                 .build(),

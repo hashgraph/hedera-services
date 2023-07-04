@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.transfers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWithAllowance;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.aaWith;
@@ -136,12 +137,40 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
     }
 
     @Test
+    void failsWhenExpectedDecimalsDiffer() {
+        body = CryptoTransferTransactionBody.newBuilder()
+                .transfers(TransferList.newBuilder()
+                        .accountAmounts(aaWithAllowance(ownerId, -1_000), aaWith(unknownAliasedId, +1_000))
+                        .build())
+                .tokenTransfers(TokenTransferList.newBuilder()
+                        .expectedDecimals(20)
+                        .token(fungibleTokenId)
+                        .transfers(List.of(aaWith(ownerId, -1_000), aaWith(unknownAliasedId1, +1_000)))
+                        .build())
+                .build();
+        givenTxn(body, payerId);
+        ensureAliasesStep = new EnsureAliasesStep(body);
+        replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
+        associateTokenRecepientsStep = new AssociateTokenRecepientsStep(body);
+        given(handleContext.body()).willReturn(txn);
+
+        final var replacedOp = getReplacedOp();
+        // payer is spender for allowances
+        adjustFungibleTokenChangesStep = new AdjustFungibleTokenChangesStep(replacedOp, payerId);
+
+        assertThatThrownBy(() -> adjustFungibleTokenChangesStep.doIn(transferContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(UNEXPECTED_TOKEN_DECIMALS));
+    }
+
+    @Test
     void allowanceWithGreaterThanAllowedAllowanceFails() {
         body = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder()
                         .accountAmounts(aaWith(ownerId, -1_000), aaWith(unknownAliasedId, +1_000))
                         .build())
                 .tokenTransfers(TokenTransferList.newBuilder()
+                        .expectedDecimals(1000)
                         .token(fungibleTokenId)
                         .transfers(List.of(aaWithAllowance(ownerId, -1_001), aaWith(unknownAliasedId1, +1_001)))
                         .build())
