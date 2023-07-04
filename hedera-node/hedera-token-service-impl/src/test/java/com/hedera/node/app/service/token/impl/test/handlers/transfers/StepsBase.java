@@ -191,15 +191,19 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected void givenConditions() {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
-                    final var copy =
-                            account.copyBuilder().accountNumber(hbarReceiver).build();
+                    final var copy = account.copyBuilder()
+                            .alias(ecKeyAlias)
+                            .accountNumber(hbarReceiver)
+                            .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     return recordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
-                    final var copy =
-                            account.copyBuilder().accountNumber(tokenReceiver).build();
+                    final var copy = account.copyBuilder()
+                            .alias(edKeyAlias)
+                            .accountNumber(tokenReceiver)
+                            .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     return recordBuilder.accountID(asAccount(tokenReceiver));

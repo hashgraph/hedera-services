@@ -148,7 +148,9 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
             final WritableAccountStore accountStore,
             final TransferContext transferContext) {
         // Look at all the allowanceTransfers and adjust the allowances in the accountStore.
-        for (final var atPair : allowanceTransfers.keySet()) {
+        for (final var entry : allowanceTransfers.entrySet()) {
+            final var atPair = entry.getKey();
+            final var amount = entry.getValue();
             final var accountId = asAccount(atPair.getHiOrderAsLong());
             final var tokenId = asToken(atPair.getLowOrderAsLong());
 
@@ -167,7 +169,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
                 if (allowance.spenderNum() == topLevelPayer.accountNum()
                         && allowance.tokenNum() == tokenId.tokenNum()) {
                     haveExistingAllowance = true;
-                    final var newAllowanceAmount = allowance.amount() + allowanceTransfers.get(account);
+                    final var newAllowanceAmount = allowance.amount() + amount;
                     validateTrue(newAllowanceAmount >= 0, AMOUNT_EXCEEDS_ALLOWANCE);
                     allowanceCopy.amount(newAllowanceAmount);
                     if (newAllowanceAmount != 0) {
@@ -195,11 +197,12 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
             final WritableTokenRelationStore tokenRelStore,
             final WritableAccountStore accountStore) {
         // Look at all the aggregatedFungibleTokenChanges and adjust the balances in the tokenRelStore.
-        for (final var atPair : aggregatedFungibleTokenChanges.keySet()) {
+        for (final var entry : aggregatedFungibleTokenChanges.entrySet()) {
+            final var atPair = entry.getKey();
+            final var amount = entry.getValue();
             final var rel = getIfUsable(
                     asAccount(atPair.getHiOrderAsLong()), asToken(atPair.getLowOrderAsLong()), tokenRelStore);
             final var account = accountStore.get(asAccount(atPair.getHiOrderAsLong()));
-            final var amount = aggregatedFungibleTokenChanges.get(atPair);
             adjustBalance(rel, account, amount, tokenRelStore, accountStore);
         }
     }

@@ -16,10 +16,17 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.transfers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.aaWith;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.nftTransferWithAllowance;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
@@ -27,6 +34,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesSte
 import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
+import com.hedera.node.app.spi.workflows.HandleException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -40,6 +48,9 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         refreshWritableStores();
         // since we can't change NFT owner with auto association if KYC key exists on token
         writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());
+        writableNftStore.put(nftSl1.copyBuilder().spenderId(spenderId).build());
+        writableNftStore.put(nftSl2.copyBuilder().spenderId(spenderId).build());
+
         givenStoresAndConfig(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
@@ -73,7 +84,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         assertThat(senderTokenRelBalance).isEqualTo(1);
         final var receiverTokenRelBalance =
                 writableTokenRelStore.get(receiver, nonFungibleTokenId).balance();
-        assertThat(receiverTokenRelBalance).isEqualTo(0);
+        assertThat(receiverTokenRelBalance).isZero();
 
         changeNFTOwnersStep.doIn(transferContext);
 
@@ -99,6 +110,100 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         final var receiverTokenRelBalanceAfter = writableTokenRelStore.get(receiver, nonFungibleTokenId);
         assertThat(senderTokenRelBalanceAfter.balance()).isEqualTo(senderTokenRelBalance - 1);
         assertThat(receiverTokenRelBalanceAfter.balance()).isEqualTo(receiverTokenRelBalance + 1);
+    }
+
+    @Test
+    void changesNftOwnersWithAllowance() {
+        body = CryptoTransferTransactionBody.newBuilder()
+                .transfers(TransferList.newBuilder()
+                        .accountAmounts(aaWith(ownerId, -1_000), aaWith(unknownAliasedId, +1_000))
+                        .build())
+                .tokenTransfers(TokenTransferList.newBuilder()
+                        .token(nonFungibleTokenId)
+                        .nftTransfers(nftTransferWithAllowance(ownerId, unknownAliasedId1, 1))
+                        .build())
+                .build();
+        givenTxn(body, spenderId);
+        ensureAliasesStep = new EnsureAliasesStep(body);
+        replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
+        associateTokenRecepientsStep = new AssociateTokenRecepientsStep(body);
+        transferContext = new TransferContextImpl(handleContext);
+
+        final var receiver = asAccount(tokenReceiver);
+        final var replacedOp = getReplacedOp();
+        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, spenderId);
+
+        final var nft = writableNftStore.get(uniqueTokenIdSl1);
+        assertThat(nft.ownerId()).isEqualTo(ownerId);
+
+        final var senderAccount = writableAccountStore.get(ownerId);
+        final var receiverAccount = writableAccountStore.get(receiver);
+
+        final var numNftsOwnedBySender = senderAccount.numberOwnedNfts();
+        assertThat(numNftsOwnedBySender).isEqualTo(2);
+        final var numNftsOwnedByReceiver = receiverAccount.numberOwnedNfts();
+        assertThat(numNftsOwnedByReceiver).isEqualTo(2);
+        final var numPositiveBalancesSender = senderAccount.numberPositiveBalances();
+        assertThat(numPositiveBalancesSender).isEqualTo(2);
+        final var numPositiveBalancesReceiver = receiverAccount.numberPositiveBalances();
+        assertThat(numPositiveBalancesReceiver).isEqualTo(2);
+
+        final var senderTokenRelBalance =
+                writableTokenRelStore.get(ownerId, nonFungibleTokenId).balance();
+        assertThat(senderTokenRelBalance).isEqualTo(1);
+        final var receiverTokenRelBalance =
+                writableTokenRelStore.get(receiver, nonFungibleTokenId).balance();
+        assertThat(receiverTokenRelBalance).isZero();
+
+        changeNFTOwnersStep.doIn(transferContext);
+
+        // owner Id on NFT should change to receiver
+        final var nftChanged = writableNftStore.get(uniqueTokenIdSl1);
+        assertThat(nftChanged.ownerId()).isEqualTo(receiver);
+
+        // see numPositiveBalances and numOwnedNfts change
+        final var senderAccountAfter = writableAccountStore.get(ownerId);
+        final var receiverAccountAfter = writableAccountStore.get(receiver);
+
+        final var numNftsOwnedBySenderAfter = senderAccountAfter.numberOwnedNfts();
+        assertThat(numNftsOwnedBySenderAfter).isEqualTo(numNftsOwnedBySender - 1);
+        final var numNftsOwnedByReceiverAfter = receiverAccountAfter.numberOwnedNfts();
+        assertThat(numNftsOwnedByReceiverAfter).isEqualTo(numNftsOwnedByReceiver + 1);
+        final var numPositiveBalancesSenderAfter = senderAccountAfter.numberPositiveBalances();
+        assertThat(numPositiveBalancesSenderAfter).isEqualTo(numPositiveBalancesSender - 1);
+        final var numPositiveBalancesReceiverAfter = receiverAccountAfter.numberPositiveBalances();
+        assertThat(numPositiveBalancesReceiverAfter).isEqualTo(numPositiveBalancesReceiver + 1);
+
+        // see token relation balances for sender and receiver change
+        final var senderTokenRelBalanceAfter = writableTokenRelStore.get(ownerId, nonFungibleTokenId);
+        final var receiverTokenRelBalanceAfter = writableTokenRelStore.get(receiver, nonFungibleTokenId);
+        assertThat(senderTokenRelBalanceAfter.balance()).isEqualTo(senderTokenRelBalance - 1);
+        assertThat(receiverTokenRelBalanceAfter.balance()).isEqualTo(receiverTokenRelBalance + 1);
+    }
+
+    @Test
+    void failsWhenSpenderNotSameAsPayer() {
+        body = CryptoTransferTransactionBody.newBuilder()
+                .transfers(TransferList.newBuilder()
+                        .accountAmounts(aaWith(ownerId, -1_000), aaWith(unknownAliasedId, +1_000))
+                        .build())
+                .tokenTransfers(TokenTransferList.newBuilder()
+                        .token(nonFungibleTokenId)
+                        .nftTransfers(nftTransferWithAllowance(ownerId, unknownAliasedId1, 1))
+                        .build())
+                .build();
+        givenTxn(body, spenderId);
+        ensureAliasesStep = new EnsureAliasesStep(body);
+        replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
+        associateTokenRecepientsStep = new AssociateTokenRecepientsStep(body);
+        transferContext = new TransferContextImpl(handleContext);
+
+        final var replacedOp = getReplacedOp();
+        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, payerId);
+
+        assertThatThrownBy(() -> changeNFTOwnersStep.doIn(transferContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(SPENDER_DOES_NOT_HAVE_ALLOWANCE));
     }
 
     CryptoTransferTransactionBody getReplacedOp() {

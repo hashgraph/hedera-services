@@ -47,7 +47,7 @@ public class ReplaceAliasesWithIDsInOp {
         final var tokenTransfersList = new ArrayList<TokenTransferList>();
         final var accountAmounts = new ArrayList<AccountAmount>();
         // replace all aliases in hbar transfers
-        for (final var aa : op.transfers().accountAmountsOrElse(emptyList())) {
+        for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList())) {
             if (isAlias(aa.accountIDOrThrow())) {
                 final var resolvedId = resolutions.get(aa.accountID().alias());
                 accountAmounts.add(aa.copyBuilder().accountID(resolvedId).build());

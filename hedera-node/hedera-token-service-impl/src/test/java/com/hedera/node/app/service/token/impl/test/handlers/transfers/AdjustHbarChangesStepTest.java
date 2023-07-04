@@ -148,7 +148,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
     void transferGreaterThanBalanceFails() {
         body = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder()
-                        .accountAmounts(aaWith(ownerId, -1_0000), aaWith(unknownAliasedId, +1_000))
+                        .accountAmounts(aaWith(ownerId, -1_0001), aaWith(unknownAliasedId, +1_000))
                         .build())
                 .tokenTransfers()
                 .build();
