@@ -18,7 +18,6 @@ package com.hedera.test.utils;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -27,8 +26,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class TestFixturesKeyLookup implements ReadableAccountStore {
-    private final ReadableKVState<String, Long> aliases;
-    private final ReadableKVState<EntityNumVirtualKey, Account> accounts;
+    private final ReadableKVState<Bytes, AccountID> aliases;
+    private final ReadableKVState<AccountID, Account> accounts;
 
     public TestFixturesKeyLookup(@NonNull final ReadableStates states) {
         this.accounts = states.get("ACCOUNTS");
@@ -40,23 +39,30 @@ public class TestFixturesKeyLookup implements ReadableAccountStore {
     public Account getAccountById(@NonNull AccountID accountID) {
         final var alias = accountID.alias();
         if (alias != null && alias.length() > 0) {
-            final var num = aliases.get(alias.asUtf8String());
+            final var num = aliases.get(alias);
             if (num == null) {
                 return null;
             } else {
-                final var account = accounts.get(new EntityNumVirtualKey(num));
-                return account == null ? null : getNewAccount(num, alias, account);
+                final var account = accounts.get(num);
+                return account == null ? null : getNewAccount(num.accountNum(), alias, account);
             }
         } else if (!accountID.hasAccountNum()) {
             return null;
         } else {
             final long num = accountID.accountNumOrThrow();
-            final var account = accounts.get(new EntityNumVirtualKey(num));
+            final var account =
+                    accounts.get(AccountID.newBuilder().accountNum(num).build());
             return account == null ? null : getNewAccount(num, Bytes.EMPTY, account);
         }
     }
 
     private Account getNewAccount(long num, Bytes alias, Account account) {
         return account.copyBuilder().alias(alias).accountNumber(num).build();
+    }
+
+    @Override
+    @Nullable
+    public AccountID getAccountIDByAlias(@NonNull final Bytes alias) {
+        return aliases.get(alias);
     }
 }

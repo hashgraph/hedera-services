@@ -29,7 +29,6 @@ import com.hedera.node.app.authorization.Authorizer;
 import com.hedera.node.app.fees.QueryFeeCheck;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.solvency.SolvencyPreCheck;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,7 +40,6 @@ import javax.inject.Singleton;
 @Singleton
 public class QueryChecker {
 
-    private final HederaAccountNumbers accountNumbers;
     private final QueryFeeCheck queryFeeCheck;
     private final Authorizer authorizer;
     private final CryptoTransferHandler cryptoTransferHandler;
@@ -50,7 +48,6 @@ public class QueryChecker {
     /**
      * Constructor of {@code QueryChecker}
      *
-     * @param accountNumbers the {@link HederaAccountNumbers} that contains a list of special accounts
      * @param queryFeeCheck the {@link QueryFeeCheck} that checks if fees can be paid
      * @param authorizer the {@link Authorizer} that checks, if the caller is authorized
      * @param cryptoTransferHandler the {@link CryptoTransferHandler} that validates a contained
@@ -60,12 +57,10 @@ public class QueryChecker {
      */
     @Inject
     public QueryChecker(
-            @NonNull final HederaAccountNumbers accountNumbers,
             @NonNull final QueryFeeCheck queryFeeCheck,
             @NonNull final Authorizer authorizer,
             @NonNull final CryptoTransferHandler cryptoTransferHandler,
             @NonNull final SolvencyPreCheck solvencyPreCheck) {
-        this.accountNumbers = requireNonNull(accountNumbers);
         this.queryFeeCheck = requireNonNull(queryFeeCheck);
         this.authorizer = requireNonNull(authorizer);
         this.cryptoTransferHandler = requireNonNull(cryptoTransferHandler);
@@ -111,7 +106,7 @@ public class QueryChecker {
         queryFeeCheck.validateQueryPaymentTransfers(txBody, fee);
 
         // A super-user cannot use an alias. Sorry, Clark Kent.
-        if (payer.hasAccountNum() && accountNumbers.isSuperuser(payer.accountNumOrThrow())) {
+        if (authorizer.isSuperUser(payer)) {
             return;
         }
 

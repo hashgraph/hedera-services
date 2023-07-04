@@ -19,9 +19,9 @@ package com.swirlds.platform;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Random;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class DummyHashgraph {
 

@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.util;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
@@ -24,14 +23,13 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
@@ -41,7 +39,6 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
-import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -74,10 +71,10 @@ public class ParityTestBase {
         }
     }
 
-    private MapWritableKVState<EntityNum, Token> newTokenStateFromTokens(Token... tokens) {
-        final var backingMap = new HashMap<EntityNum, Token>();
+    private MapWritableKVState<TokenID, Token> newTokenStateFromTokens(Token... tokens) {
+        final var backingMap = new HashMap<TokenID, Token>();
         for (final Token token : tokens) {
-            backingMap.put(EntityNum.fromTokenId(fromPbj(BaseTokenHandler.asToken(token.tokenNumber()))), token);
+            backingMap.put(token.tokenId(), token);
         }
 
         return new MapWritableKVState<>(TOKENS_KEY, backingMap);
@@ -105,9 +102,14 @@ public class ParityTestBase {
     }
 
     protected WritableTokenRelationStore newWritableStoreWithTokenRels(final TokenRelation... tokenRels) {
-        final var backingMap = new HashMap<EntityNumPair, TokenRelation>();
+        final var backingMap = new HashMap<EntityIDPair, TokenRelation>();
         for (final TokenRelation tokenRel : tokenRels) {
-            backingMap.put(EntityNumPair.fromLongs(tokenRel.accountNumber(), tokenRel.tokenNumber()), tokenRel);
+            backingMap.put(
+                    EntityIDPair.newBuilder()
+                            .accountId(tokenRel.accountId())
+                            .tokenId(tokenRel.tokenId())
+                            .build(),
+                    tokenRel);
         }
 
         final var wrappingState = new MapWritableKVState<>(ACCOUNTS_KEY, backingMap);

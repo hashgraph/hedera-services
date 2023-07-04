@@ -33,7 +33,6 @@ import com.hedera.node.config.converter.KnownBlockValuesConverter;
 import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
 import com.hedera.node.config.converter.MapAccessTypeConverter;
 import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
-import com.hedera.node.config.converter.ProfileConverter;
 import com.hedera.node.config.converter.RecomputeTypeConverter;
 import com.hedera.node.config.converter.ScaleFactorConverter;
 import com.hedera.node.config.converter.SemanticVersionConverter;
@@ -76,12 +75,13 @@ import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.sources.PropertyFileConfigSource;
+import com.swirlds.common.config.sources.SystemEnvironmentConfigSource;
+import com.swirlds.common.config.sources.SystemPropertiesConfigSource;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -89,7 +89,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.ObjIntConsumer;
-import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -130,9 +129,7 @@ public class ConfigProviderImpl implements ConfigProvider {
      * Create a new instance. You must specify whether to use the genesis.properties file as a source for the
      * configuration. This should only be true if the node is starting from genesis.
      */
-    @Inject
-    public ConfigProviderImpl(@GenesisUsage @Nullable final Boolean useGenesisSource) {
-        requireNonNull(useGenesisSource);
+    public ConfigProviderImpl(final boolean useGenesisSource) {
         final var builder = createConfigurationBuilder();
         addFileSources(builder, useGenesisSource);
         final Configuration config = builder.build();
@@ -163,6 +160,8 @@ public class ConfigProviderImpl implements ConfigProvider {
 
     private ConfigurationBuilder createConfigurationBuilder() {
         return ConfigurationBuilder.create()
+                .withSource(SystemEnvironmentConfigSource.getInstance())
+                .withSource(SystemPropertiesConfigSource.getInstance())
                 .withSource(new PropertyConfigSource(SEMANTIC_VERSION_PROPERTIES_DEFAULT_PATH, 500))
                 .withConfigDataType(AccountsConfig.class)
                 .withConfigDataType(AutoCreationConfig.class)
@@ -211,7 +210,6 @@ public class ConfigProviderImpl implements ConfigProvider {
                 .withConverter(new FileIDConverter())
                 .withConverter(new HederaFunctionalityConverter())
                 .withConverter(new PermissionedAccountsRangeConverter())
-                .withConverter(new ProfileConverter())
                 .withConverter(new SidecarTypeConverter())
                 .withConverter(new SemanticVersionConverter())
                 .withConverter(new KeyValuePairConverter())

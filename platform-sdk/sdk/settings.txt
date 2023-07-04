@@ -11,49 +11,54 @@
                                           #    Gossip / Networking    #
                                           #############################
 
-chatter.useChatter,               false
-doUpnp,                           false
-maxOutgoingSyncs,                 1
-sync.syncAsProtocolEnabled,       false
-useLoopbackIp,                    false
+chatter.useChatter,                       false
+socket.doUpnp,                            false
+socket.useLoopbackIp,                     false
+sync.maxOutgoingSyncs,                    1
+sync.syncAsProtocolEnabled,               true
+sync.syncProtocolPermitCount,             2
 
                                           #############################
-                                          # Preconsensus Event Stream #
+                                          #      Event Creation       #
                                           #############################
 
-event.preconsensus.enableReplay,  false
-event.preconsensus.enableStorage, false
+freezeSecondsAfterStartup,                0
+event.creation.maxCreationRate,           5
+event.creation.useTipsetAlgorithm,        true
 
                                           #############################
-                                          #  Consensus Event Stream   #
+                                          #        Event Stream       #
                                           #############################
 
-enableEventStreaming,             false
+event.enableEventStreaming,               false
+event.preconsensus.enableReplay,          false
+event.preconsensus.enableStorage,         false
+
 
                                           #############################
                                           #         Reconnect         #
                                           #############################
 
-reconnect.active,                 true
-state.saveReconnectStateToDisk,   false
+reconnect.active,                         true
+state.saveReconnectStateToDisk,           false
 
                                           #############################
                                           #          Metrics          #
                                           #############################
 
-csvFileName,                      PlatformTesting
-showInternalStats,                true
+metrics.csvFileName,                      PlatformTesting
+showInternalStats,                        true
 
                                           #############################
                                           #           State           #
                                           #############################
 
-checkSignedStateFromDisk,         true
-state.saveStatePeriod,            0
+
+state.checkSignedStateFromDisk,           true
+state.saveStatePeriod,                    0
 
                                           #############################
                                           #           Misc.           #
                                           #############################
 
-loadKeysFromPfxFiles,             false
-
+loadKeysFromPfxFiles,                     false

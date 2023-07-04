@@ -56,6 +56,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -153,8 +154,8 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
                 final var nft = nftStore.get(tokenId, nftSerial);
                 validateTrue(nft != null, INVALID_NFT_ID);
 
-                final var nftOwner = nft.ownerNumber();
-                validateTrue(nftOwner == accountId.accountNum(), ACCOUNT_DOES_NOT_OWN_WIPED_NFT);
+                final var nftOwner = nft.ownerId();
+                validateTrue(Objects.equals(nftOwner, accountId), ACCOUNT_DOES_NOT_OWN_WIPED_NFT);
             }
 
             // Check that the new token balance will not be negative
@@ -205,7 +206,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
 
         final var accountRel = TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore);
         validateFalse(
-                token.treasuryAccountNumber() == accountRel.accountNumber(),
+                token.treasuryAccountId().equals(accountRel.accountId()),
                 ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
 
         return new ValidationResult(account, token, accountRel);

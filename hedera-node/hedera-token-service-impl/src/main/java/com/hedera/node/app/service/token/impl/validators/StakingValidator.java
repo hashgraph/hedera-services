@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -57,7 +57,7 @@ public class StakingValidator {
             @Nullable final Long stakedNodeIdInOp,
             @NonNull ReadableAccountStore accountStore,
             @NonNull final HandleContext context,
-            @NonNull final NodeInfo nodeInfo) {
+            @NonNull final NetworkInfo networkInfo) {
         final var hasStakingId = stakedAccountIdInOp != null || stakedNodeIdInOp != null;
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
         // If staking is not enabled, then can't update staked id
@@ -73,7 +73,7 @@ public class StakingValidator {
         if (stakedIdKind.equals("STAKED_ACCOUNT_ID")) {
             validateTrue(accountStore.getAccountById(requireNonNull(stakedAccountIdInOp)) != null, INVALID_STAKING_ID);
         } else if (stakedIdKind.equals("STAKED_NODE_ID")) {
-            validateTrue(nodeInfo.isValidId((requireNonNull(stakedNodeIdInOp))), INVALID_STAKING_ID);
+            validateTrue(networkInfo.nodeInfo(requireNonNull(stakedNodeIdInOp)) != null, INVALID_STAKING_ID);
         }
     }
 

@@ -33,6 +33,8 @@ tasks.test {
     exclude("**/*")
 }
 
+tasks.itest { systemProperty("itests", System.getProperty("itests")) }
+
 configurations { evaluationDependsOn(":app-hapi-fees") }
 
 sourceSets {
@@ -85,10 +87,16 @@ dependencies {
 
         itestImplementation(project(path))
         itestImplementation(project(":hapi"))
-        itestImplementation(gav("org.apache.commons.lang3"))
+        itestImplementation(project(":app"))
+        itestImplementation(project(":config"))
         itestImplementation(gav("org.junit.jupiter.api"))
         itestImplementation(gav("org.testcontainers"))
         itestImplementation(gav("org.testcontainers.junit.jupiter"))
+        itestImplementation(gav("org.apache.commons.lang3"))
+        itestImplementation(gav("org.apache.logging.log4j.core"))
+        itestImplementation(gav("org.apache.logging.log4j.jul"))
+        itestImplementation(gav("com.swirlds.platform.core"))
+        itestImplementation(gav("com.github.spotbugs.annotations"))
 
         eetImplementation(project(path))
         eetImplementation(gav("org.junit.jupiter.api"))

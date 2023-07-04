@@ -47,6 +47,7 @@ public record HederaConfig(
         @ConfigProperty(value = "prefetch.threadPoolSize", defaultValue = "4") int prefetchThreadPoolSize,
         @ConfigProperty(value = "prefetch.codeCacheTtlSecs", defaultValue = "600") int prefetchCodeCacheTtlSecs,
         // @ConfigProperty(value = "profiles.active", defaultValue = "PROD") Profile profilesActive,
+        @ConfigProperty(value = "profiles.active", defaultValue = "PROD") String activeProfile,
         @ConfigProperty(value = "recordStream.isEnabled", defaultValue = "true") boolean recordStreamIsEnabled,
         @ConfigProperty(value = "recordStream.logDir", defaultValue = "/opt/hgcapp/recordStreams")
                 String recordStreamLogDir,
@@ -54,6 +55,8 @@ public record HederaConfig(
         @ConfigProperty(value = "recordStream.logPeriod", defaultValue = "2") long recordStreamLogPeriod,
         @ConfigProperty(value = "recordStream.queueCapacity", defaultValue = "5000") int recordStreamQueueCapacity,
         @ConfigProperty(value = "recordStream.logEveryTransaction", defaultValue = "false")
-                boolean recordStreamLogEveryTransaction
-        // @ConfigProperty("workflows.enabled", defaultValue = "") Set<HederaFunctionality> workflowsEnabled
-        ) {}
+                boolean recordStreamLogEveryTransaction,
+        @ConfigProperty(value = "workflow.verificationTimeoutMS", defaultValue = "20000")
+                long workflowVerificationTimeoutMS,
+        // FUTURE: Set<HederaFunctionality>.
+        @ConfigProperty(value = "workflows.enabled", defaultValue = "") String workflowsEnabled) {}

@@ -49,7 +49,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.system.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;

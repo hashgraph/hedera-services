@@ -18,6 +18,7 @@ package com.swirlds.platform.components;
 
 import static com.swirlds.logging.LogMarker.CREATE_EVENT;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.EventCreationRuleResponse;
@@ -31,6 +32,7 @@ import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.SelfEventStorage;
 import com.swirlds.platform.event.creation.AncientParentsRule;
+import com.swirlds.platform.event.tipset.EventCreationConfig;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -80,32 +82,29 @@ public class EventCreator {
     private final EventCreationRules eventCreationRules;
 
     /**
+     * If true, event creation is being handled by the tipset algorithm and this class should not create any events.
+     */
+    private final boolean disabled;
+
+    /**
      * Construct a new EventCreator.
      *
-     * @param softwareVersion
-     *      the software version of the node
-     * @param selfId
-     * 		the ID of this node
-     * @param signer
-     * 		responsible for signing new events
-     * @param graphGenerationsSupplier
-     * 		supplies the key generation number from the hashgraph
-     * @param transactionSupplier
-     * 		this method supplies transactions that should be inserted into newly created events
-     * @param newEventHandler
-     * 		this method is passed all newly created events
-     * @param selfEventStorage
-     * 		stores the most recent event created by me
-     * @param eventMapper
-     * 		the object that tracks the most recent events from each node
-     * @param transactionPool
-     * 		the TransactionPool
-     * @param inFreeze
-     * 		indicates if the system is currently in a freeze
-     * @param eventCreationRules
-     * 		the object used for checking if we should create an event or not
+     * @param platformContext          the platform context for this node
+     * @param softwareVersion          the software version of the node
+     * @param selfId                   the ID of this node
+     * @param signer                   responsible for signing new events
+     * @param graphGenerationsSupplier supplies the key generation number from the hashgraph
+     * @param transactionSupplier      this method supplies transactions that should be inserted into newly created
+     *                                 events
+     * @param newEventHandler          this method is passed all newly created events
+     * @param selfEventStorage         stores the most recent event created by me
+     * @param eventMapper              the object that tracks the most recent events from each node
+     * @param transactionPool          the TransactionPool
+     * @param inFreeze                 indicates if the system is currently in a freeze
+     * @param eventCreationRules       the object used for checking if we should create an event or not
      */
     public EventCreator(
+            @NonNull final PlatformContext platformContext,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final NodeId selfId,
             @NonNull final Signer signer,
@@ -129,15 +128,23 @@ public class EventCreator {
         this.transactionPool = Objects.requireNonNull(transactionPool, "the transaction pool is null");
         this.inFreeze = Objects.requireNonNull(inFreeze, "the in freeze is null");
         this.eventCreationRules = Objects.requireNonNull(eventCreationRules, "the event creation rules is null");
+        this.disabled = platformContext
+                .getConfiguration()
+                .getConfigData(EventCreationConfig.class)
+                .useTipsetAlgorithm();
     }
 
     /**
      * Create a new event and push it into the gossip/consensus pipeline.
      *
-     * @param otherId
-     * 		the node ID that will supply the other parent for this event
+     * @param otherId the node ID that will supply the other parent for this event
      */
     public boolean createEvent(final NodeId otherId) {
+
+        if (disabled) {
+            return false;
+        }
+
         if (eventCreationRules.shouldCreateEvent() == EventCreationRuleResponse.DONT_CREATE) {
             return false;
         }
@@ -201,11 +208,10 @@ public class EventCreator {
     }
 
     /**
-     * Check if the most recent event from the given node has been used as an other parent by an
-     * event created by the current node.
+     * Check if the most recent event from the given node has been used as an other parent by an event created by the
+     * current node.
      *
-     * @param otherId
-     * 		the ID of the node supplying the other parent
+     * @param otherId the ID of the node supplying the other parent
      */
     protected boolean hasOtherParentAlreadyBeenUsed(final NodeId otherId) {
         return !Objects.equals(selfId, otherId) && eventMapper.hasMostRecentEventBeenUsedAsOtherParent(otherId);
@@ -221,8 +227,7 @@ public class EventCreator {
     /**
      * Write to the log (if configured) every time an event is created.
      *
-     * @param event
-     * 		the created event to be logged
+     * @param event the created event to be logged
      */
     protected void logEventCreation(final EventImpl event) {
         logger.debug(CREATE_EVENT.getMarker(), "Creating {}", event::toMediumString);

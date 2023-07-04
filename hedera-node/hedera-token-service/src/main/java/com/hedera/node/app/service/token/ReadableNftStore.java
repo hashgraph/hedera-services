@@ -37,7 +37,7 @@ public interface ReadableNftStore {
     @Nullable
     default Nft get(@NonNull final TokenID id, final long serialNumber) {
         final var uniqueTokenId = UniqueTokenId.newBuilder()
-                .tokenTypeNumber(id.tokenNum())
+                .tokenId(id)
                 .serialNumber(serialNumber)
                 .build();
         return get(uniqueTokenId);

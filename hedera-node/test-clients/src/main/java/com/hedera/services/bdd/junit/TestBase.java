@@ -196,6 +196,17 @@ public abstract class TestBase {
      * @return
      */
     protected final DynamicContainer extractSpecsFromSuite(final Supplier<HapiSuite> suiteSupplier) {
+        return extractSpecsFromSuite(suiteSupplier, ".*");
+    }
+
+    /**
+     * Utility that creates a DynamicTest for each HapiApiSpec in the given suite.
+     *
+     * @param suiteSupplier
+     * @return
+     */
+    protected final DynamicContainer extractSpecsFromSuite(
+            final Supplier<HapiSuite> suiteSupplier, final String filter) {
         final var suite = suiteSupplier.get();
         final var tests = suite.getSpecsInSuiteWithOverrides().stream()
                 .map(s -> dynamicTest(s.getName(), () -> {
@@ -211,7 +222,8 @@ public abstract class TestBase {
                                     + s.getName()
                                     + "}: "
                                     + s.getCause());
-                }));
+                }))
+                .filter(t -> t.getDisplayName().matches(filter));
         return dynamicContainer(suite.getClass().getSimpleName(), tests);
     }
 
