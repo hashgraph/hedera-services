@@ -36,15 +36,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class AccountAliasesValidator implements RecordStreamValidator {
-    private static final Logger log = LogManager.getLogger(AccountAliasesValidator.class);
     private final Map<ByteString, Long> aliasesFromRecords = new HashMap<>();
     private final Map<ByteString, Long> aliasesFromState = new HashMap<>();
 
     @Override
+    @SuppressWarnings("java:S4507")
     public void validateRecordsAndSidecars(@NonNull final List<RecordWithSidecars> recordsWithSidecars) {
         requireNonNull(recordsWithSidecars);
         getExpectedAliasesFrom(recordsWithSidecars);
@@ -54,7 +52,7 @@ public class AccountAliasesValidator implements RecordStreamValidator {
                 Files.walk(Paths.get("build/network/itest/saved/node_0/com.hedera.node.app.ServicesMain/0/hedera"))) {
             var signedStateFile = Streams.findLast(
                             paths.filter(p -> p.endsWith("SignedState.swh")).sorted())
-                    .get(); // get the latest signed state file
+                    .orElseThrow(); // get the latest signed state file
             getActualAliasesFrom(signedStateFile);
         } catch (Exception e) {
             e.printStackTrace();
@@ -98,23 +96,19 @@ public class AccountAliasesValidator implements RecordStreamValidator {
         }
     }
 
-    private void getActualAliasesFrom(final Path signedStateFile) {
-        try {
-            var state = new SignedStateHolder(signedStateFile).getPlatformState();
-            state.accounts().forEach((k, v) -> {
-                final var alias = v.getAlias();
-                if (!alias.isEmpty()) {
-                    aliasesFromState.put(alias, k.longValue());
-                    if (alias.size() > EVM_ADDRESS_LEN) {
-                        final var evmAddress = keyAliasToEVMAddress(alias);
-                        if (evmAddress != null) {
-                            aliasesFromState.put(ByteStringUtils.wrapUnsafely(evmAddress), k.longValue());
-                        }
+    private void getActualAliasesFrom(final Path signedStateFile) throws Exception {
+        var state = new SignedStateHolder(signedStateFile).getPlatformState();
+        state.accounts().forEach((k, v) -> {
+            final var alias = v.getAlias();
+            if (!alias.isEmpty()) {
+                aliasesFromState.put(alias, k.longValue());
+                if (alias.size() > EVM_ADDRESS_LEN) {
+                    final var evmAddress = keyAliasToEVMAddress(alias);
+                    if (evmAddress != null) {
+                        aliasesFromState.put(ByteStringUtils.wrapUnsafely(evmAddress), k.longValue());
                     }
                 }
-            });
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+            }
+        });
     }
 }
