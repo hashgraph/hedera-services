@@ -1,7 +1,7 @@
 module hedera.services.test.clients {
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.hapi.utils;
-    //    requires com.hedera.node.hapi;
+    requires com.hedera.node.hapi;
     requires com.hedera.node.app.service.evm;
     requires com.hedera.node.services.cli;
     requires com.hedera.node.app.service.mono;
