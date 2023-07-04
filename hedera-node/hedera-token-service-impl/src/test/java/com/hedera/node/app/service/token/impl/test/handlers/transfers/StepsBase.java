@@ -40,6 +40,7 @@ import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustHbarChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
@@ -92,6 +93,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected AssociateTokenRecepientsStep associateTokenRecepientsStep;
     protected NFTOwnersChangeStep changeNFTOwnersStep;
     protected AdjustHbarChangesStep adjustHbarChangesStep;
+    protected AdjustFungibleTokenChangesStep adjustFungibleTokenChangesStep;
     protected CryptoTransferTransactionBody body;
     protected TransactionBody txn;
     protected TransferContextImpl transferContext;
