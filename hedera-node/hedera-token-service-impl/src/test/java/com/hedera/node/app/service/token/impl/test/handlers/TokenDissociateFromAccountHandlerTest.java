@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenDissociateScenarios.TOKEN_DISSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET;
@@ -58,7 +59,6 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
-import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
@@ -232,16 +232,14 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         @Test
         void rejectsPausedToken() {
             // Create a readable store with a paused token
-            final var pausedToken = Token.newBuilder()
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
-                    .paused(true)
-                    .build();
+            final var pausedToken =
+                    Token.newBuilder().tokenId(TOKEN_555_ID).paused(true).build();
             readableTokenStore = newReadableStoreWithTokens(pausedToken);
 
             // Create the token rel for the paused token
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
                     .build());
 
             // Create the context and transaction
@@ -258,15 +256,15 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         void rejectsTreasuryAccount() {
             // Create a readable store that has a token with a treasury account
             final var tokenWithTreasury = Token.newBuilder()
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenId(TOKEN_555_ID)
+                    .treasuryAccountId(ACCOUNT_1339)
                     .build();
             readableTokenStore = newReadableStoreWithTokens(tokenWithTreasury);
 
             // Create the token rel
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
                     .build());
 
             // Create the context and transaction
@@ -283,13 +281,13 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         void rejectsFrozenToken() {
             // Create the readable store with a token
             final var tokenWithTreasury =
-                    Token.newBuilder().tokenNumber(TOKEN_555_ID.tokenNum()).build();
+                    Token.newBuilder().tokenId(TOKEN_555_ID).build();
             readableTokenStore = newReadableStoreWithTokens(tokenWithTreasury);
 
             // Create the frozen token rel
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
                     .frozen(true)
                     .build());
 
@@ -307,15 +305,15 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         void rejectsAccountThatStillOwnsNfts() {
             // Create the readable store with a token that still owns an NFT
             final var tokenWithTreasury = Token.newBuilder()
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .tokenId(TOKEN_555_ID)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                     .build();
             readableTokenStore = newReadableStoreWithTokens(tokenWithTreasury);
 
             // Create the token rel with a non-zero NFT balance
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
                     .balance(1L)
                     .build());
 
@@ -346,16 +344,14 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             writableAccountStore = newWritableStoreWithAccounts(accountWithTokenRels);
 
             // Create the readable token store with a deleted token
-            final var tokenWithTreasury = Token.newBuilder()
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
-                    .deleted(true)
-                    .build();
+            final var tokenWithTreasury =
+                    Token.newBuilder().tokenId(TOKEN_555_ID).deleted(true).build();
             readableTokenStore = newReadableStoreWithTokens(tokenWithTreasury);
 
             // Create the token rel for the deleted token
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
                     .build());
 
             // Create the context and transaction
@@ -398,8 +394,8 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
 
             // Create the token rel for the nonexistent token
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
                     .build());
 
             // Create the context and transaction
@@ -450,23 +446,23 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             // 2. has a treasury account
             final var totalSupply = 3000L;
             final var tokenWithTreasury = Token.newBuilder()
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .tokenId(TOKEN_555_ID)
                     .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountNumber(ACCOUNT_2020.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_2020)
                     .totalSupply(totalSupply)
                     .build();
             readableTokenStore = newReadableStoreWithTokens(tokenWithTreasury);
 
             // Create the token rel with a non-zero fungible balance
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
                     .balance(1000)
                     .build());
             // Create the treasury token rel
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_2020.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_2020)
+                    .tokenId(TOKEN_555_ID)
                     .balance(2000L)
                     .build());
 
@@ -511,15 +507,13 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         @Test
         void multipleTokenRelsAreRemoved() {
             // Represents a token that won't be found
-            final var token444Id = BaseTokenHandler.asToken(444);
+            final var token444Id = asToken(444);
             // Represents a token that is deleted
-            final var token555 = Token.newBuilder()
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
-                    .deleted(true)
-                    .build();
+            final var token555 =
+                    Token.newBuilder().tokenId(TOKEN_555_ID).deleted(true).build();
             // Represents an active token
             final var token666 = Token.newBuilder()
-                    .tokenNumber(TOKEN_666_ID.tokenNum())
+                    .tokenId(TOKEN_666_ID)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                     .build();
 
@@ -539,25 +533,25 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
 
             // Create the token rel for each token
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(token444Id.tokenNum())
-                    .previousToken(-1) // start of the account's token list
-                    .nextToken(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(token444Id)
+                    .previousToken(asToken(-1)) // start of the account's token list
+                    .nextToken(TOKEN_555_ID)
                     .balance(20)
                     .build());
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
-                    .previousToken(token444Id.tokenNum())
-                    .nextToken(TOKEN_666_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
+                    .previousToken(token444Id)
+                    .nextToken(TOKEN_666_ID)
                     .balance(30)
                     .automaticAssociation(true)
                     .build());
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_666_ID.tokenNum())
-                    .previousToken(TOKEN_555_ID.tokenNum())
-                    .nextToken(-1) // end of the account's token list
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_666_ID)
+                    .previousToken(TOKEN_555_ID)
+                    .nextToken((TokenID) null) // end of the account's token list
                     .build());
 
             // Create the context and transaction

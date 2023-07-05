@@ -18,7 +18,7 @@ package com.swirlds.platform;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import com.swirlds.common.statistics.StatsRunningAverage;
+import com.swirlds.common.metrics.statistics.StatsRunningAverage;
 import com.swirlds.test.framework.TestQualifierTags;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.QueryHeader;
@@ -39,7 +40,10 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.network.NetworkGetExecutionTimeQuery;
 import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.hapi.node.transaction.FixedFee;
+import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
@@ -49,7 +53,6 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
-import com.hederahashgraph.api.proto.java.AccountID.AccountCase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
@@ -65,7 +68,7 @@ public final class PbjConverter {
         requireNonNull(accountID);
         final var builder =
                 AccountID.newBuilder().shardNum(accountID.getShardNum()).realmNum(accountID.getRealmNum());
-        if (accountID.getAccountCase() == AccountCase.ALIAS) {
+        if (accountID.getAccountCase() == com.hederahashgraph.api.proto.java.AccountID.AccountCase.ALIAS) {
             builder.alias(Bytes.wrap(accountID.getAlias().toByteArray()));
         } else {
             builder.accountNum(accountID.getAccountNum());
@@ -1351,12 +1354,65 @@ public final class PbjConverter {
                 .build();
     }
 
-    public static com.hederahashgraph.api.proto.java.FileID fromPbj(FileID someFileId) {
+    public static com.hederahashgraph.api.proto.java.FileID fromPbj(final FileID someFileId) {
         return com.hederahashgraph.api.proto.java.FileID.newBuilder()
                 .setRealmNum(someFileId.realmNum())
                 .setShardNum(someFileId.shardNum())
                 .setFileNum(someFileId.fileNum())
                 .build();
+    }
+
+    @NonNull
+    public static com.hederahashgraph.api.proto.java.CustomFee fromPbj(@NonNull final CustomFee customFee) {
+        var builder = com.hederahashgraph.api.proto.java.CustomFee.newBuilder();
+        if (customFee.hasFixedFee()) {
+            builder.setFixedFee(fromPbj(customFee.fixedFee()));
+        } else if (customFee.hasFractionalFee()) {
+            builder.setFractionalFee(fromPbj(customFee.fractionalFee()));
+        } else if (customFee.hasRoyaltyFee()) {
+            builder.setRoyaltyFee(fromPbj(customFee.royaltyFee()));
+        }
+
+        builder.setFeeCollectorAccountId(fromPbj(customFee.feeCollectorAccountId()));
+        builder.setAllCollectorsAreExempt(customFee.allCollectorsAreExempt());
+
+        return builder.build();
+    }
+
+    @NonNull
+    public static com.hederahashgraph.api.proto.java.RoyaltyFee fromPbj(@NonNull final RoyaltyFee royaltyFee) {
+        var builder = com.hederahashgraph.api.proto.java.RoyaltyFee.newBuilder();
+        builder.setExchangeValueFraction(fromPbj(royaltyFee.exchangeValueFraction()));
+        if (royaltyFee.hasFallbackFee()) builder.setFallbackFee(fromPbj(royaltyFee.fallbackFee()));
+        return builder.build();
+    }
+
+    @NonNull
+    public static com.hederahashgraph.api.proto.java.Fraction fromPbj(@NonNull final Fraction fraction) {
+        var builder = com.hederahashgraph.api.proto.java.Fraction.newBuilder();
+        builder.setNumerator(fraction.numerator());
+        builder.setDenominator(fraction.denominator());
+        return builder.build();
+    }
+
+    @NonNull
+    public static com.hederahashgraph.api.proto.java.FractionalFee fromPbj(@NonNull final FractionalFee fractionalFee) {
+        var builder = com.hederahashgraph.api.proto.java.FractionalFee.newBuilder();
+        builder.setFractionalAmount(fromPbj(fractionalFee.fractionalAmount()));
+        builder.setMinimumAmount(fractionalFee.minimumAmount());
+        builder.setMaximumAmount(fractionalFee.maximumAmount());
+        builder.setNetOfTransfers(fractionalFee.netOfTransfers());
+        return builder.build();
+    }
+
+    @NonNull
+    public static com.hederahashgraph.api.proto.java.FixedFee fromPbj(@Nullable FixedFee fixedFee) {
+        var builder = com.hederahashgraph.api.proto.java.FixedFee.newBuilder();
+        if (fixedFee != null) {
+            builder.setAmount(fixedFee.amount());
+            builder.setDenominatingTokenId(fromPbj(fixedFee.denominatingTokenId()));
+        }
+        return builder.build();
     }
 
     public static TopicID toPbj(com.hederahashgraph.api.proto.java.TopicID topicId) {

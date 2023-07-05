@@ -119,7 +119,7 @@ public class AllowanceValidator {
         if (nft.hasOwnerId()) {
             return nft.ownerId().equals(ownerID);
         } else {
-            return ownerID.accountNum() == token.treasuryAccountNumber();
+            return ownerID.equals(token.treasuryAccountId());
         }
     }
 
