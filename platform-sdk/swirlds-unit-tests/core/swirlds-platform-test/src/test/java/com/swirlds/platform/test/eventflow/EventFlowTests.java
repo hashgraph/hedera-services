@@ -35,6 +35,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.stream.EventStreamManager;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
@@ -625,7 +626,8 @@ class EventFlowTests {
                 mock(SwirldStateMetrics.class),
                 transactionConfig,
                 () -> false,
-                state);
+                state,
+                new BasicSoftwareVersion(1));
 
         ConfigurationHolder.getInstance().setConfiguration(config);
         final PlatformContext platformContext =

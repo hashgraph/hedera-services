@@ -125,7 +125,10 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                 }
             } else {
                 // Handle active tokens
-                validateFalse(tokenRel.accountNumber() == token.treasuryAccountNumber(), ACCOUNT_IS_TREASURY);
+                validateFalse(
+                        token.treasuryAccountId() != null
+                                && token.treasuryAccountId().equals(tokenRel.accountId()),
+                        ACCOUNT_IS_TREASURY);
                 validateFalse(tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
 
                 if (tokenRelBalance > 0) {
@@ -167,9 +170,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         // get changes to account and token relations
         final var updatedTokenRels =
                 new TokenRelListCalculator(tokenRelStore).removeTokenRels(account, tokenRelsToRemove);
-        final var newHeadTokenId = updatedTokenRels.updatedHeadTokenId() != null
-                ? updatedTokenRels.updatedHeadTokenId()
-                : account.headTokenNumber();
+        final var newHeadTokenId = updatedTokenRels.updatedHeadTokenId();
 
         // Update the account with the aggregate number of NFTs, auto associations, associations, and positive balances
         // to remove, as well as the new head token number
@@ -178,7 +179,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                 .usedAutoAssociations(account.usedAutoAssociations() - numAutoAssociationsToSubtract)
                 .numberAssociations(account.numberAssociations() - numAssociationsToSubtract)
                 .numberPositiveBalances(account.numberPositiveBalances() - numPositiveBalancesToSubtract)
-                .headTokenNumber(newHeadTokenId)
+                .headTokenNumber(newHeadTokenId == null ? -1 : newHeadTokenId.tokenNum())
                 .build();
 
         // Finally, update the account and the token relations via their respective stores
@@ -223,10 +224,12 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
             final TokenRelation dissociatedTokenTreasuryRel;
             if (possiblyUnusableToken != null) {
                 validateFalse(possiblyUnusableToken.paused(), TOKEN_IS_PAUSED);
-                final var tokenTreasuryAcct = AccountID.newBuilder()
-                        .accountNum(possiblyUnusableToken.treasuryAccountNumber())
-                        .build();
-                dissociatedTokenTreasuryRel = tokenRelStore.get(tokenTreasuryAcct, tokenId);
+                if (possiblyUnusableToken.treasuryAccountId() != null) {
+                    final var tokenTreasuryAcct = possiblyUnusableToken.treasuryAccountId();
+                    dissociatedTokenTreasuryRel = tokenRelStore.get(tokenTreasuryAcct, tokenId);
+                } else {
+                    dissociatedTokenTreasuryRel = null;
+                }
             } else {
                 // If the token isn't found, assume the treasury token rel is null
                 dissociatedTokenTreasuryRel = null;

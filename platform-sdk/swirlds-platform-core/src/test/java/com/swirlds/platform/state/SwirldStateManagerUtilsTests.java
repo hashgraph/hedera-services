@@ -19,7 +19,9 @@ package com.swirlds.platform.state;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
@@ -28,24 +30,32 @@ import org.junit.jupiter.api.Test;
 
 public class SwirldStateManagerUtilsTests {
 
-    private final State state = new State();
-    private final SwirldStateMetrics stats = mock(SwirldStateMetrics.class);
-
-    private final PlatformState platformState = new PlatformState();
-    private final SwirldState swirldState = new DummySwirldState();
-
     @BeforeEach
-    void setup() {
-        final DualStateImpl dualState = new DualStateImpl();
-        state.setSwirldState(swirldState);
-        state.setDualState(dualState);
-        state.setPlatformState(platformState);
-    }
+    void setup() {}
 
     @Test
     void testFastCopyIsMutable() {
+
+        final State state = new State();
+
+        final PlatformState platformState = mock(PlatformState.class);
+        when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
+        when(platformState.copy()).thenReturn(platformState);
+        state.setPlatformState(platformState);
+
+        final PlatformData platformData = mock(PlatformData.class);
+        when(platformState.getPlatformData()).thenReturn(platformData);
+
+        final SwirldState swirldState = new DummySwirldState();
+        state.setSwirldState(swirldState);
+
+        final DualStateImpl dualState = new DualStateImpl();
+        state.setDualState(dualState);
+
         state.reserve();
-        final State result = SwirldStateManagerUtils.fastCopy(state, stats);
+        final SwirldStateMetrics stats = mock(SwirldStateMetrics.class);
+        final State result = SwirldStateManagerUtils.fastCopy(state, stats, new BasicSoftwareVersion(1));
+
         assertFalse(result.isImmutable(), "The copy state should be mutable.");
         assertEquals(
                 1,
