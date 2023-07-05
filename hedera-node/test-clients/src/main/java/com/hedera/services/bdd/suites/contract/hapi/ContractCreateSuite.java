@@ -93,10 +93,10 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
 
 public class ContractCreateSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
-
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
     public static final String PARENT_INFO = "parentInfo";
+    private static final String PAYER = "payer";
+    private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
 
     public static void main(String... args) {
         new ContractCreateSuite().runSuiteAsync();
@@ -342,10 +342,10 @@ public class ContractCreateSuite extends HapiSuite {
 
     private HapiSpec rejectsInsufficientFee() {
         return defaultHapiSpec("RejectsInsufficientFee")
-                .given(cryptoCreate("payer"), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
+                .given(cryptoCreate(PAYER), uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                        .payingWith("payer")
+                        .payingWith(PAYER)
                         .fee(1L)
                         .hasPrecheck(INSUFFICIENT_TX_FEE));
     }
