@@ -170,11 +170,11 @@ public interface HederaWorldUpdater extends WorldUpdater {
     void finalizeHollowAccount(@NonNull Address alias);
 
     /**
-     * Returns all storage changes that would be committed by this updater, necessary for constructing
+     * Returns all storage updates that would be committed by this updater, necessary for constructing
      * a {@link com.hedera.hapi.streams.SidecarType#CONTRACT_STATE_CHANGE} sidecar.
      *
      * @return the full list of account-scoped storage changes
      */
     @NonNull
-    List<StorageAccesses> pendingStorageChanges();
+    List<StorageAccesses> pendingStorageUpdates();
 }

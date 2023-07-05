@@ -214,7 +214,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     }
 
     @Override
-    public @NonNull List<StorageAccesses> pendingStorageChanges() {
+    public @NonNull List<StorageAccesses> pendingStorageUpdates() {
         return evmFrameState.getStorageChanges();
     }
 

@@ -80,7 +80,8 @@ public class FrameBuilder {
         final var value = transaction.weiValue();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var nominalCoinbase = asLongZeroAddress(ledgerConfig.fundingAccount());
-        // TODO - contract.sidecars does not seem to be available yet
+        // TODO - contract.sidecars does not seem to be available yet; we do not
+        // need create the tracker here if STATE_CHANGES sidecar is disabled
         final var contextVariables =
                 Map.of(CONFIG_CONTEXT_VARIABLE, config, TRACKER_CONTEXT_VARIABLE, new StorageAccessTracker());
         final var builder = MessageFrame.builder()

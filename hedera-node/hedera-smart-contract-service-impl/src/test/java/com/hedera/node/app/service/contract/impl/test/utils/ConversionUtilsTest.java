@@ -25,11 +25,17 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.streams.ContractStateChange;
+import com.hedera.hapi.streams.ContractStateChanges;
+import com.hedera.hapi.streams.StorageChange;
+import com.hedera.node.app.service.contract.impl.state.StorageAccess;
+import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogsBloomFilter;
@@ -110,6 +116,39 @@ class ConversionUtilsTest {
         final var actual = pbjLogsFrom(List.of(BESU_LOG));
 
         assertEquals(List.of(expected), actual);
+    }
+
+    @Test
+    void convertsFromStorageAccessesAsExpected() {
+        final var oneAccesses =
+                new StorageAccesses(123L, List.of(StorageAccess.newRead(UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
+        final var twoAccesses = new StorageAccesses(
+                456L,
+                List.of(
+                        StorageAccess.newRead(UInt256.MAX_VALUE, UInt256.MIN_VALUE),
+                        StorageAccess.newWrite(UInt256.ONE, UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
+        final var expectedPbj = ContractStateChanges.newBuilder()
+                .contractStateChanges(
+                        ContractStateChange.newBuilder()
+                                .contractId(ContractID.newBuilder().contractNum(123L))
+                                .storageChanges(new StorageChange(
+                                        tuweniToPbjBytes(UInt256.MIN_VALUE), tuweniToPbjBytes(UInt256.MAX_VALUE), null))
+                                .build(),
+                        ContractStateChange.newBuilder()
+                                .contractId(ContractID.newBuilder().contractNum(456L))
+                                .storageChanges(
+                                        new StorageChange(
+                                                tuweniToPbjBytes(UInt256.MAX_VALUE),
+                                                tuweniToPbjBytes(UInt256.MIN_VALUE),
+                                                null),
+                                        new StorageChange(
+                                                tuweniToPbjBytes(UInt256.ONE),
+                                                tuweniToPbjBytes(UInt256.MIN_VALUE),
+                                                tuweniToPbjBytes(UInt256.MAX_VALUE)))
+                                .build())
+                .build();
+        final var actualPbj = ConversionUtils.pbjStateChangesFrom(List.of(oneAccesses, twoAccesses));
+        assertEquals(expectedPbj, actualPbj);
     }
 
     private byte[] bloomFor(@NonNull final Log log) {

@@ -188,7 +188,7 @@ class ProxyWorldUpdaterTest {
 
         given(evmFrameState.getStorageChanges()).willReturn(expected);
 
-        assertSame(expected, subject.pendingStorageChanges());
+        assertSame(expected, subject.pendingStorageUpdates());
     }
 
     @Test

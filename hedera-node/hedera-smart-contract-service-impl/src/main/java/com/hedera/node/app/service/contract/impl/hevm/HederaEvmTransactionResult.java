@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractLoginfo;
+import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,7 +43,8 @@ public record HederaEvmTransactionResult(
         @Nullable String haltReason,
         @Nullable ResponseCodeEnum abortReason,
         @Nullable Bytes revertReason,
-        @NonNull List<ContractLoginfo> logs) {
+        @NonNull List<ContractLoginfo> logs,
+        @Nullable ContractStateChanges stateChanges) {
     public HederaEvmTransactionResult {
         requireNonNull(output);
         requireNonNull(logs);
@@ -57,7 +59,7 @@ public record HederaEvmTransactionResult(
      */
     public static HederaEvmTransactionResult abortFor(@NonNull final ResponseCodeEnum reason) {
         return new HederaEvmTransactionResult(
-                0, 0, null, null, Bytes.EMPTY, null, reason, null, Collections.emptyList());
+                0, 0, null, null, Bytes.EMPTY, null, reason, null, Collections.emptyList(), null);
     }
 
     /**
@@ -92,7 +94,8 @@ public record HederaEvmTransactionResult(
                 null,
                 null,
                 null,
-                pbjLogsFrom(requireNonNull(logs)));
+                pbjLogsFrom(requireNonNull(logs)),
+                null);
     }
 
     /**
@@ -112,7 +115,8 @@ public record HederaEvmTransactionResult(
                 frame.getExceptionalHaltReason().map(Object::toString).orElse(null),
                 null,
                 frame.getRevertReason().map(ConversionUtils::tuweniToPbjBytes).orElse(null),
-                Collections.emptyList());
+                Collections.emptyList(),
+                null);
     }
 
     public static HederaEvmTransactionResult resourceExhaustionFrom(
@@ -127,7 +131,8 @@ public record HederaEvmTransactionResult(
                 null,
                 null,
                 Bytes.wrap(reason.name()),
-                Collections.emptyList());
+                Collections.emptyList(),
+                null);
     }
 
     public boolean isSuccess() {
