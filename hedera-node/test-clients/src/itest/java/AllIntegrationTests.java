@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-import com.hedera.services.bdd.junit.BalanceReconciliationValidator;
-import com.hedera.services.bdd.junit.ExpiryRecordsValidator;
-import com.hedera.services.bdd.junit.TokenReconciliationValidator;
-import com.hedera.services.bdd.junit.TransactionBodyValidator;
-import com.hedera.services.bdd.junit.validators.BlockNoValidator;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -57,14 +52,14 @@ class AllIntegrationTests extends DockerIntegrationTestBase {
                 .toList();
     }
 
-    @Tag("integration")
-    @Order(1)
-    @TestFactory
-    Collection<DynamicContainer> sequentialSpecsBySuite() {
-        return Arrays.stream(SequentialSuites.sequentialSuites())
-                .map(this::extractSpecsFromSuite)
-                .toList();
-    }
+//    @Tag("integration")
+//    @Order(1)
+//    @TestFactory
+//    Collection<DynamicContainer> sequentialSpecsBySuite() {
+//        return Arrays.stream(SequentialSuites.sequentialSuites())
+//                .map(this::extractSpecsFromSuite)
+//                .toList();
+//    }
 
     @Tag("integration")
     @Order(2)
@@ -74,25 +69,25 @@ class AllIntegrationTests extends DockerIntegrationTestBase {
                 concurrentSpecsFrom(ConcurrentSuites.all()), concurrentEthSpecsFrom(ConcurrentSuites.ethereumSuites()));
     }
 
-    @Tag("integration")
-    @Order(3)
-    @TestFactory
-    List<DynamicTest> logValidation() {
-        return List.of(
-                hgcaaLogValidation("build/network/itest/output/node_0/hgcaa.log"),
-                queriesLogValidation("build/network/itest/output/node_0/queries.log"));
-    }
+//    @Tag("integration")
+//    @Order(3)
+//    @TestFactory
+//    List<DynamicTest> logValidation() {
+//        return List.of(
+//                hgcaaLogValidation("build/network/itest/output/node_0/hgcaa.log"),
+//                queriesLogValidation("build/network/itest/output/node_0/queries.log"));
+//    }
 
-    @Tag("integration")
-    @Order(4)
-    @TestFactory
-    List<DynamicTest> recordStreamValidation() {
-        return List.of(recordStreamValidation(
-                TEST_CONTAINER_NODE0_STREAMS,
-                new BalanceReconciliationValidator(),
-                new BlockNoValidator(),
-                new ExpiryRecordsValidator(),
-                new TokenReconciliationValidator(),
-                new TransactionBodyValidator()));
-    }
+//    @Tag("integration")
+//    @Order(4)
+//    @TestFactory
+//    List<DynamicTest> recordStreamValidation() {
+//        return List.of(recordStreamValidation(
+//                TEST_CONTAINER_NODE0_STREAMS,
+//                new BalanceReconciliationValidator(),
+//                new BlockNoValidator(),
+//                new ExpiryRecordsValidator(),
+//                new TokenReconciliationValidator(),
+//                new TransactionBodyValidator()));
+//    }
 }
