@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.test.handlers.transfers;
+package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.aaWith;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.nftTransferWithAllowance;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.Utils.aaWith;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.Utils.nftTransferWithAllowance;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

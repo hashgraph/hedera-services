@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.test.handlers.transfers;
+package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
