@@ -74,6 +74,10 @@ public record HederaEvmTransaction(
         return gasCost == Long.MAX_VALUE ? Long.MAX_VALUE : gasCost + value;
     }
 
+    public long unusedGas(final long gasUsed) {
+        return gasLimit - gasUsed;
+    }
+
     public long gasCostGiven(final long gasPrice) {
         try {
             return Math.multiplyExact(gasLimit, gasPrice);
