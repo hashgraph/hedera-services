@@ -60,7 +60,6 @@ import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.InetSocketAddress;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.ServiceLoader;
