@@ -644,7 +644,9 @@ class StateManagementComponentTests {
     @NonNull
     private DefaultStateManagementComponent newStateManagementComponent(
             @NonNull final AddressBook addressBook, @NonNull final TestConfigBuilder configBuilder) {
-        configBuilder.withValue("state.savedStateDirectory", tmpDir.toFile().toString());
+        configBuilder
+                .withValue("state.savedStateDirectory", tmpDir.toFile().toString())
+                .withValue("state.saveReconnectStateToDisk", "false");
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withMetrics(new NoOpMetrics())
