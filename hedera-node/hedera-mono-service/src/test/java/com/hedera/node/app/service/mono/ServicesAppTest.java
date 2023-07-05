@@ -101,6 +101,7 @@ class ServicesAppTest {
 
     @Mock
     private UniqueTokenMapAdapter nftsAdapter;
+
     @Mock
     private Configuration configuration;
 
@@ -117,17 +118,11 @@ class ServicesAppTest {
         final var logDirKey = HEDERA_RECORD_STREAM_LOG_DIR;
         final var logDirVal = "data/recordStreams";
         final var nodeProps = new ScreenedNodeFileProps();
-        final var transactionConfig = new TransactionConfig(
-                1,
-                2,
-                3,
-                4,
-                5);
+        final var transactionConfig = new TransactionConfig(1, 2, 3, 4, 5);
 
         given(platform.getContext()).willReturn(platformContext);
         given(platformContext.getConfiguration()).willReturn(configuration);
-        given(configuration.getConfigData(TransactionConfig.class))
-                .willReturn(transactionConfig);
+        given(configuration.getConfigData(TransactionConfig.class)).willReturn(transactionConfig);
         given(platformContext.getCryptography()).willReturn(cryptography);
         given(platform.getSelfId()).willReturn(selfNodeId);
         if (!nodeProps.containsProperty(logDirKey)) {
