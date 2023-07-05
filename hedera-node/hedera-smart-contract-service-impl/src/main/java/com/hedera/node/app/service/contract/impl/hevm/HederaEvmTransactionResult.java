@@ -135,6 +135,21 @@ public record HederaEvmTransactionResult(
                 null);
     }
 
+    public static HederaEvmTransactionResult resourceExhaustionFrom(
+            final long gasUsed, final long gasPrice, @NonNull final ResponseCodeEnum reason) {
+        requireNonNull(reason);
+        return new HederaEvmTransactionResult(
+                gasUsed,
+                gasPrice,
+                null,
+                null,
+                Bytes.EMPTY,
+                null,
+                null,
+                Bytes.wrap(reason.name()),
+                Collections.emptyList());
+    }
+
     public boolean isSuccess() {
         return abortReason == null && revertReason == null && haltReason == null;
     }
