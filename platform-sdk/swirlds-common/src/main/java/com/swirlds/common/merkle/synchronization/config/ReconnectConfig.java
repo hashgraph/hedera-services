@@ -31,18 +31,18 @@ import java.time.Duration;
  * 		always allowed to reconnect. Respects {@link #active} -- if active is false then reconnect is never allowed.
  * @param fallenBehindThreshold
  * 		The fraction of neighbors needed to tell us we have fallen behind before we initiate a reconnect.
- * @param asyncStreamTimeoutMilliseconds
+ * @param asyncStreamTimeout
  * 		The amount of time that an {@link com.swirlds.common.merkle.synchronization.streams.AsyncInputStream} and
  *        {@link com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream} will wait before throwing a
  * 		timeout.
- * @param asyncOutputStreamFlushMilliseconds
+ * @param asyncOutputStreamFlush
  * 		In order to ensure that data is not languishing in the asyncOutputStream buffer a periodic flush is performed.
  * @param asyncStreamBufferSize
  * 		The size of the buffers for async input and output streams.
  * @param asyncStreams
  * 		If false then the async streams behave as if they were synchronous. Significantly effects performance, should be
  * 		true unless the async streams are being debugged.
- * @param maxAckDelayMilliseconds
+ * @param maxAckDelay
  * 		The maximum amount of time to wait for an ACK message. If no ACK is received and sufficient time passes then
  * 		send the potentially redundant node.
  * @param maximumReconnectFailuresBeforeShutdown
@@ -57,10 +57,10 @@ public record ReconnectConfig(
         @ConfigProperty(defaultValue = "false") boolean active,
         @ConfigProperty(defaultValue = "-1") int reconnectWindowSeconds,
         @ConfigProperty(defaultValue = "0.50") double fallenBehindThreshold,
-        @ConfigProperty(defaultValue = "100000") int asyncStreamTimeoutMilliseconds,
-        @ConfigProperty(defaultValue = "100") int asyncOutputStreamFlushMilliseconds,
+        @ConfigProperty(defaultValue = "100000ms") Duration asyncStreamTimeout,
+        @ConfigProperty(defaultValue = "100ms") Duration asyncOutputStreamFlush,
         @ConfigProperty(defaultValue = "10000") int asyncStreamBufferSize,
         @ConfigProperty(defaultValue = "true") boolean asyncStreams,
-        @ConfigProperty(defaultValue = "10") int maxAckDelayMilliseconds,
+        @ConfigProperty(defaultValue = "10ms") Duration maxAckDelay,
         @ConfigProperty(defaultValue = "10") int maximumReconnectFailuresBeforeShutdown,
         @ConfigProperty(defaultValue = "10m") Duration minimumTimeBetweenReconnects) {}
