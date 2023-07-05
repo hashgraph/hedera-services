@@ -54,10 +54,10 @@ import java.time.Duration;
  */
 @ConfigData("reconnect")
 public record ReconnectConfig(
-        @ConfigProperty(defaultValue = "false") boolean active,
+        @ConfigProperty(defaultValue = "true") boolean active,
         @ConfigProperty(defaultValue = "-1") int reconnectWindowSeconds,
         @ConfigProperty(defaultValue = "0.50") double fallenBehindThreshold,
-        @ConfigProperty(defaultValue = "100000") int asyncStreamTimeoutMilliseconds,
+        @ConfigProperty(defaultValue = "60000") int asyncStreamTimeoutMilliseconds,
         @ConfigProperty(defaultValue = "100") int asyncOutputStreamFlushMilliseconds,
         @ConfigProperty(defaultValue = "10000") int asyncStreamBufferSize,
         @ConfigProperty(defaultValue = "true") boolean asyncStreams,

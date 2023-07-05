@@ -54,7 +54,7 @@ public record SocketConfig(
         @ConfigProperty(defaultValue = "5000") int timeoutSyncClientConnect,
         @ConfigProperty(defaultValue = "5000") int timeoutServerAcceptConnect,
         @ConfigProperty(defaultValue = "true") boolean useTLS,
-        @ConfigProperty(defaultValue = "true") boolean doUpnp,
-        @ConfigProperty(defaultValue = "true") boolean useLoopbackIp,
+        @ConfigProperty(defaultValue = "false") boolean doUpnp,
+        @ConfigProperty(defaultValue = "false") boolean useLoopbackIp,
         @ConfigProperty(defaultValue = "true") boolean tcpNoDelay,
         @ConfigProperty(defaultValue = "1000") int deadlockCheckPeriod) {}

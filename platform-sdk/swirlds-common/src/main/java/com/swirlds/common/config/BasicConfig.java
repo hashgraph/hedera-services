@@ -141,7 +141,7 @@ import java.time.Duration;
 public record BasicConfig(
         @ConfigProperty(defaultValue = "configsUsed.txt") String configsUsedFilename,
         @ConfigProperty(defaultValue = "true") boolean verifyEventSigs,
-        @ConfigProperty(defaultValue = "false") boolean showInternalStats,
+        @ConfigProperty(defaultValue = "true") boolean showInternalStats,
         @ConfigProperty(defaultValue = "false") boolean verboseStatistics,
         @ConfigProperty(defaultValue = "10000") int maxEventQueueForCons,
         @ConfigProperty(defaultValue = "false") boolean throttle7,
