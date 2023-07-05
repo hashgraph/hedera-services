@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.common.utility.throttle;
 
 import com.swirlds.base.time.Time;
@@ -14,7 +30,7 @@ import org.apache.logging.log4j.Marker;
 /**
  * A wrapper around a {@link Logger} that provides rate limiting.
  */
-public class RateLimitedLogger { // TODO move to logging module
+public class RateLimitedLogger {
 
     private final Logger logger;
     private final RateLimiter rateLimiter;
@@ -27,10 +43,7 @@ public class RateLimitedLogger { // TODO move to logging module
      * @param time         provides wall clock time
      * @param maxFrequency the maximum frequency at which to log
      */
-    public RateLimitedLogger(
-            @NonNull final Logger logger,
-            @NonNull final Time time,
-            final double maxFrequency) {
+    public RateLimitedLogger(@NonNull final Logger logger, @NonNull final Time time, final double maxFrequency) {
         this(logger, new RateLimiter(time, maxFrequency));
     }
 
@@ -42,9 +55,7 @@ public class RateLimitedLogger { // TODO move to logging module
      * @param minimumPeriod the minimum amount of time that must pass between log messages
      */
     public RateLimitedLogger(
-            @NonNull final Logger logger,
-            @NonNull final Time time,
-            @NonNull final Duration minimumPeriod) {
+            @NonNull final Logger logger, @NonNull final Time time, @NonNull final Duration minimumPeriod) {
         this(logger, new RateLimiter(time, minimumPeriod));
     }
 
@@ -62,9 +73,9 @@ public class RateLimitedLogger { // TODO move to logging module
 
     private static String generateMessage(@NonNull final String baseMessage, final long deniedRequests) {
         if (deniedRequests > 0) {
-            return baseMessage +
-                    "\n(Due to rate limiting, this condition has been triggered " +
-                    deniedRequests + " times without being reported.)";
+            return baseMessage + "\n(Due to rate limiting, this condition has been triggered "
+                    + deniedRequests
+                    + " times without being reported.)";
         } else {
             return baseMessage;
         }
@@ -79,9 +90,7 @@ public class RateLimitedLogger { // TODO move to logging module
      * @param varargs   optional arguments to pass to the log4j logger
      */
     public void debug(
-            @NonNull final Marker logMarker,
-            @NonNull final String message,
-            @Nullable final Object... varargs) {
+            @NonNull final Marker logMarker, @NonNull final String message, @Nullable final Object... varargs) {
 
         try (final Locked l = lock.lock()) {
             final long deniedRequests = rateLimiter.getDeniedRequests();
@@ -100,9 +109,7 @@ public class RateLimitedLogger { // TODO move to logging module
      * @param varargs   optional arguments to pass to the log4j logger
      */
     public void trace(
-            @NonNull final Marker logMarker,
-            @NonNull final String message,
-            @Nullable final Object... varargs) {
+            @NonNull final Marker logMarker, @NonNull final String message, @Nullable final Object... varargs) {
 
         try (final Locked l = lock.lock()) {
             final long deniedRequests = rateLimiter.getDeniedRequests();
@@ -121,9 +128,7 @@ public class RateLimitedLogger { // TODO move to logging module
      * @param varargs   optional arguments to pass to the log4j logger
      */
     public void info(
-            @NonNull final Marker logMarker,
-            @NonNull final String message,
-            @Nullable final Object... varargs) {
+            @NonNull final Marker logMarker, @NonNull final String message, @Nullable final Object... varargs) {
 
         try (final Locked l = lock.lock()) {
             final long deniedRequests = rateLimiter.getDeniedRequests();
@@ -142,9 +147,7 @@ public class RateLimitedLogger { // TODO move to logging module
      * @param varargs   optional arguments to pass to the log4j logger
      */
     public void warn(
-            @NonNull final Marker logMarker,
-            @NonNull final String message,
-            @Nullable final Object... varargs) {
+            @NonNull final Marker logMarker, @NonNull final String message, @Nullable final Object... varargs) {
 
         try (final Locked l = lock.lock()) {
             final long deniedRequests = rateLimiter.getDeniedRequests();
@@ -163,9 +166,7 @@ public class RateLimitedLogger { // TODO move to logging module
      * @param varargs   optional arguments to pass to the log4j logger
      */
     public void error(
-            @NonNull final Marker logMarker,
-            @NonNull final String message,
-            @Nullable final Object... varargs) {
+            @NonNull final Marker logMarker, @NonNull final String message, @Nullable final Object... varargs) {
 
         try (final Locked l = lock.lock()) {
             final long deniedRequests = rateLimiter.getDeniedRequests();
@@ -184,9 +185,7 @@ public class RateLimitedLogger { // TODO move to logging module
      * @param varargs   optional arguments to pass to the log4j logger
      */
     public void fatal(
-            @NonNull final Marker logMarker,
-            @NonNull final String message,
-            @Nullable final Object... varargs) {
+            @NonNull final Marker logMarker, @NonNull final String message, @Nullable final Object... varargs) {
 
         try (final Locked l = lock.lock()) {
             final long deniedRequests = rateLimiter.getDeniedRequests();
