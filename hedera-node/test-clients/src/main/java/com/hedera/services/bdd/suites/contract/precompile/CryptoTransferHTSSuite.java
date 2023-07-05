@@ -64,7 +64,6 @@ import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -342,7 +341,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
         final var NON_EXISTING_SYSTEM_ADDRESS = 345L;
 
         final var allowance = 10L;
-        return defaultHapiSpec("hapiTransferFromForFungibleToken")
+        return defaultHapiSpec("hapiTransferFromForFungibleTokenToSystemAccountsFails")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
@@ -383,7 +382,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                         BigInteger.valueOf(allowance / 2))
                                 .gas(100_000_00L)
                                 .payingWith(GENESIS)
-                                .hasKnownStatus(INVALID_RECEIVING_NODE_ACCOUNT),
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // transfer to system account 0.0.451
                         contractCall(
                                         HTS_TRANSFER_FROM_CONTRACT,
@@ -396,7 +395,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                 .setAccountNum(NON_EXISTING_SYSTEM_ADDRESS)
                                                 .build())),
                                         BigInteger.valueOf(allowance / 2))
-                                .hasKnownStatus(INVALID_RECEIVING_NODE_ACCOUNT),
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // transfer to system account 0.0.0 lower bound
                         contractCall(
                                         HTS_TRANSFER_FROM_CONTRACT,
@@ -409,7 +408,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                 .setAccountNum(ZERO_ADDRESS)
                                                 .build())),
                                         BigInteger.valueOf(allowance / 2))
-                                .hasKnownStatus(INVALID_RECEIVING_NODE_ACCOUNT))))
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then();
     }
 
