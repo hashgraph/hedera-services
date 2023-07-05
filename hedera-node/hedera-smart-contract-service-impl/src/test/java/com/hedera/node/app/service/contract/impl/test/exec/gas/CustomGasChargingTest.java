@@ -20,12 +20,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmCode;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
@@ -70,7 +70,75 @@ class CustomGasChargingTest {
         final var chargingResult = subject.chargeForGas(
                 sender, relayer, wellKnownContextWith(code, blocks, true), worldUpdater, wellKnownHapiCall());
         assertEquals(0, chargingResult.relayerAllowanceUsed());
+        verifyNoInteractions(gasCalculator, worldUpdater);
+    }
+
+    @Test
+    void zeroPriceGasDoesNoChargingWork() {
+        final var context = new HederaEvmContext(0L, false, code, blocks);
+        final var chargingResult = subject.chargeForGas(sender, relayer, context, worldUpdater, wellKnownHapiCall());
+        assertEquals(0, chargingResult.relayerAllowanceUsed());
+        verifyNoInteractions(gasCalculator, worldUpdater);
+    }
+
+    @Test
+    void zeroPriceGasReturnsImmediately() {
+        final var context = new HederaEvmContext(0L, false, code, blocks);
+        final var chargingResult = subject.chargeForGas(sender, relayer, context, worldUpdater, wellKnownHapiCall());
+        assertEquals(0, chargingResult.relayerAllowanceUsed());
         verifyNoInteractions(gasCalculator);
+    }
+
+    @Test
+    void staticCallsDoNotRefundGas() {
+        subject.maybeRefundGiven(
+                GAS_LIMIT / 2,
+                MAX_GAS_ALLOWANCE / 2,
+                sender,
+                relayer,
+                wellKnownContextWith(code, blocks, true),
+                worldUpdater);
+        verifyNoInteractions(worldUpdater);
+    }
+
+    @Test
+    void consumedGasDoesNotRefundAnything() {
+        subject.maybeRefundGiven(
+                0, MAX_GAS_ALLOWANCE / 2, sender, relayer, wellKnownContextWith(code, blocks), worldUpdater);
+        verifyNoInteractions(worldUpdater);
+    }
+
+    @Test
+    void withNoRelayerSenderGetsFullRefund() {
+        given(sender.hederaId()).willReturn(SENDER_ID);
+        final var unusedGas = GAS_LIMIT / 2;
+        subject.maybeRefundGiven(unusedGas, 0, sender, null, wellKnownContextWith(code, blocks), worldUpdater);
+        verify(worldUpdater).refundFee(SENDER_ID, unusedGas * NETWORK_GAS_PRICE);
+    }
+
+    @Test
+    void relayerGetsPriorityAndSenderGetsRemainder() {
+        given(sender.hederaId()).willReturn(SENDER_ID);
+        given(relayer.hederaId()).willReturn(RELAYER_ID);
+        final var unusedGas = GAS_LIMIT / 2;
+        final var refund = unusedGas * NETWORK_GAS_PRICE;
+        final var allowanceUsed = 2 * refund / 3;
+        subject.maybeRefundGiven(
+                unusedGas, allowanceUsed, sender, relayer, wellKnownContextWith(code, blocks), worldUpdater);
+        verify(worldUpdater).refundFee(RELAYER_ID, allowanceUsed);
+        verify(worldUpdater).refundFee(SENDER_ID, refund - allowanceUsed);
+    }
+
+    @Test
+    void senderGetsNoRefundIfNoneRemaining() {
+        given(relayer.hederaId()).willReturn(RELAYER_ID);
+        final var unusedGas = GAS_LIMIT / 2;
+        final var refund = unusedGas * NETWORK_GAS_PRICE;
+        final var allowanceUsed = 3 * refund / 2;
+        subject.maybeRefundGiven(
+                unusedGas, allowanceUsed, sender, relayer, wellKnownContextWith(code, blocks), worldUpdater);
+        verify(worldUpdater).refundFee(RELAYER_ID, refund);
+        verifyNoMoreInteractions(worldUpdater);
     }
 
     @Test
