@@ -12,6 +12,8 @@ module com.hedera.node.app.service.contract.impl {
     requires transitive org.hyperledger.besu.evm;
     requires transitive tuweni.bytes;
     requires transitive tuweni.units;
+    requires com.swirlds.common;
+    requires com.swirlds.config;
     requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app.service.token;
     requires com.swirlds.jasperdb;

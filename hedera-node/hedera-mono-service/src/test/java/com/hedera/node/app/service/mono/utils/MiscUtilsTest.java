@@ -314,6 +314,7 @@ class MiscUtilsTest {
         given(address.getMemo()).willReturn("0.0.3");
         final var book = mock(AddressBook.class);
         given(book.getSize()).willReturn(1);
+        given(book.getNodeId(0)).willReturn(new NodeId(0));
         given(book.getAddress(new NodeId(0))).willReturn(address);
 
         final var accounts = MiscUtils.getNodeAccounts(book);
