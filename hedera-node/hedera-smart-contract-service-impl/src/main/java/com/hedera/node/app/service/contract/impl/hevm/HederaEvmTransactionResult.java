@@ -18,8 +18,9 @@ package com.hedera.node.app.service.contract.impl.hevm;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPbjStateChanges;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;

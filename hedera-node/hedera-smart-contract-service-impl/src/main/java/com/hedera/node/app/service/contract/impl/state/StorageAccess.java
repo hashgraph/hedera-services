@@ -38,23 +38,62 @@ public record StorageAccess(@NonNull UInt256 key, @NonNull UInt256 value, @Nulla
         requireNonNull(value, "Current value cannot be null");
     }
 
+    /**
+     * Creates a new read access.
+     *
+     * @param key the key being read
+     * @param value the value that was read
+     * @return the access object representing this event
+     */
     public static StorageAccess newRead(@NonNull UInt256 key, @NonNull UInt256 value) {
         return new StorageAccess(key, value, null);
     }
 
+    /**
+     * Creates a new write access.
+     *
+     * @param key the key being written
+     * @param oldValue the old value being overwritten
+     * @param newValue the new value being written
+     * @return the access object representing this event
+     */
     public static StorageAccess newWrite(@NonNull UInt256 key, @NonNull UInt256 oldValue, @NonNull UInt256 newValue) {
         return new StorageAccess(key, oldValue, requireNonNull(newValue));
     }
 
+    /**
+     * Returns true if this access replaced a non-zero storage value with a zero value.
+     *
+     * @return true if this access replaced a non-zero storage value with a zero value
+     */
     public boolean isRemoval() {
         return writtenValue != null && writtenValue.isZero() && !value.isZero();
     }
 
+    /**
+     * Returns true if this access replaced a zero storage value with a non-zero value.
+     *
+     * @return true if this access replaced a zero storage value with a non-zero value
+     */
     public boolean isInsertion() {
         return writtenValue != null && !writtenValue.isZero() && value.isZero();
     }
 
+    /**
+     * Returns true if this access was a read.
+     *
+     * @return true if this access was a read
+     */
     public boolean isReadOnly() {
         return writtenValue == null;
+    }
+
+    /**
+     * Returns true if this access was an update.
+     *
+     * @return true if this access was an update
+     */
+    public boolean isUpdate() {
+        return writtenValue != null;
     }
 }
