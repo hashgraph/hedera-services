@@ -27,6 +27,11 @@ import java.time.Duration;
  * Basic configuration data record. This record contains all general config properties that can not be defined for a
  * specific subsystem. The record is based on the definition of config data objects as described in {@link ConfigData}.
  *
+ * <p>
+ * Do not add new settings to this record unless you have a very good reason. New settings should go
+ * into config records with a prefix defined by a {@link ConfigData @ConfigData("prefix")} tag. Adding
+ * settings to this record pollutes the top level namespace.
+ *
  * @param configsUsedFilename
  *      the name of the file that contains the list of config files used to create this config
  * @param verifyEventSigs
@@ -125,6 +130,12 @@ import java.time.Duration;
  * @param genesisFreezeTime
  *      If this node starts from genesis, this value is used as the freeze time. This feature is deprecated and
  *      planned for removal in a future platform version.
+ * @param deadlockCheckPeriod
+ *      check for deadlocks every this many milliseconds (-1 for never)
+ * @param statsBufferSize
+ *      number of bins to store for the history (in StatsBuffer etc.)
+ * @param statsRecentSeconds
+ *      number of seconds covered by "recent" history (in StatsBuffer etc.)
  */
 @ConfigData
 public record BasicConfig(
@@ -164,7 +175,10 @@ public record BasicConfig(
         @ConfigProperty(defaultValue = "log4j2.xml") Path logPath,
         @ConfigProperty(defaultValue = "60s") Duration hangingThreadDuration,
         @ConfigProperty(defaultValue = "data/saved") String emergencyRecoveryFileLoadDir,
-        @ConfigProperty(defaultValue = "0") long genesisFreezeTime) {
+        @ConfigProperty(defaultValue = "0") long genesisFreezeTime,
+        @ConfigProperty(defaultValue = "1000") int deadlockCheckPeriod,
+        @ConfigProperty(defaultValue = "100") int statsBufferSize,
+        @ConfigProperty(defaultValue = "63") double statsRecentSeconds) {
 
     /**
      * @return Absolute path to the emergency recovery file load directory.

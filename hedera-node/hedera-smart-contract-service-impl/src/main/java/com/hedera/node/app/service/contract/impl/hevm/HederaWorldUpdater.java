@@ -55,6 +55,16 @@ public interface HederaWorldUpdater extends WorldUpdater {
     HederaEvmAccount getHederaAccount(@NonNull ContractID contractId);
 
     /**
+     * Returns the {@code 0.0.X} Hedera contract id for the given address, including when
+     * the address is pending creation.
+     *
+     * @param address the address to get the id for
+     * @return the id of the account at the given address
+     * @throws IllegalArgumentException if the address has no corresponding contract id
+     */
+    ContractID getHederaContractId(@NonNull Address address);
+
+    /**
      * Collects the given fee from the given account. The caller should have already
      * verified that the account exists and has sufficient balance to pay the fee, so
      * this method surfaces any problem by throwing an exception.
@@ -114,28 +124,29 @@ public interface HederaWorldUpdater extends WorldUpdater {
     Optional<ExceptionalHaltReason> tryTrackingDeletion(@NonNull Address deleted, @NonNull Address beneficiary);
 
     /**
-     * Given the possibly zero address of the recipient of a {@code CONTRACT_CREATION} message,
+     * Given the possibly zero address of the origin of a {@code CONTRACT_CREATION} message,
      * sets up the {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete
      * the creation of the new account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)};
      * returns the "long-zero" address to be assigned to the new account.
      *
-     * @param receiver the address of the recipient of a {@code CONTRACT_CREATION} message, zero if a top-level message
+     * @param origin the address of the origin of a {@code CONTRACT_CREATION} message, zero if a top-level message
      * @return the "long-zero" address to be assigned to the new account
      */
-    Address setupCreate(@NonNull Address receiver);
+    Address setupCreate(@NonNull Address origin);
 
     /**
-     * Given the possibly zero address of the recipient of a {@code CONTRACT_CREATION} message,
-     * and the EIP-1014 address computed by an in-progress {@code CREATE2} operation, sets up the
-     * {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete the creation of
-     * the new account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
+     * Given the possibly zero address of the origin of a {@code CONTRACT_CREATION} message,
+     * and either the canonical {@code CREATE1} address, or the EIP-1014 address computed by an
+     * in-progress {@code CREATE2} operation, sets up the {@link PendingCreation} this
+     * {@link ProxyWorldUpdater} will use to complete the creation of the new account in
+     * {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
      *
      * <p>Does not return anything, as the {@code CREATE2} address is already known.
      *
-     * @param receiver the address of the recipient of a {@code CONTRACT_CREATION} message, zero if a top-level message
+     * @param origin the address of the origin of a {@code CONTRACT_CREATION} message, zero if a top-level message
      * @param alias    the EIP-1014 address computed by an in-progress {@code CREATE2} operation
      */
-    void setupCreate2(@NonNull Address receiver, @NonNull Address alias);
+    void setupAliasedCreate(@NonNull Address origin, @NonNull Address alias);
 
     /**
      * Returns whether this address refers to a hollow account (i.e. a lazy-created account that

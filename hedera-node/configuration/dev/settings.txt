@@ -2,13 +2,12 @@
                                           #    Gossip / Networking    #
                                           #############################
 
-chatter.useChatter,                            false
-doUpnp,                                        false
-maxOutgoingSyncs,                              1                            # differs from mainnet
 numConnections,                                1000
+socket.doUpnp,                                 false
+socket.useLoopbackIp,                          false
+sync.maxOutgoingSyncs,                         1                            # differs from mainnet
 sync.syncAsProtocolEnabled,                    true
-sync.syncProtocolPermitCount,                  17
-useLoopbackIp,                                 false
+sync.syncProtocolPermitCount,                  2                            # differs from mainnet
 
                                           #############################
                                           #           State           #
@@ -45,4 +44,4 @@ reconnect.asyncStreamTimeoutMilliseconds,      60000
 metrics.csvFileName,                           MainNetStats
 metrics.csvOutputFolder,                       data/stats
 showInternalStats,                             true
-prometheus.endpointEnabled,                    false                          # differs from mainnet
+prometheus.endpointEnabled,                    false                        # differs from mainnet

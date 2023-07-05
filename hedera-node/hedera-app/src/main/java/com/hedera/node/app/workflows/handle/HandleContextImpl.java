@@ -40,6 +40,8 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
+import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -66,6 +68,8 @@ public class HandleContextImpl implements HandleContext {
     private final WritableStoreFactory writableStoreFactory;
 
     private ReadableStoreFactory readableStoreFactory;
+    private AttributeValidator attributeValidator;
+    private ExpiryValidator expiryValidator;
 
     /**
      * Constructs a {@link HandleContextImpl}.
@@ -152,13 +156,19 @@ public class HandleContextImpl implements HandleContext {
     @Override
     @NonNull
     public AttributeValidator attributeValidator() {
-        return current().attributeValidator();
+        if (attributeValidator == null) {
+            attributeValidator = new AttributeValidatorImpl(this);
+        }
+        return attributeValidator;
     }
 
     @Override
     @NonNull
     public ExpiryValidator expiryValidator() {
-        return current().expiryValidator();
+        if (expiryValidator == null) {
+            expiryValidator = new ExpiryValidatorImpl(this);
+        }
+        return expiryValidator;
     }
 
     @NonNull

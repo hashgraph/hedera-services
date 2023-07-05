@@ -19,12 +19,21 @@ package com.hedera.node.app.spi.workflows;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
 
 /**
  * Contains all keys and hollow accounts (required and optional) of a transaction.
  */
 public interface TransactionKeys {
+
+    /**
+     * Getter for the payer key
+     *
+     * @return the payer key
+     */
+    @Nullable
+    Key payerKey();
 
     /**
      * Returns an immutable copy of the set of required non-payer keys.

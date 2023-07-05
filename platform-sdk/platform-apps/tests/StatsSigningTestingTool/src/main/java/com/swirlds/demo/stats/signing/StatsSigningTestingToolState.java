@@ -43,8 +43,10 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
@@ -71,8 +73,6 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
     /** A running sum of transaction contents */
     private long runningSum = 0;
 
-    private final long selfId;
-
     /** if true, artificially take {@link #HANDLE_MICROS} to handle each consensus transaction */
     private static final boolean SYNTHETIC_HANDLE_TIME = false;
 
@@ -80,17 +80,15 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
     private static final int HANDLE_MICROS = 100;
 
     public StatsSigningTestingToolState() {
-        this(0L, () -> null);
+        this(() -> null);
     }
 
-    public StatsSigningTestingToolState(final long selfId, final Supplier<TransactionPool> transactionPoolSupplier) {
-        this.selfId = selfId;
-        this.transactionPoolSupplier = transactionPoolSupplier;
+    public StatsSigningTestingToolState(@NonNull final Supplier<TransactionPool> transactionPoolSupplier) {
+        this.transactionPoolSupplier = Objects.requireNonNull(transactionPoolSupplier);
     }
 
-    private StatsSigningTestingToolState(final long selfId, final StatsSigningTestingToolState sourceState) {
+    private StatsSigningTestingToolState(@NonNull final StatsSigningTestingToolState sourceState) {
         super(sourceState);
-        this.selfId = selfId;
         this.transactionPoolSupplier = sourceState.transactionPoolSupplier;
         setImmutable(false);
         sourceState.setImmutable(true);
@@ -102,7 +100,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
     @Override
     public synchronized StatsSigningTestingToolState copy() {
         throwIfImmutable();
-        return new StatsSigningTestingToolState(selfId, this);
+        return new StatsSigningTestingToolState(this);
     }
 
     /**
@@ -181,8 +179,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
         } catch (final InterruptedException e) {
             logger.info(
                     TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT.getMarker(),
-                    "handleTransaction Interrupted [ nodeId = {} ]. This should happen only during a reconnect",
-                    selfId);
+                    "handleTransaction Interrupted. This should happen only during a reconnect");
             Thread.currentThread().interrupt();
         } catch (final ExecutionException e) {
             logger.error(

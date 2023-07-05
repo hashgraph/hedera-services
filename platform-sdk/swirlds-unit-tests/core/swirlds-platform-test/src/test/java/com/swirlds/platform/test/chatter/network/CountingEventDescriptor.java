@@ -16,19 +16,21 @@
 
 package com.swirlds.platform.test.chatter.network;
 
+import static org.mockito.Mockito.mock;
+
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
+import com.swirlds.platform.event.EventDescriptor;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A descriptor for a {@link CountingChatterEvent}
  */
-public class CountingEventDescriptor implements EventDescriptor {
+public class CountingEventDescriptor extends EventDescriptor {
     private static final long CLASS_ID = 0x281cc80fd18964f0L;
 
     private static final class ClassVersion {
@@ -71,12 +73,12 @@ public class CountingEventDescriptor implements EventDescriptor {
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {}
 
     @Override
-    public Hash getHash() {
-        return null;
+    public @NonNull Hash getHash() {
+        return mock(Hash.class);
     }
 
     @Override
-    public NodeId getCreator() {
+    public @NonNull NodeId getCreator() {
         return creator;
     }
 

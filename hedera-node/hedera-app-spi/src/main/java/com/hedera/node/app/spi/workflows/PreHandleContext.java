@@ -73,14 +73,6 @@ public interface PreHandleContext extends TransactionKeys {
     Configuration configuration();
 
     /**
-     * Getter for the payer key
-     *
-     * @return the payer key
-     */
-    @Nullable
-    Key payerKey();
-
-    /**
      * Create a new store given the store's interface. This gives read-only access to the store.
      *
      * @param storeInterface The store interface to find and create a store for

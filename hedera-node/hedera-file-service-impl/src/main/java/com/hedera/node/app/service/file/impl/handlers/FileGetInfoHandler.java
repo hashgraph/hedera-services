@@ -29,7 +29,7 @@ import com.hedera.hapi.node.file.FileGetInfoResponse;
 import com.hedera.hapi.node.file.FileInfo;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.base.FileQueryBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -75,7 +75,7 @@ public class FileGetInfoHandler extends FileQueryBase {
     public @NonNull Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
         requireNonNull(header);
         final var query = context.query();
-        final var fileStore = context.createStore(ReadableFileStoreImpl.class);
+        final var fileStore = context.createStore(ReadableFileStore.class);
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final var op = query.fileGetInfoOrThrow();
         final var responseBuilder = FileGetInfoResponse.newBuilder();
@@ -100,7 +100,7 @@ public class FileGetInfoHandler extends FileQueryBase {
      */
     private @Nullable Optional<FileInfo> infoForFile(
             @NonNull final FileID fileID,
-            @NonNull final ReadableFileStoreImpl fileStore,
+            @NonNull final ReadableFileStore fileStore,
             @NonNull final LedgerConfig ledgerConfig) {
         final var meta = fileStore.getFileMetadata(fileID);
         if (meta == null) {

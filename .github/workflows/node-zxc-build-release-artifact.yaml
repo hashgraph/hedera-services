@@ -81,6 +81,8 @@ jobs:
   Artifact:
     name: ${{ inputs.custom-job-label || 'Artifact' }}
     runs-on: [self-hosted, Linux, large, ephemeral]
+    outputs:
+      version: ${{ steps.effective-version.outputs.number }}
     steps:
       - name: Install Semantic Version Tools
         run: |
@@ -220,6 +222,13 @@ jobs:
           EFF_VERSION="$(./gradlew showVersion --quiet | tr -d '[:space:]')"
           echo "number=${EFF_VERSION}" >>"${GITHUB_OUTPUT}"
 
+      - name: Cache Build Artifacts
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # pin@v3
+        if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
+        with:
+          path: ${{ env.HOME }}/artifact-build
+          key: node-build-artifacts-${{ steps.effective-version.outputs.number }}-${{ github.sha }}
+
       - name: Stage Artifact Build Folder
         id: artifact-staging
         run: |
@@ -328,3 +337,77 @@ jobs:
             echo "::error title=Jenkins Trigger Failure::Failed to trigger the 'build-preview-testnet' job via the Jenkins 'preview' pipeline!"
             exit 1
           fi
+
+  local-node-images:
+    name: Local Node Images
+    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    needs:
+      - Artifact
+    if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # pin@v3
+
+      - name: Authenticate to Google Cloud
+        id: google-auth
+        uses: google-github-actions/auth@ef5d53e30bbcd8d0836f4288f5e50ff3e086997d # pin@v1
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
+          service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
+
+      - name: Setup QEmu Support
+        uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7 # pin@v2
+
+      - name: Setup Docker Buildx Support
+        uses: docker/setup-buildx-action@16c0bc4a6e6ada2cfd8afd41d22d95379cf7c32a # pin@v2
+
+      - name: Docker Login
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # pin@v2
+        with:
+          registry: gcr.io
+          username: oauth2accesstoken
+          password: ${{ steps.google-auth.outputs.access_token }}
+
+      - name: Cache Build Artifacts
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # pin@v3
+        with:
+          fail-on-cache-miss: true
+          path: ${{ env.HOME }}/artifact-build
+          key: node-build-artifacts-${{ needs.Artifact.outputs.version }}-${{ github.sha }}
+
+      - name: Stage SDK Artifacts
+        run: |
+          mkdir -p hedera-node/infrastructure/docker/containers/local-node/main-network-node/sdk
+          cp -rvf ${{ env.HOME }}/artifact-build/* hedera-node/infrastructure/docker/containers/local-node/main-network-node/sdk/
+
+      - name: Build Haveged Image
+        uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825 # pin@v4
+        with:
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          push: true
+          platforms: linux/amd64,linux/arm64
+          context: hedera-node/infrastructure/docker/containers/local-node/network-node-haveged
+          tags: gcr.io/hedera-registry/network-node-haveged:${{ needs.Artifact.outputs.version }}
+
+      - name: Build Base Image
+        uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825 # pin@v4
+        with:
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          push: true
+          platforms: linux/amd64,linux/arm64
+          context: hedera-node/infrastructure/docker/containers/local-node/network-node-base
+          tags: gcr.io/hedera-registry/network-node-base:${{ needs.Artifact.outputs.version }}
+
+      - name: Build Network Node Image
+        uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825 # pin@v4
+        with:
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          push: true
+          platforms: linux/amd64,linux/arm64
+          build-args: IMAGE_TAG=${{ needs.Artifact.outputs.version }}
+          context: hedera-node/infrastructure/docker/containers/local-node/main-network-node
+          tags: gcr.io/hedera-registry/main-network-node:${{ needs.Artifact.outputs.version }}

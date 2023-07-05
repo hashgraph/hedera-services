@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -63,6 +64,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -90,7 +92,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     private HandleContext handleContext;
 
     @Mock
-    private NodeInfo nodeInfo;
+    private NetworkInfo networkInfo;
 
     @Mock(strictness = Strictness.LENIENT)
     private LongSupplier consensusSecondNow;
@@ -135,7 +137,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         expiryValidator = new StandardizedExpiryValidator(
                 System.out::println, attributeValidator, consensusSecondNow, hederaNumbers, configProvider);
         stakingValidator = new StakingValidator();
-        subject = new CryptoUpdateHandler(waivers, stakingValidator, nodeInfo);
+        subject = new CryptoUpdateHandler(waivers, stakingValidator, networkInfo);
     }
 
     @Test
@@ -224,7 +226,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void updatesStakedNodeNumberIfPresentAndEnabled() {
-        given(nodeInfo.isValidId(anyLong())).willReturn(true);
+        given(networkInfo.nodeInfo(anyLong())).willReturn(mock(NodeInfo.class));
         final var txn = new CryptoUpdateBuilder().withStakedNodeId(0).build();
         givenTxnWith(txn);
 
@@ -272,7 +274,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = new CryptoUpdateBuilder().withStakedNodeId(3).build();
         givenTxnWith(txn);
-        given(nodeInfo.isValidId(3)).willReturn(true);
+        given(networkInfo.nodeInfo(3)).willReturn(mock(NodeInfo.class));
 
         assertEquals(0, writableStore.get(updateAccountId).stakedNumber());
         subject.handle(handleContext);

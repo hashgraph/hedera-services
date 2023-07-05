@@ -59,9 +59,7 @@ public interface ExpiryValidator {
      */
     @NonNull
     ResponseCodeEnum expirationStatus(
-            @NonNull final EntityType entityType,
-            final boolean isMarkedExpired,
-            final long balanceAvailableForSelfRenewal);
+            @NonNull EntityType entityType, boolean isMarkedExpired, long balanceAvailableForSelfRenewal);
 
     /**
      * Gets the expiration status of an account and returns if the account is detached
@@ -71,9 +69,7 @@ public interface ExpiryValidator {
      * @return true if the account is detached, otherwise false
      */
     default boolean isDetached(
-            @NonNull final EntityType entityType,
-            final boolean isMarkedExpired,
-            final long balanceAvailableForSelfRenewal) {
+            @NonNull EntityType entityType, boolean isMarkedExpired, long balanceAvailableForSelfRenewal) {
         return expirationStatus(entityType, isMarkedExpired, balanceAvailableForSelfRenewal) != ResponseCodeEnum.OK;
     }
 }

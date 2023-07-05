@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.state;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
@@ -56,6 +57,8 @@ class ProxyWorldUpdaterTest {
     private static final Address LONG_ZERO_ADDRESS = asLongZeroAddress(NUMBER);
     private static final Address NEXT_LONG_ZERO_ADDRESS = asLongZeroAddress(NEXT_NUMBER);
     private static final Address SOME_EVM_ADDRESS = Address.fromHexString("0x1234123412341234123412341234123412341234");
+    private static final Address OTHER_EVM_ADDRESS =
+            Address.fromHexString("0x1239123912391239123912391239123912391239");
 
     @Mock
     private Account anImmutableAccount;
@@ -233,17 +236,46 @@ class ProxyWorldUpdaterTest {
     }
 
     @Test
-    void usesAliasIfCreate2IsSetupRecipientIsZeroAddress() {
+    void usesAliasIfCreate2IsSetupRecipient() {
         givenDispatch();
         givenMatchingEntityNumbers();
         given(evmFrameState.getMutableAccount(SOME_EVM_ADDRESS)).willReturn(mutableAccount);
 
-        subject.setupCreate2(ALTBN128_ADD, SOME_EVM_ADDRESS);
+        subject.setupAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
         subject.createAccount(SOME_EVM_ADDRESS, 1, Wei.ZERO);
 
         verify(dispatch)
                 .createContract(
                         NEXT_NUMBER, ALTBN128_ADD.toBigInteger().longValueExact(), 1, aliasFrom(SOME_EVM_ADDRESS));
+    }
+
+    @Test
+    void canResolvePendingCreationHederaId() {
+        givenDispatch();
+        given(dispatch.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+
+        subject.setupAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
+
+        final var contractId = subject.getHederaContractId(SOME_EVM_ADDRESS);
+        assertEquals(ContractID.newBuilder().contractNum(NEXT_NUMBER).build(), contractId);
+    }
+
+    @Test
+    void throwsIseWithoutCorrespondingAccount() {
+        givenDispatch();
+        given(dispatch.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+
+        subject.setupAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
+
+        assertThrows(IllegalArgumentException.class, () -> subject.getHederaContractId(OTHER_EVM_ADDRESS));
+    }
+
+    @Test
+    void getsAvailableContractIdByAddress() {
+        given(evmFrameState.getAccount(SOME_EVM_ADDRESS)).willReturn(proxyEvmAccount);
+        given(proxyEvmAccount.hederaContractId()).willReturn(CALLED_CONTRACT_ID);
+        final var actual = subject.getHederaContractId(SOME_EVM_ADDRESS);
+        assertEquals(CALLED_CONTRACT_ID, actual);
     }
 
     @Test

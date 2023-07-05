@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.fees;
 
-import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import dagger.Binds;
 import dagger.Module;
 import javax.inject.Singleton;
@@ -25,9 +24,9 @@ import javax.inject.Singleton;
 public interface FeesInjectionModule {
     @Binds
     @Singleton
-    FeeCalculator bindFeeCalculator(AdaptedMonoFeeCalculator adaptedMonoFeeCalculator);
+    FeeAccumulator bindFeeAccumulator(FeeAccumulatorImpl feeAccumulator);
 
     @Binds
     @Singleton
-    QueryFeeCheck bindQueryFeeCheck(MonoQueryFeeCheck monoQueryFeeCheck);
+    QueryFeeCheck bindQueryFeeCheck(QueryFeeCheckImpl queryFeeCheck);
 }

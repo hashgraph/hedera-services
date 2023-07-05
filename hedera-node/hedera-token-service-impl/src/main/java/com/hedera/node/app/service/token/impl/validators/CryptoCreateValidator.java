@@ -85,7 +85,7 @@ public class CryptoCreateValidator {
         attributeValidator.validateKey(op.keyOrThrow());
         validateTrue(op.alias().length() == EVM_ADDRESS_SIZE, INVALID_ALIAS_KEY);
         validateFalse(isMirror(op.alias()), INVALID_ALIAS_KEY);
-        validateTrue(readableAccountStore.getAccountIDByAlias(op.alias().toString()) == null, ALIAS_ALREADY_ASSIGNED);
+        validateTrue(readableAccountStore.getAccountIDByAlias(op.alias()) == null, ALIAS_ALREADY_ASSIGNED);
     }
 
     /** check if the number of auto associations is too many
