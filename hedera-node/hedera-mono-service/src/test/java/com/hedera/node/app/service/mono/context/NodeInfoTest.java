@@ -181,6 +181,7 @@ class NodeInfoTest {
     private void givenEntryWithWeight(long id, long weight) {
         given(address.getWeight()).willReturn(weight);
         given(address.getMemo()).willReturn("0.0." + (3 + id));
+        given(book.getNodeId((int) id)).willReturn(new NodeId(id));
         given(book.getAddress(new NodeId(id))).willReturn(address);
         given(book.getSize()).willReturn(1);
     }
@@ -188,6 +189,7 @@ class NodeInfoTest {
     private void givenEntryWithMemoAndWeight(long id, String memo, long weight) {
         given(address.getWeight()).willReturn(weight);
         given(address.getMemo()).willReturn(memo);
+        given(book.getNodeId((int) id)).willReturn(new NodeId(id));
         given(book.getAddress(new NodeId(id))).willReturn(address);
         given(book.getSize()).willReturn(1);
     }
