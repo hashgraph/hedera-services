@@ -31,6 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -39,6 +40,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 public class ContractBurnHTSSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractBurnHTSSuite.class);
@@ -100,38 +102,41 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))
                 .when(
+                        // Burning 0 amount for Fungible tokens should fail
                         sourcing(() -> contractCall(
-                                        MULTIVERSION_BURN_CONTRACT,
-                                        BURN_TOKEN_V_1,
-                                        tokenAddress.get(),
-                                        BigInteger.ZERO,
-                                        new long[0])
-                                .payingWith(ALICE)
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .gas(GAS_TO_OFFER)),
-                        sourcing(() -> contractCall(
-                                        MULTIVERSION_BURN_CONTRACT, BURN_TOKEN_V_2, tokenAddress.get(), 0L, new long[0])
-                                .payingWith(ALICE)
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .gas(GAS_TO_OFFER)
-                                .logged()),
-                        // Burning negative amount for Fungible tokens should fail
-                        sourcing(() -> contractCall(
-                                        MULTIVERSION_BURN_CONTRACT,
-                                        BURN_TOKEN_V_1,
-                                        tokenAddress.get(),
-                                        new BigInteger("FFFFFFFFFFFFFF00", 16),
-                                        new long[0])
+                                MULTIVERSION_BURN_CONTRACT,
+                                BURN_TOKEN_V_1,
+                                tokenAddress.get(),
+                                BigInteger.ZERO,
+                                new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         sourcing(() -> contractCall(
-                                        MULTIVERSION_BURN_CONTRACT,
-                                        BURN_TOKEN_V_2,
-                                        tokenAddress.get(),
-                                        -1L,
-                                        new long[0])
+                                MULTIVERSION_BURN_CONTRACT, BURN_TOKEN_V_2, tokenAddress.get(), 0L, new long[0])
+                                .payingWith(ALICE)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .logged()
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        // Burning negative amount for Fungible tokens should fail
+                        sourcing(() -> contractCall(
+                                MULTIVERSION_BURN_CONTRACT,
+                                BURN_TOKEN_V_1,
+                                tokenAddress.get(),
+                                new BigInteger("FFFFFFFFFFFFFF00", 16),
+                                new long[0])
+                                .payingWith(ALICE)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        sourcing(() -> contractCall(
+                                MULTIVERSION_BURN_CONTRACT,
+                                BURN_TOKEN_V_2,
+                                tokenAddress.get(),
+                                -1L,
+                                new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
@@ -162,29 +167,34 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(SUCCESS))
                 .when(
-                        // Burning large number should fail
+                        // Burning negative amount for Fungible tokens should fail
                         sourcing(() -> contractCall(
-                                        MULTIVERSION_BURN_CONTRACT,
-                                        BURN_TOKEN_V_1,
-                                        tokenAddress.get(),
-                                        new BigInteger("FFFFFFFFFFFFFF00", 16),
-                                        new long[] {1L})
-                                .payingWith(ALICE)
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                .gas(GAS_TO_OFFER)),
-                        // But a small negative number should succeed as the amount is irrelevant for NFTs
-                        sourcing(() -> contractCall(
-                                        MULTIVERSION_BURN_CONTRACT,
-                                        BURN_TOKEN_V_2,
-                                        tokenAddress.get(),
-                                        -1L,
-                                        new long[] {1L})
+                                MULTIVERSION_BURN_CONTRACT,
+                                BURN_TOKEN_V_1,
+                                tokenAddress.get(),
+                                new BigInteger("FFFFFFFFFFFFFF00", 16),
+                                new long[] {1L})
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
-                                .logged()))
-                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 1));
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        sourcing(() -> contractCall(
+                                MULTIVERSION_BURN_CONTRACT,
+                                BURN_TOKEN_V_2,
+                                tokenAddress.get(),
+                                -1L,
+                                new long[] {1L})
+                                .payingWith(ALICE)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .logged()
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 2));
+    }
+
+    @NotNull
+    private String getNestedContractAddress(String outerContract, HapiSpec spec) {
+        return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(outerContract));
     }
 
     @Override
