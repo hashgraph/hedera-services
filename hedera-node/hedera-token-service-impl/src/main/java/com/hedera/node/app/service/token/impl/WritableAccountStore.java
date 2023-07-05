@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -110,10 +109,10 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                             yield fromMirror(alias);
                         } else {
                             final var accountID = aliases.get(alias.asUtf8String());
-                            yield accountID == null ? AccountID.DEFAULT.accountNum() : accountID.accountNum();
+                            yield accountID == null ? 0L : accountID.accountNum();
                         }
                     }
-                    case UNSET -> EntityNumValue.DEFAULT.num();
+                    case UNSET -> 0L;
                 };
 
         return accountNum == null

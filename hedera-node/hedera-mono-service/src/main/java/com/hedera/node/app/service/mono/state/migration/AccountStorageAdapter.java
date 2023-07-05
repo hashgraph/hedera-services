@@ -133,6 +133,23 @@ public class AccountStorageAdapter {
         }
     }
 
+    public void forEachParallel(final BiConsumer<EntityNum, HederaAccount> visitor) {
+        if (accountsOnDisk) {
+            try {
+                onDiskAccounts.extractVirtualMapDataC(
+                        getStaticThreadManager(),
+                        entry -> visitor.accept(entry.getKey().asEntityNum(), entry.getValue()),
+                        THREAD_COUNT);
+            } catch (final InterruptedException e) {
+                log.error("Interrupted while extracting VM data", e);
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
+        } else {
+            inMemoryAccounts.forEach(visitor);
+        }
+    }
+
     public boolean areOnDisk() {
         return accountsOnDisk;
     }

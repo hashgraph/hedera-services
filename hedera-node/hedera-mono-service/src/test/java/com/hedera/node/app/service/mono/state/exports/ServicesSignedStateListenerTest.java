@@ -22,9 +22,8 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.system.state.notifications.NewSignedStateNotification;
-import java.security.NoSuchAlgorithmException;
+import com.swirlds.common.system.status.PlatformStatus;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,7 +68,7 @@ class ServicesSignedStateListenerTest {
     }
 
     @Test
-    void justLogsIfFreezeCompleteAndNotTimeToExport() throws NoSuchAlgorithmException {
+    void justLogsIfFreezeCompleteAndNotTimeToExport() {
         given(notice.getSwirldState()).willReturn(signedState);
         given(currentPlatformStatus.get()).willReturn(PlatformStatus.FREEZE_COMPLETE);
 

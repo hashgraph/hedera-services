@@ -17,28 +17,31 @@
 package com.hedera.node.app.service.mono.context;
 
 import com.hedera.node.app.service.mono.ServicesApp;
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public enum AppsManager {
     APPS;
 
-    private final Map<Long, ServicesApp> apps = new HashMap<>();
+    private final Map<NodeId, ServicesApp> apps = new HashMap<>();
 
-    public boolean includes(final long nodeId) {
-        return apps.containsKey(nodeId);
+    public boolean includes(@NonNull final NodeId nodeId) {
+        return apps.containsKey(Objects.requireNonNull(nodeId));
     }
 
-    public void save(final long id, final ServicesApp app) {
-        apps.put(id, app);
+    public void save(@NonNull final NodeId id, @NonNull final ServicesApp app) {
+        apps.put(Objects.requireNonNull(id), Objects.requireNonNull(app));
     }
 
-    public void clear(final long id) {
-        apps.remove(id);
+    public void clear(@NonNull final NodeId id) {
+        apps.remove(Objects.requireNonNull(id));
     }
 
-    public ServicesApp get(final long id) {
-        if (!includes(id)) {
+    public ServicesApp get(@NonNull final NodeId id) {
+        if (!includes(Objects.requireNonNull(id))) {
             throw new IllegalArgumentException("No app saved for node " + id);
         }
         return apps.get(id);

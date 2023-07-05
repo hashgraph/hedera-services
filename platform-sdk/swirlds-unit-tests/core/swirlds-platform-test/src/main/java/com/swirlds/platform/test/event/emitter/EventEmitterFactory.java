@@ -16,12 +16,15 @@
 
 package com.swirlds.platform.test.event.emitter;
 
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.event.source.EventSource;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
 import com.swirlds.platform.test.event.source.StandardEventSource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -29,8 +32,10 @@ import java.util.Random;
  */
 public class EventEmitterFactory {
 
+    /** the random number generator to use */
     private final Random random;
-    private final int numNetworkNodes;
+    /** the address book to use */
+    private final AddressBook addressBook;
     /**
      * Seed used for the standard generator. Must be same for all instances to ensure the same events are
      * generated for different instances. Differences in the graphs are managed in other ways and are defined in each
@@ -40,11 +45,11 @@ public class EventEmitterFactory {
 
     private final EventSourceFactory sourceFactory;
 
-    public EventEmitterFactory(final Random random, final int numNetworkNodes) {
-        this.random = random;
-        this.numNetworkNodes = numNetworkNodes;
+    public EventEmitterFactory(@NonNull final Random random, @NonNull final AddressBook addressBook) {
+        this.random = Objects.requireNonNull(random);
+        this.addressBook = Objects.requireNonNull(addressBook);
         this.commonSeed = random.nextLong();
-        this.sourceFactory = new EventSourceFactory(numNetworkNodes);
+        this.sourceFactory = new EventSourceFactory(addressBook);
     }
 
     /**
@@ -68,6 +73,7 @@ public class EventEmitterFactory {
      * @return the new {@link ShuffledEventEmitter}
      */
     public ShuffledEventEmitter newForkingShuffledGenerator() {
+        final int numNetworkNodes = addressBook.getSize();
         // No more than 1/3 of the nodes can create forks for consensus to be successful
         final int maxNumForkingSources = (int) Math.floor(numNetworkNodes / 3.0);
 
@@ -85,9 +91,16 @@ public class EventEmitterFactory {
     }
 
     private StandardGraphGenerator newStandardGraphGenerator(final List<EventSource<?>> eventSources) {
-        return new StandardGraphGenerator(
-                commonSeed, // standard seed must be the same across all generators
-                eventSources);
+        if (addressBook == null) {
+            return new StandardGraphGenerator(
+                    commonSeed, // standard seed must be the same across all generators
+                    eventSources);
+        } else {
+            return new StandardGraphGenerator(
+                    commonSeed, // standard seed must be the same across all generators
+                    eventSources,
+                    addressBook);
+        }
     }
 
     private ShuffledEventEmitter newShuffledEmitter(final List<EventSource<?>> eventSources) {

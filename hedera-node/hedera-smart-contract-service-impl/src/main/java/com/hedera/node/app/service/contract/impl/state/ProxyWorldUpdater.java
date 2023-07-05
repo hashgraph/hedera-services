@@ -120,6 +120,19 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         return address == null ? null : (HederaEvmAccount) get(address);
     }
 
+    @Override
+    public ContractID getHederaContractId(@NonNull final Address address) {
+        // As an important special case, return the pending creation's contract ID if its address matches
+        if (pendingCreation != null && pendingCreation.address().equals(requireNonNull(address))) {
+            return ContractID.newBuilder().contractNum(pendingCreation.number()).build();
+        }
+        final HederaEvmAccount account = (HederaEvmAccount) get(address);
+        if (account == null) {
+            throw new IllegalArgumentException("No contract pending or extant at " + address);
+        }
+        return account.hederaContractId();
+    }
+
     @Nullable
     @Override
     public HederaEvmAccount getHederaAccount(@NonNull ContractID contractId) {
@@ -137,12 +150,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     }
 
     @Override
-    public void collectFee(@NonNull final Address payer, final long amount) {
+    public void collectFee(@NonNull final AccountID payerId, final long amount) {
         throw new AssertionError("Not implemented");
     }
 
     @Override
-    public void refundFee(@NonNull final Address payer, final long amount) {
+    public void refundFee(@NonNull final AccountID payerId, final long amount) {
         throw new AssertionError("Not implemented");
     }
 
@@ -179,8 +192,8 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public Address setupCreate(@NonNull final Address receiver) {
-        setupPendingCreation(receiver, null);
+    public Address setupCreate(@NonNull final Address origin) {
+        setupPendingCreation(origin, null);
         return requireNonNull(pendingCreation).address();
     }
 
@@ -188,8 +201,8 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public void setupCreate2(@NonNull final Address receiver, @NonNull final Address alias) {
-        setupPendingCreation(receiver, alias);
+    public void setupAliasedCreate(@NonNull final Address origin, @NonNull final Address alias) {
+        setupPendingCreation(origin, alias);
     }
 
     /**

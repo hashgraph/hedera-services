@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
@@ -60,6 +62,16 @@ class ProxyEvmAccountTest {
     @Test
     void notTokenFacade() {
         assertFalse(subject.isTokenFacade());
+    }
+
+    @Test
+    void hasExpectedId() {
+        assertEquals(AccountID.newBuilder().accountNum(ACCOUNT_NUM).build(), subject.hederaId());
+    }
+
+    @Test
+    void hasExpectedContractId() {
+        assertEquals(ContractID.newBuilder().contractNum(ACCOUNT_NUM).build(), subject.hederaContractId());
     }
 
     @Test

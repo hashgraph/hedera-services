@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -118,5 +121,15 @@ public class TokenEvmAccount extends AbstractMutableEvmAccount {
     @Override
     public boolean isTokenFacade() {
         return true;
+    }
+
+    @Override
+    public @NonNull AccountID hederaId() {
+        throw new IllegalStateException("Token facade has no usable Hedera id");
+    }
+
+    @Override
+    public @NonNull ContractID hederaContractId() {
+        return ContractID.newBuilder().contractNum(numberOfLongZero(address)).build();
     }
 }

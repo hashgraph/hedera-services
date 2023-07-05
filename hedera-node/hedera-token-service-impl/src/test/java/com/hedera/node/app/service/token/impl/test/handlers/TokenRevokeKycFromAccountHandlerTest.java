@@ -212,8 +212,8 @@ class TokenRevokeKycFromAccountHandlerTest {
         @DisplayName("Valid inputs should grant KYC and commit changes")
         void kycRevokedAndPersisted() {
             final var stateTokenRel = newTokenRelationBuilder()
-                    .tokenNumber(TOKEN_10.tokenNum())
-                    .accountNumber(ACCOUNT_100.accountNumOrThrow())
+                    .tokenId(TOKEN_10)
+                    .accountId(ACCOUNT_100)
                     .kycGranted(true)
                     .build();
             given(tokenRelStore.getForModify(ACCOUNT_100, TOKEN_10)).willReturn(stateTokenRel);
@@ -228,9 +228,7 @@ class TokenRevokeKycFromAccountHandlerTest {
         }
 
         private TokenRelation.Builder newTokenRelationBuilder() {
-            return TokenRelation.newBuilder()
-                    .tokenNumber(TOKEN_10.tokenNum())
-                    .accountNumber(ACCOUNT_100.accountNumOrThrow());
+            return TokenRelation.newBuilder().tokenId(TOKEN_10).accountId(ACCOUNT_100);
         }
 
         private TransactionBody newTxnBody() {
