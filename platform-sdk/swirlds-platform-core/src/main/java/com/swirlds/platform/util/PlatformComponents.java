@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.util;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import com.swirlds.base.state.Mutable;
 import com.swirlds.base.state.Startable;
 import com.swirlds.platform.dispatch.DispatchBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A helper class for wiring platform components together.
@@ -53,9 +53,10 @@ public class PlatformComponents implements Mutable, Startable {
      * 		the type of the component
      * @return the component
      */
-    public <T> T add(final T component) {
+    @NonNull
+    public <T> T add(@NonNull final T component) {
         throwIfImmutable();
-        throwArgNull(component, "component");
+        Objects.requireNonNull(component);
         components.add(component);
         dispatchBuilder.registerObservers(component);
         return component;

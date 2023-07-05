@@ -21,11 +21,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NO
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.StatsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -85,23 +87,27 @@ public class SubmissionManager {
      *
      * @param platform the {@link Platform} to which transactions will be submitted
      * @param deduplicationCache used to prevent submission of duplicate transactions
-     * @param nodeLocalProperties the {@link NodeLocalProperties} that keep local properties
+     * @param configProvider the {@link ConfigProvider}
      * @param metrics             metrics related to submissions
      */
     @Inject
     public SubmissionManager(
             @NonNull final Platform platform,
             @NonNull final DeduplicationCache deduplicationCache,
-            @NonNull final NodeLocalProperties nodeLocalProperties,
+            @NonNull final ConfigProvider configProvider,
             @NonNull final Metrics metrics) {
         this.platform = requireNonNull(platform);
         this.submittedTxns = requireNonNull(deduplicationCache);
-        this.isProduction = requireNonNull(nodeLocalProperties).activeProfile() == Profile.PROD;
+
+        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        this.isProduction = Profile.valueOf(hederaConfig.activeProfile()) == Profile.PROD;
+
+        final var statsConfig = configProvider.getConfiguration().getConfigData(StatsConfig.class);
         this.platformTxnRejections =
                 metrics.getOrCreate(new SpeedometerMetric.Config("app", PLATFORM_TXN_REJECTIONS_NAME)
                         .withDescription(PLATFORM_TXN_REJECTIONS_DESC)
                         .withFormat(SPEEDOMETER_FORMAT)
-                        .withHalfLife(nodeLocalProperties.statsSpeedometerHalfLifeSecs()));
+                        .withHalfLife(statsConfig.speedometerHalfLifeSecs()));
     }
 
     /**

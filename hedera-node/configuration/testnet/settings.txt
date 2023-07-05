@@ -2,13 +2,12 @@
                                           #    Gossip / Networking    #
                                           #############################
 
-chatter.useChatter,                            false
-doUpnp,                                        false
-maxOutgoingSyncs,                              4                          # differs from mainnet
 numConnections,                                1000
+socket.doUpnp,                                 false
+socket.useLoopbackIp,                          false
+sync.maxOutgoingSyncs,                         4                            # differs from mainnet
 sync.syncAsProtocolEnabled,                    true
-sync.syncProtocolPermitCount,                  4                          # differs from mainnet
-useLoopbackIp,                                 false
+sync.syncProtocolPermitCount,                  4                            # differs from mainnet
 
                                           #############################
                                           #           State           #
