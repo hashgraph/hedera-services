@@ -71,6 +71,14 @@ public class RateLimitedLogger {
         lock = Locks.createAutoLock();
     }
 
+    /**
+     * Generate the log message.
+     *
+     * @param baseMessage    the base log message
+     * @param deniedRequests the number of times we have attempted to log this message but have been denied
+     * @return the message to forward to the wrapped logger
+     */
+    @NonNull
     private static String generateMessage(@NonNull final String baseMessage, final long deniedRequests) {
         if (deniedRequests > 0) {
             return baseMessage + "\n(Due to rate limiting, this condition has been triggered "
