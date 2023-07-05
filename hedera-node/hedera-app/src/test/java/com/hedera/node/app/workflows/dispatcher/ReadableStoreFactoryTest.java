@@ -33,7 +33,6 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -53,23 +52,20 @@ class ReadableStoreFactoryTest {
     @Mock
     private ReadableKVState<Object, Object> readableKVState;
 
-    @BeforeEach
-    void setUp() {
-    }
-
     @ParameterizedTest
-    @ValueSource(classes = {
-            ReadableAccountStore.class,
-            ReadableNftStore.class,
-            ReadableStakingInfoStore.class,
-            ReadableTokenStore.class,
-            ReadableTopicStore.class,
-            ReadableScheduleStore.class,
-            ReadableFileStore.class,
-            ReadableUpdateFileStore.class,
-            ReadableRunningHashLeafStore.class,
-            ReadableTokenRelationStore.class
-    })
+    @ValueSource(
+            classes = {
+                ReadableAccountStore.class,
+                ReadableNftStore.class,
+                ReadableStakingInfoStore.class,
+                ReadableTokenStore.class,
+                ReadableTopicStore.class,
+                ReadableScheduleStore.class,
+                ReadableFileStore.class,
+                ReadableUpdateFileStore.class,
+                ReadableRunningHashLeafStore.class,
+                ReadableTokenRelationStore.class
+            })
     void returnCorrectStoreClass(final Class<?> storeClass) {
         // given
         given(readableStates.get(anyString())).willReturn(readableKVState);

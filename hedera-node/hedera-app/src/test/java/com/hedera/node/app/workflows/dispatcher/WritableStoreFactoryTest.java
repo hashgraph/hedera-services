@@ -64,8 +64,7 @@ class WritableStoreFactoryTest {
                 arguments(TokenService.NAME, WritableTokenStore.class),
                 arguments(TokenService.NAME, WritableTokenRelationStore.class),
                 arguments(FreezeService.NAME, WritableUpdateFileStore.class),
-                arguments(FileService.NAME, WritableFileStore.class)
-        );
+                arguments(FileService.NAME, WritableFileStore.class));
     }
 
     @BeforeEach
