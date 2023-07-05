@@ -16,14 +16,20 @@
 
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.FileCreateFactory.newSignedFileCreate;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.test.factories.txns.FileCreateFactory;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public enum FileCreateScenarios implements TxnHandlingScenario {
     VANILLA_FILE_CREATE_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedFileCreate().get());
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(
+                    FileCreateFactory.newSignedFileCreate().get());
         }
     }
 }

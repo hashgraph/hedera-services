@@ -83,6 +83,13 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     }
 
     /** {@inheritDoc} */
+    @Nullable
+    @Override
+    public V getOriginalValue(@NonNull K key) {
+        return super.get(key);
+    }
+
+    /** {@inheritDoc} */
     @Override
     @Nullable
     public final V getForModify(@NonNull final K key) {

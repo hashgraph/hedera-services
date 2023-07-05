@@ -16,8 +16,6 @@
 
 package com.swirlds.config.impl.internal;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
-
 import com.swirlds.common.config.reflection.ConfigReflectionUtils;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
@@ -52,15 +50,15 @@ class ConfigDataFactory {
     private final ConverterService converterService;
 
     ConfigDataFactory(@NonNull final Configuration configuration, @NonNull final ConverterService converterService) {
-        this.configuration = throwArgNull(configuration, "configuration");
-        this.converterService = throwArgNull(converterService, "converterService");
+        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
+        this.converterService = Objects.requireNonNull(converterService, "converterService must not be null");
     }
 
     @SuppressWarnings("unchecked")
     @NonNull
     <T extends Record> T createConfigInstance(@NonNull final Class<T> type)
             throws InvocationTargetException, InstantiationException, IllegalAccessException {
-        throwArgNull(type, "type");
+        Objects.requireNonNull(type, "type must not be null");
 
         if (!type.isAnnotationPresent(ConfigData.class)) {
             throw new IllegalArgumentException("Can not create config instance for '" + type + "' since "
@@ -90,7 +88,7 @@ class ConfigDataFactory {
     @Nullable
     private Object getValueForRecordComponent(
             @NonNull final String namePrefix, @NonNull final RecordComponent component) {
-        throwArgNull(component, "component");
+        Objects.requireNonNull(component, "component must not be null");
         final String name = createPropertyName(namePrefix, component);
         final Class<?> valueType = component.getType();
         if (hasDefaultValue(component)) {
@@ -117,8 +115,8 @@ class ConfigDataFactory {
     }
 
     private static boolean isGenericType(@NonNull final RecordComponent component, @NonNull final Class<?> type) {
-        throwArgNull(component, "component");
-        throwArgNull(type, "type");
+        Objects.requireNonNull(component, "component must not be null");
+        Objects.requireNonNull(type, "type must not be null");
         final ParameterizedType stringSetType = (ParameterizedType) component.getGenericType();
         return Objects.equals(type, stringSetType.getRawType());
     }
@@ -134,7 +132,7 @@ class ConfigDataFactory {
     @SuppressWarnings("unchecked")
     @NonNull
     private static <T> Class<T> getGenericListType(@NonNull final RecordComponent component) {
-        throwArgNull(component, "component");
+        Objects.requireNonNull(component, "component must not be null");
         if (!isGenericType(component, List.class)) {
             throw new IllegalArgumentException("Only List interface is supported");
         }
@@ -148,7 +146,7 @@ class ConfigDataFactory {
 
     @Nullable
     private <T> Set<T> getDefaultValueSet(@NonNull final RecordComponent component) {
-        throwArgNull(component, "component");
+        Objects.requireNonNull(component, "component must not be null");
         final Class<?> type = getGenericSetType(component);
         final String rawValue = getRawValue(component);
         if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
@@ -162,7 +160,7 @@ class ConfigDataFactory {
     @SuppressWarnings("unchecked")
     @Nullable
     private <T> List<T> getDefaultValues(@NonNull final RecordComponent component) {
-        throwArgNull(component, "component");
+        Objects.requireNonNull(component, "component must not be null");
         final Class<?> type = getGenericListType(component);
         final String rawValue = getRawValue(component);
         if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
@@ -184,7 +182,7 @@ class ConfigDataFactory {
 
     @NonNull
     private static <T extends Record> String getNamePrefix(@NonNull final Class<T> type) {
-        throwArgNull(type, "type");
+        Objects.requireNonNull(type, "type must not be null");
         return Optional.ofNullable(type.getAnnotation(ConfigData.class))
                 .map(ConfigData::value)
                 .orElse("");
@@ -193,7 +191,7 @@ class ConfigDataFactory {
     @SuppressWarnings("unchecked")
     @Nullable
     private <T> T getDefaultValue(@NonNull final RecordComponent component) {
-        throwArgNull(component, "component");
+        Objects.requireNonNull(component, "component must not be null");
         final String rawValue = getRawValue(component);
         if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
             return null;
@@ -203,14 +201,14 @@ class ConfigDataFactory {
 
     @NonNull
     private static Optional<String> getRawDefaultValue(@NonNull final RecordComponent component) {
-        throwArgNull(component, "component");
+        Objects.requireNonNull(component, "component must not be null");
         return Optional.ofNullable(component.getAnnotation(ConfigProperty.class))
                 .map(ConfigProperty::defaultValue)
                 .filter(defaultValue -> !Objects.equals(ConfigProperty.UNDEFINED_DEFAULT_VALUE, defaultValue));
     }
 
     private static boolean hasDefaultValue(@NonNull final RecordComponent component) {
-        throwArgNull(component, "component");
+        Objects.requireNonNull(component, "component must not be null");
         return Optional.ofNullable(component.getAnnotation(ConfigProperty.class))
                 .map(propertyAnnotation ->
                         !Objects.equals(ConfigProperty.UNDEFINED_DEFAULT_VALUE, propertyAnnotation.defaultValue()))
@@ -219,7 +217,7 @@ class ConfigDataFactory {
 
     @NonNull
     private static String createPropertyName(@NonNull final String prefix, @NonNull final RecordComponent component) {
-        throwArgNull(component, "component");
+        Objects.requireNonNull(component, "component must not be null");
         return Optional.ofNullable(component.getAnnotation(ConfigProperty.class))
                 .map(propertyAnnotation -> {
                     if (!propertyAnnotation.value().isBlank()) {
@@ -233,8 +231,8 @@ class ConfigDataFactory {
 
     @NonNull
     private static String createPropertyName(@NonNull final String prefix, @NonNull final String name) {
-        throwArgNull(prefix, "prefix");
-        throwArgNull(name, "name");
+        Objects.requireNonNull(prefix, "prefix must not be null");
+        Objects.requireNonNull(name, "name must not be null");
         if (prefix.isBlank()) {
             return name;
         }

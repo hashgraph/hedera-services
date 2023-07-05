@@ -18,11 +18,11 @@ package com.swirlds.platform.components.state;
 
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A {@link StateToDiskAttemptConsumer} that stores the {@link StateToDiskAttempt}s in a {@link BlockingQueue} for testing purposes

@@ -29,7 +29,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -65,7 +65,7 @@ public class FileUpdateHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var transactionBody = context.body().fileUpdateOrThrow();
-        final var fileStore = context.createStore(ReadableFileStoreImpl.class);
+        final var fileStore = context.createStore(ReadableFileStore.class);
 
         preValidate(transactionBody.fileID(), fileStore, context, false);
         validateAndAddRequiredKeys(transactionBody.keys(), context, true);
@@ -77,12 +77,13 @@ public class FileUpdateHandler implements TransactionHandler {
 
         final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
         final var fileUpdate = handleContext.body().fileUpdateOrThrow();
-        final var maybeFile = requireNonNull(fileStore)
-                .get(fileUpdate.fileIDOrElse(FileID.DEFAULT).fileNum());
+        final var maybeFile = fileStore.get(fileUpdate.fileIDOrElse(FileID.DEFAULT));
 
         final var fileServiceConfig = handleContext.configuration().getConfigData(FilesConfig.class);
 
-        if (maybeFile.isEmpty()) throw new HandleException(INVALID_FILE_ID);
+        if (maybeFile.isEmpty()) {
+            throw new HandleException(INVALID_FILE_ID);
+        }
 
         final var file = maybeFile.get();
         validateFalse(file.deleted(), FILE_DELETED);
@@ -95,7 +96,7 @@ public class FileUpdateHandler implements TransactionHandler {
         // Now we apply the mutations to a builder
         final var builder = new File.Builder();
         // But first copy over the immutable topic attributes to the builder
-        builder.fileNumber(file.fileNumber());
+        builder.fileId(file.fileId());
         builder.deleted(file.deleted());
 
         // And then resolve mutable attributes, and put the new topic back

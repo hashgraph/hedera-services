@@ -56,6 +56,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.extractBytecodeUnhexed;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.CONTRACT_REPORTED_ADDRESS_MESSAGE;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.CONTRACT_REPORTED_LOG_MESSAGE;
@@ -63,7 +64,6 @@ import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSu
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.EXPECTED_CREATE2_ADDRESS_MESSAGE;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.GET_ADDRESS;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.GET_BYTECODE;
-import static com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.stream.proto.ContractActionType.CALL;

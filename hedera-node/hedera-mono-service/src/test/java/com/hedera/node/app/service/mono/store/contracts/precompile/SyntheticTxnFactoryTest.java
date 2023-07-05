@@ -105,10 +105,10 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
@@ -462,7 +462,7 @@ class SyntheticTxnFactoryTest {
     }
 
     @Test
-    void createsExpectedCryptoCreateWithECKeyAlias() throws DecoderException {
+    void createsExpectedCryptoCreateWithECKeyAlias() throws InvalidKeyException {
         final var balance = 10L;
         final var key = KeyFactory.getDefaultInstance().newEcdsaSecp256k1();
         final var alias = key.toByteString();

@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.spi.signatures;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
@@ -67,5 +70,53 @@ public interface SignatureVerification {
      */
     default boolean failed() {
         return !passed();
+    }
+
+    /**
+     * Convenience method to create a SignatureVerification that failed
+     *
+     * @param key The key for which verification failed
+     */
+    @NonNull
+    static SignatureVerification failedVerification(@NonNull final Key key) {
+        requireNonNull(key, "Key must not be null");
+        return new SignatureVerification() {
+            @NonNull
+            @Override
+            public Key key() {
+                return key;
+            }
+
+            @Override
+            public boolean passed() {
+                return false;
+            }
+        };
+    }
+
+    /**
+     * Convenience method to create a SignatureVerification for a hollow account that failed
+     *
+     * @param evmAlias The alias for which verification failed
+     */
+    static SignatureVerification failedVerification(@NonNull final Bytes evmAlias) {
+        return new SignatureVerification() {
+            @Nullable
+            @Override
+            public Key key() {
+                return null;
+            }
+
+            @NonNull
+            @Override
+            public Bytes evmAlias() {
+                return evmAlias;
+            }
+
+            @Override
+            public boolean passed() {
+                return false;
+            }
+        };
     }
 }

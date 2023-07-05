@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
@@ -29,7 +30,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -38,25 +38,11 @@ import java.util.List;
 import javax.inject.Inject;
 
 public class AllowanceValidator {
-    final ConfigProvider configProvider;
 
     @Inject
-    public AllowanceValidator(final ConfigProvider configProvider) {
-        this.configProvider = configProvider;
-    }
+    public AllowanceValidator() {}
 
-    /**
-     * Check if the allowance feature is enabled
-     *
-     * @return true if the feature is enabled in {@link HederaConfig}
-     */
-    public boolean isEnabled() {
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-        return hederaConfig.allowancesIsEnabled();
-    }
-
-    protected void validateTotalAllowancesPerTxn(final int totalAllowances) {
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+    protected void validateTotalAllowancesPerTxn(final int totalAllowances, @NonNull final HederaConfig hederaConfig) {
         validateFalse(
                 exceedsTxnLimit(totalAllowances, hederaConfig.allowancesMaxTransactionLimit()),
                 MAX_ALLOWANCES_EXCEEDED);
@@ -121,13 +107,20 @@ public class AllowanceValidator {
      * as an invalid owner and returns false.
      *
      * @param nft given nft
-     * @param ownerNum owner given in allowance
+     * @param ownerID owner given in allowance
      * @param token token for which nft belongs to
      * @return whether the owner is valid
      */
-    public static boolean isValidOwner(final Nft nft, final long ownerNum, final Token token) {
-        final var listedOwner = nft.ownerNumber();
-        return listedOwner == 0 ? ownerNum == token.treasuryAccountNumber() : listedOwner == ownerNum;
+    public static boolean isValidOwner(
+            @NonNull final Nft nft, @NonNull final AccountID ownerID, @NonNull final Token token) {
+        requireNonNull(nft);
+        requireNonNull(ownerID);
+        requireNonNull(token);
+        if (nft.hasOwnerId()) {
+            return nft.ownerId().equals(ownerID);
+        } else {
+            return ownerID.equals(token.treasuryAccountId());
+        }
     }
 
     /**

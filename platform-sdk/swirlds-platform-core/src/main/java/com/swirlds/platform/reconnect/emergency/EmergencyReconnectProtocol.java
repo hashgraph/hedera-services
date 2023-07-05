@@ -18,7 +18,6 @@ package com.swirlds.platform.reconnect.emergency;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
-import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
@@ -31,10 +30,11 @@ import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.SignedStateFinder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -97,7 +97,7 @@ public class EmergencyReconnectProtocol implements Protocol {
         this.reconnectSocketTimeout = reconnectSocketTimeout;
         this.reconnectMetrics = reconnectMetrics;
         this.reconnectController = reconnectController;
-        this.fallenBehindManager = ArgumentUtils.throwArgNull(fallenBehindManager, "fallenBehindManager");
+        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager, "fallenBehindManager must not be null");
     }
 
     @Override

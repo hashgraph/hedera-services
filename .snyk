@@ -1,0 +1,14 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.25.0
+ignore: {}
+patch: {}
+exclude:
+  global:
+    - >-
+      hedera-node/hedera-smart-contract-service-impl/src/main/java/com/hedera/node/app/service/contract/impl/state/DispatchingEvmFrameState.java
+    - >-
+      hedera-node/test-clients/src/main/java/com/hedera/services/bdd/suites/contract/opcodes/Create2OperationSuite.java
+    - >-
+      hedera-node/test-clients/src/main/java/com/hedera/services/bdd/spec/keys/deterministic/Bip0032.java
+    - >-
+      hedera-node/hedera-evm/src/main/java/com/hedera/node/app/service/evm/store/contracts/HederaEvmWorldStateTokenAccount.java

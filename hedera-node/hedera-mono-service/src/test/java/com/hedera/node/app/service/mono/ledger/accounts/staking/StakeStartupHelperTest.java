@@ -40,6 +40,7 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.utility.MerkleLong;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
@@ -229,9 +230,9 @@ class StakeStartupHelperTest {
         given(addressBook.getSize()).willReturn(preUpgradeNodeIds.length + 1);
         int nextIndex = 0;
         for (final long preUpgradeNodeId : preUpgradeNodeIds) {
-            given(addressBook.getId(nextIndex++)).willReturn(preUpgradeNodeId);
+            given(addressBook.getNodeId(nextIndex++)).willReturn(new NodeId(preUpgradeNodeId));
         }
-        given(addressBook.getId(nextIndex)).willReturn(addedNodeId);
+        given(addressBook.getNodeId(nextIndex)).willReturn(new NodeId(addedNodeId));
     }
 
     void givenWellKnownAddressBookAndInfosMap() {
@@ -260,12 +261,12 @@ class StakeStartupHelperTest {
     }
 
     private void addPreUpgrade(final int index, final long nodeId) {
-        given(addressBook.getId(index)).willReturn(nodeId);
+        given(addressBook.getNodeId(index)).willReturn(new NodeId(nodeId));
         stakingInfos.put(EntityNum.fromLong(nodeId), new MerkleStakingInfo());
     }
 
     private void addPostUpgrade(final int index, final long nodeId) {
-        given(addressBook.getId(index)).willReturn(nodeId);
+        given(addressBook.getNodeId(index)).willReturn(new NodeId(nodeId));
     }
 
     private static void registerConstructables() {

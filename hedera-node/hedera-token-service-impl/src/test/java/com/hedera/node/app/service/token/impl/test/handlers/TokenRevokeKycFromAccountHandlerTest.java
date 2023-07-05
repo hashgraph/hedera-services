@@ -60,7 +60,6 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -197,7 +196,7 @@ class TokenRevokeKycFromAccountHandlerTest {
         @Test
         @DisplayName("When getForModify returns empty, should not put or commit")
         void emptyGetForModifyShouldNotPersist() {
-            given(tokenRelStore.getForModify(notNull(), notNull())).willReturn(Optional.empty());
+            given(tokenRelStore.getForModify(notNull(), notNull())).willReturn(null);
 
             final var txnBody = newTxnBody();
             given(handleContext.body()).willReturn(txnBody);
@@ -213,11 +212,11 @@ class TokenRevokeKycFromAccountHandlerTest {
         @DisplayName("Valid inputs should grant KYC and commit changes")
         void kycRevokedAndPersisted() {
             final var stateTokenRel = newTokenRelationBuilder()
-                    .tokenNumber(TOKEN_10.tokenNum())
-                    .accountNumber(ACCOUNT_100.accountNumOrThrow())
+                    .tokenId(TOKEN_10)
+                    .accountId(ACCOUNT_100)
                     .kycGranted(true)
                     .build();
-            given(tokenRelStore.getForModify(ACCOUNT_100, TOKEN_10)).willReturn(Optional.of(stateTokenRel));
+            given(tokenRelStore.getForModify(ACCOUNT_100, TOKEN_10)).willReturn(stateTokenRel);
 
             final var txnBody = newTxnBody();
             given(handleContext.body()).willReturn(txnBody);
@@ -229,9 +228,7 @@ class TokenRevokeKycFromAccountHandlerTest {
         }
 
         private TokenRelation.Builder newTokenRelationBuilder() {
-            return TokenRelation.newBuilder()
-                    .tokenNumber(TOKEN_10.tokenNum())
-                    .accountNumber(ACCOUNT_100.accountNumOrThrow());
+            return TokenRelation.newBuilder().tokenId(TOKEN_10).accountId(ACCOUNT_100);
         }
 
         private TransactionBody newTxnBody() {

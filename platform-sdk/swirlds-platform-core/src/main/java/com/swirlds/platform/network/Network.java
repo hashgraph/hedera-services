@@ -21,9 +21,9 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.p2p.portforwarding.PortMapping;
-import com.swirlds.p2p.portforwarding.PortMappingListener;
-import com.swirlds.p2p.portforwarding.portmapper.PortMapperPortForwarder;
+import com.swirlds.platform.portforwarding.PortMapping;
+import com.swirlds.platform.portforwarding.PortMappingListener;
+import com.swirlds.platform.portforwarding.portmapper.PortMapperPortForwarder;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -73,7 +73,7 @@ public class Network {
      * 		if there are any errors getting the addreses
      */
     public static boolean isOwn(InetAddress addr) throws SocketException {
-        return getOwnAddresses().contains(addr);
+        return getOwnAddresses().contains(addr) || addr.isLoopbackAddress();
     }
 
     /**

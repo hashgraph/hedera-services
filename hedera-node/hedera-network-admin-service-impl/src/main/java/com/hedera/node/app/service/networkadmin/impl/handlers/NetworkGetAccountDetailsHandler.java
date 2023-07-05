@@ -19,8 +19,6 @@ package com.hedera.node.app.service.networkadmin.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
-import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
@@ -30,14 +28,12 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenFreezeStatus;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenKycStatus;
 import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.AccountDetails;
 import com.hedera.hapi.node.token.GetAccountDetailsQuery;
 import com.hedera.hapi.node.token.GetAccountDetailsResponse;
@@ -46,7 +42,6 @@ import com.hedera.hapi.node.token.GrantedNftAllowance;
 import com.hedera.hapi.node.token.GrantedTokenAllowance;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUtil;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -92,27 +87,17 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
     }
 
     @Override
-    public boolean requiresNodePayment(@NonNull ResponseType responseType) {
-        return responseType == ANSWER_ONLY || responseType == ANSWER_STATE_PROOF;
-    }
-
-    @Override
-    public boolean needsAnswerOnlyCost(@NonNull ResponseType responseType) {
-        return COST_ANSWER == responseType;
-    }
-
-    @Override
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
-        final var query = context.query();
+        final GetAccountDetailsQuery op = context.query().accountDetailsOrThrow();
+
+        // The Account ID must be specified
+        if (!op.hasAccountId()) throw new PreCheckException(INVALID_ACCOUNT_ID);
+
+        // The account must exist for that transaction ID
         final var accountStore = context.createStore(ReadableAccountStore.class);
-        final GetAccountDetailsQuery op = query.accountDetailsOrThrow();
-        if (op.hasAccountId()) {
-            final var accountMetadata = accountStore.getAccountById(op.accountIdOrElse(AccountID.DEFAULT));
-            mustExist(accountMetadata, INVALID_ACCOUNT_ID);
-        } else {
-            throw new PreCheckException(INVALID_ACCOUNT_ID);
-        }
+        final var accountMetadata = accountStore.getAccountById(op.accountIdOrThrow());
+        mustExist(accountMetadata, INVALID_ACCOUNT_ID);
     }
 
     @Override
@@ -137,8 +122,9 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
                     account, accountStore, tokensConfig, readableTokenStore, tokenRelationStore, ledgerConfig);
 
             if (optionalInfo.isEmpty()) {
-                header.copyBuilder().nodeTransactionPrecheckCode(FAIL_INVALID).build();
-                responseBuilder.header(header);
+                responseBuilder.header(header.copyBuilder()
+                        .nodeTransactionPrecheckCode(FAIL_INVALID)
+                        .build());
             } else {
                 optionalInfo.ifPresent(responseBuilder::accountDetails);
             }
@@ -207,21 +193,14 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             ReadableTokenStore readableTokenStore,
             ReadableTokenRelationStore tokenRelationStore) {
         final var tokenRelationshipList = new ArrayList<TokenRelationship>();
-        var tokenNum = account.headTokenNumber();
+        var tokenId = TokenID.newBuilder().tokenNum(account.headTokenNumber()).build();
         int count = 0;
 
-        while (tokenNum != 0 && count <= maxRelsPerInfoQuery) {
-            final Optional<TokenRelation> optionalTokenRelation = tokenRelationStore.get(
-                    AccountID.newBuilder().accountNum(account.accountNumber()).build(),
-                    TokenID.newBuilder().tokenNum(tokenNum).build());
-            if (optionalTokenRelation.isPresent()) {
-                final var tokenId = TokenID.newBuilder()
-                        .shardNum(StaticProperties.getShard())
-                        .realmNum(StaticProperties.getRealm())
-                        .tokenNum(tokenNum)
-                        .build();
+        while (tokenId != null && !tokenId.equals(TokenID.DEFAULT) && count <= maxRelsPerInfoQuery) {
+            final var tokenRelation = tokenRelationStore.get(
+                    AccountID.newBuilder().accountNum(account.accountNumber()).build(), tokenId);
+            if (tokenRelation != null) {
                 final TokenMetadata token = readableTokenStore.getTokenMeta(tokenId);
-                final var tokenRelation = optionalTokenRelation.get();
                 if (token != null) {
                     final TokenRelationship tokenRelationship = TokenRelationship.newBuilder()
                             .tokenId(tokenId)
@@ -238,7 +217,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
                             .build();
                     tokenRelationshipList.add(tokenRelationship);
                 }
-                tokenNum = tokenRelation.nextToken();
+                tokenId = tokenRelation.nextToken();
             } else {
                 break;
             }

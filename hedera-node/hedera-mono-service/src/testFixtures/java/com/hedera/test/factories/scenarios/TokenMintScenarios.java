@@ -16,15 +16,20 @@
 
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.TokenMintFactory.newSignedTokenMint;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.test.factories.txns.TokenMintFactory;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public enum TokenMintScenarios implements TxnHandlingScenario {
     MINT_WITH_SUPPLY_KEYED_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenMint()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenMintFactory.newSignedTokenMint()
                     .minting(KNOWN_TOKEN_WITH_SUPPLY)
                     .nonPayerKts(TOKEN_SUPPLY_KT)
                     .get());
@@ -32,16 +37,21 @@ public enum TokenMintScenarios implements TxnHandlingScenario {
     },
     MINT_WITH_MISSING_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             return PlatformTxnAccessor.from(
-                    newSignedTokenMint().minting(MISSING_TOKEN).get());
+                    TokenMintFactory.newSignedTokenMint().minting(MISSING_TOKEN).get());
         }
     },
     MINT_FOR_TOKEN_WITHOUT_SUPPLY {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenMint().minting(KNOWN_TOKEN_NO_SPECIAL_KEYS).get());
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(TokenMintFactory.newSignedTokenMint()
+                    .minting(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+                    .get());
         }
     },
 }

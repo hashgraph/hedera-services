@@ -22,6 +22,7 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.SoftwareVersion;
@@ -29,13 +30,14 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.system.SystemExitCode;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -49,9 +51,6 @@ public class SavedStateLoader {
 
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(SavedStateLoader.class);
-    /** Current system settings */
-    private final Settings settings = Settings.getInstance();
-
     /** An array of saved states to consider for loading, ordered from newest to oldest */
     private final SavedStateInfo[] savedStateFiles;
 
@@ -80,13 +79,13 @@ public class SavedStateLoader {
      * @param emergencyRecoveryManager the emergency recovery manager
      */
     public SavedStateLoader(
-            final PlatformContext platformContext,
-            final ShutdownRequestedTrigger shutdownRequestedTrigger,
-            final AddressBook addressBook,
-            final SavedStateInfo[] savedStateFiles,
-            final SoftwareVersion currentSoftwareVersion,
-            final Supplier<EmergencySignedStateValidator> emergencyStateValidator,
-            final EmergencyRecoveryManager emergencyRecoveryManager) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ShutdownRequestedTrigger shutdownRequestedTrigger,
+            @NonNull final AddressBook addressBook,
+            @Nullable final SavedStateInfo[] savedStateFiles,
+            @NonNull final SoftwareVersion currentSoftwareVersion,
+            @NonNull final Supplier<EmergencySignedStateValidator> emergencyStateValidator,
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
         Objects.requireNonNull(shutdownRequestedTrigger, "shutdownRequestedTrigger");
         Objects.requireNonNull(addressBook, "addressBook");
         Objects.requireNonNull(currentSoftwareVersion, "currentSoftwareVersion");
@@ -119,12 +118,15 @@ public class SavedStateLoader {
      * Stores a signed state read from disk along with its original hash and it's recalculated hash. These hashes could
      * be different if a migration was performed.
      */
-    private record SignedStateWithHashes(ReservedSignedState signedState, Hash oldHash, Hash newHash) {
+    private record SignedStateWithHashes(
+            @NonNull ReservedSignedState signedState, @NonNull Hash oldHash, @NonNull Hash newHash) {
+
         /**
          * Returns the version of the software that wrote the signed state to disk
          *
          * @return the software version
          */
+        @NonNull
         public SoftwareVersion getVersion() {
             return signedState
                     .get()
@@ -254,9 +256,10 @@ public class SavedStateLoader {
     @NonNull
     private ReservedSignedState getRegularSavedStateToLoad(final long maxRound)
             throws IOException, SignedStateLoadingException {
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
         if (savedStateFiles == null || savedStateFiles.length == 0) {
-            if (settings.isRequireStateLoad()) {
+            if (stateConfig.requireStateLoad()) {
                 throw new SignedStateLoadingException("No saved states found on disk!");
             } else {
                 return createNullReservation();
@@ -267,7 +270,7 @@ public class SavedStateLoader {
             if (savedStateFile.round() <= maxRound) {
                 final SignedStateWithHashes stateWithHashes = readAndRehashState(platformContext, savedStateFile);
 
-                if (settings.isCheckSignedStateFromDisk()) {
+                if (stateConfig.checkSignedStateFromDisk()) {
                     evaluateLoadedStateHash(stateWithHashes, currentSoftwareVersion);
                 }
 

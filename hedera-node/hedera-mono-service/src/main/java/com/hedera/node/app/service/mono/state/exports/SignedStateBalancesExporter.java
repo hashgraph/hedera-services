@@ -33,7 +33,6 @@ import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.service.mono.utils.SystemExits;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
@@ -53,11 +52,14 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.zip.GZIPOutputStream;
 import javax.inject.Singleton;
@@ -113,7 +115,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
         this.accountBalanceDigest = MessageDigest.getInstance(Cryptography.DEFAULT_DIGEST_TYPE.algorithmName());
     }
 
-    private Instant getFirstExportTime(final Instant now, final int exportPeriodInSecs) {
+    private Instant nextPeriodBoundaryAtLeastNow(final Instant now, final int exportPeriodInSecs) {
         final long epochSeconds = now.getEpochSecond();
         final long elapsedSecs = epochSeconds % exportPeriodInSecs;
         return elapsedSecs == 0
@@ -131,8 +133,11 @@ public class SignedStateBalancesExporter implements BalancesExporter {
         if (!dynamicProperties.shouldExportBalances()) {
             return false;
         }
-        if (nextExportTime == null) {
-            nextExportTime = getFirstExportTime(now, exportPeriod);
+        // In dev environments, it's common to load a state created a long time ago, but we don't want to
+        // export balances for every period boundary between the saved state time and now; so "fast-forward"
+        // the next export time to the first period boundary after the saved state time
+        if (nextExportTime == null || Duration.between(nextExportTime, now).getSeconds() > exportPeriod) {
+            nextExportTime = nextPeriodBoundaryAtLeastNow(now, exportPeriod);
         }
         if (!now.isBefore(nextExportTime)) {
             nextExportTime = nextExportTime.plusSeconds(exportPeriod);
@@ -222,21 +227,21 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
     BalancesSummary summarized(final ServicesState signedState) {
         final long nodeBalanceWarnThreshold = dynamicProperties.nodeBalanceWarningThreshold();
-        final var totalFloat = new NonAtomicReference<>(BigInteger.valueOf(0L));
-        final List<SingleAccountBalances> accountBalances = new ArrayList<>();
+        final var totalFloat = new AtomicReference<>(BigInteger.ZERO);
+        final List<SingleAccountBalances> accountBalances = Collections.synchronizedList(new ArrayList<>());
 
         final var nodeIds = MiscUtils.getNodeAccounts(signedState.addressBook());
         final var tokens = signedState.tokens();
         final var accounts = signedState.accounts();
         final var tokenAssociations = signedState.tokenAssociations();
-        accounts.forEach((id, account) -> {
+        accounts.forEachParallel((id, account) -> {
             if (!account.isDeleted()) {
                 final var accountId = id.toGrpcAccountId();
                 final var balance = account.getBalance();
                 if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
                     log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL, readableId(accountId), balance);
                 }
-                totalFloat.set(totalFloat.get().add(BigInteger.valueOf(account.getBalance())));
+                totalFloat.accumulateAndGet(BigInteger.valueOf(account.getBalance()), BigInteger::add);
                 final SingleAccountBalances.Builder sabBuilder = SingleAccountBalances.newBuilder();
                 sabBuilder.setHbarBalance(balance).setAccountID(accountId);
                 if (dynamicProperties.shouldExportTokenBalances()) {

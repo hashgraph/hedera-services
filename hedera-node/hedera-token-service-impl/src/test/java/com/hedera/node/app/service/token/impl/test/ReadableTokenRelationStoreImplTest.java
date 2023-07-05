@@ -69,13 +69,13 @@ class ReadableTokenRelationStoreImplTest {
     @Test
     void testGet() {
         final var tokenRelation = TokenRelation.newBuilder()
-                .tokenNumber(TOKEN_10)
-                .accountNumber(ACCOUNT_20)
+                .tokenId(TOKEN_10_ID)
+                .accountId(ACCOUNT_20_ID)
                 .build();
         given(tokenRelState.get(notNull())).willReturn(tokenRelation);
 
         final var result = subject.get(ACCOUNT_20_ID, TOKEN_10_ID);
-        Assertions.assertThat(result.orElseThrow()).isEqualTo(tokenRelation);
+        Assertions.assertThat(result).isEqualTo(tokenRelation);
     }
 
     @Test
@@ -84,7 +84,7 @@ class ReadableTokenRelationStoreImplTest {
 
         final var result =
                 subject.get(ACCOUNT_20_ID, TokenID.newBuilder().tokenNum(-1L).build());
-        Assertions.assertThat(result).isEmpty();
+        Assertions.assertThat(result).isNull();
     }
 
     @Test

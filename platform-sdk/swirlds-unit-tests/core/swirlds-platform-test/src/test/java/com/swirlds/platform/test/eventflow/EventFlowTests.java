@@ -20,6 +20,7 @@ import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,10 +29,13 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.TransactionConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.stream.EventStreamManager;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
@@ -43,11 +47,12 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.platform.SettingsProvider;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManagerFactory;
+import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -65,7 +70,9 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.stats.CycleTimingStat;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -83,7 +90,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.provider.Arguments;
@@ -94,16 +100,12 @@ import org.mockito.stubbing.Answer;
  */
 class EventFlowTests {
 
-    /** Delay in milliseconds between shuffles. */
-    private static final long SHUFFLE_DELAY_MS = 600;
-
     /** The maximum allowed bytes per transaction */
     private static final Integer TX_MAX_BYTES = 10;
 
     protected static final NodeId selfId = new NodeId(0L);
     private static final int THROTTLE_TRANSACTION_QUEUE_SIZE = 100_000;
 
-    private final SettingsProvider settingsProvider = mock(SettingsProvider.class);
     protected AddressBook addressBook;
     private BlockingQueue<ReservedSignedState> signedStateTracker;
     protected SystemTransactionTracker systemTransactionTracker;
@@ -159,7 +161,7 @@ class EventFlowTests {
 
         final Random random = RandomUtils.initRandom(seed);
         init(random, numNodes, origSwirldState);
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         // Submits events
         final HashSet<ConsensusTransactionImpl> transactions = applyToWrapper.apply(wrapper);
@@ -246,7 +248,7 @@ class EventFlowTests {
 
         final Random random = RandomUtils.initRandom(seed);
         init(random, numNodes, origSwirldState, state);
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         final List<ConsensusRound> consensusRounds = wrapper.applyConsensusRounds(addressBook, numEvents);
 
@@ -257,6 +259,8 @@ class EventFlowTests {
         // Extract the transactions from other events
         final HashSet<Transaction> otherConsensusTransactions =
                 extractTransactions((id) -> !Objects.equals(id, selfId), consensusRounds);
+
+        assertDoesNotThrow(wrapper::waitUntilAllRoundsAreHandled);
 
         final TransactionTracker consensusState =
                 (TransactionTracker) swirldStateManager.getConsensusState().getSwirldState();
@@ -278,7 +282,7 @@ class EventFlowTests {
 
     /**
      * Verifies that signed states are created for the appropriate rounds given the
-     * {@link SettingsProvider#getSignedStateFreq()}.
+     * {@link com.swirlds.common.config.StateConfig#signedStateFreq()}.
      * <p>
      * Some developers have seen this test hang when running locally. There is a known memory leak with SS1
      * (https://github.com/swirlds/swirlds-platform/issues/4776) that causes the hang-up when running with multiple SS1
@@ -299,10 +303,8 @@ class EventFlowTests {
             final SwirldState origSwirldState) {
         final Random random = RandomUtils.initRandom(seed);
 
-        when(settingsProvider.getSignedStateFreq()).thenReturn(signedStateFreq);
-
-        init(random, numNodes, origSwirldState);
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        init(random, numNodes, origSwirldState, null, prepareConfig(signedStateFreq));
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         final List<ConsensusRound> consensusRounds = wrapper.applyConsensusRounds(addressBook, numEvents);
 
@@ -361,13 +363,11 @@ class EventFlowTests {
             final SwirldState origSwirldState) {
         final Random random = RandomUtils.initRandom(seed);
 
-        when(settingsProvider.getSignedStateFreq()).thenReturn(signedStateFreq);
-
         // Will hold the freeze round when the last event of the round is generated
         final AtomicLong freezeRound = new AtomicLong(-1);
 
-        init(random, numNodes, origSwirldState);
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        init(random, numNodes, origSwirldState, null, prepareConfig(signedStateFreq));
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         final List<ConsensusRound> consensusRounds =
                 wrapper.applyConsensusRounds(addressBook, numEvents, newConsRound -> {
@@ -464,10 +464,10 @@ class EventFlowTests {
             final Long seed, final int numNodes, final int numTransactions, final SwirldState origSwirldState) {
         final Random random = RandomUtils.initRandom(seed);
         init(random, numNodes, origSwirldState);
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         final Set<ConsensusTransactionImpl> transactions = wrapper.applyPreConsensusEvents(
-                numTransactions, EventFlowTestUtils.createEventEmitter(random, numNodes, 1.0));
+                numTransactions, EventFlowTestUtils.createEventEmitter(random, addressBook, 1.0));
 
         assertEventuallyEquals(
                 transactions.size(),
@@ -498,10 +498,10 @@ class EventFlowTests {
             final Long seed, final int numNodes, final int numEvents, final SwirldState origSwirldState) {
         final Random random = RandomUtils.initRandom(seed);
         init(random, numNodes, origSwirldState);
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         final List<ConsensusRound> consensusRounds = wrapper.applyConsensusRounds(
-                addressBook, numEvents, EventFlowTestUtils.createEventEmitter(random, numNodes, 1.0));
+                addressBook, numEvents, EventFlowTestUtils.createEventEmitter(random, addressBook, 1.0));
 
         final HashSet<Transaction> systemTransactions = extractTransactions((selfNodeId) -> true, consensusRounds);
 
@@ -553,22 +553,32 @@ class EventFlowTests {
     }
 
     protected void init(final Random random, final int numNodes, final SwirldState swirldState) {
-        init(random, numNodes, swirldState, null);
+        init(random, numNodes, swirldState, null, prepareConfig());
     }
 
     protected void init(
             final Random random, final int numNodes, final SwirldState swirldState, final State initialState) {
+        init(random, numNodes, swirldState, initialState, prepareConfig());
+    }
+
+    protected void init(
+            final Random random,
+            final int numNodes,
+            final SwirldState swirldState,
+            final State initialState,
+            final Configuration config) {
         addressBook = new RandomAddressBookGenerator(random)
                 .setSize(numNodes)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
-                .setSequentialIds(true)
                 .build();
-        when(settingsProvider.getTransactionMaxBytes()).thenReturn(TX_MAX_BYTES);
-        when(settingsProvider.getDelayShuffle()).thenReturn(SHUFFLE_DELAY_MS);
-        when(settingsProvider.getThrottleTransactionQueueSize()).thenReturn(THROTTLE_TRANSACTION_QUEUE_SIZE);
-        when(settingsProvider.getMaxEventQueueForCons()).thenReturn(500);
-        when(settingsProvider.getMaxTransactionBytesPerEvent()).thenReturn(2048);
+
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("transaction.transactionMaxBytes", TX_MAX_BYTES)
+                .withValue("transaction.throttleTransactionQueueSize", THROTTLE_TRANSACTION_QUEUE_SIZE)
+                .withValue("transaction.maxTransactionBytesPerEvent", 2048)
+                .getOrCreateConfig();
+        final TransactionConfig transactionConfig = configuration.getConfigData(TransactionConfig.class);
 
         final ConsensusHandlingMetrics consStats = mock(ConsensusHandlingMetrics.class);
         when(consStats.getConsCycleStat()).thenReturn(mock(CycleTimingStat.class));
@@ -592,11 +602,10 @@ class EventFlowTests {
                 .when(eventStreamManager)
                 .addEvents(anyList());
 
-        final AddressBook addressBook = new RandomAddressBookGenerator().build();
         final State state = getInitialState(swirldState, initialState, addressBook);
 
         systemTransactionTracker = new SystemTransactionTracker();
-        signedStateTracker = new ArrayBlockingQueue<>(100);
+        signedStateTracker = new ArrayBlockingQueue<>(1000);
 
         final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
                 new PreConsensusSystemTransactionManagerFactory()
@@ -615,20 +624,28 @@ class EventFlowTests {
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
-                settingsProvider,
+                transactionConfig,
                 () -> false,
-                state);
+                state,
+                new BasicSoftwareVersion(1));
 
+        ConfigurationHolder.getInstance().setConfiguration(config);
         final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+                TestPlatformContextBuilder.create().withConfiguration(config).build();
+        final ThreadConfig threadConfig = config.getConfigData(ThreadConfig.class);
 
         preConsensusEventHandler = new PreConsensusEventHandler(
-                new NoOpMetrics(), getStaticThreadManager(), selfId, swirldStateManager, consensusMetrics);
+                new NoOpMetrics(),
+                getStaticThreadManager(),
+                selfId,
+                swirldStateManager,
+                consensusMetrics,
+                threadConfig);
+
         consensusEventHandler = new ConsensusRoundHandler(
                 platformContext,
                 getStaticThreadManager(),
                 selfId,
-                settingsProvider,
                 swirldStateManager,
                 consStats,
                 eventStreamManager,
@@ -637,6 +654,17 @@ class EventFlowTests {
                 () -> {},
                 (round) -> {},
                 SoftwareVersion.NO_VERSION);
+    }
+
+    private Configuration prepareConfig() {
+        return prepareConfig(1);
+    }
+
+    private Configuration prepareConfig(int signedStateFreq) {
+        return new TestConfigBuilder()
+                .withValue("state.signedStateFreq", signedStateFreq)
+                .withValue("event.maxEventQueueForCons", 500)
+                .getOrCreateConfig();
     }
 
     private State getInitialState(
@@ -656,9 +684,11 @@ class EventFlowTests {
         return state;
     }
 
-    protected EventFlowWrapper createEventFlowWrapper(final Random random, final int numNodes) {
+    protected EventFlowWrapper createEventFlowWrapper(
+            @NonNull final Random random, @NonNull final AddressBook addressBook) {
+        // arguments are checked for null in the constructor.
         return new EventFlowWrapper(
-                random, numNodes, preConsensusEventHandler, consensusEventHandler, swirldStateManager);
+                random, addressBook, preConsensusEventHandler, consensusEventHandler, swirldStateManager);
     }
 
     /**
@@ -692,7 +722,7 @@ class EventFlowTests {
         assertEventuallyEquals(
                 expected.size(),
                 actual::size,
-                Duration.ofSeconds(4),
+                Duration.ofSeconds(2),
                 String.format(
                         "%s contains a different number of transactions. Expected: %s, actual: %s",
                         desc, expected.size(), actual.size()));

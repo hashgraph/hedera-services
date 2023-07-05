@@ -20,18 +20,19 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.state.Stoppable;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.throttle.RateLimiter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,13 +58,16 @@ public class SignedStateSentinel implements Startable, Stoppable {
      * @param time            provides the wall clock time
      */
     public SignedStateSentinel(
-            final PlatformContext platformContext, final ThreadManager threadManager, final Time time) {
-        this.time = time;
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final Time time) {
+        this.time = Objects.requireNonNull(time);
         maxSignedStateAge = platformContext
                 .getConfiguration()
                 .getConfigData(StateConfig.class)
                 .suspiciousSignedStateAge();
 
+        Objects.requireNonNull(threadManager);
         thread = new StoppableThreadConfiguration<>(threadManager)
                 .setComponent("platform")
                 .setThreadName("signed-state-sentinel")
@@ -71,7 +75,7 @@ public class SignedStateSentinel implements Startable, Stoppable {
                 .setWork(this::checkSignedStates)
                 .build();
 
-        rateLimiter = new RateLimiter(OSTime.getInstance(), Duration.ofMinutes(10));
+        rateLimiter = new RateLimiter(Time.getCurrent(), Duration.ofMinutes(10));
     }
 
     /**
@@ -96,7 +100,8 @@ public class SignedStateSentinel implements Startable, Stoppable {
             return;
         }
 
-        if (CompareTo.isGreaterThan(objectRecord.getAge(time.now()), maxSignedStateAge) && rateLimiter.request()) {
+        if (CompareTo.isGreaterThan(objectRecord.getAge(time.now()), maxSignedStateAge)
+                && rateLimiter.requestAndTrigger()) {
             final SignedStateHistory history = objectRecord.getMetadata();
             logger.error(EXCEPTION.getMarker(), "old signed state detected, memory leak probable.\n{}", history);
         }

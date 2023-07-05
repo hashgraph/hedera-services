@@ -16,22 +16,30 @@
 
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.sigs.SigMapGenerator;
+import com.hedera.test.factories.txns.SystemDeleteFactory;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.util.Set;
 
 public enum SystemDeleteScenarios implements TxnHandlingScenario {
     SYSTEM_DELETE_FILE_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedSystemDelete().file(MISC_FILE_ID).get());
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(SystemDeleteFactory.newSignedSystemDelete()
+                    .file(MISC_FILE_ID)
+                    .get());
         }
     },
     FULL_PAYER_SIGS_VIA_MAP_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedSystemDelete()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(SystemDeleteFactory.newSignedSystemDelete()
                     .payer(DILIGENT_SIGNING_PAYER_ID)
                     .payerKt(DILIGENT_SIGNING_PAYER_KT)
                     .nonPayerKts(MISC_FILE_WACL_KT)
@@ -40,8 +48,10 @@ public enum SystemDeleteScenarios implements TxnHandlingScenario {
         }
     },
     MISSING_PAYER_SIGS_VIA_MAP_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedSystemDelete()
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
+            return PlatformTxnAccessor.from(SystemDeleteFactory.newSignedSystemDelete()
                     .payer(TOKEN_TREASURY_ID)
                     .payerKt(TOKEN_TREASURY_KT)
                     .nonPayerKts(MISC_FILE_WACL_KT)
@@ -50,11 +60,13 @@ public enum SystemDeleteScenarios implements TxnHandlingScenario {
         }
     },
     INVALID_PAYER_SIGS_VIA_MAP_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             SigMapGenerator buggySigMapGen = SigMapGenerator.withUniquePrefixes();
             buggySigMapGen.setInvalidEntries(Set.of(1));
 
-            return PlatformTxnAccessor.from(newSignedSystemDelete()
+            return PlatformTxnAccessor.from(SystemDeleteFactory.newSignedSystemDelete()
                     .fee(1_234L)
                     .sigMapGen(buggySigMapGen)
                     .payer(DILIGENT_SIGNING_PAYER_ID)
@@ -65,10 +77,12 @@ public enum SystemDeleteScenarios implements TxnHandlingScenario {
         }
     },
     AMBIGUOUS_SIG_MAP_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             SigMapGenerator ambigSigMapGen = SigMapGenerator.withAmbiguousPrefixes();
 
-            return PlatformTxnAccessor.from(newSignedSystemDelete()
+            return PlatformTxnAccessor.from(SystemDeleteFactory.newSignedSystemDelete()
                     .fee(1_234L)
                     .keyFactory(overlapFactory)
                     .sigMapGen(ambigSigMapGen)

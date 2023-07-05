@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKENS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.TOKEN_RELS;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
@@ -35,6 +36,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.TokenBalance;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -42,8 +44,6 @@ import com.hedera.hapi.node.token.CryptoGetAccountBalanceQuery;
 import com.hedera.hapi.node.token.CryptoGetAccountBalanceResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -240,7 +240,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableStore);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 1000)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
@@ -267,27 +267,32 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         ReadableAccountStore ReadableAccountStore = new ReadableAccountStoreImpl(readableStates1);
 
         given(token1.decimals()).willReturn(100);
-        final var readableToken = MapReadableKVState.<EntityNum, Token>builder(TOKENS)
-                .value(EntityNum.fromLong(3L), token1)
+        final var readableToken = MapReadableKVState.<TokenID, Token>builder(TOKENS)
+                .value(asToken(3L), token1)
                 .build();
-        given(readableStates2.<EntityNum, Token>get(TOKENS)).willReturn(readableToken);
+        given(readableStates2.<TokenID, Token>get(TOKENS)).willReturn(readableToken);
         final var readableTokenStore = new ReadableTokenStoreImpl(readableStates2);
 
         final var tokenRelation = TokenRelation.newBuilder()
-                .tokenNumber(3L)
-                .accountNumber(accountNum)
+                .tokenId(asToken(3L))
+                .accountId(id)
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(4L)
-                .previousToken(2L)
+                .nextToken(asToken(4L))
+                .previousToken(asToken(2L))
                 .build();
-        final var readableTokenRel = MapReadableKVState.<EntityNumPair, TokenRelation>builder(TOKEN_RELS)
-                .value(EntityNumPair.fromLongs(3L, accountNum), tokenRelation)
+        final var readableTokenRel = MapReadableKVState.<EntityIDPair, TokenRelation>builder(TOKEN_RELS)
+                .value(
+                        EntityIDPair.newBuilder()
+                                .accountId(id)
+                                .tokenId(asToken(3L))
+                                .build(),
+                        tokenRelation)
                 .build();
-        given(readableStates3.<EntityNumPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRel);
+        given(readableStates3.<EntityIDPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRel);
         final var readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates3);
 
         final var query = createGetAccountBalanceQuery(accountNum);
@@ -296,7 +301,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
         when(context.createStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
@@ -325,53 +330,68 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
 
         given(token1.decimals()).willReturn(100);
         given(token2.decimals()).willReturn(50);
-        final var readableToken = MapReadableKVState.<EntityNum, Token>builder(TOKENS)
-                .value(EntityNum.fromLong(3L), token1)
-                .value(EntityNum.fromLong(4L), token2)
-                .value(EntityNum.fromLong(5L), token3)
+        final var readableToken = MapReadableKVState.<TokenID, Token>builder(TOKENS)
+                .value(asToken(3L), token1)
+                .value(asToken(4L), token2)
+                .value(asToken(5L), token3)
                 .build();
-        given(readableStates2.<EntityNum, Token>get(TOKENS)).willReturn(readableToken);
+        given(readableStates2.<TokenID, Token>get(TOKENS)).willReturn(readableToken);
         final var readableTokenStore = new ReadableTokenStoreImpl(readableStates2);
 
         final var tokenRelation1 = TokenRelation.newBuilder()
-                .tokenNumber(3L)
-                .accountNumber(accountNum)
+                .tokenId(asToken(3L))
+                .accountId(id)
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(4L)
-                .previousToken(2L)
+                .nextToken(asToken(4L))
+                .previousToken(asToken(2L))
                 .build();
         final var tokenRelation2 = TokenRelation.newBuilder()
-                .tokenNumber(4L)
-                .accountNumber(accountNum)
+                .tokenId(asToken(4L))
+                .accountId(id)
                 .balance(100L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(5L)
-                .previousToken(3L)
+                .nextToken(asToken(5L))
+                .previousToken(asToken(3L))
                 .build();
         final var tokenRelation3 = TokenRelation.newBuilder()
-                .tokenNumber(5L)
-                .accountNumber(accountNum)
+                .tokenId(asToken(5L))
+                .accountId(id)
                 .balance(10L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(6L)
-                .previousToken(4L)
+                .nextToken(asToken(6L))
+                .previousToken(asToken(4L))
                 .build();
-        final var readableTokenRel = MapReadableKVState.<EntityNumPair, TokenRelation>builder(TOKEN_RELS)
-                .value(EntityNumPair.fromLongs(accountNum, 3L), tokenRelation1)
-                .value(EntityNumPair.fromLongs(accountNum, 4L), tokenRelation2)
-                .value(EntityNumPair.fromLongs(accountNum, 5L), tokenRelation3)
+        final var readableTokenRel = MapReadableKVState.<EntityIDPair, TokenRelation>builder(TOKEN_RELS)
+                .value(
+                        EntityIDPair.newBuilder()
+                                .accountId(id)
+                                .tokenId(asToken(3L))
+                                .build(),
+                        tokenRelation1)
+                .value(
+                        EntityIDPair.newBuilder()
+                                .accountId(id)
+                                .tokenId(asToken(4L))
+                                .build(),
+                        tokenRelation2)
+                .value(
+                        EntityIDPair.newBuilder()
+                                .accountId(id)
+                                .tokenId(asToken(5L))
+                                .build(),
+                        tokenRelation3)
                 .build();
-        given(readableStates3.<EntityNumPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRel);
+        given(readableStates3.<EntityIDPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRel);
         final var readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates3);
 
         final var query = createGetAccountBalanceQuery(accountNum);
@@ -380,7 +400,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
         when(context.createStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
 
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);

@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -103,5 +105,51 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
     @Override
     public void setStorageValue(@NonNull final UInt256 key, @NonNull final UInt256 value) {
         state.setStorageValue(number, key, value);
+    }
+
+    // --- Hedera-specific methods ---
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isTokenFacade() {
+        return false;
+    }
+
+    @Override
+    public @NonNull AccountID hederaId() {
+        return AccountID.newBuilder().accountNum(number).build();
+    }
+
+    @Override
+    public @NonNull ContractID hederaContractId() {
+        return ContractID.newBuilder().contractNum(number).build();
+    }
+
+    /**
+     * Returns the number of treasury titles held by this account.
+     *
+     * @return the number of treasury titles held by this account
+     */
+    public int numTreasuryTitles() {
+        return state.getNumTreasuryTitles(number);
+    }
+
+    /**
+     * Returns the number of positive token balances held by this account.
+     *
+     * @return the number of positive token balances held by this account
+     */
+    public int numPositiveTokenBalances() {
+        return state.getNumPositiveTokenBalances(number);
+    }
+
+    /**
+     * Returns whether the account is a contract.
+     *
+     * @return if the account is a contract
+     */
+    public boolean isContract() {
+        return state.isContract(number);
     }
 }

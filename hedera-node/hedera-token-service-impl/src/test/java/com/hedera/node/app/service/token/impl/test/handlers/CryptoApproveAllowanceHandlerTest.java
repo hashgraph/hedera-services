@@ -34,9 +34,9 @@ import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.config.VersionedConfigImpl;
-import com.hedera.node.app.service.token.impl.*;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator;
@@ -44,7 +44,6 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,9 +56,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock(strictness = Strictness.LENIENT)
-    private ConfigProvider configProvider;
-
-    @Mock(strictness = Strictness.LENIENT)
     private HandleContext handleContext;
 
     private CryptoApproveAllowanceHandler subject;
@@ -68,8 +64,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     public void setUp() {
         super.setUp();
         refreshWritableStores();
-        final var validator = new ApproveAllowanceValidator(configProvider);
-        givenStoresAndConfig(configProvider, handleContext);
+        final var validator = new ApproveAllowanceValidator();
+        givenStoresAndConfig(handleContext);
 
         subject = new CryptoApproveAllowanceHandler(validator);
     }
@@ -160,10 +156,10 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThat(writableNftStore.get(uniqueTokenIdSl1)).isNotNull();
         assertThat(writableNftStore.get(uniqueTokenIdSl2)).isNotNull();
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isZero();
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isZero();
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isNull();
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isNull();
 
         subject.handle(handleContext);
 
@@ -184,10 +180,10 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThat(writableNftStore.get(uniqueTokenIdSl1)).isNotNull();
         assertThat(writableNftStore.get(uniqueTokenIdSl2)).isNotNull();
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isEqualTo(spenderId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isEqualTo(spenderId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isEqualTo(spenderId);
     }
 
     @Test
@@ -213,10 +209,10 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThat(writableNftStore.get(uniqueTokenIdSl1)).isNotNull();
         assertThat(writableNftStore.get(uniqueTokenIdSl2)).isNotNull();
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isZero();
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isZero();
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isNull();
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isNull();
 
         subject.handle(handleContext);
 
@@ -237,10 +233,10 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThat(writableNftStore.get(uniqueTokenIdSl1)).isNotNull();
         assertThat(writableNftStore.get(uniqueTokenIdSl2)).isNotNull();
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isEqualTo(spenderId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isEqualTo(spenderId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isEqualTo(spenderId);
     }
 
     @Test
@@ -255,20 +251,20 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         final var existingOwner = writableAccountStore.getAccountById(ownerId);
         assertThat(existingOwner.approveForAllNftAllowances()).hasSize(1);
 
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isZero();
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isZero();
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isNull();
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isNull();
 
         subject.handle(handleContext);
 
         final var modifiedOwner = writableAccountStore.getAccountById(ownerId);
 
         assertThat(modifiedOwner.approveForAllNftAllowances()).isEmpty();
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerNumber()).isEqualTo(ownerId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderNumber()).isEqualTo(spenderId.accountNum());
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderNumber()).isEqualTo(spenderId.accountNum());
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isEqualTo(spenderId);
     }
 
     @Test
@@ -297,12 +293,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         // change the state to have the payer as owner for NFTs for a passing test.
         // If not it fails since those NFTs are not owned by the payer.
         writableNftState = emptyWritableNftStateBuilder()
-                .value(
-                        uniqueTokenIdSl1,
-                        nftSl1.copyBuilder().ownerNumber(accountNum).build())
-                .value(
-                        uniqueTokenIdSl2,
-                        nftSl2.copyBuilder().ownerNumber(accountNum).build())
+                .value(uniqueTokenIdSl1, nftSl1.copyBuilder().ownerId(payerId).build())
+                .value(uniqueTokenIdSl2, nftSl2.copyBuilder().ownerId(payerId).build())
                 .build();
         given(writableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(writableNftState);
         writableNftStore = new WritableNftStore(writableStates);
@@ -341,10 +333,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void checksIfAllowancesExceedLimit() {
-        configuration = new HederaTestConfigBuilder()
+        configuration = HederaTestConfigBuilder.create()
                 .withValue("hedera.allowances.maxAccountLimit", 2)
                 .getOrCreateConfig();
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
         given(handleContext.configuration()).willReturn(configuration);
 
         final var txn = cryptoApproveAllowanceTransaction(

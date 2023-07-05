@@ -56,12 +56,10 @@ import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.network.Network;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
-import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
@@ -95,7 +93,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
     private static final long CLASS_ID = 0xf052378c7364ef47L;
 
-    private long selfId;
+    private NodeId selfId;
 
     /** false until the test scenario has been validated, true afterwards. */
     private final AtomicBoolean validationPerformed = new AtomicBoolean(false);
@@ -156,7 +154,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         logger.info(STARTUP.getMarker(), "init called in State.");
         throwIfImmutable();
 
-        this.selfId = platform.getSelfId().id();
+        this.selfId = platform.getSelfId();
     }
 
     /**
@@ -493,8 +491,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
             @NonNull final AddressBook addressBook1,
             @NonNull final AddressBook addressBook2,
             final boolean expectedResult) {
-        final String addressBook1ConfigText = addressBook1.toConfigText();
-        final String addressBook2ConfigText = addressBook2.toConfigText();
+        final String addressBook1ConfigText = AddressBookUtils.addressBookConfigText(addressBook1);
+        final String addressBook2ConfigText = AddressBookUtils.addressBookConfigText(addressBook2);
         final boolean pass = addressBook1ConfigText.equals(addressBook2ConfigText) == expectedResult;
         if (!pass) {
             if (expectedResult) {
@@ -640,18 +638,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     @NonNull
     private AddressBook parseAddressBook(@NonNull final String addressBookString) throws ParseException {
         Objects.requireNonNull(addressBookString, "addressBookString must not be null");
-        return AddressBookUtils.parseAddressBookConfigText(
-                addressBookString,
-                NodeId::new,
-                ip -> {
-                    try {
-                        return Network.isOwn(ip);
-                    } catch (SocketException e) {
-                        logger.error(EXCEPTION.getMarker(), "Unable to determine if {} is own ip address", ip, e);
-                        return false;
-                    }
-                },
-                id -> "");
+        return AddressBookUtils.parseAddressBookText(addressBookString);
     }
 
     /**

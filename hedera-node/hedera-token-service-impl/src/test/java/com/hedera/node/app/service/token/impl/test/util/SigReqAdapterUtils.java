@@ -76,6 +76,8 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
@@ -85,15 +87,13 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -134,8 +134,24 @@ public class SigReqAdapterUtils {
      * @return the well-known token store
      */
     public static ReadableTokenStore wellKnownTokenStoreAt() {
+        final var wrappedState = wellKnownTokenState();
+        final var state = new StateKeyAdapter<>(wrappedState, Function.identity());
+        return new ReadableTokenStoreImpl(mockStates(Map.of(TOKENS_KEY, state)));
+    }
+
+    /**
+     * Returns the {@link WritableTokenStore} containing the "well-known" tokens that exist in a
+     * {@code SigRequirementsTest} scenario (see also {@link #wellKnownTokenStoreAt()})
+     *
+     * @return the well-known token store
+     */
+    public static WritableTokenStore wellKnownWritableTokenStoreAt() {
+        return new WritableTokenStore(mockWritableStates(Map.of(TOKENS_KEY, wellKnownTokenState())));
+    }
+
+    private static WritableKVState<TokenID, Token> wellKnownTokenState() {
         final var source = sigReqsMockTokenStore();
-        final Map<EntityNum, Token> destination = new HashMap<>();
+        final Map<TokenID, Token> destination = new HashMap<>();
         List.of(
                         toPbj(KNOWN_TOKEN_IMMUTABLE),
                         toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS),
@@ -147,34 +163,40 @@ public class SigReqAdapterUtils {
                         toPbj(KNOWN_TOKEN_WITH_SUPPLY),
                         toPbj(KNOWN_TOKEN_WITH_WIPE),
                         toPbj(DELETED_TOKEN))
-                .forEach(id -> destination.put(EntityNum.fromLong(id.tokenNum()), asToken(source.get(fromPbj(id)))));
-        final var wrappedState = new MapReadableKVState<>("TOKENS", destination);
-        final var state = new StateKeyAdapter<>(wrappedState, Function.identity());
-        return new ReadableTokenStoreImpl(mockStates(Map.of(TOKENS_KEY, state)));
+                .forEach(id -> destination.put(id, asToken(source.get(fromPbj(id)))));
+        return new MapWritableKVState<>("TOKENS", destination);
     }
 
     public static WritableTokenRelationStore wellKnownTokenRelStoreAt() {
-        final var miscAcctNum = MISC_ACCOUNT.getAccountNum();
-        final var destination = new HashMap<EntityNumPair, TokenRelation>();
+        final var destination = new HashMap<EntityIDPair, TokenRelation>();
         destination.put(
-                EntityNumPair.fromLongs(miscAcctNum, KNOWN_TOKEN_IMMUTABLE.getTokenNum()),
+                EntityIDPair.newBuilder()
+                        .accountId(toPbj(MISC_ACCOUNT))
+                        .tokenId(toPbj(KNOWN_TOKEN_IMMUTABLE))
+                        .build(),
                 TokenRelation.newBuilder()
-                        .accountNumber(miscAcctNum)
-                        .tokenNumber(KNOWN_TOKEN_IMMUTABLE.getTokenNum())
+                        .accountId(toPbj(MISC_ACCOUNT))
+                        .tokenId(toPbj(KNOWN_TOKEN_IMMUTABLE))
                         .balance(10)
                         .build());
         destination.put(
-                EntityNumPair.fromLongs(miscAcctNum, KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum()),
+                EntityIDPair.newBuilder()
+                        .accountId(toPbj(MISC_ACCOUNT))
+                        .tokenId(toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS))
+                        .build(),
                 TokenRelation.newBuilder()
-                        .accountNumber(miscAcctNum)
-                        .tokenNumber(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
+                        .accountId(toPbj(MISC_ACCOUNT))
+                        .tokenId(toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS))
                         .balance(20)
                         .build());
         destination.put(
-                EntityNumPair.fromLongs(miscAcctNum, KNOWN_TOKEN_WITH_KYC.getTokenNum()),
+                EntityIDPair.newBuilder()
+                        .accountId(toPbj(MISC_ACCOUNT))
+                        .tokenId(toPbj(KNOWN_TOKEN_WITH_KYC))
+                        .build(),
                 TokenRelation.newBuilder()
-                        .accountNumber(miscAcctNum)
-                        .tokenNumber(KNOWN_TOKEN_WITH_KYC.getTokenNum())
+                        .accountId(toPbj(MISC_ACCOUNT))
+                        .tokenId(toPbj(KNOWN_TOKEN_WITH_KYC))
                         .balance(30)
                         .build());
 
@@ -345,12 +367,14 @@ public class SigReqAdapterUtils {
             customFee.forEach(fee -> pbjFees.add(fromFcCustomFee(fee)));
         }
         return new Token(
-                token.entityNum(),
+                TokenID.newBuilder().tokenNum(token.entityNum()).build(),
                 token.name(),
                 token.symbol(),
                 token.decimals(),
                 token.totalSupply(),
-                token.treasuryNum().longValue(),
+                AccountID.newBuilder()
+                        .accountNum(token.treasuryNum().longValue())
+                        .build(),
                 !token.adminKey().isEmpty()
                         ? fromGrpcKey(asKeyUnchecked(token.adminKey().get()))
                         : Key.DEFAULT,
@@ -378,7 +402,11 @@ public class SigReqAdapterUtils {
                 token.supplyType() == com.hedera.node.app.service.mono.state.enums.TokenSupplyType.FINITE
                         ? com.hedera.hapi.node.base.TokenSupplyType.FINITE
                         : com.hedera.hapi.node.base.TokenSupplyType.INFINITE,
-                token.autoRenewAccount() == null ? 0 : token.autoRenewAccount().num(),
+                token.autoRenewAccount() == null
+                        ? AccountID.DEFAULT
+                        : AccountID.newBuilder()
+                                .accountNum(token.autoRenewAccount().num())
+                                .build(),
                 token.autoRenewPeriod(),
                 token.expiry(),
                 token.memo(),

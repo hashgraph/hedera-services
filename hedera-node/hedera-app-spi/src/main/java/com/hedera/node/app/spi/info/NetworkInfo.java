@@ -18,6 +18,8 @@ package com.hedera.node.app.spi.info;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 
 /**
  * Provides information about the network.
@@ -31,4 +33,13 @@ public interface NetworkInfo {
      */
     @NonNull
     Bytes ledgerId();
+
+    @NonNull
+    NodeInfo selfNodeInfo();
+
+    @NonNull
+    List<NodeInfo> addressBook();
+
+    @Nullable
+    NodeInfo nodeInfo(long nodeId);
 }
