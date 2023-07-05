@@ -27,6 +27,7 @@ import static com.hedera.hapi.node.base.TokenKycStatus.GRANTED;
 import static com.hedera.hapi.node.base.TokenKycStatus.KYC_NOT_APPLICABLE;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.key.KeyUtils.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -239,23 +240,21 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         requireNonNull(readableTokenStore);
         requireNonNull(tokenRelationStore);
         final var ret = new ArrayList<TokenRelationship>();
-        var tokenNum = account.headTokenNumber();
+        var tokenId = asToken(account.headTokenNumber());
         int count = 0;
         TokenRelation tokenRelation;
         Token token; // token from readableToken store by tokenID
-        TokenID tokenID; // build from tokenNum
         AccountID accountID; // build from accountNumber
-        while (tokenNum != 0 && count < tokenConfig.maxRelsPerInfoQuery()) {
+        while (tokenId != null && !tokenId.equals(TokenID.DEFAULT) && count < tokenConfig.maxRelsPerInfoQuery()) {
             accountID =
                     AccountID.newBuilder().accountNum(account.accountNumber()).build();
-            tokenID = TokenID.newBuilder().tokenNum(tokenNum).build();
-            tokenRelation = tokenRelationStore.get(accountID, tokenID);
+            tokenRelation = tokenRelationStore.get(accountID, tokenId);
             if (tokenRelation != null) {
-                token = readableTokenStore.get(tokenID);
+                token = readableTokenStore.get(tokenId);
                 if (token != null) {
-                    addTokenRelation(ret, token, tokenRelation, tokenNum);
+                    addTokenRelation(ret, token, tokenRelation, tokenId);
                 }
-                tokenNum = tokenRelation.nextToken();
+                tokenId = tokenRelation.nextToken();
             } else {
                 break;
             }
@@ -269,12 +268,12 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
      * @param ret ArrayList of TokenRelationship object
      * @param token token from readableToken store by tokenID
      * @param tokenRelation token relation from token relation store
-     * @param tokenNum token number
+     * @param tokenId token id
      */
     private void addTokenRelation(
-            ArrayList<TokenRelationship> ret, Token token, TokenRelation tokenRelation, long tokenNum) {
+            ArrayList<TokenRelationship> ret, Token token, TokenRelation tokenRelation, TokenID tokenId) {
         final var tokenRelationship = TokenRelationship.newBuilder()
-                .tokenId(TokenID.newBuilder().tokenNum(tokenNum).build())
+                .tokenId(tokenId)
                 .symbol(token.symbol())
                 .balance(tokenRelation.balance())
                 .decimals(token.decimals())

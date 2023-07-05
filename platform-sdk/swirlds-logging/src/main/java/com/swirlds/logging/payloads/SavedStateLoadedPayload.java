@@ -16,7 +16,9 @@
 
 package com.swirlds.logging.payloads;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * This payload is logged when the platform loads a saved state from disk.
@@ -25,13 +27,11 @@ public class SavedStateLoadedPayload extends AbstractLogPayload {
 
     private long round;
     private Instant consensusTimestamp;
-    private Instant willFreezeUntil;
 
-    public SavedStateLoadedPayload(final long round, final Instant consensusTimestamp, final Instant willFreezeUntil) {
+    public SavedStateLoadedPayload(final long round, @NonNull final Instant consensusTimestamp) {
         super("Platform has loaded a saved state");
         this.round = round;
-        this.consensusTimestamp = consensusTimestamp;
-        this.willFreezeUntil = willFreezeUntil;
+        this.consensusTimestamp = Objects.requireNonNull(consensusTimestamp);
     }
 
     public long getRound() {
@@ -48,13 +48,5 @@ public class SavedStateLoadedPayload extends AbstractLogPayload {
 
     public void setConsensusTimestamp(final Instant consensusTimestamp) {
         this.consensusTimestamp = consensusTimestamp;
-    }
-
-    public Instant getWillFreezeUntil() {
-        return willFreezeUntil;
-    }
-
-    public void setWillFreezeUntil(final Instant willFreezeUntil) {
-        this.willFreezeUntil = willFreezeUntil;
     }
 }

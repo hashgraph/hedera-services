@@ -29,11 +29,13 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
+import com.hedera.node.app.service.token.impl.test.handlers.transfer.StepsBase;
+import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 
-class CryptoTransferHandlerTestBase {
+class CryptoTransferHandlerTestBase extends StepsBase {
     protected static final AccountID ACCOUNT_3333 = asAccount(3333);
     protected static final AccountID ACCOUNT_4444 = asAccount(4444);
     protected static final TokenID TOKEN_2468 = asToken(2468);
@@ -58,10 +60,13 @@ class CryptoTransferHandlerTestBase {
             .build();
 
     protected CryptoTransferHandler subject;
+    protected CryptoTransferValidator validator;
 
     @BeforeEach
-    void doSetup() {
-        subject = new CryptoTransferHandler();
+    public void setUp() {
+        super.setUp();
+        validator = new CryptoTransferValidator();
+        subject = new CryptoTransferHandler(validator);
     }
 
     protected TransactionBody newCryptoTransfer(final AccountAmount... acctAmounts) {

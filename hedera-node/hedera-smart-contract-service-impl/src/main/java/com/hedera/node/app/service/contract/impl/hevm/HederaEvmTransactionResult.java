@@ -103,7 +103,6 @@ public record HederaEvmTransactionResult(
      */
     public static HederaEvmTransactionResult failureFrom(final long gasUsed, @NonNull final MessageFrame frame) {
         requireNonNull(frame);
-
         return new HederaEvmTransactionResult(
                 gasUsed,
                 frame.getGasPrice().toLong(),
@@ -113,6 +112,21 @@ public record HederaEvmTransactionResult(
                 frame.getExceptionalHaltReason().map(Object::toString).orElse(null),
                 null,
                 frame.getRevertReason().map(ConversionUtils::tuweniToPbjBytes).orElse(null),
+                Collections.emptyList());
+    }
+
+    public static HederaEvmTransactionResult resourceExhaustionFrom(
+            final long gasUsed, final long gasPrice, @NonNull final ResponseCodeEnum reason) {
+        requireNonNull(reason);
+        return new HederaEvmTransactionResult(
+                gasUsed,
+                gasPrice,
+                null,
+                null,
+                Bytes.EMPTY,
+                null,
+                null,
+                Bytes.wrap(reason.name()),
                 Collections.emptyList());
     }
 

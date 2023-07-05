@@ -25,6 +25,7 @@ import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.*;
 import com.swirlds.config.api.Configuration;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +42,9 @@ class HederaEvmTransactionProcessorTest {
 
     @Mock
     private HederaWorldUpdater worldUpdater;
+
+    @Mock
+    private Supplier<HederaWorldUpdater> feesOnlyUpdater;
 
     @Mock
     private HederaTracer tracer;
@@ -72,9 +76,9 @@ class HederaEvmTransactionProcessorTest {
         final var transaction = wellKnownHapiCall();
         final var context = wellKnownContextWith(code, blocks, false);
 
-        subject.process(transaction, worldUpdater, context, VERSION_030, tracer, config);
+        subject.process(transaction, worldUpdater, feesOnlyUpdater, context, VERSION_030, tracer, config);
 
-        verify(v30processor).processTransaction(transaction, worldUpdater, context, tracer, config);
+        verify(v30processor).processTransaction(transaction, worldUpdater, feesOnlyUpdater, context, tracer, config);
     }
 
     @Test
@@ -82,9 +86,9 @@ class HederaEvmTransactionProcessorTest {
         final var transaction = wellKnownHapiCall();
         final var context = wellKnownContextWith(code, blocks, false);
 
-        subject.process(transaction, worldUpdater, context, VERSION_034, tracer, config);
+        subject.process(transaction, worldUpdater, feesOnlyUpdater, context, VERSION_034, tracer, config);
 
-        verify(v34processor).processTransaction(transaction, worldUpdater, context, tracer, config);
+        verify(v34processor).processTransaction(transaction, worldUpdater, feesOnlyUpdater, context, tracer, config);
     }
 
     @Test
@@ -92,8 +96,8 @@ class HederaEvmTransactionProcessorTest {
         final var transaction = wellKnownHapiCall();
         final var context = wellKnownContextWith(code, blocks, false);
 
-        subject.process(transaction, worldUpdater, context, VERSION_038, tracer, config);
+        subject.process(transaction, worldUpdater, feesOnlyUpdater, context, VERSION_038, tracer, config);
 
-        verify(v38processor).processTransaction(transaction, worldUpdater, context, tracer, config);
+        verify(v38processor).processTransaction(transaction, worldUpdater, feesOnlyUpdater, context, tracer, config);
     }
 }
