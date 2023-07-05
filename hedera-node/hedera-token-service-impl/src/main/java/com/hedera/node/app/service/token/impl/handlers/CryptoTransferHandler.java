@@ -202,9 +202,11 @@ public class CryptoTransferHandler implements TransactionHandler {
         final List<TransferStep> steps = new ArrayList<>();
         // Step 1: associate any token recipients that are not already associated and have
         // auto association slots open
-        final var associateTokenRecepients = new AssociateTokenRecepientsStep(op);
+        steps.add(new AssociateTokenRecepientsStep(op));
         // Step 2: Charge custom fees for token transfers. yet to be implemented
-        final var customFeeAssessmentStep = new CustomFeeAssessmentStep(op);
+        final var customFeeStep = new CustomFeeAssessmentStep(op);
+        final var listOfOps = customFeeStep.assessCustomFees(op);
+
         // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
         final var assessHbarTransfers = new AdjustHbarChangesStep(op, topLevelPayer);
         // Step 4: Charge token transfers with an approval. Modify the allowances map on account
@@ -213,7 +215,6 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var changeNftOwners = new NFTOwnersChangeStep(op, topLevelPayer);
         // Step 6: TODO Pay staking rewards
 
-        steps.add(associateTokenRecepients);
         steps.add(assessHbarTransfers);
         steps.add(assessFungibleTokenTransfers);
         steps.add(changeNftOwners);
