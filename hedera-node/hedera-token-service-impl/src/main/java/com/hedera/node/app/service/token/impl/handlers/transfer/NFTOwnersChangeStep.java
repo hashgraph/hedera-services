@@ -78,8 +78,8 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
                 final var senderRel = getIfUsable(senderId, tokenId, tokenRelStore);
                 final var receiverRel = getIfUsable(receiverId, tokenId, tokenRelStore);
 
-                validateFrozenAndKycOnRelation(senderRel);
-                validateFrozenAndKycOnRelation(receiverRel);
+                validateNotFrozenAndKycOnRelation(senderRel);
+                validateNotFrozenAndKycOnRelation(receiverRel);
 
                 final var treasury = token.treasuryAccountId();
                 getIfUsable(treasury, accountStore, expiryValidator, INVALID_ACCOUNT_ID);

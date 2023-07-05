@@ -29,7 +29,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -42,14 +42,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class AssociateTokenRecepientsStepTest extends StepsBase {
+public class AssociateTokenRecipientsStepTest extends StepsBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private HandleContext handleContext;
 
     @Mock
     private ExpiryValidator expiryValidator;
 
-    private AssociateTokenRecepientsStep subject;
+    private AssociateTokenRecipientsStep subject;
     private CryptoTransferTransactionBody txn;
     private TransferContextImpl transferContext;
 
@@ -59,7 +59,7 @@ public class AssociateTokenRecepientsStepTest extends StepsBase {
         givenValidTxn();
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
-        subject = new AssociateTokenRecepientsStep(txn);
+        subject = new AssociateTokenRecipientsStep(txn);
         transferContext = new TransferContextImpl(handleContext);
     }
 

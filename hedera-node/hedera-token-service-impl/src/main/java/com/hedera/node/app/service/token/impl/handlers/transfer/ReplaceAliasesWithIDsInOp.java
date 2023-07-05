@@ -18,12 +18,14 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep.isAlias;
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +42,10 @@ public class ReplaceAliasesWithIDsInOp {
      * @return the crypto transfer operation with aliases replaced with IDs
      */
     public CryptoTransferTransactionBody replaceAliasesWithIds(
-            final CryptoTransferTransactionBody op, final TransferContextImpl transferContext) {
+            @NonNull final CryptoTransferTransactionBody op, @NonNull final TransferContextImpl transferContext) {
+        requireNonNull(op);
+        requireNonNull(transferContext);
+
         final var resolutions = transferContext.resolutions();
         final var replacedAliasesOp = CryptoTransferTransactionBody.newBuilder();
         final var transferList = TransferList.newBuilder();

@@ -19,8 +19,8 @@ package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfer.Utils.aaWith;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfer.Utils.nftTransferWithAllowance;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.nftTransferWithAllowance;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -30,7 +30,7 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
-import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
@@ -55,7 +55,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecepientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         transferContext = new TransferContextImpl(handleContext);
     }
 
@@ -128,7 +128,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         givenTxn(body, spenderId);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecepientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         transferContext = new TransferContextImpl(handleContext);
 
         final var replacedOp = getReplacedOp();
@@ -154,7 +154,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         givenTxn(body, spenderId);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecepientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         transferContext = new TransferContextImpl(handleContext);
 
         final var receiver = asAccount(tokenReceiver);
@@ -223,7 +223,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         givenTxn(body, spenderId);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecepientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         transferContext = new TransferContextImpl(handleContext);
 
         final var replacedOp = getReplacedOp();
@@ -235,7 +235,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
     }
 
     CryptoTransferTransactionBody getReplacedOp() {
-        givenConditions();
+        givenAutoCreationDispatchEffects();
         ensureAliasesStep.doIn(transferContext);
         associateTokenRecepientsStep.doIn(transferContext);
         return replaceAliasesWithIDsInOp.replaceAliasesWithIds(body, transferContext);

@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
@@ -31,26 +32,28 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Associates the token with the sender and receiver accounts if they are not already associated.
  * They are auto-associated only if there are open auto-associations available on the account.
  */
-public class AssociateTokenRecepientsStep extends BaseTokenHandler implements TransferStep {
+public class AssociateTokenRecipientsStep extends BaseTokenHandler implements TransferStep {
     private final CryptoTransferTransactionBody op;
 
-    public AssociateTokenRecepientsStep(final CryptoTransferTransactionBody op) {
-        this.op = op;
+    public AssociateTokenRecipientsStep(@NonNull final CryptoTransferTransactionBody op) {
+        this.op = requireNonNull(op);
     }
 
     @Override
-    public void doIn(final TransferContext transferContext) {
+    public void doIn(@NonNull final TransferContext transferContext) {
+        requireNonNull(transferContext);
         final var handleContext = transferContext.getHandleContext();
         final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
 
-        for (var xfers : op.tokenTransfersOrElse(emptyList())) {
+        for (final var xfers : op.tokenTransfersOrElse(emptyList())) {
             final var tokenId = xfers.tokenOrThrow();
             final var token = getIfUsable(tokenId, tokenStore);
 
@@ -79,12 +82,12 @@ public class AssociateTokenRecepientsStep extends BaseTokenHandler implements Tr
      * @param handleContext The context
      */
     private void validateAndAutoAssociate(
-            final AccountID accountId,
-            final TokenID tokenId,
-            final Token token,
-            final WritableAccountStore accountStore,
-            final WritableTokenRelationStore tokenRelStore,
-            final HandleContext handleContext) {
+            @NonNull final AccountID accountId,
+            @NonNull final TokenID tokenId,
+            @NonNull final Token token,
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final WritableTokenRelationStore tokenRelStore,
+            @NonNull final HandleContext handleContext) {
         final var account = getIfUsable(accountId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
         final var tokenRel = tokenRelStore.get(accountId, tokenId);
 

@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -29,6 +30,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,13 +40,18 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
     final CryptoTransferTransactionBody op;
     private final AccountID topLevelPayer;
 
-    public AdjustHbarChangesStep(final CryptoTransferTransactionBody op, final AccountID topLevelPayer) {
+    public AdjustHbarChangesStep(
+            @NonNull final CryptoTransferTransactionBody op, @NonNull final AccountID topLevelPayer) {
+        requireNonNull(op);
+        requireNonNull(topLevelPayer);
         this.op = op;
         this.topLevelPayer = topLevelPayer;
     }
 
     @Override
-    public void doIn(final TransferContext transferContext) {
+    public void doIn(@NonNull final TransferContext transferContext) {
+        requireNonNull(transferContext);
+
         final var accountStore = transferContext.getHandleContext().writableStore(WritableAccountStore.class);
         // Aggregate all the hbar balances from the changes. It also includes allowance transfer amounts
         final Map<AccountID, Long> netHbarTransfers = new HashMap<>();
@@ -67,7 +74,8 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
      * @param allowanceTransfers - map of aggregated token allowances to be modified
      * @param aa - account amount
      */
-    private void addOrUpdateAllowances(final Map<AccountID, Long> allowanceTransfers, final AccountAmount aa) {
+    private void addOrUpdateAllowances(
+            @NonNull final Map<AccountID, Long> allowanceTransfers, @NonNull final AccountAmount aa) {
         if (!allowanceTransfers.containsKey(aa.accountID())) {
             allowanceTransfers.put(aa.accountID(), aa.amount());
         } else {
@@ -81,7 +89,8 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
      * @param netHbarTransfers - map of aggregated hbar balances to be modified
      * @param aa - account amount
      */
-    private void addOrUpdateAggregatedBalances(final Map<AccountID, Long> netHbarTransfers, final AccountAmount aa) {
+    private void addOrUpdateAggregatedBalances(
+            @NonNull final Map<AccountID, Long> netHbarTransfers, @NonNull final AccountAmount aa) {
         if (!netHbarTransfers.containsKey(aa.accountID())) {
             netHbarTransfers.put(aa.accountID(), aa.amount());
         } else {
@@ -99,9 +108,9 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
      * @param transferContext - transfer context
      */
     private void modifyAggregatedAllowances(
-            final Map<AccountID, Long> allowanceTransfers,
-            final WritableAccountStore accountStore,
-            final TransferContext transferContext) {
+            @NonNull final Map<AccountID, Long> allowanceTransfers,
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final TransferContext transferContext) {
         for (final var entry : allowanceTransfers.entrySet()) {
             final var accountId = entry.getKey();
             final var amount = entry.getValue();
@@ -146,9 +155,9 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
      * @param transferContext - transfer context
      */
     private void modifyAggregatedTransfers(
-            final Map<AccountID, Long> netHbarTransfers,
-            final WritableAccountStore accountStore,
-            final TransferContext transferContext) {
+            @NonNull final Map<AccountID, Long> netHbarTransfers,
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final TransferContext transferContext) {
         for (final var entry : netHbarTransfers.entrySet()) {
             final var accountId = entry.getKey();
             final var amount = entry.getValue();

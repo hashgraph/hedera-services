@@ -18,10 +18,9 @@ package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWithAllowance;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfer.Utils.aaWith;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfer.Utils.nftTransferWith;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfer.Utils.nftTransferWithAllowance;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.nftTransferWith;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -42,7 +41,7 @@ import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustHbarChangesStep;
-import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
@@ -90,7 +89,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected ExpiryValidator expiryValidator;
     protected EnsureAliasesStep ensureAliasesStep;
     protected ReplaceAliasesWithIDsInOp replaceAliasesWithIDsInOp;
-    protected AssociateTokenRecepientsStep associateTokenRecepientsStep;
+    protected AssociateTokenRecipientsStep associateTokenRecepientsStep;
     protected NFTOwnersChangeStep changeNFTOwnersStep;
     protected AdjustHbarChangesStep adjustHbarChangesStep;
     protected AdjustFungibleTokenChangesStep adjustFungibleTokenChangesStep;
@@ -193,7 +192,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         //        given(fees.computePayment(any(), any())).willReturn(new FeeObject(100, 100, 100));
     }
 
-    protected void givenConditions() {
+    protected void givenAutoCreationDispatchEffects() {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()

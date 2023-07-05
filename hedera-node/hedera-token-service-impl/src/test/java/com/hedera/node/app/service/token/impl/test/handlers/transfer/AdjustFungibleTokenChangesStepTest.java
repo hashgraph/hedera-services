@@ -18,8 +18,8 @@ package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWithAllowance;
-import static com.hedera.node.app.service.token.impl.test.handlers.transfer.Utils.aaWith;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,7 +32,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
-import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
@@ -54,7 +54,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecepientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         transferContext = new TransferContextImpl(handleContext);
     }
 
@@ -96,7 +96,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         givenTxnWithAllowances();
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecepientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         given(handleContext.body()).willReturn(txn);
 
         final var receiver = asAccount(tokenReceiver);
@@ -151,7 +151,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         givenTxn(body, payerId);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecepientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         given(handleContext.body()).willReturn(txn);
 
         final var replacedOp = getReplacedOp();
@@ -178,7 +178,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         givenTxn(body, spenderId);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecepientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         given(handleContext.body()).willReturn(txn);
 
         final var replacedOp = getReplacedOp();
@@ -203,7 +203,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         givenTxn(body, spenderId);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecepientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         given(handleContext.body()).willReturn(txn);
 
         final var replacedOp = getReplacedOp();
@@ -215,7 +215,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
     }
 
     CryptoTransferTransactionBody getReplacedOp() {
-        givenConditions();
+        givenAutoCreationDispatchEffects();
         ensureAliasesStep.doIn(transferContext);
         associateTokenRecepientsStep.doIn(transferContext);
         return replaceAliasesWithIDsInOp.replaceAliasesWithIds(body, transferContext);
