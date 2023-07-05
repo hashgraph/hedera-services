@@ -69,7 +69,7 @@ public class CustomSLoadOperation implements Operation {
     }
 
     /**
-     * {@inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public int getOpcode() {
@@ -77,7 +77,7 @@ public class CustomSLoadOperation implements Operation {
     }
 
     /**
-     * {@inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public String getName() {
@@ -85,7 +85,7 @@ public class CustomSLoadOperation implements Operation {
     }
 
     /**
-     * {@inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public int getStackItemsConsumed() {
@@ -93,7 +93,7 @@ public class CustomSLoadOperation implements Operation {
     }
 
     /**
-     * {@inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public int getStackItemsProduced() {
