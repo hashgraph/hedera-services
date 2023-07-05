@@ -194,7 +194,7 @@ public class CryptoTransferHandler implements TransactionHandler {
      *        'o' = causes a side effect not represented as BalanceChange
      *
      * @param op            The crypto transfer transaction body
-     * @param topLevelPayer
+     * @param topLevelPayer The payer of the transaction
      * @return A list of steps to execute
      */
     private List<TransferStep> decomposeIntoSteps(
@@ -204,7 +204,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         // auto association slots open
         steps.add(new AssociateTokenRecepientsStep(op));
         // Step 2: Charge custom fees for token transfers. yet to be implemented
-        final var customFeeStep = new CustomFeeAssessmentStep(op);
+        final var customFeeStep = new CustomFeeAssessmentStep();
         final var listOfOps = customFeeStep.assessCustomFees(op);
 
         // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account

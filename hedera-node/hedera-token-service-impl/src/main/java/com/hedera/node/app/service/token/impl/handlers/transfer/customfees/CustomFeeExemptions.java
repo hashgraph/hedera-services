@@ -1,20 +1,20 @@
-package com.hedera.node.app.service.token.impl.handlers.transfer.customFees;
+package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
-import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 
 public class CustomFeeExemptions {
     public static boolean isPayerExempt(final CustomFeeMeta feeMeta,
-                                 final FcCustomFee fee,
+                                 final CustomFee fee,
                                  final AccountID payer) {
         if (feeMeta.treasuryId().equals(payer)) {
             return true;
         }
-        if (fee.getFeeCollectorAsId().equals(payer)) {
+        if (fee.feeCollectorAccountId().equals(payer)) {
             return true;
         }
-        if (fee.getAllCollectorsAreExempt()) {
+        if (fee.allCollectorsAreExempt()) {
             return isPayerCollectorFor(feeMeta, payer);
         } else {
             // If payer isn't the treasury or the collector of a fee without

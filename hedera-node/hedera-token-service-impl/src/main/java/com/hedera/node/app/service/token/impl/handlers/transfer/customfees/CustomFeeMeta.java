@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.handlers.transfer.customFees;
+package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.CustomFee;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 import java.util.List;
 
-public record CustomFeeMeta(TokenID tokenId, AccountID treasuryId, List<CustomFee> customFees) {
+public record CustomFeeMeta(@NonNull TokenID tokenId, @NonNull AccountID treasuryId, @NonNull List<CustomFee> customFees) {
 }
