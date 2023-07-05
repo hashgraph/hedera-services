@@ -28,8 +28,6 @@ import org.apache.tuweni.units.bigints.UInt256;
  * <p>The type of access (read or mutation) is decided by whether the {@link StorageAccess#writtenValue}
  * field is null. If null, this access was just a read. Otherwise, it was a write.
  *
- * <p>Note we do not distinguish between the
- *
  * @param key the key of the access
  * @param value the value read or overwritten
  * @param writtenValue if not null, the overwriting value

@@ -28,8 +28,6 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.StorageChange;
-import com.hedera.node.app.service.contract.impl.state.StorageAccess;
-import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -120,13 +118,6 @@ class ConversionUtilsTest {
 
     @Test
     void convertsFromStorageAccessesAsExpected() {
-        final var oneAccesses =
-                new StorageAccesses(123L, List.of(StorageAccess.newRead(UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
-        final var twoAccesses = new StorageAccesses(
-                456L,
-                List.of(
-                        StorageAccess.newRead(UInt256.MAX_VALUE, UInt256.MIN_VALUE),
-                        StorageAccess.newWrite(UInt256.ONE, UInt256.MIN_VALUE, UInt256.MAX_VALUE)));
         final var expectedPbj = ContractStateChanges.newBuilder()
                 .contractStateChanges(
                         ContractStateChange.newBuilder()
@@ -147,7 +138,7 @@ class ConversionUtilsTest {
                                                 tuweniToPbjBytes(UInt256.MAX_VALUE)))
                                 .build())
                 .build();
-        final var actualPbj = ConversionUtils.pbjStateChangesFrom(List.of(oneAccesses, twoAccesses));
+        final var actualPbj = ConversionUtils.pbjStateChangesFrom(SOME_STORAGE_ACCESSES);
         assertEquals(expectedPbj, actualPbj);
     }
 

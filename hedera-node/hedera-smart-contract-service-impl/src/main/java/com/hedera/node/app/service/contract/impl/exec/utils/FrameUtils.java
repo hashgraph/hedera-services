@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.utils;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,6 +44,10 @@ public class FrameUtils {
 
     public static @Nullable StorageAccessTracker accessTrackerFor(@NonNull final MessageFrame frame) {
         return frame.getContextVariable(TRACKER_CONTEXT_VARIABLE);
+    }
+
+    public static @NonNull ProxyWorldUpdater proxyUpdaterFor(@NonNull final MessageFrame frame) {
+        return (ProxyWorldUpdater) frame.getWorldUpdater();
     }
 
     public static boolean isDelegateCall(@NonNull final MessageFrame frame) {

@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -75,7 +76,13 @@ public record HederaEvmTransactionResult(
             @NonNull final MessageFrame frame) {
         requireNonNull(frame);
         return successFrom(
-                gasUsed, frame.getGasPrice(), recipientId, recipientEvmAddress, frame.getOutputData(), frame.getLogs());
+                gasUsed,
+                frame.getGasPrice(),
+                recipientId,
+                recipientEvmAddress,
+                frame.getOutputData(),
+                frame.getLogs(),
+                stateChangesFrom(frame));
     }
 
     public static HederaEvmTransactionResult successFrom(
@@ -84,7 +91,8 @@ public record HederaEvmTransactionResult(
             @NonNull final ContractID recipientId,
             @NonNull final ContractID recipientEvmAddress,
             @NonNull final org.apache.tuweni.bytes.Bytes output,
-            @NonNull final List<Log> logs) {
+            @NonNull final List<Log> logs,
+            @Nullable final ContractStateChanges stateChanges) {
         return new HederaEvmTransactionResult(
                 gasUsed,
                 requireNonNull(gasPrice).toLong(),
@@ -95,7 +103,7 @@ public record HederaEvmTransactionResult(
                 null,
                 null,
                 pbjLogsFrom(requireNonNull(logs)),
-                null);
+                stateChanges);
     }
 
     /**
@@ -135,22 +143,18 @@ public record HederaEvmTransactionResult(
                 null);
     }
 
-    public static HederaEvmTransactionResult resourceExhaustionFrom(
-            final long gasUsed, final long gasPrice, @NonNull final ResponseCodeEnum reason) {
-        requireNonNull(reason);
-        return new HederaEvmTransactionResult(
-                gasUsed,
-                gasPrice,
-                null,
-                null,
-                Bytes.EMPTY,
-                null,
-                null,
-                Bytes.wrap(reason.name()),
-                Collections.emptyList());
-    }
-
     public boolean isSuccess() {
         return abortReason == null && revertReason == null && haltReason == null;
+    }
+
+    private static @Nullable ContractStateChanges stateChangesFrom(@NonNull final MessageFrame frame) {
+        requireNonNull(frame);
+        final var accessTracker = accessTrackerFor(frame);
+        if (accessTracker == null) {
+            return null;
+        } else {
+            final var worldUpdater = proxyUpdaterFor(frame);
+            return pbjStateChangesFrom(accessTracker.getReadsMergedWith(worldUpdater.pendingStorageUpdates()));
+        }
     }
 }
