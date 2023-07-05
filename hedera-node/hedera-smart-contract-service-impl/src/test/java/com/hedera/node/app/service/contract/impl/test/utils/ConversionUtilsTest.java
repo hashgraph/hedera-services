@@ -138,7 +138,7 @@ class ConversionUtilsTest {
                                                 tuweniToPbjBytes(UInt256.MAX_VALUE)))
                                 .build())
                 .build();
-        final var actualPbj = ConversionUtils.pbjStateChangesFrom(SOME_STORAGE_ACCESSES);
+        final var actualPbj = ConversionUtils.asPbjStateChanges(SOME_STORAGE_ACCESSES);
         assertEquals(expectedPbj, actualPbj);
     }
 

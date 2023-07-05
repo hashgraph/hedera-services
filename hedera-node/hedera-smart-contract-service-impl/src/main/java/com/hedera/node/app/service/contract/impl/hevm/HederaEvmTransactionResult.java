@@ -19,12 +19,14 @@ package com.hedera.node.app.service.contract.impl.hevm;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPbjStateChanges;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.streams.ContractStateChanges;
+import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -82,7 +84,7 @@ public record HederaEvmTransactionResult(
                 recipientEvmAddress,
                 frame.getOutputData(),
                 frame.getLogs(),
-                stateChangesFrom(frame));
+                allStateAccessesFrom(frame));
     }
 
     public static HederaEvmTransactionResult successFrom(
@@ -124,7 +126,7 @@ public record HederaEvmTransactionResult(
                 null,
                 frame.getRevertReason().map(ConversionUtils::tuweniToPbjBytes).orElse(null),
                 Collections.emptyList(),
-                null);
+                stateReadsFrom(frame));
     }
 
     public static HederaEvmTransactionResult resourceExhaustionFrom(
@@ -147,14 +149,29 @@ public record HederaEvmTransactionResult(
         return abortReason == null && revertReason == null && haltReason == null;
     }
 
-    private static @Nullable ContractStateChanges stateChangesFrom(@NonNull final MessageFrame frame) {
+    private static @Nullable ContractStateChanges allStateAccessesFrom(@NonNull final MessageFrame frame) {
+        return stateChangesFrom(frame, true);
+    }
+
+    private static @Nullable ContractStateChanges stateReadsFrom(@NonNull final MessageFrame frame) {
+        return stateChangesFrom(frame, false);
+    }
+
+    private static @Nullable ContractStateChanges stateChangesFrom(
+            @NonNull final MessageFrame frame, final boolean includeWrites) {
         requireNonNull(frame);
         final var accessTracker = accessTrackerFor(frame);
         if (accessTracker == null) {
             return null;
         } else {
-            final var worldUpdater = proxyUpdaterFor(frame);
-            return pbjStateChangesFrom(accessTracker.getReadsMergedWith(worldUpdater.pendingStorageUpdates()));
+            final List<StorageAccesses> accesses;
+            if (includeWrites) {
+                final var worldUpdater = proxyUpdaterFor(frame);
+                accesses = accessTracker.getReadsMergedWith(worldUpdater.pendingStorageUpdates());
+            } else {
+                accesses = accessTracker.getJustReads();
+            }
+            return asPbjStateChanges(accesses);
         }
     }
 }

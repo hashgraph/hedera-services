@@ -48,6 +48,17 @@ public class StorageAccessTracker {
     }
 
     /**
+     * Returns the list of all storage reads (i.e. the tracked {@code SLOAD}'s).
+     * This is a convenience methods equivalent to passing an empty list to
+     * {@link #getReadsMergedWith(List)}
+     *
+     * @return the list of all storage reads
+     */
+    public List<StorageAccesses> getJustReads() {
+        return getReadsMergedWith(List.of());
+    }
+
+    /**
      * Given all the storage writes from a transaction, returns the merged list of {@link StorageAccesses} that
      * includes both the given list of writes, and all tracked first reads.
      *

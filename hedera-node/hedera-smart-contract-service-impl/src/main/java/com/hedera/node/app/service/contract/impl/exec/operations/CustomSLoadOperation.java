@@ -18,11 +18,11 @@ package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.hapi.streams.SidecarType.CONTRACT_STATE_CHANGE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.streams.SidecarType;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
-import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;
@@ -62,7 +62,7 @@ public class CustomSLoadOperation implements Operation {
     private void trackAccessIn(@NonNull final MessageFrame frame, @NonNull UInt256 key, @NonNull UInt256 value) {
         final var accessTracker = accessTrackerFor(frame);
         if (accessTracker != null) {
-            final var worldUpdater = (ProxyWorldUpdater) frame.getWorldUpdater();
+            final var worldUpdater = proxyUpdaterFor(frame);
             final var contractId = worldUpdater.getHederaContractId(frame.getRecipientAddress());
             accessTracker.trackIfFirstRead(contractId.contractNumOrThrow(), key, value);
         }

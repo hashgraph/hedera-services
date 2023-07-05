@@ -65,4 +65,14 @@ class StorageAccessTrackerTest {
         assertEquals(UInt256.MIN_VALUE, firstAccess.value());
         assertEquals(UInt256.MAX_VALUE, firstAccess.writtenValue());
     }
+
+    @Test
+    void getsExpectedReads() {
+        subject.trackIfFirstRead(123L, UInt256.ONE, UInt256.MIN_VALUE);
+        subject.trackIfFirstRead(456L, UInt256.MAX_VALUE, UInt256.ONE);
+
+        final var reads = subject.getJustReads();
+
+        assertEquals(reads, subject.getReadsMergedWith(List.of()));
+    }
 }

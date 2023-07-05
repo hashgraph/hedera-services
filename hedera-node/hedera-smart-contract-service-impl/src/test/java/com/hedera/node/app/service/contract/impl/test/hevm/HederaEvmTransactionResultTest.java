@@ -65,7 +65,19 @@ class HederaEvmTransactionResultTest {
         final var result = HederaEvmTransactionResult.successFrom(
                 GAS_LIMIT / 2, CALLED_CONTRACT_ID, CALLED_CONTRACT_EVM_ADDRESS, frame);
 
-        final var expectedChanges = ConversionUtils.pbjStateChangesFrom(SOME_STORAGE_ACCESSES);
+        final var expectedChanges = ConversionUtils.asPbjStateChanges(SOME_STORAGE_ACCESSES);
+        assertEquals(expectedChanges, result.stateChanges());
+    }
+
+    @Test
+    void givenAccessTrackerIncludesReadStorageAccessesOnlyOnFailure() {
+        given(frame.getContextVariable(FrameUtils.TRACKER_CONTEXT_VARIABLE)).willReturn(accessTracker);
+        given(accessTracker.getJustReads()).willReturn(SOME_STORAGE_ACCESSES);
+        given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
+
+        final var result = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, frame);
+
+        final var expectedChanges = ConversionUtils.asPbjStateChanges(SOME_STORAGE_ACCESSES);
         assertEquals(expectedChanges, result.stateChanges());
     }
 

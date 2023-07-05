@@ -67,7 +67,7 @@ public class ConversionUtils {
      * @param storageAccesses the {@link StorageAccesses}
      * @return the PBJ {@link ContractStateChanges}
      */
-    public static ContractStateChanges pbjStateChangesFrom(@NonNull final List<StorageAccesses> storageAccesses) {
+    public static ContractStateChanges asPbjStateChanges(@NonNull final List<StorageAccesses> storageAccesses) {
         final List<ContractStateChange> allStateChanges = new ArrayList<>();
         for (final var storageAccess : storageAccesses) {
             final List<StorageChange> changes = new ArrayList<>();
