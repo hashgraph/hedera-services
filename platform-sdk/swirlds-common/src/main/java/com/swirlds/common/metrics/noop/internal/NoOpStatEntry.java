@@ -20,7 +20,7 @@ import static com.swirlds.common.metrics.Metric.DataType.INT;
 
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.StatEntry;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
