@@ -63,6 +63,8 @@ public final class TipsetEventCreationManagerFactory {
      * @param eventObserverDispatcher   wires together event intake logic
      * @param platformStatusSupplier    provides the current platform status
      * @param startUpEventFrozenManager manages the start-up event frozen state
+     * @param latestReconnectRound      provides the latest reconnect round
+     * @param latestSavedStateRound     provides the latest saved state round
      * @return a new tipset event creation manager, or null if tipset event creation is disabled
      */
     @Nullable
@@ -78,7 +80,9 @@ public final class TipsetEventCreationManagerFactory {
             @NonNull final QueueThread<EventIntakeTask> eventIntakeQueue,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
-            @NonNull final StartUpEventFrozenManager startUpEventFrozenManager) {
+            @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
+            @NonNull final Supplier<Long> latestReconnectRound,
+            @NonNull final Supplier<Long> latestSavedStateRound) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -118,7 +122,9 @@ public final class TipsetEventCreationManagerFactory {
                 newEventHandler,
                 eventIntakeQueue::size,
                 platformStatusSupplier,
-                startUpEventFrozenManager);
+                startUpEventFrozenManager,
+                latestReconnectRound,
+                latestSavedStateRound);
 
         eventObserverDispatcher.addObserver((PreConsensusEventObserver) event -> abortAndThrowIfInterrupted(
                 manager::registerEvent,
