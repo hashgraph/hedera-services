@@ -52,14 +52,14 @@ class AllIntegrationTests extends DockerIntegrationTestBase {
                 .toList();
     }
 
-//    @Tag("integration")
-//    @Order(1)
-//    @TestFactory
-//    Collection<DynamicContainer> sequentialSpecsBySuite() {
-//        return Arrays.stream(SequentialSuites.sequentialSuites())
-//                .map(this::extractSpecsFromSuite)
-//                .toList();
-//    }
+    @Tag("integration")
+    @Order(1)
+    @TestFactory
+    Collection<DynamicContainer> sequentialSpecsBySuite() {
+        return Arrays.stream(SequentialSuites.sequentialSuites())
+                .map(this::extractSpecsFromSuite)
+                .toList();
+    }
 
     @Tag("integration")
     @Order(2)
