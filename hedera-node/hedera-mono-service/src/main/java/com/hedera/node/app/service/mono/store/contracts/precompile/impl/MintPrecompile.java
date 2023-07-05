@@ -41,6 +41,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.Infrastructur
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.node.app.service.mono.store.contracts.precompile.specification.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
@@ -92,8 +93,8 @@ public class MintPrecompile extends AbstractWritePrecompile {
         this.transactionBody = null;
         final var mintAbi =
                 switch (functionId) {
-                    case AbiConstants.ABI_ID_MINT_TOKEN -> SystemContractAbis.MINT_TOKEN_V1;
-                    case AbiConstants.ABI_ID_MINT_TOKEN_V2 -> SystemContractAbis.MINT_TOKEN_V2;
+                    case AbiConstants.ABI_ID_MINT_TOKEN -> SystemContractAbis.MINT_TOKEN_METHOD_V1;
+                    case AbiConstants.ABI_ID_MINT_TOKEN_V2 -> SystemContractAbis.MINT_TOKEN_METHOD_V2;
                     default -> throw new IllegalArgumentException("invalid selector to mint precompile");
                 };
         mintOp = getMintWrapper(input, mintAbi);

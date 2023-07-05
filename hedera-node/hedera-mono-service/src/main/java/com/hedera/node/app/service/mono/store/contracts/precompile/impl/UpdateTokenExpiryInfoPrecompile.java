@@ -32,6 +32,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
+import com.hedera.node.app.service.mono.store.contracts.precompile.specification.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
@@ -56,6 +57,7 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
             PrecompilePricingUtils precompilePricingUtils,
             final int functionId) {
         super(
+                UPDATE_TOKEN_EXPIRY,
                 KeyActivationUtils::validateKey,
                 KeyActivationUtils::validateLegacyKey,
                 ledgers,
@@ -72,9 +74,10 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
     public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
         final var updateExpiryInfoAbi =
                 switch (functionId) {
-                    case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO -> SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V1;
+                    case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO -> SystemContractAbis
+                            .UPDATE_TOKEN_EXPIRY_INFO_METHOD_V1;
                     case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2 -> SystemContractAbis
-                            .UPDATE_TOKEN_EXPIRY_INFO_V2;
+                            .UPDATE_TOKEN_EXPIRY_INFO_METHOD_V2;
                     default -> throw new IllegalArgumentException("invalid selector to updateExpiryInfo precompile");
                 };
 
@@ -88,7 +91,6 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
         Objects.requireNonNull(updateExpiryInfoOp);
         validateTrue(updateExpiryInfoOp.tokenID() != null, INVALID_TOKEN_ID);
         tokenId = Id.fromGrpcToken(updateExpiryInfoOp.tokenID());
-        type = UPDATE_TOKEN_EXPIRY;
         super.run(frame);
     }
 

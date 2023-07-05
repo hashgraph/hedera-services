@@ -30,6 +30,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.WipeWrapper;
+import com.hedera.node.app.service.mono.store.contracts.precompile.specification.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -58,8 +59,10 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
     public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var wipeAbi =
                 switch (functionId) {
-                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE -> SystemContractAbis.WIPE_TOKEN_ACCOUNT_V1;
-                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2 -> SystemContractAbis.WIPE_TOKEN_ACCOUNT_V2;
+                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE -> SystemContractAbis
+                            .WIPE_TOKEN_ACCOUNT_METHOD_V1;
+                    case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2 -> SystemContractAbis
+                            .WIPE_TOKEN_ACCOUNT_METHOD_V2;
                     default -> throw new IllegalArgumentException("invalid selector to wipe precompile");
                 };
         wipeOp = getWipeWrapper(input, aliasResolver, wipeAbi);

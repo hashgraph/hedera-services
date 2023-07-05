@@ -38,6 +38,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.Infrastructur
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.node.app.service.mono.store.contracts.precompile.specification.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
@@ -83,8 +84,8 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var burnAbi =
                 switch (functionId) {
-                    case AbiConstants.ABI_ID_BURN_TOKEN -> SystemContractAbis.BURN_TOKEN_V1;
-                    case AbiConstants.ABI_ID_BURN_TOKEN_V2 -> SystemContractAbis.BURN_TOKEN_V2;
+                    case AbiConstants.ABI_ID_BURN_TOKEN -> SystemContractAbis.BURN_TOKEN_METHOD_V1;
+                    case AbiConstants.ABI_ID_BURN_TOKEN_V2 -> SystemContractAbis.BURN_TOKEN_METHOD_V2;
                     default -> throw new IllegalArgumentException("invalid selector to burn precompile");
                 };
         burnOp = getBurnWrapper(input, burnAbi);

@@ -73,7 +73,7 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis;
+import com.hedera.node.app.service.mono.store.contracts.precompile.specification.SystemContractAbis;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.txns.token.BurnLogic;
@@ -115,7 +115,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class BurnPrecompilesTest {
 
-    private final Bytes pretendArguments = SystemContractAbis.BURN_TOKEN_V1.selector;
+    private final Bytes pretendArguments = SystemContractAbis.BURN_TOKEN_METHOD_V1.selector;
 
     @Mock
     private AccountStore accountStore;
@@ -477,7 +477,7 @@ class BurnPrecompilesTest {
         givenIfDelegateCall();
         doCallRealMethod().when(frame).setExceptionalHaltReason(any());
         burnPrecompile
-                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1))
+                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_METHOD_V1))
                 .thenReturn(HTSTestsUtil.fungibleBurnAmountOversize);
         // when:
         final var result = subject.computePrecompile(pretendArguments, frame);
@@ -499,7 +499,7 @@ class BurnPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         burnPrecompile
-                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1))
+                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_METHOD_V1))
                 .thenReturn(HTSTestsUtil.fungibleBurnMaxAmount);
         given(syntheticTxnFactory.createBurn(HTSTestsUtil.fungibleBurnMaxAmount))
                 .willReturn(mockSynthBodyBuilder);
@@ -544,7 +544,7 @@ class BurnPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         burnPrecompile
-                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1))
+                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_METHOD_V1))
                 .thenReturn(HTSTestsUtil.fungibleBurn);
         given(syntheticTxnFactory.createBurn(any()))
                 .willReturn(TransactionBody.newBuilder().setTokenBurn(TokenBurnTransactionBody.newBuilder()));
@@ -565,7 +565,7 @@ class BurnPrecompilesTest {
     @Test
     void decodeFungibleBurnInputV1() {
         burnPrecompile.close();
-        final var decodedInput = getBurnWrapper(FUNGIBLE_BURN_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1);
+        final var decodedInput = getBurnWrapper(FUNGIBLE_BURN_INPUT_V1, SystemContractAbis.BURN_TOKEN_METHOD_V1);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
         assertEquals(33, decodedInput.amount());
@@ -576,7 +576,7 @@ class BurnPrecompilesTest {
     @Test
     void decodeFungibleBurnInputV2() {
         burnPrecompile.close();
-        final var decodedInput = getBurnWrapper(FUNGIBLE_BURN_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2);
+        final var decodedInput = getBurnWrapper(FUNGIBLE_BURN_INPUT_V2, SystemContractAbis.BURN_TOKEN_METHOD_V2);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
         assertEquals(33, decodedInput.amount());
@@ -623,7 +623,7 @@ class BurnPrecompilesTest {
     @Test
     void decodeNonFungibleBurnInputV1() {
         burnPrecompile.close();
-        final var decodedInput = getBurnWrapper(NON_FUNGIBLE_BURN_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1);
+        final var decodedInput = getBurnWrapper(NON_FUNGIBLE_BURN_INPUT_V1, SystemContractAbis.BURN_TOKEN_METHOD_V1);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
         assertEquals(-1, decodedInput.amount());
@@ -636,7 +636,7 @@ class BurnPrecompilesTest {
     @Test
     void decodeNonFungibleBurnInputV2() {
         burnPrecompile.close();
-        final var decodedInput = getBurnWrapper(NON_FUNGIBLE_BURN_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2);
+        final var decodedInput = getBurnWrapper(NON_FUNGIBLE_BURN_INPUT_V2, SystemContractAbis.BURN_TOKEN_METHOD_V2);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
         assertEquals(-1, decodedInput.amount());
@@ -667,7 +667,7 @@ class BurnPrecompilesTest {
     private void givenNonfungibleFrameContext() {
         givenFrameContext();
         burnPrecompile
-                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1))
+                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_METHOD_V1))
                 .thenReturn(HTSTestsUtil.nonFungibleBurn);
         given(syntheticTxnFactory.createBurn(HTSTestsUtil.nonFungibleBurn)).willReturn(mockSynthBodyBuilder);
     }
@@ -675,7 +675,7 @@ class BurnPrecompilesTest {
     private void givenFungibleFrameContext() {
         givenFrameContext();
         burnPrecompile
-                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1))
+                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_METHOD_V1))
                 .thenReturn(HTSTestsUtil.fungibleBurn);
         given(syntheticTxnFactory.createBurn(HTSTestsUtil.fungibleBurn)).willReturn(mockSynthBodyBuilder);
     }
