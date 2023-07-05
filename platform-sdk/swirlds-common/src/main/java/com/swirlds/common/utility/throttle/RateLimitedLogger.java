@@ -63,7 +63,7 @@ public class RateLimitedLogger { // TODO move to logging module
     private static String generateMessage(@NonNull final String baseMessage, final long deniedRequests) {
         if (deniedRequests > 0) {
             return baseMessage +
-                    "\n(Due to rate limiting, this log was attempted and ignored " +
+                    "\n(Due to rate limiting, this condition has been triggered " +
                     deniedRequests + " times without being reported.)";
         } else {
             return baseMessage;
@@ -81,12 +81,12 @@ public class RateLimitedLogger { // TODO move to logging module
     public void debug(
             @NonNull final Marker logMarker,
             @NonNull final String message,
-            @Nullable Objects... varargs) {
+            @Nullable final Object... varargs) {
 
         try (final Locked l = lock.lock()) {
             final long deniedRequests = rateLimiter.getDeniedRequests();
-            if (rateLimiter.request()) { // TODO requestAndTrigger
-                logger.debug(logMarker, generateMessage(message, deniedRequests), (Object[]) varargs);
+            if (rateLimiter.requestAndTrigger()) {
+                logger.debug(logMarker, generateMessage(message, deniedRequests), varargs);
             }
         }
     }
@@ -102,12 +102,12 @@ public class RateLimitedLogger { // TODO move to logging module
     public void trace(
             @NonNull final Marker logMarker,
             @NonNull final String message,
-            @Nullable Objects... varargs) {
+            @Nullable final Object... varargs) {
 
         try (final Locked l = lock.lock()) {
             final long deniedRequests = rateLimiter.getDeniedRequests();
-            if (rateLimiter.request()) { // TODO requestAndTrigger
-                logger.trace(logMarker, generateMessage(message, deniedRequests), (Object[]) varargs);
+            if (rateLimiter.requestAndTrigger()) {
+                logger.trace(logMarker, generateMessage(message, deniedRequests), varargs);
             }
         }
     }
@@ -123,12 +123,12 @@ public class RateLimitedLogger { // TODO move to logging module
     public void info(
             @NonNull final Marker logMarker,
             @NonNull final String message,
-            @Nullable Objects... varargs) {
+            @Nullable final Object... varargs) {
 
         try (final Locked l = lock.lock()) {
             final long deniedRequests = rateLimiter.getDeniedRequests();
-            if (rateLimiter.request()) { // TODO requestAndTrigger
-                logger.info(logMarker, generateMessage(message, deniedRequests), (Object[]) varargs);
+            if (rateLimiter.requestAndTrigger()) {
+                logger.info(logMarker, generateMessage(message, deniedRequests), varargs);
             }
         }
     }
@@ -144,12 +144,12 @@ public class RateLimitedLogger { // TODO move to logging module
     public void warn(
             @NonNull final Marker logMarker,
             @NonNull final String message,
-            @Nullable Objects... varargs) {
+            @Nullable final Object... varargs) {
 
         try (final Locked l = lock.lock()) {
             final long deniedRequests = rateLimiter.getDeniedRequests();
-            if (rateLimiter.request()) { // TODO requestAndTrigger
-                logger.warn(logMarker, generateMessage(message, deniedRequests), (Object[]) varargs);
+            if (rateLimiter.requestAndTrigger()) {
+                logger.warn(logMarker, generateMessage(message, deniedRequests), varargs);
             }
         }
     }
@@ -165,12 +165,12 @@ public class RateLimitedLogger { // TODO move to logging module
     public void error(
             @NonNull final Marker logMarker,
             @NonNull final String message,
-            @Nullable Objects... varargs) {
+            @Nullable final Object... varargs) {
 
         try (final Locked l = lock.lock()) {
             final long deniedRequests = rateLimiter.getDeniedRequests();
-            if (rateLimiter.request()) { // TODO requestAndTrigger
-                logger.error(logMarker, generateMessage(message, deniedRequests), (Object[]) varargs);
+            if (rateLimiter.requestAndTrigger()) {
+                logger.error(logMarker, generateMessage(message, deniedRequests), varargs);
             }
         }
     }
@@ -186,14 +186,13 @@ public class RateLimitedLogger { // TODO move to logging module
     public void fatal(
             @NonNull final Marker logMarker,
             @NonNull final String message,
-            @Nullable Objects... varargs) {
+            @Nullable final Object... varargs) {
 
         try (final Locked l = lock.lock()) {
             final long deniedRequests = rateLimiter.getDeniedRequests();
-            if (rateLimiter.request()) { // TODO requestAndTrigger
-                logger.fatal(logMarker, generateMessage(message, deniedRequests), (Object[]) varargs);
+            if (rateLimiter.requestAndTrigger()) {
+                logger.fatal(logMarker, generateMessage(message, deniedRequests), varargs);
             }
         }
     }
-
 }
