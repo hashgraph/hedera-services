@@ -179,6 +179,7 @@ public class ConfigUtils {
                         CreateSuite.class,
                         SpecialFileHashSuite.class,
                         StakeSuite.class,
+                        StakeSetupSuite.class,
                         CustomSpecAssert.class)
                 .forEach(cls -> setLogLevel(cls, logLevel));
     }
