@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.records;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -34,4 +35,12 @@ public interface CryptoCreateRecordBuilder {
      */
     @NonNull
     CryptoCreateRecordBuilder accountID(@NonNull AccountID accountID);
+
+    /**
+     * The new EVM address of the account created by this transaction.
+     * @param evmAddress the new EVM address
+     * @return this builder
+     */
+    @NonNull
+    CryptoCreateRecordBuilder evmAddress(@NonNull final Bytes evmAddress);
 }

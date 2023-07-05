@@ -35,6 +35,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
@@ -42,7 +43,6 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenGrantKycTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
@@ -122,12 +122,14 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
     private ReadableTokenStore mockKnownKycTokenStore() {
         final var tokenNum = KNOWN_TOKEN_WITH_KYC.getTokenNum();
         final var storedToken = new Token(
-                tokenNum,
+                TokenID.newBuilder()
+                        .tokenNum(KNOWN_TOKEN_WITH_KYC.getTokenNum())
+                        .build(),
                 "Test_KnownKycToken" + System.currentTimeMillis(),
                 "KYC",
                 10,
                 10,
-                treasury.accountNumOrThrow(),
+                treasury,
                 null,
                 TOKEN_KYC_KT.asPbjKey(),
                 null,
@@ -139,7 +141,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
                 false,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.INFINITE,
-                -1,
+                AccountID.newBuilder().accountNum(-1).build(),
                 autoRenewSecs,
                 expirationTime,
                 memo,
@@ -148,10 +150,10 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
                 false,
                 false,
                 Collections.emptyList());
-        final var readableState = MapReadableKVState.<EntityNum, Token>builder(TOKENS)
-                .value(EntityNum.fromLong(tokenNum), storedToken)
+        final var readableState = MapReadableKVState.<TokenID, Token>builder(TOKENS)
+                .value(TokenID.newBuilder().tokenNum(tokenNum).build(), storedToken)
                 .build();
-        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(readableState);
+        given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableState);
         return new ReadableTokenStoreImpl(readableStates);
     }
 
@@ -229,9 +231,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         }
 
         private TokenRelation.Builder newTokenRelationBuilder() {
-            return TokenRelation.newBuilder()
-                    .tokenNumber(token.tokenNumber())
-                    .accountNumber(payerId.accountNumOrThrow());
+            return TokenRelation.newBuilder().tokenId(token.tokenId()).accountId(payerId);
         }
 
         private TransactionBody newTxnBody(final boolean tokenPresent, final boolean accountPresent) {

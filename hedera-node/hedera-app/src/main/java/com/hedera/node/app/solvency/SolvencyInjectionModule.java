@@ -24,5 +24,5 @@ import javax.inject.Singleton;
 public interface SolvencyInjectionModule {
     @Binds
     @Singleton
-    SolvencyPreCheck bindSolvencyPreCheck(MonoSolvencyPreCheck solvencyPreCheck);
+    SolvencyPreCheck bindSolvencyPreCheck(SolvencyPreCheckImpl solvencyPreCheck);
 }
