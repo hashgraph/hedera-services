@@ -122,7 +122,7 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
         return processingEnv.getFiler().getResource(StandardLocation.SOURCE_PATH, packageName, fileName);
     }
 
-    protected void log(@NonNull String message) {
+    protected void log(@NonNull final String message) {
         Objects.requireNonNull(message, "message must not be null");
 
         processingEnv.getMessager().printMessage(Kind.NOTE, message);
