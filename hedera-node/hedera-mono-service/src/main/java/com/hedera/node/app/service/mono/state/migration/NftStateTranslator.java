@@ -45,7 +45,7 @@ public final class NftStateTranslator {
         requireNonNull(merkleUniqueToken);
         final var builder = Nft.newBuilder();
         final var nftIdPair = merkleUniqueToken.getKey().asNftNumPair();
-        builder.id(nftNumPairToNftID(nftIdPair));
+        builder.id(merkelUniqueTokenToNftID(nftIdPair));
 
         builder.ownerId(PbjConverter.toPbj(merkleUniqueToken.getOwner().toGrpcAccountId()))
                 .spenderId(PbjConverter.toPbj(merkleUniqueToken.getSpender().toGrpcAccountId()))
@@ -56,15 +56,15 @@ public final class NftStateTranslator {
                 .metadata(Bytes.wrap(merkleUniqueToken.getMetadata()));
 
         final var nftPrevIdPair = merkleUniqueToken.getPrev();
-        builder.ownerPreviousNftId(nftNumPairToNftID(nftPrevIdPair));
+        builder.ownerPreviousNftId(merkelUniqueTokenToNftID(nftPrevIdPair));
 
         final var nftNextIdPair = merkleUniqueToken.getNext();
-        builder.ownerNextNftId(nftNumPairToNftID(nftNextIdPair));
+        builder.ownerNextNftId(merkelUniqueTokenToNftID(nftNextIdPair));
 
         return builder.build();
     }
 
-    private static @NonNull NftID nftNumPairToNftID(@NonNull NftNumPair merkleUniqueToken) {
+    private static @NonNull NftID merkelUniqueTokenToNftID(@NonNull NftNumPair merkleUniqueToken) {
         final var tokenTypeNumber = merkleUniqueToken.tokenNum();
         final var serialNumber = merkleUniqueToken.serialNum();
         return NftID.newBuilder()
