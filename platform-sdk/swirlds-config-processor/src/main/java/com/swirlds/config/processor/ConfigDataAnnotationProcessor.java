@@ -45,7 +45,7 @@ import javax.tools.StandardLocation;
 public class ConfigDataAnnotationProcessor extends AbstractProcessor {
 
     @Override
-    public boolean process(@NonNull Set<? extends TypeElement> annotations, @NonNull RoundEnvironment roundEnv) {
+    public boolean process(final @NonNull Set<? extends TypeElement> annotations, final @NonNull RoundEnvironment roundEnv) {
         Objects.requireNonNull(roundEnv, "annotations must not be null");
         Objects.requireNonNull(roundEnv, "roundEnv must not be null");
 
