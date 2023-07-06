@@ -69,6 +69,7 @@ import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.records.TransactionRecordService;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
@@ -94,10 +95,12 @@ import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -128,6 +131,17 @@ class ContractCreateTransitionLogicTest {
     private long gas = 33_333;
     private long customAutoRenewPeriod = 100_001L;
     private Long balance = 1_234L;
+
+    private static final Map<ContractID, Long> targetContractNonces =
+            new TreeMap<>(Comparator.comparingLong(ContractID::getContractNum)) {
+                {
+                    put(new EntityId(5L, 6L, 7L).toGrpcContractId(), 2L);
+                }
+
+                {
+                    put(new EntityId(8L, 9L, 10L).toGrpcContractId(), 1L);
+                }
+            };
 
     @Mock
     private HederaFs hfs;
@@ -1079,6 +1093,70 @@ class ContractCreateTransitionLogicTest {
         final var changes = customizerUsed.accountCustomizer().getChanges();
         assertTrue(changes.containsKey(MAX_AUTOMATIC_ASSOCIATIONS));
         assertEquals(10, (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+    }
+
+    @Test
+    void followsHappyPathForContractNoncesWithOverrides() {
+        // setup:
+        givenValidTxnCtxWithMaxAssociations();
+        final var captor = ArgumentCaptor.forClass(ContractCustomizer.class);
+        final var secondaryCreations = List.of(IdUtils.asContract("0.0.849321"));
+        given(properties.isContractsNoncesExternalizationEnabled()).willReturn(true);
+        // and:
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
+        given(accessor.getTxn()).willReturn(contractCreateTxn);
+        given(txnCtx.activePayer()).willReturn(ourAccount());
+        given(txnCtx.accessor()).willReturn(accessor);
+        given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
+        given(worldState.getContractNonces()).willReturn(targetContractNonces);
+        given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT))
+                .willReturn(autoRenewModel);
+        given(autoRenewModel.isSmartContract()).willReturn(false);
+        final var result = TransactionProcessingResult.successful(
+                null,
+                1234L,
+                0L,
+                124L,
+                Bytes.EMPTY,
+                contractAccount.getId().asEvmAddress(),
+                Map.of(),
+                new ArrayList<>());
+        given(txnCtx.consensusTime()).willReturn(consensusTime);
+
+        final var newEvmAddress = contractAccount.getId().asEvmAddress();
+        given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
+                .willReturn(newEvmAddress);
+        given(evmTxProcessor.execute(
+                        senderAccount,
+                        contractAccount.getId().asEvmAddress(),
+                        gas,
+                        balance,
+                        Bytes.fromHexString(new String(bytecode)),
+                        txnCtx.consensusTime()))
+                .willReturn(result);
+
+        // when:
+        subject.doStateTransition();
+
+        // then:
+        verify(sigImpactHistorian).markEntityChanged(contractAccount.getId().num());
+        verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
+        verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
+        verify(worldState).setHapiSenderCustomizer(captor.capture());
+        verify(worldState).getCreatedContractIds();
+        verify(worldState).getContractNonces();
+        verify(recordServices).externalizeSuccessfulEvmCreate(result, newEvmAddress.toArrayUnsafe());
+        verify(worldState, never()).reclaimContractId();
+        verify(worldState).resetHapiSenderCustomizer();
+        verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
+        verify(accountStore).loadAccount(senderAccount.getId());
+        verify(accountStore).loadAccountOrFailWith(Id.fromGrpcAccount(autoRenewAccount), INVALID_AUTORENEW_ACCOUNT);
+        // and:
+        final var customizerUsed = captor.getValue();
+        final var changes = customizerUsed.accountCustomizer().getChanges();
+        assertTrue(changes.containsKey(MAX_AUTOMATIC_ASSOCIATIONS));
+        assertEquals(maxAutoAssociations, (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
     }
 
     @Test

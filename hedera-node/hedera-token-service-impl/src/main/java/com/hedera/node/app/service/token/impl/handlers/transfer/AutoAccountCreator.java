@@ -27,6 +27,7 @@ import static com.hedera.node.app.service.token.impl.validators.TokenAttributesV
 import static com.hedera.node.app.spi.key.KeyUtils.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.swirlds.common.utility.CommonUtils.hex;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -69,7 +70,7 @@ public class AutoAccountCreator {
 
     @Inject
     public AutoAccountCreator(@NonNull final HandleContext handleContext) {
-        this.handleContext = handleContext;
+        this.handleContext = requireNonNull(handleContext);
         this.accountStore = handleContext.writableStore(WritableAccountStore.class);
     }
 
@@ -79,6 +80,8 @@ public class AutoAccountCreator {
      * @param isByTokenTransfer whether the account is being created by a token transfer
      */
     public AccountID create(@NonNull final Bytes alias, final boolean isByTokenTransfer) {
+        requireNonNull(alias);
+
         final var accountsConfig = handleContext.configuration().getConfigData(AccountsConfig.class);
 
         validateTrue(
@@ -108,7 +111,15 @@ public class AutoAccountCreator {
         if (isAliasEVMAddress) {
             fee += getLazyCreationFinalizationFee();
         }
-        // TODO: Check if payer has enough balance to pay for the fee
+        // TODO : distribute autocreation fee and deduct payer balance
+        //        final var payer = handleContext.body().transactionID().accountID();
+        //        final var payerAccount = accountStore.get(payer);
+        //        final var currentBalance = payerAccount.tinybarBalance();
+        //        validateTrue(currentBalance >= fee, INSUFFICIENT_PAYER_BALANCE);
+        //        final var payerCopy = payerAccount.copyBuilder()
+        //                .tinybarBalance(currentBalance - fee)
+        //                .build();
+        //        accountStore.put(payerCopy.copyBuilder().build());
 
         final var childRecord = handleContext.dispatchRemovableChildTransaction(
                 syntheticCreation.memo(memo).build(), CryptoCreateRecordBuilder.class);
@@ -142,7 +153,7 @@ public class AutoAccountCreator {
      * @param syntheticCreation transaction body for auto creation
      * @return fee for auto creation
      */
-    private long autoCreationFeeFor(final TransactionBody.Builder syntheticCreation) {
+    private long autoCreationFeeFor(@NonNull final TransactionBody.Builder syntheticCreation) {
         final var topLevelPayer = handleContext.body().transactionIDOrThrow().accountIDOrThrow();
         final var payerAccount = accountStore.get(topLevelPayer);
         validateTrue(payerAccount != null, PAYER_ACCOUNT_NOT_FOUND);
@@ -159,7 +170,7 @@ public class AutoAccountCreator {
      * @param balance initial balance of the account
      * @return transaction body for new hollow-account
      */
-    public TransactionBody.Builder createHollowAccount(final Bytes alias, final long balance) {
+    public TransactionBody.Builder createHollowAccount(@NonNull final Bytes alias, final long balance) {
         final var baseBuilder = createAccountBase(balance);
         baseBuilder.key(IMMUTABILITY_SENTINEL_KEY).alias(alias).memo(LAZY_MEMO);
         return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
@@ -185,7 +196,7 @@ public class AutoAccountCreator {
      * @return transaction body for new account
      */
     private TransactionBody.Builder createAccount(
-            final Bytes alias, final Key key, final long balance, final int maxAutoAssociations) {
+            @NonNull final Bytes alias, @NonNull final Key key, final long balance, final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(balance);
         baseBuilder.key(key).alias(alias).memo(AUTO_MEMO);
 
@@ -226,7 +237,7 @@ public class AutoAccountCreator {
      * @param address address to check
      * @return true if the given address is a valid EVM address length, false otherwise
      */
-    private boolean isEvmAddress(final Bytes address) {
+    private boolean isEvmAddress(@Nullable final Bytes address) {
         return address != null && isOfEvmAddressSize(address);
     }
 }

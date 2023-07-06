@@ -39,9 +39,6 @@ import java.time.Duration;
  * 		In order to ensure that data is not languishing in the asyncOutputStream buffer a periodic flush is performed.
  * @param asyncStreamBufferSize
  * 		The size of the buffers for async input and output streams.
- * @param asyncStreams
- * 		If false then the async streams behave as if they were synchronous. Significantly effects performance, should be
- * 		true unless the async streams are being debugged.
  * @param maxAckDelay
  * 		The maximum amount of time to wait for an ACK message. If no ACK is received and sufficient time passes then
  * 		send the potentially redundant node.
@@ -60,7 +57,6 @@ public record ReconnectConfig(
         @ConfigProperty(defaultValue = "100000ms") Duration asyncStreamTimeout,
         @ConfigProperty(defaultValue = "100ms") Duration asyncOutputStreamFlush,
         @ConfigProperty(defaultValue = "10000") int asyncStreamBufferSize,
-        @ConfigProperty(defaultValue = "true") boolean asyncStreams,
         @ConfigProperty(defaultValue = "10ms") Duration maxAckDelay,
         @ConfigProperty(defaultValue = "10") int maximumReconnectFailuresBeforeShutdown,
         @ConfigProperty(defaultValue = "10m") Duration minimumTimeBetweenReconnects) {}

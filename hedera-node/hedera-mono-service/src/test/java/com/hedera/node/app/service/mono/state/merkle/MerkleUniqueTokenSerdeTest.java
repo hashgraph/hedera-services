@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.state.merkle;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken.RELEASE_0180_VERSION;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken.RELEASE_0250_VERSION;
 
+import com.hedera.node.app.service.mono.state.migration.NftStateTranslator;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hedera.test.serde.EqualityType;
@@ -52,7 +53,9 @@ public class MerkleUniqueTokenSerdeTest extends SelfSerializableDataTest<MerkleU
             seededObject.setNext(NftNumPair.MISSING_NFT_NUM_PAIR);
             return seededObject;
         } else {
-            return seededObject;
+            final var pbjNft = NftStateTranslator.nftFromMerkleUniqueToken(seededObject);
+            final var merkleUniqueToken = NftStateTranslator.merkleUniqueTokenFromNft(pbjNft);
+            return merkleUniqueToken;
         }
     }
 }
