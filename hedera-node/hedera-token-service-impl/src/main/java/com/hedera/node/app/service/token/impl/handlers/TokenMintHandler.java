@@ -227,7 +227,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             final long currentSerialNumber) {
         return Nft.newBuilder()
                 .id(NftID.newBuilder()
-                        .tokenID(tokenId)
+                        .tokenId(tokenId)
                         .serialNumber(currentSerialNumber)
                         .build())
                 // ownerID is null to indicate owned by treasury

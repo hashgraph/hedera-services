@@ -161,9 +161,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             .tokenId(nonFungibleTokenId)
             .build();
     protected final NftID nftIdSl1 =
-            NftID.newBuilder().tokenID(nonFungibleTokenId).serialNumber(1L).build();
+            NftID.newBuilder().tokenId(nonFungibleTokenId).serialNumber(1L).build();
     protected final NftID nftIdSl2 =
-            NftID.newBuilder().tokenID(nonFungibleTokenId).serialNumber(2L).build();
+            NftID.newBuilder().tokenId(nonFungibleTokenId).serialNumber(2L).build();
 
     /* ---------- Allowances --------------- */
     protected final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()

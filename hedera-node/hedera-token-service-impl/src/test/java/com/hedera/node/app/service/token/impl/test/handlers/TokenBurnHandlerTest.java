@@ -604,7 +604,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             // this owner number isn't the treasury
             AccountID ownerId = AccountID.newBuilder().accountNum(999).build();
             writableNftStore = newWritableStoreWithNfts(Nft.newBuilder()
-                    .id(NftID.newBuilder().tokenID(TOKEN_123).serialNumber(1L).build())
+                    .id(NftID.newBuilder().tokenId(TOKEN_123).serialNumber(1L).build())
                     .ownerId(ownerId)
                     .build());
 
@@ -634,7 +634,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .balance(10)
                     .build());
             writableNftStore = newWritableStoreWithNfts(Nft.newBuilder()
-                    .id(NftID.newBuilder().tokenID(TOKEN_123).serialNumber(1L).build())
+                    .id(NftID.newBuilder().tokenId(TOKEN_123).serialNumber(1L).build())
                     // do not set ownerId - default to null
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L);
@@ -668,14 +668,14 @@ class TokenBurnHandlerTest extends ParityTestBase {
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
                             .id(NftID.newBuilder()
-                                    .tokenID(TOKEN_123)
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(1L)
                                     .build())
                             // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(NftID.newBuilder()
-                                    .tokenID(TOKEN_123)
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(2L)
                                     .build())
                             // do not set ownerId - default to null
@@ -712,21 +712,21 @@ class TokenBurnHandlerTest extends ParityTestBase {
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
                             .id(NftID.newBuilder()
-                                    .tokenID(TOKEN_123)
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(1L)
                                     .build())
                             // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(NftID.newBuilder()
-                                    .tokenID(TOKEN_123)
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(2L)
                                     .build())
                             // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(NftID.newBuilder()
-                                    .tokenID(TOKEN_123)
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(3L)
                                     .build())
                             // do not set ownerId - default to null
@@ -772,21 +772,21 @@ class TokenBurnHandlerTest extends ParityTestBase {
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
                             .id(NftID.newBuilder()
-                                    .tokenID(TOKEN_123)
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(1L)
                                     .build())
                             // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(NftID.newBuilder()
-                                    .tokenID(TOKEN_123)
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(2L)
                                     .build())
                             // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(NftID.newBuilder()
-                                    .tokenID(TOKEN_123)
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(3L)
                                     .build())
                             // do not set ownerId - default to null
@@ -833,21 +833,21 @@ class TokenBurnHandlerTest extends ParityTestBase {
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
                             .id(NftID.newBuilder()
-                                    .tokenID(TOKEN_123)
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(1L)
                                     .build())
                             // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(NftID.newBuilder()
-                                    .tokenID(TOKEN_123)
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(2L)
                                     .build())
                             // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(NftID.newBuilder()
-                                    .tokenID(TOKEN_123)
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(3L)
                                     .build())
                             // do not set ownerId - default to null

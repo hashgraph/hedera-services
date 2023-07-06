@@ -64,7 +64,7 @@ class GetTokenNftInfoAnswerTest {
     private final String node = "0.0.3";
     private final String payer = "0.0.12345";
     private NftID nftId =
-            NftID.newBuilder().setTokenID(asToken("1.2.3")).setSerialNumber(2).build();
+            NftID.newBuilder().setTokenId(asToken("1.2.3")).setSerialNumber(2).build();
     private final long fee = 1_234L;
     private final AccountID owner = asAccount("3.4.5");
     private final AccountID spender = asAccount("5.6.7");
@@ -146,7 +146,7 @@ class GetTokenNftInfoAnswerTest {
     @Test
     void validatesWrongSerialNumber() throws Throwable {
         // setup:
-        nftId = NftID.newBuilder().setTokenID(nftId.getTokenID()).build();
+        nftId = NftID.newBuilder().setTokenId(nftId.getTokenId()).build();
         final Query query = validQuery(COST_ANSWER, fee, nftId);
 
         // when:

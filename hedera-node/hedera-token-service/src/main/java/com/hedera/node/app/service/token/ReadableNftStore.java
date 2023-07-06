@@ -40,7 +40,7 @@ public interface ReadableNftStore {
     default Nft get(@NonNull final TokenID id, final long serialNumber) {
         requireNonNull(id);
         final var nftID =
-                NftID.newBuilder().tokenID(id).serialNumber(serialNumber).build();
+                NftID.newBuilder().tokenId(id).serialNumber(serialNumber).build();
         return get(nftID);
     }
 

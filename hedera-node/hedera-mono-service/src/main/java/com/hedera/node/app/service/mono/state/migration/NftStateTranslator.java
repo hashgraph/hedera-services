@@ -68,7 +68,7 @@ public final class NftStateTranslator {
         final var tokenTypeNumber = nftNumPair.tokenNum();
         final var serialNumber = nftNumPair.serialNum();
         return NftID.newBuilder()
-                .tokenID(TokenID.newBuilder().tokenNum(tokenTypeNumber).build())
+                .tokenId(TokenID.newBuilder().tokenNum(tokenTypeNumber).build())
                 .serialNumber(serialNumber)
                 .build();
     }
@@ -106,7 +106,7 @@ public final class NftStateTranslator {
 
         if (nft.hasId()) {
             merkleUniqueToken.setKey(EntityNumPair.fromNums(
-                    EntityNum.fromLong(nft.id().tokenID().tokenNum()),
+                    EntityNum.fromLong(nft.id().tokenId().tokenNum()),
                     EntityNum.fromLong(nft.id().serialNumber())));
         }
         merkleUniqueToken.setOwner(EntityId.fromGrpcAccountId(PbjConverter.fromPbj(nft.ownerId())));
@@ -117,13 +117,13 @@ public final class NftStateTranslator {
 
         if (nft.hasOwnerPreviousNftId()) {
             merkleUniqueToken.setPrev(new NftNumPair(
-                    nft.ownerPreviousNftId().tokenID().tokenNum(),
+                    nft.ownerPreviousNftId().tokenId().tokenNum(),
                     nft.ownerPreviousNftId().serialNumber()));
         }
 
         if (nft.hasOwnerNextNftId()) {
             merkleUniqueToken.setNext(new NftNumPair(
-                    nft.ownerNextNftId().tokenID().tokenNum(),
+                    nft.ownerNextNftId().tokenId().tokenNum(),
                     nft.ownerNextNftId().serialNumber()));
         }
 
