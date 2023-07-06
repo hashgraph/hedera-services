@@ -60,9 +60,9 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
     @Override
     public ExpiryMeta resolveCreationAttempt(
             final boolean entityCanSelfFundRenewal, @NonNull final ExpiryMeta creationMeta) {
-        if (creationMeta.hasAutoRenewNum()) {
+        if (creationMeta.hasAutoRenewAccountId()) {
             validateAutoRenewAccount(
-                    creationMeta.autoRenewShard(), creationMeta.autoRenewRealm(), creationMeta.autoRenewNum());
+                    creationMeta.autoRenewAccountId());
         }
 
         long effectiveExpiry = creationMeta.expiry();
@@ -78,7 +78,7 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
         if (creationMeta.hasAutoRenewPeriod()) {
             context.attributeValidator().validateAutoRenewPeriod(creationMeta.autoRenewPeriod());
         }
-        return new ExpiryMeta(effectiveExpiry, creationMeta.autoRenewPeriod(), creationMeta.autoRenewNum());
+        return new ExpiryMeta(effectiveExpiry, creationMeta.autoRenewPeriod(), creationMeta.autoRenewAccountId());
     }
 
     /**
@@ -88,9 +88,9 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
     @Override
     public ExpiryMeta resolveUpdateAttempt(
             @NonNull final ExpiryMeta currentMeta, @NonNull final ExpiryMeta updateMeta) {
-        if (updateMeta.hasAutoRenewNum()) {
+        if (updateMeta.hasAutoRenewAccountId()) {
             validateAutoRenewAccount(
-                    updateMeta.autoRenewShard(), updateMeta.autoRenewRealm(), updateMeta.autoRenewNum());
+                    updateMeta.autoRenewAccountId());
         }
 
         var resolvedExpiry = currentMeta.expiry();
@@ -106,15 +106,15 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
             resolvedAutoRenewPeriod = updateMeta.autoRenewPeriod();
         }
 
-        var resolvedAutoRenewNum = currentMeta.autoRenewNum();
-        if (updateMeta.hasAutoRenewNum()) {
+        var resolvedAutoRenewAccountId= currentMeta.autoRenewAccountId();
+        if (updateMeta.hasAutoRenewAccountId()) {
             // If just now adding an auto-renew account, confirm the resolved auto-renew period is valid
-            if (!currentMeta.hasAutoRenewNum()) {
+            if (!currentMeta.hasAutoRenewAccountId()) {
                 context.attributeValidator().validateAutoRenewPeriod(resolvedAutoRenewPeriod);
             }
-            resolvedAutoRenewNum = updateMeta.autoRenewNum();
+            resolvedAutoRenewAccountId = updateMeta.autoRenewAccountId();
         }
-        return new ExpiryMeta(resolvedExpiry, resolvedAutoRenewPeriod, resolvedAutoRenewNum);
+        return new ExpiryMeta(resolvedExpiry, resolvedAutoRenewPeriod, resolvedAutoRenewAccountId);
     }
 
     /**
@@ -158,26 +158,19 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
     /**
      * Helper to validate that the given account number is a valid auto-renew account.
      *
-     * @param shard the account shard to validate
-     * @param realm the account realm to validate
-     * @param num the account number to validate
+     * @param accountID the account id to validate
      * @throws HandleException if the account number is invalid
      */
-    private void validateAutoRenewAccount(final long shard, final long realm, final long num) {
+    private void validateAutoRenewAccount(final AccountID accountID) {
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
-        validateTrue(shard == hederaConfig.shard() && realm == hederaConfig.realm(), INVALID_AUTORENEW_ACCOUNT);
-        if (num == 0L) {
+        validateTrue(accountID.shardNum() == hederaConfig.shard() && accountID.realmNum() == hederaConfig.realm(), INVALID_AUTORENEW_ACCOUNT);
+        if (accountID.accountNum() == 0L) {
             // 0L is a sentinel number that says to remove the current auto-renew account
             return;
         }
-        final var autoRenewId = AccountID.newBuilder()
-                .shardNum(shard)
-                .realmNum(realm)
-                .accountNum(num)
-                .build();
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         try {
-            final var account = accountStore.getAccountById(autoRenewId);
+            final var account = accountStore.getAccountById(accountID);
             if (account == null) {
                 throw new HandleException(INVALID_AUTORENEW_ACCOUNT);
             }

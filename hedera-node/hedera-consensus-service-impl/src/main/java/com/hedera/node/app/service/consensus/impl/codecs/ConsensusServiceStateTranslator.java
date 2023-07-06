@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.consensus.impl.codecs;
 
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
@@ -60,7 +62,12 @@ public class ConsensusServiceStateTranslator {
         if (monoTopic.hasAdminKey()) topicBuilder.adminKey(PbjConverter.asPbjKey(monoTopic.getAdminKey()));
         if (monoTopic.hasSubmitKey()) topicBuilder.submitKey(PbjConverter.asPbjKey(monoTopic.getSubmitKey()));
         topicBuilder.autoRenewPeriod(monoTopic.getAutoRenewDurationSeconds());
-        topicBuilder.autoRenewAccountNumber(monoTopic.getAutoRenewAccountId().num());
+        final var autoRenewAccountId = monoTopic.getAutoRenewAccountId();
+        topicBuilder.autoRenewAccountId(AccountID.newBuilder()
+                .shardNum(autoRenewAccountId.shard())
+                .realmNum(autoRenewAccountId.realm())
+                .accountNum(autoRenewAccountId.num())
+                .build());
         topicBuilder.expiry(monoTopic.getExpirationTimestamp().getSeconds());
         topicBuilder.runningHash(Bytes.wrap(monoTopic.getRunningHash()));
         topicBuilder.sequenceNumber(monoTopic.getSequenceNumber());
@@ -101,7 +108,7 @@ public class ConsensusServiceStateTranslator {
                                 .orElse(null),
                         topic.autoRenewPeriod(),
                         new com.hedera.node.app.service.mono.state.submerkle.EntityId(
-                                0, 0, topic.autoRenewAccountNumber()),
+                                topic.autoRenewAccountId().shardNum(), topic.autoRenewAccountId().realmNum(), topic.autoRenewAccountId().accountNum()),
                         new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expiry(), 0));
         monoTopic.setRunningHash(PbjConverter.asBytes(topic.runningHash()));
         monoTopic.setSequenceNumber(topic.sequenceNumber());

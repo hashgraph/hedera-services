@@ -26,8 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestBase;
@@ -55,7 +57,7 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
         assertEquals(adminKey.toString(), topic.submitKey().toString());
         assertEquals(this.topic.sequenceNumber(), topic.sequenceNumber());
         assertEquals(this.topic.autoRenewPeriod(), topic.autoRenewPeriod());
-        assertEquals(autoRenewId.accountNum(), topic.autoRenewAccountNumber());
+        assertEquals(autoRenewId, topic.autoRenewAccountId());
         assertEquals(memo, topic.memo());
         assertFalse(topic.deleted());
         assertArrayEquals(runningHash, asBytes(topic.runningHash()));
@@ -63,7 +65,7 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
 
     @Test
     void getsTopicIfTopicExistsWithNoAutoRenewAccount() {
-        givenValidTopic(0L);
+        givenValidTopic(AccountID.newBuilder().accountNum(0L).build());
         readableTopicState = readableTopicState();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
@@ -78,7 +80,7 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
         assertEquals(adminKey.toString(), topic.submitKey().toString());
         assertEquals(this.topic.sequenceNumber(), topic.sequenceNumber());
         assertEquals(this.topic.autoRenewPeriod(), topic.autoRenewPeriod());
-        assertEquals(0L, topic.autoRenewAccountNumber());
+        assertEquals(0L, topic.autoRenewAccountId().accountNum());
         assertEquals(memo, topic.memo());
         assertFalse(topic.deleted());
         assertArrayEquals(runningHash, asBytes(topic.runningHash()));

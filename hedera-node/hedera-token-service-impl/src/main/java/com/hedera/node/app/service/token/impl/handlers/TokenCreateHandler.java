@@ -209,9 +209,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 false,
                 op.tokenType(),
                 op.supplyType(),
-                AccountID.newBuilder()
-                        .accountNum(resolvedExpiryMeta.autoRenewNum())
-                        .build(),
+                resolvedExpiryMeta.autoRenewAccountId(),
                 resolvedExpiryMeta.autoRenewPeriod(),
                 resolvedExpiryMeta.expiry(),
                 op.memo(),
@@ -231,13 +229,15 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     private ExpiryMeta getExpiryMeta(final long consensusTime, @NonNull final TokenCreateTransactionBody op) {
         final var impliedExpiry =
                 consensusTime + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
+        final var accountId = AccountID.newBuilder()
+                .shardNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().shardNum() : NA)
+                .realmNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().realmNum() : NA)
+                .accountNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA).build();
         return new ExpiryMeta(
                 impliedExpiry,
                 op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(),
                 // Shard and realm will be ignored if num is NA
-                op.hasAutoRenewAccount() ? op.autoRenewAccount().shardNum() : NA,
-                op.hasAutoRenewAccount() ? op.autoRenewAccount().realmNum() : NA,
-                op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA);
+               accountId);
     }
 
     /**
@@ -267,11 +267,8 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var resolvedExpiryMeta = context.expiryValidator().resolveCreationAttempt(false, givenExpiryMeta);
 
         // validate auto-renew account exists
-        if (resolvedExpiryMeta.autoRenewNum() != 0) {
-            final var id = AccountID.newBuilder()
-                    .accountNum(resolvedExpiryMeta.autoRenewNum())
-                    .build();
-            TokenHandlerHelper.getIfUsable(id, accountStore, context.expiryValidator(), INVALID_AUTORENEW_ACCOUNT);
+        if (resolvedExpiryMeta.autoRenewAccountId().accountNum() != 0) {
+            TokenHandlerHelper.getIfUsable(resolvedExpiryMeta.autoRenewAccountId(), accountStore, context.expiryValidator(), INVALID_AUTORENEW_ACCOUNT);
         }
         return resolvedExpiryMeta;
     }

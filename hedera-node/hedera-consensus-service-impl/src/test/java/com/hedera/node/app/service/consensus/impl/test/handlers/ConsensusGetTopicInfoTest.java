@@ -161,7 +161,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
     @Test
     @DisplayName("deleted topic is not valid")
     void validatesQueryIfDeletedTopic() throws Throwable {
-        givenValidTopic(autoRenewId.accountNum(), true);
+        givenValidTopic(autoRenewId, true);
         readableTopicState = readableTopicState();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
@@ -227,7 +227,7 @@ class ConsensusGetTopicInfoTest extends ConsensusTestBase {
                 .sequenceNumber(topic.sequenceNumber())
                 .expirationTime(Timestamp.newBuilder().seconds(topic.expiry()))
                 .submitKey(key)
-                .autoRenewAccount(AccountID.newBuilder().accountNum(topic.autoRenewAccountNumber()))
+                .autoRenewAccount(topic.autoRenewAccountId())
                 .autoRenewPeriod(WELL_KNOWN_AUTO_RENEW_PERIOD)
                 .ledgerId(new BytesConverter().convert("0x03"))
                 .build();

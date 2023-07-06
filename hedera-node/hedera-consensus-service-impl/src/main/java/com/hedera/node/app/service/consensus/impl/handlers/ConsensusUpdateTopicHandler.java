@@ -25,6 +25,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TopicID;
@@ -156,7 +157,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, topic);
         builder.expiry(resolvedExpiryMeta.expiry());
         builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
-        builder.autoRenewAccountNumber(resolvedExpiryMeta.autoRenewNum());
+        builder.autoRenewAccountId(resolvedExpiryMeta.autoRenewAccountId());
     }
 
     private void validateMaybeNewAttributes(
@@ -180,14 +181,13 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
             @NonNull final Topic topic) {
-        final var currentMeta = new ExpiryMeta(topic.expiry(), topic.autoRenewPeriod(), topic.autoRenewAccountNumber());
+        final var currentMeta = new ExpiryMeta(topic.expiry(), topic.autoRenewPeriod(), topic.autoRenewAccountId());
         if (updatesExpiryMeta(op)) {
+            final var accountID = AccountID.newBuilder().shardNum(effAutoRenewShardOf(op)).realmNum(effAutoRenewRealmOf(op)).accountNum(effAutoRenewNumOf(op)).build();
             final var updateMeta = new ExpiryMeta(
                     effExpiryOf(op),
-                    effAutoRenewPeriodOf(op),
-                    effAutoRenewShardOf(op),
-                    effAutoRenewRealmOf(op),
-                    effAutoRenewNumOf(op));
+                    effAutoRenewPeriodOf(op), accountID
+                    );
             return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);
         } else {
             return currentMeta;

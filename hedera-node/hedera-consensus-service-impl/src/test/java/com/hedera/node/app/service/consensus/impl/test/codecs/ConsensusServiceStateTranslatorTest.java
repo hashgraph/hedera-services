@@ -163,7 +163,7 @@ public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
         merkleTopic.setDeleted(topic.deleted());
         merkleTopic.setSequenceNumber(topic.sequenceNumber());
         merkleTopic.setAutoRenewAccountId(
-                new com.hedera.node.app.service.mono.state.submerkle.EntityId(0, 0, topic.autoRenewAccountNumber()));
+                new com.hedera.node.app.service.mono.state.submerkle.EntityId(topic.autoRenewAccountId().shardNum(), topic.autoRenewAccountId().realmNum(), topic.autoRenewAccountId().accountNum()));
         return merkleTopic;
     }
 
@@ -177,7 +177,7 @@ public class ConsensusServiceStateTranslatorTest extends ConsensusTestBase {
         merkleTopic.setDeleted(topic.deleted());
         merkleTopic.setSequenceNumber(topic.sequenceNumber());
         merkleTopic.setAutoRenewAccountId(
-                new com.hedera.node.app.service.mono.state.submerkle.EntityId(0, 0, topic.autoRenewAccountNumber()));
+                new com.hedera.node.app.service.mono.state.submerkle.EntityId(topic.autoRenewAccountId().shardNum(), topic.autoRenewAccountId().realmNum(), topic.autoRenewAccountId().accountNum()));
         return merkleTopic;
     }
 

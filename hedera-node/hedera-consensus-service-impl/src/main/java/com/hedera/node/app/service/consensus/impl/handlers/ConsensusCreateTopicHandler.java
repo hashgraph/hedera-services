@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RU
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TopicID;
@@ -111,20 +112,21 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         final var impliedExpiry = handleContext.consensusNow().getEpochSecond()
                 + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
+        final var accountId = AccountID.newBuilder()
+                .shardNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().shardNum() : NA)
+                .realmNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().realmNum() : NA)
+                .accountNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA).build();
         final var entityExpiryMeta = new ExpiryMeta(
                 impliedExpiry,
                 op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(),
-                // Shard and realm will be ignored if num is NA
-                op.hasAutoRenewAccount() ? op.autoRenewAccount().shardNum() : NA,
-                op.hasAutoRenewAccount() ? op.autoRenewAccount().realmNum() : NA,
-                op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA);
+                accountId);
 
         try {
             final var effectiveExpiryMeta =
                     handleContext.expiryValidator().resolveCreationAttempt(false, entityExpiryMeta);
             builder.autoRenewPeriod(effectiveExpiryMeta.autoRenewPeriod());
             builder.expiry(effectiveExpiryMeta.expiry());
-            builder.autoRenewAccountNumber(effectiveExpiryMeta.autoRenewNum());
+            builder.autoRenewAccountId(effectiveExpiryMeta.autoRenewAccountId());
 
             /* --- Add topic id to topic builder --- */
             builder.id(

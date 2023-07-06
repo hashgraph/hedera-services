@@ -42,8 +42,8 @@ class ExpiryMetaTest {
     void detectsRenewNum() {
         final var withRenewNum = new ExpiryMeta(NA, 1L, 1L);
         final var withoutRenewNum = new ExpiryMeta(2L, NA, NA);
-        assertTrue(withRenewNum.hasAutoRenewNum());
-        assertFalse(withoutRenewNum.hasAutoRenewNum());
+        assertTrue(withRenewNum.hasAutoRenewAccountId());
+        assertFalse(withoutRenewNum.hasAutoRenewAccountId());
     }
 
     @Test
