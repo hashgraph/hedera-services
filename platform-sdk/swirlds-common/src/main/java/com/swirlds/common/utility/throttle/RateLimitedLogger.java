@@ -24,6 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Objects;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 
@@ -90,6 +91,29 @@ public class RateLimitedLogger {
     }
 
     /**
+     * Write a message to the log at the given level. Message may not actually be written if this logger has been used
+     * too recently.
+     *
+     * @param level     the log level
+     * @param logMarker the marker to use
+     * @param message   the message to write
+     * @param varargs   optional arguments to pass to the log4j logger
+     */
+    public void log(
+            @NonNull final Level level,
+            @NonNull final Marker logMarker,
+            @NonNull final String message,
+            @Nullable final Object... varargs) {
+
+        try (final Locked l = lock.lock()) {
+            final long deniedRequests = rateLimiter.getDeniedRequests();
+            if (rateLimiter.requestAndTrigger()) {
+                logger.log(level, logMarker, generateMessage(message, deniedRequests), varargs);
+            }
+        }
+    }
+
+    /**
      * Write a message to the log at debug level. Message may not actually be written if this logger has been used too
      * recently.
      *
@@ -100,12 +124,7 @@ public class RateLimitedLogger {
     public void debug(
             @NonNull final Marker logMarker, @NonNull final String message, @Nullable final Object... varargs) {
 
-        try (final Locked l = lock.lock()) {
-            final long deniedRequests = rateLimiter.getDeniedRequests();
-            if (rateLimiter.requestAndTrigger()) {
-                logger.debug(logMarker, generateMessage(message, deniedRequests), varargs);
-            }
-        }
+        log(Level.DEBUG, logMarker, message, varargs);
     }
 
     /**
@@ -119,12 +138,7 @@ public class RateLimitedLogger {
     public void trace(
             @NonNull final Marker logMarker, @NonNull final String message, @Nullable final Object... varargs) {
 
-        try (final Locked l = lock.lock()) {
-            final long deniedRequests = rateLimiter.getDeniedRequests();
-            if (rateLimiter.requestAndTrigger()) {
-                logger.trace(logMarker, generateMessage(message, deniedRequests), varargs);
-            }
-        }
+        log(Level.TRACE, logMarker, message, varargs);
     }
 
     /**
@@ -138,12 +152,7 @@ public class RateLimitedLogger {
     public void info(
             @NonNull final Marker logMarker, @NonNull final String message, @Nullable final Object... varargs) {
 
-        try (final Locked l = lock.lock()) {
-            final long deniedRequests = rateLimiter.getDeniedRequests();
-            if (rateLimiter.requestAndTrigger()) {
-                logger.info(logMarker, generateMessage(message, deniedRequests), varargs);
-            }
-        }
+        log(Level.INFO, logMarker, message, varargs);
     }
 
     /**
@@ -157,12 +166,7 @@ public class RateLimitedLogger {
     public void warn(
             @NonNull final Marker logMarker, @NonNull final String message, @Nullable final Object... varargs) {
 
-        try (final Locked l = lock.lock()) {
-            final long deniedRequests = rateLimiter.getDeniedRequests();
-            if (rateLimiter.requestAndTrigger()) {
-                logger.warn(logMarker, generateMessage(message, deniedRequests), varargs);
-            }
-        }
+        log(Level.WARN, logMarker, message, varargs);
     }
 
     /**
@@ -176,12 +180,7 @@ public class RateLimitedLogger {
     public void error(
             @NonNull final Marker logMarker, @NonNull final String message, @Nullable final Object... varargs) {
 
-        try (final Locked l = lock.lock()) {
-            final long deniedRequests = rateLimiter.getDeniedRequests();
-            if (rateLimiter.requestAndTrigger()) {
-                logger.error(logMarker, generateMessage(message, deniedRequests), varargs);
-            }
-        }
+        log(Level.ERROR, logMarker, message, varargs);
     }
 
     /**
@@ -195,11 +194,6 @@ public class RateLimitedLogger {
     public void fatal(
             @NonNull final Marker logMarker, @NonNull final String message, @Nullable final Object... varargs) {
 
-        try (final Locked l = lock.lock()) {
-            final long deniedRequests = rateLimiter.getDeniedRequests();
-            if (rateLimiter.requestAndTrigger()) {
-                logger.fatal(logMarker, generateMessage(message, deniedRequests), varargs);
-            }
-        }
+        log(Level.FATAL, logMarker, message, varargs);
     }
 }

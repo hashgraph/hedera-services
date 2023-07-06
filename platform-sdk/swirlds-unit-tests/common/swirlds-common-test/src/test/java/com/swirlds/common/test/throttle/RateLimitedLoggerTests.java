@@ -20,7 +20,6 @@ import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -32,6 +31,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.junit.jupiter.api.DisplayName;
@@ -52,11 +52,13 @@ public class RateLimitedLoggerTests {
         final AtomicInteger count = new AtomicInteger();
 
         doAnswer(invocation -> {
-                    final Marker marker = invocation.getArgument(0);
-                    final String message = invocation.getArgument(1);
-                    final Integer countArg = invocation.getArgument(2);
-                    final Exception exceptionArg = invocation.getArgument(3);
+                    final Level level = invocation.getArgument(0);
+                    final Marker marker = invocation.getArgument(1);
+                    final String message = invocation.getArgument(2);
+                    final Integer countArg = invocation.getArgument(3);
+                    final Exception exceptionArg = invocation.getArgument(4);
 
+                    assertEquals(Level.DEBUG, level);
                     assertEquals(EXCEPTION.getMarker(), marker);
                     assertTrue(message.startsWith("Exception occurred {}"));
                     assertEquals(count.get(), countArg);
@@ -66,37 +68,7 @@ public class RateLimitedLoggerTests {
                     return null;
                 })
                 .when(logger)
-                .debug(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .trace(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .info(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .warn(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .error(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .fatal(any(Marker.class), any(String.class), any(Object[].class));
+                .log(any(Level.class), any(Marker.class), any(String.class), any(Object[].class));
 
         final RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(logger, time, period);
 
@@ -131,17 +103,13 @@ public class RateLimitedLoggerTests {
         final AtomicInteger count = new AtomicInteger();
 
         doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .debug(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    final Marker marker = invocation.getArgument(0);
-                    final String message = invocation.getArgument(1);
-                    final Integer countArg = invocation.getArgument(2);
-                    final Exception exceptionArg = invocation.getArgument(3);
+                    final Level level = invocation.getArgument(0);
+                    final Marker marker = invocation.getArgument(1);
+                    final String message = invocation.getArgument(2);
+                    final Integer countArg = invocation.getArgument(3);
+                    final Exception exceptionArg = invocation.getArgument(4);
 
+                    assertEquals(Level.TRACE, level);
                     assertEquals(EXCEPTION.getMarker(), marker);
                     assertTrue(message.startsWith("Exception occurred {}"));
                     assertEquals(count.get(), countArg);
@@ -151,31 +119,7 @@ public class RateLimitedLoggerTests {
                     return null;
                 })
                 .when(logger)
-                .trace(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .info(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .warn(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .error(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .fatal(any(Marker.class), any(String.class), any(Object[].class));
+                .log(any(Level.class), any(Marker.class), any(String.class), any(Object[].class));
 
         final RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(logger, time, period);
 
@@ -210,23 +154,13 @@ public class RateLimitedLoggerTests {
         final AtomicInteger count = new AtomicInteger();
 
         doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .debug(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .trace(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    final Marker marker = invocation.getArgument(0);
-                    final String message = invocation.getArgument(1);
-                    final Integer countArg = invocation.getArgument(2);
-                    final Exception exceptionArg = invocation.getArgument(3);
+                    final Level level = invocation.getArgument(0);
+                    final Marker marker = invocation.getArgument(1);
+                    final String message = invocation.getArgument(2);
+                    final Integer countArg = invocation.getArgument(3);
+                    final Exception exceptionArg = invocation.getArgument(4);
 
+                    assertEquals(Level.INFO, level);
                     assertEquals(EXCEPTION.getMarker(), marker);
                     assertTrue(message.startsWith("Exception occurred {}"));
                     assertEquals(count.get(), countArg);
@@ -236,25 +170,7 @@ public class RateLimitedLoggerTests {
                     return null;
                 })
                 .when(logger)
-                .info(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .warn(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .error(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .fatal(any(Marker.class), any(String.class), any(Object[].class));
+                .log(any(Level.class), any(Marker.class), any(String.class), any(Object[].class));
 
         final RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(logger, time, period);
 
@@ -289,29 +205,13 @@ public class RateLimitedLoggerTests {
         final AtomicInteger count = new AtomicInteger();
 
         doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .debug(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .trace(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .info(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    final Marker marker = invocation.getArgument(0);
-                    final String message = invocation.getArgument(1);
-                    final Integer countArg = invocation.getArgument(2);
-                    final Exception exceptionArg = invocation.getArgument(3);
+                    final Level level = invocation.getArgument(0);
+                    final Marker marker = invocation.getArgument(1);
+                    final String message = invocation.getArgument(2);
+                    final Integer countArg = invocation.getArgument(3);
+                    final Exception exceptionArg = invocation.getArgument(4);
 
+                    assertEquals(Level.WARN, level);
                     assertEquals(EXCEPTION.getMarker(), marker);
                     assertTrue(message.startsWith("Exception occurred {}"));
                     assertEquals(count.get(), countArg);
@@ -321,19 +221,7 @@ public class RateLimitedLoggerTests {
                     return null;
                 })
                 .when(logger)
-                .warn(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .error(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .fatal(any(Marker.class), any(String.class), any(Object[].class));
+                .log(any(Level.class), any(Marker.class), any(String.class), any(Object[].class));
 
         final RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(logger, time, period);
 
@@ -368,35 +256,13 @@ public class RateLimitedLoggerTests {
         final AtomicInteger count = new AtomicInteger();
 
         doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .debug(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .trace(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .info(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .warn(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    final Marker marker = invocation.getArgument(0);
-                    final String message = invocation.getArgument(1);
-                    final Integer countArg = invocation.getArgument(2);
-                    final Exception exceptionArg = invocation.getArgument(3);
+                    final Level level = invocation.getArgument(0);
+                    final Marker marker = invocation.getArgument(1);
+                    final String message = invocation.getArgument(2);
+                    final Integer countArg = invocation.getArgument(3);
+                    final Exception exceptionArg = invocation.getArgument(4);
 
+                    assertEquals(Level.ERROR, level);
                     assertEquals(EXCEPTION.getMarker(), marker);
                     assertTrue(message.startsWith("Exception occurred {}"));
                     assertEquals(count.get(), countArg);
@@ -406,13 +272,7 @@ public class RateLimitedLoggerTests {
                     return null;
                 })
                 .when(logger)
-                .error(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .fatal(any(Marker.class), any(String.class), any(Object[].class));
+                .log(any(Level.class), any(Marker.class), any(String.class), any(Object[].class));
 
         final RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(logger, time, period);
 
@@ -447,41 +307,13 @@ public class RateLimitedLoggerTests {
         final AtomicInteger count = new AtomicInteger();
 
         doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .debug(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .trace(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .info(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .warn(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    fail();
-                    return null;
-                })
-                .when(logger)
-                .error(any(Marker.class), any(String.class), any(Object[].class));
-        doAnswer(invocation -> {
-                    final Marker marker = invocation.getArgument(0);
-                    final String message = invocation.getArgument(1);
-                    final Integer countArg = invocation.getArgument(2);
-                    final Exception exceptionArg = invocation.getArgument(3);
+                    final Level level = invocation.getArgument(0);
+                    final Marker marker = invocation.getArgument(1);
+                    final String message = invocation.getArgument(2);
+                    final Integer countArg = invocation.getArgument(3);
+                    final Exception exceptionArg = invocation.getArgument(4);
 
+                    assertEquals(Level.FATAL, level);
                     assertEquals(EXCEPTION.getMarker(), marker);
                     assertTrue(message.startsWith("Exception occurred {}"));
                     assertEquals(count.get(), countArg);
@@ -491,7 +323,7 @@ public class RateLimitedLoggerTests {
                     return null;
                 })
                 .when(logger)
-                .fatal(any(Marker.class), any(String.class), any(Object[].class));
+                .log(any(Level.class), any(Marker.class), any(String.class), any(Object[].class));
 
         final RateLimitedLogger rateLimitedLogger = new RateLimitedLogger(logger, time, period);
 
