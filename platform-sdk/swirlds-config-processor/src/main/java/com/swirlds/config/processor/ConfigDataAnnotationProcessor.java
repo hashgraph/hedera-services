@@ -104,7 +104,7 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
 
     @NonNull
     private JavaFileObject getConstantSourceFile(
-            @NonNull String packageName, @NonNull String simpleClassName, @NonNull TypeElement originatingElement)
+            @NonNull final String packageName, @NonNull final String simpleClassName, @NonNull final TypeElement originatingElement)
             throws IOException {
         Objects.requireNonNull(packageName, "packageName must not be null");
         Objects.requireNonNull(simpleClassName, "simpleClassName must not be null");
@@ -115,7 +115,7 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
     }
 
     @NonNull
-    private FileObject getSource(@NonNull String fileName, @NonNull String packageName) throws IOException {
+    private FileObject getSource(@NonNull final String fileName, @NonNull final String packageName) throws IOException {
         Objects.requireNonNull(fileName, "fileName must not be null");
         Objects.requireNonNull(packageName, "packageName must not be null");
 
