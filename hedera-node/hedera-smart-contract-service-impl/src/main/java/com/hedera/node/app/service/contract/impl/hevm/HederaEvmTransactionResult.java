@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPbjStateChanges;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
@@ -23,6 +26,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractLoginfo;
+import com.hedera.hapi.streams.ContractStateChanges;
+import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,7 +47,8 @@ public record HederaEvmTransactionResult(
         @Nullable String haltReason,
         @Nullable ResponseCodeEnum abortReason,
         @Nullable Bytes revertReason,
-        @NonNull List<ContractLoginfo> logs) {
+        @NonNull List<ContractLoginfo> logs,
+        @Nullable ContractStateChanges stateChanges) {
     public HederaEvmTransactionResult {
         requireNonNull(output);
         requireNonNull(logs);
@@ -57,7 +63,7 @@ public record HederaEvmTransactionResult(
      */
     public static HederaEvmTransactionResult abortFor(@NonNull final ResponseCodeEnum reason) {
         return new HederaEvmTransactionResult(
-                0, 0, null, null, Bytes.EMPTY, null, reason, null, Collections.emptyList());
+                0, 0, null, null, Bytes.EMPTY, null, reason, null, Collections.emptyList(), null);
     }
 
     /**
@@ -73,7 +79,13 @@ public record HederaEvmTransactionResult(
             @NonNull final MessageFrame frame) {
         requireNonNull(frame);
         return successFrom(
-                gasUsed, frame.getGasPrice(), recipientId, recipientEvmAddress, frame.getOutputData(), frame.getLogs());
+                gasUsed,
+                frame.getGasPrice(),
+                recipientId,
+                recipientEvmAddress,
+                frame.getOutputData(),
+                frame.getLogs(),
+                allStateAccessesFrom(frame));
     }
 
     public static HederaEvmTransactionResult successFrom(
@@ -82,7 +94,8 @@ public record HederaEvmTransactionResult(
             @NonNull final ContractID recipientId,
             @NonNull final ContractID recipientEvmAddress,
             @NonNull final org.apache.tuweni.bytes.Bytes output,
-            @NonNull final List<Log> logs) {
+            @NonNull final List<Log> logs,
+            @Nullable final ContractStateChanges stateChanges) {
         return new HederaEvmTransactionResult(
                 gasUsed,
                 requireNonNull(gasPrice).toLong(),
@@ -92,7 +105,8 @@ public record HederaEvmTransactionResult(
                 null,
                 null,
                 null,
-                pbjLogsFrom(requireNonNull(logs)));
+                pbjLogsFrom(requireNonNull(logs)),
+                stateChanges);
     }
 
     /**
@@ -112,7 +126,8 @@ public record HederaEvmTransactionResult(
                 frame.getExceptionalHaltReason().map(Object::toString).orElse(null),
                 null,
                 frame.getRevertReason().map(ConversionUtils::tuweniToPbjBytes).orElse(null),
-                Collections.emptyList());
+                Collections.emptyList(),
+                stateReadsFrom(frame));
     }
 
     public static HederaEvmTransactionResult resourceExhaustionFrom(
@@ -127,10 +142,37 @@ public record HederaEvmTransactionResult(
                 null,
                 null,
                 Bytes.wrap(reason.name()),
-                Collections.emptyList());
+                Collections.emptyList(),
+                null);
     }
 
     public boolean isSuccess() {
         return abortReason == null && revertReason == null && haltReason == null;
+    }
+
+    private static @Nullable ContractStateChanges allStateAccessesFrom(@NonNull final MessageFrame frame) {
+        return stateChangesFrom(frame, true);
+    }
+
+    private static @Nullable ContractStateChanges stateReadsFrom(@NonNull final MessageFrame frame) {
+        return stateChangesFrom(frame, false);
+    }
+
+    private static @Nullable ContractStateChanges stateChangesFrom(
+            @NonNull final MessageFrame frame, final boolean includeWrites) {
+        requireNonNull(frame);
+        final var accessTracker = accessTrackerFor(frame);
+        if (accessTracker == null) {
+            return null;
+        } else {
+            final List<StorageAccesses> accesses;
+            if (includeWrites) {
+                final var worldUpdater = proxyUpdaterFor(frame);
+                accesses = accessTracker.getReadsMergedWith(worldUpdater.pendingStorageUpdates());
+            } else {
+                accesses = accessTracker.getJustReads();
+            }
+            return asPbjStateChanges(accesses);
+        }
     }
 }

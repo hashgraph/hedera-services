@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.B
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -46,6 +47,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHal
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -71,6 +73,7 @@ import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
+import com.hedera.node.app.service.mono.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SystemContractAbis;
@@ -222,6 +225,9 @@ class BurnPrecompilesTest {
     @Mock
     private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
+    @Mock
+    private BurnWrapper burnOp;
+
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
     private static final long TEST_NODE_FEE = 300_000;
@@ -321,6 +327,11 @@ class BurnPrecompilesTest {
     void nftBurnFailurePathWorksWithNullLedgers() {
         givenNonfungibleFrameContext();
         givenPricingUtilsContext();
+        burnPrecompile
+                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1, wrappedLedgers))
+                .thenReturn(HTSTestsUtil.nonFungibleBurn);
+        given(syntheticTxnFactory.createBurn(HTSTestsUtil.nonFungibleBurn)).willReturn(mockSynthBodyBuilder);
+
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -336,7 +347,10 @@ class BurnPrecompilesTest {
         given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.serviceFee()).willReturn(1L);
         given(creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID)).willReturn(mockRecordBuilder);
+        given(creator.createUnsuccessfulSyntheticRecord(INVALID_TOKEN_BURN_AMOUNT))
+                .willReturn(mockRecordBuilder);
         given(encoder.encodeBurnFailure(FAIL_INVALID)).willReturn(HTSTestsUtil.failInvalidResult);
+        given(encoder.encodeBurnFailure(INVALID_TOKEN_BURN_AMOUNT)).willReturn(HTSTestsUtil.failInvalidResult);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -477,7 +491,7 @@ class BurnPrecompilesTest {
         givenIfDelegateCall();
         doCallRealMethod().when(frame).setExceptionalHaltReason(any());
         burnPrecompile
-                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1))
+                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1, wrappedLedgers))
                 .thenReturn(HTSTestsUtil.fungibleBurnAmountOversize);
         // when:
         final var result = subject.computePrecompile(pretendArguments, frame);
@@ -499,7 +513,7 @@ class BurnPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         burnPrecompile
-                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1))
+                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1, wrappedLedgers))
                 .thenReturn(HTSTestsUtil.fungibleBurnMaxAmount);
         given(syntheticTxnFactory.createBurn(HTSTestsUtil.fungibleBurnMaxAmount))
                 .willReturn(mockSynthBodyBuilder);
@@ -544,7 +558,7 @@ class BurnPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         burnPrecompile
-                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1))
+                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1, wrappedLedgers))
                 .thenReturn(HTSTestsUtil.fungibleBurn);
         given(syntheticTxnFactory.createBurn(any()))
                 .willReturn(TransactionBody.newBuilder().setTokenBurn(TokenBurnTransactionBody.newBuilder()));
@@ -564,8 +578,11 @@ class BurnPrecompilesTest {
 
     @Test
     void decodeFungibleBurnInputV1() {
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(wrappedLedgers.tokens().get(any(), any())).willReturn(TokenType.FUNGIBLE_COMMON);
         burnPrecompile.close();
-        final var decodedInput = getBurnWrapper(FUNGIBLE_BURN_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1);
+        final var decodedInput =
+                getBurnWrapper(FUNGIBLE_BURN_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1, wrappedLedgers);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
         assertEquals(33, decodedInput.amount());
@@ -575,8 +592,11 @@ class BurnPrecompilesTest {
 
     @Test
     void decodeFungibleBurnInputV2() {
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(wrappedLedgers.tokens().get(any(), any())).willReturn(TokenType.FUNGIBLE_COMMON);
         burnPrecompile.close();
-        final var decodedInput = getBurnWrapper(FUNGIBLE_BURN_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2);
+        final var decodedInput =
+                getBurnWrapper(FUNGIBLE_BURN_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2, wrappedLedgers);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
         assertEquals(33, decodedInput.amount());
@@ -587,19 +607,29 @@ class BurnPrecompilesTest {
     @Test
     void decodeFungibleBurnZeroInputV1() {
         burnPrecompile.close();
-        var exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> getBurnWrapper(FUNGIBLE_BURN_ZERO_AMOUNT_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1));
-        assertEquals("Illegal amount of tokens to burn", exception.getMessage());
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(wrappedLedgers.tokens().get(any(), any())).willReturn(TokenType.FUNGIBLE_COMMON);
+        final var decodedInput =
+                getBurnWrapper(FUNGIBLE_BURN_ZERO_AMOUNT_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1, wrappedLedgers);
+
+        assertTrue(decodedInput.tokenType().getTokenNum() > 0);
+        assertEquals(0, decodedInput.amount());
+        assertEquals(0, decodedInput.serialNos().size());
+        assertEquals(FUNGIBLE_COMMON, decodedInput.type());
     }
 
     @Test
     void decodeFungibleBurnZeroInputV2() {
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(wrappedLedgers.tokens().get(any(), any())).willReturn(TokenType.FUNGIBLE_COMMON);
         burnPrecompile.close();
-        var exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> getBurnWrapper(FUNGIBLE_BURN_ZERO_AMOUNT_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2));
-        assertEquals("Illegal amount of tokens to burn", exception.getMessage());
+        final var decodedInput =
+                getBurnWrapper(FUNGIBLE_BURN_ZERO_AMOUNT_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2, wrappedLedgers);
+
+        assertTrue(decodedInput.tokenType().getTokenNum() > 0);
+        assertEquals(0, decodedInput.amount());
+        assertEquals(0, decodedInput.serialNos().size());
+        assertEquals(FUNGIBLE_COMMON, decodedInput.type());
     }
 
     @Test
@@ -607,26 +637,34 @@ class BurnPrecompilesTest {
         burnPrecompile.close();
         var exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> getBurnWrapper(FUNGIBLE_BURN_NEGATIVE_AMOUNT_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1));
+                () -> getBurnWrapper(
+                        FUNGIBLE_BURN_NEGATIVE_AMOUNT_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1, wrappedLedgers));
         assertEquals("unsigned val exceeds bit limit: 256 > 64", exception.getMessage());
     }
 
     @Test
     void decodeFungibleBurnNegativeInputV2() {
         burnPrecompile.close();
-        var exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> getBurnWrapper(FUNGIBLE_BURN_NEGATIVE_AMOUNT_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2));
-        assertEquals("Illegal amount of tokens to burn", exception.getMessage());
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(wrappedLedgers.tokens().get(any(), any())).willReturn(TokenType.FUNGIBLE_COMMON);
+        final var decodedInput = getBurnWrapper(
+                FUNGIBLE_BURN_NEGATIVE_AMOUNT_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2, wrappedLedgers);
+        assertTrue(decodedInput.tokenType().getTokenNum() > 0);
+        assertEquals(-4096, decodedInput.amount());
+        assertEquals(0, decodedInput.serialNos().size());
+        assertEquals(FUNGIBLE_COMMON, decodedInput.type());
     }
 
     @Test
     void decodeNonFungibleBurnInputV1() {
         burnPrecompile.close();
-        final var decodedInput = getBurnWrapper(NON_FUNGIBLE_BURN_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(wrappedLedgers.tokens().get(any(), any())).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+        final var decodedInput =
+                getBurnWrapper(NON_FUNGIBLE_BURN_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1, wrappedLedgers);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
-        assertEquals(-1, decodedInput.amount());
+        assertEquals(0, decodedInput.amount());
         assertEquals(2, decodedInput.serialNos().size());
         assertEquals(123, decodedInput.serialNos().get(0));
         assertEquals(234, decodedInput.serialNos().get(1));
@@ -636,10 +674,13 @@ class BurnPrecompilesTest {
     @Test
     void decodeNonFungibleBurnInputV2() {
         burnPrecompile.close();
-        final var decodedInput = getBurnWrapper(NON_FUNGIBLE_BURN_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(wrappedLedgers.tokens().get(any(), any())).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+        final var decodedInput =
+                getBurnWrapper(NON_FUNGIBLE_BURN_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2, wrappedLedgers);
 
         assertTrue(decodedInput.tokenType().getTokenNum() > 0);
-        assertEquals(-1, decodedInput.amount());
+        assertEquals(0, decodedInput.amount());
         assertEquals(2, decodedInput.serialNos().size());
         assertEquals(123, decodedInput.serialNos().get(0));
         assertEquals(234, decodedInput.serialNos().get(1));
@@ -651,23 +692,31 @@ class BurnPrecompilesTest {
         burnPrecompile.close();
         var exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> getBurnWrapper(NON_FUNGIBLE_NEGATIVE_AMOUNT_BURN_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1));
+                () -> getBurnWrapper(
+                        NON_FUNGIBLE_NEGATIVE_AMOUNT_BURN_INPUT_V1, SystemContractAbis.BURN_TOKEN_V1, wrappedLedgers));
         assertEquals("unsigned val exceeds bit limit: 256 > 64", exception.getMessage());
     }
 
     @Test
     void decodeNonFungibleBurnNegativeInputV2() {
         burnPrecompile.close();
-        var exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> getBurnWrapper(NON_FUNGIBLE_NEGATIVE_AMOUNT_BURN_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2));
-        assertEquals("Illegal amount of tokens to burn", exception.getMessage());
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(wrappedLedgers.tokens().get(any(), any())).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+        final var decodedInput = getBurnWrapper(
+                NON_FUNGIBLE_NEGATIVE_AMOUNT_BURN_INPUT_V2, SystemContractAbis.BURN_TOKEN_V2, wrappedLedgers);
+
+        assertTrue(decodedInput.tokenType().getTokenNum() > 0);
+        assertEquals(0, decodedInput.amount());
+        assertEquals(2, decodedInput.serialNos().size());
+        assertEquals(123, decodedInput.serialNos().get(0));
+        assertEquals(234, decodedInput.serialNos().get(1));
+        assertEquals(NON_FUNGIBLE_UNIQUE, decodedInput.type());
     }
 
     private void givenNonfungibleFrameContext() {
         givenFrameContext();
         burnPrecompile
-                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1))
+                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1, wrappedLedgers))
                 .thenReturn(HTSTestsUtil.nonFungibleBurn);
         given(syntheticTxnFactory.createBurn(HTSTestsUtil.nonFungibleBurn)).willReturn(mockSynthBodyBuilder);
     }
@@ -675,7 +724,7 @@ class BurnPrecompilesTest {
     private void givenFungibleFrameContext() {
         givenFrameContext();
         burnPrecompile
-                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1))
+                .when(() -> getBurnWrapper(pretendArguments, SystemContractAbis.BURN_TOKEN_V1, wrappedLedgers))
                 .thenReturn(HTSTestsUtil.fungibleBurn);
         given(syntheticTxnFactory.createBurn(HTSTestsUtil.fungibleBurn)).willReturn(mockSynthBodyBuilder);
     }

@@ -45,4 +45,6 @@ module com.hedera.node.app.service.contract.impl.test {
             org.junit.platform.commons;
     opens com.hedera.node.app.service.contract.impl.test.hevm to
             org.junit.platform.commons;
+    opens com.hedera.node.app.service.contract.impl.test.infra to
+            org.junit.platform.commons;
 }
