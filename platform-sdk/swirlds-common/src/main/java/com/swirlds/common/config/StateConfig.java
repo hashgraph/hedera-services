@@ -68,8 +68,6 @@ import java.time.Duration;
  *                                              Ignored if dumpStateOnISS is false.
  * @param secondsBetweenIssLogs                 The minimum time that must pass between log messages about ISS events.
  *                                              If ISS events happen with a higher frequency then they are squelched.
- * @param stateDeletionErrorLogFrequencySeconds If there are problems with state lifecycle then write errors to the log
- *                                              at most once per this period of time.
  * @param enableHashStreamLogging               When enabled, hashes for the nodes are logged per round.
  * @param debugHashDepth                        When logging debug information about the hashes in a merkle tree, do not
  *                                              display hash information for nodes deeper than this.
@@ -117,7 +115,6 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "false") boolean haltOnCatastrophicIss,
         @ConfigProperty(defaultValue = "21600") long secondsBetweenISSDumps,
         @ConfigProperty(defaultValue = "300") long secondsBetweenIssLogs,
-        @ConfigProperty(defaultValue = "60") int stateDeletionErrorLogFrequencySeconds,
         @ConfigProperty(defaultValue = "true") boolean enableHashStreamLogging,
         @ConfigProperty(defaultValue = "5") int debugHashDepth,
         @ConfigProperty(defaultValue = "1000") int maxAgeOfFutureStateSignatures,

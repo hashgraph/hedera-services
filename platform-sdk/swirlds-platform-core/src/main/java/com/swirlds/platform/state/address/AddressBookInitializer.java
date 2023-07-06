@@ -56,8 +56,6 @@ public class AddressBookInitializer {
     public static final String CONFIG_ADDRESS_BOOK_USED = "The Configuration Address Book Was Used.";
     /** The text indicating the state address book was used in the usedAddressBook file. */
     public static final String STATE_ADDRESS_BOOK_USED = "The State Saved Address Book Was Used.";
-    /** The text indicating the state address book was null in the usedAddressBook file. */
-    public static final String STATE_ADDRESS_BOOK_NULL = "The State Saved Address Book Was NULL.";
     /** The file name prefix to use when creating address book files. */
     private static final String ADDRESS_BOOK_FILE_PREFIX = "usedAddressBook";
     /** The format of date and time to use when creating address book files. */
@@ -73,12 +71,12 @@ public class AddressBookInitializer {
     private final SoftwareVersion currentVersion;
     /** Indicate that the software version has upgraded. */
     private final boolean softwareUpgrade;
-    /** The SignedState loaded from disk. May be null. */
-    @Nullable
-    private final SignedState loadedSignedState;
-    /** The address book in the signed state loaded from disk. May be null. */
-    @Nullable
-    private final AddressBook loadedAddressBook;
+    /** The initial state. Must not be null. */
+    @NonNull
+    private final SignedState initialState;
+    /** The address book in the state. Must not be null */
+    @NonNull
+    private final AddressBook stateAddressBook;
     /** The address book derived from config.txt */
     @NonNull
     private final AddressBook configAddressBook;
@@ -99,14 +97,14 @@ public class AddressBookInitializer {
      *
      * @param currentVersion    The current version of the application.
      * @param softwareUpgrade   Indicate that the software version has upgraded.
-     * @param signedState       The signed state loaded from disk.
+     * @param initialState      The initial state to start from.
      * @param configAddressBook The address book derived from config.txt.
      * @param platformContext   The context for the platform.
      */
     public AddressBookInitializer(
             @NonNull final SoftwareVersion currentVersion,
             final boolean softwareUpgrade,
-            @Nullable final SignedState signedState,
+            @NonNull final SignedState initialState,
             @NonNull final AddressBook configAddressBook,
             @NonNull final PlatformContext platformContext) {
         this.currentVersion = Objects.requireNonNull(currentVersion, "The currentVersion must not be null.");
@@ -115,8 +113,8 @@ public class AddressBookInitializer {
         this.platformContext = Objects.requireNonNull(platformContext, "The platformContext must not be null.");
         final AddressBookConfig addressBookConfig =
                 platformContext.getConfiguration().getConfigData(AddressBookConfig.class);
-        this.loadedSignedState = signedState;
-        this.loadedAddressBook = loadedSignedState == null ? null : loadedSignedState.getAddressBook();
+        this.initialState = Objects.requireNonNull(initialState, "The initialState must not be null.");
+        this.stateAddressBook = initialState.getAddressBook();
         this.pathToAddressBookDirectory = Path.of(addressBookConfig.addressBookDirectory());
         try {
             Files.createDirectories(pathToAddressBookDirectory);
@@ -153,28 +151,30 @@ public class AddressBookInitializer {
     private AddressBook initialize() {
         AddressBook candidateAddressBook;
         if (useConfigAddressBook) {
+            // settings.txt override to use config.txt address book
             logger.info(
                     STARTUP.getMarker(),
                     "Overriding the address book in the state with the address book from config.txt");
-            // configuration is overriding to force use of configuration address book.
             candidateAddressBook = configAddressBook;
-        } else if (loadedSignedState == null || loadedAddressBook == null) {
-            logger.info(
-                    STARTUP.getMarker(),
-                    "The loaded signed state is null. The candidateAddressBook is set to "
-                            + "the address book from config.txt.");
+        } else if (initialState.isGenesisState()) {
+            // Starting from Genesis, config and state address book should be the same.
+            if (!Objects.equals(configAddressBook, initialState.getAddressBook())) {
+                throw new IllegalStateException("Config and State Address Books do not match on Genesis Start.");
+            }
+            logger.info(STARTUP.getMarker(), "Starting from genesis: using the config address book.");
             candidateAddressBook = configAddressBook;
             checkCandidateAddressBookValidity(candidateAddressBook);
         } else if (!softwareUpgrade) {
-            logger.info(STARTUP.getMarker(), "Using the loaded signed state's address book and weight values.");
-            candidateAddressBook = loadedAddressBook;
+            // Loaded State From Disk, Non-Genesis, No Software Upgrade
+            logger.info(STARTUP.getMarker(), "Using the loaded state's address book and weight values.");
+            candidateAddressBook = stateAddressBook;
             // since state address book was checked for validity prior to adoption, no check needed here.
         } else {
-            // There is a software upgrade
+            // Loaded State from Disk, Non-Genesis, There is a software version upgrade
             logger.info(
                     STARTUP.getMarker(),
                     "The address book weight may be updated by the application using data from the state snapshot.");
-            candidateAddressBook = loadedSignedState
+            candidateAddressBook = initialState
                     .getSwirldState()
                     .updateWeight(configAddressBook.copy(), platformContext)
                     .copy();
@@ -212,9 +212,9 @@ public class AddressBookInitializer {
     }
 
     /**
-     * Records the configuration address book, the state loaded address book, and the usedAddressBook in a timestamped
-     * file for diagnostic purposes.  If the path to the address book directory does not resolve or a new file for
-     * address books cannot be created, no file is generated.
+     * Records the configuration address book, the state address book, and the usedAddressBook in a timestamped file for
+     * diagnostic purposes.  If the path to the address book directory does not resolve or a new file for address books
+     * cannot be created, no file is generated.
      *
      * @param usedAddressBook the address book to be returned from the AddressBookInitializer.
      */
@@ -229,13 +229,12 @@ public class AddressBookInitializer {
                 out.write(CONFIG_ADDRESS_BOOK_HEADER + "\n");
                 out.write(configAddressBook.toConfigText() + "\n\n");
                 out.write(STATE_ADDRESS_BOOK_HEADER + "\n");
-                final String text =
-                        loadedAddressBook == null ? STATE_ADDRESS_BOOK_NULL : loadedAddressBook.toConfigText();
+                final String text = stateAddressBook.toConfigText();
                 out.write(text + "\n\n");
                 out.write(USED_ADDRESS_BOOK_HEADER + "\n");
                 if (usedAddressBook == configAddressBook) {
                     out.write(CONFIG_ADDRESS_BOOK_USED);
-                } else if (usedAddressBook == loadedAddressBook) {
+                } else if (usedAddressBook == stateAddressBook) {
                     out.write(STATE_ADDRESS_BOOK_USED);
                 } else {
                     out.write(usedAddressBook.toConfigText());

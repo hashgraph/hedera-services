@@ -43,8 +43,6 @@ import com.swirlds.config.api.ConfigProperty;
  * 		should be set to true when using the internet simulator
  * @param tcpNoDelay
  * 		if true, then Nagel's algorithm is disabled, which helps latency, hurts bandwidth usage
- * @param deadlockCheckPeriod
- * 		check for deadlocks every this many milliseconds (-1 for never)
  */
 @ConfigData("socket")
 public record SocketConfig(
@@ -56,5 +54,4 @@ public record SocketConfig(
         @ConfigProperty(defaultValue = "true") boolean useTLS,
         @ConfigProperty(defaultValue = "false") boolean doUpnp,
         @ConfigProperty(defaultValue = "false") boolean useLoopbackIp,
-        @ConfigProperty(defaultValue = "true") boolean tcpNoDelay,
-        @ConfigProperty(defaultValue = "1000") int deadlockCheckPeriod) {}
+        @ConfigProperty(defaultValue = "true") boolean tcpNoDelay) {}
