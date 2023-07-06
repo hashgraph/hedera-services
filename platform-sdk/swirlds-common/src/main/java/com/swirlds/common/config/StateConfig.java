@@ -108,7 +108,8 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "false") boolean cleanSavedStateDirectory,
         @ConfigProperty(defaultValue = "20") int stateSavingQueueSize,
         @ConfigProperty(defaultValue = "0") int saveStatePeriod,
-        @ConfigProperty(defaultValue = "true") boolean saveReconnectStateToDisk,
+        // FUTURE WORK: this should be default true once virtual map bug is fixed
+        @ConfigProperty(defaultValue = "false") boolean saveReconnectStateToDisk,
         @ConfigProperty(defaultValue = "3") int signedStateDisk,
         @ConfigProperty(defaultValue = "false") boolean dumpStateOnAnyISS,
         @ConfigProperty(defaultValue = "true") boolean dumpStateOnFatal,
