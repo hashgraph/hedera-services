@@ -58,45 +58,14 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
         // Allowance transfers is only for negative amounts, it is used to reduce allowance for the spender
         final Map<AccountID, Long> allowanceTransfers = new HashMap<>();
         for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(Collections.emptyList())) {
-            addOrUpdateAggregatedBalances(netHbarTransfers, aa);
+            netHbarTransfers.merge(aa.accountID(), aa.amount(), Long::sum);
             if (aa.isApproval() && aa.amount() < 0) {
-                addOrUpdateAllowances(allowanceTransfers, aa);
+                allowanceTransfers.merge(aa.accountID(), aa.amount(), Long::sum);
             }
         }
 
         modifyAggregatedTransfers(netHbarTransfers, accountStore, transferContext);
         modifyAggregatedAllowances(allowanceTransfers, accountStore, transferContext);
-    }
-
-    /**
-     * Aggregates all token allowances from the changes that have isApproval flag set in
-     * {@link CryptoTransferTransactionBody}.
-     * @param allowanceTransfers - map of aggregated token allowances to be modified
-     * @param aa - account amount
-     */
-    private void addOrUpdateAllowances(
-            @NonNull final Map<AccountID, Long> allowanceTransfers, @NonNull final AccountAmount aa) {
-        if (!allowanceTransfers.containsKey(aa.accountID())) {
-            allowanceTransfers.put(aa.accountID(), aa.amount());
-        } else {
-            final var existingChange = allowanceTransfers.get(aa.accountID());
-            allowanceTransfers.put(aa.accountID(), existingChange + aa.amount());
-        }
-    }
-
-    /**
-     * Modifies the aggregated token balances for all the changes
-     * @param netHbarTransfers - map of aggregated hbar balances to be modified
-     * @param aa - account amount
-     */
-    private void addOrUpdateAggregatedBalances(
-            @NonNull final Map<AccountID, Long> netHbarTransfers, @NonNull final AccountAmount aa) {
-        if (!netHbarTransfers.containsKey(aa.accountID())) {
-            netHbarTransfers.put(aa.accountID(), aa.amount());
-        } else {
-            final var existingChange = netHbarTransfers.get(aa.accountID());
-            netHbarTransfers.put(aa.accountID(), existingChange + aa.amount());
-        }
     }
 
     /**

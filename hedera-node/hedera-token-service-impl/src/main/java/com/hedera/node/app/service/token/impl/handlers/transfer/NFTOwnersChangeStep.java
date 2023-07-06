@@ -62,11 +62,8 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         for (var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.token();
             final var token = getIfUsable(tokenId, tokenStore);
-
-            if (xfers.hasExpectedDecimals()) {
-                HandleException.validateTrue(
-                        token.decimals() == xfers.expectedDecimals().intValue(), UNEXPECTED_TOKEN_DECIMALS);
-            }
+            // Expected decimals are already validated in AdjustFungibleTokenChangesStep.
+            // So not doing same check again here
 
             for (final var nftTransfer : xfers.nftTransfersOrElse(Collections.emptyList())) {
                 final var senderId = nftTransfer.senderAccountID();

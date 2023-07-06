@@ -94,57 +94,20 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
                 // Add the amount to the aggregatedFungibleTokenChanges map.
                 // If the (accountId, tokenId) pair doesn't exist in the map, add it.
                 // Else, update the aggregated transfer amount
-                addOrUpdateAggregatedBalances(aggregatedFungibleTokenChanges, pair, aa.amount());
+                aggregatedFungibleTokenChanges.merge(pair, aa.amount(), Long::sum);
 
                 // If the transfer is happening with an allowance,
                 // add it to the allowanceTransfers map.
                 // If the accountId tokenId pair doesn't exist in the map, add it.
                 // Else, update the aggregated transfer amount
                 if (aa.isApproval() && aa.amount() < 0) {
-                    addOrUpdateAllowances(allowanceTransfers, pair, aa.amount());
+                    allowanceTransfers.merge(pair, aa.amount(), Long::sum);
                 }
             }
         }
 
         modifyAggregatedTokenBalances(aggregatedFungibleTokenChanges, tokenRelStore, accountStore);
         modifyAggregatedAllowances(allowanceTransfers, accountStore, transferContext);
-    }
-
-    /**
-     * Aggregates all token allowances from the changes that have isApproval flag set in
-     * {@link CryptoTransferTransactionBody}.
-     * @param allowanceTransfers - map of aggregated token allowances to be modified
-     * @param pair - the account id and token id pair to look for in token allowances
-     * @param amount - amount to be added to the aggregated balance
-     */
-    private void addOrUpdateAllowances(
-            @NonNull final Map<EntityNumPair, Long> allowanceTransfers,
-            @NonNull final EntityNumPair pair,
-            final long amount) {
-        if (!allowanceTransfers.containsKey(pair)) {
-            allowanceTransfers.put(pair, amount);
-        } else {
-            final var existingChange = allowanceTransfers.get(pair);
-            allowanceTransfers.put(pair, existingChange + amount);
-        }
-    }
-
-    /**
-     * Modifies the aggregated token balances for all the changes
-     * @param aggregatedFungibleTokenChanges - map of aggregated token balances to be modified
-     * @param pair - account id and token id pair
-     * @param amount - amount to be added to the aggregated balance
-     */
-    private void addOrUpdateAggregatedBalances(
-            @NonNull final Map<EntityNumPair, Long> aggregatedFungibleTokenChanges,
-            @NonNull final EntityNumPair pair,
-            final long amount) {
-        if (!aggregatedFungibleTokenChanges.containsKey(pair)) {
-            aggregatedFungibleTokenChanges.put(pair, amount);
-        } else {
-            final var existingChange = aggregatedFungibleTokenChanges.get(pair);
-            aggregatedFungibleTokenChanges.put(pair, existingChange + amount);
-        }
     }
 
     /**
