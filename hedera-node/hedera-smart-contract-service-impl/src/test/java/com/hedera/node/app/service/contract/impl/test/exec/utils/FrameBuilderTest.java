@@ -58,7 +58,7 @@ class FrameBuilderTest {
     private final FrameBuilder subject = new FrameBuilder();
 
     @Test
-    void constructsExpectedFrameForCallToExtantContract() {
+    void constructsExpectedFrameForCallToExtantContractIncludingAccessTrackerWithSidecarEnabled() {
         final var transaction = wellKnownHapiCall();
         given(worldUpdater.updater()).willReturn(stackedUpdater);
         given(blocks.blockValuesOf(GAS_LIMIT)).willReturn(blockValues);

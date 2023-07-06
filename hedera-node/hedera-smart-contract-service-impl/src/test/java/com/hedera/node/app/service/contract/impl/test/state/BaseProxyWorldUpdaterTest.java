@@ -28,8 +28,8 @@ import com.hedera.node.app.service.contract.impl.state.ContractSchema;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.RentFactors;
-import com.hedera.node.app.service.contract.impl.state.StorageChange;
-import com.hedera.node.app.service.contract.impl.state.StorageChanges;
+import com.hedera.node.app.service.contract.impl.state.StorageAccess;
+import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
 import com.hedera.node.app.spi.meta.bni.Fees;
@@ -109,7 +109,7 @@ class BaseProxyWorldUpdaterTest {
         // Three keys being removed in pending changes
         final var sizeExcludingPendingRemovals = sizeIncludingPendingRemovals - 3;
         given(evmFrameState.getKvStateSize()).willReturn(sizeIncludingPendingRemovals);
-        given(evmFrameState.getPendingStorageChanges()).willReturn(pendingChanges());
+        given(evmFrameState.getStorageChanges()).willReturn(pendingChanges());
         given(evmFrameState.getRentFactorsFor(A_NUM)).willReturn(new RentFactors(aSlotsUsedBeforeCommit, aExpiry));
 
         final var rentInTinycents = 666_666L;
@@ -133,22 +133,22 @@ class BaseProxyWorldUpdaterTest {
         inOrder.verify(scope).commit();
     }
 
-    private List<StorageChanges> pendingChanges() {
+    private List<StorageAccesses> pendingChanges() {
         return List.of(
-                new StorageChanges(
+                new StorageAccesses(
                         A_NUM,
                         List.of(
-                                new StorageChange(A_KEY_BEING_ADDED, UInt256.ZERO, UInt256.ONE),
-                                new StorageChange(A_KEY_BEING_CHANGED, UInt256.ONE, UInt256.MAX_VALUE),
-                                new StorageChange(A_KEY_BEING_REMOVED, UInt256.ONE, UInt256.ZERO),
-                                new StorageChange(A_SECOND_KEY_BEING_ADDED, UInt256.ZERO, UInt256.ONE),
-                                new StorageChange(A_THIRD_KEY_BEING_ADDED, UInt256.ZERO, UInt256.MAX_VALUE))),
-                new StorageChanges(
+                                new StorageAccess(A_KEY_BEING_ADDED, UInt256.ZERO, UInt256.ONE),
+                                new StorageAccess(A_KEY_BEING_CHANGED, UInt256.ONE, UInt256.MAX_VALUE),
+                                new StorageAccess(A_KEY_BEING_REMOVED, UInt256.ONE, UInt256.ZERO),
+                                new StorageAccess(A_SECOND_KEY_BEING_ADDED, UInt256.ZERO, UInt256.ONE),
+                                new StorageAccess(A_THIRD_KEY_BEING_ADDED, UInt256.ZERO, UInt256.MAX_VALUE))),
+                new StorageAccesses(
                         B_NUM,
                         List.of(
-                                new StorageChange(B_KEY_BEING_ADDED, UInt256.ZERO, UInt256.ONE),
-                                new StorageChange(B_KEY_BEING_REMOVED, UInt256.ONE, UInt256.ZERO),
-                                new StorageChange(B_SECOND_KEY_BEING_REMOVED, UInt256.ONE, UInt256.ZERO))));
+                                new StorageAccess(B_KEY_BEING_ADDED, UInt256.ZERO, UInt256.ONE),
+                                new StorageAccess(B_KEY_BEING_REMOVED, UInt256.ONE, UInt256.ZERO),
+                                new StorageAccess(B_SECOND_KEY_BEING_REMOVED, UInt256.ONE, UInt256.ZERO))));
     }
 
     private List<StorageSizeChange> expectedSizeChanges() {
