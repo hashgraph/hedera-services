@@ -20,6 +20,8 @@ import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.get
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
@@ -33,8 +35,14 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.Custo
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Charges custom fees for the crypto transfer operation. This is yet to be implemented
@@ -64,24 +72,85 @@ public class CustomFeeAssessmentStep {
         final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
         final var tokensConfig = handleContext.configuration().getConfigData(TokensConfig.class);
 
-        final var nextLevelBuilder = CryptoTransferTransactionBody.newBuilder()
-                .transfers(TransferList.newBuilder().build())
-                .tokenTransfers(TokenTransferList.newBuilder()
-                        .transfers(emptyList())
-                        .nftTransfers(emptyList())
+        // two maps to aggregate all custom fee balance changes. These two maps are used
+        // to construct a transaction body that needs to be assessed again for custom fees
+        final Map<TokenID, Map<AccountID, Long>> customFeeTokenAdjustmentsLevel1 = new HashMap<>();
+        final Map<AccountID, Long> customFeeHbarAdjustmentsLevel1 = new HashMap<>();
+        // Any debits in this set should not trigger custom fee charging again
+        final Set<TokenID> exemptDebitsLevel1 = new HashSet<>();
+
+        // Assess custom fees for given op and produce a next level transaction body builder
+        // that needs to be assessed again for custom fees. This is because a custom fee balance
+        // change can trigger custom fees again
+        assessCustomFeesForALevel(
+                tokenTransfers,
+                tokenStore,
+                tokensConfig,
+                customFeeHbarAdjustmentsLevel1,
+                customFeeTokenAdjustmentsLevel1,
+                exemptDebitsLevel1);
+
+        final var nextLevelBuilder = buildTransactionFromAdjustments(customFeeHbarAdjustmentsLevel1,
+                customFeeTokenAdjustmentsLevel1);
+        customFeeAssessments.add(nextLevelBuilder);
+
+        // There can only be three levels of custom fees. So assess the generated builder again
+        // for last level of custom fees
+        assessCustomFeesForALevel(
+                nextLevelBuilder.build().tokenTransfers(),
+                tokenStore,
+                tokensConfig,
+                customFeeHbarAdjustments,
+                customFeeTokenAdjustments,
+                exemptDebits);
+
+        return nextLevelBuilder;
+    }
+
+    private CryptoTransferTransactionBody.Builder buildTransactionFromAdjustments(
+            final Map<AccountID, Long> customFeeHbarAdjustments,
+            final Map<TokenID, Map<AccountID, Long>> customFeeTokenAdjustments) {
+        final var newBuilder = CryptoTransferTransactionBody.newBuilder();
+        final var transferList = TransferList.newBuilder();
+        final List<AccountAmount> aaList = new ArrayList<>();
+        final List<TokenTransferList> tokenTransferLists = new ArrayList<>();
+
+        for(final var entry : customFeeHbarAdjustments.entrySet()) {
+            aaList.add(AccountAmount.newBuilder().accountID(entry.getKey()).amount(entry.getValue()).build());
+        }
+        transferList.accountAmounts(aaList);
+        newBuilder.transfers(transferList.build());
+        aaList.clear();
+
+        for(final var entry : customFeeTokenAdjustments.entrySet()) {
+            final var tokenTransferList = TokenTransferList.newBuilder()
+                    .token(entry.getKey());
+            for(final var valueEntry : entry.getValue().entrySet()) {
+                aaList.add(AccountAmount.newBuilder()
+                        .accountID(valueEntry.getKey())
+                        .amount(valueEntry.getValue())
                         .build());
+            }
+            tokenTransferList.transfers(aaList);
+            tokenTransferLists.add(tokenTransferList.build());
+        }
+        newBuilder.tokenTransfers(tokenTransferLists);
+        return newBuilder;
+    }
 
-        final var hbarAdjustments = TransferList.newBuilder();
-        final List<TokenTransferList.Builder> htsAdjustments = new ArrayList<>();
-
+    private void assessCustomFeesForALevel(List<TokenTransferList> tokenTransfers,
+                                           ReadableTokenStore tokenStore,
+                                           TokensConfig tokensConfig,
+                                           Map<AccountID, Long> customFeeHbarAdjustments,
+                                           Map<TokenID, Map<AccountID, Long>> customFeeTokenAdjustments,
+                                           Set<TokenID> exemptDebits) {
         for (final var xfer : tokenTransfers) {
             final var tokenId = xfer.token();
             final var fungibleTokenTransfers = xfer.transfersOrElse(emptyList());
             final var nftTransfers = xfer.nftTransfersOrElse(emptyList());
 
             final var token = getIfUsable(tokenId, tokenStore);
-            final var feeMeta =
-                    new CustomFeeMeta(tokenId, token.treasuryAccountId(), token.customFeesOrElse(emptyList()));
+            final var feeMeta = new CustomFeeMeta(tokenId, token.treasuryAccountId(), token.customFeesOrElse(emptyList()), token.tokenType());
             if (feeMeta.customFees().isEmpty()) {
                 continue;
             }
@@ -90,9 +159,15 @@ public class CustomFeeAssessmentStep {
                 final var adjustment = aa.amount();
                 for (final var fee : feeMeta.customFees()) {
                     final var denomToken = fee.fixedFee().denominatingTokenId();
-                    if (couldTriggerCustomFees(tokenId, denomToken, false, true, adjustment)) {
+                    if (couldTriggerCustomFees(tokenId, denomToken, false,
+                            true, adjustment, exemptDebits)) {
                         customFeeAssessor.assess(
-                                aa.accountID(), feeMeta, tokensConfig, ledgerConfig, hbarAdjustments, htsAdjustments);
+                                aa.accountID(),
+                                feeMeta,
+                                tokensConfig,
+                                customFeeHbarAdjustments,
+                                customFeeTokenAdjustments,
+                                exemptDebits);
                     }
                 }
             }
@@ -101,44 +176,18 @@ public class CustomFeeAssessmentStep {
                 final var adjustment = nftTransfer.serialNumber();
                 for (final var fee : feeMeta.customFees()) {
                     final var denomToken = fee.fixedFee().denominatingTokenId();
-                    if (couldTriggerCustomFees(tokenId, denomToken, true, false, adjustment)) {
+                    if (couldTriggerCustomFees(tokenId, denomToken, true,
+                            false, adjustment, exemptDebits)) {
                         customFeeAssessor.assess(
                                 nftTransfer.senderAccountID(),
                                 feeMeta,
                                 tokensConfig,
-                                ledgerConfig,
-                                hbarAdjustments,
-                                htsAdjustments);
+                                customFeeHbarAdjustments,
+                                customFeeTokenAdjustments,
+                                exemptDebits);
                     }
                 }
             }
-        }
-        nextLevelBuilder.tokenTransfers(tokenTransfers).transfers(hbarAdjustments.build());
-        customFeeAssessments.add(nextLevelBuilder);
-        return nextLevelBuilder;
-    }
-
-    /**
-     * Checks if the adjustment will trigger a custom fee.
-     * Custom fee is triggered if the fee is not self-denominated and the transfer is not a hbar transfer
-     * and the adjustment is a debit.
-     * @param chargingTokenId the token that is being charged
-     * @param denominatingTokenID the token that is being used as denomination to pay the fee
-     * @param isNftTransfer true if the transfer is an NFT transfer
-     * @param isFungibleTokenTransfer true if the transfer is a fungible token transfer
-     * @param adjustment the amount of the transfer
-     * @return true if the adjustment will trigger a custom fee. False otherwise.
-     */
-    private boolean couldTriggerCustomFees(
-            @NonNull TokenID chargingTokenId,
-            @NonNull TokenID denominatingTokenID,
-            boolean isNftTransfer,
-            boolean isFungibleTokenTransfer,
-            long adjustment) {
-        if (isExemptFromCustomFees(chargingTokenId, denominatingTokenID)) {
-            return false;
-        } else {
-            return isNftTransfer || (isFungibleTokenTransfer && adjustment < 0);
         }
     }
 
@@ -152,5 +201,31 @@ public class CustomFeeAssessmentStep {
         /* But self-denominated fees are exempt from further custom fee charging,
         c.f. https://github.com/hashgraph/hedera-services/issues/1925 */
         return chargingTokenId.equals(denominatingTokenID);
+    }
+    /**
+     * Checks if the adjustment will trigger a custom fee.
+     * Custom fee is triggered if the fee is not self-denominated and the transfer is not a hbar transfer
+     * and the adjustment is a debit.
+     *
+     * @param chargingTokenId         the token that is being charged
+     * @param denominatingTokenID     the token that is being used as denomination to pay the fee
+     * @param isNftTransfer           true if the transfer is an NFT transfer
+     * @param isFungibleTokenTransfer true if the transfer is a fungible token transfer
+     * @param adjustment              the amount of the transfer
+     * @param exemptDebits
+     * @return true if the adjustment will trigger a custom fee. False otherwise.
+     */
+    private boolean couldTriggerCustomFees(
+            @NonNull TokenID chargingTokenId,
+            @NonNull TokenID denominatingTokenID,
+            boolean isNftTransfer,
+            boolean isFungibleTokenTransfer,
+            long adjustment,
+            final Set<TokenID> exemptDebits){
+        if (isExemptFromCustomFees(chargingTokenId, denominatingTokenID) || exemptDebits.contains(denominatingTokenID)) {
+            return false;
+        }else{
+            return isNftTransfer || (isFungibleTokenTransfer && adjustment < 0);
+        }
     }
 }

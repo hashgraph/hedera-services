@@ -127,7 +127,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         // Replace all aliases in the transaction body with its account ids
         final var replacedOp = ensureAndReplaceAliasesInOp(txn, transferContext, context);
         // Use the op with replaced aliases in further steps
-        final var steps = decomposeIntoSteps(replacedOp, topLevelPayer);
+        final var steps = decomposeIntoSteps(replacedOp, topLevelPayer, transferContext);
         for (final var step : steps) {
             // Apply all changes to the handleContext's States
             step.doIn(transferContext);
@@ -193,19 +193,21 @@ public class CryptoTransferHandler implements TransactionHandler {
      *        'c' = updates an existing BalanceChange
      *        'o' = causes a side effect not represented as BalanceChange
      *
-     * @param op            The crypto transfer transaction body
-     * @param topLevelPayer The payer of the transaction
+     * @param op              The crypto transfer transaction body
+     * @param topLevelPayer   The payer of the transaction
+     * @param transferContext
      * @return A list of steps to execute
      */
     private List<TransferStep> decomposeIntoSteps(
-            final CryptoTransferTransactionBody op, final AccountID topLevelPayer) {
+            final CryptoTransferTransactionBody op, final AccountID topLevelPayer,
+            final TransferContextImpl transferContext) {
         final List<TransferStep> steps = new ArrayList<>();
         // Step 1: associate any token recipients that are not already associated and have
         // auto association slots open
         steps.add(new AssociateTokenRecepientsStep(op));
         // Step 2: Charge custom fees for token transfers. yet to be implemented
-        final var customFeeStep = new CustomFeeAssessmentStep();
-        final var listOfOps = customFeeStep.assessCustomFees(op);
+        final var customFeeStep = new CustomFeeAssessmentStep(op);
+        final var listOfOps = customFeeStep.assessCustomFees(transferContext);
 
         // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
         final var assessHbarTransfers = new AdjustHbarChangesStep(op, topLevelPayer);

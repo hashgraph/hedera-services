@@ -18,9 +18,13 @@ package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.transaction.CustomFee;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 public record CustomFeeMeta(
-        @NonNull TokenID tokenId, @NonNull AccountID treasuryId, @NonNull List<CustomFee> customFees) {}
+        @NonNull TokenID tokenId,
+        @NonNull AccountID treasuryId,
+        @NonNull List<CustomFee> customFees,
+        @NonNull TokenType tokenType) {}

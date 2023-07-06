@@ -23,14 +23,21 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -40,7 +47,7 @@ public class CustomFeeAssessor {
     private final CustomFractionalFeeAssessor fractionalFeeAssessor;
     private final CustomRoyaltyFeeAssessor royaltyFeeAssessor;
     private int numberOfCustomFeesCharged = 0;
-    private int numOfTotalBalanceChanges = 0;
+    private int totalBalanceChanges = 0;
     private int levelNum = 0;
 
     @Inject
@@ -52,7 +59,7 @@ public class CustomFeeAssessor {
         this.fixedFeeAssessor = fixedFeeAssessor;
         this.fractionalFeeAssessor = fractionalFeeAssessor;
         this.royaltyFeeAssessor = royaltyFeeAssessor;
-        numOfTotalBalanceChanges = numAdjustmentsFromOriginalBody(op);
+        totalBalanceChanges = numAdjustmentsFromOriginalBody(op);
     }
 
     private int numAdjustmentsFromOriginalBody(final CryptoTransferTransactionBody op) {
@@ -73,9 +80,9 @@ public class CustomFeeAssessor {
             final AccountID sender,
             final CustomFeeMeta feeMeta,
             final TokensConfig tokensConfig,
-            final LedgerConfig ledgerConfig,
-            final TransferList.Builder hbarAdjustments,
-            final List<TokenTransferList.Builder> htsAdjustments) {
+            final Map<AccountID, Long> hbarAdjustments,
+            final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
+            final Set<TokenID> exemptDebits) {
         // increment the level to create transaction body from all custom fees assessed from original
         // transaction
         levelNum++;
@@ -86,30 +93,17 @@ public class CustomFeeAssessor {
         if (feeMeta.treasuryId().equals(sender)) {
             return;
         }
+        fixedFeeAssessor.assessFixedFees(feeMeta, sender, hbarAdjustments, htsAdjustments, exemptDebits);
+        totalBalanceChanges += hbarAdjustments.size() + htsAdjustments.size();
+        validateFalse(totalBalanceChanges > maxTransfersSize, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);;
 
-        final var maxTransfersSize = ledgerConfig.xferBalanceChangesMaxLen();
-        assessFixedFees(feeMeta, sender, maxTransfersSize, hbarAdjustments, htsAdjustments);
-
-        validateFalse(numOfTotalBalanceChanges > maxTransfersSize, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
-    }
-
-    private void assessFixedFees(
-            @NonNull final CustomFeeMeta feeMeta,
-            @NonNull final AccountID sender,
-            final int maxTransfersSize,
-            @NonNull final TransferList.Builder hbarAdjustments,
-            final List<TokenTransferList.Builder> htsAdjustments) {
-        for (final var fee : feeMeta.customFees()) {
-            final var collector = fee.feeCollectorAccountId();
-            if (sender.equals(collector)) {
-                continue;
-            }
-            if (fee.fee().kind().equals(CustomFee.FeeOneOfType.FIXED_FEE)) {
-                // This is a top-level fixed fee, not a fallback royalty fee
-                fixedFeeAssessor.assess(sender, feeMeta, fee, false, hbarAdjustments, htsAdjustments);
-                validateFalse(
-                        numOfTotalBalanceChanges > maxTransfersSize, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
-            }
+        // A FUNGIBLE_COMMON token can have fractional fees but not royalty fees.
+        // A NON_FUNGIBLE_UNIQUE token can have royalty fees but not fractional fees.
+        // So check token type and do further assessment
+        if(feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)){
+            fractionalFeeAssessor.assessFractionFees(feeMeta, sender, hbarAdjustments, htsAdjustments);
+        } else {
+            royaltyFeeAssessor.assessRoyaltyFees(feeMeta, sender, hbarAdjustments, htsAdjustments);
         }
     }
 }
