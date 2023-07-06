@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.service.mono.state.merkle;
 
+import com.hedera.test.serde.EqualityType;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
@@ -46,7 +48,8 @@ public class MerkleNetworkContextSerdeTest extends SelfSerializableDataTest<Merk
     }
 
     @Override
-    protected MerkleNetworkContext getExpectedObject(final int version, final int testCaseNo) {
+    protected MerkleNetworkContext getExpectedObject(
+            final int version, final int testCaseNo, @NonNull final EqualityType equalityType) {
         final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
         if (version < MerkleNetworkContext.RELEASE_0310_VERSION) {
             if (version < MerkleNetworkContext.RELEASE_0300_VERSION) {

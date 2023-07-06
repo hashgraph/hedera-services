@@ -42,7 +42,6 @@ import com.hedera.hapi.node.token.GrantedNftAllowance;
 import com.hedera.hapi.node.token.GrantedTokenAllowance;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUtil;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -194,19 +193,13 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             ReadableTokenStore readableTokenStore,
             ReadableTokenRelationStore tokenRelationStore) {
         final var tokenRelationshipList = new ArrayList<TokenRelationship>();
-        var tokenNum = account.headTokenNumber();
+        var tokenId = TokenID.newBuilder().tokenNum(account.headTokenNumber()).build();
         int count = 0;
 
-        while (tokenNum != 0 && count <= maxRelsPerInfoQuery) {
+        while (tokenId != null && !tokenId.equals(TokenID.DEFAULT) && count <= maxRelsPerInfoQuery) {
             final var tokenRelation = tokenRelationStore.get(
-                    AccountID.newBuilder().accountNum(account.accountNumber()).build(),
-                    TokenID.newBuilder().tokenNum(tokenNum).build());
+                    AccountID.newBuilder().accountNum(account.accountNumber()).build(), tokenId);
             if (tokenRelation != null) {
-                final var tokenId = TokenID.newBuilder()
-                        .shardNum(StaticProperties.getShard())
-                        .realmNum(StaticProperties.getRealm())
-                        .tokenNum(tokenNum)
-                        .build();
                 final TokenMetadata token = readableTokenStore.getTokenMeta(tokenId);
                 if (token != null) {
                     final TokenRelationship tokenRelationship = TokenRelationship.newBuilder()
@@ -224,7 +217,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
                             .build();
                     tokenRelationshipList.add(tokenRelationship);
                 }
-                tokenNum = tokenRelation.nextToken();
+                tokenId = tokenRelation.nextToken();
             } else {
                 break;
             }

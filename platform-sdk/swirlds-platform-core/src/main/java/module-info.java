@@ -59,12 +59,6 @@ module com.swirlds.platform {
     exports com.swirlds.platform.util;
 
     /* Targeted Exports to External Libraries */
-    exports com.swirlds.platform.event to
-            com.swirlds.platform.test,
-            com.swirlds.common,
-            com.swirlds.common.test,
-            com.fasterxml.jackson.core,
-            com.fasterxml.jackson.databind;
     exports com.swirlds.platform.internal to
             com.swirlds.platform.test,
             com.fasterxml.jackson.core,
@@ -113,6 +107,8 @@ module com.swirlds.platform {
             com.swirlds.config.impl;
     exports com.swirlds.platform.gossip.sync.config to
             com.swirlds.config.impl;
+    exports com.swirlds.platform.event.tipset to
+            com.swirlds.config.impl;
 
     opens com.swirlds.platform.cli to
             info.picocli;
@@ -126,6 +122,7 @@ module com.swirlds.platform {
     exports com.swirlds.platform.reconnect;
     exports com.swirlds.platform.gossip.shadowgraph;
     exports com.swirlds.platform.recovery.emergencyfile;
+    exports com.swirlds.platform.event;
 
     /* Swirlds Libraries */
     requires com.swirlds.base;

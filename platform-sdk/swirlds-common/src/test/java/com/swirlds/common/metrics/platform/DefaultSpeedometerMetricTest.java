@@ -30,7 +30,7 @@ import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;

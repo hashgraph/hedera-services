@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -51,12 +52,14 @@ public class EvmFnResult implements SelfSerializable {
     static final int RELEASE_0250_VERSION = 4;
     static final int RELEASE_0260_VERSION = 5;
     static final int RELEASE_0290_VERSION = 6;
-    static final int CURRENT_VERSION = RELEASE_0290_VERSION;
+    static final int RELEASE_0400_VERSION = 7;
+    static final int CURRENT_VERSION = RELEASE_0400_VERSION;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x2055c5c03ff84eb4L;
 
     public static final int MAX_LOGS = 1_024;
     public static final int MAX_CREATED_IDS = 32;
+    public static final int MAX_CREATED_CONTRACT_NONCES = Integer.MAX_VALUE;
     public static final int MAX_ERROR_BYTES = Integer.MAX_VALUE;
     public static final int MAX_RESULT_BYTES = Integer.MAX_VALUE;
     public static final int MAX_ADDRESS_BYTES = 20;
@@ -69,6 +72,7 @@ public class EvmFnResult implements SelfSerializable {
     private String error;
     private EntityId contractId;
     private List<EntityId> createdContractIds = Collections.emptyList();
+    private List<ContractNonceInfo> contractNonces = Collections.emptyList();
     private List<EvmLog> logs = Collections.emptyList();
     private long gas;
     private long amount;
@@ -99,6 +103,7 @@ public class EvmFnResult implements SelfSerializable {
                     result.getOutput(),
                     recipient,
                     serializableIdsFrom(result.getCreatedContracts()),
+                    serializableContractNoncesFrom(result.getContractNonces()),
                     evmAddress);
         } else {
             final var error = result.getRevertReason()
@@ -116,6 +121,7 @@ public class EvmFnResult implements SelfSerializable {
             final long gasUsed,
             final List<EvmLog> logs,
             final List<EntityId> createdContractIds,
+            final List<ContractNonceInfo> contractNonces,
             final byte[] evmAddress,
             final long gas,
             final long amount,
@@ -128,6 +134,7 @@ public class EvmFnResult implements SelfSerializable {
         this.gasUsed = gasUsed;
         this.logs = logs;
         this.createdContractIds = createdContractIds;
+        this.contractNonces = contractNonces;
         this.evmAddress = evmAddress;
         this.gas = gas;
         this.amount = amount;
@@ -186,6 +193,9 @@ public class EvmFnResult implements SelfSerializable {
         if (version >= RELEASE_0260_VERSION) {
             senderId = readNullableSerializable(in);
         }
+        if (version >= RELEASE_0400_VERSION) {
+            contractNonces = in.readSerializableList(MAX_CREATED_CONTRACT_NONCES, true, ContractNonceInfo::new);
+        }
     }
 
     @Override
@@ -202,6 +212,7 @@ public class EvmFnResult implements SelfSerializable {
         out.writeLong(amount);
         out.writeByteArray(functionParameters);
         writeNullableSerializable(senderId, out);
+        out.writeSerializableList(contractNonces, true, true);
     }
 
     /* --- Object --- */
@@ -220,6 +231,7 @@ public class EvmFnResult implements SelfSerializable {
                 && Objects.equals(error, that.error)
                 && Arrays.equals(bloom, that.bloom)
                 && Objects.equals(logs, that.logs)
+                && Objects.equals(contractNonces, that.contractNonces)
                 && Objects.equals(createdContractIds, that.createdContractIds)
                 && Arrays.equals(evmAddress, that.evmAddress)
                 && gas == that.gas
@@ -246,6 +258,7 @@ public class EvmFnResult implements SelfSerializable {
                 .add("contractId", contractId)
                 .add("createdContractIds", createdContractIds)
                 .add("logs", logs)
+                .add("contractNonces", contractNonces)
                 .add("evmAddress", hex(evmAddress))
                 .add("gas", gas)
                 .add("amount", amount)
@@ -303,6 +316,10 @@ public class EvmFnResult implements SelfSerializable {
         return functionParameters;
     }
 
+    public List<ContractNonceInfo> getContractNonces() {
+        return contractNonces;
+    }
+
     public EntityId getSenderId() {
         return senderId;
     }
@@ -325,6 +342,10 @@ public class EvmFnResult implements SelfSerializable {
 
     public void setSenderId(final EntityId senderId) {
         this.senderId = senderId;
+    }
+
+    public void setContractNonces(List<ContractNonceInfo> contractNonces) {
+        this.contractNonces = contractNonces;
     }
 
     public void updateForEvmCall(final EthTxData callContext, final EntityId senderId) {
@@ -353,6 +374,11 @@ public class EvmFnResult implements SelfSerializable {
         if (isNotEmpty(createdContractIds)) {
             for (final var createdId : createdContractIds) {
                 grpc.addCreatedContractIDs(createdId.toGrpcContractId());
+            }
+        }
+        if (isNotEmpty(contractNonces)) {
+            for (final var contractInfoNonce : contractNonces) {
+                grpc.addContractNonces(contractInfoNonce.toGrpc());
             }
         }
         if (evmAddress.length > 0) {
@@ -384,12 +410,28 @@ public class EvmFnResult implements SelfSerializable {
         }
     }
 
+    private static List<ContractNonceInfo> serializableContractNoncesFrom(
+            final Map<ContractID, Long> grpcContractNonces) {
+        final var n = grpcContractNonces.size();
+        if (n > 0) {
+            final List<ContractNonceInfo> contractNonces = new ArrayList<>();
+            for (final var contractNonce : grpcContractNonces.entrySet()) {
+                contractNonces.add(new ContractNonceInfo(
+                        EntityId.fromGrpcContractId(contractNonce.getKey()), contractNonce.getValue()));
+            }
+            return contractNonces;
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
     private static EvmFnResult success(
             final List<Log> logs,
             final long gasUsed,
             final Bytes output,
             final Address recipient,
             final List<EntityId> createdContractIds,
+            final List<ContractNonceInfo> contractNonces,
             final byte[] evmAddress) {
         return new EvmFnResult(
                 EntityId.fromAddress(recipient),
@@ -399,6 +441,7 @@ public class EvmFnResult implements SelfSerializable {
                 gasUsed,
                 EvmLog.fromBesu(logs),
                 createdContractIds,
+                contractNonces,
                 evmAddress,
                 0L,
                 0L,
@@ -413,6 +456,7 @@ public class EvmFnResult implements SelfSerializable {
                 error,
                 EMPTY,
                 gasUsed,
+                Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
                 EMPTY,

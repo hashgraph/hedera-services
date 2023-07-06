@@ -26,10 +26,12 @@ public class StandardEventEmitter extends AbstractEventEmitter<StandardEventEmit
 
     public StandardEventEmitter(final GraphGenerator<?> graphGenerator) {
         super(graphGenerator);
+        reset();
     }
 
     public StandardEventEmitter(final StandardEventEmitter that) {
         this(that.getGraphGenerator().cleanCopy());
+        reset();
     }
 
     /**

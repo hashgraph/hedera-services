@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.gas;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.node.app.service.contract.impl.exec.gas.GasCharges.ZERO_CHARGES;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -54,6 +55,43 @@ public class CustomGasCharging {
     }
 
     /**
+     * If the actual gas used by a transaction merits a refund, then do the refund using
+     * relayer-aware logic. The relayer gets refund priority, so any charged allowance
+     * is first refunded, with the sender only getting a refund if there is any left over.
+     *
+     * @param unusedGas the actual gas used by the transaction
+     * @param allowanceUsed the amount of the relayer's gas allowance used
+     * @param sender the sender account
+     * @param relayer the relayer account, if present
+     * @param context the context of the transaction, including the network gas price
+     * @param worldUpdater the world updater for the transaction
+     */
+    public void maybeRefundGiven(
+            final long unusedGas,
+            final long allowanceUsed,
+            @NonNull final HederaEvmAccount sender,
+            @Nullable final HederaEvmAccount relayer,
+            @NonNull final HederaEvmContext context,
+            @NonNull final HederaWorldUpdater worldUpdater) {
+        requireNonNull(sender);
+        requireNonNull(context);
+        requireNonNull(worldUpdater);
+        if (context.isNoopGasContext() || unusedGas == 0) {
+            return;
+        }
+        final var refund = unusedGas * context.gasPrice();
+        if (allowanceUsed > 0) {
+            requireNonNull(relayer);
+            worldUpdater.refundFee(relayer.hederaId(), Math.min(allowanceUsed, refund));
+            if (refund > allowanceUsed) {
+                worldUpdater.refundFee(sender.hederaId(), refund - allowanceUsed);
+            }
+        } else {
+            worldUpdater.refundFee(sender.hederaId(), refund);
+        }
+    }
+
+    /**
      * Tries to charge gas for the given transaction based on the pre-fetched sender and relayer accounts,
      * within the given context and world updater.
      *
@@ -62,25 +100,27 @@ public class CustomGasCharging {
      * @param context the context of the transaction, including the network gas price
      * @param worldUpdater the world updater for the transaction
      * @param transaction the transaction to charge gas for
-     * @return the amount charged to the relayer, if any
+     * @return the result of the gas charging
      * @throws HandleException if the gas charging fails for any reason
      */
-    public long chargeForGas(
+    public GasCharges chargeForGas(
             @NonNull final HederaEvmAccount sender,
             @Nullable final HederaEvmAccount relayer,
             @NonNull final HederaEvmContext context,
             @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final HederaEvmTransaction transaction) {
-        if (context.staticCall()) {
-            return 0L;
+        if (context.isNoopGasContext()) {
+            return ZERO_CHARGES;
         }
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, transaction.isCreate());
         validateTrue(transaction.gasLimit() >= intrinsicGas, INSUFFICIENT_GAS);
         if (transaction.isEthereumTransaction()) {
-            return chargeWithRelayer(sender, requireNonNull(relayer), context, worldUpdater, transaction);
+            final var allowanceUsed =
+                    chargeWithRelayer(sender, requireNonNull(relayer), context, worldUpdater, transaction);
+            return new GasCharges(intrinsicGas, allowanceUsed);
         } else {
             chargeWithOnlySender(sender, context, worldUpdater, transaction);
-            return 0L;
+            return new GasCharges(intrinsicGas, 0L);
         }
     }
 
