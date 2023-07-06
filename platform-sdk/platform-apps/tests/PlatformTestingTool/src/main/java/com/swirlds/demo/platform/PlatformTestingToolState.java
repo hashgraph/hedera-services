@@ -254,10 +254,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
         setConfig(sourceState.getConfig().copy());
 
-        if (sourceState.getNextSeqCons() != null) {
+        if (platform != null && sourceState.getNextSeqCons() != null) {
             setNextSeqCons(new NextSeqConsList(sourceState.getNextSeqCons()));
-        }
-        if (platform != null) {
+
             // If nextSeqCons is shorter than the address book then add 0s until the sizes match
             for (int index = getNextSeqCons().size();
                     index < platform.getAddressBook().getSize();
@@ -305,7 +304,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         this.progressCfg = sourceState.progressCfg;
         this.roundCounter = sourceState.roundCounter;
 
-        if (platform != null) {
+        if (platform != null && sourceState.getTransactionCounter() != null) {
             setTransactionCounter(
                     new TransactionCounterList(platform.getAddressBook().getSize()));
             for (int id = 0; id < platform.getAddressBook().getSize(); id++) {
@@ -1095,7 +1094,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
      * If the size of the address book has changed, zero out the transaction counters and resize, as needed.
      */
     private void updateTransactionCounters() {
-        if (getTransactionCounter().size() != platform.getAddressBook().getSize()) {
+        if (getTransactionCounter() == null
+                || getTransactionCounter().size() != platform.getAddressBook().getSize()) {
             setNextSeqCons(new NextSeqConsList(platform.getAddressBook().getSize()));
 
             setTransactionCounter(
