@@ -38,6 +38,8 @@ import com.hedera.node.app.service.mono.throttling.annotations.ScheduleThrottle;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.swirlds.common.system.address.AddressBook;
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -51,6 +53,8 @@ public class ConfigCallbacks {
 
     private static final Logger log = LogManager.getLogger(ConfigCallbacks.class);
     private static final long DEFAULT_MAX_TO_MIN_STAKE_RATIO = 4L;
+    private static final BigDecimal MAX_STAKE_SCALE_FACTOR =
+            BigDecimal.TEN.add(BigDecimal.ONE).divide(BigDecimal.TEN, MathContext.DECIMAL32);
     private final PropertySource properties;
     private final PropertySources propertySources;
     private final HapiOpPermissions hapiOpPermissions;
@@ -115,8 +119,10 @@ public class ConfigCallbacks {
     }
 
     private void updateMinAndMaxStakesWith(
-            final long hbarFloat, final int numNodes, final Map<Long, Long> maxToMinStakeRatios) {
-        final var maxStake = hbarFloat / numNodes;
+            final long totalHbarSupply, final int numNodes, final Map<Long, Long> maxToMinStakeRatios) {
+        final var maxStake = MAX_STAKE_SCALE_FACTOR
+                .multiply(BigDecimal.valueOf(totalHbarSupply / numNodes))
+                .longValue();
         final var curStakingInfos = stakingInfos.get();
         curStakingInfos.keySet().forEach(num -> {
             final var mutableInfo = curStakingInfos.getForModify(num);
