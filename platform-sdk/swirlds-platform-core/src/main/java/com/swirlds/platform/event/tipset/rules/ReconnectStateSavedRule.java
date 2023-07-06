@@ -27,7 +27,7 @@ import java.util.function.Supplier;
  * <p>
  * After the platform status refactor is completed, this functionality will be superseded by platform status logic.
  */
-public class ReconnectStateSavedRule implements TipsetEventCreationRule { // TODO test
+public class ReconnectStateSavedRule implements TipsetEventCreationRule {
 
     private final Supplier<Long> latestReconnectRound;
     private final Supplier<Long> latestSavedStateRound;

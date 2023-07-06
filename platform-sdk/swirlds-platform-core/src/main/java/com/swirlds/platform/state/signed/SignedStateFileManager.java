@@ -229,7 +229,9 @@ public class SignedStateFileManager implements Startable {
             try (reservedSignedState) {
                 try {
                     writeSignedStateToDisk(selfId, directory, reservedSignedState.get(), taskDescription);
-                    latestSavedStateRound.set(round);
+                    if (round > latestSavedStateRound.get()) {
+                        latestSavedStateRound.set(round);
+                    }
                     metrics.getWriteStateToDiskTimeMetric()
                             .update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 
@@ -437,7 +439,7 @@ public class SignedStateFileManager implements Startable {
      *
      * @return the latest saved state round
      */
-    public long getLatestSavedStateRound() { // TODO test
+    public long getLatestSavedStateRound() {
         return latestSavedStateRound.get();
     }
 }
