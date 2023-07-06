@@ -94,13 +94,14 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * still be checked for authorization based on the Hedera concept of receiver signature
      * requirements.
      *
-     * <p>Returns true if the receiver authorization and transfer succeeded, false otherwise.
+     * <p>Returns {@code Optional.empty()} immediately if {@code amount} is zero; or if the receiver
+     * authorization and transfer succeeded. Returns an optional of the halt reason otherwise.
      *
      * @param sendingContract the sender of the transfer, already authorized
      * @param recipient       the recipient of the transfer, not yet authorized
      * @param amount          the amount to transfer
      * @param delegateCall    whether this transfer is done via code executed by a delegate call
-     * @return a optional with the reason to halt if the transfer failed, or empty if it succeeded
+     * @return an optional with the reason to halt if the transfer failed, empty otherwise
      */
     Optional<ExceptionalHaltReason> tryTransferFromContract(
             @NonNull Address sendingContract, @NonNull Address recipient, long amount, boolean delegateCall);

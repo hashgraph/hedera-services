@@ -17,31 +17,51 @@
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
-import com.hedera.node.app.spi.meta.bni.Dispatch;
-import com.hedera.node.app.spi.meta.bni.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import java.util.Objects;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.CallCodeOperation;
-import org.hyperledger.besu.evm.operation.Operation;
-import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 /**
- * A small customization of the Besu {@link CallCodeOperation} that checks for missing
- * addresses before delegating the call.
- *
- * <p><b>IMPORTANT:</b> This operation no longer does checks for receiver signature
- * requirements when value is being transferred; those requirements will be enforced in
- * the call the {@link MessageCallProcessor} makes to {@link Dispatch#transferWithReceiverSigCheck(long, long, long, VerificationStrategy)}.
+ * Hedera customization of {@link CallCodeOperation} that immediately halts on calls to missing addresses,
+ * <i>unless</i> the call is to an address in the system account range, in which case the fate of the call
+ * is determined by the {@link CustomMessageCallProcessor}.
  */
-public class CustomCallCodeOperation extends CallCodeOperation {
-    private static final Operation.OperationResult UNDERFLOW_RESPONSE =
-            new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
+public class CustomCallCodeOperation extends CallCodeOperation implements BasicCustomCallOperation {
     private final AddressChecks addressChecks;
 
     public CustomCallCodeOperation(
             @NonNull final GasCalculator gasCalculator, @NonNull final AddressChecks addressChecks) {
-        super(gasCalculator);
-        this.addressChecks = addressChecks;
+        super(Objects.requireNonNull(gasCalculator));
+        this.addressChecks = Objects.requireNonNull(addressChecks);
+    }
+
+    @Override
+    public Address superTo(@NonNull MessageFrame frame) {
+        return super.to(frame);
+    }
+
+    @Override
+    public long superCost(@NonNull MessageFrame frame) {
+        return super.cost(frame);
+    }
+
+    @Override
+    public AddressChecks addressChecks() {
+        return addressChecks;
+    }
+
+    @Override
+    public OperationResult superExecute(@NonNull MessageFrame frame, @NonNull EVM evm) {
+        return super.execute(frame, evm);
+    }
+
+    @Override
+    public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
+        return BasicCustomCallOperation.super.execute(frame, evm);
     }
 }

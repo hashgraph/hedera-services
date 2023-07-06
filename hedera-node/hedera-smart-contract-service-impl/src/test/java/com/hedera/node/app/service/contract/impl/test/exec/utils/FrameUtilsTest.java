@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.node.app.service.contract.impl.exec.operations.utils.OpUtils;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
@@ -35,7 +36,7 @@ import org.junit.jupiter.api.Test;
 
 class FrameUtilsTest {
     private static final Set<Class<?>> toBeTested =
-            new HashSet<>(Arrays.asList(FrameUtils.class, ConversionUtils.class));
+            new HashSet<>(Arrays.asList(FrameUtils.class, ConversionUtils.class, OpUtils.class));
 
     @Test
     void throwsInConstructor() {

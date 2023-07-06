@@ -26,7 +26,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
-import com.hedera.node.app.service.contract.impl.exec.operations.CustomDelegateCallOperation;
+import com.hedera.node.app.service.contract.impl.exec.operations.CustomStaticCallOperation;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -44,7 +44,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class CustomDelegateCallOperationTest {
+class CustomStaticCallOperationTest {
+
     @Mock
     private GasCalculator gasCalculator;
 
@@ -60,11 +61,11 @@ class CustomDelegateCallOperationTest {
     @Mock
     private EVM evm;
 
-    private CustomDelegateCallOperation subject;
+    private CustomStaticCallOperation subject;
 
     @BeforeEach
     void setUp() {
-        subject = new CustomDelegateCallOperation(gasCalculator, addressChecks);
+        subject = new CustomStaticCallOperation(gasCalculator, addressChecks);
     }
 
     @Test
