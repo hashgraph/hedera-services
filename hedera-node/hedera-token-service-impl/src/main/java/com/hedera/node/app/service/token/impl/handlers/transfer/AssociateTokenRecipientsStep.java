@@ -65,7 +65,8 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             for (final var aa : xfers.nftTransfersOrElse(emptyList())) {
                 final var receiverId = aa.receiverAccountID();
                 final var senderId = aa.senderAccountID();
-                validateAndAutoAssociate(senderId, tokenId, token, accountStore, tokenRelStore, handleContext);
+                // sender should be associated already. If not throw exception
+                validateTrue(tokenRelStore.get(senderId, tokenId) != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
                 validateAndAutoAssociate(receiverId, tokenId, token, accountStore, tokenRelStore, handleContext);
             }
         }

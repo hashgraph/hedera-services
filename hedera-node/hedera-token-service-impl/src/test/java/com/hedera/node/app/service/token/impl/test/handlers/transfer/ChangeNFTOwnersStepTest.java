@@ -114,32 +114,6 @@ class ChangeNFTOwnersStepTest extends StepsBase {
     }
 
     @Test
-    void failsWIthDifferingExpectedDecimals() {
-        body = CryptoTransferTransactionBody.newBuilder()
-                .transfers(TransferList.newBuilder()
-                        .accountAmounts(aaWith(ownerId, -1_000), aaWith(unknownAliasedId, +1_000))
-                        .build())
-                .tokenTransfers(TokenTransferList.newBuilder()
-                        .token(nonFungibleTokenId)
-                        .expectedDecimals(20)
-                        .nftTransfers(nftTransferWithAllowance(ownerId, unknownAliasedId1, 1))
-                        .build())
-                .build();
-        givenTxn(body, spenderId);
-        ensureAliasesStep = new EnsureAliasesStep(body);
-        replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
-        transferContext = new TransferContextImpl(handleContext);
-
-        final var replacedOp = getReplacedOp();
-        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, spenderId);
-
-        assertThatThrownBy(() -> changeNFTOwnersStep.doIn(transferContext))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(UNEXPECTED_TOKEN_DECIMALS));
-    }
-
-    @Test
     void changesNftOwnersWithAllowance() {
         body = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder()
