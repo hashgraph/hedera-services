@@ -18,11 +18,11 @@ package com.hedera.node.app.service.contract.impl.state;
 
 import java.util.List;
 
-public record StorageChanges(long contractNumber, List<StorageChange> changes) {
+public record StorageAccesses(long contractNumber, List<StorageAccess> accesses) {
     public StorageSizeChange summarizeSizeEffects() {
         var numRemovals = 0;
         var numInsertions = 0;
-        for (final var change : changes()) {
+        for (final var change : accesses()) {
             if (change.isRemoval()) {
                 numRemovals++;
             } else if (change.isInsertion()) {
