@@ -23,6 +23,7 @@ import static com.swirlds.base.state.LifecyclePhase.STOPPED;
 import com.swirlds.base.state.Lifecycle;
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.NodeId;
@@ -44,6 +45,8 @@ import com.swirlds.platform.event.tipset.rules.TipsetPlatformStatusRule;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -141,11 +144,18 @@ public class TipsetEventCreationManager implements Lifecycle {
         Objects.requireNonNull(platformStatusSupplier);
         Objects.requireNonNull(startUpEventFrozenManager);
 
-        eventCreationRules = AggregateTipsetEventCreationRules.of(
-                new TipsetMaximumRateRule(platformContext, time),
-                new TipsetBackpressureRule(platformContext, eventIntakeQueueSize),
-                new TipsetPlatformStatusRule(platformStatusSupplier, transactionPool, startUpEventFrozenManager),
-                new ReconnectStateSavedRule(latestReconnectRound, latestSavedStateRound));
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        final EventCreationConfig eventCreationConfig =
+                platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
+
+        final List<TipsetEventCreationRule> rules = new ArrayList<>();
+        rules.add(new TipsetMaximumRateRule(platformContext, time));
+        rules.add(new TipsetBackpressureRule(platformContext, eventIntakeQueueSize));
+        rules.add(new TipsetPlatformStatusRule(platformStatusSupplier, transactionPool, startUpEventFrozenManager));
+        if (stateConfig.saveReconnectStateToDisk()) {
+            rules.add(new ReconnectStateSavedRule(latestReconnectRound, latestSavedStateRound));
+        }
+        eventCreationRules = AggregateTipsetEventCreationRules.of(rules);
 
         eventCreator = new TipsetEventCreatorImpl(
                 platformContext,
@@ -156,9 +166,6 @@ public class TipsetEventCreationManager implements Lifecycle {
                 selfId,
                 softwareVersion,
                 transactionPool);
-
-        final EventCreationConfig eventCreationConfig =
-                platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
 
         workQueue = new MultiQueueThreadConfiguration(threadManager)
                 .setThreadName("event-creator")
