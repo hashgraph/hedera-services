@@ -32,28 +32,17 @@ event.enableEventStreaming,               false
 event.preconsensus.enableReplay,          false
 event.preconsensus.enableStorage,         false
 
-
-                                          #############################
-                                          #         Reconnect         #
-                                          #############################
-
-reconnect.active,                         true
-state.saveReconnectStateToDisk,           false
-
                                           #############################
                                           #          Metrics          #
                                           #############################
 
 metrics.csvFileName,                      PlatformTesting
-prometheus.enabled,                       false
-showInternalStats,                        true
 
                                           #############################
                                           #           State           #
                                           #############################
 
-
-state.checkSignedStateFromDisk,           true
+state.saveReconnectStateToDisk,           false
 state.saveStatePeriod,                    0
 
                                           #############################
