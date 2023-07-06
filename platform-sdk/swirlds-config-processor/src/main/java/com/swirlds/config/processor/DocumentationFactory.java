@@ -33,7 +33,7 @@ public class DocumentationFactory {
         Objects.requireNonNull(configDataRecordDefinition, "configDataRecordDefinition must not be null");
         Objects.requireNonNull(configDocumentationFile, "configDocumentationFile must not be null");
 
-        try (FileWriter writer = new FileWriter(configDocumentationFile.toString(), true)) {
+        try (final FileWriter writer = new FileWriter(configDocumentationFile.toString(), true)) {
             configDataRecordDefinition.propertyDefinitions().forEach(propertyDefinition -> {
                 try {
                     writer.write("## " + propertyDefinition.name() + "\n\n");
