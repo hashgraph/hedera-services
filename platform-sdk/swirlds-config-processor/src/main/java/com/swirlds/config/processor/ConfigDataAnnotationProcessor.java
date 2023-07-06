@@ -56,7 +56,7 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
         final Path configDocumentationFile = Paths.get(executionPath, "build/docs/config.md");
         try {
             Files.deleteIfExists(configDocumentationFile);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException("Error while deleting " + configDocumentationFile, e);
         }
         configDocumentationFile.toFile().getParentFile().mkdirs();
