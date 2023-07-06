@@ -38,7 +38,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("RateLimitedLogger Tests")
-public class RateLimitedLoggerTests {
+class RateLimitedLoggerTests {
 
     @DisplayName("debug() Test")
     @Test
