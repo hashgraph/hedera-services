@@ -25,7 +25,6 @@ import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
@@ -143,8 +142,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
             if (!isEmpty(meta.adminKey())) info.adminKey(meta.adminKey());
             if (!isEmpty(meta.submitKey())) info.submitKey(meta.submitKey());
             info.autoRenewPeriod(Duration.newBuilder().seconds(meta.autoRenewPeriod()));
-            if (meta.autoRenewAccountId().accountNum() !=0 )
-                info.autoRenewAccount(meta.autoRenewAccountId());
+            if (meta.autoRenewAccountId().accountNum() != 0) info.autoRenewAccount(meta.autoRenewAccountId());
 
             info.ledgerId(config.id());
             return Optional.of(info.build());

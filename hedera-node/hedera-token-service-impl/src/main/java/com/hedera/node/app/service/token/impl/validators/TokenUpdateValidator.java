@@ -82,7 +82,7 @@ public class TokenUpdateValidator {
 
         final var resolvedExpiryMeta = resolveExpiry(token, op, context.expiryValidator());
         validateNewAndExistingAutoRenewAccount(
-               resolvedExpiryMeta.autoRenewAccountId(),
+                resolvedExpiryMeta.autoRenewAccountId(),
                 token.autoRenewAccountId(),
                 readableAccountStore,
                 context.expiryValidator());

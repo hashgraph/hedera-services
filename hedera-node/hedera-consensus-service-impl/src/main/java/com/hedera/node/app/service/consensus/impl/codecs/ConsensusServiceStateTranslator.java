@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.consensus.impl.codecs;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -108,7 +107,9 @@ public class ConsensusServiceStateTranslator {
                                 .orElse(null),
                         topic.autoRenewPeriod(),
                         new com.hedera.node.app.service.mono.state.submerkle.EntityId(
-                                topic.autoRenewAccountId().shardNum(), topic.autoRenewAccountId().realmNum(), topic.autoRenewAccountId().accountNum()),
+                                topic.autoRenewAccountId().shardNum(),
+                                topic.autoRenewAccountId().realmNum(),
+                                topic.autoRenewAccountId().accountNum()),
                         new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expiry(), 0));
         monoTopic.setRunningHash(PbjConverter.asBytes(topic.runningHash()));
         monoTopic.setSequenceNumber(topic.sequenceNumber());

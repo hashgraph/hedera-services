@@ -78,8 +78,7 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
     public ExpiryMeta resolveCreationAttempt(
             final boolean entityCanSelfFundRenewal, @NonNull final ExpiryMeta creationMeta) {
         if (creationMeta.hasAutoRenewAccountId()) {
-            validateAutoRenewAccount(
-                    creationMeta.autoRenewAccountId());
+            validateAutoRenewAccount(creationMeta.autoRenewAccountId());
         }
 
         final var thisSecond = consensusSecondNow.getAsLong();
@@ -107,8 +106,7 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
     public ExpiryMeta resolveUpdateAttempt(
             @NonNull final ExpiryMeta currentMeta, @NonNull final ExpiryMeta updateMeta) {
         if (updateMeta.hasAutoRenewAccountId()) {
-            validateAutoRenewAccount(
-                    updateMeta.autoRenewAccountId());
+            validateAutoRenewAccount(updateMeta.autoRenewAccountId());
         }
 
         var resolvedExpiry = currentMeta.expiry();
@@ -180,7 +178,9 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
      * @throws HandleException if the account number is invalid
      */
     private void validateAutoRenewAccount(AccountID accountID) {
-        validateTrue(accountID.shardNum() == numbers.shard() && accountID.realmNum() == numbers.realm(), INVALID_AUTORENEW_ACCOUNT);
+        validateTrue(
+                accountID.shardNum() == numbers.shard() && accountID.realmNum() == numbers.realm(),
+                INVALID_AUTORENEW_ACCOUNT);
         if (accountID.accountNum() == 0L) {
             // 0L is a sentinel number that says to remove the current auto-renew account
             return;

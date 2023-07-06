@@ -351,8 +351,8 @@ class ConsensusUpdateTopicTest extends ConsensusTestBase {
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         final var impliedMeta = new ExpiryMeta(123L, NA, NA, NA, NA);
         given(expiryValidator.resolveUpdateAttempt(currentExpiryMeta, impliedMeta))
-                .willReturn(
-                        new ExpiryMeta(123L, currentExpiryMeta.autoRenewPeriod(), currentExpiryMeta.autoRenewAccountId()));
+                .willReturn(new ExpiryMeta(
+                        123L, currentExpiryMeta.autoRenewPeriod(), currentExpiryMeta.autoRenewAccountId()));
 
         subject.handle(handleContext);
 

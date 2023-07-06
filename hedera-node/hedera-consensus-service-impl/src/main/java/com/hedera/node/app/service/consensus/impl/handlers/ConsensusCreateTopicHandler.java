@@ -115,11 +115,10 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         final var accountId = AccountID.newBuilder()
                 .shardNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().shardNum() : NA)
                 .realmNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().realmNum() : NA)
-                .accountNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA).build();
+                .accountNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA)
+                .build();
         final var entityExpiryMeta = new ExpiryMeta(
-                impliedExpiry,
-                op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(),
-                accountId);
+                impliedExpiry, op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(), accountId);
 
         try {
             final var effectiveExpiryMeta =

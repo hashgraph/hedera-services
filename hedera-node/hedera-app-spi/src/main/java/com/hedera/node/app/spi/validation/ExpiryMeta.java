@@ -28,8 +28,7 @@ import com.hedera.hapi.node.base.AccountID;
  * @param autoRenewPeriod the number of seconds between auto-renewals
  * @param autoRenewAccountId the id of the account to be charged for auto-renewals
  */
-public record ExpiryMeta(
-    long expiry, long autoRenewPeriod, AccountID autoRenewAccountId) {
+public record ExpiryMeta(long expiry, long autoRenewPeriod, AccountID autoRenewAccountId) {
 
     /**
      * For convenience in tests, creates an instance with the given expiry, auto-renew period,
@@ -39,8 +38,14 @@ public record ExpiryMeta(
      * @param autoRenewPeriod the number of seconds between auto-renewals
      */
     public ExpiryMeta(long expiry, long autoRenewPeriod, long autoRenewNum) {
-        this(expiry, autoRenewPeriod,
-                AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(autoRenewNum).build());
+        this(
+                expiry,
+                autoRenewPeriod,
+                AccountID.newBuilder()
+                        .shardNum(0)
+                        .realmNum(0)
+                        .accountNum(autoRenewNum)
+                        .build());
     }
 
     /**
@@ -51,8 +56,14 @@ public record ExpiryMeta(
      * @param autoRenewPeriod the number of seconds between auto-renewals
      */
     public ExpiryMeta(long expiry, long autoRenewPeriod, long autoRenewShard, long autoRenewRealm, long autoRenewNum) {
-        this(expiry, autoRenewPeriod,
-                AccountID.newBuilder().shardNum(autoRenewShard).realmNum(autoRenewRealm).accountNum(autoRenewNum).build());
+        this(
+                expiry,
+                autoRenewPeriod,
+                AccountID.newBuilder()
+                        .shardNum(autoRenewShard)
+                        .realmNum(autoRenewRealm)
+                        .accountNum(autoRenewNum)
+                        .build());
     }
 
     /**

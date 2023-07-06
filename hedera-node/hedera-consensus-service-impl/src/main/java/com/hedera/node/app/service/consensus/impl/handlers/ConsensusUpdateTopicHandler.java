@@ -183,11 +183,12 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final Topic topic) {
         final var currentMeta = new ExpiryMeta(topic.expiry(), topic.autoRenewPeriod(), topic.autoRenewAccountId());
         if (updatesExpiryMeta(op)) {
-            final var accountID = AccountID.newBuilder().shardNum(effAutoRenewShardOf(op)).realmNum(effAutoRenewRealmOf(op)).accountNum(effAutoRenewNumOf(op)).build();
-            final var updateMeta = new ExpiryMeta(
-                    effExpiryOf(op),
-                    effAutoRenewPeriodOf(op), accountID
-                    );
+            final var accountID = AccountID.newBuilder()
+                    .shardNum(effAutoRenewShardOf(op))
+                    .realmNum(effAutoRenewRealmOf(op))
+                    .accountNum(effAutoRenewNumOf(op))
+                    .build();
+            final var updateMeta = new ExpiryMeta(effExpiryOf(op), effAutoRenewPeriodOf(op), accountID);
             return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);
         } else {
             return currentMeta;

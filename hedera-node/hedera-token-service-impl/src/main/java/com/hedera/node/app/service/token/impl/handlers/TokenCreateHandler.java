@@ -232,12 +232,13 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var accountId = AccountID.newBuilder()
                 .shardNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().shardNum() : NA)
                 .realmNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().realmNum() : NA)
-                .accountNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA).build();
+                .accountNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA)
+                .build();
         return new ExpiryMeta(
                 impliedExpiry,
                 op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(),
                 // Shard and realm will be ignored if num is NA
-               accountId);
+                accountId);
     }
 
     /**
@@ -268,7 +269,11 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
         // validate auto-renew account exists
         if (resolvedExpiryMeta.autoRenewAccountId().accountNum() != 0) {
-            TokenHandlerHelper.getIfUsable(resolvedExpiryMeta.autoRenewAccountId(), accountStore, context.expiryValidator(), INVALID_AUTORENEW_ACCOUNT);
+            TokenHandlerHelper.getIfUsable(
+                    resolvedExpiryMeta.autoRenewAccountId(),
+                    accountStore,
+                    context.expiryValidator(),
+                    INVALID_AUTORENEW_ACCOUNT);
         }
         return resolvedExpiryMeta;
     }
