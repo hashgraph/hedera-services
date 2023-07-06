@@ -125,6 +125,7 @@ class ConfigCallbacksTest {
         given(addressBook.getSize()).willReturn(numNodes);
         given(dynamicProps.knownBlockValues()).willReturn(blockValues);
         given(dynamicProps.nodeMaxMinStakeRatios()).willReturn(Map.of(0L, 2L, 1L, 8L));
+        final var historicalMaxStake = totalHbarSupply / numNodes;
         final var overrideMaxStake = totalHbarSupply / numNodes * 11 / 10;
         final var config = ServicesConfigurationList.getDefaultInstance();
 
@@ -139,11 +140,11 @@ class ConfigCallbacksTest {
         verify(networkCtx).renumberBlocksToMatch(blockValues);
         // and:
         final var updatedNode0Info = stakingInfos.get(EntityNum.fromLong(0L));
-        assertStakes(updatedNode0Info, overrideMaxStake / 2, overrideMaxStake);
+        assertStakes(updatedNode0Info, historicalMaxStake / 2, overrideMaxStake);
         final var updatedNode1Info = stakingInfos.get(EntityNum.fromLong(1L));
-        assertStakes(updatedNode1Info, overrideMaxStake / 8, overrideMaxStake);
+        assertStakes(updatedNode1Info, historicalMaxStake / 8, overrideMaxStake);
         final var updatedNode2Info = stakingInfos.get(EntityNum.fromLong(2L));
-        assertStakes(updatedNode2Info, overrideMaxStake / 4, overrideMaxStake);
+        assertStakes(updatedNode2Info, historicalMaxStake / 4, overrideMaxStake);
     }
 
     @Test
