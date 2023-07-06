@@ -18,6 +18,7 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SIGNED_STATE;
+import static com.swirlds.platform.state.PlatformData.GENESIS_ROUND;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.CREATION;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
@@ -195,6 +196,15 @@ public class SignedState implements SignedStateInfo {
     @Override
     public long getRound() {
         return state.getPlatformState().getPlatformData().getRound();
+    }
+
+    /**
+     * Check if this state is the genesis state.
+     *
+     * @return true if this is the genesis state
+     */
+    public boolean isGenesisState() {
+        return state.getPlatformState().getPlatformData().getRound() == GENESIS_ROUND;
     }
 
     /**

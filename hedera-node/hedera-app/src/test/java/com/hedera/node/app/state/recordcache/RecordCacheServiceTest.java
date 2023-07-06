@@ -46,8 +46,7 @@ final class RecordCacheServiceTest {
         svc.registerSchemas(registry);
         verify(registry).register(captor.capture());
         final var schema = captor.getValue();
-        assertThat(schema.getVersion())
-                .isEqualTo(SemanticVersion.newBuilder().minor(38).build());
+        assertThat(schema.getVersion()).isEqualTo(SemanticVersion.newBuilder().build());
         assertThat(schema.statesToCreate()).hasSize(1);
     }
 }

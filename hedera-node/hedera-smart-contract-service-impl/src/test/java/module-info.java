@@ -33,6 +33,8 @@ module com.hedera.node.app.service.contract.impl.test {
             org.junit.platform.commons;
     opens com.hedera.node.app.service.contract.impl.test.exec.gas to
             org.junit.platform.commons;
+    opens com.hedera.node.app.service.contract.impl.test.exec.utils to
+            org.junit.platform.commons;
     opens com.hedera.node.app.service.contract.impl.test.exec.v030 to
             org.junit.platform.commons;
     opens com.hedera.node.app.service.contract.impl.test.exec.v034 to
@@ -42,5 +44,7 @@ module com.hedera.node.app.service.contract.impl.test {
     opens com.hedera.node.app.service.contract.impl.test.exec.processors to
             org.junit.platform.commons;
     opens com.hedera.node.app.service.contract.impl.test.hevm to
+            org.junit.platform.commons;
+    opens com.hedera.node.app.service.contract.impl.test.infra to
             org.junit.platform.commons;
 }

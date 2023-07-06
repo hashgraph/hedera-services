@@ -18,7 +18,7 @@ package com.swirlds.common.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.statistics.internal.StatsBuffer;
+import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.Test;
 

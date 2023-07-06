@@ -40,7 +40,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
-import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -64,18 +64,18 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
     private final CryptoCreateValidator cryptoCreateValidator;
 
     private StakingValidator stakingValidator;
-    private NodeInfo nodeInfo;
+    private NetworkInfo networkInfo;
 
     @Inject
     public CryptoCreateHandler(
             @NonNull final CryptoCreateValidator cryptoCreateValidator,
             @NonNull final StakingValidator stakingValidator,
-            @NonNull final NodeInfo nodeInfo) {
+            @NonNull final NetworkInfo networkInfo) {
         this.cryptoCreateValidator =
                 requireNonNull(cryptoCreateValidator, "The supplied argument 'cryptoCreateValidator' must not be null");
         this.stakingValidator =
                 requireNonNull(stakingValidator, "The supplied argument 'stakingValidator' must not be null");
-        this.nodeInfo = requireNonNull(nodeInfo, "The supplied argument 'nodeInfo' must not be null");
+        this.networkInfo = requireNonNull(networkInfo, "The supplied argument 'nodeInfo' must not be null");
     }
 
     @Override
@@ -211,7 +211,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 op.stakedNodeId(),
                 accountStore,
                 context,
-                nodeInfo);
+                networkInfo);
 
         return payer;
     }

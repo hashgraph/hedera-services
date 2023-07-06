@@ -21,9 +21,11 @@ import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecor
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0280_VERSION;
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0340_VERSION;
 
+import com.hedera.test.serde.EqualityType;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<ExpirableTxnRecord> {
     public static final int NUM_TEST_CASES = 4 * MIN_TEST_CASES_PER_VERSION;
@@ -44,7 +46,8 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
     }
 
     @Override
-    protected ExpirableTxnRecord getExpectedObject(final int version, final int testCaseNo) {
+    protected ExpirableTxnRecord getExpectedObject(
+            final int version, final int testCaseNo, @NonNull final EqualityType equalityType) {
         final var seeded =
                 SeededPropertySource.forSerdeTest(version, testCaseNo).nextRecord();
         if (version < RELEASE_0260_VERSION) {

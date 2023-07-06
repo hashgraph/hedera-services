@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.TokenID;
@@ -48,7 +49,7 @@ public interface ReadableTokenStore {
             @Nullable Key pauseKey,
             @Nullable String symbol,
             boolean hasRoyaltyWithFallback,
-            long treasuryNum,
+            AccountID treasuryAccountId,
             int decimals) {
         public boolean hasAdminKey() {
             return adminKey != null && !adminKey.key().kind().equals(KeyOneOfType.UNSET);

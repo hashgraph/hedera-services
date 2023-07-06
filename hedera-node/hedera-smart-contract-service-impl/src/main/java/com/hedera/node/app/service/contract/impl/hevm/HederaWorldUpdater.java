@@ -21,8 +21,10 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.PendingCreation;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -53,6 +55,16 @@ public interface HederaWorldUpdater extends WorldUpdater {
      */
     @Nullable
     HederaEvmAccount getHederaAccount(@NonNull ContractID contractId);
+
+    /**
+     * Returns the {@code 0.0.X} Hedera contract id for the given address, including when
+     * the address is pending creation.
+     *
+     * @param address the address to get the id for
+     * @return the id of the account at the given address
+     * @throws IllegalArgumentException if the address has no corresponding contract id
+     */
+    ContractID getHederaContractId(@NonNull Address address);
 
     /**
      * Collects the given fee from the given account. The caller should have already
@@ -114,28 +126,29 @@ public interface HederaWorldUpdater extends WorldUpdater {
     Optional<ExceptionalHaltReason> tryTrackingDeletion(@NonNull Address deleted, @NonNull Address beneficiary);
 
     /**
-     * Given the possibly zero address of the recipient of a {@code CONTRACT_CREATION} message,
+     * Given the possibly zero address of the origin of a {@code CONTRACT_CREATION} message,
      * sets up the {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete
      * the creation of the new account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)};
      * returns the "long-zero" address to be assigned to the new account.
      *
-     * @param receiver the address of the recipient of a {@code CONTRACT_CREATION} message, zero if a top-level message
+     * @param origin the address of the origin of a {@code CONTRACT_CREATION} message, zero if a top-level message
      * @return the "long-zero" address to be assigned to the new account
      */
-    Address setupCreate(@NonNull Address receiver);
+    Address setupCreate(@NonNull Address origin);
 
     /**
-     * Given the possibly zero address of the recipient of a {@code CONTRACT_CREATION} message,
-     * and the EIP-1014 address computed by an in-progress {@code CREATE2} operation, sets up the
-     * {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete the creation of
-     * the new account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
+     * Given the possibly zero address of the origin of a {@code CONTRACT_CREATION} message,
+     * and either the canonical {@code CREATE1} address, or the EIP-1014 address computed by an
+     * in-progress {@code CREATE2} operation, sets up the {@link PendingCreation} this
+     * {@link ProxyWorldUpdater} will use to complete the creation of the new account in
+     * {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
      *
      * <p>Does not return anything, as the {@code CREATE2} address is already known.
      *
-     * @param receiver the address of the recipient of a {@code CONTRACT_CREATION} message, zero if a top-level message
+     * @param origin the address of the origin of a {@code CONTRACT_CREATION} message, zero if a top-level message
      * @param alias    the EIP-1014 address computed by an in-progress {@code CREATE2} operation
      */
-    void setupCreate2(@NonNull Address receiver, @NonNull Address alias);
+    void setupAliasedCreate(@NonNull Address origin, @NonNull Address alias);
 
     /**
      * Returns whether this address refers to a hollow account (i.e. a lazy-created account that
@@ -155,4 +168,13 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * @param alias the hollow account to be finalized as a contract
      */
     void finalizeHollowAccount(@NonNull Address alias);
+
+    /**
+     * Returns all storage updates that would be committed by this updater, necessary for constructing
+     * a {@link com.hedera.hapi.streams.SidecarType#CONTRACT_STATE_CHANGE} sidecar.
+     *
+     * @return the full list of account-scoped storage changes
+     */
+    @NonNull
+    List<StorageAccesses> pendingStorageUpdates();
 }

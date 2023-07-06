@@ -40,7 +40,7 @@ import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
