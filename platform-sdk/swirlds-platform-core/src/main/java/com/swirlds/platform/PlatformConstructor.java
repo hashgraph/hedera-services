@@ -160,6 +160,7 @@ public final class PlatformConstructor {
      * @param postConsensusSystemTransactionManager the manager which handles system transactions post-consensus
      * @param platformStatusComponent               manages platform status
      * @param initialState                          the initial state
+     * @param softwareVersion                       the software version
      * @return the newly constructed instance of {@link SwirldStateManager}
      */
     static SwirldStateManager swirldStateManager(
@@ -170,7 +171,8 @@ public final class PlatformConstructor {
             @NonNull final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
             @NonNull final PlatformStatusComponent platformStatusComponent,
             @NonNull final BooleanSupplier inFreezeChecker,
-            @NonNull final State initialState) {
+            @NonNull final State initialState,
+            @NonNull final SoftwareVersion softwareVersion) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(addressBook);
@@ -180,6 +182,7 @@ public final class PlatformConstructor {
         Objects.requireNonNull(platformStatusComponent);
         Objects.requireNonNull(inFreezeChecker);
         Objects.requireNonNull(initialState);
+        Objects.requireNonNull(softwareVersion);
 
         return new SwirldStateManagerImpl(
                 platformContext,
@@ -190,7 +193,8 @@ public final class PlatformConstructor {
                 new SwirldStateMetrics(platformContext.getMetrics()),
                 platformStatusComponent,
                 inFreezeChecker,
-                initialState);
+                initialState,
+                softwareVersion);
     }
 
     /**

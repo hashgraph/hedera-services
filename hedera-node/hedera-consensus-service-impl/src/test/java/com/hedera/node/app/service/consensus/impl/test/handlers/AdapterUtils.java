@@ -20,8 +20,8 @@ import static com.hedera.node.app.service.consensus.impl.test.handlers.AdapterUt
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
-import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CURRENTLY_UNUSED_ALIAS;
@@ -72,8 +72,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -119,22 +117,16 @@ public class AdapterUtils {
         return mockStates;
     }
 
-    private static ReadableKVState<EntityNumVirtualKey, Account> wellKnownAccountsState() {
+    private static ReadableKVState<AccountID, Account> wellKnownAccountsState() {
         return new MapReadableKVState<>(ACCOUNTS_KEY, wellKnownAccountStoreAt());
     }
 
-    private static MapReadableKVState<String, EntityNumValue> wellKnownAliasState() {
-        final Map<String, EntityNumValue> wellKnownAliases = Map.ofEntries(
-                Map.entry(CURRENTLY_UNUSED_ALIAS, new EntityNumValue(MISSING_NUM.longValue())),
-                Map.entry(
-                        NO_RECEIVER_SIG_ALIAS,
-                        new EntityNumValue(fromAccountId(NO_RECEIVER_SIG).longValue())),
-                Map.entry(
-                        RECEIVER_SIG_ALIAS,
-                        new EntityNumValue(fromAccountId(RECEIVER_SIG).longValue())),
-                Map.entry(
-                        FIRST_TOKEN_SENDER_LITERAL_ALIAS.toStringUtf8(),
-                        new EntityNumValue(fromAccountId(FIRST_TOKEN_SENDER).longValue())));
+    private static MapReadableKVState<Bytes, AccountID> wellKnownAliasState() {
+        final Map<Bytes, AccountID> wellKnownAliases = Map.ofEntries(
+                Map.entry(Bytes.wrap(CURRENTLY_UNUSED_ALIAS), asAccount(MISSING_NUM.longValue())),
+                Map.entry(Bytes.wrap(NO_RECEIVER_SIG_ALIAS), toPbj(NO_RECEIVER_SIG)),
+                Map.entry(Bytes.wrap(RECEIVER_SIG_ALIAS), toPbj(RECEIVER_SIG)),
+                Map.entry(Bytes.wrap(FIRST_TOKEN_SENDER_LITERAL_ALIAS.toByteArray()), toPbj(FIRST_TOKEN_SENDER)));
         return new MapReadableKVState<>(ALIASES_KEY, wellKnownAliases);
     }
 
@@ -157,54 +149,52 @@ public class AdapterUtils {
                 .spenderNum(DEFAULT_PAYER.getAccountNum())
                 .build();
 
-        private static ReadableKVState<EntityNumVirtualKey, Account> wellKnownAccountsState() {
+        private static ReadableKVState<AccountID, Account> wellKnownAccountsState() {
             return new MapReadableKVState<>(ACCOUNTS_KEY, wellKnownAccountStoreAt());
         }
 
-        public static Map<EntityNumVirtualKey, Account> wellKnownAccountStoreAt() {
-            final var destination = new HashMap<EntityNumVirtualKey, Account>();
+        public static Map<AccountID, Account> wellKnownAccountStoreAt() {
+            final var destination = new HashMap<AccountID, Account>();
             destination.put(
-                    EntityNumVirtualKey.fromLong(FIRST_TOKEN_SENDER.getAccountNum()),
+                    toPbj(FIRST_TOKEN_SENDER),
                     toPbjAccount(FIRST_TOKEN_SENDER.getAccountNum(), FIRST_TOKEN_SENDER_KT.asPbjKey(), 10_000L));
             destination.put(
-                    EntityNumVirtualKey.fromLong(SECOND_TOKEN_SENDER.getAccountNum()),
+                    toPbj(SECOND_TOKEN_SENDER),
                     toPbjAccount(SECOND_TOKEN_SENDER.getAccountNum(), SECOND_TOKEN_SENDER_KT.asPbjKey(), 10_000L));
             destination.put(
-                    EntityNumVirtualKey.fromLong(TOKEN_RECEIVER.getAccountNum()),
-                    toPbjAccount(TOKEN_RECEIVER.getAccountNum(), TOKEN_WIPE_KT.asPbjKey(), 0L));
+                    toPbj(TOKEN_RECEIVER), toPbjAccount(TOKEN_RECEIVER.getAccountNum(), TOKEN_WIPE_KT.asPbjKey(), 0L));
             destination.put(
-                    EntityNumVirtualKey.fromLong(DEFAULT_NODE.getAccountNum()),
-                    toPbjAccount(DEFAULT_NODE.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), 0L));
+                    toPbj(DEFAULT_NODE), toPbjAccount(DEFAULT_NODE.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), 0L));
             destination.put(
-                    EntityNumVirtualKey.fromLong(DEFAULT_PAYER.getAccountNum()),
+                    toPbj(DEFAULT_PAYER),
                     toPbjAccount(DEFAULT_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(STAKING_FUND.getAccountNum()),
+                    toPbj(STAKING_FUND),
                     toPbjAccount(STAKING_FUND.getAccountNum(), toPbj(asKeyUnchecked(EMPTY_KEY)), 0L));
             destination.put(
-                    EntityNumVirtualKey.fromLong(MASTER_PAYER.getAccountNum()),
+                    toPbj(MASTER_PAYER),
                     toPbjAccount(MASTER_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(TREASURY_PAYER.getAccountNum()),
+                    toPbj(TREASURY_PAYER),
                     toPbjAccount(TREASURY_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(NO_RECEIVER_SIG.getAccountNum()),
+                    toPbj(NO_RECEIVER_SIG),
                     toPbjAccount(NO_RECEIVER_SIG.getAccountNum(), NO_RECEIVER_SIG_KT.asPbjKey(), DEFAULT_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(RECEIVER_SIG.getAccountNum()),
+                    toPbj(RECEIVER_SIG),
                     toPbjAccount(RECEIVER_SIG.getAccountNum(), RECEIVER_SIG_KT.asPbjKey(), DEFAULT_BALANCE, true));
             destination.put(
-                    EntityNumVirtualKey.fromLong(SYS_ACCOUNT.getAccountNum()),
+                    toPbj(SYS_ACCOUNT),
                     toPbjAccount(SYS_ACCOUNT.getAccountNum(), SYS_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(MISC_ACCOUNT.getAccountNum()),
+                    toPbj(MISC_ACCOUNT),
                     toPbjAccount(MISC_ACCOUNT.getAccountNum(), MISC_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(CUSTOM_PAYER_ACCOUNT.getAccountNum()),
+                    toPbj(CUSTOM_PAYER_ACCOUNT),
                     toPbjAccount(
                             CUSTOM_PAYER_ACCOUNT.getAccountNum(), CUSTOM_PAYER_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(OWNER_ACCOUNT.getAccountNum()),
+                    toPbj(OWNER_ACCOUNT),
                     toPbjAccount(
                             OWNER_ACCOUNT.getAccountNum(),
                             OWNER_ACCOUNT_KT.asPbjKey(),
@@ -214,7 +204,7 @@ public class AdapterUtils {
                             List.of(fungibleTokenAllowances),
                             List.of(nftAllowances)));
             destination.put(
-                    EntityNumVirtualKey.fromLong(DELEGATING_SPENDER.getAccountNum()),
+                    toPbj(DELEGATING_SPENDER),
                     toPbjAccount(
                             DELEGATING_SPENDER.getAccountNum(),
                             DELEGATING_SPENDER_KT.asPbjKey(),
@@ -224,20 +214,20 @@ public class AdapterUtils {
                             List.of(fungibleTokenAllowances),
                             List.of(nftAllowances)));
             destination.put(
-                    EntityNumVirtualKey.fromLong(COMPLEX_KEY_ACCOUNT.getAccountNum()),
+                    toPbj(COMPLEX_KEY_ACCOUNT),
                     toPbjAccount(
                             COMPLEX_KEY_ACCOUNT.getAccountNum(), COMPLEX_KEY_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(TOKEN_TREASURY.getAccountNum()),
+                    toPbj(TOKEN_TREASURY),
                     toPbjAccount(TOKEN_TREASURY.getAccountNum(), TOKEN_TREASURY_KT.asPbjKey(), DEFAULT_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(DILIGENT_SIGNING_PAYER.getAccountNum()),
+                    toPbj(DILIGENT_SIGNING_PAYER),
                     toPbjAccount(
                             DILIGENT_SIGNING_PAYER.getAccountNum(),
                             DILIGENT_SIGNING_PAYER_KT.asPbjKey(),
                             DEFAULT_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(FROM_OVERLAP_PAYER.getAccountNum()),
+                    toPbj(FROM_OVERLAP_PAYER),
                     toPbjAccount(
                             FROM_OVERLAP_PAYER.getAccountNum(), FROM_OVERLAP_PAYER_KT.asPbjKey(), DEFAULT_BALANCE));
             return destination;

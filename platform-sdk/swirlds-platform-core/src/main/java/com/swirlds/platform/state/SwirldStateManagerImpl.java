@@ -23,6 +23,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusComponent;
@@ -99,6 +100,11 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
      */
     private final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager;
 
+    /**
+     * The current software version.
+     */
+    private final SoftwareVersion softwareVersion;
+
     // Used for creating mock instances in unit testing
     public SwirldStateManagerImpl() {
         stats = null;
@@ -107,6 +113,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
         postConsensusSystemTransactionManager = null;
         transactionHandler = null;
         uptimeTracker = null;
+        softwareVersion = null;
     }
 
     /**
@@ -121,6 +128,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
      * @param platformStatusComponent               manages platform status
      * @param inFreeze                              indicates if the system is currently in a freeze
      * @param state                                 the genesis state
+     * @param softwareVersion                       the current software version
      */
     public SwirldStateManagerImpl(
             @NonNull final PlatformContext platformContext,
@@ -131,7 +139,8 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
             @NonNull final SwirldStateMetrics swirldStateMetrics,
             @NonNull final PlatformStatusComponent platformStatusComponent,
             @NonNull final BooleanSupplier inFreeze,
-            @NonNull final State state) {
+            @NonNull final State state,
+            @NonNull final SoftwareVersion softwareVersion) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(addressBook);
@@ -142,6 +151,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
         Objects.requireNonNull(platformStatusComponent);
         Objects.requireNonNull(inFreeze);
         Objects.requireNonNull(state);
+        this.softwareVersion = Objects.requireNonNull(softwareVersion);
 
         this.transactionPool = new EventTransactionPool(
                 platformContext.getMetrics(),
@@ -282,7 +292,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     }
 
     private void fastCopyAndUpdateRefs(final State state) {
-        final State consState = fastCopy(state, stats);
+        final State consState = fastCopy(state, stats, softwareVersion);
 
         // Set latest immutable first to prevent the newly immutable state from being deleted between setting the
         // stateRef and the latestImmutableState

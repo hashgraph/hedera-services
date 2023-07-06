@@ -23,7 +23,7 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.EnumSet;
 import java.util.function.Consumer;
 import java.util.function.Function;

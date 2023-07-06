@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
@@ -26,6 +28,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
@@ -36,8 +39,6 @@ import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -83,15 +84,17 @@ public class NetworkAdminHandlerTestBase {
             AccountID.newBuilder().accountNum(32134).build();
 
     protected static final long payerBalance = 10_000L;
-    protected final EntityNum fungibleTokenNum = EntityNum.fromLong(1L);
-    protected final EntityNum nonFungibleTokenNum = EntityNum.fromLong(2L);
-    protected final EntityNumPair fungiblePair =
-            EntityNumPair.fromLongs(accountNum.longValue(), fungibleTokenNum.longValue());
-    protected final EntityNumPair nonFungiblePair =
-            EntityNumPair.fromLongs(accountNum.longValue(), nonFungibleTokenNum.longValue());
+    protected final TokenID fungibleTokenId = asToken(1L);
+    protected final TokenID nonFungibleTokenId = asToken(2L);
+    protected final EntityIDPair fungiblePair = EntityIDPair.newBuilder()
+            .accountId(accountId)
+            .tokenId(fungibleTokenId)
+            .build();
+    protected final EntityIDPair nonFungiblePair = EntityIDPair.newBuilder()
+            .accountId(accountId)
+            .tokenId(nonFungibleTokenId)
+            .build();
 
-    protected final TokenID tokenId =
-            TokenID.newBuilder().tokenNum(fungibleTokenNum.longValue()).build();
     protected final String tokenName = "test token";
     protected final String tokenSymbol = "TT";
     protected final AccountID treasury = AccountID.newBuilder().accountNum(100).build();
@@ -100,8 +103,8 @@ public class NetworkAdminHandlerTestBase {
     protected final String memo = "test memo";
 
     protected MapReadableKVState<AccountID, Account> readableAccounts;
-    protected MapReadableKVState<EntityNum, Token> readableTokenState;
-    protected MapReadableKVState<EntityNumPair, TokenRelation> readableTokenRelState;
+    protected MapReadableKVState<TokenID, Token> readableTokenState;
+    protected MapReadableKVState<EntityIDPair, TokenRelation> readableTokenRelState;
 
     protected ReadableTokenStore readableTokenStore;
 
@@ -191,7 +194,7 @@ public class NetworkAdminHandlerTestBase {
 
     private void givenTokensInReadableStore() {
         readableTokenState = readableTokenState();
-        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(readableTokenState);
+        given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
     }
 
@@ -200,7 +203,7 @@ public class NetworkAdminHandlerTestBase {
                 .value(fungiblePair, fungibleTokenRelation)
                 .value(nonFungiblePair, nonFungibleTokenRelation)
                 .build();
-        given(readableStates.<EntityNumPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
+        given(readableStates.<EntityIDPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
         readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates);
     }
 
@@ -249,7 +252,7 @@ public class NetworkAdminHandlerTestBase {
     }
 
     @NonNull
-    protected MapReadableKVState.Builder<EntityNumPair, TokenRelation> emptyReadableTokenRelsStateBuilder() {
+    protected MapReadableKVState.Builder<EntityIDPair, TokenRelation> emptyReadableTokenRelsStateBuilder() {
         return MapReadableKVState.builder(TOKEN_RELS);
     }
 
@@ -260,33 +263,33 @@ public class NetworkAdminHandlerTestBase {
     }
 
     @NonNull
-    protected MapReadableKVState<EntityNum, Token> readableTokenState() {
-        return MapReadableKVState.<EntityNum, Token>builder(TOKENS)
-                .value(fungibleTokenNum, fungibleToken)
-                .value(nonFungibleTokenNum, nonFungibleToken)
+    protected MapReadableKVState<TokenID, Token> readableTokenState() {
+        return MapReadableKVState.<TokenID, Token>builder(TOKENS)
+                .value(fungibleTokenId, fungibleToken)
+                .value(nonFungibleTokenId, nonFungibleToken)
                 .build();
     }
 
     protected void givenValidFungibleToken() {
-        givenValidFungibleToken(autoRenewId.accountNum());
+        givenValidFungibleToken(autoRenewId);
     }
 
-    protected void givenValidFungibleToken(long autoRenewAccountNumber) {
-        givenValidFungibleToken(autoRenewAccountNumber, false, false, false, false, true, true);
+    protected void givenValidFungibleToken(AccountID autoRenewAccountId) {
+        givenValidFungibleToken(autoRenewAccountId, false, false, false, false, true, true);
     }
 
     protected void givenValidNonFungibleToken() {
         givenValidFungibleToken();
         nonFungibleToken = fungibleToken
                 .copyBuilder()
-                .tokenNumber(nonFungibleTokenNum.longValue())
+                .tokenId(nonFungibleTokenId)
                 .customFees(List.of())
                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                 .build();
     }
 
     protected void givenValidFungibleToken(
-            long autoRenewAccountNumber,
+            AccountID autoRenewAccountId,
             boolean deleted,
             boolean paused,
             boolean accountsFrozenByDefault,
@@ -294,12 +297,12 @@ public class NetworkAdminHandlerTestBase {
             boolean withAdminKey,
             boolean withSubmitKey) {
         fungibleToken = new Token(
-                tokenId.tokenNum(),
+                fungibleTokenId,
                 tokenName,
                 tokenSymbol,
                 1000,
                 1000,
-                treasury.accountNum(),
+                treasury,
                 null,
                 null,
                 null,
@@ -311,7 +314,7 @@ public class NetworkAdminHandlerTestBase {
                 deleted,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.INFINITE,
-                autoRenewAccountNumber,
+                autoRenewAccountId,
                 autoRenewSecs,
                 expirationTime,
                 memo,
@@ -364,29 +367,29 @@ public class NetworkAdminHandlerTestBase {
 
     protected void givenFungibleTokenRelation() {
         fungibleTokenRelation = TokenRelation.newBuilder()
-                .tokenNumber(tokenId.tokenNum())
-                .accountNumber(accountNum)
+                .tokenId(fungibleTokenId)
+                .accountId(accountId)
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(0L)
-                .previousToken(3L)
+                .nextToken(asToken(0L))
+                .previousToken(asToken(3L))
                 .build();
     }
 
     protected void givenNonFungibleTokenRelation() {
         nonFungibleTokenRelation = TokenRelation.newBuilder()
-                .tokenNumber(nonFungibleTokenNum.longValue())
-                .accountNumber(accountNum)
+                .tokenId(nonFungibleTokenId)
+                .accountId(asAccount(accountNum))
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(0L)
-                .previousToken(3L)
+                .nextToken(asToken(0L))
+                .previousToken(asToken(3L))
                 .build();
     }
 

@@ -17,29 +17,34 @@
 package com.hedera.node.app.authorization;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
+import com.hedera.node.app.config.VersionedConfigImpl;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.AccountsConfig;
+import com.hedera.node.config.data.ApiPermissionConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 final class AuthorizerTest {
-    private HapiOpPermissions hapiOpPermissions;
+    private ConfigProvider configProvider;
     private AccountID accountID;
     private HederaFunctionality hapiFunction;
 
     @BeforeEach
     void setUp() {
-        hapiOpPermissions = mock(HapiOpPermissions.class);
+        configProvider = () -> new VersionedConfigImpl(
+                HederaTestConfigBuilder.create(false)
+                        .withConfigDataType(ApiPermissionConfig.class)
+                        .withConfigDataType(AccountsConfig.class)
+                        .getOrCreateConfig(),
+                1);
+
         accountID = AccountID.newBuilder().build();
         hapiFunction = CONSENSUS_CREATE_TOPIC;
     }
@@ -48,7 +53,7 @@ final class AuthorizerTest {
     @DisplayName("Account ID is null throws")
     void accountIdIsNullThrows() {
         // given:
-        final var authorizer = new AuthorizerImpl(hapiOpPermissions);
+        final var authorizer = new AuthorizerImpl(configProvider);
 
         // expect:
         //noinspection DataFlowIssue
@@ -59,7 +64,7 @@ final class AuthorizerTest {
     @DisplayName("Hapi function is null throws")
     void hapiFunctionIsNullThrows() {
         // given:
-        final var authorizer = new AuthorizerImpl(hapiOpPermissions);
+        final var authorizer = new AuthorizerImpl(configProvider);
 
         // expect:
         //noinspection DataFlowIssue
@@ -70,8 +75,16 @@ final class AuthorizerTest {
     @DisplayName("Account is not permitted")
     void accountIsNotPermitted() {
         // given:
-        final var authorizer = new AuthorizerImpl(hapiOpPermissions);
-        given(hapiOpPermissions.permissibilityOf2(any(), any())).willReturn(AUTHORIZATION_FAILED);
+        configProvider = () -> new VersionedConfigImpl(
+                HederaTestConfigBuilder.create(false)
+                        .withConfigDataType(ApiPermissionConfig.class)
+                        .withConfigDataType(AccountsConfig.class)
+                        .withValue("createTopic", "1-1000")
+                        .getOrCreateConfig(),
+                1);
+
+        final var authorizer = new AuthorizerImpl(configProvider);
+        accountID = AccountID.newBuilder().accountNum(1234L).build();
 
         // expect:
         final var authorized = authorizer.isAuthorized(accountID, hapiFunction);
@@ -82,8 +95,16 @@ final class AuthorizerTest {
     @DisplayName("Account is permitted")
     void accountIsPermitted() {
         // given:
-        final var authorizer = new AuthorizerImpl(hapiOpPermissions);
-        given(hapiOpPermissions.permissibilityOf2(any(), any())).willReturn(OK);
+        configProvider = () -> new VersionedConfigImpl(
+                HederaTestConfigBuilder.create(false)
+                        .withConfigDataType(ApiPermissionConfig.class)
+                        .withConfigDataType(AccountsConfig.class)
+                        .withValue("createTopic", "1-1234")
+                        .getOrCreateConfig(),
+                1);
+
+        final var authorizer = new AuthorizerImpl(configProvider);
+        accountID = AccountID.newBuilder().accountNum(1234L).build();
 
         // expect:
         final var authorized = authorizer.isAuthorized(accountID, hapiFunction);

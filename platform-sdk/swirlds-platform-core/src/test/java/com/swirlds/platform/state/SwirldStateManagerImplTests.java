@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusComponent;
@@ -59,7 +60,8 @@ public class SwirldStateManagerImplTests {
                 mock(SwirldStateMetrics.class),
                 mock(PlatformStatusComponent.class),
                 () -> false,
-                initialState);
+                initialState,
+                new BasicSoftwareVersion(1));
     }
 
     @Test
@@ -113,6 +115,16 @@ public class SwirldStateManagerImplTests {
     private static State newState() {
         final State state = new State();
         state.setSwirldState(new DummySwirldState());
+
+        final PlatformState platformState = mock(PlatformState.class);
+        when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
+        when(platformState.copy()).thenReturn(platformState);
+
+        final PlatformData platformData = mock(PlatformData.class);
+        when(platformState.getPlatformData()).thenReturn(platformData);
+
+        state.setPlatformState(platformState);
+
         assertEquals(0, state.getReservationCount(), "A brand new state should have no references.");
         return state;
     }

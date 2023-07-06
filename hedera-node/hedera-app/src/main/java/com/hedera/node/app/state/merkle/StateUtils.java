@@ -35,6 +35,17 @@ public final class StateUtils {
     /** Prevent instantiation */
     private StateUtils() {}
 
+    /**
+     * Write the {@code object} to the {@link OutputStream} using the given {@link Codec}.
+     *
+     * @param out The object to write out
+     * @param codec The codec to use. MUST be compatible with the {@code object} type
+     * @param object The object to write
+     * @return The number of bytes written to the stream.
+     * @param <T> The type of the object and associated codec.
+     * @throws IOException If the output stream throws it.
+     * @throws ClassCastException If the object or codec is not for type {@code T}.
+     */
     public static <T> int writeToStream(
             @NonNull final OutputStream out, @NonNull final Codec<T> codec, @NonNull final T object)
             throws IOException {
@@ -47,6 +58,16 @@ public final class StateUtils {
         return byteStream.size();
     }
 
+    /**
+     * Read an object from the {@link InputStream} using the given {@link Codec}.
+     *
+     * @param in The input stream to read from
+     * @param codec The codec to use. MUST be compatible with the {@code object} type
+     * @return The object read from the stream
+     * @param <T> The type of the object and associated codec.
+     * @throws IOException If the input stream throws it.
+     * @throws ClassCastException If the object or codec is not for type {@code T}.
+     */
     @NonNull
     public static <T> T readFromStream(@NonNull final InputStream in, @NonNull final Codec<T> codec)
             throws IOException {
