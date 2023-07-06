@@ -52,8 +52,8 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
         if (annotations.isEmpty()) {
             return false;
         }
-        String executionPath = System.getProperty("user.dir");
-        Path configDocumentationFile = Paths.get(executionPath, "build/docs/config.md");
+        final String executionPath = System.getProperty("user.dir");
+        final Path configDocumentationFile = Paths.get(executionPath, "build/docs/config.md");
         try {
             Files.deleteIfExists(configDocumentationFile);
         } catch (IOException e) {
