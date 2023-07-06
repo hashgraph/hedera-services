@@ -245,7 +245,6 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
         @Test
         void accountDoesntExist() {
-
             // Both stores are intentionally empty
             writableAccountStore = newWritableStoreWithAccounts();
             writableTokenStore = newWritableStoreWithTokens();
