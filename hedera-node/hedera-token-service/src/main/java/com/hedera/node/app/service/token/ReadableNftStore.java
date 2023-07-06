@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Nft;
@@ -36,6 +38,7 @@ public interface ReadableNftStore {
      */
     @Nullable
     default Nft get(@NonNull final TokenID id, final long serialNumber) {
+        requireNonNull(id);
         final var nftID =
                 NftID.newBuilder().tokenID(id).serialNumber(serialNumber).build();
         return get(nftID);

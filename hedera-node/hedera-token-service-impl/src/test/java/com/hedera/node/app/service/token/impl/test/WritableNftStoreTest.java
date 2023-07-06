@@ -48,6 +48,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
         assertThrows(NullPointerException.class, () -> new WritableNftStore(null));
         assertThrows(NullPointerException.class, () -> writableNftStore.put(null));
         assertThrows(NullPointerException.class, () -> writableNftStore.get(null));
+        assertThrows(NullPointerException.class, () -> writableNftStore.get(null, 0));
     }
 
     @Test
@@ -64,8 +65,10 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
         writableNftStore.put(nft);
 
         final var readToken = writableNftStore.get(id);
-
         assertEquals(nft, readToken);
+
+        final var readToken2 = writableNftStore.get(fungibleTokenId, 1);
+        assertEquals(nft, readToken2);
     }
 
     @Test
@@ -77,9 +80,12 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
         writableNftStore.put(nft);
 
         final var readToken = writableNftStore.getForModify(id);
-
         assertThat(readToken).isNotNull();
         assertEquals(nft, readToken);
+
+        final var readToken2 = writableNftStore.getForModify(fungibleTokenId, 1);
+        assertThat(readToken2).isNotNull();
+        assertEquals(nft, readToken2);
     }
 
     @Test
@@ -133,6 +139,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
 
         // Assert the NFT is removed
         assertNull(writableNftStore.get(nftToRemove));
+        assertNull(writableNftStore.get(fungibleTokenId, 1));
     }
 
     @Test
