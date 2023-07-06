@@ -14,21 +14,25 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.state;
+package com.swirlds.common.metrics.statistics;
 
-import java.util.List;
+/**
+ * Settings for statistics.
+ */
+public interface StatSettings {
 
-public record StorageChanges(long contractNumber, List<StorageChange> changes) {
-    public StorageSizeChange summarizeSizeEffects() {
-        var numRemovals = 0;
-        var numInsertions = 0;
-        for (final var change : changes()) {
-            if (change.isRemoval()) {
-                numRemovals++;
-            } else if (change.isInsertion()) {
-                numInsertions++;
-            }
-        }
-        return new StorageSizeChange(contractNumber, numRemovals, numInsertions);
-    }
+    /**
+     * number of bins to store for the history (in StatsBuffer etc.)
+     */
+    int getBufferSize();
+
+    /**
+     * number of seconds covered by "recent" history (in StatsBuffer etc.)
+     */
+    double getRecentSeconds();
+
+    /**
+     * number of seconds that the "all" history window skips at the start
+     */
+    double getSkipSeconds();
 }

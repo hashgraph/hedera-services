@@ -45,7 +45,6 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustHbarChangesStep;
-import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.CustomFeeAssessmentStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
@@ -199,7 +198,8 @@ public class CryptoTransferHandler implements TransactionHandler {
      * @return A list of steps to execute
      */
     private List<TransferStep> decomposeIntoSteps(
-            final CryptoTransferTransactionBody op, final AccountID topLevelPayer,
+            final CryptoTransferTransactionBody op,
+            final AccountID topLevelPayer,
             final TransferContextImpl transferContext) {
         final List<TransferStep> steps = new ArrayList<>();
         // Step 1: associate any token recipients that are not already associated and have

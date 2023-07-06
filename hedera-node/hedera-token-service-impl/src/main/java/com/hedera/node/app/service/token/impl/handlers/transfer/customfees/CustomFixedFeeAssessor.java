@@ -22,8 +22,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.CustomFee;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.commons.lang3.tuple.Pair;
-
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Singleton;
@@ -59,9 +57,7 @@ public class CustomFixedFeeAssessor {
     }
 
     public void assessHbarFees(
-            final AccountID sender,
-            final CustomFee hbarFee,
-            final Map<AccountID, Long> hbarAdjustments) {
+            final AccountID sender, final CustomFee hbarFee, final Map<AccountID, Long> hbarAdjustments) {
         final var collector = hbarFee.feeCollectorAccountId();
         final var fixedSpec = hbarFee.fixedFee();
         final var amount = fixedSpec.amount();
@@ -86,7 +82,7 @@ public class CustomFixedFeeAssessor {
             addHtsAdjustment(htsAdjustments, sender, collector, amount, denominatingToken);
             // self denominated fees are exempt from further fee charging
             if (chargingTokenMeta.tokenId().equals(denominatingToken)) {
-               exemptDenoms.add(denominatingToken);
+                exemptDenoms.add(denominatingToken);
             }
         } else {
             addHtsAdjustment(htsAdjustments, sender, collector, amount, denominatingToken);

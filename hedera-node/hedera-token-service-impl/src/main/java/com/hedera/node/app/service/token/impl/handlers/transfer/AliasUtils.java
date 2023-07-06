@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -25,9 +26,9 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Objects;
 
 public final class AliasUtils {
     private AliasUtils() {
@@ -40,8 +41,9 @@ public final class AliasUtils {
      * @param alias given alias byte string
      * @return whether it parses to a valid primitive key
      */
-    public static boolean isSerializedProtoKey(final Bytes alias) {
-        try (final var bais = new ByteArrayInputStream(Objects.requireNonNull(asBytes(alias)))) {
+    public static boolean isSerializedProtoKey(@NonNull final Bytes alias) {
+        requireNonNull(alias);
+        try (final var bais = new ByteArrayInputStream(requireNonNull(asBytes(alias)))) {
             final var stream = new ReadableStreamingData(bais);
             stream.limit(bais.available());
             final var key = Key.PROTOBUF.parse(stream);
@@ -57,8 +59,9 @@ public final class AliasUtils {
      * @param alias given alias bytes
      * @return the parsed key
      */
-    public static Key asKeyFromAlias(Bytes alias) {
-        try (final var bais = new ByteArrayInputStream(Objects.requireNonNull(asBytes(alias)))) {
+    public static Key asKeyFromAlias(@NonNull Bytes alias) {
+        requireNonNull(alias);
+        try (final var bais = new ByteArrayInputStream(requireNonNull(asBytes(alias)))) {
             final var stream = new ReadableStreamingData(bais);
             return Key.PROTOBUF.parse(stream);
         } catch (final IOException e) {
@@ -66,7 +69,8 @@ public final class AliasUtils {
         }
     }
 
-    public static boolean isAlias(final AccountID idOrAlias) {
+    public static boolean isAlias(@NonNull final AccountID idOrAlias) {
+        requireNonNull(idOrAlias);
         return !idOrAlias.hasAccountNum() && idOrAlias.hasAlias();
     }
 }

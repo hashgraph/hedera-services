@@ -35,8 +35,6 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.Custo
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.commons.lang3.tuple.Pair;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -90,8 +88,8 @@ public class CustomFeeAssessmentStep {
                 customFeeTokenAdjustmentsLevel1,
                 exemptDebitsLevel1);
 
-        final var nextLevelBuilder = buildTransactionFromAdjustments(customFeeHbarAdjustmentsLevel1,
-                customFeeTokenAdjustmentsLevel1);
+        final var nextLevelBuilder =
+                buildTransactionFromAdjustments(customFeeHbarAdjustmentsLevel1, customFeeTokenAdjustmentsLevel1);
         customFeeAssessments.add(nextLevelBuilder);
 
         // There can only be three levels of custom fees. So assess the generated builder again
@@ -115,17 +113,19 @@ public class CustomFeeAssessmentStep {
         final List<AccountAmount> aaList = new ArrayList<>();
         final List<TokenTransferList> tokenTransferLists = new ArrayList<>();
 
-        for(final var entry : customFeeHbarAdjustments.entrySet()) {
-            aaList.add(AccountAmount.newBuilder().accountID(entry.getKey()).amount(entry.getValue()).build());
+        for (final var entry : customFeeHbarAdjustments.entrySet()) {
+            aaList.add(AccountAmount.newBuilder()
+                    .accountID(entry.getKey())
+                    .amount(entry.getValue())
+                    .build());
         }
         transferList.accountAmounts(aaList);
         newBuilder.transfers(transferList.build());
         aaList.clear();
 
-        for(final var entry : customFeeTokenAdjustments.entrySet()) {
-            final var tokenTransferList = TokenTransferList.newBuilder()
-                    .token(entry.getKey());
-            for(final var valueEntry : entry.getValue().entrySet()) {
+        for (final var entry : customFeeTokenAdjustments.entrySet()) {
+            final var tokenTransferList = TokenTransferList.newBuilder().token(entry.getKey());
+            for (final var valueEntry : entry.getValue().entrySet()) {
                 aaList.add(AccountAmount.newBuilder()
                         .accountID(valueEntry.getKey())
                         .amount(valueEntry.getValue())
@@ -138,19 +138,21 @@ public class CustomFeeAssessmentStep {
         return newBuilder;
     }
 
-    private void assessCustomFeesForALevel(List<TokenTransferList> tokenTransfers,
-                                           ReadableTokenStore tokenStore,
-                                           TokensConfig tokensConfig,
-                                           Map<AccountID, Long> customFeeHbarAdjustments,
-                                           Map<TokenID, Map<AccountID, Long>> customFeeTokenAdjustments,
-                                           Set<TokenID> exemptDebits) {
+    private void assessCustomFeesForALevel(
+            List<TokenTransferList> tokenTransfers,
+            ReadableTokenStore tokenStore,
+            TokensConfig tokensConfig,
+            Map<AccountID, Long> customFeeHbarAdjustments,
+            Map<TokenID, Map<AccountID, Long>> customFeeTokenAdjustments,
+            Set<TokenID> exemptDebits) {
         for (final var xfer : tokenTransfers) {
             final var tokenId = xfer.token();
             final var fungibleTokenTransfers = xfer.transfersOrElse(emptyList());
             final var nftTransfers = xfer.nftTransfersOrElse(emptyList());
 
             final var token = getIfUsable(tokenId, tokenStore);
-            final var feeMeta = new CustomFeeMeta(tokenId, token.treasuryAccountId(), token.customFeesOrElse(emptyList()), token.tokenType());
+            final var feeMeta = new CustomFeeMeta(
+                    tokenId, token.treasuryAccountId(), token.customFeesOrElse(emptyList()), token.tokenType());
             if (feeMeta.customFees().isEmpty()) {
                 continue;
             }
@@ -159,8 +161,7 @@ public class CustomFeeAssessmentStep {
                 final var adjustment = aa.amount();
                 for (final var fee : feeMeta.customFees()) {
                     final var denomToken = fee.fixedFee().denominatingTokenId();
-                    if (couldTriggerCustomFees(tokenId, denomToken, false,
-                            true, adjustment, exemptDebits)) {
+                    if (couldTriggerCustomFees(tokenId, denomToken, false, true, adjustment, exemptDebits)) {
                         customFeeAssessor.assess(
                                 aa.accountID(),
                                 feeMeta,
@@ -176,8 +177,7 @@ public class CustomFeeAssessmentStep {
                 final var adjustment = nftTransfer.serialNumber();
                 for (final var fee : feeMeta.customFees()) {
                     final var denomToken = fee.fixedFee().denominatingTokenId();
-                    if (couldTriggerCustomFees(tokenId, denomToken, true,
-                            false, adjustment, exemptDebits)) {
+                    if (couldTriggerCustomFees(tokenId, denomToken, true, false, adjustment, exemptDebits)) {
                         customFeeAssessor.assess(
                                 nftTransfer.senderAccountID(),
                                 feeMeta,
@@ -221,10 +221,11 @@ public class CustomFeeAssessmentStep {
             boolean isNftTransfer,
             boolean isFungibleTokenTransfer,
             long adjustment,
-            final Set<TokenID> exemptDebits){
-        if (isExemptFromCustomFees(chargingTokenId, denominatingTokenID) || exemptDebits.contains(denominatingTokenID)) {
+            final Set<TokenID> exemptDebits) {
+        if (isExemptFromCustomFees(chargingTokenId, denominatingTokenID)
+                || exemptDebits.contains(denominatingTokenID)) {
             return false;
-        }else{
+        } else {
             return isNftTransfer || (isFungibleTokenTransfer && adjustment < 0);
         }
     }

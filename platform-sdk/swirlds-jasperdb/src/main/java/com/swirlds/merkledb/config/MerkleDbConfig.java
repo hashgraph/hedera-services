@@ -64,22 +64,6 @@ import java.time.temporal.ChronoUnit;
  * 		The minimum elapsed time in merge period units between medium merges.
  * @param fullMergePeriod
  * 		The minimum elapsed time in merge period units between full merges.
- * @param maxDataFileBytes
- * 		Chosen max size for a data file, this is a balance as fewer bigger files are faster to read
- * 		from but large files are extensive to merge. It must be less than 1024GB (as determined by
- *        {@code DataFileCommon#MAX_ADDRESSABLE_DATA_FILE_SIZE_BYTES})
- * @param moveListChunkSize
- * 		This is the size of each sub array chunk allocated as the moves list grows. It wants to be
- * 		big enough that we don't have too many arrays but small enough to not use a crazy amount of RAM for small
- * 		virtual merkle trees and in unit tests etc. Default of 500_000 seems an ok compromise at 11.5Mb.
- * @param maxRamUsedForMergingGb
- * 		Maximum amount of RAM that can be used for the moves map during merging of files.
- * 		This is for a single merge. If we do more than 1 merge at a time then this will be multiplied by number of
- * 		active merges. This directly dictates the max number of items that can be stored in a data file.
- * @param iteratorInputBufferBytes
- * 		Size of the buffered input stream (in bytes) underlying a {@link com.swirlds.jasperdb.files.DataFileIterator}.
- * @param writerOutputBufferBytes
- * 		Size of the buffered output stream (in bytes) used by a {@link com.swirlds.jasperdb.files.DataFileWriter}.
  * @param reconnectKeyLeakMitigationEnabled
  * 		There currently exists a bug when a virtual map is reconnected that can
  * 		cause some deleted keys to leak into the datasource. If this method returns true then a mitigation strategy is
@@ -135,11 +119,7 @@ public record MerkleDbConfig(
         @Min(0) @ConfigProperty(defaultValue = "1") long mergeActivatePeriod,
         @Min(0) @ConfigProperty(defaultValue = "60") long mediumMergePeriod,
         @Min(0) @ConfigProperty(defaultValue = "1440") long fullMergePeriod,
-        @Min(0) @ConfigProperty(defaultValue = "68719476736") long maxDataFileBytes,
-        @Positive @ConfigProperty(defaultValue = "500000") int moveListChunkSize,
-        @Min(0) @ConfigProperty(defaultValue = "10") int maxRamUsedForMergingGb,
         @Positive @ConfigProperty(defaultValue = "1048576") int iteratorInputBufferBytes,
-        @Positive @ConfigProperty(defaultValue = "4194304") int writerOutputBufferBytes,
         @ConfigProperty(defaultValue = "false") boolean reconnectKeyLeakMitigationEnabled,
         @ConfigProperty(defaultValue = "10") int keySetBloomFilterHashCount,
         @ConfigProperty(defaultValue = "2147483648") long keySetBloomFilterSizeInBytes,
@@ -161,7 +141,7 @@ public record MerkleDbConfig(
         if (maxNumberOfFilesInMerge <= minNumberOfFilesInMerge) {
             return new DefaultConfigViolation(
                     "maxNumberOfFilesInMerge",
-                    maxNumberOfFilesInMerge + "",
+                    "%d".formatted(maxNumberOfFilesInMerge),
                     true,
                     "Cannot configure maxNumberOfFilesInMerge to " + maxNumberOfFilesInMerge + ", it must be > "
                             + minNumberOfFilesInMerge);
@@ -177,7 +157,7 @@ public record MerkleDbConfig(
         if (minNumberOfFilesInMerge < 2) {
             return new DefaultConfigViolation(
                     "maxNumberOfFilesInMerge",
-                    maxNumberOfFilesInMerge + "",
+                    "%d".formatted(maxNumberOfFilesInMerge),
                     true,
                     "Cannot configure minNumberOfFilesInMerge to " + minNumberOfFilesInMerge + ", it must be >= 2");
         }

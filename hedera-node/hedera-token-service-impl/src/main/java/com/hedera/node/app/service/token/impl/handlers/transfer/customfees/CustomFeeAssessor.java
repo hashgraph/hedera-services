@@ -24,18 +24,11 @@ import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.hapi.node.transaction.CustomFee;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
-import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.commons.lang3.tuple.Pair;
-
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
@@ -95,12 +88,13 @@ public class CustomFeeAssessor {
         }
         fixedFeeAssessor.assessFixedFees(feeMeta, sender, hbarAdjustments, htsAdjustments, exemptDebits);
         totalBalanceChanges += hbarAdjustments.size() + htsAdjustments.size();
-        validateFalse(totalBalanceChanges > maxTransfersSize, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);;
+        validateFalse(totalBalanceChanges > maxTransfersSize, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
+        ;
 
         // A FUNGIBLE_COMMON token can have fractional fees but not royalty fees.
         // A NON_FUNGIBLE_UNIQUE token can have royalty fees but not fractional fees.
         // So check token type and do further assessment
-        if(feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)){
+        if (feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
             fractionalFeeAssessor.assessFractionFees(feeMeta, sender, hbarAdjustments, htsAdjustments);
         } else {
             royaltyFeeAssessor.assessRoyaltyFees(feeMeta, sender, hbarAdjustments, htsAdjustments);

@@ -391,7 +391,7 @@ public class BaseTokenHandler {
         // TODO: Need to track units change in record in finalize method for this
     }
 
-    protected void validateFrozenAndKycOnRelation(@NonNull final TokenRelation rel) {
+    protected void validateNotFrozenAndKycOnRelation(@NonNull final TokenRelation rel) {
         validateTrue(!rel.frozen(), ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN);
         validateTrue(rel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
     }

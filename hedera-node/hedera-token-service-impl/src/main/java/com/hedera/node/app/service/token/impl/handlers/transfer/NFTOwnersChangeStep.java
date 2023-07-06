@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -37,7 +36,6 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
-import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 
@@ -62,11 +60,8 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         for (var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.token();
             final var token = getIfUsable(tokenId, tokenStore);
-
-            if (xfers.hasExpectedDecimals()) {
-                HandleException.validateTrue(
-                        token.decimals() == xfers.expectedDecimals().intValue(), UNEXPECTED_TOKEN_DECIMALS);
-            }
+            // Expected decimals are already validated in AdjustFungibleTokenChangesStep.
+            // So not doing same check again here
 
             for (final var nftTransfer : xfers.nftTransfersOrElse(Collections.emptyList())) {
                 final var senderId = nftTransfer.senderAccountID();
@@ -78,8 +73,8 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
                 final var senderRel = getIfUsable(senderId, tokenId, tokenRelStore);
                 final var receiverRel = getIfUsable(receiverId, tokenId, tokenRelStore);
 
-                validateFrozenAndKycOnRelation(senderRel);
-                validateFrozenAndKycOnRelation(receiverRel);
+                validateNotFrozenAndKycOnRelation(senderRel);
+                validateNotFrozenAndKycOnRelation(receiverRel);
 
                 final var treasury = token.treasuryAccountId();
                 getIfUsable(treasury, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
