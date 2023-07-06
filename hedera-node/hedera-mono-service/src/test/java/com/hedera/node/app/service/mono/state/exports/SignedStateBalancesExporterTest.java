@@ -216,8 +216,10 @@ class SignedStateBalancesExporterTest {
 
         final var book = mock(AddressBook.class);
         given(book.getSize()).willReturn(2);
-        given(book.getAddress(0)).willReturn(firstNodeAddress);
-        given(book.getAddress(1)).willReturn(secondNodeAddress);
+        given(book.getNodeId(0)).willReturn(new NodeId(0));
+        given(book.getNodeId(1)).willReturn(new NodeId(1));
+        given(book.getAddress(new NodeId(0))).willReturn(firstNodeAddress);
+        given(book.getAddress(new NodeId(1))).willReturn(secondNodeAddress);
 
         state = mock(ServicesState.class);
         given(state.getAccountFromNodeId(nodeId)).willReturn(thisNode);

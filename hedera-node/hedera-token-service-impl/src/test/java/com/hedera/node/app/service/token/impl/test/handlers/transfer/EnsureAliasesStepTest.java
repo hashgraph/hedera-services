@@ -65,25 +65,24 @@ class EnsureAliasesStepTest extends StepsBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(createdNumber).build();
+                            account.copyBuilder().accountNumber(hbarReceiver).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(createdNumber));
-                    return recordBuilder.accountID(asAccount(createdNumber));
+                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    return recordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
-                    final var copy = account.copyBuilder()
-                            .accountNumber(createdNumber + 1)
-                            .build();
+                    final var copy =
+                            account.copyBuilder().accountNumber(tokenReceiver).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(edKeyAlias, asAccount(createdNumber + 1));
-                    return recordBuilder.accountID(asAccount(createdNumber + 1));
+                    writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
+                    return recordBuilder.accountID(asAccount(tokenReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
-        assertThat(writableAccountStore.get(asAccount(createdNumber))).isNull();
-        assertThat(writableAccountStore.get(asAccount(createdNumber + 1))).isNull();
+        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNull();
+        assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
         assertThat(writableAliases.get(ecKeyAlias)).isNull();
         assertThat(writableAliases.get(edKeyAlias)).isNull();
 
@@ -92,10 +91,10 @@ class EnsureAliasesStepTest extends StepsBase {
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(2);
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(4);
-        assertThat(writableAccountStore.get(asAccount(createdNumber))).isNotNull();
-        assertThat(writableAccountStore.get(asAccount(createdNumber + 1))).isNotNull();
-        assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(createdNumber);
-        assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(createdNumber + 1);
+        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
+        assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNotNull();
+        assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(hbarReceiver);
+        assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(tokenReceiver);
 
         assertThat(transferContext.numOfAutoCreations()).isEqualTo(2);
         assertThat(transferContext.numOfLazyCreations()).isZero();
@@ -122,35 +121,35 @@ class EnsureAliasesStepTest extends StepsBase {
                                 .nftTransfers(nftTransferWith(ownerId, asAccountWithAlias(evmAddressAlias3), 1))
                                 .build())
                 .build();
-        givenTxn(body);
+        givenTxn(body, payerId);
 
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
-                            .accountNumber(createdNumber)
+                            .accountNumber(hbarReceiver)
                             .alias(evmAddressAlias1)
                             .build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(evmAddressAlias1, asAccount(createdNumber));
-                    return recordBuilder.accountID(asAccount(createdNumber));
+                    writableAliases.put(evmAddressAlias1, asAccount(hbarReceiver));
+                    return recordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
-                            .accountNumber(createdNumber + 1)
+                            .accountNumber(tokenReceiver)
                             .alias(evmAddressAlias2)
                             .build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(evmAddressAlias2, asAccount(createdNumber + 1));
-                    return recordBuilder.accountID(asAccount(createdNumber + 1));
+                    writableAliases.put(evmAddressAlias2, asAccount(tokenReceiver));
+                    return recordBuilder.accountID(asAccount(tokenReceiver));
                 })
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
-                            .accountNumber(createdNumber + 2)
+                            .accountNumber(hbarReceiver + 2)
                             .alias(evmAddressAlias3)
                             .build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(evmAddressAlias3, asAccount(createdNumber + 2));
-                    return recordBuilder.accountID(asAccount(createdNumber + 2));
+                    writableAliases.put(evmAddressAlias3, asAccount(hbarReceiver + 2));
+                    return recordBuilder.accountID(asAccount(hbarReceiver + 2));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -161,12 +160,12 @@ class EnsureAliasesStepTest extends StepsBase {
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(3);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(3);
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(5);
-        assertThat(writableAccountStore.get(asAccount(createdNumber))).isNotNull();
-        assertThat(writableAccountStore.get(asAccount(createdNumber + 1))).isNotNull();
-        assertThat(writableAccountStore.get(asAccount(createdNumber + 2))).isNotNull();
-        assertThat(writableAliases.get(evmAddressAlias1).accountNum()).isEqualTo(createdNumber);
-        assertThat(writableAliases.get(evmAddressAlias2).accountNum()).isEqualTo(createdNumber + 1);
-        assertThat(writableAliases.get(evmAddressAlias3).accountNum()).isEqualTo(createdNumber + 2);
+        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
+        assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNotNull();
+        assertThat(writableAccountStore.get(asAccount(hbarReceiver + 2))).isNotNull();
+        assertThat(writableAliases.get(evmAddressAlias1).accountNum()).isEqualTo(hbarReceiver);
+        assertThat(writableAliases.get(evmAddressAlias2).accountNum()).isEqualTo(tokenReceiver);
+        assertThat(writableAliases.get(evmAddressAlias3).accountNum()).isEqualTo(hbarReceiver + 2);
 
         assertThat(transferContext.numOfAutoCreations()).isZero();
         assertThat(transferContext.numOfLazyCreations()).isEqualTo(3);
@@ -188,8 +187,8 @@ class EnsureAliasesStepTest extends StepsBase {
 
         assertThat(writableAccountStore.modifiedAliasesInState()).isEmpty();
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
-        assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(createdNumber);
-        assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(createdNumber + 1);
+        assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(hbarReceiver);
+        assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(tokenReceiver);
 
         assertThat(transferContext.numOfAutoCreations()).isZero();
         assertThat(transferContext.numOfLazyCreations()).isZero();
@@ -217,7 +216,7 @@ class EnsureAliasesStepTest extends StepsBase {
                                 .nftTransfers(nftTransferWith(ownerId, unknownAliasedId1, 1))
                                 .build())
                 .build();
-        txn = asTxn(body);
+        txn = asTxn(body, payerId);
         given(handleContext.body()).willReturn(txn);
         ensureAliasesStep = new EnsureAliasesStep(body);
         transferContext = new TransferContextImpl(handleContext);
@@ -225,18 +224,17 @@ class EnsureAliasesStepTest extends StepsBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(createdNumber).build();
+                            account.copyBuilder().accountNumber(hbarReceiver).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(createdNumber));
-                    return recordBuilder.accountID(asAccount(createdNumber));
+                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    return recordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
-                    final var copy = account.copyBuilder()
-                            .accountNumber(createdNumber + 1)
-                            .build();
+                    final var copy =
+                            account.copyBuilder().accountNumber(tokenReceiver).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(edKeyAlias, asAccount(createdNumber + 1));
-                    return recordBuilder.accountID(asAccount(createdNumber + 1));
+                    writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
+                    return recordBuilder.accountID(asAccount(tokenReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -257,29 +255,12 @@ class EnsureAliasesStepTest extends StepsBase {
                         .build())
                 .tokenTransfers()
                 .build();
-        txn = asTxn(body);
+        txn = asTxn(body, payerId);
         given(handleContext.body()).willReturn(txn);
         ensureAliasesStep = new EnsureAliasesStep(body);
         transferContext = new TransferContextImpl(handleContext);
 
-        given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
-                .will((invocation) -> {
-                    final var copy =
-                            account.copyBuilder().accountNumber(createdNumber).build();
-                    writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(createdNumber));
-                    return recordBuilder.accountID(asAccount(createdNumber));
-                })
-                .will((invocation) -> {
-                    final var copy = account.copyBuilder()
-                            .accountNumber(createdNumber + 1)
-                            .build();
-                    writableAccountStore.put(copy);
-                    writableAliases.put(edKeyAlias, asAccount(createdNumber + 1));
-                    return recordBuilder.accountID(asAccount(createdNumber + 1));
-                });
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-
+        givenAutoCreationDispatchEffects();
         assertThatThrownBy(() -> ensureAliasesStep.doIn(transferContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));
@@ -292,7 +273,7 @@ class EnsureAliasesStepTest extends StepsBase {
                 .transfers(
                         TransferList.newBuilder().accountAmounts(mirrorAdjust).build())
                 .build();
-        txn = asTxn(body);
+        txn = asTxn(body, payerId);
         given(handleContext.body()).willReturn(txn);
         ensureAliasesStep = new EnsureAliasesStep(body);
         transferContext = new TransferContextImpl(handleContext);
@@ -317,7 +298,7 @@ class EnsureAliasesStepTest extends StepsBase {
                                 .build())
                         .build())
                 .build();
-        txn = asTxn(body);
+        txn = asTxn(body, payerId);
         given(handleContext.body()).willReturn(txn);
         ensureAliasesStep = new EnsureAliasesStep(body);
         transferContext = new TransferContextImpl(handleContext);
@@ -330,24 +311,24 @@ class EnsureAliasesStepTest extends StepsBase {
 
     private void setUpInsertingKnownAliasesToState() {
         final var readableBuilder = emptyReadableAliasStateBuilder();
-        readableBuilder.value(ecKeyAlias, asAccount(createdNumber));
-        readableBuilder.value(edKeyAlias, asAccount(createdNumber + 1));
+        readableBuilder.value(ecKeyAlias, asAccount(hbarReceiver));
+        readableBuilder.value(edKeyAlias, asAccount(tokenReceiver));
         readableAliases = readableBuilder.build();
 
         final var writableBuilder = emptyWritableAliasStateBuilder();
-        writableBuilder.value(ecKeyAlias, asAccount(createdNumber));
-        writableBuilder.value(edKeyAlias, asAccount(createdNumber + 1));
+        writableBuilder.value(ecKeyAlias, asAccount(hbarReceiver));
+        writableBuilder.value(edKeyAlias, asAccount(tokenReceiver));
         writableAliases = writableBuilder.build();
 
         given(writableStates.<Bytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         writableAccountStore = new WritableAccountStore(writableStates);
 
         writableAccountStore.put(account.copyBuilder()
-                .accountNumber(createdNumber)
+                .accountNumber(hbarReceiver)
                 .alias(ecKeyAlias)
                 .build());
         writableAccountStore.put(account.copyBuilder()
-                .accountNumber(createdNumber + 1)
+                .accountNumber(tokenReceiver)
                 .alias(edKeyAlias)
                 .build());
 
@@ -378,7 +359,7 @@ class EnsureAliasesStepTest extends StepsBase {
                         .transfers(List.of(aaWith(ownerId, -1_000), aaWith(unknownAliasedId1, +1_000)))
                         .build())
                 .build();
-        txn = asTxn(body);
+        txn = asTxn(body, payerId);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.configuration()).willReturn(configuration);
 

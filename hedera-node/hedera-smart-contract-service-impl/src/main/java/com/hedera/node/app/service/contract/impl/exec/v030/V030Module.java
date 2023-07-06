@@ -25,11 +25,7 @@ import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
-import com.hedera.node.app.service.contract.impl.exec.operations.CustomBalanceOperation;
-import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
-import com.hedera.node.app.service.contract.impl.exec.operations.CustomChainIdOperation;
-import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreate2Operation;
-import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreateOperation;
+import com.hedera.node.app.service.contract.impl.exec.operations.*;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomContractCreationProcessor;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
@@ -52,6 +48,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
+import org.hyperledger.besu.evm.operation.SLoadOperation;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
@@ -172,5 +169,13 @@ public interface V030Module {
     static Operation provideCreate2Operation(
             @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final FeatureFlags featureFlags) {
         return new CustomCreate2Operation(gasCalculator, featureFlags);
+    }
+
+    @Provides
+    @IntoSet
+    @ServicesV030
+    static Operation provideSLoadOperation(
+            @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final FeatureFlags featureFlags) {
+        return new CustomSLoadOperation(featureFlags, new SLoadOperation(gasCalculator));
     }
 }
