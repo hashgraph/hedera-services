@@ -24,7 +24,7 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.common.metrics.MetricType.RUNNING_AVERAGE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
