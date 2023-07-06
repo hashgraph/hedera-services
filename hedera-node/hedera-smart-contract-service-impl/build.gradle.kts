@@ -23,7 +23,15 @@ dependencies {
         annotationProcessor(gav("dagger.compiler"))
         testImplementation(testFixtures(project(":app-spi")))
         testImplementation(testFixtures(project(":config")))
+        testImplementation(testFixtures(project(":app-service-mono")))
 
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("org.hamcrest"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.mockito"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+        testImplementation(gav("com.swirlds.merkle"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
         testRuntimeOnly(gav("org.mockito.inline"))
     }
 }
