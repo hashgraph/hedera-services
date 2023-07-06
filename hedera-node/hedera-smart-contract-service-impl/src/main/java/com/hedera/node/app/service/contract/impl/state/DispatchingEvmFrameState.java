@@ -124,7 +124,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
 
     @NonNull
     @Override
-    public List<StorageChanges> getPendingStorageChanges() {
+    public List<StorageAccesses> getStorageChanges() {
         // TODO - when WritableKVState supports getting the original value, use that here
         throw new AssertionError("Not implemented");
     }
