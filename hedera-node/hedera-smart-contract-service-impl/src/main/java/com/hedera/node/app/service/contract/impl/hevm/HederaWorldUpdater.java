@@ -26,6 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -65,6 +66,14 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * @throws IllegalArgumentException if the address has no corresponding contract id
      */
     ContractID getHederaContractId(@NonNull Address address);
+
+    /**
+     * Returns the all the bytes of entropy available in this world.
+     *
+     * @return the available entropy
+     */
+    @NonNull
+    Bytes entropy();
 
     /**
      * Collects the given fee from the given account. The caller should have already

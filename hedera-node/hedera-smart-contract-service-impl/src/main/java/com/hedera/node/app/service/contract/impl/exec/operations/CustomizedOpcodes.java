@@ -28,6 +28,7 @@ public enum CustomizedOpcodes {
     CHAINID(0x46),
     CREATE(0xf0),
     CREATE2(0xf5),
+    PREVRANDAO(0x44),
     SELFDESTRUCT(0xff);
 
     CustomizedOpcodes(int opcode) {

@@ -38,6 +38,13 @@ public interface BasicCustomCallOperation {
             new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
 
     /**
+     * Returns the {@link AddressChecks} instance used to determine whether a call is to a missing address.
+     *
+     * @return the {@link AddressChecks} instance used to determine whether a call is to a missing address
+     */
+    AddressChecks addressChecks();
+
+    /**
      * Returns the address to which the {@link org.hyperledger.besu.evm.operation.AbstractCallOperation} being
      * customized is targeted.
      *
@@ -52,13 +59,6 @@ public interface BasicCustomCallOperation {
      * @return the gas cost of the call
      */
     long superCost(@NonNull MessageFrame frame);
-
-    /**
-     * Returns the {@link AddressChecks} instance used to determine whether a call is to a missing address.
-     *
-     * @return the {@link AddressChecks} instance used to determine whether a call is to a missing address
-     */
-    AddressChecks addressChecks();
 
     /**
      * Executes the {@link org.hyperledger.besu.evm.operation.AbstractCallOperation} being customized.
