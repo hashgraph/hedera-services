@@ -16,87 +16,92 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.transaction.CustomFee;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.grpc.marshalling.AdjustmentUtils;
-import com.hedera.node.app.service.mono.grpc.marshalling.AssessedCustomFeeWrapper;
-import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
-import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeExemptions.isPayerExempt;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
+import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.transaction.CustomFee;
+import java.util.List;
+import javax.inject.Singleton;
 
 @Singleton
 public class CustomFixedFeeAssessor {
+    public CustomFixedFeeAssessor() {}
 
-    @Inject
-    public CustomFixedFeeAssessor(){
-    }
-
-    /**
-     * Assess the given fixed fee, which may be either a top-level fixed fee or a fallback royalty
-     * fee.
-     *
-     * @param payer the payer of the fixed fee
-     * @param feeMeta the metadata for the token charging the fixed fee
-     * @param fee the fixed fee to assess
-     * @param isFallbackFee whether the fee is a fallback royalty fee
-     * @return OK if the fee was assessed successfully, or a failure code if not
-     */
-    public TransactionBody.Builder assess(
-            final AccountID payer,
+    public void assess(
+            final AccountID sender,
             final CustomFeeMeta feeMeta,
             final CustomFee fee,
-            final boolean isFallbackFee) {
-        if (isPayerExempt(feeMeta, fee, payer)) {
+            final boolean isFallbackFee,
+            final TransferList.Builder hbarAdjustments,
+            final List<TokenTransferList.Builder> htsAdjustments) {
+        if (isPayerExempt(feeMeta, fee, sender)) {
             return;
         }
-
-        final var fixedSpec = fee.fixedFeeOrThrow();
-        if (fixedSpec.hasDenominatingTokenId()) {
-            return assessHbarFees(payer, fee, changeManager, accumulator, isFallbackFee);
+        final var fixedFeeSpec = fee.fixedFeeOrThrow();
+        if (!fixedFeeSpec.hasDenominatingTokenId()) {
+            assessHbarFees(sender, fee, isFallbackFee, hbarAdjustments);
         } else {
-            return assessHtsFees(payer, feeMeta, fee, changeManager, accumulator, isFallbackFee);
+            assessHtsFees(sender, feeMeta, fee, isFallbackFee, htsAdjustments);
         }
     }
 
-    public ResponseCodeEnum assessHbarFees(
-            final AccountID payer,
-            final FcCustomFee hbarFee,
-            boolean isFallbackFee) {
-        final var collector = hbarFee.getFeeCollectorAsId();
-        final var fixedSpec = hbarFee.getFixedFeeSpec();
-        final var amount = fixedSpec.getUnitsToCollect();
-        adjustForAssessedHbar(payer, collector, amount, changeManager, isFallbackFee);
-        final var effPayerAccountNums = new AccountID[] {payer.asGrpcAccount()};
-        final var assessed = new AssessedCustomFeeWrapper(collector.asEntityId(), amount, effPayerAccountNums);
-        accumulator.add(assessed);
-        return OK;
+    public void assessHbarFees(
+            final AccountID sender,
+            final CustomFee hbarFee,
+            boolean isFallbackFee,
+            final TransferList.Builder hbarAdjustments) {
+        final var collector = hbarFee.feeCollectorAccountId();
+        final var fixedSpec = hbarFee.fixedFee();
+        final var amount = fixedSpec.amount();
+        final var aaDebit =
+                AccountAmount.newBuilder().accountID(sender).amount(-amount).build();
+        final var aaCredit =
+                AccountAmount.newBuilder().accountID(collector).amount(amount).build();
+
+        // TODO : How to set includesFallbackFee for signature requirement ??
+        hbarAdjustments.accountAmounts(aaCredit, aaDebit);
     }
 
-    public ResponseCodeEnum assessHtsFees(
-            AccountID payer,
+    public void assessHtsFees(
+            AccountID sender,
             CustomFeeMeta chargingTokenMeta,
             CustomFee htsFee,
-            boolean isFallbackFee) {
-        final var collector = htsFee.feeCollectorAccountId();
-        final var fixedSpec = htsFee.fixedFee();
-        final var amount = fixedSpec.amount();
-        final var denominatingToken = fixedSpec.denominatingTokenId();
-        AdjustmentUtils.adjustForAssessed(
-                payer, chargingTokenMeta.tokenId(), collector, denominatingToken, amount, changeManager, isFallbackFee);
+            boolean isFallbackFee,
+            final List<TokenTransferList.Builder> htsAdjustments) {
+        final var collector = htsFee.feeCollectorAccountIdOrThrow();
+        final var fixedFeeSpec = htsFee.fixedFeeOrThrow();
+        final var amount = fixedFeeSpec.amount();
+        final var denominatingToken = fixedFeeSpec.denominatingTokenId();
 
-        final var effPayerAccountNums = new AccountID[] {payer.asGrpcAccount()};
-        final var assessed = new AssessedCustomFeeWrapper(
-                htsFee.feeCollectorAccountId(), fixedSpec.denominatingTokenId(), amount, effPayerAccountNums);
-        accumulator.add(assessed);
-
-        return OK;
+        if (amount < 0) {
+            addHtsAdjustment(htsAdjustments, sender, collector, amount, denominatingToken);
+            if (chargingTokenMeta.tokenId().equals(denominatingToken)) {
+                // TODO : How to set exempt from custom Fees
+            }
+        } else {
+            addHtsAdjustment(htsAdjustments, sender, collector, amount, denominatingToken);
+        }
     }
 
+    private void addHtsAdjustment(
+            final List<TokenTransferList.Builder> htsAdjustments,
+            final AccountID sender,
+            final AccountID collector,
+            final long amount,
+            final TokenID denominatingToken) {
+        final var tokenTransferLisBuilder = TokenTransferList.newBuilder();
+        final var aaDebit =
+                AccountAmount.newBuilder().accountID(sender).amount(amount).build();
+        final var aaCredit =
+                AccountAmount.newBuilder().accountID(collector).amount(-amount).build();
+        tokenTransferLisBuilder
+                .token(denominatingToken)
+                .transfers(aaCredit, aaDebit)
+                .build();
+        htsAdjustments.add(tokenTransferLisBuilder);
+    }
 }

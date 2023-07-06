@@ -16,12 +16,14 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.ReadableNftStore;
-import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeAssessor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta;
@@ -31,13 +33,8 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.Custo
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
-import static java.util.Collections.emptyList;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Charges custom fees for the crypto transfer operation. This is yet to be implemented
@@ -54,26 +51,28 @@ public class CustomFeeAssessmentStep {
         fixedFeeAssessor = new CustomFixedFeeAssessor();
         fractionalFeeAssessor = new CustomFractionalFeeAssessor();
         royaltyFeeAssessor = new CustomRoyaltyFeeAssessor();
-        customFeeAssessor = new CustomFeeAssessor(fixedFeeAssessor, fractionalFeeAssessor, royaltyFeeAssessor);
+        customFeeAssessor = new CustomFeeAssessor(fixedFeeAssessor, fractionalFeeAssessor, royaltyFeeAssessor, op);
     }
-    public List<TransactionBody.Builder> assessCustomFees(@NonNull final TransferContext transferContext) {
+
+    public CryptoTransferTransactionBody.Builder assessCustomFees(@NonNull final TransferContext transferContext) {
         requireNonNull(transferContext);
         final var customFeeAssessments = new ArrayList<>();
 
         final var handleContext = transferContext.getHandleContext();
         final var tokenTransfers = op.tokenTransfersOrElse(emptyList());
-        final var nftStore = handleContext.readableStore(ReadableNftStore.class);
-        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
         final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
-        final var tokenRelStore = handleContext.readableStore(ReadableTokenRelationStore.class);
-        final var expiryValidator = handleContext.expiryValidator();
         final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
         final var tokensConfig = handleContext.configuration().getConfigData(TokensConfig.class);
-        final var maxXferBalanceChanges = ledgerConfig.xferBalanceChangesMaxLen();
-        final var maxNestedCustomFees = tokensConfig.maxCustomFeeDepth();
-        final var maxCustomFeesAllowed = tokensConfig.maxCustomFeesAllowed();
-        final var levelOneBody = op.copyBuilder();
-        final var levelTwoBody = TransactionBody.newBuilder();
+
+        final var nextLevelBuilder = CryptoTransferTransactionBody.newBuilder()
+                .transfers(TransferList.newBuilder().build())
+                .tokenTransfers(TokenTransferList.newBuilder()
+                        .transfers(emptyList())
+                        .nftTransfers(emptyList())
+                        .build());
+
+        final var hbarAdjustments = TransferList.newBuilder();
+        final List<TokenTransferList.Builder> htsAdjustments = new ArrayList<>();
 
         for (final var xfer : tokenTransfers) {
             final var tokenId = xfer.token();
@@ -81,25 +80,42 @@ public class CustomFeeAssessmentStep {
             final var nftTransfers = xfer.nftTransfersOrElse(emptyList());
 
             final var token = getIfUsable(tokenId, tokenStore);
-            final var feeMeta = new CustomFeeMeta(tokenId, token.treasuryAccountId(), token.customFeesOrElse(emptyList()));
+            final var feeMeta =
+                    new CustomFeeMeta(tokenId, token.treasuryAccountId(), token.customFeesOrElse(emptyList()));
             if (feeMeta.customFees().isEmpty()) {
                 continue;
             }
-            for(final var aa : fungibleTokenTransfers) {
+
+            for (final var aa : fungibleTokenTransfers) {
                 final var adjustment = aa.amount();
-                for(final var fee : feeMeta.customFees()) {
+                for (final var fee : feeMeta.customFees()) {
                     final var denomToken = fee.fixedFee().denominatingTokenId();
-                    if(couldTriggerCustomFees(tokenId,denomToken, false, true, adjustment)){
-                        customFeeAssessor.assess();
+                    if (couldTriggerCustomFees(tokenId, denomToken, false, true, adjustment)) {
+                        customFeeAssessor.assess(
+                                aa.accountID(), feeMeta, tokensConfig, ledgerConfig, hbarAdjustments, htsAdjustments);
                     }
                 }
             }
 
-            for(final var nftTransfer : nftTransfers){
-
+            for (final var nftTransfer : nftTransfers) {
+                final var adjustment = nftTransfer.serialNumber();
+                for (final var fee : feeMeta.customFees()) {
+                    final var denomToken = fee.fixedFee().denominatingTokenId();
+                    if (couldTriggerCustomFees(tokenId, denomToken, true, false, adjustment)) {
+                        customFeeAssessor.assess(
+                                nftTransfer.senderAccountID(),
+                                feeMeta,
+                                tokensConfig,
+                                ledgerConfig,
+                                hbarAdjustments,
+                                htsAdjustments);
+                    }
+                }
             }
-
         }
+        nextLevelBuilder.tokenTransfers(tokenTransfers).transfers(hbarAdjustments.build());
+        customFeeAssessments.add(nextLevelBuilder);
+        return nextLevelBuilder;
     }
 
     /**
@@ -113,11 +129,12 @@ public class CustomFeeAssessmentStep {
      * @param adjustment the amount of the transfer
      * @return true if the adjustment will trigger a custom fee. False otherwise.
      */
-    private boolean couldTriggerCustomFees(@NonNull TokenID chargingTokenId,
-                                           @NonNull TokenID denominatingTokenID,
-                                           boolean isNftTransfer,
-                                           boolean isFungibleTokenTransfer,
-                                           long adjustment) {
+    private boolean couldTriggerCustomFees(
+            @NonNull TokenID chargingTokenId,
+            @NonNull TokenID denominatingTokenID,
+            boolean isNftTransfer,
+            boolean isFungibleTokenTransfer,
+            long adjustment) {
         if (isExemptFromCustomFees(chargingTokenId, denominatingTokenID)) {
             return false;
         } else {
@@ -131,9 +148,9 @@ public class CustomFeeAssessmentStep {
      * @param denominatingTokenID the token that is being used as denomination to pay the fee
      * @return true if the custom fee is self-denominated
      */
-    private boolean isExemptFromCustomFees(TokenID chargingTokenId, TokenID denominatingTokenID){
+    private boolean isExemptFromCustomFees(TokenID chargingTokenId, TokenID denominatingTokenID) {
         /* But self-denominated fees are exempt from further custom fee charging,
-            c.f. https://github.com/hashgraph/hedera-services/issues/1925 */
+        c.f. https://github.com/hashgraph/hedera-services/issues/1925 */
         return chargingTokenId.equals(denominatingTokenID);
     }
 }
