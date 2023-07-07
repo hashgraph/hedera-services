@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.merkle;
 
+import com.hedera.node.app.service.mono.state.migration.TokeRelationStateTranslator;
 import com.hedera.test.serde.EqualityType;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
@@ -40,6 +41,9 @@ public class MerkleTokenRelStatusSerdeTest extends SelfSerializableDataTest<Merk
             expected.setNext(0);
             expected.setPrev(0);
         }
-        return expected;
+        final var pbjTokenRelation = TokeRelationStateTranslator.tokenRelationFromMerkleTokenRelStatus(expected);
+        final var merkleTokenRelStatus =
+                TokeRelationStateTranslator.merkleTokenRelStatusFromTokenRelation(pbjTokenRelation);
+        return merkleTokenRelStatus;
     }
 }
