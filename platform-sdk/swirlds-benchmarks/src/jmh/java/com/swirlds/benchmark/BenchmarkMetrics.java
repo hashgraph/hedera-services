@@ -24,9 +24,10 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 import com.swirlds.benchmark.config.BenchmarkConfig;
 import com.swirlds.common.metrics.FunctionGauge;
+import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metric;
+import com.swirlds.common.metrics.Metric.ValueType;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
@@ -66,12 +67,14 @@ public final class BenchmarkMetrics {
 
     // Configurable parameters
     private static String csvOutputFolder;
-    private static String csvFileName;
+    private static String csvMetricsFileName;
+    private static String csvMetricNamesFileName;
     private static boolean csvAppend;
     private static int csvWriteFrequency;
     private static String deviceName;
 
-    private Path csvFilePath;
+    private Path csvMetricsFilePath;
+    private Path csvMetricNamesFilePath;
     private ScheduledExecutorService metricService;
     private String origMetricString;
     private String curMetricString;
@@ -129,8 +132,7 @@ public final class BenchmarkMetrics {
             .withDescription("Open file descriptors")
             .withFormat(FORMAT_INTEGER);
 
-    private static final RunningAverageMetric.Config TPS_CONFIG = new RunningAverageMetric.Config(
-                    BENCHMARK_CATEGORY, "tps")
+    private static final LongGauge.Config TPS_CONFIG = new LongGauge.Config(BENCHMARK_CATEGORY, "tps")
             .withDescription("transactions per second")
             .withFormat(FORMAT_FLOAT0);
 
@@ -280,51 +282,68 @@ public final class BenchmarkMetrics {
         return printableName;
     }
 
+    private Collection<Metric> getAllMetrics() {
+        return metrics.getAll().stream()
+                .filter(m -> m.getValueTypes().contains(ValueType.VALUE))
+                .toList();
+    }
+
     private static String getMetricNames(final Collection<Metric> collection) {
         return collection.stream()
-                .flatMap(metric -> metric.getValueTypes().stream().map(valueType -> printableName(metric, valueType)))
+                .map(metric -> printableName(metric, ValueType.VALUE))
                 .collect(Collectors.joining(",", "", System.lineSeparator()));
     }
 
     private static String getMetricValues(final Collection<Metric> collection) {
         return collection.stream()
-                .flatMap(metric -> metric.getValueTypes().stream()
-                        .map(valueType -> String.format(metric.getFormat().replace(",", ""), metric.get(valueType))))
+                .map(metric -> {
+                    final Object value = metric.get(ValueType.VALUE);
+                    metric.reset();
+                    return value;
+                })
+                .map(Object::toString)
                 .collect(Collectors.joining(",", "", System.lineSeparator()));
     }
 
     private void reportMetrics() {
         try {
-            if (csvFilePath == null) {
+            Collection<Metric> allMetrics = getAllMetrics();
+            String names = getMetricNames(allMetrics);
+
+            if (csvMetricsFilePath == null) {
                 String folderName = csvOutputFolder;
                 if (folderName.isBlank()) {
-                    csvFilePath = BaseBench.getBenchDir().resolve(csvFileName);
+                    csvMetricsFilePath = BaseBench.getBenchDir().resolve(csvMetricsFileName);
+                    csvMetricNamesFilePath = BaseBench.getBenchDir().resolve(csvMetricNamesFileName);
                 } else {
-                    csvFilePath = Path.of(folderName).resolve(csvFileName);
+                    csvMetricsFilePath = Path.of(folderName).resolve(csvMetricsFileName);
+                    csvMetricNamesFilePath = Path.of(folderName).resolve(csvMetricNamesFileName);
                 }
-                if (csvAppend && Files.exists(csvFilePath)) {
-                    Files.writeString(csvFilePath, "\n\n", APPEND);
+                if (csvAppend && Files.exists(csvMetricsFilePath)) {
+                    Files.writeString(csvMetricsFilePath, "\n\n", APPEND);
                 } else {
-                    Files.writeString(csvFilePath, "", CREATE, WRITE, TRUNCATE_EXISTING);
+                    Files.writeString(csvMetricsFilePath, "", CREATE, WRITE, TRUNCATE_EXISTING);
+                }
+                Files.writeString(csvMetricNamesFilePath, "metricName" + System.lineSeparator(), CREATE, WRITE);
+                for (String metricName : names.split(",")) {
+                    Files.writeString(csvMetricNamesFilePath, metricName + System.lineSeparator(), APPEND);
                 }
             }
 
             // Update metrics
             updateDiskMetrics();
 
-            Collection<Metric> allMetrics = metrics.getAll();
-            String names = getMetricNames(allMetrics);
             if (origMetricString.equals(names)) {
                 return;
             }
             if (!curMetricString.equals(names)) {
                 curMetricString = names;
-                Files.writeString(csvFilePath, names, APPEND);
+                Files.writeString(csvMetricsFilePath, names, APPEND);
             }
             String values = getMetricValues(allMetrics);
-            Files.writeString(csvFilePath, values, APPEND);
+            Files.writeString(csvMetricsFilePath, values, APPEND);
         } catch (IOException ioex) {
-            logger.error("Can't write to {}: {}", csvFilePath, ioex);
+            logger.error("Can't write to {}: {}", csvMetricsFilePath, ioex);
         }
     }
 
@@ -346,7 +365,7 @@ public final class BenchmarkMetrics {
         metrics.getOrCreate(OPEN_FDS_CONFIG);
         registerDiskMetrics();
 
-        origMetricString = curMetricString = getMetricNames(metrics.getAll());
+        origMetricString = curMetricString = getMetricNames(getAllMetrics());
         if (csvWriteFrequency > 0) {
             metricService.scheduleAtFixedRate(
                     this::reportMetrics, csvWriteFrequency, csvWriteFrequency, TimeUnit.MILLISECONDS);
@@ -355,7 +374,8 @@ public final class BenchmarkMetrics {
 
     public static void configure(BenchmarkConfig config) {
         csvOutputFolder = config.csvOutputFolder();
-        csvFileName = config.csvFileName();
+        csvMetricsFileName = config.csvMetricsFileName();
+        csvMetricNamesFileName = config.csvMetricNamesFileName();
         csvAppend = config.csvAppend();
         csvWriteFrequency = config.csvWriteFrequency();
         deviceName = config.deviceName();
@@ -374,7 +394,7 @@ public final class BenchmarkMetrics {
         consumer.accept(INSTANCE.metrics);
     }
 
-    public static RunningAverageMetric registerTPS() {
+    public static LongGauge registerTPS() {
         return INSTANCE.metrics.getOrCreate(TPS_CONFIG);
     }
 
@@ -384,7 +404,8 @@ public final class BenchmarkMetrics {
 
     public static void reset() {
         INSTANCE.metrics.resetAll();
-        INSTANCE.csvFilePath = null;
+        INSTANCE.csvMetricsFilePath = null;
+        INSTANCE.csvMetricNamesFilePath = null;
     }
 
     public static void stop() {

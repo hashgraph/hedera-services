@@ -21,9 +21,11 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.VIRTUAL_MERKLE_STATS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
+import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -167,10 +169,12 @@ public class VirtualPipeline {
      */
     private final VirtualMapConfig config;
 
+    private final VirtualMapStatistics statistics;
+
     /**
      * Create a new pipeline for a family of fast copies on a virtual root.
      */
-    public VirtualPipeline(@NonNull final VirtualMapConfig config) {
+    public VirtualPipeline(@NonNull final VirtualMapConfig config, @NonNull final String label) {
         this.config = Objects.requireNonNull(config);
         copies = new PipelineList<>();
         unhashedCopies = new ConcurrentLinkedDeque<>();
@@ -181,6 +185,18 @@ public class VirtualPipeline {
                 .setThreadName(PIPELINE_THREAD_NAME)
                 .setExceptionHandler((t, ex) -> logger.error(EXCEPTION.getMarker(), "Uncaught exception ", ex))
                 .buildFactory());
+
+        statistics = new VirtualMapStatistics(label);
+    }
+
+    /**
+     * Register all statistics with an object that manages statistics.
+     *
+     * @param metrics
+     * 		reference to the metrics system
+     */
+    public void registerMetrics(final Metrics metrics) {
+        statistics.registerMetrics(metrics);
     }
 
     /**
@@ -209,8 +225,10 @@ public class VirtualPipeline {
      * Slow down the fast copy operation if there are too many copies that need to be flushed.
      */
     private void applyFlushBackpressure() {
-        final int backlogExcess = flushBacklog.size() - config.preferredFlushQueueSize();
+        final int backlogSize = flushBacklog.size();
+        statistics.recordFlushBacklogSize(backlogSize);
 
+        final int backlogExcess = backlogSize - config.preferredFlushQueueSize();
         if (backlogExcess <= 0) {
             return;
         }
@@ -221,6 +239,8 @@ public class VirtualPipeline {
 
         final Duration maxSleepTime = config.maximumFlushThrottlePeriod();
         final Duration sleepTime = CompareTo.min(computedSleepTime, maxSleepTime);
+        final int sleepTimeMillis = (int) sleepTime.toMillis();
+        statistics.recordFlushBackpressureMs(sleepTimeMillis);
 
         try {
             logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flush backpressure: {} ms", sleepTime.toMillis());
@@ -246,9 +266,12 @@ public class VirtualPipeline {
             return;
         }
         final Duration sleepTime = Duration.ofMillis((long) over100percentExcess * over100percentExcess);
+        final int sleepTimeMillis = (int) sleepTime.toMillis();
+        statistics.recordFamilySizeBackpressureMs(sleepTimeMillis);
+
         try {
             logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Total size backpressure: {} ms", sleepTime.toMillis());
-            MILLISECONDS.sleep(sleepTime.toMillis());
+            MILLISECONDS.sleep(sleepTimeMillis);
         } catch (final InterruptedException ex) {
             Thread.currentThread().interrupt();
         }
@@ -290,6 +313,8 @@ public class VirtualPipeline {
             unhashedCopies.add(copy);
         }
         mostRecentCopy.set(copy);
+
+        statistics.setPipelineSize(copies.getSize());
 
         applyFlushBackpressure();
         applyFamilySizeBackpressure();
@@ -472,6 +497,9 @@ public class VirtualPipeline {
         }
         copy.flush();
         flushBacklog.remove(copy);
+
+        final int flushBacklogSize = flushBacklog.size();
+        statistics.recordFlushBacklogSize(flushBacklogSize);
     }
 
     /**
@@ -534,6 +562,7 @@ public class VirtualPipeline {
                 logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Merge {}", copy.getFastCopyVersion());
                 merge(next);
                 copies.remove(next);
+                statistics.setPipelineSize(copies.getSize());
             }
             next = next.getNext();
         }

@@ -16,13 +16,12 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
-
 import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.IntegerGauge;
+import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.utility.CommonUtils;
 
 /**
@@ -31,38 +30,61 @@ import com.swirlds.common.utility.CommonUtils;
 public class VirtualMapStatistics {
 
     public static final String STAT_CATEGORY = "virtual-map";
-    private static final double DEFAULT_HALF_LIFE = 5;
 
-    private final LongGauge.Config sizeConfig;
+    /** Metric name prefix for all virtual map metric names */
+    private static final String VMAP_PREFIX = "vmap_";
+    /** Prefix for all metrics related to virtual map queries */
+    private static final String QUERIES_PREFIX = "queries_";
+    /** Prefix for all lifecycle related metric names */
+    private static final String LIFECYCLE_PREFIX = "lifecycle_";
+
+    /** Virtual Map name */
+    private final String label;
+
+    /** Virtual map entities - total number */
     private LongGauge size;
 
-    /**
-     * The average time to call the VirtualMap flush() method.
-     */
-    private final RunningAverageMetric.Config flushLatencyConfig;
+    /** Virtual map entities - adds / s */
+    private LongAccumulator addedEntities;
+    /** Virtual map entities - updates / s */
+    private LongAccumulator updatedEntities;
+    /** Virtual map entities - deletes / s */
+    private LongAccumulator removedEntities;
+    /** Virtual map entities - reads / s */
+    private LongAccumulator readEntities;
 
-    private RunningAverageMetric flushLatency;
-
-    /**
-     * The average time to call the cache merge() method.
-     */
-    private final RunningAverageMetric.Config mergeLatencyConfig;
-
-    private RunningAverageMetric mergeLatency;
-
-    /**
-     * The average number of virtual root node copies in virtual pipeline flush backlog.
-     */
-    private final IntegerGauge.Config flushBacklogSizeConfig;
-
+    /** Number of virtual root copies in the pipeline */
+    private IntegerGauge pipelineSize;
+    /** The number of virtual root node copies in virtual pipeline flush backlog */
     private IntegerGauge flushBacklogSize;
+    /** Flush backpressure duration, ms */
+    private IntegerAccumulator flushBackpressureMs;
+    /** Family size backpressure duration, ms */
+    private IntegerAccumulator familySizeBackpressureMs;
+    /** The average time to merge virtual map copy to the next copy, ms */
+    private LongAccumulator mergeDurationMs;
+    /** The average time to flush virtual map copy to disk (to data source), ms */
+    private LongAccumulator flushDurationMs;
+    /** The number of virtual root node copy flushes to data source */
+    private Counter flushCount;
+    /** The average time to hash virtual map copy, ms */
+    private LongAccumulator hashDurationMs;
 
-    /**
-     * The total number of virtual map flushes to disk.
-     */
-    private final Counter.Config flushCounterConfig;
+    private static LongAccumulator buildLongAccumulator(
+            final Metrics metrics, final String name, final String description) {
+        return metrics.getOrCreate(new LongAccumulator.Config(STAT_CATEGORY, name)
+                .withInitialValue(0)
+                .withAccumulator(Long::sum)
+                .withDescription(description));
+    }
 
-    private Counter flushCounter;
+    private static IntegerAccumulator buildIntegerAccumulator(
+            final Metrics metrics, final String name, final String description) {
+        return metrics.getOrCreate(new IntegerAccumulator.Config(STAT_CATEGORY, name)
+                .withInitialValue(0)
+                .withAccumulator(Integer::sum)
+                .withDescription(description));
+    }
 
     /**
      * Create a new statistics instance for a virtual map family.
@@ -74,25 +96,7 @@ public class VirtualMapStatistics {
      */
     public VirtualMapStatistics(final String label) {
         CommonUtils.throwArgNull(label, "label");
-
-        sizeConfig = new LongGauge.Config(STAT_CATEGORY, "vMapSize_" + label)
-                .withDescription("The size of the VirtualMap '" + label + "'");
-
-        flushLatencyConfig = new RunningAverageMetric.Config(STAT_CATEGORY, "vMapFlushLatency_" + label)
-                .withDescription("The flush latency of VirtualMap '" + label + "'")
-                .withFormat(FORMAT_10_2)
-                .withHalfLife(DEFAULT_HALF_LIFE);
-
-        mergeLatencyConfig = new RunningAverageMetric.Config(STAT_CATEGORY, "vMapMergeLatency_" + label)
-                .withDescription("The merge latency of VirtualMap '" + label + "'")
-                .withFormat(FORMAT_10_2)
-                .withHalfLife(DEFAULT_HALF_LIFE);
-
-        flushBacklogSizeConfig = new IntegerGauge.Config(STAT_CATEGORY, "vMapFlushBacklog_" + label)
-                .withDescription("the number of '" + label + "' copies waiting to be flushed");
-
-        flushCounterConfig = new Counter.Config(STAT_CATEGORY, "vMapFlushes_" + label)
-                .withDescription("the count of '" + label + "' flushes");
+        this.label = label;
     }
 
     /**
@@ -105,18 +109,65 @@ public class VirtualMapStatistics {
      */
     public void registerMetrics(final Metrics metrics) {
         CommonUtils.throwArgNull(metrics, "metrics");
-        size = metrics.getOrCreate(sizeConfig);
-        flushLatency = metrics.getOrCreate(flushLatencyConfig);
-        mergeLatency = metrics.getOrCreate(mergeLatencyConfig);
-        flushBacklogSize = metrics.getOrCreate(flushBacklogSizeConfig);
-        flushCounter = metrics.getOrCreate(flushCounterConfig);
+
+        // Generic
+        size = metrics.getOrCreate(new LongGauge.Config(STAT_CATEGORY, VMAP_PREFIX + "size_" + label)
+                .withDescription("Virtual map size, " + label));
+
+        // Queries
+        addedEntities = buildLongAccumulator(
+                metrics,
+                VMAP_PREFIX + QUERIES_PREFIX + "addedEntities_" + label,
+                "Added virtual map entities, " + label);
+        updatedEntities = buildLongAccumulator(
+                metrics,
+                VMAP_PREFIX + QUERIES_PREFIX + "updatedEntities_" + label,
+                "Updated virtual map entities, " + label + ", per second");
+        removedEntities = buildLongAccumulator(
+                metrics,
+                VMAP_PREFIX + QUERIES_PREFIX + "removedEntities_" + label,
+                "Removed virtual map entities, " + label + ", per second");
+        readEntities = buildLongAccumulator(
+                metrics,
+                VMAP_PREFIX + QUERIES_PREFIX + "readEntities_" + label,
+                "Read virtual map entities, " + label + ", per second");
+
+        // Lifecycle
+        pipelineSize = metrics.getOrCreate(
+                new IntegerGauge.Config(STAT_CATEGORY, VMAP_PREFIX + LIFECYCLE_PREFIX + "pipelineSize_" + label)
+                        .withDescription("Virtual pipeline size, " + label));
+        flushBacklogSize = metrics.getOrCreate(
+                new IntegerGauge.Config(STAT_CATEGORY, VMAP_PREFIX + LIFECYCLE_PREFIX + "flushBacklogSize_" + label)
+                        .withDescription("Virtual pipeline flush backlog size" + label));
+        flushBackpressureMs = buildIntegerAccumulator(
+                metrics,
+                VMAP_PREFIX + LIFECYCLE_PREFIX + "flushBackpressureMs_" + label,
+                "Virtual pipeline flush backpressure, " + label + ", ms");
+        familySizeBackpressureMs = buildIntegerAccumulator(
+                metrics,
+                VMAP_PREFIX + LIFECYCLE_PREFIX + "familySizeBackpressureMs_" + label,
+                "Virtual pipeline family size backpressure, " + label + ", ms");
+        mergeDurationMs = buildLongAccumulator(
+                metrics,
+                VMAP_PREFIX + LIFECYCLE_PREFIX + "mergeDurationMs_" + label,
+                "Virtual root copy merge duration, " + label + ", ms");
+        flushDurationMs = buildLongAccumulator(
+                metrics,
+                VMAP_PREFIX + LIFECYCLE_PREFIX + "flushDurationMs_" + label,
+                "Virtual root copy flush duration, " + label + ", ms");
+        flushCount = metrics.getOrCreate(
+                new Counter.Config(STAT_CATEGORY, VMAP_PREFIX + LIFECYCLE_PREFIX + "flushCount_" + label)
+                        .withDescription("Virtual root copy flush count, " + label));
+        hashDurationMs = buildLongAccumulator(
+                metrics,
+                VMAP_PREFIX + LIFECYCLE_PREFIX + "hashDurationMs_" + label,
+                "Virtual root copy hash duration, " + label + ", ms");
     }
 
     /**
      * Update the size statistic for the virtual map.
      *
-     * @param size
-     * 		the current size
+     * @param size the value to set
      */
     public void setSize(final long size) {
         if (this.size != null) {
@@ -125,41 +176,118 @@ public class VirtualMapStatistics {
     }
 
     /**
-     * Record the virtual map is flushed, and flush latency is as specified.
-     *
-     * @param flushLatency
-     * 		The flush latency
+     * Increments {@link #addedEntities} stat by 1.
      */
-    public void recordFlush(final double flushLatency) {
-        if (this.flushCounter != null) {
-            this.flushCounter.increment();
-        }
-        if (this.flushLatency != null) {
-            this.flushLatency.update(flushLatency);
+    public void countAddedEntities() {
+        if (addedEntities != null) {
+            addedEntities.update(1);
         }
     }
 
     /**
-     * Record the current merge latency for the virtual map.
-     *
-     * @param mergeLatency
-     * 		the current merge latency
+     * Increments {@link #updatedEntities} stat by 1.
      */
-    public void recordMergeLatency(final double mergeLatency) {
-        if (this.mergeLatency != null) {
-            this.mergeLatency.update(mergeLatency);
+    public void countUpdatedEntities() {
+        if (updatedEntities != null) {
+            updatedEntities.update(1);
         }
     }
 
     /**
-     * Record the current number of virtual maps that are waiting to be flushed.
-     *
-     * @param flushBacklogSize
-     * 		the number of maps that need to be flushed but have not yet been flushed
+     * Increments {@link #removedEntities} stat by 1.
      */
-    public void recordFlushBacklogSize(final int flushBacklogSize) {
-        if (this.flushBacklogSize != null) {
-            this.flushBacklogSize.set(flushBacklogSize);
+    public void countRemovedEntities() {
+        if (removedEntities != null) {
+            removedEntities.update(1);
+        }
+    }
+
+    /**
+     * Increments {@link #readEntities} stat by 1.
+     */
+    public void countReadEntities() {
+        if (readEntities != null) {
+            readEntities.update(1);
+        }
+    }
+
+    /**
+     * Updates {@link #pipelineSize} stat to the given value.
+     *
+     * @param value the value to set
+     */
+    public void setPipelineSize(final int value) {
+        if (this.pipelineSize != null) {
+            this.pipelineSize.set(value);
+        }
+    }
+
+    /**
+     * Updates {@link #flushBacklogSize} stat.
+     *
+     * @param size flush backlog size
+     */
+    public void recordFlushBacklogSize(final int size) {
+        if (flushBacklogSize != null) {
+            flushBacklogSize.set(size);
+        }
+    }
+
+    /**
+     * Updates {@link #flushBackpressureMs} stat.
+     *
+     * @param backpressureMs flush backpressure, ms
+     */
+    public void recordFlushBackpressureMs(final int backpressureMs) {
+        if (flushBackpressureMs != null) {
+            flushBackpressureMs.update(backpressureMs);
+        }
+    }
+
+    /**
+     * Updates {@link #familySizeBackpressureMs} stat.
+     *
+     * @param backpressureMs family size backpressure, ms
+     */
+    public void recordFamilySizeBackpressureMs(final int backpressureMs) {
+        if (familySizeBackpressureMs != null) {
+            familySizeBackpressureMs.update(backpressureMs);
+        }
+    }
+
+    /**
+     * Record a virtual root copy is merged, and merge duration is as specified.
+     *
+     * @param mergeDurationMs merge duration, ms
+     */
+    public void recordMerge(final long mergeDurationMs) {
+        if (this.mergeDurationMs != null) {
+            this.mergeDurationMs.update(mergeDurationMs);
+        }
+    }
+
+    /**
+     * Record a virtual root copy is flushed, and flush duration is as specified.
+     *
+     * @param flushDurationMs flush duration, ms
+     */
+    public void recordFlush(final long flushDurationMs) {
+        if (this.flushCount != null) {
+            this.flushCount.increment();
+        }
+        if (this.flushDurationMs != null) {
+            this.flushDurationMs.update(flushDurationMs);
+        }
+    }
+
+    /**
+     * Record a virtual root copy is hashed, and hash duration is as specified.
+     *
+     * @param hashDurationMs flush duration, ms
+     */
+    public void recordHash(final long hashDurationMs) {
+        if (this.hashDurationMs != null) {
+            this.hashDurationMs.update(hashDurationMs);
         }
     }
 }
