@@ -14,55 +14,48 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.stateproof.internal;
+package com.swirlds.platform.state.proof;
 
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.List;
 
 /**
- * A leaf in a state proof tree. Contains data that modifies the hash. Data is opaque, meaning that it is not intended
- * to be interpreted in any meaningful way other than how it modifies the hash.
+ * A node in a state proof tree containing a payload.
  */
-public class StateProofOpaqueNode implements StateProofNode {
-
-    private static final long CLASS_ID = 0x4ab3834aaba6fbbdL;
+public class StateProofPayload implements StateProofNode {
+    private static final long CLASS_ID = 0xd21870ecd467b717L;
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
     }
 
-    private byte[] data;
+    private MerkleLeaf payload;
+    private boolean initialized = false;
 
     /**
      * Zero arg constructor required by the serialization framework.
      */
-    public StateProofOpaqueNode() {}
+    public StateProofPayload() {}
 
     /**
-     * Construct a new leaf node with the given bytes.
+     * Construct a new leaf node with the given payload (i.e. a merkle leaf we want to prove).
      *
-     * @param data the opaque data, used only for hash computation
+     * @param payload the payload
+     * @throws IllegalArgumentException if the payload is not hashed
      */
-    public StateProofOpaqueNode(@NonNull final byte[] data) {
-        this.data = data;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public byte[] getHashableBytes(@NonNull final Cryptography cryptography) {
-        if (data == null) {
-            throw new IllegalStateException("StateProofOpaqueData has not been properly initialized");
+    public StateProofPayload(@Nullable final MerkleLeaf payload) {
+        if (payload != null && payload.getHash() == null) {
+            throw new IllegalArgumentException("Payload must be hashed");
         }
-
-        return data;
+        this.payload = payload;
+        initialized = true;
     }
 
     /**
@@ -71,11 +64,23 @@ public class StateProofOpaqueNode implements StateProofNode {
     @NonNull
     @Override
     public List<MerkleLeaf> getPayloads() {
-        if (data == null) {
-            throw new IllegalStateException("StateProofOpaqueData has not been properly initialized");
+        if (!initialized) {
+            throw new IllegalStateException("StateProofPayload has not been properly initialized");
         }
-        // no payloads here :)
-        return List.of();
+        return List.of(payload);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public byte[] getHashableBytes(@NonNull final Cryptography cryptography) {
+        if (!initialized) {
+            throw new IllegalStateException("StateProofPayload has not been properly initialized");
+        }
+        final Hash hash = cryptography.digestSync(payload);
+        return hash.getValue();
     }
 
     /**
@@ -99,7 +104,7 @@ public class StateProofOpaqueNode implements StateProofNode {
      */
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        out.writeByteArray(data);
+        out.writeSerializable(payload, true);
     }
 
     /**
@@ -107,6 +112,7 @@ public class StateProofOpaqueNode implements StateProofNode {
      */
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        data = in.readByteArray(Integer.MAX_VALUE); // TODO use sane upper limit
+        payload = in.readSerializable();
+        initialized = true;
     }
 }

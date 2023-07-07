@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.stateproof;
+package com.swirlds.platform.state.proof;
 
 import static com.swirlds.platform.Utilities.isMajority;
 import static com.swirlds.platform.Utilities.isStrongMinority;
@@ -28,7 +28,6 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.stateproof.internal.StateProofNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.HashMap;
@@ -49,7 +48,7 @@ public class StateProof implements SelfSerializable {
         public static final int ORIGINAL = 1;
     }
 
-    Map<NodeId, Signature> signatures;
+    private Map<NodeId, Signature> signatures;
     private StateProofNode root;
     private List<MerkleLeaf> payloads;
 

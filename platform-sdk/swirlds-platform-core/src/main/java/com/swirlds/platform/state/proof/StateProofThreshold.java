@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.stateproof;
+package com.swirlds.platform.state.proof;
 
 /**
  * Signature thresholds for state proofs. If validating using the address book used to generate this state proof,
