@@ -16,12 +16,15 @@
 
 package com.hedera.services.bdd.suites.ethereum;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
@@ -67,6 +70,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.hyperledger.besu.datatypes.Address.contractAddress;
+import static org.hyperledger.besu.datatypes.Address.fromHexString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -76,7 +81,6 @@ import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.BddTestNameDoesNotMatchMethodName;
@@ -86,9 +90,11 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -100,16 +106,14 @@ import org.junit.jupiter.api.Assertions;
 @SuppressWarnings("java:S5960")
 public class EthereumSuite extends HapiSuite {
 
+    public static final long GAS_LIMIT = 1_000_000;
+    public static final String ERC20_CONTRACT = "ERC20Contract";
+    public static final String EMIT_SENDER_ORIGIN_CONTRACT = "EmitSenderOrigin";
     private static final Logger log = LogManager.getLogger(EthereumSuite.class);
     private static final long DEPOSIT_AMOUNT = 20_000L;
     private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
     private static final String TOKEN_CREATE_CONTRACT = "NewTokenCreateContract";
     private static final String HELLO_WORLD_MINT_CONTRACT = "HelloWorldMint";
-    public static final long GAS_LIMIT = 1_000_000;
-
-    public static final String ERC20_CONTRACT = "ERC20Contract";
-    public static final String EMIT_SENDER_ORIGIN_CONTRACT = "EmitSenderOrigin";
-
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
     private static final String AUTO_ACCOUNT_TRANSACTION_NAME = "autoAccount";
     private static final String TOKEN = "token";
@@ -393,7 +397,7 @@ public class EthereumSuite extends HapiSuite {
                 .then(getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).logged(), sourcing(() -> getContractInfo(
                                 contractID.get())
                         .logged()
-                        .has(ContractInfoAsserts.contractWith()
+                        .has(contractWith()
                                 .defaultAdminKey()
                                 .autoRenew(AUTO_RENEW_PERIOD)
                                 .balance(INITIAL_BALANCE)
@@ -601,8 +605,57 @@ public class EthereumSuite extends HapiSuite {
                             allRunFor(spec, op);
                             final var record = op.getResponseRecord();
                             final var creationResult = record.getContractCreateResult();
-                            final var createdIds = creationResult.getCreatedContractIDsList();
+                            final var createdIds = creationResult.getCreatedContractIDsList().stream()
+                                    .sorted(Comparator.comparing(id -> id.getContractNum()))
+                                    .toList();
                             assertEquals(4, createdIds.size(), "Expected four creations but got " + createdIds);
+
+                            final var ecdsaKey = spec.registry()
+                                    .getKey(SECP_256K1_SOURCE_KEY)
+                                    .getECDSASecp256K1()
+                                    .toByteArray();
+                            final var senderAddress = CommonUtils.hex(recoverAddressFromPubKey(ecdsaKey));
+                            final var senderNonce = 0;
+
+                            final var expectedParentContractAddress =
+                                    contractAddress(fromHexString(senderAddress), senderNonce);
+                            final var expectedFirstChildContractAddress =
+                                    contractAddress(expectedParentContractAddress, 1);
+                            final var expectedSecondChildContractAddress =
+                                    contractAddress(expectedParentContractAddress, 2);
+                            final var expectedThirdChildContractAddress =
+                                    contractAddress(expectedParentContractAddress, 3);
+
+                            final var parentContractId = CommonUtils.hex(
+                                    asEvmAddress(createdIds.get(0).getContractNum()));
+                            final var firstChildContractId = CommonUtils.hex(
+                                    asEvmAddress(createdIds.get(1).getContractNum()));
+                            final var secondChildContractId = CommonUtils.hex(
+                                    asEvmAddress(createdIds.get(2).getContractNum()));
+                            final var thirdChildContractId = CommonUtils.hex(
+                                    asEvmAddress(createdIds.get(3).getContractNum()));
+
+                            final var parentContractInfo = getContractInfo(parentContractId)
+                                    .has(contractWith()
+                                            .addressOrAlias(expectedParentContractAddress.toUnprefixedHexString()));
+                            final var firstChildContractInfo = getContractInfo(firstChildContractId)
+                                    .has(contractWith()
+                                            .addressOrAlias(expectedFirstChildContractAddress.toUnprefixedHexString()));
+                            final var secondChildContractInfo = getContractInfo(secondChildContractId)
+                                    .has(contractWith()
+                                            .addressOrAlias(
+                                                    expectedSecondChildContractAddress.toUnprefixedHexString()));
+                            final var thirdChildContractInfo = getContractInfo(thirdChildContractId)
+                                    .has(contractWith()
+                                            .addressOrAlias(expectedThirdChildContractAddress.toUnprefixedHexString()))
+                                    .logged();
+
+                            allRunFor(
+                                    spec,
+                                    parentContractInfo,
+                                    firstChildContractInfo,
+                                    secondChildContractInfo,
+                                    thirdChildContractInfo);
                         }))
                 .when()
                 .then();

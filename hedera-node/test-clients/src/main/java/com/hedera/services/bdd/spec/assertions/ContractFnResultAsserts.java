@@ -67,8 +67,8 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
             try {
                 assertEquals(1, actualObjs.length, "Extra contract function return values!");
                 String implicitContract = "contract" + rand.nextInt();
-                ContractID contract = TxnUtils.asContractId(Bytes.fromHexString(((Address) actualObjs[0]).toString())
-                        .toArray());
+                ContractID contract = TxnUtils.asContractId(
+                        ((Address) actualObjs[0]).toString().substring(2), spec);
                 spec.registry().saveContractId(implicitContract, contract);
                 HapiGetContractInfo op = getContractInfo(implicitContract).has(theExpectedInfo);
                 Optional<Throwable> opError = op.execFor(spec);
