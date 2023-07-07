@@ -16,44 +16,6 @@
 
 package com.hedera.node.app.workflows;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Duration;
-import com.hedera.hapi.node.base.Signature;
-import com.hedera.hapi.node.base.SignatureList;
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.base.SignaturePair;
-import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
-import com.hedera.hapi.node.transaction.SignedTransaction;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.config.VersionedConfigImpl;
-import com.hedera.node.app.spi.HapiUtils;
-import com.hedera.node.app.spi.UnknownHederaFunctionality;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.HederaConfig;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Named;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.MockedStatic;
-
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.stream.Stream;
-
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
@@ -77,6 +39,43 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
+
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.Signature;
+import com.hedera.hapi.node.base.SignatureList;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.SignaturePair;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.config.VersionedConfigImpl;
+import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.MockedStatic;
 
 final class TransactionCheckerTest extends AppTestBase {
     private static final int MAX_TX_SIZE = 1024 * 6;
@@ -127,11 +126,11 @@ final class TransactionCheckerTest extends AppTestBase {
 
     private SignatureMap.Builder sigMapBuilder() {
         final var sigPair = SignaturePair.newBuilder()
-                .pubKeyPrefix(Bytes.wrap(new byte[]{1, 2, 3, 4, 5}))
+                .pubKeyPrefix(Bytes.wrap(new byte[] {1, 2, 3, 4, 5}))
                 .ed25519(randomBytes(64))
                 .build();
         final var sigPair2 = SignaturePair.newBuilder()
-                .pubKeyPrefix(Bytes.wrap(new byte[]{1, 2, 7}))
+                .pubKeyPrefix(Bytes.wrap(new byte[] {1, 2, 7}))
                 .ed25519(randomBytes(64))
                 .build();
         return SignatureMap.newBuilder().sigPair(sigPair, sigPair2);

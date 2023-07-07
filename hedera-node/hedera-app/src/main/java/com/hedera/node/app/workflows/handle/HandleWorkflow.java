@@ -36,6 +36,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.WorkflowsValidationUtil;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -78,7 +79,7 @@ public class HandleWorkflow {
     private final ServiceScopeLookup serviceScopeLookup;
     private final ConfigProvider configProvider;
     private final InstantSource instantSource;
-    private final TransactionChecker transactionChecker;
+    private final WorkflowsValidationUtil workflowsValidationUtil;
 
     @Inject
     public HandleWorkflow(
@@ -92,7 +93,7 @@ public class HandleWorkflow {
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ConfigProvider configProvider,
             @NonNull final InstantSource instantSource,
-            @NonNull final TransactionChecker transactionChecker) {
+            @NonNull final WorkflowsValidationUtil workflowsValidationUtil) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -103,7 +104,8 @@ public class HandleWorkflow {
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
-        this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
+        this.workflowsValidationUtil =
+                requireNonNull(workflowsValidationUtil, "workflowsValidationUtil must not be null");
     }
 
     /**
@@ -145,7 +147,7 @@ public class HandleWorkflow {
                     preHandleResult.txInfo().signedBytes());
 
             // Check transaction duplication
-            transactionChecker.checkDuplicates(preHandleResult.txInfo().txBody());
+            workflowsValidationUtil.checkDuplicates(preHandleResult.txInfo().txBody());
 
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();

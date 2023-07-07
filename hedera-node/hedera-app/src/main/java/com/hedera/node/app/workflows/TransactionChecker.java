@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.workflows;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
@@ -53,7 +51,6 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.Codec;
@@ -120,10 +117,6 @@ public class TransactionChecker {
      * The account ID of the node running this software
      */
     private final AccountID nodeAccount;
-    /**
-     * The {@link HederaRecordCache} used to check for duplicating transactions
-     */
-    private final HederaRecordCache hederaRecordCache;
 
     // TODO We need to incorporate the check for "TRANSACTION_TOO_MANY_LAYERS". "maxProtoMessageDepth" is a property
     //  passed to StructuralPrecheck used for this purpose. We will need to add this to PBJ as an argument to the
@@ -143,8 +136,7 @@ public class TransactionChecker {
             @MaxSignedTxnSize final int maxSignedTxnSize,
             @NodeSelfId @NonNull final AccountID nodeAccount,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final Metrics metrics,
-            @NonNull final HederaRecordCache hederaRecordCache) {
+            @NonNull final Metrics metrics) {
         if (maxSignedTxnSize <= 0) {
             throw new IllegalArgumentException("maxSignedTxnSize must be > 0");
         }
@@ -156,7 +148,6 @@ public class TransactionChecker {
                 .withDescription(COUNTER_RECEIVED_DEPRECATED_DESC));
         superDeprecatedCounter = metrics.getOrCreate(new Counter.Config("app", COUNTER_SUPER_DEPRECATED_TXNS_NAME)
                 .withDescription(COUNTER_RECEIVED_SUPER_DEPRECATED_DESC));
-        this.hederaRecordCache = requireNonNull(hederaRecordCache);
     }
 
     /**
@@ -568,16 +559,5 @@ public class TransactionChecker {
             return 0;
         });
         return sortedList;
-    }
-
-    public void checkDuplicates(final TransactionBody txBody) throws PreCheckException {
-        if (txBody == null) {
-            throw new PreCheckException(EMPTY_TRANSACTION_BODY);
-        }
-
-        final var foundTransactionRecord = hederaRecordCache.getRecord(txBody.transactionIDOrThrow());
-        if (foundTransactionRecord != null) {
-            throw new PreCheckException(DUPLICATE_TRANSACTION);
-        }
     }
 }

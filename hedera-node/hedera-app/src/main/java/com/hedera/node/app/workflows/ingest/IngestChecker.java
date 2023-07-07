@@ -39,6 +39,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.WorkflowsValidationUtil;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
@@ -61,6 +62,7 @@ public final class IngestChecker {
     private final SolvencyPreCheck solvencyPreCheck;
     private final SignatureVerifier signatureVerifier;
     private final SignatureExpander signatureExpander;
+    private final WorkflowsValidationUtil workflowsValidationUtil;
 
     /**
      * Constructor of the {@code IngestChecker}
@@ -80,13 +82,15 @@ public final class IngestChecker {
             @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final SignatureExpander signatureExpander,
-            @NonNull final SignatureVerifier signatureVerifier) {
+            @NonNull final SignatureVerifier signatureVerifier,
+            @NonNull final WorkflowsValidationUtil workflowsValidationUtil) {
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.solvencyPreCheck = solvencyPreCheck;
         this.signatureVerifier = requireNonNull(signatureVerifier);
         this.signatureExpander = requireNonNull(signatureExpander);
+        this.workflowsValidationUtil = requireNonNull(workflowsValidationUtil);
     }
 
     /**
@@ -120,7 +124,7 @@ public final class IngestChecker {
         assert functionality != HederaFunctionality.NONE;
 
         // 2. Check transaction duplication
-        transactionChecker.checkDuplicates(txBody);
+        workflowsValidationUtil.checkDuplicates(txBody);
 
         // 3. Check throttles
         if (throttleAccumulator.shouldThrottle(txInfo.txBody())) {
