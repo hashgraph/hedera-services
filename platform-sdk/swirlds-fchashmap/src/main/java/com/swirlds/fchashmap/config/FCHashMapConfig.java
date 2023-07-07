@@ -18,17 +18,10 @@ package com.swirlds.fchashmap.config;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import java.time.Duration;
 
 /**
  * Configuration for {@link com.swirlds.fchashmap.FCHashMap}.
  *
- * @param maximumGCQueueSize
- * 		the maximum expected size of the FCHashMapGarbageCollector's queue.
- * @param gCQueueThresholdPeriod
- * 		the amount of time that must pass between error logs about the FCHashMapGarbageCollector's queue size.
- * @param archiveEnabled
- * 		is the archival of FCHashMap enabled?
  * @param rebuildSplitFactor
  *      split the binary tree at this depth relative to the root of the binary tree. The tree will be split into 2^split-factor subtrees, and each subtree will be eligible to be handled on a separate thread.
  * @param rebuildThreadCount
@@ -37,8 +30,5 @@ import java.time.Duration;
  */
 @ConfigData("fcHashMap")
 public record FCHashMapConfig(
-        @ConfigProperty(defaultValue = "200") int maximumGCQueueSize,
-        @ConfigProperty(defaultValue = "1m") Duration gCQueueThresholdPeriod,
-        @ConfigProperty(defaultValue = "true") boolean archiveEnabled,
         @ConfigProperty(defaultValue = "7") int rebuildSplitFactor,
         @ConfigProperty(defaultValue = "24") int rebuildThreadCount) {}

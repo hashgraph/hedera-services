@@ -434,8 +434,10 @@ public class PlatformTestingToolMain implements SwirldMain {
 
     private long summation(List<TransactionCounter> counters, ValueExtractor valueExtractor) {
         long total = 0;
-        for (TransactionCounter counter : counters) {
-            total += valueExtractor.getValue(counter);
+        if (counters != null) {
+            for (TransactionCounter counter : counters) {
+                total += valueExtractor.getValue(counter);
+            }
         }
         return total;
     }
