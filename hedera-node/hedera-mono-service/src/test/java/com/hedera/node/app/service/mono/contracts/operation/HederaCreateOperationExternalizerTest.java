@@ -17,21 +17,14 @@
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.KEY;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.*;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -55,12 +48,7 @@ import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -223,6 +211,7 @@ class HederaCreateOperationExternalizerTest {
         final var initCode = "initCode".getBytes();
         final var newContractMock = mock(Account.class);
         final var runtimeCode = "runtimeCode".getBytes();
+        given(newContractMock.getNonce()).willReturn(1L);
         given(newContractMock.getCode()).willReturn(Bytes.of(runtimeCode));
         given(updater.get(PRETEND_CONTRACT_ADDRESS)).willReturn(newContractMock);
         final var sidecarRecord = TransactionSidecarRecord.newBuilder()
@@ -274,6 +263,9 @@ class HederaCreateOperationExternalizerTest {
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
         given(dynamicProperties.enabledSidecars()).willReturn(Set.of());
         given(childFrame.getContractAddress()).willReturn(PRETEND_CONTRACT_ADDRESS);
+        final var newContractMock = mock(Account.class);
+        given(newContractMock.getNonce()).willReturn(1L);
+        given(updater.get(PRETEND_CONTRACT_ADDRESS)).willReturn(newContractMock);
 
         // when:
         subject.externalize(frame, childFrame);
