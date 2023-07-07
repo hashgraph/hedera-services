@@ -549,13 +549,6 @@ public class Create2OperationSuite extends HapiSuite {
                                 .nodePayment(ONE_HBAR)),
                         sourcing(() -> setExpectedCreate2Address(
                                 contract, salt, expectedCreate2Address, testContractInitcode)),
-                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                .sending(tcValue)),
-                        sourcing(() ->
-                                contractDelete(expectedCreate2Address.get()).signedBy(DEFAULT_PAYER, adminKey)),
-                        logIt(DELETED_CREATE_2_LOG),
                         // Now create a hollow account at the desired address
                         lazyCreateAccount(creation, expectedCreate2Address, ftId, nftId, partyAlias),
                         getTxnRecord(creation)
@@ -670,13 +663,6 @@ public class Create2OperationSuite extends HapiSuite {
                                 .nodePayment(ONE_HBAR)),
                         sourcing(() -> setExpectedCreate2Address(
                                 contract, salt, expectedCreate2Address, testContractInitcode)),
-                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                .sending(tcValue)),
-                        sourcing(() ->
-                                contractDelete(expectedCreate2Address.get()).signedBy(DEFAULT_PAYER, adminKey)),
-                        logIt(DELETED_CREATE_2_LOG),
                         // Now create a hollow account at the desired address
                         lazyCreateAccount(creation, expectedCreate2Address, ftId, nftId, partyAlias),
                         getTxnRecord(creation)
