@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.data;
+package com.swirlds.merkledb;
 
-import com.swirlds.config.api.ConfigData;
-import com.swirlds.config.api.ConfigProperty;
+/**
+ * Data file collection compaction type.
+ */
+public enum CompactionType {
 
-@ConfigData("virtualdatasource")
-public record VirtualdatasourceConfig(@ConfigProperty(defaultValue = "true") boolean jasperdbToMerkledb) {}
+    /** Small compactions */
+    SMALL,
+
+    /** Medium compactions */
+    MEDIUM,
+
+    /** Full (large) compactions */
+    FULL
+}
