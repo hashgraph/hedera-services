@@ -81,6 +81,7 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
         })
 public interface ContractsModule {
     int SYSTEM_ACCOUNT_BOUNDARY = 750;
+    int STRICT_SYSTEM_ACCOUNT_BOUNDARY = 999;
 
     @Qualifier
     @interface V_0_30 {}
@@ -272,7 +273,7 @@ public interface ContractsModule {
     static Predicate<Address> provideStrictHederaSystemAccountDetector() {
         // all addresses between 0-999 (inclusive) are treated as system accounts
         // from the perspective of the EVM when executing ExtCode operations
-        return address ->
-                address.numberOfLeadingZeroBytes() >= 18 && Integer.compareUnsigned(address.getInt(16), 999) <= 0;
+        return address -> address.numberOfLeadingZeroBytes() >= 18
+                && Integer.compareUnsigned(address.getInt(16), STRICT_SYSTEM_ACCOUNT_BOUNDARY) <= 0;
     }
 }

@@ -850,6 +850,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 ? change.counterPartyAccountId().getAccountNum()
                 : change.getAccount().num();
 
-        validateTrueOrRevert(accountNum >= SYSTEM_ACCOUNT_BOUNDARY, INVALID_RECEIVING_NODE_ACCOUNT);
+        validateTrueOrRevert(accountNum > SYSTEM_ACCOUNT_BOUNDARY, INVALID_RECEIVING_NODE_ACCOUNT);
     }
 }

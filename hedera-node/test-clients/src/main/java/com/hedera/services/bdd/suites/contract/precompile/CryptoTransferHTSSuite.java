@@ -64,6 +64,7 @@ import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -337,8 +338,11 @@ public class CryptoTransferHTSSuite extends HapiSuite {
 
     private HapiSpec hapiTransferFromForFungibleTokenToSystemAccountsFails() {
         final var UPPER_BOUND_SYSTEM_ADDRESS = 750L;
-        final var ZERO_ADDRESS = 0L;
+        final var ADDRESS_ONE = 1L;
         final var NON_EXISTING_SYSTEM_ADDRESS = 345L;
+        final var TXN_TO_FIRST_ADDRESS = "TXN_TO_FIRST_ADDRESS";
+        final var TXN_TO_NON_EXISTING_ADDRESS = "TXN_TO_NON_EXISTING_ADDRESS";
+        final var TXN_TO_UPPER_BOUND_ADDRESS = "TXN_TO_UPPER_BOUND_ADDRESS";
 
         final var allowance = 10L;
         return defaultHapiSpec("hapiTransferFromForFungibleTokenToSystemAccountsFails")
@@ -381,6 +385,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                 .build())),
                                         BigInteger.valueOf(allowance / 2))
                                 .gas(100_000_00L)
+                                .via(TXN_TO_UPPER_BOUND_ADDRESS)
                                 .payingWith(GENESIS)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // transfer to system account 0.0.451
@@ -395,6 +400,8 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                 .setAccountNum(NON_EXISTING_SYSTEM_ADDRESS)
                                                 .build())),
                                         BigInteger.valueOf(allowance / 2))
+                                .via(TXN_TO_NON_EXISTING_ADDRESS)
+                                .gas(100_000_00L)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // transfer to system account 0.0.0 lower bound
                         contractCall(
@@ -405,11 +412,25 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                         HapiParserUtil.asHeadlongAddress(
                                                 asAddress(spec.registry().getAccountID(OWNER))),
                                         HapiParserUtil.asHeadlongAddress(asAddress(AccountID.newBuilder()
-                                                .setAccountNum(ZERO_ADDRESS)
+                                                .setAccountNum(ADDRESS_ONE)
                                                 .build())),
                                         BigInteger.valueOf(allowance / 2))
+                                .gas(100_000_00L)
+                                .via(TXN_TO_FIRST_ADDRESS)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then();
+                .then(
+                        childRecordsCheck(
+                                TXN_TO_UPPER_BOUND_ADDRESS,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_RECEIVING_NODE_ACCOUNT)),
+                        childRecordsCheck(
+                                TXN_TO_FIRST_ADDRESS,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_RECEIVING_NODE_ACCOUNT)),
+                        childRecordsCheck(
+                                TXN_TO_NON_EXISTING_ADDRESS,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_RECEIVING_NODE_ACCOUNT)));
     }
 
     private HapiSpec hapiTransferFromForNFT() {
