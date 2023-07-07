@@ -70,17 +70,17 @@ class AutoAccountCreatorTest extends StepsBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(createdNumber).build();
+                            account.copyBuilder().accountNumber(hbarReceiver).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(createdNumber));
-                    return recordBuilder.accountID(asAccount(createdNumber));
+                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    return recordBuilder.accountID(asAccount(hbarReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
-        assertThat(writableAccountStore.get(asAccount(createdNumber))).isNull();
-        assertThat(writableAccountStore.get(asAccount(createdNumber + 1))).isNull();
+        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNull();
+        assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
         assertThat(writableAliases.get(ecKeyAlias)).isNull();
 
         subject.create(ecKeyAlias, false);
@@ -88,8 +88,8 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(1);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(1);
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(3);
-        assertThat(writableAccountStore.get(asAccount(createdNumber))).isNotNull();
-        assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(createdNumber);
+        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
+        assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(hbarReceiver);
     }
 
     @Test
@@ -98,17 +98,17 @@ class AutoAccountCreatorTest extends StepsBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(createdNumber).build();
+                            account.copyBuilder().accountNumber(hbarReceiver).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(edKeyAlias, asAccount(createdNumber));
-                    return recordBuilder.accountID(asAccount(createdNumber));
+                    writableAliases.put(edKeyAlias, asAccount(hbarReceiver));
+                    return recordBuilder.accountID(asAccount(hbarReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
-        assertThat(writableAccountStore.get(asAccount(createdNumber))).isNull();
-        assertThat(writableAccountStore.get(asAccount(createdNumber + 1))).isNull();
+        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNull();
+        assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
         assertThat(writableAliases.get(edKeyAlias)).isNull();
 
         subject.create(edKeyAlias, false);
@@ -116,8 +116,8 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(1);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(1);
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(3);
-        assertThat(writableAccountStore.get(asAccount(createdNumber))).isNotNull();
-        assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(createdNumber);
+        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
+        assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(hbarReceiver);
     }
 
     @Test
@@ -127,17 +127,17 @@ class AutoAccountCreatorTest extends StepsBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(createdNumber).build();
+                            account.copyBuilder().accountNumber(hbarReceiver).build();
                     writableAccountStore.put(copy);
-                    writableAliases.put(address, asAccount(createdNumber));
-                    return recordBuilder.accountID(asAccount(createdNumber));
+                    writableAliases.put(address, asAccount(hbarReceiver));
+                    return recordBuilder.accountID(asAccount(hbarReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
-        assertThat(writableAccountStore.get(asAccount(createdNumber))).isNull();
-        assertThat(writableAccountStore.get(asAccount(createdNumber + 1))).isNull();
+        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNull();
+        assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNull();
         assertThat(writableAliases.get(address)).isNull();
 
         subject.create(address, false);
@@ -145,7 +145,7 @@ class AutoAccountCreatorTest extends StepsBase {
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(1);
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(1);
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(3);
-        assertThat(writableAccountStore.get(asAccount(createdNumber))).isNotNull();
-        assertThat(writableAliases.get(address).accountNum()).isEqualTo(createdNumber);
+        assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
+        assertThat(writableAliases.get(address).accountNum()).isEqualTo(hbarReceiver);
     }
 }

@@ -26,6 +26,7 @@ import com.swirlds.common.config.OSHealthCheckConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -46,7 +47,6 @@ import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.CryptoMetrics;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.ThreadConfig;
@@ -60,7 +60,6 @@ import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.net.InetSocketAddress;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -129,6 +128,8 @@ public abstract class InProcessIntegrationTestBase extends TestBase {
                 .withConfigDataType(WiringConfig.class)
                 .withConfigDataType(SyncConfig.class)
                 .withConfigDataType(UptimeConfig.class)
+                // 2. Configure Settings
+                .withSource(new LegacyFileConfigSource(tmpDir.resolve("settings.txt")))
                 .build();
 
         ConfigurationHolder.getInstance().setConfiguration(config);
@@ -146,10 +147,6 @@ public abstract class InProcessIntegrationTestBase extends TestBase {
         System.setProperty("grpc.workflowsPort", "0");
         System.setProperty("grpc.workflowsTlsPort", "0");
         System.setProperty("hedera.workflows.enabled", "CryptoCreate");
-
-        // 2. Configure Settings
-        final var settingsPath = Files.createFile(tmpDir.resolve("settings.txt"));
-        Settings.getInstance().loadSettings(settingsPath);
 
         // 3. Create a new Node ID for our node
         final var nodeId = new NodeId(0);
@@ -170,7 +167,6 @@ public abstract class InProcessIntegrationTestBase extends TestBase {
                 "TEST0",
                 "TEST0",
                 1,
-                true,
                 new byte[] {127, 0, 0, 1},
                 port,
                 new byte[] {127, 0, 0, 1},
