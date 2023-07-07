@@ -55,7 +55,6 @@ import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -83,20 +82,22 @@ public class HandleWorkflow {
     private final ConfigProvider configProvider;
     private final InstantSource instantSource;
     private final HederaRecordCache recordCache;
+    private final TransactionChecker transactionChecker;
 
     @Inject
     public HandleWorkflow(
-            @NonNull final NetworkInfo networkInfo,
-            @NonNull final PreHandleWorkflow preHandleWorkflow,
-            @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final BlockRecordManager blockRecordManager,
-            @NonNull final SignatureExpander signatureExpander,
-            @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final TransactionChecker checker,
-            @NonNull final ServiceScopeLookup serviceScopeLookup,
-            @NonNull final ConfigProvider configProvider,
-            @NonNull final InstantSource instantSource,
-            @NonNull final HederaRecordCache recordCache) {
+        @NonNull final NetworkInfo networkInfo,
+        @NonNull final PreHandleWorkflow preHandleWorkflow,
+        @NonNull final TransactionDispatcher dispatcher,
+        @NonNull final BlockRecordManager blockRecordManager,
+        @NonNull final SignatureExpander signatureExpander,
+        @NonNull final SignatureVerifier signatureVerifier,
+        @NonNull final TransactionChecker checker,
+        @NonNull final ServiceScopeLookup serviceScopeLookup,
+        @NonNull final ConfigProvider configProvider,
+        @NonNull final InstantSource instantSource,
+        @NonNull final HederaRecordCache recordCache,
+        @NonNull final TransactionChecker transactionChecker) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -108,6 +109,7 @@ public class HandleWorkflow {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
+        this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
     }
 
     /**
@@ -145,7 +147,7 @@ public class HandleWorkflow {
         }
 
         // Get the consensus timestamp
-        final Instant consensusNow = platformTxn.getConsensusTimestamp();
+        final var consensusNow = platformTxn.getConsensusTimestamp();
 
         // Setup record builder list
         blockRecordManager.startUserTransaction(consensusNow, state);
@@ -155,7 +157,7 @@ public class HandleWorkflow {
         PreHandleResult preHandleResult = null;
         try {
             // Setup configuration
-            var configuration = configProvider.getConfiguration();
+            final var configuration = configProvider.getConfiguration();
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
 
             preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
@@ -177,11 +179,14 @@ public class HandleWorkflow {
                 default -> throw new PreCheckException(preHandleResult.responseCode());
             }
 
+            // Check transaction duplication
+            transactionChecker.checkDuplicates(preHandleResult.txInfo().txBody());
+
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
             final var maxMillis = instantSource.millis() + timeout;
             final var payerKeyVerification =
-                    preHandleResult.verificationResults().get(preHandleResult.payerKey());
+                preHandleResult.verificationResults().get(preHandleResult.payerKey());
             if (payerKeyVerification.get(timeout, TimeUnit.MILLISECONDS).failed()) {
                 throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
             }
@@ -317,7 +322,7 @@ public class HandleWorkflow {
 
     private boolean preHandleStillValid(
             @NonNull final VersionedConfiguration configuration, @Nullable final Object metadata) {
-        if (metadata instanceof PreHandleResult preHandleResult) {
+        if (metadata instanceof final PreHandleResult preHandleResult) {
             return preHandleResult.configVersion() == configuration.getVersion();
         }
         return false;

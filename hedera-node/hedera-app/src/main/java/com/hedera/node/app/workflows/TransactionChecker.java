@@ -16,24 +16,6 @@
 
 package com.hedera.node.app.workflows;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_START;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
-import static java.util.Collections.emptyList;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -51,6 +33,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.Codec;
@@ -62,16 +45,37 @@ import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_START;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Checks transactions for internal consistency and validity.
@@ -97,16 +101,30 @@ public class TransactionChecker {
     private static final String COUNTER_RECEIVED_SUPER_DEPRECATED_DESC =
             "number of super-deprecated txns (body, sigs) received";
 
-    /** The maximum number of bytes that can exist in the transaction */
+    /**
+     * The maximum number of bytes that can exist in the transaction
+     */
     private final int maxSignedTxnSize;
-    /** The {@link ConfigProvider} used to get properties needed for these checks. */
+    /**
+     * The {@link ConfigProvider} used to get properties needed for these checks.
+     */
     private final ConfigProvider props;
-    /** The {@link Counter} used to track the number of deprecated transactions (bodyBytes, sigMap) received. */
+    /**
+     * The {@link Counter} used to track the number of deprecated transactions (bodyBytes, sigMap) received.
+     */
     private final Counter deprecatedCounter;
-    /** The {@link Counter} used to track the number of super deprecated transactions (body, sigs) received. */
+    /**
+     * The {@link Counter} used to track the number of super deprecated transactions (body, sigs) received.
+     */
     private final Counter superDeprecatedCounter;
-    /** The account ID of the node running this software */
+    /**
+     * The account ID of the node running this software
+     */
     private final AccountID nodeAccount;
+    /**
+     * The {@link HederaRecordCache} used to check for duplicating transactions
+     */
+    private final HederaRecordCache hederaRecordCache;
 
     // TODO We need to incorporate the check for "TRANSACTION_TOO_MANY_LAYERS". "maxProtoMessageDepth" is a property
     //  passed to StructuralPrecheck used for this purpose. We will need to add this to PBJ as an argument to the
@@ -116,9 +134,9 @@ public class TransactionChecker {
      * Create a new {@link TransactionChecker}
      *
      * @param maxSignedTxnSize the maximum transaction size
-     * @param configProvider access to configuration
-     * @param metrics metrics related to workflows
-     * @throws NullPointerException if one of the arguments is {@code null}
+     * @param configProvider   access to configuration
+     * @param metrics          metrics related to workflows
+     * @throws NullPointerException     if one of the arguments is {@code null}
      * @throws IllegalArgumentException if {@code maxSignedTxnSize} is not positive
      */
     @Inject
@@ -126,18 +144,20 @@ public class TransactionChecker {
             @MaxSignedTxnSize final int maxSignedTxnSize,
             @NodeSelfId @NonNull final AccountID nodeAccount,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final Metrics metrics) {
+            @NonNull final Metrics metrics,
+            @NonNull final HederaRecordCache hederaRecordCache) {
         if (maxSignedTxnSize <= 0) {
             throw new IllegalArgumentException("maxSignedTxnSize must be > 0");
         }
 
         this.nodeAccount = requireNonNull(nodeAccount);
         this.maxSignedTxnSize = maxSignedTxnSize;
-        this.props = requireNonNull(configProvider);
-        this.deprecatedCounter = metrics.getOrCreate(new Counter.Config("app", COUNTER_DEPRECATED_TXNS_NAME)
+        props = requireNonNull(configProvider);
+        deprecatedCounter = metrics.getOrCreate(new Counter.Config("app", COUNTER_DEPRECATED_TXNS_NAME)
                 .withDescription(COUNTER_RECEIVED_DEPRECATED_DESC));
-        this.superDeprecatedCounter = metrics.getOrCreate(new Counter.Config("app", COUNTER_SUPER_DEPRECATED_TXNS_NAME)
+        superDeprecatedCounter = metrics.getOrCreate(new Counter.Config("app", COUNTER_SUPER_DEPRECATED_TXNS_NAME)
                 .withDescription(COUNTER_RECEIVED_SUPER_DEPRECATED_DESC));
+        this.hederaRecordCache = requireNonNull(hederaRecordCache);
     }
 
     /**
@@ -209,6 +229,7 @@ public class TransactionChecker {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @NonNull
+    // TODO: rename to syntaxCheck?
     public TransactionInfo check(@NonNull final Transaction tx) throws PreCheckException {
 
         // NOTE: Since we've already parsed the transaction, we assume that the transaction was not too many
@@ -252,7 +273,7 @@ public class TransactionChecker {
         try {
             final var functionality = HapiUtils.functionOf(txBody);
             return new TransactionInfo(tx, txBody, signatureMap, bodyBytes, functionality);
-        } catch (UnknownHederaFunctionality e) {
+        } catch (final UnknownHederaFunctionality e) {
             throw new PreCheckException(INVALID_TRANSACTION_BODY);
         }
     }
@@ -471,17 +492,17 @@ public class TransactionChecker {
      */
     @NonNull
     private <T extends Record> T parseStrict(
-            @NonNull ReadableSequentialData data, Codec<T> codec, ResponseCodeEnum parseErrorCode)
+            @NonNull final ReadableSequentialData data, final Codec<T> codec, final ResponseCodeEnum parseErrorCode)
             throws PreCheckException {
         try {
             return codec.parseStrict(data);
-        } catch (MalformedProtobufException e) {
+        } catch (final MalformedProtobufException e) {
             // We could not parseStrict the protobuf because it was not valid protobuf
             throw new PreCheckException(parseErrorCode);
-        } catch (UnknownFieldException e) {
+        } catch (final UnknownFieldException e) {
             // We do not allow newer clients to send transactions to older networks.
             throw new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             // This should technically not be possible. The data buffer supplied
             // is either based on a byte[] or a byte buffer, in both cases all data
             // is available and a generic IO exception shouldn't happen. If it does,
@@ -506,7 +527,7 @@ public class TransactionChecker {
         final var sortedList = sort(sigPairs);
         if (sortedList.size() > 1) {
             var prev = sortedList.get(0);
-            var size = sortedList.size();
+            final var size = sortedList.size();
             for (int i = 1; i < size; i++) {
                 final var curr = sortedList.get(i);
                 final var p1 = prev.pubKeyPrefix();
@@ -549,5 +570,16 @@ public class TransactionChecker {
             return 0;
         });
         return sortedList;
+    }
+
+    public void checkDuplicates(final TransactionBody txBody) throws PreCheckException {
+        if (txBody == null) {
+            throw new PreCheckException(EMPTY_TRANSACTION_BODY);
+        }
+
+        final var foundTransactionRecord = hederaRecordCache.getRecord(txBody.transactionIDOrThrow());
+        if (foundTransactionRecord != null) {
+            throw new PreCheckException(DUPLICATE_TRANSACTION);
+        }
     }
 }
