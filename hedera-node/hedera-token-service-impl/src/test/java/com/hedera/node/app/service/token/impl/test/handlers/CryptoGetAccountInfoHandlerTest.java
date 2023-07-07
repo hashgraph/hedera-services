@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_K
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -41,6 +42,7 @@ import com.hedera.hapi.node.base.StakingInfo;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenRelationship;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
@@ -50,8 +52,6 @@ import com.hedera.hapi.node.token.CryptoGetInfoQuery;
 import com.hedera.hapi.node.token.CryptoGetInfoResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -69,6 +69,7 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.utility.CommonUtils;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -238,19 +239,19 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
         given(token1.decimals()).willReturn(100);
         given(token1.symbol()).willReturn("FOO");
-        given(token1.tokenNumber()).willReturn(3L);
+        given(token1.tokenId()).willReturn(asToken(3L));
         setupTokenStore(token1);
 
         final var tokenRelation = TokenRelation.newBuilder()
-                .tokenNumber(3L)
-                .accountNumber(accountNum)
+                .tokenId(asToken(3L))
+                .accountId(id)
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(4L)
-                .previousToken(2L)
+                .nextToken(asToken(4L))
+                .previousToken(asToken(2L))
                 .build();
         setupTokenRelationStore(tokenRelation);
         setupStakingInfoStore();
@@ -277,42 +278,42 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         given(token2.decimals()).willReturn(50);
         given(token1.symbol()).willReturn("FOO");
         given(token2.symbol()).willReturn("BAR");
-        given(token1.tokenNumber()).willReturn(3L);
-        given(token2.tokenNumber()).willReturn(4L);
+        given(token1.tokenId()).willReturn(asToken(3L));
+        given(token2.tokenId()).willReturn(asToken(4L));
         setupTokenStore(token1, token2);
 
         final var tokenRelation1 = TokenRelation.newBuilder()
-                .tokenNumber(3L)
-                .accountNumber(accountNum)
+                .tokenId(asToken(3L))
+                .accountId(id)
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(4L)
-                .previousToken(2L)
+                .nextToken(asToken(4L))
+                .previousToken(asToken(2L))
                 .build();
         final var tokenRelation2 = TokenRelation.newBuilder()
-                .tokenNumber(4L)
-                .accountNumber(accountNum)
+                .tokenId(asToken(4L))
+                .accountId(id)
                 .balance(100L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(5L)
-                .previousToken(3L)
+                .nextToken(asToken(5L))
+                .previousToken(asToken(3L))
                 .build();
         final var tokenRelation3 = TokenRelation.newBuilder()
-                .tokenNumber(5L)
-                .accountNumber(accountNum)
+                .tokenId(asToken(5L))
+                .accountId(id)
                 .balance(10L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(6L)
-                .previousToken(4L)
+                .nextToken(asToken(6L))
+                .previousToken(asToken(4L))
                 .build();
         setupTokenRelationStore(tokenRelation1, tokenRelation2, tokenRelation3);
         setupStakingInfoStore();
@@ -339,19 +340,19 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
         given(token1.decimals()).willReturn(100);
         given(token1.symbol()).willReturn("FOO");
-        given(token1.tokenNumber()).willReturn(3L);
+        given(token1.tokenId()).willReturn(asToken(3L));
         setupTokenStore(token1);
 
         final var tokenRelation = TokenRelation.newBuilder()
-                .tokenNumber(3L)
-                .accountNumber(accountNum)
+                .tokenId(asToken(3L))
+                .accountId(id)
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(4L)
-                .previousToken(2L)
+                .nextToken(asToken(4L))
+                .previousToken(asToken(2L))
                 .build();
         setupTokenRelationStore(tokenRelation);
         setupStakingInfoStore();
@@ -367,31 +368,32 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void testEvmAddressAlias() {
+        final Bytes evmAddress = Bytes.wrap(CommonUtils.unhex("6aeb3773ea468a814d954e6dec795bfee7d76e26"));
         final var responseHeader = getOkResponse();
-        final var expectedInfo = getExpectedAccountInfoEvm();
+        final var expectedInfo = getExpectedAccountInfoEvm(evmAddress);
 
         account = account.copyBuilder()
                 .stakedNumber(-1)
                 .declineReward(false)
-                .alias(Bytes.wrap(evmAddress))
+                .alias(evmAddress)
                 .build();
         setupAccountStore();
 
         given(token1.decimals()).willReturn(100);
         given(token1.symbol()).willReturn("FOO");
-        given(token1.tokenNumber()).willReturn(3L);
+        given(token1.tokenId()).willReturn(asToken(3L));
         setupTokenStore(token1);
 
         final var tokenRelation = TokenRelation.newBuilder()
-                .tokenNumber(3L)
-                .accountNumber(accountNum)
+                .tokenId(asToken(3L))
+                .accountId(id)
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(4L)
-                .previousToken(2L)
+                .nextToken(asToken(4L))
+                .previousToken(asToken(2L))
                 .build();
         setupTokenRelationStore(tokenRelation);
         setupStakingInfoStore();
@@ -415,21 +417,26 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     }
 
     private void setupTokenStore(Token... tokens) {
-        final var readableToken = MapReadableKVState.<EntityNum, Token>builder(TOKENS_KEY);
+        final var readableToken = MapReadableKVState.<TokenID, Token>builder(TOKENS_KEY);
         for (Token token : tokens) {
-            readableToken.value(EntityNum.fromLong(token.tokenNumber()), token);
+            readableToken.value(token.tokenId(), token);
         }
-        given(readableStates2.<EntityNum, Token>get(TOKENS_KEY)).willReturn(readableToken.build());
+        given(readableStates2.<TokenID, Token>get(TOKENS_KEY)).willReturn(readableToken.build());
         final var readableTokenStore = new ReadableTokenStoreImpl(readableStates2);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
     }
 
     private void setupTokenRelationStore(TokenRelation... tokenRelations) {
-        final var readableTokenRel = MapReadableKVState.<EntityNumPair, TokenRelation>builder(TOKEN_RELS_KEY);
+        final var readableTokenRel = MapReadableKVState.<EntityIDPair, TokenRelation>builder(TOKEN_RELS_KEY);
         for (TokenRelation tokenRelation : tokenRelations) {
-            readableTokenRel.value(EntityNumPair.fromLongs(accountNum, tokenRelation.tokenNumber()), tokenRelation);
+            readableTokenRel.value(
+                    EntityIDPair.newBuilder()
+                            .accountId(id)
+                            .tokenId(tokenRelation.tokenId())
+                            .build(),
+                    tokenRelation);
         }
-        given(readableStates3.<EntityNumPair, TokenRelation>get(TOKEN_RELS_KEY)).willReturn(readableTokenRel.build());
+        given(readableStates3.<EntityIDPair, TokenRelation>get(TOKEN_RELS_KEY)).willReturn(readableTokenRel.build());
         final var readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates3);
         when(context.createStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
     }
@@ -444,7 +451,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     }
 
     private void setupConfig() {
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
                 .withValue("ledger.id", "0x03")
                 .getOrCreateConfig();
@@ -493,7 +500,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .build();
     }
 
-    private AccountInfo getExpectedAccountInfoEvm() {
+    private AccountInfo getExpectedAccountInfoEvm(Bytes evmAddress) {
         return AccountInfo.newBuilder()
                 .key(key)
                 .accountID(id)
@@ -507,8 +514,8 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .ownedNfts(2)
                 .maxAutomaticTokenAssociations(10)
                 .ethereumNonce(0)
-                .alias(Bytes.wrap(evmAddress))
-                .contractAccountID("6aea3773ea468a814d954e6dec795bfee7d76e25")
+                .alias(evmAddress)
+                .contractAccountID("6aeb3773ea468a814d954e6dec795bfee7d76e26")
                 .tokenRelationships(getExpectedTokenRelationship())
                 .stakingInfo(getExpectedStakingInfo())
                 .build();

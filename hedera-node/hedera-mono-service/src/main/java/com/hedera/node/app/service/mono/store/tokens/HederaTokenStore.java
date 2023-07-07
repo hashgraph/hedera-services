@@ -668,7 +668,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
                 && !op.hasAutoRenewAccount()
                 && op.getSymbol().length() == 0
                 && op.getName().length() == 0
-                && op.getAutoRenewPeriod().getSeconds() == 0;
+                && op.getAutoRenewPeriod().getSeconds() == 0
+                && !op.hasMemo();
     }
 
     private ResponseCodeEnum fullySanityChecked(

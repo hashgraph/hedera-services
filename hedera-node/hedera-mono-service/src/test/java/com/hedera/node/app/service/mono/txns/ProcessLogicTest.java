@@ -22,6 +22,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.events.ConsensusEvent;
@@ -81,7 +82,7 @@ class ProcessLogicTest {
                             (BiConsumer<ConsensusEvent, ConsensusTransaction>) invocationOnMock.getArgument(0);
                     for (int i = 0; i < metadata.length; i++) {
                         final var event = mock(ConsensusEvent.class);
-                        given(event.getCreatorId()).willReturn(metadata[i].getRight());
+                        given(event.getCreatorId()).willReturn(new NodeId(metadata[i].getRight()));
                         given(event.getSoftwareVersion()).willReturn(eventVersion);
                         observer.accept(event, null);
                     }

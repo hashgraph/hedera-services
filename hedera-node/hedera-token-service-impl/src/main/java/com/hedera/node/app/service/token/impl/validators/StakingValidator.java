@@ -23,9 +23,9 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -37,31 +37,29 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class StakingValidator {
-    private NodeInfo nodeInfo;
-    private ConfigProvider configProvider;
-
     @Inject
-    public StakingValidator(NodeInfo nodeInfo, ConfigProvider configProvider) {
-        this.nodeInfo = nodeInfo;
-        this.configProvider = configProvider;
-    }
+    public StakingValidator() {}
 
     /**
      * Validates staked id if present
+     *
      * @param hasDeclineRewardChange if the transaction body has decline reward field to be updated
-     * @param stakedIdKind staked id kind (account or node)
-     * @param stakedAccountIdInOp staked account id
-     * @param stakedNodeIdInOp staked node id
-     * @param accountStore readable account store
+     * @param stakedIdKind           staked id kind (account or node)
+     * @param stakedAccountIdInOp    staked account id
+     * @param stakedNodeIdInOp       staked node id
+     * @param accountStore           readable account store
+     * @param context
      */
     public void validateStakedId(
             @NonNull final boolean hasDeclineRewardChange,
             @NonNull final String stakedIdKind,
             @Nullable final AccountID stakedAccountIdInOp,
             @Nullable final Long stakedNodeIdInOp,
-            @NonNull ReadableAccountStore accountStore) {
+            @NonNull ReadableAccountStore accountStore,
+            @NonNull final HandleContext context,
+            @NonNull final NetworkInfo networkInfo) {
         final var hasStakingId = stakedAccountIdInOp != null || stakedNodeIdInOp != null;
-        final var stakingConfig = configProvider.getConfiguration().getConfigData(StakingConfig.class);
+        final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
         // If staking is not enabled, then can't update staked id
         validateFalse(!stakingConfig.isEnabled() && (hasStakingId || hasDeclineRewardChange), STAKING_NOT_ENABLED);
 
@@ -75,7 +73,7 @@ public class StakingValidator {
         if (stakedIdKind.equals("STAKED_ACCOUNT_ID")) {
             validateTrue(accountStore.getAccountById(requireNonNull(stakedAccountIdInOp)) != null, INVALID_STAKING_ID);
         } else if (stakedIdKind.equals("STAKED_NODE_ID")) {
-            validateTrue(nodeInfo.isValidId((requireNonNull(stakedNodeIdInOp).longValue())), INVALID_STAKING_ID);
+            validateTrue(networkInfo.nodeInfo(requireNonNull(stakedNodeIdInOp)) != null, INVALID_STAKING_ID);
         }
     }
 

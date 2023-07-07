@@ -20,9 +20,9 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
+import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.statistics.internal.StatsBuffer;
-import com.swirlds.platform.Settings;
+import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -327,10 +327,14 @@ class WinTab2Stats extends PrePaintableJPanel {
                 String title = metric.getName() + " vs. time for " + (allHistory ? "all" : "recent") + " history";
 
                 if (buffer.numBins() == 0) {
-                    String s = String.format(
-                            "Skipping the first %,.0f seconds ...",
-                            Settings.getInstance().getStatsSkipSeconds());
-                    int w = g.getFontMetrics().stringWidth(s);
+                    final BasicConfig basicConfig = WinBrowser.memberDisplayed
+                            .platform
+                            .getContext()
+                            .getConfiguration()
+                            .getConfigData(BasicConfig.class);
+                    final String s =
+                            String.format("Skipping the first %,.0f seconds ...", basicConfig.statsSkipSeconds());
+                    final int w = g.getFontMetrics().stringWidth(s);
                     g.drawString(s, (minXs + maxXs - w) / 2, (minYs + maxYs) / 2);
                     g.drawLine(minXs, maxYs, maxXs, maxYs); // x axis
                     g.drawLine(minXs, minYs, minXs, maxYs); // y axis

@@ -983,7 +983,8 @@ class HTSPrecompiledContractTest {
         givenFrameContext();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN_V2));
         burnPrecompile
-                .when(() -> BurnPrecompile.getBurnWrapper(any(), eq(SystemContractAbis.BURN_TOKEN_V2)))
+                .when(() ->
+                        BurnPrecompile.getBurnWrapper(any(), eq(SystemContractAbis.BURN_TOKEN_V2), eq(wrappedLedgers)))
                 .thenReturn(nonFungibleBurn);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));

@@ -54,7 +54,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class PreHandleContextListUpdatesTest {
 
-    private static final Configuration CONFIG = new HederaTestConfigBuilder().getOrCreateConfig();
+    private static final Configuration CONFIG = HederaTestConfigBuilder.createConfig();
     public static final Key A_COMPLEX_KEY = Key.newBuilder()
             .thresholdKey(ThresholdKey.newBuilder()
                     .threshold(2)

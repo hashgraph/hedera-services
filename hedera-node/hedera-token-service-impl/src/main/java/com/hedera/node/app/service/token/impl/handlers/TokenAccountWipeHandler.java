@@ -51,10 +51,12 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -103,6 +105,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
         final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var nftStore = context.writableStore(WritableNftStore.class);
         final var expiryValidator = context.expiryValidator();
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
 
         // Assign relevant variables
         final var txn = context.body();
@@ -122,7 +125,8 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
                 accountStore,
                 tokenStore,
                 tokenRelStore,
-                expiryValidator);
+                expiryValidator,
+                tokensConfig);
         final var acct = validated.account();
         final var token = validated.token();
 
@@ -150,8 +154,8 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
                 final var nft = nftStore.get(tokenId, nftSerial);
                 validateTrue(nft != null, INVALID_NFT_ID);
 
-                final var nftOwner = nft.ownerNumber();
-                validateTrue(nftOwner == accountId.accountNum(), ACCOUNT_DOES_NOT_OWN_WIPED_NFT);
+                final var nftOwner = nft.ownerId();
+                validateTrue(Objects.equals(nftOwner, accountId), ACCOUNT_DOES_NOT_OWN_WIPED_NFT);
             }
 
             // Check that the new token balance will not be negative
@@ -188,20 +192,21 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelStore,
-            @NonNull final ExpiryValidator expiryValidator) {
+            @NonNull final ExpiryValidator expiryValidator,
+            @NonNull final TokensConfig tokensConfig) {
         validateTrue(fungibleWipeCount > -1, INVALID_WIPING_AMOUNT);
 
         final var account =
                 TokenHandlerHelper.getIfUsable(accountId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
 
-        validator.validateWipe(fungibleWipeCount, nftSerialNums);
+        validator.validateWipe(fungibleWipeCount, nftSerialNums, tokensConfig);
 
         final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
         validateTrue(token.wipeKey() != null, ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY);
 
         final var accountRel = TokenHandlerHelper.getIfUsable(accountId, tokenId, tokenRelStore);
         validateFalse(
-                token.treasuryAccountNumber() == accountRel.accountNumber(),
+                token.treasuryAccountId().equals(accountRel.accountId()),
                 ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
 
         return new ValidationResult(account, token, accountRel);

@@ -28,18 +28,23 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHie
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setInsets;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
-import static com.swirlds.platform.state.address.AddressBookUtils.getOwnHostCount;
+import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
+import static com.swirlds.platform.state.address.AddressBookNetworkUtils.getLocalAddressCount;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
+import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.OSHealthCheckConfig;
+import com.swirlds.common.config.PathsConfig;
+import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.export.ConfigExport;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -54,6 +59,10 @@ import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
+import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsProvider;
@@ -75,15 +84,19 @@ import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
+import com.swirlds.logging.payloads.SavedStateLoadedPayload;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.config.ConfigMappings;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.config.internal.ConfigMappings;
+import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.config.legacy.ConfigPropertiesSource;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
+import com.swirlds.platform.event.tipset.EventCreationConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
@@ -100,16 +113,18 @@ import com.swirlds.platform.portforwarding.PortForwarder;
 import com.swirlds.platform.portforwarding.PortMapping;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
+import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SavedStateInfo;
+import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
 import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.uptime.UptimeConfig;
-import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.MetricsDocUtils;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -119,6 +134,7 @@ import java.awt.GraphicsEnvironment;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -191,7 +207,7 @@ public class Browser {
 
         // The properties from the config.txt
         final LegacyConfigProperties configurationProperties = LegacyConfigPropertiesLoader.loadConfigFile(
-                Settings.getInstance().getConfigPath());
+                ConfigurationHolder.getConfigData(PathsConfig.class).getConfigPath());
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
@@ -220,6 +236,7 @@ public class Browser {
                 .withConfigDataType(ReconnectConfig.class)
                 .withConfigDataType(FCHashMapConfig.class)
                 .withConfigDataType(JasperDbConfig.class)
+                .withConfigDataType(MerkleDbConfig.class)
                 .withConfigDataType(ChatterConfig.class)
                 .withConfigDataType(AddressBookConfig.class)
                 .withConfigDataType(VirtualMapConfig.class)
@@ -234,7 +251,11 @@ public class Browser {
                 .withConfigDataType(SyncConfig.class)
                 .withConfigDataType(UptimeConfig.class)
                 .withConfigDataType(RecycleBinConfig.class)
-                .withConfigDataType(EventConfig.class);
+                .withConfigDataType(EventConfig.class)
+                .withConfigDataType(EventCreationConfig.class)
+                .withConfigDataType(PathsConfig.class)
+                .withConfigDataType(SocketConfig.class)
+                .withConfigDataType(TransactionConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
         if (appMains.size() > 0) {
@@ -242,6 +263,7 @@ public class Browser {
         }
 
         this.configuration = configurationBuilder.build();
+        PlatformConfigUtils.checkConfiguration(configuration);
 
         // Set the configuration on all SwirldMain instances.
         appMains.values().forEach(swirldMain -> swirldMain.setConfiguration(configuration));
@@ -267,28 +289,6 @@ public class Browser {
                 jframe.dispose();
             }
 
-            // Read from data/settings.txt (where data is in same directory as .jar, usually sdk/) to change
-            // the default settings given in the Settings class. This file won't normally exist. But it can
-            // be used for testing and debugging. This is NOT documented for users.
-            //
-            // Also, if the settings.txt file exists, then after reading it and changing the settings, write
-            // all the current settings to settingsUsed.txt, some of which might have been changed by
-            // settings.txt
-            Settings.getInstance().loadSettings();
-
-            // Provide swirlds.common the settings it needs via the SettingsCommon class
-            Settings.populateSettingsCommon();
-
-            // Update Settings based on config.txt
-            configurationProperties.tls().ifPresent(tls -> Settings.getInstance()
-                    .setUseTLS(tls));
-            configurationProperties.maxSyncs().ifPresent(value -> Settings.getInstance()
-                    .setMaxOutgoingSyncs(value));
-            configurationProperties.transactionMaxBytes().ifPresent(value -> Settings.getInstance()
-                    .setTransactionMaxBytes(value));
-            configurationProperties.ipTos().ifPresent(ipTos -> Settings.getInstance()
-                    .setSocketIpTos(ipTos));
-
             // Write the settingsUsed.txt file
             writeSettingsUsed(configuration);
 
@@ -300,13 +300,13 @@ public class Browser {
             // simulation to run.
 
             try {
-
-                if (Files.exists(Settings.getInstance().getConfigPath())) {
-                    CommonUtils.tellUserConsole("Reading the configuration from the file:   "
-                            + Settings.getInstance().getConfigPath());
+                final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
+                if (Files.exists(pathsConfig.getConfigPath())) {
+                    CommonUtils.tellUserConsole(
+                            "Reading the configuration from the file:   " + pathsConfig.getConfigPath());
                 } else {
-                    CommonUtils.tellUserConsole("A config.txt file could be created here:   "
-                            + Settings.getInstance().getConfigPath());
+                    CommonUtils.tellUserConsole(
+                            "A config.txt file could be created here:   " + pathsConfig.getConfigPath());
                     return;
                 }
                 // instantiate all Platform objects, which each instantiates a Statistics object
@@ -329,7 +329,8 @@ public class Browser {
                         () -> (Arrays.toString(Network.getOwnAddresses2())));
 
                 // port forwarding
-                if (Settings.getInstance().isDoUpnp()) {
+                final SocketConfig socketConfig = configuration.getConfigData(SocketConfig.class);
+                if (socketConfig.doUpnp()) {
                     final List<PortMapping> portsToBeMapped = new LinkedList<>();
                     synchronized (getPlatforms()) {
                         for (final Platform p : getPlatforms()) {
@@ -403,8 +404,11 @@ public class Browser {
             final Map<NodeId, SwirldMain> appMains = new HashMap<>();
             final AddressBook addressBook = appDefinition.getAddressBook();
             for (final Address address : addressBook) {
-                if (localNodesToStart.contains(address.getNodeId()) || address.isOwnHost()) {
-                    appMains.put(address.getNodeId(), buildAppMain(appDefinition, appLoader));
+                if (AddressBookNetworkUtils.isLocal(address)) {
+                    // if the local nodes to start are not specified, start all local nodes. Otherwise, start specified.
+                    if (localNodesToStart.isEmpty() || localNodesToStart.contains(address.getNodeId())) {
+                        appMains.put(address.getNodeId(), buildAppMain(appDefinition, appLoader));
+                    }
                 }
             }
             return appMains;
@@ -422,8 +426,9 @@ public class Browser {
         final StringBuilder settingsUsedBuilder = new StringBuilder();
 
         // Add all settings values to the string builder
-        if (Files.exists(Settings.getInstance().getSettingsPath())) {
-            Settings.getInstance().addSettingsUsed(settingsUsedBuilder);
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
+        if (Files.exists(pathsConfig.getSettingsPath())) {
+            PlatformConfigUtils.generateSettingsUsed(settingsUsedBuilder, configuration);
         }
 
         settingsUsedBuilder.append(System.lineSeparator());
@@ -435,7 +440,7 @@ public class Browser {
 
         // Write the settingsUsed.txt file
         final Path settingsUsedPath =
-                Settings.getInstance().getSettingsUsedDir().resolve(SettingConstants.SETTING_USED_FILENAME);
+                pathsConfig.getSettingsUsedDir().resolve(PlatformConfigUtils.SETTING_USED_FILENAME);
         try (final OutputStream outputStream = new FileOutputStream(settingsUsedPath.toFile())) {
             outputStream.write(settingsUsedBuilder.toString().getBytes(StandardCharsets.UTF_8));
         } catch (final IOException | RuntimeException e) {
@@ -471,31 +476,21 @@ public class Browser {
         if (args != null) {
             for (final String item : args) {
                 final String arg = item.trim().toLowerCase();
-                switch (arg) {
-                    case "-local":
-                    case "-log":
-                        currentOption = arg;
-                        break;
-                    default:
-                        if (currentOption != null) {
-                            switch (currentOption) {
-                                case "-local":
-                                    try {
-                                        localNodesToStart.add(new NodeId(Integer.parseInt(arg)));
-                                    } catch (final NumberFormatException ex) {
-                                        // Intentionally suppress the NumberFormatException
-                                    }
-                                    break;
-                                case "-log":
-                                    Settings.getInstance().setLogPath(getAbsolutePath(arg));
-                                    break;
-                            }
-                        }
+                if (arg.equals("-local")) {
+                    currentOption = arg;
+                } else if (currentOption != null) {
+                    try {
+                        localNodesToStart.add(new NodeId(Integer.parseInt(arg)));
+                    } catch (final NumberFormatException ex) {
+                        // Intentionally suppress the NumberFormatException
+                    }
                 }
             }
         }
 
-        launch(localNodesToStart, Settings.getInstance().getLogPath());
+        launch(
+                localNodesToStart,
+                ConfigurationHolder.getConfigData(PathsConfig.class).getLogPath());
     }
 
     /**
@@ -551,30 +546,31 @@ public class Browser {
     }
 
     /**
-     * Instantiate and start the thread dump generator, if enabled via the {@link Settings#getThreadDumpPeriodMs()}
-     * setting.
+     * Instantiate and start the thread dump generator.
      */
     private void startThreadDumpGenerator() {
-        if (Settings.getInstance().getThreadDumpPeriodMs() > 0) {
-            final Path dir = getAbsolutePath(Settings.getInstance().getThreadDumpLogDir());
+        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
+
+        if (threadConfig.threadDumpPeriodMs() > 0) {
+            final Path dir = getAbsolutePath(threadConfig.threadDumpLogDir());
             if (!Files.exists(dir)) {
                 rethrowIO(() -> Files.createDirectories(dir));
             }
             logger.info(STARTUP.getMarker(), "Starting thread dump generator and save to directory {}", dir);
-            ThreadDumpGenerator.generateThreadDumpAtIntervals(
-                    dir, Settings.getInstance().getThreadDumpPeriodMs());
+            ThreadDumpGenerator.generateThreadDumpAtIntervals(dir, threadConfig.threadDumpPeriodMs());
         }
     }
 
     /**
      * Instantiate and start the JVMPauseDetectorThread, if enabled via the
-     * {@link Settings#getJVMPauseDetectorSleepMs()} setting.
+     * {@link BasicConfig#jvmPauseDetectorSleepMs()} setting.
      */
-    private void startJVMPauseDetectorThread() {
-        if (Settings.getInstance().getJVMPauseDetectorSleepMs() > 0) {
+    private void startJVMPauseDetectorThread(@NonNull final Configuration configuration) {
+        final BasicConfig basicConfig = Objects.requireNonNull(configuration).getConfigData(BasicConfig.class);
+        if (basicConfig.jvmPauseDetectorSleepMs() > 0) {
             final JVMPauseDetectorThread jvmPauseDetectorThread = new JVMPauseDetectorThread(
                     (pauseTimeMs, allocTimeMs) -> {
-                        if (pauseTimeMs > Settings.getInstance().getJVMPauseReportMs()) {
+                        if (pauseTimeMs > basicConfig.jvmPauseReportMs()) {
                             logger.warn(
                                     EXCEPTION.getMarker(),
                                     "jvmPauseDetectorThread detected JVM paused for {} ms, allocation pause {} ms",
@@ -582,7 +578,7 @@ public class Browser {
                                     allocTimeMs);
                         }
                     },
-                    Settings.getInstance().getJVMPauseDetectorSleepMs());
+                    basicConfig.jvmPauseDetectorSleepMs());
             jvmPauseDetectorThread.start();
             logger.debug(STARTUP.getMarker(), "jvmPauseDetectorThread started");
         }
@@ -628,8 +624,9 @@ public class Browser {
 
         int ownHostIndex = 0;
 
-        for (final Address address : addressBook) {
-            final NodeId nodeId = address.getNodeId();
+        for (int nodeIndex = 0; nodeIndex < addressBook.getSize(); nodeIndex++) {
+            final NodeId nodeId = addressBook.getNodeId(nodeIndex);
+            final Address address = addressBook.getAddress(nodeId);
             final int instanceNumber = addressBook.getIndexOfNodeId(nodeId);
 
             if (appMains.containsKey(nodeId)) {
@@ -649,51 +646,70 @@ public class Browser {
                 // the name of this swirld
                 final String swirldName = appDefinition.getSwirldName();
                 final SoftwareVersion appVersion = appMain.getSoftwareVersion();
+
+                final RecycleBin recycleBin;
+                try {
+                    recycleBin = RecycleBin.create(configuration, nodeId);
+                } catch (IOException e) {
+                    throw new UncheckedIOException("unable to create recycle bin", e);
+                }
+
                 // We can't send a "real" dispatch, since the dispatcher will not have been started by the
                 // time this class is used.
-                final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
-                        shutdown::shutdown, Settings.getInstance().getEmergencyRecoveryFileLoadDir());
+                final BasicConfig basicConfig =
+                        platformContext.getConfiguration().getConfigData(BasicConfig.class);
+                final EmergencyRecoveryManager emergencyRecoveryManager =
+                        new EmergencyRecoveryManager(shutdown::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
 
-                final ReservedSignedState loadedSignedState = getUnmodifiedSignedStateFromDisk(
+                final ReservedSignedState initialState = getInitialState(
                         platformContext,
+                        appMain,
                         mainClassName,
                         swirldName,
                         nodeId,
-                        appVersion,
-                        addressBook.copy(),
+                        addressBook,
                         emergencyRecoveryManager);
 
-                // check software version compatibility
-                final boolean softwareUpgrade =
-                        BootstrapUtils.detectSoftwareUpgrade(appVersion, loadedSignedState.getNullable());
+                final SwirldsPlatform platform;
+                try (initialState) {
+                    // check software version compatibility
+                    final boolean softwareUpgrade = detectSoftwareUpgrade(appVersion, initialState.get());
 
-                // Initialize the address book from the configuration and platform saved state.
-                final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
-                        appVersion,
-                        softwareUpgrade,
-                        loadedSignedState.getNullable(),
-                        addressBook.copy(),
-                        platformContext);
+                    if (softwareUpgrade) {
+                        try {
+                            logger.info(
+                                    STARTUP.getMarker(), "Clearing recycle bin as part of software upgrade workflow.");
+                            recycleBin.clear();
+                        } catch (final IOException e) {
+                            throw new UncheckedIOException("Failed to clear recycle bin", e);
+                        }
+                    }
 
-                // set here, then given to the state in run(). A copy of it is given to hashgraph.
-                final AddressBook initialAddressBook = addressBookInitializer.getInitialAddressBook();
+                    // Initialize the address book from the configuration and platform saved state.
+                    final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
+                            appVersion, softwareUpgrade, initialState.get(), addressBook.copy(), platformContext);
 
-                GuiPlatformAccessor.getInstance().setPlatformName(nodeId, platformName);
-                GuiPlatformAccessor.getInstance().setSwirldId(nodeId, appDefinition.getSwirldId());
-                GuiPlatformAccessor.getInstance().setInstanceNumber(nodeId, instanceNumber);
+                    if (!initialState.get().isGenesisState()) {
+                        updateLoadedStateAddressBook(
+                                initialState.get(), addressBookInitializer.getInitialAddressBook());
+                    }
 
-                final SwirldsPlatform platform = new SwirldsPlatform(
-                        platformContext,
-                        crypto.get(nodeId),
-                        initialAddressBook,
-                        nodeId,
-                        mainClassName,
-                        swirldName,
-                        appVersion,
-                        appMain::newState,
-                        loadedSignedState,
-                        emergencyRecoveryManager,
-                        softwareUpgrade);
+                    GuiPlatformAccessor.getInstance().setPlatformName(nodeId, platformName);
+                    GuiPlatformAccessor.getInstance().setSwirldId(nodeId, appDefinition.getSwirldId());
+                    GuiPlatformAccessor.getInstance().setInstanceNumber(nodeId, instanceNumber);
+
+                    platform = new SwirldsPlatform(
+                            platformContext,
+                            crypto.get(nodeId),
+                            recycleBin,
+                            nodeId,
+                            mainClassName,
+                            swirldName,
+                            appVersion,
+                            initialState.get(),
+                            emergencyRecoveryManager);
+                }
+
                 platforms.add(platform);
 
                 new InfoMember(infoSwirld, instanceNumber, platform);
@@ -719,6 +735,91 @@ public class Browser {
         }
 
         return Collections.unmodifiableList(platforms);
+    }
+
+    /**
+     * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
+     * only transactions will be capable of modifying the address book.
+     *
+     * @param signedState the state that was loaded from disk
+     * @param addressBook the address book specified in config.txt
+     */
+    private static void updateLoadedStateAddressBook(
+            @NonNull final SignedState signedState, @NonNull final AddressBook addressBook) {
+
+        final State state = signedState.getState();
+
+        // Update the address book with the current address book read from config.txt.
+        // Eventually we will not do this, and only transactions will be capable of
+        // modifying the address book.
+        state.getPlatformState().setAddressBook(addressBook.copy());
+
+        // Invalidate a path down to the new address book
+        new MerkleRouteIterator(state, state.getPlatformState().getAddressBook().getRoute())
+                .forEachRemaining(MerkleNode::invalidateHash);
+
+        // We should only have to rehash a few nodes, so simpler to use the synchronous algorithm.
+        MerkleCryptoFactory.getInstance().digestTreeSync(state);
+
+        // If our hash changes as a result of the new address book then our old signatures may become invalid.
+        signedState.pruneInvalidSignatures();
+    }
+
+    /**
+     * Get the initial state to be used by this node. May return a state loaded from disk, or may return a genesis state
+     * if no valid state is found on disk.
+     *
+     * @param platformContext          the platform context
+     * @param appMain                  the app main
+     * @param mainClassName            the name of the app's SwirldMain class
+     * @param swirldName               the name of this swirld
+     * @param selfId                   the node id of this node
+     * @param configAddressBook        the address book from config.txt
+     * @param emergencyRecoveryManager the emergency recovery manager
+     * @return the initial state to be used by this node
+     */
+    @NonNull
+    private ReservedSignedState getInitialState(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final SwirldMain appMain,
+            @NonNull final String mainClassName,
+            @NonNull final String swirldName,
+            @NonNull final NodeId selfId,
+            @NonNull final AddressBook configAddressBook,
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
+
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(mainClassName);
+        Objects.requireNonNull(swirldName);
+        Objects.requireNonNull(selfId);
+        Objects.requireNonNull(configAddressBook);
+        Objects.requireNonNull(emergencyRecoveryManager);
+
+        final ReservedSignedState loadedState = getUnmodifiedSignedStateFromDisk(
+                platformContext,
+                mainClassName,
+                swirldName,
+                selfId,
+                appMain.getSoftwareVersion(),
+                configAddressBook,
+                emergencyRecoveryManager);
+
+        if (loadedState.isNotNull()) {
+            logger.info(
+                    STARTUP.getMarker(),
+                    new SavedStateLoadedPayload(
+                            loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
+            return loadedState;
+        }
+
+        // Not strictly necessary to close a null reservation, but it's nice to be consistent.
+        loadedState.close();
+
+        final State genesisState =
+                buildGenesisState(platformContext, configAddressBook, appMain.getSoftwareVersion(), appMain.newState());
+
+        final SignedState signedState = new SignedState(platformContext, genesisState, "genesis state");
+        return signedState.reserve("genesis state");
     }
 
     /**
@@ -790,7 +891,7 @@ public class Browser {
             SignedStateFileUtils.cleanStateDirectory(mainClassName);
         }
 
-        final int ownHostCount = Math.min(getOwnHostCount(addressBook), appMains.size());
+        final int ownHostCount = Math.min(getLocalAddressCount(addressBook), appMains.size());
         logger.info(STARTUP.getMarker(), "there are {} nodes with local IP addresses", ownHostCount);
 
         // if the local machine did not match any address in the address book then we should log an error and exit
@@ -849,7 +950,7 @@ public class Browser {
         startThreadDumpGenerator();
 
         // Initialize JVMPauseDetectorThread, if enabled via settings
-        startJVMPauseDetectorThread();
+        startJVMPauseDetectorThread(configuration);
 
         logger.info(STARTUP.getMarker(), "Starting metrics");
         metricsProvider.start();

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.context;
 
-import com.swirlds.common.system.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatus;
 
 /**
  * Defines a type that sets and gets the status of the underlying {@link

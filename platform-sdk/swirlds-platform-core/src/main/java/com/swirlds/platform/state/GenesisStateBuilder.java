@@ -17,15 +17,14 @@
 package com.swirlds.platform.state;
 
 import com.swirlds.common.config.BasicConfig;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.Platform;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * Responsible for building the genesis state.
@@ -80,27 +79,23 @@ public final class GenesisStateBuilder {
     /**
      * Build and initialize a genesis state.
      *
-     * @param platform                  the platform running this node
-     * @param addressBook               the current address book
-     * @param appVersion                the software version of the app
-     * @param genesisSwirldStateBuilder builds the genesis application state
+     * @param platformContext the platform context
+     * @param addressBook     the current address book
+     * @param appVersion      the software version of the app
+     * @param swirldState     the application's genesis state
      * @return a genesis state
      */
     public static State buildGenesisState(
-            final Platform platform,
-            final AddressBook addressBook,
-            final SoftwareVersion appVersion,
-            final Supplier<SwirldState> genesisSwirldStateBuilder) {
+            @NonNull final PlatformContext platformContext,
+            @NonNull final AddressBook addressBook,
+            @NonNull final SoftwareVersion appVersion,
+            @NonNull final SwirldState swirldState) {
 
-        final BasicConfig basicConfig = platform.getContext().getConfiguration().getConfigData(BasicConfig.class);
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final State state = new State();
         state.setPlatformState(buildGenesisPlatformState(addressBook, appVersion));
-        state.setSwirldState(genesisSwirldStateBuilder.get());
+        state.setSwirldState(swirldState);
         state.setDualState(buildGenesisDualState(basicConfig));
-
-        state.getSwirldState()
-                .init(platform, state.getSwirldDualState(), InitTrigger.GENESIS, SoftwareVersion.NO_VERSION);
-        state.markAsInitialized();
 
         return state;
     }

@@ -67,6 +67,8 @@ public class PropertyNames {
     public static final String LEDGER_TOTAL_TINY_BAR_FLOAT = "ledger.totalTinyBarFloat";
     public static final String LEDGER_ID = "ledger.id";
     public static final String STAKING_PERIOD_MINS = "staking.periodMins";
+    public static final String STAKING_MAX_STAKE_REWARDED = "staking.maxStakeRewarded";
+    public static final String STAKING_REWARD_BALANCE_THRESHOLD = "staking.rewardBalanceThreshold";
     public static final String STAKING_REWARD_HISTORY_NUM_STORED_PERIODS = "staking.rewardHistory.numStoredPeriods";
     public static final String STAKING_STARTUP_HELPER_RECOMPUTE = "staking.startupHelper.recompute";
     public static final String CONFIG_VERSION = "hedera.config.version";
@@ -205,8 +207,6 @@ public class PropertyNames {
     public static final String HEDERA_ALLOWANCES_IS_ENABLED = "hedera.allowances.isEnabled";
     public static final String ENTITIES_LIMIT_TOKEN_ASSOCIATIONS = "entities.limitTokenAssociations";
     public static final String UTIL_PRNG_IS_ENABLED = "utilPrng.isEnabled";
-    public static final String HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION =
-            "hedera.recordStream.enableTraceabilityMigration";
     public static final String TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC = "traceability.maxExportsPerConsSec";
     public static final String TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO =
             "traceability.minFreeToUsedGasThrottleRatio";

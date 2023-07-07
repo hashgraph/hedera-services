@@ -22,7 +22,6 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
@@ -37,7 +36,7 @@ import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
@@ -50,9 +49,7 @@ import javax.inject.Singleton;
 public class ApproveAllowanceValidator extends AllowanceValidator {
 
     @Inject
-    public ApproveAllowanceValidator(final ConfigProvider configProvider) {
-        super(configProvider);
-    }
+    public ApproveAllowanceValidator() {}
 
     public void validate(
             @NonNull final HandleContext context, final Account payerAccount, final ReadableAccountStore accountStore) {
@@ -60,6 +57,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         final var tokenStore = context.readableStore(ReadableTokenStore.class);
         final var tokenRelStore = context.readableStore(ReadableTokenRelationStore.class);
         final var nftStore = context.readableStore(ReadableNftStore.class);
+        final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
 
         final var txn = context.body();
         final var op = txn.cryptoApproveAllowanceOrThrow();
@@ -69,10 +67,10 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         final var nftAllowances = op.nftAllowancesOrElse(emptyList());
 
         // feature flag for allowances. Will probably be moved to some other place in app in the future.
-        validateTrue(isEnabled(), NOT_SUPPORTED);
+        validateTrue(hederaConfig.allowancesIsEnabled(), NOT_SUPPORTED);
 
         // validate total count of allowances
-        validateAllowanceCount(cryptoAllowances, tokenAllowances, nftAllowances);
+        validateAllowanceCount(cryptoAllowances, tokenAllowances, nftAllowances, hederaConfig);
         // validate all allowances
         validateCryptoAllowances(cryptoAllowances, payerAccount, accountStore);
         validateFungibleTokenAllowances(tokenAllowances, payerAccount, accountStore, tokenStore, tokenRelStore);
@@ -188,14 +186,15 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
     }
 
     private void validateAllowanceCount(
-            final List<CryptoAllowance> cryptoAllowances,
-            final List<TokenAllowance> tokenAllowances,
-            final List<NftAllowance> nftAllowances) {
+            @NonNull final List<CryptoAllowance> cryptoAllowances,
+            @NonNull final List<TokenAllowance> tokenAllowances,
+            @NonNull final List<NftAllowance> nftAllowances,
+            @NonNull final HederaConfig hederaConfig) {
         // each serial number of an NFT is considered as an allowance.
         // So for Nft allowances aggregated amount is considered for limit calculation.
         final var totalAllowances =
                 cryptoAllowances.size() + tokenAllowances.size() + aggregateApproveNftAllowances(nftAllowances);
-        validateTotalAllowancesPerTxn(totalAllowances);
+        validateTotalAllowancesPerTxn(totalAllowances, hederaConfig);
     }
 
     private void validateTokenBasics(
@@ -205,7 +204,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             final ReadableTokenRelationStore tokenRelStore) {
         final var ownerId =
                 AccountID.newBuilder().accountNum(owner.accountNumber()).build();
-        final var tokenId = TokenID.newBuilder().tokenNum(token.tokenNumber()).build();
+        final var tokenId = token.tokenId();
         // ONLY reject self-approval for NFT's; else allow to match OZ ERC-20
         validateFalse(
                 !token.tokenType().equals(TokenType.FUNGIBLE_COMMON)

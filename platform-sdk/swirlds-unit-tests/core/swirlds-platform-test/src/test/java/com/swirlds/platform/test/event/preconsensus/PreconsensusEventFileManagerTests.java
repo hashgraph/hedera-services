@@ -42,6 +42,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -56,7 +57,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -1202,5 +1202,62 @@ class PreconsensusEventFileManagerTests {
 
         // Iterating again without fixing discontinuities should still work.
         assertIteratorEquality(files.iterator(), manager.getFileIterator(startGeneration, false));
+    }
+
+    @Test
+    @DisplayName("clear() Test")
+    void clearTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+
+        final int fileCount = 100;
+
+        final List<PreconsensusEventFile> files = new ArrayList<>();
+
+        // Intentionally pick values close to wrapping around the 3 digit to 4 digit sequence number.
+        // This will cause the files not to line up alphabetically, and this is a scenario that the
+        // code should be able to handle.
+        final long firstSequenceNumber = random.nextLong(950, 1000);
+
+        final long maxDelta = random.nextLong(10, 20);
+        long minimumGeneration = random.nextLong(0, 1000);
+        final long nonExistentGeneration = minimumGeneration - 1;
+        long maximumGeneration = random.nextLong(minimumGeneration, minimumGeneration + maxDelta);
+        Instant timestamp = Instant.now();
+
+        for (long sequenceNumber = firstSequenceNumber;
+                sequenceNumber < firstSequenceNumber + fileCount;
+                sequenceNumber++) {
+
+            final PreconsensusEventFile file = PreconsensusEventFile.of(
+                    sequenceNumber, minimumGeneration, maximumGeneration, timestamp, fileDirectory, false);
+
+            minimumGeneration = random.nextLong(minimumGeneration, maximumGeneration + 1);
+            maximumGeneration =
+                    Math.max(maximumGeneration, random.nextLong(minimumGeneration, minimumGeneration + maxDelta));
+            timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
+
+            files.add(file);
+            createDummyFile(file);
+        }
+
+        final PlatformContext platformContext = buildContext();
+
+        final PreconsensusEventFileManager manager = new PreconsensusEventFileManager(
+                platformContext, Time.getCurrent(), TestRecycleBin.getInstance(), new NodeId(0));
+
+        assertIteratorEquality(
+                files.iterator(), manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
+
+        assertIteratorEquality(
+                files.iterator(), manager.getFileIterator(files.get(0).getMaximumGeneration(), false));
+
+        // attempt to start a non-existent generation
+        assertIteratorEquality(files.iterator(), manager.getFileIterator(nonExistentGeneration, false));
+
+        manager.clear();
+
+        assertIteratorEquality(
+                Collections.emptyIterator(),
+                manager.getFileIterator(PreconsensusEventFileManager.NO_MINIMUM_GENERATION, false));
     }
 }

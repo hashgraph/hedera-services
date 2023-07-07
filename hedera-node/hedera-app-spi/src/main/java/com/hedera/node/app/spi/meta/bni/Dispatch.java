@@ -141,8 +141,24 @@ public interface Dispatch {
      * @param strategy         the {@link VerificationStrategy} to use
      * @return the result of the transfer attempt
      */
-    ResponseCodeEnum transferValue(
+    ResponseCodeEnum transferWithReceiverSigCheck(
             long amount, long fromEntityNumber, long toEntityNumber, @NonNull VerificationStrategy strategy);
+
+    /**
+     * Collects the given {@code amount} of fees from the given {@code fromEntityNumber}.
+     *
+     * @param fromEntityNumber the number of the entity to collect fees from
+     * @param amount          the amount of fees to collect
+     */
+    void collectFee(long fromEntityNumber, long amount);
+
+    /**
+     * Refunds the given {@code amount} of fees from the given {@code fromEntityNumber}.
+     *
+     * @param fromEntityNumber the number of the entity to refund fees to
+     * @param amount          the amount of fees to collect
+     */
+    void refundFee(long fromEntityNumber, long amount);
 
     /**
      * Links the given {@code evmAddress} to the given {@code entityNumber} as an alias.
@@ -296,4 +312,14 @@ public interface Dispatch {
      */
     @Nullable
     Nft getNft(@NonNull UniqueTokenId id);
+
+    // --- (SECTION V) Miscellaneous methods
+    /**
+     * Tracks the deletion of a contract and the beneficiary that should receive any staking awards otherwise
+     * earned by the deleted contract.
+     *
+     * @param deletedNumber the number of the deleted contract
+     * @param beneficiaryNumber the number of the beneficiary
+     */
+    void trackDeletion(long deletedNumber, long beneficiaryNumber);
 }

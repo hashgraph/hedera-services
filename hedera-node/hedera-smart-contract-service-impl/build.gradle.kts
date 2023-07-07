@@ -21,19 +21,32 @@ description = "Default Hedera Smart Contract Service Implementation"
 dependencies {
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
-        testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
-        testImplementation(testFixtures(project(":hedera-node:node-config")))
+        testImplementation(testFixtures(project(":app-spi")))
+        testImplementation(testFixtures(project(":config")))
+        testImplementation(testFixtures(project(":app-service-mono")))
 
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("org.hamcrest"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.mockito"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+        testImplementation(gav("com.swirlds.merkle"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
         testRuntimeOnly(gav("org.mockito.inline"))
     }
 }
+
+val generatedSources = file("build/generated/sources/annotationProcessor/java/main")
+
+java.sourceSets["main"].java.srcDir(generatedSources)
 
 // TODO module-info.java in 'test'
 // https://github.com/autonomousapps/dependency-analysis-android-gradle-plugin/issues/900
 dependencyAnalysis.issues {
     onUnusedDependencies {
-        exclude(":hedera-node:node-app-service-mono")
-        exclude(":hedera-node:node-app-service-token")
+        exclude(":config")
+        exclude(":app-service-mono")
+        exclude(":app-service-token")
         exclude("org.apache.tuweni:tuweni-units")
     }
 }

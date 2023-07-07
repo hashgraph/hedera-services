@@ -51,6 +51,6 @@ public interface ContextModule {
     @Provides
     @Singleton
     static NodeInfo provideNodeInfo(@NonNull final Platform platform) {
-        return new NodeInfo(platform.getSelfId().getIdAsInt(), () -> platform.getAddressBook());
+        return new NodeInfo(platform.getSelfId().id(), platform::getAddressBook);
     }
 }

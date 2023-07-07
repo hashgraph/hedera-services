@@ -43,7 +43,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -75,11 +74,11 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.VersionedConfiguration;
-import com.hedera.node.config.data.TokensConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.config.api.Configuration;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -89,10 +88,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenBurnHandlerTest extends ParityTestBase {
     private static final AccountID ACCOUNT_1339 = BaseCryptoHandler.asAccount(1339);
     private static final TokenID TOKEN_123 = BaseTokenHandler.asToken(123);
-
-    private final ConfigProvider configProvider = mock(ConfigProvider.class);
-    private TokenSupplyChangeOpsValidator validator = new TokenSupplyChangeOpsValidator(configProvider);
+    private TokenSupplyChangeOpsValidator validator = new TokenSupplyChangeOpsValidator();
     private final TokenBurnHandler subject = new TokenBurnHandler(validator);
+    private Configuration configuration;
+
+    @BeforeEach
+    public void setUp() {
+        super.setUp();
+        configuration = HederaTestConfigBuilder.create()
+                .withValue("tokens.nfts.areEnabled", true)
+                .withValue("tokens.nfts.maxBatchSizeBurn", 100)
+                .getOrCreateConfig();
+    }
 
     @Nested
     class PureChecks {
@@ -211,7 +218,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void invalidFungibleAmount() {
-            mockConfig();
+
             final var txn = newBurnTxn(TOKEN_123, -1);
             final var context = mockContext(txn);
 
@@ -222,7 +229,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void tokenIdNotFound() {
-            mockConfig();
+
             writableTokenStore = newWritableStoreWithTokens();
             final var txn = newBurnTxn(BaseTokenHandler.asToken(999), 1);
             final var context = mockContext(txn);
@@ -234,11 +241,11 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void tokenIsDeleted() {
-            mockConfig();
+
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .deleted(true) // Intentionally deleted
                     .build());
@@ -253,11 +260,11 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void tokenIsPaused() {
-            mockConfig();
+
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .paused(true) // Intentionally paused
                     .build());
@@ -271,18 +278,18 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void tokenDoesntHaveSupplyKey() {
-            mockConfig();
+
             final var totalFungibleSupply = 5;
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey((Key) null) // Intentionally missing supply key
                     .totalSupply(totalFungibleSupply)
                     .build());
             writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_123)
                     .balance(totalFungibleSupply)
                     .build());
             final var txn = newBurnTxn(TOKEN_123, totalFungibleSupply + 1);
@@ -295,11 +302,11 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void tokenTreasuryRelDoesntExist() {
-            mockConfig();
+
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .build());
             // Intentionally has no token rels:
@@ -314,8 +321,11 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void fungibleAmountExceedsBatchSize() {
-            mockConfig(1, true);
-            validator = new TokenSupplyChangeOpsValidator(configProvider);
+            configuration = HederaTestConfigBuilder.create()
+                    .withValue("tokens.nfts.areEnabled", true)
+                    .withValue("tokens.nfts.maxBatchSizeBurn", 1)
+                    .getOrCreateConfig();
+            validator = new TokenSupplyChangeOpsValidator();
 
             final var txn = newBurnTxn(TOKEN_123, 2);
             final var context = mockContext(txn);
@@ -327,19 +337,19 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void fungibleTokenTreasuryAccountDoesntExist() {
-            mockConfig();
+
             // Intentionally has no treasury account:
             writableAccountStore = newWritableStoreWithAccounts();
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .totalSupply(10)
                     .build());
             writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_123)
                     .balance(10)
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 10);
@@ -352,18 +362,18 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void fungibleAmountExceedsSupply() {
-            mockConfig();
+
             final var totalFungibleSupply = 5;
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .totalSupply(totalFungibleSupply)
                     .build());
             writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_123)
                     .balance(totalFungibleSupply)
                     .build());
             final var txn = newBurnTxn(TOKEN_123, totalFungibleSupply + 1);
@@ -376,17 +386,16 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void fungibleAmountExceedsBalance() {
-            mockConfig();
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .totalSupply(10)
                     .build());
             writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_123)
                     .balance(8)
                     .build());
             // The token treasury has a balance of 8. The token supply is 10, so a fungible amount of 9 exceed the total
@@ -402,22 +411,21 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void fungibleAmountBurnedWithLeftoverTreasuryBalance() {
-            mockConfig();
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .accountNumber(ACCOUNT_1339.accountNum())
                     .numberTreasuryTitles(1)
                     .numberPositiveBalances(1)
                     .build());
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .totalSupply(10)
                     .build());
             writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_123)
                     .balance(9)
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 8);
@@ -438,22 +446,22 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void fungibleAmountBurnedWithZeroTreasuryBalance() {
-            mockConfig();
+
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .accountNumber(ACCOUNT_1339.accountNum())
                     .numberTreasuryTitles(1)
                     .numberPositiveBalances(1)
                     .build());
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .totalSupply(10)
                     .build());
             writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_123)
                     .balance(8)
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 8);
@@ -476,8 +484,11 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftsGivenButNotEnabled() {
-            mockConfig(100, false);
-            validator = new TokenSupplyChangeOpsValidator(configProvider);
+            configuration = HederaTestConfigBuilder.create()
+                    .withValue("tokens.nfts.areEnabled", false)
+                    .withValue("tokens.nfts.maxBatchSizeBurn", 100)
+                    .getOrCreateConfig();
+            validator = new TokenSupplyChangeOpsValidator();
 
             final var txn = newBurnTxn(TOKEN_123, 0, 1L);
             final var context = mockContext(txn);
@@ -489,8 +500,11 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftSerialCountExceedsBatchSize() {
-            mockConfig(1, true);
-            validator = new TokenSupplyChangeOpsValidator(configProvider);
+            configuration = HederaTestConfigBuilder.create()
+                    .withValue("tokens.nfts.areEnabled", true)
+                    .withValue("tokens.nfts.maxBatchSizeBurn", 1)
+                    .getOrCreateConfig();
+            validator = new TokenSupplyChangeOpsValidator();
 
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
             final var context = mockContext(txn);
@@ -502,17 +516,17 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void invalidNftSerial() {
-            mockConfig();
+
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .totalSupply(10)
                     .build());
             writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_123)
                     .build());
             writableNftStore = newWritableStoreWithNfts();
             final var txn = newBurnTxn(TOKEN_123, 0, -1L);
@@ -525,17 +539,17 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftSerialNotFound() {
-            mockConfig();
+
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .totalSupply(10)
                     .build());
             writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_123)
                     .balance(10)
                     .build());
             writableNftStore = new WritableNftStore(new MapWritableStates(
@@ -551,17 +565,17 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftSerialNumsEmpty() {
-            mockConfig();
+
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .totalSupply(10)
                     .build());
             writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_123)
                     .balance(10)
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 0);
@@ -574,26 +588,27 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftNotOwnedByTreasury() {
-            mockConfig();
+
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .totalSupply(10)
                     .build());
             writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_123)
                     .balance(10)
                     .build());
             // this owner number isn't the treasury
+            AccountID ownerId = AccountID.newBuilder().accountNum(999).build();
             writableNftStore = newWritableStoreWithNfts(Nft.newBuilder()
                     .id(UniqueTokenId.newBuilder()
-                            .tokenTypeNumber(TOKEN_123.tokenNum())
+                            .tokenId(TOKEN_123)
                             .serialNumber(1L)
                             .build())
-                    .ownerNumber(999)
+                    .ownerId(ownerId)
                     .build());
 
             final var txn = newBurnTxn(TOKEN_123, 0, 1L);
@@ -606,27 +621,27 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftTreasuryAccountDoesntExist() {
-            mockConfig();
+
             // Intentionally has no treasury account:
             writableAccountStore = newWritableStoreWithAccounts();
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .totalSupply(10)
                     .build());
             writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_123)
                     .balance(10)
                     .build());
             writableNftStore = newWritableStoreWithNfts(Nft.newBuilder()
                     .id(UniqueTokenId.newBuilder()
-                            .tokenTypeNumber(TOKEN_123.tokenNum())
+                            .tokenId(TOKEN_123)
                             .serialNumber(1L)
                             .build())
-                    .ownerNumber(0)
+                    // do not set ownerId - default to null
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L);
             final var context = mockContext(txn);
@@ -638,38 +653,38 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void numNftSerialsExceedsNftSupply() {
-            mockConfig();
+
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .accountNumber(ACCOUNT_1339.accountNum())
                     .numberTreasuryTitles(1)
                     .numberPositiveBalances(1)
                     .build());
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .totalSupply(1)
                     .build());
             writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_123)
                     .balance(1)
                     .build());
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
-                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(1L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
-                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(2L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
             final var context = mockContext(txn);
@@ -681,46 +696,46 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftSerialsBurnedWithLeftoverTreasuryBalance() {
-            mockConfig();
+
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .accountNumber(ACCOUNT_1339.accountNum())
                     .numberTreasuryTitles(1)
                     .numberPositiveBalances(1)
                     .numberOwnedNfts(3)
                     .build());
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .totalSupply(3)
                     .build());
             writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_123)
                     .balance(3)
                     .build());
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
-                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(1L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
-                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(2L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
-                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(3L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
             final var context = mockContext(txn);
@@ -741,46 +756,46 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         @Test
         void nftSerialsBurnedWithNoLeftoverTreasuryBalance() {
-            mockConfig();
+
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .accountNumber(ACCOUNT_1339.accountNum())
                     .numberTreasuryTitles(1)
                     .numberPositiveBalances(1)
                     .numberOwnedNfts(3)
                     .build());
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .totalSupply(10)
                     .build());
             writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_123)
                     .balance(3)
                     .build());
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
-                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(1L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
-                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(2L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
-                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(3L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L);
             final var context = mockContext(txn);
@@ -803,45 +818,45 @@ class TokenBurnHandlerTest extends ParityTestBase {
         @Test
         void duplicateNftSerials() {
             // This is a success case, and should be identical to the case without no duplicates above
-            mockConfig();
+
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .accountNumber(ACCOUNT_1339.accountNum())
                     .numberTreasuryTitles(1)
                     .numberPositiveBalances(1)
                     .build());
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .tokenId(TOKEN_123)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_1339)
                     .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
                     .totalSupply(10)
                     .build());
             writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_123.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_123)
                     .balance(3)
                     .build());
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
-                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(1L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
-                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(2L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
                             .id(UniqueTokenId.newBuilder()
-                                    .tokenTypeNumber(TOKEN_123.tokenNum())
+                                    .tokenId(TOKEN_123)
                                     .serialNumber(3L)
                                     .build())
-                            .ownerNumber(0)
+                            // do not set ownerId - default to null
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L, 1L, 2L, 3L, 3L, 1L, 1L, 2L);
             final var context = mockContext(txn);
@@ -869,23 +884,9 @@ class TokenBurnHandlerTest extends ParityTestBase {
             given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
             given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
             given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+            given(context.configuration()).willReturn(configuration);
 
             return context;
-        }
-
-        private void mockConfig() {
-            mockConfig(100, true);
-        }
-
-        private void mockConfig(final int maxBatchSize, final boolean nftsEnabled) {
-            final var mockTokensConfig = mock(TokensConfig.class);
-            lenient().when(mockTokensConfig.nftsAreEnabled()).thenReturn(nftsEnabled);
-            lenient().when(mockTokensConfig.nftsMaxBatchSizeBurn()).thenReturn(maxBatchSize);
-
-            final var mockConfig = mock(VersionedConfiguration.class);
-            lenient().when(mockConfig.getConfigData(TokensConfig.class)).thenReturn(mockTokensConfig);
-
-            given(configProvider.getConfiguration()).willReturn(mockConfig);
         }
     }
 

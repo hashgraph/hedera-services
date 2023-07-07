@@ -20,11 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.TransactionConfig;
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.state.DummySwirldState;
-import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
@@ -46,16 +48,22 @@ public class SwirldStateManagerImplTests {
         final AddressBook addressBook = new RandomAddressBookGenerator().build();
         when(platform.getAddressBook()).thenReturn(addressBook);
         initialState = newState();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+        final TransactionConfig transactionConfig =
+                platformContext.getConfiguration().getConfigData(TransactionConfig.class);
+
         swirldStateManagerImpl = new SwirldStateManagerImpl(
-                TestPlatformContextBuilder.create().build(),
+                platformContext,
                 addressBook,
                 new NodeId(0L),
                 mock(PreConsensusSystemTransactionManager.class),
                 mock(PostConsensusSystemTransactionManager.class),
                 mock(SwirldStateMetrics.class),
-                mock(SettingsProvider.class),
+                transactionConfig,
                 () -> false,
-                initialState);
+                initialState,
+                new BasicSoftwareVersion(1));
     }
 
     @Test
@@ -109,6 +117,16 @@ public class SwirldStateManagerImplTests {
     private static State newState() {
         final State state = new State();
         state.setSwirldState(new DummySwirldState());
+
+        final PlatformState platformState = mock(PlatformState.class);
+        when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
+        when(platformState.copy()).thenReturn(platformState);
+
+        final PlatformData platformData = mock(PlatformData.class);
+        when(platformState.getPlatformData()).thenReturn(platformData);
+
+        state.setPlatformState(platformState);
+
         assertEquals(0, state.getReservationCount(), "A brand new state should have no references.");
         return state;
     }

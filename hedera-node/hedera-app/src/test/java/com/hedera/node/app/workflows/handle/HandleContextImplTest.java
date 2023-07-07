@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.node.app.spi.fixtures.Scenarios.ALICE;
 import static com.hedera.node.app.spi.fixtures.Scenarios.ERIN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,8 +45,6 @@ import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -108,6 +107,8 @@ class HandleContextImplTest extends StateTestBase {
     private HandleContextImpl createContext(TransactionBody txBody) {
         return new HandleContextImpl(
                 txBody,
+                ALICE.accountID(),
+                ALICE.account().keyOrThrow(),
                 TransactionCategory.USER,
                 recordBuilder,
                 stack,
@@ -121,8 +122,12 @@ class HandleContextImplTest extends StateTestBase {
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithInvalidArguments() {
+        final var payer = ALICE.accountID();
+        final var payerKey = ALICE.account().keyOrThrow();
         assertThatThrownBy(() -> new HandleContextImpl(
                         null,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -135,6 +140,8 @@ class HandleContextImplTest extends StateTestBase {
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
                         null,
+                        payerKey,
+                        TransactionCategory.USER,
                         recordBuilder,
                         stack,
                         verifier,
@@ -145,6 +152,34 @@ class HandleContextImplTest extends StateTestBase {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
+                        payer,
+                        null,
+                        TransactionCategory.USER,
+                        recordBuilder,
+                        stack,
+                        verifier,
+                        recordListBuilder,
+                        checker,
+                        dispatcher,
+                        serviceScopeLookup))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
+                        null,
+                        recordBuilder,
+                        stack,
+                        verifier,
+                        recordListBuilder,
+                        checker,
+                        dispatcher,
+                        serviceScopeLookup))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         null,
                         stack,
@@ -156,6 +191,8 @@ class HandleContextImplTest extends StateTestBase {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         recordBuilder,
                         null,
@@ -167,6 +204,8 @@ class HandleContextImplTest extends StateTestBase {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -178,6 +217,8 @@ class HandleContextImplTest extends StateTestBase {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -189,6 +230,8 @@ class HandleContextImplTest extends StateTestBase {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -200,6 +243,8 @@ class HandleContextImplTest extends StateTestBase {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -211,6 +256,8 @@ class HandleContextImplTest extends StateTestBase {
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -264,8 +311,8 @@ class HandleContextImplTest extends StateTestBase {
         @Test
         void testAccessConfig() {
             // given
-            final var configuration1 = new HederaTestConfigBuilder().getOrCreateConfig();
-            final var configuration2 = new HederaTestConfigBuilder().getOrCreateConfig();
+            final var configuration1 = HederaTestConfigBuilder.createConfig();
+            final var configuration2 = HederaTestConfigBuilder.createConfig();
             when(savepoint1.configuration()).thenReturn(configuration1);
             when(savepoint2.configuration()).thenReturn(configuration2);
             when(stack.peek()).thenReturn(savepoint1);
@@ -297,43 +344,6 @@ class HandleContextImplTest extends StateTestBase {
             // then
             assertThat(actual1).isSameAs(1L);
             assertThat(actual2).isSameAs(2L);
-        }
-
-        @Test
-        void testAccessAttributeValidator(
-                @Mock AttributeValidator attributeValidator1, @Mock AttributeValidator attributeValidator2) {
-            // given
-            when(savepoint1.attributeValidator()).thenReturn(attributeValidator1);
-            when(savepoint2.attributeValidator()).thenReturn(attributeValidator2);
-            when(stack.peek()).thenReturn(savepoint1);
-            final var context = createContext(TransactionBody.DEFAULT);
-
-            // when
-            final var actual1 = context.attributeValidator();
-            when(stack.peek()).thenReturn(savepoint2);
-            final var actual2 = context.attributeValidator();
-
-            // then
-            assertThat(actual1).isSameAs(attributeValidator1);
-            assertThat(actual2).isSameAs(attributeValidator2);
-        }
-
-        @Test
-        void testAccessExpiryValidator(@Mock ExpiryValidator expiryValidator1, @Mock ExpiryValidator expiryValidator2) {
-            // given
-            when(savepoint1.expiryValidator()).thenReturn(expiryValidator1);
-            when(savepoint2.expiryValidator()).thenReturn(expiryValidator2);
-            when(stack.peek()).thenReturn(savepoint1);
-            final var context = createContext(TransactionBody.DEFAULT);
-
-            // when
-            final var actual1 = context.expiryValidator();
-            when(stack.peek()).thenReturn(savepoint2);
-            final var actual2 = context.expiryValidator();
-
-            // then
-            assertThat(actual1).isSameAs(expiryValidator1);
-            assertThat(actual2).isSameAs(expiryValidator2);
         }
 
         @Test
@@ -423,7 +433,7 @@ class HandleContextImplTest extends StateTestBase {
 
         @BeforeEach
         void setup(@Mock Savepoint savepoint) {
-            final var configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+            final var configuration = HederaTestConfigBuilder.createConfig();
             lenient().when(savepoint.configuration()).thenReturn(configuration);
             lenient().when(stack.peek()).thenReturn(savepoint);
         }
@@ -498,8 +508,8 @@ class HandleContextImplTest extends StateTestBase {
                 E_KEY, EGGPLANT,
                 F_KEY, FIG,
                 G_KEY, GRAPE);
-        private static final Configuration CONFIG_1 = new HederaTestConfigBuilder().getOrCreateConfig();
-        private static final Configuration CONFIG_2 = new HederaTestConfigBuilder().getOrCreateConfig();
+        private static final Configuration CONFIG_1 = HederaTestConfigBuilder.createConfig();
+        private static final Configuration CONFIG_2 = HederaTestConfigBuilder.createConfig();
 
         @Mock(strictness = LENIENT)
         private HederaState baseState;
@@ -543,6 +553,8 @@ class HandleContextImplTest extends StateTestBase {
         private HandleContextImpl createContext(TransactionBody txBody, TransactionCategory category) {
             return new HandleContextImpl(
                     txBody,
+                    ALICE.accountID(),
+                    ALICE.account().keyOrThrow(),
                     category,
                     recordBuilder,
                     stack,
@@ -657,7 +669,7 @@ class HandleContextImplTest extends StateTestBase {
 
         @ParameterizedTest
         @MethodSource("createContextDispatchers")
-        void testDispatchHandleFails(Consumer<HandleContext> contextDispatcher) throws PreCheckException {
+        void testDispatchHandleFails(Consumer<HandleContext> contextDispatcher) {
             // given
             final var txBody = TransactionBody.newBuilder().build();
             doThrow(new HandleException(ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT))

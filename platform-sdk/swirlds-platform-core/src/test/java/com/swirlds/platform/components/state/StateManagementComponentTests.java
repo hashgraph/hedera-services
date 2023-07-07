@@ -33,8 +33,8 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.state.notifications.IssNotification;
+import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.test.AssertionUtils;
 import com.swirlds.common.test.RandomAddressBookGenerator;
@@ -49,6 +49,8 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
@@ -58,8 +60,6 @@ import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -113,7 +113,6 @@ class StateManagementComponentTests {
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(false)
                 .build();
         final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
@@ -161,7 +160,6 @@ class StateManagementComponentTests {
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(false)
                 .build();
         final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
@@ -256,7 +254,6 @@ class StateManagementComponentTests {
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(false)
                 .build();
         final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
@@ -303,7 +300,6 @@ class StateManagementComponentTests {
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(false)
                 .build();
         final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
@@ -382,7 +378,6 @@ class StateManagementComponentTests {
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(false)
                 .build();
         final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
@@ -402,7 +397,6 @@ class StateManagementComponentTests {
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(false)
                 .build();
         final DefaultStateManagementComponent component = newStateManagementComponent(
                 addressBook, defaultConfigBuilder().withValue("state.saveReconnectStateToDisk", true));

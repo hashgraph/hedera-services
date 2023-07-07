@@ -67,7 +67,7 @@ class FileGetInfoTest extends FileTestBase {
     @BeforeEach
     void setUp() {
         subject = new FileGetInfoHandler();
-        final var configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        final var configuration = HederaTestConfigBuilder.createConfig();
         lenient().when(context.configuration()).thenReturn(configuration);
     }
 
@@ -158,7 +158,7 @@ class FileGetInfoTest extends FileTestBase {
 
         final var query = createGetFileInfoQuery(fileId.fileNum());
         when(context.query()).thenReturn(query);
-        when(context.createStore(ReadableFileStoreImpl.class)).thenReturn(readableStore);
+        when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
 
         final var response = subject.findResponse(context, responseHeader);
         final var op = response.fileGetInfoOrThrow();
@@ -176,7 +176,7 @@ class FileGetInfoTest extends FileTestBase {
 
         final var query = createGetFileInfoQuery(fileId.fileNum());
         when(context.query()).thenReturn(query);
-        when(context.createStore(ReadableFileStoreImpl.class)).thenReturn(readableStore);
+        when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
 
         final var response = subject.findResponse(context, responseHeader);
         final var fileInfoResponse = response.fileGetInfoOrThrow();

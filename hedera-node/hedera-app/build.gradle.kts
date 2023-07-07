@@ -26,9 +26,10 @@ dependencies {
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
 
-        testImplementation(testFixtures(project(":hedera-node:node-config")))
-        testImplementation(testFixtures(project(":hedera-node:node-app-service-mono")))
-        testImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+        testImplementation(project(":app"))
+        testImplementation(testFixtures(project(":config")))
+        testImplementation(testFixtures(project(":app-service-mono")))
+        testImplementation(testFixtures(project(":app-spi")))
         testImplementation(gav("com.swirlds.base"))
         testImplementation(gav("io.github.classgraph"))
         testImplementation(gav("org.assertj.core"))
@@ -41,10 +42,12 @@ dependencies {
         testImplementation(gav("uk.org.webcompere.systemstubs.core"))
         testCompileOnly(gav("com.github.spotbugs.annotations"))
 
-        itestImplementation(project(":hedera-node:node-app"))
-        itestImplementation(project(":hedera-node:node-app-spi"))
-        itestImplementation(project(":hedera-node:node-hapi"))
-        itestImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+        itestImplementation(project(":app"))
+        itestImplementation(project(":app-spi"))
+        itestImplementation(project(":config"))
+        itestImplementation(project(":hapi"))
+        itestImplementation(testFixtures(project(":app-spi")))
+        itestImplementation(testFixtures(project(":config")))
         itestImplementation(gav("com.github.spotbugs.annotations"))
         itestImplementation(gav("com.hedera.pbj.runtime"))
         itestImplementation(gav("com.swirlds.common"))
@@ -52,15 +55,16 @@ dependencies {
         itestImplementation(gav("io.grpc"))
         itestImplementation(gav("io.helidon.grpc.client"))
         itestImplementation(gav("io.helidon.grpc.server"))
+        itestImplementation(gav("org.apache.logging.log4j"))
         itestImplementation(gav("org.assertj.core"))
         itestImplementation(gav("org.bouncycastle.provider"))
         itestImplementation(gav("org.junit.jupiter.api"))
         itestImplementation(gav("org.junit.jupiter.params"))
 
-        jmhImplementation(project(":hedera-node:node-app"))
-        jmhImplementation(project(":hedera-node:node-app-service-mono"))
-        jmhImplementation(project(":hedera-node:node-hapi"))
-        jmhImplementation(testFixtures(project(":hedera-node:node-app-spi")))
+        jmhImplementation(project(":app"))
+        jmhImplementation(project(":app-service-mono"))
+        jmhImplementation(project(":hapi"))
+        jmhImplementation(testFixtures(project(":app-spi")))
         jmhImplementation(gav("com.hedera.pbj.runtime"))
         jmhImplementation(gav("com.swirlds.common"))
         jmhImplementation(gav("jmh.core"))
@@ -119,6 +123,14 @@ tasks.register<JavaExec>("run") {
     dependsOn(tasks.assemble)
     workingDir = project(":hedera-node").projectDir
     jvmArgs = listOf("-cp", "data/lib/*")
+    mainClass.set("com.swirlds.platform.Browser")
+}
+
+tasks.register<JavaExec>("modrun") {
+    group = "application"
+    dependsOn(tasks.assemble)
+    workingDir = project(":hedera-node").projectDir
+    jvmArgs = listOf("-cp", "data/lib/*", "-Dhedera.workflows.enabled=true")
     mainClass.set("com.swirlds.platform.Browser")
 }
 

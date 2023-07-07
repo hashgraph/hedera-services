@@ -21,9 +21,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -66,11 +64,13 @@ import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.hedera.node.app.service.mono.txns.network.UpgradeActions;
 import com.hedera.node.app.service.mono.txns.prefetch.PrefetchProcessor;
 import com.hedera.node.app.service.mono.utils.JvmSystemExits;
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -103,6 +103,9 @@ class ServicesAppTest {
     private UniqueTokenMapAdapter nftsAdapter;
 
     @Mock
+    private Configuration configuration;
+
+    @Mock
     private TokenRelStorageAdapter tokenRelsAdapter;
 
     private ServicesApp subject;
@@ -115,8 +118,11 @@ class ServicesAppTest {
         final var logDirKey = HEDERA_RECORD_STREAM_LOG_DIR;
         final var logDirVal = "data/recordStreams";
         final var nodeProps = new ScreenedNodeFileProps();
+        final var transactionConfig = new TransactionConfig(1, 2, 3, 4, 5);
 
         given(platform.getContext()).willReturn(platformContext);
+        given(platformContext.getConfiguration()).willReturn(configuration);
+        given(configuration.getConfigData(TransactionConfig.class)).willReturn(transactionConfig);
         given(platformContext.getCryptography()).willReturn(cryptography);
         given(platform.getSelfId()).willReturn(selfNodeId);
         if (!nodeProps.containsProperty(logDirKey)) {
@@ -133,7 +139,7 @@ class ServicesAppTest {
                 .platform(platform)
                 .consoleCreator((ignore, visible) -> null)
                 .crypto(cryptography)
-                .selfId(selfId)
+                .selfId(new NodeId(selfId))
                 .build();
 
         // Make sure the MutableStateChildren has the needed children to instantiate EntityMapWarmer
@@ -183,7 +189,7 @@ class ServicesAppTest {
         assertThat(subject.virtualMapFactory(), instanceOf(VirtualMapFactory.class));
         assertThat(subject.prefetchProcessor(), instanceOf(PrefetchProcessor.class));
         assertThat(subject.bootstrapProps(), instanceOf(ChainedSources.class));
-        assertSame(subject.nodeId(), selfNodeId);
+        assertEquals(subject.nodeId(), selfNodeId);
         assertSame(SLEEPING_PAUSE, subject.pause());
         assertTrue(subject.consoleOut().isEmpty());
         assertThat(subject.stakeStartupHelper(), instanceOf(StakeStartupHelper.class));

@@ -17,9 +17,9 @@
 package com.swirlds.platform.test.chatter.protocol.heartbeat;
 
 import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.Assertions;
 
 /**

@@ -124,7 +124,7 @@ public class IssHandler {
 
             haltRequestedConsumer.haltRequested("other node observed with ISS");
             halted = true;
-        } else if (stateConfig.dumpStateOnAnyISS() && issDumpRateLimiter.request()) {
+        } else if (stateConfig.dumpStateOnAnyISS() && issDumpRateLimiter.requestAndTrigger()) {
             stateDumpRequestedDispatcher.dispatch(round, ISS_DUMP_CATEGORY, false);
         }
     }
@@ -157,7 +157,7 @@ public class IssHandler {
             // If we are powering down, always do a state dump.
             stateDumpRequestedDispatcher.dispatch(round, ISS_DUMP_CATEGORY, true);
             fatalErrorConsumer.fatalError("Self ISS", null, SystemExitCode.ISS);
-        } else if (stateConfig.dumpStateOnAnyISS() && issDumpRateLimiter.request()) {
+        } else if (stateConfig.dumpStateOnAnyISS() && issDumpRateLimiter.requestAndTrigger()) {
             stateDumpRequestedDispatcher.dispatch(round, ISS_DUMP_CATEGORY, false);
         }
     }
@@ -235,7 +235,7 @@ public class IssHandler {
             stateDumpRequestedDispatcher.dispatch(round, ISS_DUMP_CATEGORY, false);
             haltRequestedConsumer.haltRequested("catastrophic ISS observed");
             halted = true;
-        } else if (stateConfig.dumpStateOnAnyISS() && issDumpRateLimiter.request()) {
+        } else if (stateConfig.dumpStateOnAnyISS() && issDumpRateLimiter.requestAndTrigger()) {
             stateDumpRequestedDispatcher.dispatch(round, ISS_DUMP_CATEGORY, stateConfig.automatedSelfIssRecovery());
         }
     }

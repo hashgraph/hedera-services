@@ -44,6 +44,8 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         super.setUp();
         readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAliases = readableAliasState();
+        given(readableStates.<Bytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         subject = new ReadableAccountStoreImpl(readableStates);
     }
 
@@ -138,7 +140,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         assertThat(mappedAccount.autoRenewAccountNumber()).isZero();
         assertThat(mappedAccount.autoRenewSecs()).isZero();
         assertThat(mappedAccount.accountNumber()).isEqualTo(accountNum);
-        assertThat(mappedAccount.alias()).isEqualTo(null);
+        assertThat(mappedAccount.alias()).isNull();
         assertThat(mappedAccount.smartContract()).isFalse();
     }
 
@@ -152,5 +154,13 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
 
         final var result = subject.getAccountById(id);
         assertThat(result).isNull();
+    }
+
+    @Test
+    void getAccountIDByAlias() {
+        final var accountId = subject.getAccountIDByAlias(alias.alias());
+        assertThat(accountId).isEqualTo(id);
+        final var accountId2 = subject.getAccountIDByAlias(Bytes.wrap("test"));
+        assertThat(accountId2).isNull();
     }
 }

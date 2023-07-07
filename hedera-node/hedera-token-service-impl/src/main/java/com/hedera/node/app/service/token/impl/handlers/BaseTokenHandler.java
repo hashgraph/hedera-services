@@ -16,13 +16,19 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -33,9 +39,13 @@ import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.data.EntitiesConfig;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -105,8 +115,8 @@ public class BaseTokenHandler {
         requireNonNull(invalidSupplyCode);
 
         validateTrue(
-                treasuryRel.accountNumber() == token.treasuryAccountNumber()
-                        && token.tokenNumber() == treasuryRel.tokenNumber(),
+                treasuryRel.accountId().equals(token.treasuryAccountId())
+                        && token.tokenId().equals(treasuryRel.tokenId()),
                 FAIL_INVALID);
         final long newTotalSupply = token.totalSupply() + amount;
 
@@ -119,7 +129,7 @@ public class BaseTokenHandler {
             validateTrue(token.maxSupply() >= newTotalSupply, TOKEN_MAX_SUPPLY_REACHED);
         }
 
-        final var treasuryAccount = accountStore.get(asAccount(treasuryRel.accountNumber()));
+        final var treasuryAccount = accountStore.get(treasuryRel.accountId());
         validateTrue(treasuryAccount != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
         final long newTreasuryBalance = treasuryRel.balance() + amount;
@@ -175,7 +185,7 @@ public class BaseTokenHandler {
         final var firstOfNewTokenRels = newTokenRels.get(0);
         final var updatedAcct = account.copyBuilder()
                 // replace the head token number with the first token number of the new tokenRels
-                .headTokenNumber(firstOfNewTokenRels.tokenNumber())
+                .headTokenNumber(firstOfNewTokenRels.tokenId().tokenNum())
                 // and also update the account's total number of token associations
                 .numberAssociations(account.numberAssociations() + newTokenRels.size())
                 .build();
@@ -216,13 +226,13 @@ public class BaseTokenHandler {
                 final var lastOfNewTokenRels = newTokenRels.remove(newTokenRels.size() - 1);
                 final var headTokenAsNonHeadTokenRel = headTokenRel
                         .copyBuilder()
-                        .previousToken(lastOfNewTokenRels.tokenNumber())
+                        .previousToken(lastOfNewTokenRels.tokenId())
                         .build(); // the old head token rel is no longer the head
 
                 // Also connect the last of the new tokenRels to the old head token rel
                 newTokenRels.add(lastOfNewTokenRels
                         .copyBuilder()
-                        .nextToken(headTokenAsNonHeadTokenRel.tokenNumber())
+                        .nextToken(headTokenAsNonHeadTokenRel.tokenId())
                         .build());
                 tokenRelStore.put(headTokenAsNonHeadTokenRel);
             } else {
@@ -250,28 +260,26 @@ public class BaseTokenHandler {
             // Link each of the new token IDs together in a doubly-linked list way by setting each
             // token relation's previous and next token IDs.
 
-            // Compute the previous and next token IDs. Unfortunately `TokenRelation` doesn't
-            // allow for null values, so a value of '0' will have to indicate a null pointer to
-            // the previous or next token (since no token number 0 can exist)
-            long prevTokenId = 0;
-            long nextTokenId = 0;
+            // Compute the previous and next token IDs.
+            TokenID prevTokenId = null;
+            TokenID nextTokenId = null;
             if (i - 1 >= 0) { // if there is a previous token
                 prevTokenId = Optional.ofNullable(tokens.get(i - 1))
-                        .map(Token::tokenNumber)
-                        .orElse(0L);
+                        .map(Token::tokenId)
+                        .orElse(null);
             }
             if (i + 1 < tokens.size()) { // if there is a next token
                 nextTokenId = Optional.ofNullable(tokens.get(i + 1))
-                        .map(Token::tokenNumber)
-                        .orElse(0L);
+                        .map(Token::tokenId)
+                        .orElse(null);
             }
 
             // Create the new token relation
             final var isFrozen = token.hasFreezeKey() && token.accountsFrozenByDefault();
             final var kycGranted = !token.hasKycKey();
             final var newTokenRel = new TokenRelation(
-                    token.tokenNumber(),
-                    account.accountNumber(),
+                    token.tokenId(),
+                    asAccount(account.accountNumber()),
                     0,
                     isFrozen,
                     kycGranted,
@@ -284,7 +292,126 @@ public class BaseTokenHandler {
         return newTokenRels;
     }
 
+    /**
+     * Creates a new {@link TokenRelation} with the account and token. This is called when there is
+     * no association yet, but have open slots for maxAutoAssociations on the account.
+     * @param account the account to link the tokens to
+     * @param token the token to link to the account
+     * @param accountStore the account store
+     * @param tokenRelStore the token relation store
+     * @param context the handle context
+     */
+    protected void autoAssociate(
+            @NonNull final Account account,
+            @NonNull final Token token,
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final WritableTokenRelationStore tokenRelStore,
+            @NonNull final HandleContext context) {
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
+
+        final var accountId = asAccount(account.accountNumber());
+        final var tokenId = token.tokenId();
+        // If token is already associated, no need to associate again
+        validateTrue(tokenRelStore.get(accountId, tokenId) == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+        validateTrue(
+                tokenRelStore.sizeOfState() + 1 < tokensConfig.maxAggregateRels(),
+                MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+
+        // Check is number of used associations is less than maxAutoAssociations
+        final var numAssociations = account.numberAssociations();
+        validateFalse(
+                entitiesConfig.limitTokenAssociations() && numAssociations >= tokensConfig.maxPerAccount(),
+                TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+
+        final var maxAutoAssociations = account.maxAutoAssociations();
+        final var usedAutoAssociations = account.usedAutoAssociations();
+        validateFalse(usedAutoAssociations >= maxAutoAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+
+        // Create new token relation and commit to store
+        final var newTokenRel = TokenRelation.newBuilder()
+                .tokenId(tokenId)
+                .accountId(accountId)
+                .automaticAssociation(true)
+                .kycGranted(!token.hasKycKey())
+                .frozen(token.hasFreezeKey() && token.accountsFrozenByDefault())
+                .previousToken((TokenID) null)
+                .nextToken(asToken(account.headTokenNumber()))
+                .build();
+
+        final var copyAccount = account.copyBuilder()
+                .numberAssociations(numAssociations + 1)
+                .usedAutoAssociations(usedAutoAssociations + 1)
+                .headTokenNumber(tokenId.tokenNum())
+                .build();
+
+        accountStore.put(copyAccount);
+        tokenRelStore.put(newTokenRel);
+    }
+
+    /**
+     * Adjust fungible balances for the given token relationship and account by the given adjustment.
+     * NOTE: This updates account's numOfPositiveBalances and puts to modifications on state.
+     * @param tokenRel token relationship
+     * @param account account to be adjusted
+     * @param adjustment adjustment to be made
+     * @param tokenRelStore token relationship store
+     * @param accountStore account store
+     */
+    protected void adjustBalance(
+            @NonNull final TokenRelation tokenRel,
+            @NonNull final Account account,
+            final long adjustment,
+            @NonNull final WritableTokenRelationStore tokenRelStore,
+            @NonNull final WritableAccountStore accountStore) {
+        requireNonNull(tokenRel);
+        requireNonNull(account);
+        requireNonNull(tokenRelStore);
+        requireNonNull(accountStore);
+
+        final var originalBalance = tokenRel.balance();
+        final var newBalance = originalBalance + adjustment;
+        validateTrue(newBalance >= 0, INSUFFICIENT_TOKEN_BALANCE);
+
+        final var copyRel = tokenRel.copyBuilder();
+        tokenRelStore.put(copyRel.balance(newBalance).build());
+
+        var numPositiveBalances = account.numberPositiveBalances();
+        // If the original balance is zero, then the receiving account's numPositiveBalances has to
+        // be increased
+        // and if the newBalance is zero, then the sending account's numPositiveBalances has to be
+        // decreased
+        if (newBalance == 0 && adjustment < 0) {
+            numPositiveBalances--;
+        } else if (originalBalance == 0 && adjustment > 0) {
+            numPositiveBalances++;
+        }
+        final var copyAccount = account.copyBuilder();
+        accountStore.put(copyAccount.numberPositiveBalances(numPositiveBalances).build());
+        // TODO: Need to track units change in record in finalize method for this
+    }
+
+    protected void validateNotFrozenAndKycOnRelation(@NonNull final TokenRelation rel) {
+        validateTrue(!rel.frozen(), ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN);
+        validateTrue(rel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+    }
+
     /* ------------------------- Helper functions ------------------------- */
+
+    /**
+     * Returns true if the given token update op is an expiry-only update op.
+     * This is needed for validating whether a token update op has admin key present on the token,
+     * to update any other fields other than expiry.
+     * @param op the token update op to check
+     * @return true if the given token update op is an expiry-only update op
+     */
+    public static boolean isExpiryOnlyUpdateOp(@NonNull final TokenUpdateTransactionBody op) {
+        final var defaultOp = TokenUpdateTransactionBody.DEFAULT;
+        final var copyDefaultWithExpiry =
+                defaultOp.copyBuilder().expiry(op.expiry()).token(op.token()).build();
+        return op.equals(copyDefaultWithExpiry);
+    }
+
     @NonNull
     public static TokenID asToken(final long num) {
         return TokenID.newBuilder().tokenNum(num).build();

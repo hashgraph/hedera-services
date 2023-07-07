@@ -136,8 +136,7 @@ public class CustomFeesValidator {
                 case FRACTIONAL_FEE -> {
                     // fractional fee can be only applied to fungible common tokens
                     validateTrue(isFungibleCommon(tokenType), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
-                    final var tokenId =
-                            TokenID.newBuilder().tokenNum(token.tokenNumber()).build();
+                    final var tokenId = token.tokenId();
                     final var relation = tokenRelationStore.get(collectorId, tokenId);
                     validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
                 }
@@ -214,10 +213,7 @@ public class CustomFeesValidator {
             if (fixedFee.denominatingTokenIdOrThrow().tokenNum() == 0L) {
                 validateTrue(isFungibleCommon(tokenType), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
                 final var copy = fee.copyBuilder();
-                copy.fixedFee(fixedFee.copyBuilder()
-                        .denominatingTokenId(TokenID.newBuilder()
-                                .tokenNum(createdToken.tokenNumber())
-                                .build()));
+                copy.fixedFee(fixedFee.copyBuilder().denominatingTokenId(createdToken.tokenId()));
                 feesWithCollectorsToAutoAssociate.add(copy.build());
             } else {
                 validateExplicitTokenDenomination(

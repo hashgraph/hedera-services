@@ -27,10 +27,13 @@ import javax.inject.Singleton;
 @Module
 public interface HederaStateInjectionModule {
     @Binds
-    abstract RecordCache provideRecordCache(RecordCacheImpl cache);
+    LedgerValidator provideLedgerValidator(LedgerValidatorImpl impl);
 
     @Binds
-    abstract DeduplicationCache provideDeduplicationCache(DeduplicationCacheImpl cache);
+    RecordCache provideRecordCache(RecordCacheImpl cache);
+
+    @Binds
+    DeduplicationCache provideDeduplicationCache(DeduplicationCacheImpl cache);
 
     @Provides
     @Singleton

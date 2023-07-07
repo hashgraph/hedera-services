@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.infra;
 
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.service.contract.impl.state.StorageChanges;
+import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
 import com.hedera.node.app.spi.meta.bni.Scope;
 import com.hedera.node.app.spi.state.WritableKVState;
@@ -53,7 +53,7 @@ public class LegibleStorageManager {
      */
     public void rewrite(
             @NonNull final Scope scope,
-            @NonNull final List<StorageChanges> changes,
+            @NonNull final List<StorageAccesses> changes,
             @NonNull final List<StorageSizeChange> sizeChanges,
             @NonNull final WritableKVState<SlotKey, SlotValue> storage) {
         throw new AssertionError("Not implemented");

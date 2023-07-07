@@ -54,6 +54,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_NUM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_NONCES_EXTERNALIZATION_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
@@ -82,7 +83,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_ALLOWANCES_MAX_TXN_LIMIT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_RECORD_FILE_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIG_FILE_VERSION;
@@ -113,8 +113,10 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_IS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_STAKE_REWARDED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_BALANCE_THRESHOLD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_START_THRESH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
@@ -255,9 +257,12 @@ public class GlobalDynamicProperties implements EvmProperties {
     private Set<CustomFeeType> htsUnsupportedCustomFeeReceiverDebits;
     private boolean atomicCryptoTransferEnabled;
     private boolean enableHRCAssociate;
+    private boolean enableContractsNoncesExternalization;
     private KnownBlockValues knownBlockValues;
     private long exchangeRateGasReq;
     private long stakingRewardRate;
+    private long stakingMaxStakeRewarded;
+    private long stakingRewardBalanceThreshold;
     private long stakingStartThreshold;
     private int nodeRewardPercent;
     private int stakingRewardPercent;
@@ -283,7 +288,6 @@ public class GlobalDynamicProperties implements EvmProperties {
     private ContractStoragePriceTiers storagePriceTiers;
     private boolean compressRecordFilesOnCreation;
     private boolean tokenAutoCreationsEnabled;
-    private boolean doTraceabilityExport;
     private boolean compressAccountBalanceFilesOnCreation;
     private long traceabilityMaxExportsPerConsSec;
     private long traceabilityMinFreeToUsedGasThrottleRatio;
@@ -405,8 +409,11 @@ public class GlobalDynamicProperties implements EvmProperties {
         atomicCryptoTransferEnabled =
                 properties.getBooleanProperty(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED);
         enableHRCAssociate = properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED);
+        enableContractsNoncesExternalization = properties.getBooleanProperty(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED);
         knownBlockValues = properties.getBlockValuesProperty(CONTRACTS_KNOWN_BLOCK_HASH);
         exchangeRateGasReq = properties.getLongProperty(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST);
+        stakingMaxStakeRewarded = properties.getLongProperty(STAKING_MAX_STAKE_REWARDED);
+        stakingRewardBalanceThreshold = properties.getLongProperty(STAKING_REWARD_BALANCE_THRESHOLD);
         stakingRewardRate = properties.getLongProperty(STAKING_REWARD_RATE);
         stakingStartThreshold = properties.getLongProperty(STAKING_START_THRESH);
         nodeRewardPercent = properties.getIntProperty(STAKING_FEES_NODE_REWARD_PERCENT);
@@ -436,7 +443,6 @@ public class GlobalDynamicProperties implements EvmProperties {
         compressRecordFilesOnCreation = properties.getBooleanProperty(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION);
         tokenAutoCreationsEnabled = properties.getBooleanProperty(TOKENS_AUTO_CREATIONS_ENABLED);
         compressAccountBalanceFilesOnCreation = properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION);
-        doTraceabilityExport = properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION);
         traceabilityMaxExportsPerConsSec = properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC);
         traceabilityMinFreeToUsedGasThrottleRatio =
                 properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO);
@@ -785,6 +791,10 @@ public class GlobalDynamicProperties implements EvmProperties {
         return enableHRCAssociate;
     }
 
+    public boolean isContractsNoncesExternalizationEnabled() {
+        return enableContractsNoncesExternalization;
+    }
+
     public KnownBlockValues knownBlockValues() {
         return knownBlockValues;
     }
@@ -793,7 +803,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         return exchangeRateGasReq;
     }
 
-    public long getStakingRewardRate() {
+    public long stakingRewardRate() {
         return stakingRewardRate;
     }
 
@@ -901,10 +911,6 @@ public class GlobalDynamicProperties implements EvmProperties {
         return compressAccountBalanceFilesOnCreation;
     }
 
-    public boolean shouldDoTraceabilityExport() {
-        return doTraceabilityExport;
-    }
-
     public long traceabilityMinFreeToUsedGasThrottleRatio() {
         return traceabilityMinFreeToUsedGasThrottleRatio;
     }
@@ -964,5 +970,26 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public int cacheCryptoTransferWarmThreads() {
         return cacheWarmThreads;
+    }
+
+    /**
+     * The maximum amount of stake that can be rewarded at the full reward rate (in tinybars). If twice this
+     * amount were staked for reward, then the effective reward rate would be cut in half.
+     *
+     * @return the maximum amount of stake that can be rewarded at the full reward rate
+     */
+    public long maxStakeRewarded() {
+        return stakingMaxStakeRewarded;
+    }
+
+    /**
+     * The reward threshold balance of account {@code 0.0.800} (in tinybars). When the balance is this or more,
+     * then the reward rate set in the {@code staking.rewardRate} property is used.  When the balance is less
+     * than this threshold, then a fraction of that reward rate is used.
+     *
+     * @return the minimum balance of account {@code 0.0.800} required for the full reward rate to be used
+     */
+    public long stakingRewardBalanceThreshold() {
+        return stakingRewardBalanceThreshold;
     }
 }

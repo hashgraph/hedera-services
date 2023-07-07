@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.STORAGE_KEY;
+import static com.hedera.node.app.service.contract.impl.state.ContractSchema.STORAGE_KEY;
 
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
@@ -68,7 +68,7 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
     @Override
     public void commit() {
         // Get the pending changes and summarize their effects on size
-        final var changes = evmFrameState.getPendingStorageChanges();
+        final var changes = evmFrameState.getStorageChanges();
         final var sizeEffects = summarizeSizeEffects(changes);
 
         // Validate the effects on size are legal
@@ -87,7 +87,7 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
 
     private record SizeEffects(long finalSlotsUsed, List<StorageSizeChange> sizeChanges) {}
 
-    private SizeEffects summarizeSizeEffects(@NonNull final List<StorageChanges> allChanges) {
+    private SizeEffects summarizeSizeEffects(@NonNull final List<StorageAccesses> allChanges) {
         // The initial K/V state will still include the slots being "zeroed out"; i.e., removed
         var finalSlotsUsed = evmFrameState.getKvStateSize();
         final List<StorageSizeChange> sizeChanges = new ArrayList<>();
