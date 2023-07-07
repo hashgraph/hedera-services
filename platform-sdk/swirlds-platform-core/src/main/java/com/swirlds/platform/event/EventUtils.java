@@ -19,16 +19,17 @@ package com.swirlds.platform.event;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.PlatformEvent;
-import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
@@ -40,8 +41,7 @@ public abstract class EventUtils {
     /**
      * Converts the event to a short string. Should be replaced by {@link EventStrings#toShortString(EventImpl)}
      *
-     * @param event
-     * 		the event to convert
+     * @param event the event to convert
      * @return a short string
      */
     public static String toShortString(final EventImpl event) {
@@ -51,8 +51,7 @@ public abstract class EventUtils {
     /**
      * Convert an array of events to a single string, using toShortString() on each, and separating with commas.
      *
-     * @param events
-     * 		array of events to convert
+     * @param events array of events to convert
      * @return a single string with a comma separated list of all of the event strings
      */
     public static String toShortStrings(final EventImpl[] events) {
@@ -79,8 +78,7 @@ public abstract class EventUtils {
      * Prepares consensus events for shadow graph during a restart or reconnect by sorting the events by generation and
      * checking for generation gaps.
      *
-     * @param events
-     * 		events supplied by consensus
+     * @param events events supplied by consensus
      * @return a list of input events, sorted and checked
      */
     public static List<EventImpl> prepareForShadowGraph(final EventImpl[] events) {
@@ -106,10 +104,8 @@ public abstract class EventUtils {
     /**
      * Checks if there is a generation difference of more than 1 between events, if there is, throws an exception
      *
-     * @param events
-     * 		events to look for generation gaps in, sorted in ascending order by generation
-     * @throws IllegalArgumentException
-     * 		if any problem is found with the signed state events
+     * @param events events to look for generation gaps in, sorted in ascending order by generation
+     * @throws IllegalArgumentException if any problem is found with the signed state events
      */
     public static void checkForGenerationGaps(final List<EventImpl> events) {
         if (events == null || events.isEmpty()) {
@@ -154,10 +150,8 @@ public abstract class EventUtils {
     /**
      * Get the creator ID of the event. If null return {@link EventConstants#CREATOR_ID_UNDEFINED}.
      *
-     * @param event
-     * 		the event
-     * @return the creator ID as {@code long} of the given event, or the self-ID
-     * 		if the given event is {@code null}
+     * @param event the event
+     * @return the creator ID as {@code long} of the given event, or the self-ID if the given event is {@code null}
      */
     @Nullable
     public static NodeId getCreatorId(@Nullable final BaseEvent event) {
@@ -171,14 +165,13 @@ public abstract class EventUtils {
     /**
      * Compute the creation time of a new event.
      *
-     * @param now
-     * 		a time {@code Instant}
-     * @param selfParent
-     * 		the self-parent of the event to be created
+     * @param now        a time {@code Instant}
+     * @param selfParent the self-parent of the event to be created
      * @return a time {@code Instant} which defines the creation time of an event
      */
-    public static Instant getChildTimeCreated(final Instant now, final BaseEvent selfParent) {
-        Instant timeCreated = now;
+    public static Instant getChildTimeCreated(@NonNull final Instant now, @Nullable final BaseEvent selfParent) {
+
+        Objects.requireNonNull(now);
 
         if (selfParent != null) {
             // Ensure that events created by self have a monotonically increasing creation time.
@@ -197,30 +190,50 @@ public abstract class EventUtils {
             // where n is the number of transactions in x (so each can have a different time),
             // or n=1 if there are no transactions (so each event is a different time).
 
-            final Transaction[] transactions = selfParent.getHashedData().getTransactions();
-            long minimumTimeIncrement = 1;
-            if (transactions != null && transactions.length > 0) {
-                minimumTimeIncrement = transactions.length;
-            }
+            final int parentTransactionCount = selfParent.getHashedData().getTransactions() == null
+                    ? 0
+                    : selfParent.getHashedData().getTransactions().length;
 
-            final Instant minimumNextEventTime =
-                    selfParent.getHashedData().getTimeCreated().plusNanos(minimumTimeIncrement);
-
-            if (timeCreated.isBefore(minimumNextEventTime)) {
-                timeCreated = minimumNextEventTime;
-            }
+            return calculateNewEventCreationTime(
+                    now, selfParent.getHashedData().getTimeCreated(), parentTransactionCount);
         }
 
-        return timeCreated;
+        return now;
+    }
+
+    /**
+     * Calculate the creation time for a new event.
+     * <p>
+     * Regardless of whatever the host computer's clock says, the event creation time must always advance from self
+     * parent to child. Further, the time in between the self parent and the child must be large enough so that every
+     * transaction in the parent can be assigned a unique timestamp at nanosecond precision.
+     *
+     * @param now                        the current time
+     * @param selfParentCreationTime     the creation time of the self parent
+     * @param selfParentTransactionCount the number of transactions in the self parent
+     * @return the creation time for the new event
+     */
+    @NonNull
+    public static Instant calculateNewEventCreationTime(
+            @NonNull final Instant now,
+            @NonNull final Instant selfParentCreationTime,
+            final int selfParentTransactionCount) {
+
+        final int minimumIncrement = Math.max(1, selfParentTransactionCount);
+        final Instant minimumNextEventTime = selfParentCreationTime.plusNanos(minimumIncrement);
+        if (now.isBefore(minimumNextEventTime)) {
+            return minimumNextEventTime;
+        } else {
+            return now;
+        }
     }
 
     /**
      * Get the generation of an event. Returns {@value EventConstants#GENERATION_UNDEFINED} for null events.
      *
-     * @param event
-     * 		an event
-     * @return the generation number of the given event,
-     * 		or {@value EventConstants#GENERATION_UNDEFINED} is the event is {@code null}
+     * @param event an event
+     * @return the generation number of the given event, or {@value EventConstants#GENERATION_UNDEFINED} is the event is
+     * {@code null}
      */
     public static long getEventGeneration(final BaseEvent event) {
         if (event == null) {
@@ -232,10 +245,9 @@ public abstract class EventUtils {
     /**
      * Get the base hash of an event. Returns null for null events.
      *
-     * @param event
-     * 		an event
-     * @return a {@code byte[]} which contains the hash bytes of the given event, or {@code null}
-     * 		if the given event is {@code null}
+     * @param event an event
+     * @return a {@code byte[]} which contains the hash bytes of the given event, or {@code null} if the given event is
+     * {@code null}
      */
     public static byte[] getEventHash(final BaseEvent event) {
         if (event == null) {

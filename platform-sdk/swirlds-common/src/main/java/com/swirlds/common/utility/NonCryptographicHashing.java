@@ -19,6 +19,8 @@ package com.swirlds.common.utility;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 import static com.swirlds.common.utility.CommonUtils.getNormalisedStringBytes;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /**
  * <p>
  * This class contains a collection of methods for hashing basic data types.
@@ -64,7 +66,7 @@ public final class NonCryptographicHashing {
      * 		the length of the data
      * @return a long to mix into the hash
      */
-    private static long computeMixin(final DataType type, final long length) {
+    private static long computeMixin(@NonNull final DataType type, final long length) {
         return ((long) type.ordinal()) | (length << 32);
     }
 
@@ -76,7 +78,6 @@ public final class NonCryptographicHashing {
      * @return a non-cryptographic long hash
      */
     public static long hash64(final long x0) {
-
         return perm64(perm64(computeMixin(DataType.LONG, 1)) ^ x0);
     }
 
@@ -338,7 +339,7 @@ public final class NonCryptographicHashing {
      * 		an array of longs
      * @return a non-cryptographic integer hash
      */
-    public static long hash64(final long... x) {
+    public static long hash64(@NonNull final long... x) {
         long t = perm64(computeMixin(DataType.LONG_ARRAY, x.length));
         for (final long l : x) {
             t = perm64(t ^ l);
@@ -582,7 +583,7 @@ public final class NonCryptographicHashing {
      * 		an array of longs
      * @return a non-cryptographic integer hash
      */
-    public static int hash32(final long... x) {
+    public static int hash32(@NonNull final long... x) {
         return (int) hash64(x);
     }
 
@@ -593,7 +594,7 @@ public final class NonCryptographicHashing {
      * 		a byte array
      * @return a non-cryptographic long hash
      */
-    public static long hash64(final byte[] bytes) {
+    public static long hash64(@NonNull final byte[] bytes) {
         long hash = perm64(computeMixin(DataType.BYTE_ARRAY, bytes.length));
         for (int i = 0; i < bytes.length; i += 8) {
             hash = perm64(hash ^ byteArrayToLong(bytes, i));
@@ -608,7 +609,7 @@ public final class NonCryptographicHashing {
      * 		a byte array
      * @return a non-cryptographic int hash
      */
-    public static long hash32(final byte[] bytes) {
+    public static long hash32(@NonNull final byte[] bytes) {
         return (int) hash64(bytes);
     }
 
@@ -619,7 +620,7 @@ public final class NonCryptographicHashing {
      * 		a string
      * @return a non-cryptographic long hash
      */
-    public static long hash64(final String string) {
+    public static long hash64(@NonNull final String string) {
         final byte[] bytes = getNormalisedStringBytes(string);
 
         long hash = perm64(computeMixin(DataType.STRING, bytes.length));
@@ -636,7 +637,7 @@ public final class NonCryptographicHashing {
      * 		a string
      * @return a non-cryptographic int hash
      */
-    public static int hash32(final String string) {
+    public static int hash32(@NonNull final String string) {
         return (int) hash64(string);
     }
 
@@ -655,7 +656,11 @@ public final class NonCryptographicHashing {
      * Leemon wrote this, it's magic and does magic things. Like holy molly does
      * this algorithm resolve some nasty hash collisions for troublesome data sets.
      * Don't mess with this method.
-     * </p>
+     *
+     * <p>
+     * Warning: there currently exist production use cases that will break if this hashing algorithm is changed.
+     * If modifications to this hashing algorithm are ever required, we will need to "fork" this class and leave
+     * the old algorithm intact.
      */
     private static long perm64(long x) {
 

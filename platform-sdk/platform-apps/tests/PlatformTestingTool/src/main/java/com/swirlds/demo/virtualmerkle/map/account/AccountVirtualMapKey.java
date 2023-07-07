@@ -16,6 +16,7 @@
 
 package com.swirlds.demo.virtualmerkle.map.account;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -107,6 +108,10 @@ public class AccountVirtualMapKey implements VirtualKey {
 
     public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
         return realmID == buffer.getLong() && shardId == buffer.getLong() && accountID == buffer.getLong();
+    }
+
+    public boolean equals(final BufferedData buffer) throws IOException {
+        return realmID == buffer.readLong() && shardId == buffer.readLong() && accountID == buffer.readLong();
     }
 
     /**

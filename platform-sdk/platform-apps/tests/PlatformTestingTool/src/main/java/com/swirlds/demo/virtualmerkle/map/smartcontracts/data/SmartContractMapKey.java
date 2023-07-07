@@ -77,6 +77,10 @@ public final class SmartContractMapKey implements VirtualKey {
         return ClassVersion.ORIGINAL;
     }
 
+    public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
+        return contractId == buffer.getLong() && keyValuePairIndex == buffer.getLong();
+    }
+
     public boolean equals(final BufferedData buffer) throws IOException {
         return contractId == buffer.readLong() && keyValuePairIndex == buffer.readLong();
     }

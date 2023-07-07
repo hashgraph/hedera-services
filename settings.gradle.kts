@@ -23,6 +23,7 @@ pluginManagement {
         mavenCentral()
         maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
     }
+    @Suppress("UnstableApiUsage") includeBuild("build-logic")
 }
 
 plugins {
@@ -32,63 +33,63 @@ plugins {
     id("me.champeau.includegit").version("0.1.6")
 }
 
-includeBuild(".") // https://github.com/gradlex-org/java-module-dependencies/issues/26
+includeBuild("hedera-platform")
 
 include(":hedera-node")
 
-include(":node-app-service-network-admin", "hedera-network-admin-service")
+include(":app", "hedera-app")
 
-include(":node-app-service-network-admin-impl", "hedera-network-admin-service-impl")
+include(":app-hapi-fees", "hapi-fees")
 
-include(":node-app-service-consensus", "hedera-consensus-service")
+include(":app-hapi-utils", "hapi-utils")
 
-include(":node-app-service-consensus-impl", "hedera-consensus-service-impl")
+include(":app-service-consensus", "hedera-consensus-service")
 
-include(":node-app-service-file", "hedera-file-service")
+include(":app-service-consensus-impl", "hedera-consensus-service-impl")
 
-include(":node-app-service-file-impl", "hedera-file-service-impl")
+include(":app-service-contract", "hedera-smart-contract-service")
 
-include(":node-app-service-schedule", "hedera-schedule-service")
+include(":app-service-contract-impl", "hedera-smart-contract-service-impl")
 
-include(":node-app-service-schedule-impl", "hedera-schedule-service-impl")
+include(":app-service-evm", "hedera-evm")
 
-include(":node-app-service-contract", "hedera-smart-contract-service")
+include(":app-service-evm-impl", "hedera-evm-impl")
 
-include(":node-app-service-contract-impl", "hedera-smart-contract-service-impl")
+include(":app-service-file", "hedera-file-service")
 
-include(":node-app-service-token", "hedera-token-service")
+include(":app-service-file-impl", "hedera-file-service-impl")
 
-include(":node-app-service-token-impl", "hedera-token-service-impl")
+include(":app-service-mono", "hedera-mono-service")
 
-include(":node-app-service-util", "hedera-util-service")
+include(":app-service-network-admin", "hedera-network-admin-service")
 
-include(":node-app-service-util-impl", "hedera-util-service-impl")
+include(":app-service-network-admin-impl", "hedera-network-admin-service-impl")
 
-include(":node-app-hapi-utils", "hapi-utils")
+include(":app-service-schedule", "hedera-schedule-service")
 
-include(":node-app-hapi-fees", "hapi-fees")
+include(":app-service-schedule-impl", "hedera-schedule-service-impl")
 
-include(":node-hapi", "hapi")
+include(":app-service-token", "hedera-token-service")
 
-include(":node-config", "hedera-config")
+include(":app-service-token-impl", "hedera-token-service-impl")
 
-include(":node-app", "hedera-app")
+include(":app-service-util", "hedera-util-service")
 
-include(":node-app-spi", "hedera-app-spi")
+include(":app-service-util-impl", "hedera-util-service-impl")
 
-include(":node-app-service-evm", "hedera-evm")
+include(":app-spi", "hedera-app-spi")
 
-include(":node-app-service-evm-impl", "hedera-evm-impl")
+include(":config", "hedera-config")
 
-include(":node-app-service-mono", "hedera-mono-service")
+include(":hapi", "hapi")
 
 include(":services-cli", "cli-clients")
 
-include(":hedera-node:test-clients")
+include(":test-clients", "test-clients")
 
 fun include(name: String, path: String) {
-    include(":hedera-node$name")
-    project(":hedera-node$name").projectDir = File(rootDir, "hedera-node/$path")
+    include(name)
+    project(name).projectDir = File(rootDir, "hedera-node/$path")
 }
 
 // Enable Gradle Build Scan
@@ -126,92 +127,8 @@ dependencyResolutionManagement {
         // runtime distribution. These libs can be depended on during compilation, or bundled as
         // part of runtime.
         create("libs") {
-            val besuNativeVersion = "0.6.1"
-            val besuVersion = "23.1.2"
-            val bouncycastleVersion = "1.70"
-            val daggerVersion = "2.42"
-            val eclipseCollectionsVersion = "10.4.0"
-            val helidonVersion = "3.0.2"
-            val ioGrpcVersion = "1.45.1"
-            val jacksonVersion = "2.13.3"
-            val log4jVersion = "2.17.1"
-            val mockitoVersion = "4.6.1"
-            val swirldsVersion = "0.39.0-alpha.3"
-            val systemStubsVersion = "2.0.2"
-            val testContainersVersion = "1.17.2"
-            val tuweniVersion = "2.2.0"
-
-            version("awaitility", "4.2.0")
-            version("com.fasterxml.jackson.core", jacksonVersion)
-            version("com.fasterxml.jackson.databind", jacksonVersion)
-            version("com.github.benmanes.caffeine", "3.0.6")
-            version("com.github.docker.java.api", "3.2.13")
-            version("com.github.spotbugs.annotations", "4.7.3")
-            version("com.google.common", "31.1-jre")
-            version("com.google.protobuf", "3.19.4")
-            version("com.google.protobuf.util", "3.19.2")
-            version("com.hedera.pbj.runtime", "0.6.1")
-            version("com.sun.jna", "5.12.1")
-            version("com.swirlds.base", swirldsVersion)
-            version("com.swirlds.cli", swirldsVersion)
-            version("com.swirlds.common", swirldsVersion)
-            version("com.swirlds.config", swirldsVersion)
-            version("com.swirlds.fchashmap", swirldsVersion)
-            version("com.swirlds.fcqueue", swirldsVersion)
-            version("com.swirlds.jasperdb", swirldsVersion)
-            version("com.swirlds.logging", swirldsVersion)
-            version("com.swirlds.merkle", swirldsVersion)
-            version("com.swirlds.platform", swirldsVersion)
-            version("com.swirlds.test.framework", swirldsVersion)
-            version("com.swirlds.virtualmap", swirldsVersion)
-            version("dagger", daggerVersion)
-            version("dagger.compiler", daggerVersion)
-            version("grpc.protobuf", ioGrpcVersion)
-            version("grpc.stub", ioGrpcVersion)
-            version("headlong", "6.1.1")
-            version("info.picocli", "4.6.3")
-            version("io.github.classgraph", "4.8.65")
-            version("io.grpc", helidonVersion)
-            version("io.helidon.grpc.client", helidonVersion)
-            version("io.helidon.grpc.core", helidonVersion)
-            version("io.helidon.grpc.server", helidonVersion)
-            version("io_helidon_common_configurable", helidonVersion)
-            version("java.annotation", "3.0.2")
-            version("javax.inject", "1")
-            version("net.i2p.crypto.eddsa", "0.3.0")
-            version("org.antlr.antlr4.runtime", "4.11.1")
-            version("org.apache.commons.codec", "1.15")
-            version("org.apache.commons.collections4", "4.4")
-            version("org.apache.commons.io", "2.11.0")
-            version("org.apache.commons.lang3", "3.12.0")
-            version("org.apache.logging.log4j", log4jVersion)
-            version("org.apache.logging.log4j.core", log4jVersion)
-            version("org.apache.logging.log4j.jul", log4jVersion)
-            version("org.assertj.core", "3.23.1")
-            version("org.bouncycastle.pkix", bouncycastleVersion)
-            version("org.bouncycastle.provider", bouncycastleVersion)
-            version("org.eclipse.collections.api", eclipseCollectionsVersion)
-            version("org.eclipse.collections.impl", eclipseCollectionsVersion)
-            version("org.hamcrest", "2.2")
-            version("org.hyperledger.besu.crypto", besuVersion)
-            version("org.hyperledger.besu.datatypes", besuVersion)
-            version("org.hyperledger.besu.evm", besuVersion)
-            version("org.hyperledger.besu.secp256k1", besuNativeVersion)
-            version("org.json", "20210307")
-            version("org.junit.jupiter.api", "5.9.0")
-            version("org.junitpioneer", "2.0.1")
-            version("org.mockito", mockitoVersion)
-            version("org.mockito.inline", mockitoVersion)
-            version("org.mockito.junit.jupiter", mockitoVersion)
-            version("org.opentest4j", "1.2.0")
-            version("org.slf4j", "2.0.3")
-            version("org.testcontainers", testContainersVersion)
-            version("org.testcontainers.junit.jupiter", testContainersVersion)
-            version("tuweni.bytes", tuweniVersion)
-            version("tuweni.units", tuweniVersion)
-            version("uk.org.webcompere.systemstubs.core", systemStubsVersion)
-            version("uk.org.webcompere.systemstubs.jupiter", systemStubsVersion)
-
+            version("google-proto", "3.19.4")
+            version("grpc-proto", "1.45.1")
             version("hapi-proto", hapiProtoVersion)
 
             plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.6.1")

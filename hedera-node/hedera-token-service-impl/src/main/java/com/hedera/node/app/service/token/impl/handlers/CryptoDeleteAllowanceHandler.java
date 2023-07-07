@@ -97,7 +97,8 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
     }
 
     /**
-     * Deletes allowance for the given nft serials. Clears spender on the provided nft serials if the owner owns the serials.
+     * Deletes allowance for the given nft serials.
+     * Clears spender on the provided nft serials if the owner owns the serials.
      * If owner is not specified payer is considered as the owner.
      * If the owner doesn't own these serials throws an exception.
      * @param context handle context
@@ -152,10 +153,18 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
 
                 validateTrue(nft != null, INVALID_NFT_ID);
                 // Check if owner owns the nft
-                validateTrue(isValidOwner(nft, owner.accountNumber(), token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+                // FUTURE: owner will be updated to use an AccountID instead of a long account number
+                // Issue #7243
+                AccountID accountOwner = AccountID.newBuilder()
+                        .accountNum(owner.accountNumber())
+                        .realmNum(0)
+                        .shardNum(0)
+                        .build();
+                validateTrue(isValidOwner(nft, accountOwner, token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
 
                 // Clear spender on the nft
-                final var copy = nft.copyBuilder().spenderNumber(0L).build();
+                // sets account number to AccountIDProtoCodec.ACCOUNT_UNSET
+                final var copy = nft.copyBuilder().spenderId(AccountID.DEFAULT).build();
                 nftStore.put(copy);
             }
         }

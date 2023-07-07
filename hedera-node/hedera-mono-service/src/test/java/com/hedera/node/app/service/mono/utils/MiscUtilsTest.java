@@ -205,6 +205,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.KeyedMerkleLong;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
@@ -212,6 +213,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -220,7 +222,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
@@ -313,7 +314,8 @@ class MiscUtilsTest {
         given(address.getMemo()).willReturn("0.0.3");
         final var book = mock(AddressBook.class);
         given(book.getSize()).willReturn(1);
-        given(book.getAddress(0)).willReturn(address);
+        given(book.getNodeId(0)).willReturn(new NodeId(0));
+        given(book.getAddress(new NodeId(0))).willReturn(address);
 
         final var accounts = MiscUtils.getNodeAccounts(book);
 
@@ -736,7 +738,7 @@ class MiscUtilsTest {
     }
 
     @Test
-    void describesCorrectly() throws DecoderException {
+    void describesCorrectly() throws InvalidKeyException {
         assertEquals("<N/A>", describe(null));
 
         final var key = Key.newBuilder()

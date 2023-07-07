@@ -22,11 +22,12 @@ import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
-import com.swirlds.common.internal.SettingsCommon;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.StatEntry;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -65,7 +66,8 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
         this.statsStringSupplier = (Supplier<Object>) config.getStatsStringSupplier();
         this.resetStatsStringSupplier = (Supplier<Object>) config.getResetStatsStringSupplier();
         if (config.getInit() != null) {
-            config.getInit().apply(SettingsCommon.halfLife);
+            final MetricsConfig metricsConfig = ConfigurationHolder.getConfigData(MetricsConfig.class);
+            config.getInit().apply(metricsConfig.halfLife());
         }
     }
 
@@ -134,10 +136,11 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
      */
     @Override
     public void reset() {
+        final MetricsConfig metricsConfig = ConfigurationHolder.getConfigData(MetricsConfig.class);
         if (reset != null) {
-            reset.accept(SettingsCommon.halfLife);
+            reset.accept(metricsConfig.halfLife());
         } else if (buffered != null) {
-            buffered.reset(SettingsCommon.halfLife);
+            buffered.reset(metricsConfig.halfLife());
         }
     }
 

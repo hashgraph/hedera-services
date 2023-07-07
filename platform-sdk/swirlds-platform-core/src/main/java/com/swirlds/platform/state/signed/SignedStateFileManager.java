@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
@@ -27,7 +26,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedSt
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
 
 import com.swirlds.base.state.Startable;
-import com.swirlds.common.config.BasicConfig;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
@@ -35,9 +34,9 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
+import com.swirlds.platform.config.ThreadConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -127,22 +126,22 @@ public class SignedStateFileManager implements Startable {
             @NonNull final StateToDiskAttemptConsumer stateToDiskAttemptConsumer,
             @NonNull final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer) {
 
-        this.metrics = throwArgNull(metrics, "metrics");
+        this.metrics = Objects.requireNonNull(metrics, "metrics must not be null");
         this.time = time;
         this.selfId = selfId;
         this.mainClassName = mainClassName;
         this.swirldName = swirldName;
         this.stateToDiskAttemptConsumer = stateToDiskAttemptConsumer;
         this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
-        this.minimumGenerationNonAncientConsumer =
-                throwArgNull(minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer");
+        this.minimumGenerationNonAncientConsumer = Objects.requireNonNull(
+                minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer must not be null");
 
-        final BasicConfig basicConfig = context.getConfiguration().getConfigData(BasicConfig.class);
+        final ThreadConfig threadConfig = context.getConfiguration().getConfigData(ThreadConfig.class);
 
         this.taskQueue = new QueueThreadConfiguration<Runnable>(threadManager)
                 .setCapacity(stateConfig.stateSavingQueueSize())
                 .setMaxBufferSize(1)
-                .setPriority(basicConfig.threadPriorityNonSync())
+                .setPriority(threadConfig.threadPriorityNonSync())
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("signed-state-file-manager")

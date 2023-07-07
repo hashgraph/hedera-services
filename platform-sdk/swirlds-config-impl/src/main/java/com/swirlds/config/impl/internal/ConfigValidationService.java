@@ -29,6 +29,7 @@ import com.swirlds.config.impl.validators.annotation.internal.NegativeConstraint
 import com.swirlds.config.impl.validators.annotation.internal.PositiveConstraintsValidation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
@@ -60,7 +61,7 @@ class ConfigValidationService implements ConfigLifecycle {
 
     void addValidator(@NonNull final ConfigValidator validator) {
         throwIfInitialized();
-        ArgumentUtils.throwArgNull(validator, "validator");
+        Objects.requireNonNull(validator, "validator must not be null");
         validators.add(validator);
     }
 
@@ -91,7 +92,7 @@ class ConfigValidationService implements ConfigLifecycle {
 
     void validate(@NonNull final Configuration configuration) {
         throwIfNotInitialized();
-        ArgumentUtils.throwArgNull(configuration, "configuration");
+        Objects.requireNonNull(configuration, "configuration must not be null");
         final List<ConfigViolation> violations =
                 validators.stream().flatMap(v -> v.validate(configuration)).collect(Collectors.toList());
         if (!violations.isEmpty()) {
@@ -107,8 +108,8 @@ class ConfigValidationService implements ConfigLifecycle {
             @NonNull final ConfigPropertyConstraint<T> validator) {
         throwIfInitialized();
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
-        ArgumentUtils.throwArgNull(valueType, "valueType");
-        ArgumentUtils.throwArgNull(validator, "validator");
+        Objects.requireNonNull(valueType, "valueType must not be null");
+        Objects.requireNonNull(validator, "validator must not be null");
         constraintValidator.addConstraint(propertyName, valueType, validator);
     }
 }

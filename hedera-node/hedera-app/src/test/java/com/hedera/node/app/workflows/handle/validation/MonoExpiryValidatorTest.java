@@ -31,7 +31,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
@@ -42,7 +41,6 @@ import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.function.LongSupplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,13 +72,8 @@ class MonoExpiryValidatorTest {
     @Mock
     private HederaNumbers numbers;
 
-    @Mock
-    private Account account;
-
     @Mock(strictness = Strictness.LENIENT)
     private ConfigProvider configProvider;
-
-    private VersionedConfiguration configuration;
 
     private MonoExpiryValidator subject;
 
@@ -88,8 +81,8 @@ class MonoExpiryValidatorTest {
     void setUp() {
         subject =
                 new MonoExpiryValidator(accountStore, attributeValidator, consensusSecondNow, numbers, configProvider);
-        configuration =
-                new VersionedConfigImpl(new HederaTestConfigBuilder().getOrCreateConfig(), DEFAULT_CONFIG_VERSION);
+        final var configuration =
+                new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), DEFAULT_CONFIG_VERSION);
         given(configProvider.getConfiguration()).willReturn(configuration);
     }
 

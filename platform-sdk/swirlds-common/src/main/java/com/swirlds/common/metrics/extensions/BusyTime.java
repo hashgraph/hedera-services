@@ -16,12 +16,11 @@
 
 package com.swirlds.common.metrics.extensions;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.FloatFormats;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.time.IntegerEpochTime;
-import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.ByteUtils;
 import com.swirlds.common.utility.StackTrace;
 import com.swirlds.common.utility.throttle.RateLimiter;
@@ -55,10 +54,10 @@ public class BusyTime {
     private final RateLimiter logLimiter;
 
     /**
-     * The default constructor, uses the {@link OSTime} instance to get the current time
+     * The default constructor, uses the {@link Time#getCurrent()} instance to get the current time
      */
     public BusyTime() {
-        this(OSTime.getInstance());
+        this(Time.getCurrent());
     }
 
     /**
@@ -171,7 +170,7 @@ public class BusyTime {
         if ((statusChange == WORK_START && !isIdle(currentStatus))
                 || (statusChange == WORK_END && isIdle(currentStatus))) {
             // this means that the metric has not been updated correctly, we will not change the value
-            if (logLimiter.request()) {
+            if (logLimiter.requestAndTrigger()) {
                 log.error(
                         LogMarker.EXCEPTION.getMarker(),
                         "BusyTime metric has been updated incorrectly. "

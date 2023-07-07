@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -194,7 +193,8 @@ class EndOfStakingPeriodCalculatorTest {
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
         given(dynamicProperties.sumOfConsensusWeights()).willReturn(500);
         given(dynamicProperties.maxDailyStakeRewardThPerH()).willReturn(Long.MAX_VALUE);
-        given(properties.getLongProperty(STAKING_REWARD_RATE)).willReturn(100L);
+        given(dynamicProperties.maxStakeRewarded()).willReturn(Long.MAX_VALUE);
+        given(dynamicProperties.stakingRewardRate()).willReturn(100L);
         given(properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT)).willReturn(stakingRewardAccount);
         given(accounts.get(EntityNum.fromInt(800))).willReturn(account_800);
         given(account_800.getBalance()).willReturn(balance_800);

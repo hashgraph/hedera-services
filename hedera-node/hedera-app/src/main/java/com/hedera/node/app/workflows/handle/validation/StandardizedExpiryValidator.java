@@ -44,7 +44,10 @@ import javax.inject.Inject;
  * An implementation of {@link ExpiryValidator} that encapsulates the current policies
  * for validating expiry metadata of create and update transactions, <i>without</i> using
  * any {@code mono-service} components.
+ *
+ * @deprecated Use {@link ExpiryValidatorImpl} instead.
  */
+@Deprecated(forRemoval = true)
 public class StandardizedExpiryValidator implements ExpiryValidator {
     private final Consumer<Id> idValidator;
     private final LongSupplier consensusSecondNow;
@@ -69,8 +72,10 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    public ExpiryMeta resolveCreationAttempt(final boolean entityCanSelfFundRenewal, final ExpiryMeta creationMeta) {
+    public ExpiryMeta resolveCreationAttempt(
+            final boolean entityCanSelfFundRenewal, @NonNull final ExpiryMeta creationMeta) {
         if (creationMeta.hasAutoRenewNum()) {
             validateAutoRenewAccount(
                     creationMeta.autoRenewShard(), creationMeta.autoRenewRealm(), creationMeta.autoRenewNum());
@@ -96,8 +101,10 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    public ExpiryMeta resolveUpdateAttempt(final ExpiryMeta currentMeta, final ExpiryMeta updateMeta) {
+    public ExpiryMeta resolveUpdateAttempt(
+            @NonNull final ExpiryMeta currentMeta, @NonNull final ExpiryMeta updateMeta) {
         if (updateMeta.hasAutoRenewNum()) {
             validateAutoRenewAccount(
                     updateMeta.autoRenewShard(), updateMeta.autoRenewRealm(), updateMeta.autoRenewNum());
@@ -130,6 +137,7 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public ResponseCodeEnum expirationStatus(
             @NonNull final EntityType entityType,
@@ -159,7 +167,7 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
      * @return whether the entity has a complete auto-renew configuration
      */
     private boolean hasCompleteAutoRenewSpec(
-            final boolean entityCanSelfFundRenewal, final ExpiryMeta creationMetadata) {
+            final boolean entityCanSelfFundRenewal, @NonNull final ExpiryMeta creationMetadata) {
         return creationMetadata.hasFullAutoRenewSpec()
                 || (!creationMetadata.hasExplicitExpiry() && entityCanSelfFundRenewal);
     }

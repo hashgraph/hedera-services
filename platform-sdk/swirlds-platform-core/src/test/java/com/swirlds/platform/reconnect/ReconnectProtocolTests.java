@@ -85,10 +85,8 @@ public class ReconnectProtocolTests {
         for (final boolean teacherIsThrottled : List.of(true, false)) {
             for (final boolean selfIsBehind : List.of(true, false)) {
                 for (final boolean teacherHasValidState : List.of(true, false)) {
-                    for (final boolean stateIsInitialized : List.of(true, false)) {
-                        arguments.add(Arguments.of(new AcceptParams(
-                                teacherIsThrottled, selfIsBehind, teacherHasValidState, stateIsInitialized)));
-                    }
+                    arguments.add(
+                            Arguments.of(new AcceptParams(teacherIsThrottled, selfIsBehind, teacherHasValidState)));
                 }
             }
         }
@@ -96,22 +94,17 @@ public class ReconnectProtocolTests {
         return arguments.stream();
     }
 
-    private record AcceptParams(
-            boolean teacherIsThrottled,
-            boolean selfIsBehind,
-            boolean teacherHasValidState,
-            boolean stateIsInitialized) {
+    private record AcceptParams(boolean teacherIsThrottled, boolean selfIsBehind, boolean teacherHasValidState) {
 
         public boolean shouldAccept() {
-            return !teacherIsThrottled && !selfIsBehind && teacherHasValidState && stateIsInitialized;
+            return !teacherIsThrottled && !selfIsBehind && teacherHasValidState;
         }
 
         @Override
         public String toString() {
             return (teacherIsThrottled ? "throttled teacher" : "un-throttled teacher") + ", "
                     + (selfIsBehind ? "teacher is behind" : "teacher not behind")
-                    + ", " + (teacherHasValidState ? "teacher has valid state" : "teacher has no valid state")
-                    + ", " + (stateIsInitialized ? "state is initialized" : "state is not initialized");
+                    + ", " + (teacherHasValidState ? "teacher has valid state" : "teacher has no valid state");
         }
     }
 
@@ -160,9 +153,6 @@ public class ReconnectProtocolTests {
         if (params.teacherHasValidState) {
             signedState = spy(new RandomSignedStateGenerator().build());
             when(signedState.isComplete()).thenReturn(true);
-            if (params.stateIsInitialized) {
-                signedState.getState().markAsInitialized();
-            }
         } else {
             signedState = null;
         }
@@ -252,7 +242,6 @@ public class ReconnectProtocolTests {
         when(signedState.isComplete()).thenReturn(true);
         final State state = mock(State.class);
         when(signedState.getState()).thenReturn(state);
-        when(state.isInitialized()).thenReturn(true);
 
         final ReservedSignedState reservedSignedState = signedState.reserve("test");
 
@@ -331,7 +320,6 @@ public class ReconnectProtocolTests {
 
         final SignedState signedState = spy(new RandomSignedStateGenerator().build());
         when(signedState.isComplete()).thenReturn(true);
-        signedState.getState().markAsInitialized();
 
         final ReservedSignedState reservedSignedState = signedState.reserve("test");
 

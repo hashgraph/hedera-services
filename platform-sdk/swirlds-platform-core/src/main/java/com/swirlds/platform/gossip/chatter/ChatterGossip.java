@@ -21,6 +21,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -37,8 +38,6 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.threading.utility.SequenceCycle;
-import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
@@ -52,6 +51,7 @@ import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
+import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.event.EventCreatorThread;
 import com.swirlds.platform.event.EventIntakeTask;
@@ -82,7 +82,7 @@ import com.swirlds.platform.reconnect.DefaultSignedStateValidator;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectProtocol;
 import com.swirlds.platform.reconnect.emergency.EmergencyReconnectProtocol;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.threading.PauseAndClear;
@@ -248,10 +248,10 @@ public class ChatterGossip extends AbstractGossip {
                             connectionManagers.getManager(otherId, topology.shouldConnectTo(otherId)),
                             chatterConfig.sleepAfterFailedNegotiation(),
                             List.of(
-                                    new VersionCompareHandshake(appVersion, !settings.isGossipWithDifferentVersions()),
+                                    new VersionCompareHandshake(appVersion, !basicConfig.gossipWithDifferentVersions()),
                                     new VersionCompareHandshake(
                                             PlatformVersion.locateOrDefault(),
-                                            !settings.isGossipWithDifferentVersions())),
+                                            !basicConfig.gossipWithDifferentVersions())),
                             new NegotiationProtocols(List.of(
                                     new EmergencyReconnectProtocol(
                                             threadManager,
@@ -306,6 +306,7 @@ public class ChatterGossip extends AbstractGossip {
                         new AncientParentsRule(consensusRef::get),
                         criticalQuorum));
         final ChatterEventCreator chatterEventCreator = new ChatterEventCreator(
+                platformContext,
                 appVersion,
                 selfId,
                 PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
@@ -315,15 +316,17 @@ public class ChatterGossip extends AbstractGossip {
                 chatterEventMapper::getMostRecentEvent,
                 eventCreationRules,
                 CryptographyHolder.get(),
-                OSTime.getInstance());
+                Time.getCurrent());
 
         if (startedFromGenesis) {
             // if we are starting from genesis, we will create a genesis event, which is the only event that will
             // ever be created without an other-parent
             chatterEventCreator.createGenesisEvent();
         }
+        final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         final EventCreatorThread eventCreatorThread = new EventCreatorThread(
                 threadManager,
+                threadConfig,
                 selfId,
                 chatterConfig.attemptedChatterEventPerSecond(),
                 addressBook,

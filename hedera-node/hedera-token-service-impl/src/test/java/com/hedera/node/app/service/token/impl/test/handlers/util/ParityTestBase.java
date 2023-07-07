@@ -17,15 +17,35 @@
 package com.hedera.node.app.service.token.impl.test.handlers.util;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.hapi.node.state.common.UniqueTokenId;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
+import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
+import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 
 public class ParityTestBase {
@@ -49,5 +69,59 @@ public class ParityTestBase {
         } catch (final Throwable e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private MapWritableKVState<TokenID, Token> newTokenStateFromTokens(Token... tokens) {
+        final var backingMap = new HashMap<TokenID, Token>();
+        for (final Token token : tokens) {
+            backingMap.put(token.tokenId(), token);
+        }
+
+        return new MapWritableKVState<>(TOKENS_KEY, backingMap);
+    }
+
+    protected ReadableTokenStore newReadableStoreWithTokens(Token... tokens) {
+        final var wrappedState = newTokenStateFromTokens(tokens);
+        return new ReadableTokenStoreImpl(new MapReadableStates(Map.of(TOKENS_KEY, wrappedState)));
+    }
+
+    protected WritableTokenStore newWritableStoreWithTokens(Token... tokens) {
+        final var wrappedState = newTokenStateFromTokens(tokens);
+        return new WritableTokenStore(new MapWritableStates(Map.of(TOKENS_KEY, wrappedState)));
+    }
+
+    protected WritableAccountStore newWritableStoreWithAccounts(Account... accounts) {
+        final var backingMap = new HashMap<AccountID, Account>();
+        for (final Account account : accounts) {
+            backingMap.put(BaseCryptoHandler.asAccount(account.accountNumber()), account);
+        }
+
+        final var wrappingState = new MapWritableKVState<>(ACCOUNTS_KEY, backingMap);
+        return new WritableAccountStore(new MapWritableStates(Map.of(
+                ACCOUNTS_KEY, wrappingState, ALIASES_KEY, new MapWritableKVState<>(ALIASES_KEY, new HashMap<>()))));
+    }
+
+    protected WritableTokenRelationStore newWritableStoreWithTokenRels(final TokenRelation... tokenRels) {
+        final var backingMap = new HashMap<EntityIDPair, TokenRelation>();
+        for (final TokenRelation tokenRel : tokenRels) {
+            backingMap.put(
+                    EntityIDPair.newBuilder()
+                            .accountId(tokenRel.accountId())
+                            .tokenId(tokenRel.tokenId())
+                            .build(),
+                    tokenRel);
+        }
+
+        final var wrappingState = new MapWritableKVState<>(ACCOUNTS_KEY, backingMap);
+        return new WritableTokenRelationStore(
+                new MapWritableStates(Map.of(TokenServiceImpl.TOKEN_RELS_KEY, wrappingState)));
+    }
+
+    protected WritableNftStore newWritableStoreWithNfts(Nft... nfts) {
+        final var nftStateBuilder = MapWritableKVState.<UniqueTokenId, Nft>builder(TokenServiceImpl.NFTS_KEY);
+        for (final Nft nft : nfts) {
+            nftStateBuilder.value(nft.id(), nft);
+        }
+        return new WritableNftStore(new MapWritableStates(Map.of(TokenServiceImpl.NFTS_KEY, nftStateBuilder.build())));
     }
 }

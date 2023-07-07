@@ -78,7 +78,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_ALLOWANCES_MAX_TXN_LIMIT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_RECORD_FILE_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIG_FILE_VERSION;
@@ -109,8 +108,10 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_IS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_STAKE_REWARDED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_BALANCE_THRESHOLD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_START_THRESH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
@@ -232,10 +233,10 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.areTokenAutoCreationsEnabled());
         assertFalse(subject.dynamicEvmVersion());
         assertFalse(subject.shouldCompressAccountBalanceFilesOnCreation());
-        assertTrue(subject.shouldDoTraceabilityExport());
         assertTrue(subject.isLazyCreationEnabled());
         assertFalse(subject.isCryptoCreateWithAliasEnabled());
         assertFalse(subject.isAtomicCryptoTransferEnabled());
+        assertFalse(subject.isContractsNoncesExternalizationEnabled());
         assertTrue(subject.isHRCAssociateEnabled());
         assertFalse(subject.isImplicitCreationEnabled());
     }
@@ -338,6 +339,8 @@ class GlobalDynamicPropertiesTest {
         assertEquals(76L, subject.maxDailyStakeRewardThPerH());
         assertEquals(88L, subject.traceabilityMinFreeToUsedGasThrottleRatio());
         assertEquals(89L, subject.traceabilityMaxExportsPerConsSec());
+        assertEquals(101L, subject.maxStakeRewarded());
+        assertEquals(102L, subject.stakingRewardBalanceThreshold());
     }
 
     @Test
@@ -482,10 +485,10 @@ class GlobalDynamicPropertiesTest {
         assertEquals(67L, subject.schedulingMaxTxnPerSecond());
         assertEquals(68L, subject.scheduleThrottleMaxGasLimit());
         assertEquals(69L, subject.schedulingMaxExpirationFutureSeconds());
-        assertEquals(76L, subject.getStakingRewardRate());
+        assertEquals(76L, subject.stakingRewardRate());
         assertEquals(70L, subject.maxPrecedingRecords());
         assertEquals(71L, subject.maxFollowingRecords());
-        assertEquals(76L, subject.getStakingRewardRate());
+        assertEquals(76L, subject.stakingRewardRate());
         assertEquals(77L, subject.maxDailyStakeRewardThPerH());
         assertEquals(81L, subject.maxNumAccounts());
         assertEquals(82L, subject.maxNumContracts());
@@ -663,8 +666,6 @@ class GlobalDynamicPropertiesTest {
                 .willReturn(Map.of(0L, 4L, 1L, 8L));
         given(properties.getIntProperty(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB))
                 .willReturn((i + 88));
-        given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION))
-                .willReturn((i + 81) % 2 == 0);
         given(properties.getBooleanProperty(CONTRACTS_ITEMIZE_STORAGE_FEES)).willReturn((i + 79) % 2 == 1);
         given(properties.getLongProperty(CONTRACTS_REFERENCE_SLOT_LIFETIME)).willReturn(i + 86L);
         given(properties.getIntProperty(CONTRACTS_FREE_STORAGE_TIER_LIMIT)).willReturn(i + 87);
@@ -675,8 +676,6 @@ class GlobalDynamicPropertiesTest {
         given(properties.getBooleanProperty(CONTRACTS_DYNAMIC_EVM_VERSION)).willReturn(i % 2 == 0);
         given(properties.getStringProperty(CONTRACTS_EVM_VERSION)).willReturn(evmVersions[i % 2]);
         given(properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION)).willReturn((i + 84) % 2 == 0);
-        given(properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION))
-                .willReturn((i + 85) % 2 == 0);
         given(properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO))
                 .willReturn(i + 87L);
         given(properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC)).willReturn(i + 88L);
@@ -699,6 +698,8 @@ class GlobalDynamicPropertiesTest {
         given(properties.getIntProperty(STAKING_SUM_OF_CONSENSUS_WEIGHTS)).willReturn(i + 97);
         given(properties.getIntProperty(CACHE_CRYPTO_TRANSFER_WARM_THREADS)).willReturn(i + 98);
         given(properties.getIntProperty(CONFIG_VERSION)).willReturn(i + 99);
+        given(properties.getLongProperty(STAKING_MAX_STAKE_REWARDED)).willReturn(i + 100L);
+        given(properties.getLongProperty(STAKING_REWARD_BALANCE_THRESHOLD)).willReturn(i + 101L);
     }
 
     private Set<EntityType> typesFor(final int i) {

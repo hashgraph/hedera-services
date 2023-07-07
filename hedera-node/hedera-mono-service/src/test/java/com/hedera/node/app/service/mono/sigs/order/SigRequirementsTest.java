@@ -308,6 +308,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.iterableWithSize;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -1053,8 +1054,10 @@ public class SigRequirementsTest {
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
         // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
+        assertThat(
+                sanityRestored(summary.getOrderedKeys()),
+                contains(FIRST_TOKEN_SENDER_KT.asKey(), SECOND_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -1079,8 +1082,10 @@ public class SigRequirementsTest {
         final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
+        assertThat(
+                sanityRestored(summary.getOrderedKeys()),
+                contains(FIRST_TOKEN_SENDER_KT.asKey(), SECOND_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -1092,8 +1097,10 @@ public class SigRequirementsTest {
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
         // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
+        assertThat(
+                sanityRestored(summary.getOrderedKeys()),
+                containsInAnyOrder(FIRST_TOKEN_SENDER_KT.asKey(), SECOND_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -1105,8 +1112,10 @@ public class SigRequirementsTest {
         final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
+        assertThat(
+                sanityRestored(summary.getOrderedKeys()),
+                containsInAnyOrder(FIRST_TOKEN_SENDER_KT.asKey(), SECOND_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test

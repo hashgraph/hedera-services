@@ -16,12 +16,13 @@
 
 package com.swirlds.platform.gossip.chatter.protocol;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.DurationGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.sequence.Shiftable;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.time.Time;
+import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatMessage;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatSendReceive;
@@ -29,7 +30,6 @@ import com.swirlds.platform.gossip.chatter.protocol.input.InputDelegate;
 import com.swirlds.platform.gossip.chatter.protocol.input.InputDelegateBuilder;
 import com.swirlds.platform.gossip.chatter.protocol.input.MessageTypeHandlerBuilder;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
-import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import com.swirlds.platform.gossip.chatter.protocol.output.MessageOutput;
 import com.swirlds.platform.gossip.chatter.protocol.output.OtherEventDelay;
 import com.swirlds.platform.gossip.chatter.protocol.output.PriorityOutputAggregator;

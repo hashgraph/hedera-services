@@ -20,9 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockWritableStates;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_KNOWN_TOKEN;
@@ -41,28 +38,25 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenDeleteTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
+import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
-import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import java.util.HashMap;
-import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class TokenDeleteHandlerTest extends ParityTestBase {
-    private static final AccountID ACCOUNT_1339 = IdConvenienceUtils.fromAccountNum(1339);
-    private static final TokenID TOKEN_987_ID = IdConvenienceUtils.fromTokenNum(987L);
+    private static final AccountID ACCOUNT_1339 = BaseCryptoHandler.asAccount(1339);
+    private static final TokenID TOKEN_987_ID = BaseTokenHandler.asToken(987L);
 
     private final TokenDeleteHandler subject = new TokenDeleteHandler();
 
@@ -132,7 +126,7 @@ class TokenDeleteHandlerTest extends ParityTestBase {
         void rejectsDeletedToken() {
             // Create the token store with a deleted token
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_987_ID.tokenNum())
+                    .tokenId(TOKEN_987_ID)
                     .deleted(true)
                     .adminKey(DEFAULT_PAYER_KT.asPbjKey())
                     .build());
@@ -151,7 +145,7 @@ class TokenDeleteHandlerTest extends ParityTestBase {
         void rejectsPausedToken() {
             // Create the token store with a paused token
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_987_ID.tokenNum())
+                    .tokenId(TOKEN_987_ID)
                     .deleted(false)
                     .paused(true)
                     .adminKey(DEFAULT_PAYER_KT.asPbjKey())
@@ -171,7 +165,7 @@ class TokenDeleteHandlerTest extends ParityTestBase {
         void rejectsTokenWithoutAdminKey() {
             // Create the token store with a null admin key
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_987_ID.tokenNum())
+                    .tokenId(TOKEN_987_ID)
                     .deleted(false)
                     .paused(false)
                     .adminKey((Key) null) // here's the null admin key
@@ -190,7 +184,7 @@ class TokenDeleteHandlerTest extends ParityTestBase {
         @Test
         void deletesValidToken() {
             // Verify that the treasury account's treasury titles count is correct before the test
-            final var treasuryAcctId = IdConvenienceUtils.fromAccountNum(3);
+            final var treasuryAcctId = BaseCryptoHandler.asAccount(3);
             final var treasuryAcct = writableAccountStore.get(treasuryAcctId);
             Assertions.assertThat(treasuryAcct.numberTreasuryTitles()).isEqualTo(2);
 
@@ -199,7 +193,7 @@ class TokenDeleteHandlerTest extends ParityTestBase {
 
             // Create the context and transaction
             final var context = mockContext();
-            final var token535Id = IdConvenienceUtils.fromTokenNum(535);
+            final var token535Id = BaseTokenHandler.asToken(535);
             final var txn = newDissociateTxn(token535Id);
             given(context.body()).willReturn(txn);
 
@@ -221,17 +215,6 @@ class TokenDeleteHandlerTest extends ParityTestBase {
             given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
             return context;
-        }
-
-        private WritableTokenStore newWritableStoreWithTokens(Token... tokens) {
-            final var backingMap = new HashMap<EntityNum, Token>();
-            for (final Token token : tokens) {
-                backingMap.put(
-                        EntityNum.fromTokenId(fromPbj(IdConvenienceUtils.fromTokenNum(token.tokenNumber()))), token);
-            }
-
-            final var wrappingState = new MapWritableKVState<>(TOKENS_KEY, backingMap);
-            return new WritableTokenStore(mockWritableStates(Map.of(TOKENS_KEY, wrappingState)));
         }
     }
 

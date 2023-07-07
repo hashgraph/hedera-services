@@ -19,6 +19,7 @@ package com.swirlds.platform.state.iss;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_HASH;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
@@ -26,7 +27,6 @@ import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.logging.payloads.IssPayload;
 import com.swirlds.platform.dispatch.DispatchBuilder;
@@ -286,7 +286,7 @@ public class ConsensusHashManager {
         final Hash consensusHash = roundHashValidator.getConsensusHash();
 
         final long skipCount = selfIssRateLimiter.getDeniedRequests();
-        if (selfIssRateLimiter.request()) {
+        if (selfIssRateLimiter.requestAndTrigger()) {
 
             final StringBuilder sb = new StringBuilder();
             sb.append("Invalid State Signature (ISS): this node has the wrong hash for round ")
@@ -317,7 +317,7 @@ public class ConsensusHashManager {
         final Hash selfHash = roundHashValidator.getSelfStateHash();
 
         final long skipCount = catastrophicIssRateLimiter.getDeniedRequests();
-        if (catastrophicIssRateLimiter.request()) {
+        if (catastrophicIssRateLimiter.requestAndTrigger()) {
 
             final StringBuilder sb = new StringBuilder();
             sb.append("Catastrophic Invalid State Signature (ISS)\n");
@@ -341,7 +341,7 @@ public class ConsensusHashManager {
      */
     private void handleLackOfData(final RoundHashValidator roundHashValidator) {
         final long skipCount = lackingSignaturesRateLimiter.getDeniedRequests();
-        if (!lackingSignaturesRateLimiter.request()) {
+        if (!lackingSignaturesRateLimiter.requestAndTrigger()) {
             return;
         }
 

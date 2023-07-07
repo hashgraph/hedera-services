@@ -17,8 +17,10 @@
 package com.swirlds.platform.test;
 
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.RandomEventUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -28,20 +30,21 @@ import java.util.Set;
 
 @Deprecated
 public class SimpleEventGenerator {
-    final int numberOfNodes;
+    final AddressBook addressBook;
     final Map<NodeId, EventImpl> lastEvent;
     final Random random;
     final Set<NodeId> excludeAsOtherParent;
 
-    public SimpleEventGenerator(int numberOfNodes, Random random) {
-        this.numberOfNodes = numberOfNodes;
-        lastEvent = new HashMap<>(numberOfNodes);
-        this.random = random;
+    public SimpleEventGenerator(@NonNull final AddressBook addressBook, @NonNull final Random random) {
+        this.addressBook = Objects.requireNonNull(addressBook);
+        lastEvent = new HashMap<>(addressBook.getSize());
+        this.random = Objects.requireNonNull(random);
         excludeAsOtherParent = new HashSet<>();
     }
 
     public EventImpl nextEvent(final boolean fakeHash) {
-        final NodeId nodeId = new NodeId(random.nextInt(numberOfNodes));
+        final int randomIndex = random.nextInt(addressBook.getSize());
+        final NodeId nodeId = addressBook.getNodeId(randomIndex);
         final NodeId otherId = getOtherParent(nodeId);
         final EventImpl event = RandomEventUtils.randomEvent(
                 random, nodeId, lastEvent.get(nodeId), lastEvent.get(otherId), fakeHash, true);
@@ -56,7 +59,8 @@ public class SimpleEventGenerator {
     private NodeId getOtherParent(final NodeId exclude) {
         NodeId otherId = exclude;
         while (Objects.equals(otherId, exclude) || excludeAsOtherParent.contains(otherId)) {
-            otherId = new NodeId(random.nextInt(numberOfNodes));
+            final int randomIndex = random.nextInt(addressBook.getSize());
+            otherId = addressBook.getNodeId(randomIndex);
         }
         return otherId;
     }

@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.txnFrom;
 import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicContextAssertions;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
@@ -241,8 +242,8 @@ class TokenUnfreezeAccountHandlerTest {
                             Account.newBuilder().accountNumber(accountNumber).build());
             given(tokenRelStore.getForModify(ACCOUNT_13257, token))
                     .willReturn(TokenRelation.newBuilder()
-                            .tokenNumber(token.tokenNum())
-                            .accountNumber(accountNumber)
+                            .tokenId(token)
+                            .accountId(ACCOUNT_13257)
                             .build());
             final var txn = newUnfreezeTxn(token);
             given(context.body()).willReturn(txn);
@@ -250,8 +251,8 @@ class TokenUnfreezeAccountHandlerTest {
             subject.handle(context);
             verify(tokenRelStore)
                     .put(TokenRelation.newBuilder()
-                            .tokenNumber(token.tokenNum())
-                            .accountNumber(accountNumber)
+                            .tokenId(token)
+                            .accountId(ACCOUNT_13257)
                             .frozen(false)
                             .build());
         }
@@ -274,7 +275,7 @@ class TokenUnfreezeAccountHandlerTest {
 
         private ReadableTokenStore.TokenMetadata tokenMetaWithFreezeKey(Key freezeKey) {
             return new ReadableTokenStore.TokenMetadata(
-                    null, null, null, freezeKey, null, null, null, null, false, 25L, 2);
+                    null, null, null, freezeKey, null, null, null, null, false, asAccount(25L), 2);
         }
 
         private TransactionBody newUnfreezeTxn(TokenID token) {

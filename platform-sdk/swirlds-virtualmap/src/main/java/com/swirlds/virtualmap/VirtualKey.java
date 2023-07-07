@@ -54,6 +54,7 @@ public interface VirtualKey extends SelfSerializable {
      * @throws IOException
      * 		If there was a problem writing this classes data into the ByteBuffer
      */
+    // TODO: serialize(WriteableSequentialData)
     void serialize(ByteBuffer buffer) throws IOException;
 
     /**
@@ -68,5 +69,6 @@ public interface VirtualKey extends SelfSerializable {
      * @throws IOException
      * 		If there was a problem reading this classes data from the ByteBuffer
      */
+    // TODO: deserialize(ReadableSequentialData)
     void deserialize(ByteBuffer buffer) throws IOException;
 }

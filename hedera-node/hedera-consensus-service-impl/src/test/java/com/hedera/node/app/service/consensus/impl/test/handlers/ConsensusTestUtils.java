@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
@@ -81,6 +82,16 @@ public final class ConsensusTestUtils {
     }
 
     static Topic newTopic(Key admin, Key submit) {
-        return new Topic(EXISTING_TOPIC.getTopicNum(), -1L, 0L, -1L, 1234567L, false, null, "memo", admin, submit);
+        return new Topic(
+                TopicID.newBuilder().topicNum(EXISTING_TOPIC.getTopicNum()).build(),
+                -1L,
+                0L,
+                -1L,
+                1234567L,
+                false,
+                null,
+                "memo",
+                admin,
+                submit);
     }
 }

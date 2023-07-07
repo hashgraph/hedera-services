@@ -16,6 +16,8 @@
 
 package com.swirlds.demo.virtualmerkle.map.account;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -116,6 +118,14 @@ public class AccountVirtualMapValue implements VirtualValue {
         buffer.putLong(uid);
     }
 
+    public void serialize(final WritableSequentialData out) throws IOException {
+        out.writeLong(balance);
+        out.writeLong(sendThreshold);
+        out.writeLong(receiveThreshold);
+        out.writeByte(getRequireSignatureAsByte());
+        out.writeLong(uid);
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -126,6 +136,14 @@ public class AccountVirtualMapValue implements VirtualValue {
         this.receiveThreshold = buffer.getLong();
         this.requireSignature = buffer.get() == 1;
         this.uid = buffer.getLong();
+    }
+
+    public void deserialize(final ReadableSequentialData in) throws IOException {
+        this.balance = in.readLong();
+        this.sendThreshold = in.readLong();
+        this.receiveThreshold = in.readLong();
+        this.requireSignature = in.readByte() == 1;
+        this.uid = in.readLong();
     }
 
     /**

@@ -791,18 +791,18 @@ public class EventImpl extends AbstractSerializableHashable
     }
 
     /**
-     * @param m the member ID
-     * @return last ancestor created by m (memoizes lastSee function from Swirlds-TR-2020-01)
+     * @param m the index of the member ID
+     * @return last ancestor created by the member at index m (memoizes lastSee function from Swirlds-TR-2020-01)
      */
     public EventImpl getLastSee(final int m) {
         return internalEventData.getLastSee(m);
     }
 
     /**
-     * remember event, the last ancestor created by m (memoizes lastSee function from Swirlds-TR-2020-01)
+     * remember event, the last ancestor created by the member at index m (memoizes lastSee function from Swirlds-TR-2020-01)
      *
-     * @param m     the member ID of the creator
-     * @param event the last seen {@link EventImpl} object created by m
+     * @param m     the index of the member ID of the creator
+     * @param event the last seen {@link EventImpl} object created by member at index m
      */
     public void setLastSee(final int m, final EventImpl event) {
         internalEventData.setLastSee(m, event);
@@ -826,19 +826,19 @@ public class EventImpl extends AbstractSerializableHashable
     }
 
     /**
-     * @param m the member ID
-     * @return strongly-seen witness in parent round by m (memoizes stronglySeeP function from Swirlds-TR-2020-01)
+     * @param m the index of the member ID
+     * @return strongly-seen witness in parent round by the member at index m (memoizes stronglySeeP function from Swirlds-TR-2020-01)
      */
     public EventImpl getStronglySeeP(final int m) {
         return internalEventData.getStronglySeeP(m);
     }
 
     /**
-     * remember event, the strongly-seen witness in parent round by m (memoizes stronglySeeP function from
+     * remember event, the strongly-seen witness in parent round by the member at index m (memoizes stronglySeeP function from
      * Swirlds-TR-2020-01)
      *
-     * @param m     the member ID of the creator
-     * @param event the strongly-seen witness in parent round created by m
+     * @param m     the index of the member ID of the creator
+     * @param event the strongly-seen witness in parent round created by the member at index m
      */
     public void setStronglySeeP(final int m, final EventImpl event) {
         internalEventData.setStronglySeeP(m, event);

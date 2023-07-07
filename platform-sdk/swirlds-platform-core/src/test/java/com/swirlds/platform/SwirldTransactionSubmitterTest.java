@@ -19,16 +19,17 @@ package com.swirlds.platform;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.internal.SettingsCommon;
-import com.swirlds.common.system.platformstatus.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.common.test.TransactionUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.metrics.TransactionMetrics;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.Random;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -42,7 +43,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class SwirldTransactionSubmitterTest {
 
-    private final SettingsProvider settings = mock(SettingsProvider.class);
+    private TransactionConfig transactionConfig;
 
     private Random random;
 
@@ -57,19 +58,19 @@ class SwirldTransactionSubmitterTest {
     @BeforeAll
     public static void staticSetup() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common.system.transaction");
-        SettingsCommon.transactionMaxBytes = 6144;
     }
 
     @BeforeEach
     void setup() {
         random = RandomUtils.getRandom();
-
-        when(settings.getTransactionMaxBytes()).thenReturn(SettingsCommon.transactionMaxBytes);
-
         platformStatus = PlatformStatus.ACTIVE;
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("transaction.transactionMaxBytes", 6144)
+                .getOrCreateConfig();
+        transactionConfig = configuration.getConfigData(TransactionConfig.class);
 
         transactionSubmitter = new SwirldTransactionSubmitter(
-                this::getPlatformStatus, settings, (t) -> true, mock(TransactionMetrics.class));
+                this::getPlatformStatus, transactionConfig, (t) -> true, mock(TransactionMetrics.class));
     }
 
     private PlatformStatus getPlatformStatus() {
@@ -81,7 +82,7 @@ class SwirldTransactionSubmitterTest {
     void testSwirldTransactionSize(final int contentSize) {
         final byte[] nbyte = new byte[contentSize];
         random.nextBytes(nbyte);
-        if (contentSize <= SettingsCommon.transactionMaxBytes) {
+        if (contentSize <= transactionConfig.transactionMaxBytes()) {
             assertTrue(
                     transactionSubmitter.submitTransaction(new SwirldTransaction(nbyte)), "create transaction failed");
         } else {

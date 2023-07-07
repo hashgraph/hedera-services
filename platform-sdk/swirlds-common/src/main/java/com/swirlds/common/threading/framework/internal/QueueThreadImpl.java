@@ -16,7 +16,7 @@
 
 package com.swirlds.common.threading.framework.internal;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.threading.framework.QueueThread;
@@ -24,6 +24,7 @@ import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -32,12 +33,9 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 /**
  * Implements a thread that continuously takes elements from a queue and handles them.
  *
- * @param <T>
- * 		the type of the item in the queue
+ * @param <T> the type of the item in the queue
  */
 public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements QueueThread<T> {
-
-    private static final int WAIT_FOR_WORK_DELAY_MS = 10;
 
     private final int bufferSize;
 
@@ -53,8 +51,26 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
      * Incremented each time we timeout while waiting for work from the queue.
      */
     private final AtomicLong noWorkCount = new AtomicLong();
-    /** Tracks metrics related to this queue thread */
+
+    /**
+     * Tracks metrics related to this queue thread
+     */
     private final QueueThreadMetrics metrics;
+
+    /**
+     * If not null, called periodically when the queue thread is idle.
+     */
+    private final InterruptableRunnable idleCallback;
+
+    /**
+     * If not null, called when a batch of work has been handled.
+     */
+    private final InterruptableRunnable batchHandledCallback;
+
+    /**
+     * The amount of time to wait for work.
+     */
+    private final Duration waitForWorkDuration;
 
     /**
      * <p>
@@ -62,12 +78,11 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
      * </p>
      *
      * <p>
-     * Unlike previous iterations of this class, this constructor DOES NOT start the background handler thread.
-     * Call {@link #start()} to start the handler thread.
+     * Unlike previous iterations of this class, this constructor DOES NOT start the background handler thread. Call
+     * {@link #start()} to start the handler thread.
      * </p>
      *
-     * @param configuration
-     * 		the configuration object
+     * @param configuration the configuration object
      */
     public QueueThreadImpl(final AbstractQueueThreadConfiguration<?, T> configuration) {
         super(ThreadBuildingUtils.getOrBuildQueue(configuration));
@@ -84,6 +99,9 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
 
         buffer = new ArrayList<>(bufferSize);
         handler = configuration.getHandler();
+        idleCallback = configuration.getIdleCallback();
+        batchHandledCallback = configuration.getBatchHandledCallback();
+        this.waitForWorkDuration = configuration.getWaitForWorkDuration();
         metrics = new QueueThreadMetrics(configuration);
 
         stoppableThread = configuration
@@ -95,15 +113,14 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
 
     /**
      * <p>
-     * Build a "seed" that can be planted in a thread. When the runnable is executed, it takes over the calling
-     * thread
-     * and configures that thread the way it would configure a newly created thread. When work
-     * is finished, the calling thread is restored back to its original configuration.
+     * Build a "seed" that can be planted in a thread. When the runnable is executed, it takes over the calling thread
+     * and configures that thread the way it would configure a newly created thread. When work is finished, the calling
+     * thread is restored back to its original configuration.
      * </p>
      *
      * <p>
-     * Note that this seed will be unable to change the thread group of the calling thread, regardless of the
-     * thread group that is configured.
+     * Note that this seed will be unable to change the thread group of the calling thread, regardless of the thread
+     * group that is configured.
      * </p>
      *
      * <p>
@@ -235,6 +252,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
             metrics.startingWork();
             if (item != null) {
                 handler.accept(item);
+                batchHandled();
             }
             return;
         }
@@ -243,19 +261,33 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
             handler.accept(item);
         }
         buffer.clear();
+        batchHandled();
     }
 
     /**
-     * Wait a while for the next item to become available and return it. If no item becomes available before
-     * a timeout then return null.
+     * This method is called whenever a batch of work is completed.
+     */
+    private void batchHandled() throws InterruptedException {
+        if (batchHandledCallback != null) {
+            batchHandledCallback.run();
+        }
+    }
+
+    /**
+     * Wait a while for the next item to become available and return it. If no item becomes available before a timeout
+     * then return null.
      *
-     * @throws InterruptedException
-     * 		if this method is interrupted during execution
+     * @throws InterruptedException if this method is interrupted during execution
      */
     private T waitForItem() throws InterruptedException {
-        final T item = poll(WAIT_FOR_WORK_DELAY_MS, MILLISECONDS);
+        final T item = poll(waitForWorkDuration.toNanos(), NANOSECONDS);
         if (item == null) {
             noWorkCount.incrementAndGet();
+            if (idleCallback != null) {
+                metrics.startingWork();
+                idleCallback.run();
+                metrics.finishedWork();
+            }
         }
         return item;
     }
@@ -285,7 +317,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
 
         final long initialCount = noWorkCount.get();
         while (noWorkCount.get() <= initialCount + 1 && getStatus() != Status.DEAD) {
-            MILLISECONDS.sleep(WAIT_FOR_WORK_DELAY_MS);
+            NANOSECONDS.sleep(waitForWorkDuration.toNanos());
         }
     }
 

@@ -31,15 +31,13 @@ public interface NodeInfo {
      *
      * @return whether this node has zero stake.
      */
-    boolean isSelfZeroStake();
+    boolean zeroStake();
 
     /**
-     * Returns the account parsed from the address book memo corresponding to the given node id.
+     * Returns the account ID corresponding with this node.
      *
-     * @param nodeId the id of interest
-     * @return the account parsed from the address book memo corresponding to the given node id.
-     * @throws IllegalArgumentException if the book did not contain the id, or was missing an
-     *     account for the id
+     * @return the account ID of the node.
+     * @throws IllegalStateException if the book did not contain the id, or was missing an account for the id
      */
-    AccountID accountOf(long nodeId);
+    AccountID accountId();
 }

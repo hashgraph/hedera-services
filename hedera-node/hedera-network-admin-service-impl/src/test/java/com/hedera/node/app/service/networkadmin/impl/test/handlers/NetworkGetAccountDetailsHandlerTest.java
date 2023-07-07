@@ -49,7 +49,6 @@ import com.hedera.hapi.node.token.GrantedNftAllowance;
 import com.hedera.hapi.node.token.GrantedTokenAllowance;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetAccountDetailsHandler;
 import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUtil;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -76,7 +75,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     @BeforeEach
     void setUp() {
         networkGetAccountDetailsHandler = new NetworkGetAccountDetailsHandler();
-        final var configuration = new HederaTestConfigBuilder().getOrCreateConfig();
+        final var configuration = HederaTestConfigBuilder.createConfig();
         lenient().when(context.configuration()).thenReturn(configuration);
     }
 
@@ -234,11 +233,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
                 .build();
         List<TokenRelationship> tokenRelationships = new ArrayList<>();
         var tokenRelation = TokenRelationship.newBuilder()
-                .tokenId(TokenID.newBuilder()
-                        .shardNum(StaticProperties.getShard())
-                        .realmNum(StaticProperties.getRealm())
-                        .tokenNum(nonFungibleTokenNum.longValue())
-                        .build())
+                .tokenId(nonFungibleTokenId)
                 .balance(1000L)
                 .decimals(1000)
                 .symbol(tokenSymbol)

@@ -83,7 +83,7 @@ public final class SmartContractMapKeySerializer implements KeySerializer<SmartC
     @Override
     public boolean equals(final ByteBuffer buffer, final int dataVersion, final SmartContractMapKey keyToCompare)
             throws IOException {
-        return keyToCompare.equals(buffer);
+        return keyToCompare.equals(buffer, dataVersion);
     }
 
     /**

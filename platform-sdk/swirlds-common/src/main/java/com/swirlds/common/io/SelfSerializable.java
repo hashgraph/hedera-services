@@ -18,6 +18,7 @@ package com.swirlds.common.io;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 /**
@@ -37,5 +38,5 @@ public interface SelfSerializable extends SerializableDet, FunctionalSerialize {
      * @throws IOException
      * 		Thrown in case of an IO exception.
      */
-    void deserialize(SerializableDataInputStream in, int version) throws IOException;
+    void deserialize(@NonNull SerializableDataInputStream in, int version) throws IOException;
 }

@@ -25,12 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockStates;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockWritableStates;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenDissociateScenarios.TOKEN_DISSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET;
@@ -45,10 +40,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -60,33 +55,39 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
-import com.hedera.node.app.service.token.impl.util.IdConvenienceUtils;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private ExpiryValidator expiryValidator;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    private HandleContext handleContext;
+
     private static final AccountID ACCOUNT_1339 =
             AccountID.newBuilder().accountNum(MISC_ACCOUNT.getAccountNum()).build();
-    private static final AccountID ACCOUNT_2020 = IdConvenienceUtils.fromAccountNum(2020);
+    private static final AccountID ACCOUNT_2020 = BaseCryptoHandler.asAccount(2020);
     private static final TokenID TOKEN_555_ID =
             TokenID.newBuilder().tokenNum(555).build();
     private static final TokenID TOKEN_666_ID =
@@ -189,7 +190,8 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             final var txn = newDissociateTxn(
                     AccountID.newBuilder().accountNum(accountNumber).build(), List.of(TOKEN_555_ID));
             given(context.body()).willReturn(txn);
-
+            given(expiryValidator.expirationStatus(eq(EntityType.ACCOUNT), eq(true), anyLong()))
+                    .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
             Assertions.assertThatThrownBy(() -> subject.handle(context))
                     .isInstanceOf(HandleException.class)
                     .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
@@ -230,16 +232,14 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         @Test
         void rejectsPausedToken() {
             // Create a readable store with a paused token
-            final var pausedToken = Token.newBuilder()
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
-                    .paused(true)
-                    .build();
+            final var pausedToken =
+                    Token.newBuilder().tokenId(TOKEN_555_ID).paused(true).build();
             readableTokenStore = newReadableStoreWithTokens(pausedToken);
 
             // Create the token rel for the paused token
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
                     .build());
 
             // Create the context and transaction
@@ -256,15 +256,15 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         void rejectsTreasuryAccount() {
             // Create a readable store that has a token with a treasury account
             final var tokenWithTreasury = Token.newBuilder()
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
-                    .treasuryAccountNumber(ACCOUNT_1339.accountNumOrThrow())
+                    .tokenId(TOKEN_555_ID)
+                    .treasuryAccountId(ACCOUNT_1339)
                     .build();
             readableTokenStore = newReadableStoreWithTokens(tokenWithTreasury);
 
             // Create the token rel
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
                     .build());
 
             // Create the context and transaction
@@ -281,13 +281,13 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         void rejectsFrozenToken() {
             // Create the readable store with a token
             final var tokenWithTreasury =
-                    Token.newBuilder().tokenNumber(TOKEN_555_ID.tokenNum()).build();
+                    Token.newBuilder().tokenId(TOKEN_555_ID).build();
             readableTokenStore = newReadableStoreWithTokens(tokenWithTreasury);
 
             // Create the frozen token rel
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
                     .frozen(true)
                     .build());
 
@@ -305,15 +305,15 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         void rejectsAccountThatStillOwnsNfts() {
             // Create the readable store with a token that still owns an NFT
             final var tokenWithTreasury = Token.newBuilder()
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .tokenId(TOKEN_555_ID)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                     .build();
             readableTokenStore = newReadableStoreWithTokens(tokenWithTreasury);
 
             // Create the token rel with a non-zero NFT balance
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
                     .balance(1L)
                     .build());
 
@@ -344,16 +344,14 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             writableAccountStore = newWritableStoreWithAccounts(accountWithTokenRels);
 
             // Create the readable token store with a deleted token
-            final var tokenWithTreasury = Token.newBuilder()
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
-                    .deleted(true)
-                    .build();
+            final var tokenWithTreasury =
+                    Token.newBuilder().tokenId(TOKEN_555_ID).deleted(true).build();
             readableTokenStore = newReadableStoreWithTokens(tokenWithTreasury);
 
             // Create the token rel for the deleted token
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
                     .build());
 
             // Create the context and transaction
@@ -396,8 +394,8 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
 
             // Create the token rel for the nonexistent token
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
                     .build());
 
             // Create the context and transaction
@@ -448,23 +446,23 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             // 2. has a treasury account
             final var totalSupply = 3000L;
             final var tokenWithTreasury = Token.newBuilder()
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .tokenId(TOKEN_555_ID)
                     .tokenType(TokenType.FUNGIBLE_COMMON)
-                    .treasuryAccountNumber(ACCOUNT_2020.accountNumOrThrow())
+                    .treasuryAccountId(ACCOUNT_2020)
                     .totalSupply(totalSupply)
                     .build();
             readableTokenStore = newReadableStoreWithTokens(tokenWithTreasury);
 
             // Create the token rel with a non-zero fungible balance
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
                     .balance(1000)
                     .build());
             // Create the treasury token rel
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_2020.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_2020)
+                    .tokenId(TOKEN_555_ID)
                     .balance(2000L)
                     .build());
 
@@ -509,15 +507,13 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         @Test
         void multipleTokenRelsAreRemoved() {
             // Represents a token that won't be found
-            final var token444Id = IdConvenienceUtils.fromTokenNum(444);
+            final var token444Id = asToken(444);
             // Represents a token that is deleted
-            final var token555 = Token.newBuilder()
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
-                    .deleted(true)
-                    .build();
+            final var token555 =
+                    Token.newBuilder().tokenId(TOKEN_555_ID).deleted(true).build();
             // Represents an active token
             final var token666 = Token.newBuilder()
-                    .tokenNumber(TOKEN_666_ID.tokenNum())
+                    .tokenId(TOKEN_666_ID)
                     .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                     .build();
 
@@ -537,25 +533,25 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
 
             // Create the token rel for each token
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(token444Id.tokenNum())
-                    .previousToken(-1) // start of the account's token list
-                    .nextToken(TOKEN_555_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(token444Id)
+                    .previousToken(asToken(-1)) // start of the account's token list
+                    .nextToken(TOKEN_555_ID)
                     .balance(20)
                     .build());
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_555_ID.tokenNum())
-                    .previousToken(token444Id.tokenNum())
-                    .nextToken(TOKEN_666_ID.tokenNum())
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_555_ID)
+                    .previousToken(token444Id)
+                    .nextToken(TOKEN_666_ID)
                     .balance(30)
                     .automaticAssociation(true)
                     .build());
             writableTokenRelStore.put(TokenRelation.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNumOrThrow())
-                    .tokenNumber(TOKEN_666_ID.tokenNum())
-                    .previousToken(TOKEN_555_ID.tokenNum())
-                    .nextToken(-1) // end of the account's token list
+                    .accountId(ACCOUNT_1339)
+                    .tokenId(TOKEN_666_ID)
+                    .previousToken(TOKEN_555_ID)
+                    .nextToken((TokenID) null) // end of the account's token list
                     .build());
 
             // Create the context and transaction
@@ -586,34 +582,9 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             final var token666Rel = writableTokenRelStore.get(ACCOUNT_1339, TOKEN_666_ID);
             Assertions.assertThat(token666Rel).isNull();
         }
-
-        private ReadableTokenStore newReadableStoreWithTokens(Token... tokens) {
-            final var backingMap = new HashMap<EntityNum, Token>();
-            for (final Token token : tokens) {
-                backingMap.put(
-                        EntityNum.fromTokenId(fromPbj(IdConvenienceUtils.fromTokenNum(token.tokenNumber()))), token);
-            }
-
-            final var wrappingState = new MapWritableKVState<>(TOKENS_KEY, backingMap);
-            return new ReadableTokenStoreImpl(mockStates(Map.of(TOKENS_KEY, wrappingState)));
-        }
-
-        private WritableAccountStore newWritableStoreWithAccounts(Account... accounts) {
-            final var backingMap = new HashMap<AccountID, Account>();
-            for (final Account account : accounts) {
-                backingMap.put(IdConvenienceUtils.fromAccountNum(account.accountNumber()), account);
-            }
-
-            final var wrappingState = new MapWritableKVState<>(ACCOUNTS_KEY, backingMap);
-            return new WritableAccountStore(mockWritableStates(Map.of(
-                    ACCOUNTS_KEY, wrappingState, ALIASES_KEY, new MapWritableKVState<>(ALIASES_KEY, new HashMap<>()))));
-        }
     }
 
     private HandleContext mockContext() {
-        final var handleContext = mock(HandleContext.class);
-
-        final var expiryValidator = mock(ExpiryValidator.class);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(notNull(), anyBoolean(), anyLong()))
                 .willReturn(ResponseCodeEnum.OK);

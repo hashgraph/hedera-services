@@ -20,6 +20,7 @@ import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createBal
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createForcedOtherParentMatrix;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createShunnedNodeOtherParentAffinityMatrix;
 
+import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.sync.SyncTestParams;
 import java.util.List;
@@ -48,9 +49,11 @@ public class SplitForkGraphCreator {
 
     private static void forceNextCreator(
             final SyncTestParams params, final StandardEventEmitter emitter, final int creatorToFork) {
-        for (int i = 0; i < emitter.getGraphGenerator().getNumberOfSources(); i++) {
+        final AddressBook addressBook = emitter.getGraphGenerator().getAddressBook();
+        final int numberOfSources = addressBook.getSize();
+        for (int i = 0; i < numberOfSources; i++) {
             final boolean sourceIsCreatorToFork = i == creatorToFork;
-            emitter.getGraphGenerator().getSource(i).setNewEventWeight((r, index, prev) -> {
+            emitter.getGraphGenerator().getSource(addressBook.getNodeId(i)).setNewEventWeight((r, index, prev) -> {
                 if (index < params.getNumCommonEvents()) {
                     return 1.0;
                 } else if (index == params.getNumCommonEvents() && sourceIsCreatorToFork) {
