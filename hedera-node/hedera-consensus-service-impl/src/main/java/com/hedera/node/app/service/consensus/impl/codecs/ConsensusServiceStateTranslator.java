@@ -101,10 +101,8 @@ public class ConsensusServiceStateTranslator {
                                         topic.submitKeyOrElse(Key.DEFAULT))
                                 .orElse(null),
                         topic.autoRenewPeriod(),
-                        new com.hedera.node.app.service.mono.state.submerkle.EntityId(
-                                topic.autoRenewAccountId().shardNum(),
-                                topic.autoRenewAccountId().realmNum(),
-                                topic.autoRenewAccountId().accountNum()),
+                        com.hedera.node.app.service.mono.state.submerkle.EntityId.fromPbjAccountId(
+                                topic.autoRenewAccountId()),
                         new com.hedera.node.app.service.mono.state.submerkle.RichInstant(topic.expiry(), 0));
         monoTopic.setRunningHash(PbjConverter.asBytes(topic.runningHash()));
         monoTopic.setSequenceNumber(topic.sequenceNumber());
