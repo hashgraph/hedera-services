@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.isAlias;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
@@ -42,7 +43,12 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustHbarChangesStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.CustomFeeAssessmentStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferStep;
@@ -107,6 +113,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.cryptoTransferOrThrow();
+        final var topLevelPayer = txn.transactionIDOrThrow().accountIDOrThrow();
 
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
@@ -120,7 +127,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         // Replace all aliases in the transaction body with its account ids
         final var replacedOp = ensureAndReplaceAliasesInOp(txn, transferContext, context);
         // Use the op with replaced aliases in further steps
-        final var steps = decomposeIntoSteps(replacedOp);
+        final var steps = decomposeIntoSteps(replacedOp, topLevelPayer);
         for (final var step : steps) {
             // Apply all changes to the handleContext's States
             step.doIn(transferContext);
@@ -185,16 +192,34 @@ public class CryptoTransferHandler implements TransactionHandler {
      * LEGEND: '+' = creates new BalanceChange(s) from either the transaction body, custom fee schedule, or staking reward situation
      *        'c' = updates an existing BalanceChange
      *        'o' = causes a side effect not represented as BalanceChange
-     * @param op The crypto transfer transaction body
+     *
+     * @param op            The crypto transfer transaction body
+     * @param topLevelPayer
      * @return A list of steps to execute
      */
-    private List<TransferStep> decomposeIntoSteps(final CryptoTransferTransactionBody op) {
+    private List<TransferStep> decomposeIntoSteps(
+            final CryptoTransferTransactionBody op, final AccountID topLevelPayer) {
         final List<TransferStep> steps = new ArrayList<>();
-        // TODO: implement other steps
+        // Step 1: associate any token recipients that are not already associated and have
+        // auto association slots open
+        final var associateTokenRecepients = new AssociateTokenRecipientsStep(op);
+        // Step 2: Charge custom fees for token transfers. yet to be implemented
+        final var customFeeAssessmentStep = new CustomFeeAssessmentStep(op);
+        // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
+        final var assessHbarTransfers = new AdjustHbarChangesStep(op, topLevelPayer);
+        // Step 4: Charge token transfers with an approval. Modify the allowances map on account
+        final var assessFungibleTokenTransfers = new AdjustFungibleTokenChangesStep(op, topLevelPayer);
+        // Step 5: Change NFT owners and also ones with isApproval. Clear the spender on NFT
+        final var changeNftOwners = new NFTOwnersChangeStep(op, topLevelPayer);
+        // Step 6: TODO Pay staking rewards
+
+        steps.add(associateTokenRecepients);
+        steps.add(assessHbarTransfers);
+        steps.add(assessFungibleTokenTransfers);
+        steps.add(changeNftOwners);
 
         return steps;
     }
-
     /**
      * As part of pre-handle, checks that HBAR or fungible token transfers in the transfer list are plausible.
      *
@@ -367,9 +392,5 @@ public class CryptoTransferHandler implements TransactionHandler {
             }
         }
         return false;
-    }
-
-    public static boolean isAlias(final AccountID idOrAlias) {
-        return !idOrAlias.hasAccountNum() && idOrAlias.hasAlias();
     }
 }
