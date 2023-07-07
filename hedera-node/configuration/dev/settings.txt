@@ -15,6 +15,7 @@ sync.syncProtocolPermitCount,                  2                            # di
 
 jasperDb.iteratorInputBufferBytes,             16777216
 merkleDb.iteratorInputBufferBytes,             16777216
+merkleDb.hashesRamToDiskThreshold,             8388608
 state.checkSignedStateFromDisk,                true
 state.saveStatePeriod,                         300                          # differs from mainnet
 state.signedStateDisk,                         5

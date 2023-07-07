@@ -22,7 +22,7 @@ import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.statistics.internal.StatsBuffer;
+import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;

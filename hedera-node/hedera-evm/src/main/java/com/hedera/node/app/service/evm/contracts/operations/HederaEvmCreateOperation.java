@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.operations;
 
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldUpdater;
 import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -44,9 +44,16 @@ public class HederaEvmCreateOperation extends AbstractEvmRecordingCreateOperatio
 
     @Override
     protected Address targetContractAddress(MessageFrame frame) {
-        final var updater = (HederaEvmWorldUpdater) frame.getWorldUpdater();
-        final Address address = updater.newContractAddress(frame.getRecipientAddress());
+        final var sourceAddressOrAlias = frame.getRecipientAddress();
+        final var sourceNonce =
+                frame.getWorldUpdater().getAccount(sourceAddressOrAlias).getNonce();
+        final var updater = (HederaEvmStackedWorldUpdater) frame.getWorldUpdater();
+        // Decrement nonce by 1 to normalize the effect of transaction execution
+        final var alias = Address.contractAddress(sourceAddressOrAlias, sourceNonce - 1L);
+
+        final Address address = updater.newAliasedContractAddress(sourceAddressOrAlias, alias);
         frame.warmUpAddress(address);
-        return address;
+        frame.warmUpAddress(alias);
+        return alias;
     }
 }
