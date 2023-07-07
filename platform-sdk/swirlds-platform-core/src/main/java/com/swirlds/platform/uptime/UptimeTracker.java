@@ -236,10 +236,10 @@ public class UptimeTracker {
             }
 
             // Temporarily disabled until we properly detect judges in a round
-//            final long lastJudgeRound = uptimeData.getLastJudgeRound(id);
-//            if (lastJudgeRound != NO_ROUND) {
-//                uptimeMetrics.getRoundsSinceLastJudgeMetric(id).update(currentRound - lastJudgeRound);
-//            }
+            //            final long lastJudgeRound = uptimeData.getLastJudgeRound(id);
+            //            if (lastJudgeRound != NO_ROUND) {
+            //                uptimeMetrics.getRoundsSinceLastJudgeMetric(id).update(currentRound - lastJudgeRound);
+            //            }
         }
 
         final double fractionOfNetworkAlive = (double) nonDegradedConsensusWeight / addressBook.getTotalWeight();
