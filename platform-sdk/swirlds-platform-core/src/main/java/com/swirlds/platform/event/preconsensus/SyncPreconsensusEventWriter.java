@@ -213,6 +213,7 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
         final PreconsensusEventFile file = fileManager.getNextFileDescriptor(0, 0, true);
 
         try {
+            Files.createDirectories(file.getPath().getParent());
             Files.createFile(file.getPath());
         } catch (final IOException e) {
             throw new UncheckedIOException("unable to create file to mark discontinuity", e);
