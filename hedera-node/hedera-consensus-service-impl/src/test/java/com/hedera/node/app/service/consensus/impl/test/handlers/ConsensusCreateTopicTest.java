@@ -247,7 +247,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                 .willReturn(new ExpiryMeta(
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
-                        op.autoRenewAccount().accountNum()));
+                        op.autoRenewAccount()));
         given(handleContext.newEntityNum()).willReturn(1_234L);
 
         subject.handle(handleContext);
@@ -283,7 +283,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                 .willReturn(new ExpiryMeta(
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
-                        op.autoRenewAccount().accountNumOrElse(0L)));
+                        op.autoRenewAccount()));
         given(handleContext.newEntityNum()).willReturn(1_234L);
 
         subject.handle(handleContext);

@@ -31,42 +31,6 @@ import com.hedera.hapi.node.base.AccountID;
 public record ExpiryMeta(long expiry, long autoRenewPeriod, AccountID autoRenewAccountId) {
 
     /**
-     * For convenience in tests, creates an instance with the given expiry, auto-renew period,
-     * and auto-renew account number with zeros for the shard and realm of the auto-renew account.
-     *
-     * @param expiry the consensus second at which the entity expires
-     * @param autoRenewPeriod the number of seconds between auto-renewals
-     */
-    public ExpiryMeta(long expiry, long autoRenewPeriod, long autoRenewNum) {
-        this(
-                expiry,
-                autoRenewPeriod,
-                AccountID.newBuilder()
-                        .shardNum(0)
-                        .realmNum(0)
-                        .accountNum(autoRenewNum)
-                        .build());
-    }
-
-    /**
-     * For convenience in tests, creates an instance with the given expiry, auto-renew period,
-     * and auto-renew account number with zeros for the shard and realm of the auto-renew account.
-     *
-     * @param expiry the consensus second at which the entity expires
-     * @param autoRenewPeriod the number of seconds between auto-renewals
-     */
-    public ExpiryMeta(long expiry, long autoRenewPeriod, long autoRenewShard, long autoRenewRealm, long autoRenewNum) {
-        this(
-                expiry,
-                autoRenewPeriod,
-                AccountID.newBuilder()
-                        .shardNum(autoRenewShard)
-                        .realmNum(autoRenewRealm)
-                        .accountNum(autoRenewNum)
-                        .build());
-    }
-
-    /**
      * A sentinel value indicating some part of the metadata is not available..
      */
     public static long NA = Long.MIN_VALUE;
@@ -95,7 +59,7 @@ public record ExpiryMeta(long expiry, long autoRenewPeriod, AccountID autoRenewA
      * @return whether this metadata has explicit auto-renew account
      */
     public boolean hasAutoRenewAccountId() {
-        return autoRenewAccountId.accountNum() != NA;
+        return autoRenewAccountId != null;
     }
 
     /**

@@ -268,7 +268,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var resolvedExpiryMeta = context.expiryValidator().resolveCreationAttempt(false, givenExpiryMeta);
 
         // validate auto-renew account exists
-        if (resolvedExpiryMeta.autoRenewAccountId().accountNum() != 0) {
+        if (resolvedExpiryMeta.hasAutoRenewAccountId()) {
             TokenHandlerHelper.getIfUsable(
                     resolvedExpiryMeta.autoRenewAccountId(),
                     accountStore,

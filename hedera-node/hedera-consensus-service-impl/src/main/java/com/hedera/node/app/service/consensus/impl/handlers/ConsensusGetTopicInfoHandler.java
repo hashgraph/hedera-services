@@ -142,7 +142,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
             if (!isEmpty(meta.adminKey())) info.adminKey(meta.adminKey());
             if (!isEmpty(meta.submitKey())) info.submitKey(meta.submitKey());
             info.autoRenewPeriod(Duration.newBuilder().seconds(meta.autoRenewPeriod()));
-            if (meta.autoRenewAccountId().accountNum() != 0) info.autoRenewAccount(meta.autoRenewAccountId());
+            if (meta.hasAutoRenewAccountId()) info.autoRenewAccount(meta.autoRenewAccountId());
 
             info.ledgerId(config.id());
             return Optional.of(info.build());

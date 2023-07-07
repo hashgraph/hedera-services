@@ -22,10 +22,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOU
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
-import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TopicID;
@@ -112,13 +110,9 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         final var impliedExpiry = handleContext.consensusNow().getEpochSecond()
                 + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
-        final var accountId = AccountID.newBuilder()
-                .shardNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().shardNum() : NA)
-                .realmNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().realmNum() : NA)
-                .accountNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA)
-                .build();
+
         final var entityExpiryMeta = new ExpiryMeta(
-                impliedExpiry, op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(), accountId);
+                impliedExpiry, op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(), op.autoRenewAccount());
 
         try {
             final var effectiveExpiryMeta =

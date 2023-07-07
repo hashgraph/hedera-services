@@ -25,7 +25,6 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TopicID;
@@ -183,12 +182,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final Topic topic) {
         final var currentMeta = new ExpiryMeta(topic.expiry(), topic.autoRenewPeriod(), topic.autoRenewAccountId());
         if (updatesExpiryMeta(op)) {
-            final var accountID = AccountID.newBuilder()
-                    .shardNum(effAutoRenewShardOf(op))
-                    .realmNum(effAutoRenewRealmOf(op))
-                    .accountNum(effAutoRenewNumOf(op))
-                    .build();
-            final var updateMeta = new ExpiryMeta(effExpiryOf(op), effAutoRenewPeriodOf(op), accountID);
+            final var updateMeta = new ExpiryMeta(effExpiryOf(op), effAutoRenewPeriodOf(op), op.autoRenewAccount());
             return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);
         } else {
             return currentMeta;
@@ -201,18 +195,6 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
     private long effAutoRenewPeriodOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return op.hasAutoRenewPeriod() ? op.autoRenewPeriodOrThrow().seconds() : NA;
-    }
-
-    private long effAutoRenewShardOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
-        return op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow().shardNum() : NA;
-    }
-
-    private long effAutoRenewRealmOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
-        return op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow().realmNum() : NA;
-    }
-
-    private long effAutoRenewNumOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
-        return op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow().accountNumOrElse(NA) : NA;
     }
 
     private boolean updatesExpiryMeta(@NonNull final ConsensusUpdateTopicTransactionBody op) {
