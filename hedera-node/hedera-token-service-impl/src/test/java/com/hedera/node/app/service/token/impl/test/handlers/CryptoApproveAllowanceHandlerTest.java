@@ -198,9 +198,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(existingOwner.approveForAllNftAllowances()).hasSize(1);
 
         assertThat(existingOwner.cryptoAllowances().get(0).spenderNum()).isEqualTo(spenderId.accountNum());
-        assertThat(existingOwner.cryptoAllowances().get(0).amount()).isEqualTo(100);
+        assertThat(existingOwner.cryptoAllowances().get(0).amount()).isEqualTo(1000);
         assertThat(existingOwner.tokenAllowances().get(0).spenderNum()).isEqualTo(spenderId.accountNum());
-        assertThat(existingOwner.tokenAllowances().get(0).amount()).isEqualTo(100);
+        assertThat(existingOwner.tokenAllowances().get(0).amount()).isEqualTo(1000);
         assertThat(existingOwner.tokenAllowances().get(0).tokenNum()).isEqualTo(fungibleTokenId.tokenNum());
         assertThat(existingOwner.approveForAllNftAllowances().get(0).spenderNum())
                 .isEqualTo(spenderId.accountNum());

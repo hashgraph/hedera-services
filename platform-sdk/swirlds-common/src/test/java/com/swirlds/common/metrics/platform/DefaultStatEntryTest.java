@@ -36,7 +36,7 @@ import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import java.util.function.Consumer;
