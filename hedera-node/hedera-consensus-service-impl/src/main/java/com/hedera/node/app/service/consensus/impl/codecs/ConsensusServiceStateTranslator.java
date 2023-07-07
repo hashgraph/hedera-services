@@ -18,7 +18,6 @@ package com.hedera.node.app.service.consensus.impl.codecs;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
@@ -62,11 +61,7 @@ public class ConsensusServiceStateTranslator {
         if (monoTopic.hasSubmitKey()) topicBuilder.submitKey(PbjConverter.asPbjKey(monoTopic.getSubmitKey()));
         topicBuilder.autoRenewPeriod(monoTopic.getAutoRenewDurationSeconds());
         final var autoRenewAccountId = monoTopic.getAutoRenewAccountId();
-        topicBuilder.autoRenewAccountId(AccountID.newBuilder()
-                .shardNum(autoRenewAccountId.shard())
-                .realmNum(autoRenewAccountId.realm())
-                .accountNum(autoRenewAccountId.num())
-                .build());
+        topicBuilder.autoRenewAccountId(autoRenewAccountId.toPbjAccountId());
         topicBuilder.expiry(monoTopic.getExpirationTimestamp().getSeconds());
         topicBuilder.runningHash(Bytes.wrap(monoTopic.getRunningHash()));
         topicBuilder.sequenceNumber(monoTopic.getSequenceNumber());

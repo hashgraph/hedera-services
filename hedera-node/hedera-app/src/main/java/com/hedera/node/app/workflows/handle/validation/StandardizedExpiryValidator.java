@@ -177,7 +177,7 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
      * @param accountID the account id to validate
      * @throws HandleException if the account number is invalid
      */
-    private void validateAutoRenewAccount(AccountID accountID) {
+    private void validateAutoRenewAccount(final AccountID accountID) {
         validateTrue(
                 accountID.shardNum() == numbers.shard() && accountID.realmNum() == numbers.realm(),
                 INVALID_AUTORENEW_ACCOUNT);
