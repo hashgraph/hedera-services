@@ -16,14 +16,6 @@
 
 package com.hedera.node.app.workflows.ingest;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Transaction;
@@ -42,13 +34,22 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.WorkflowsValidationUtil;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
 import java.util.HashSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import javax.inject.Inject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
+import static java.util.Objects.requireNonNull;
 
 /**
  * The {@code IngestChecker} contains checks that are specific to the ingest workflow
@@ -114,7 +115,7 @@ public final class IngestChecker {
     public TransactionInfo runAllChecks(@NonNull final HederaState state, @NonNull final Transaction tx)
             throws PreCheckException {
         // 1. Check the syntax
-        final var txInfo = transactionChecker.syntaxCheck(tx);
+        final var txInfo = transactionChecker.check(tx);
         final var txBody = txInfo.txBody();
         final var functionality = txInfo.functionality();
 
