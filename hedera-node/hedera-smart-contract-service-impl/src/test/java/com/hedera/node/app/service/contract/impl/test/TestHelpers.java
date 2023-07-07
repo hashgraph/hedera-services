@@ -48,6 +48,7 @@ public class TestHelpers {
     public static long REQUIRED_GAS = 123L;
     public static long NONCE = 678;
     public static long VALUE = 999_999;
+    public static Wei WEI_VALUE = Wei.of(VALUE);
     public static long INTRINSIC_GAS = 12_345;
     public static long GAS_LIMIT = 1_000_000;
     public static long DEFAULT_COINBASE = 98;
