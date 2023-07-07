@@ -123,7 +123,7 @@ class IngestCheckerTest extends AppTestBase {
 
         final var transactionInfo = new TransactionInfo(
                 tx, txBody, MOCK_SIGNATURE_MAP, tx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
-        when(transactionChecker.check(tx)).thenReturn(transactionInfo);
+        when(transactionChecker.syntaxCheck(tx)).thenReturn(transactionInfo);
 
         subject = new IngestChecker(
                 currentPlatformStatus,
@@ -196,9 +196,9 @@ class IngestCheckerTest extends AppTestBase {
         @ParameterizedTest(name = "TransactionChecker fails with error code {0}")
         @MethodSource("failureReasons")
         @DisplayName("If the transaction fails TransactionChecker, a failure response is returned with the right error")
-        void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) throws PreCheckException {
+        void onsetFailsWithPreCheckException(final ResponseCodeEnum failureReason) throws PreCheckException {
             // Given a TransactionChecker that will throw a PreCheckException with the given failure reason
-            when(transactionChecker.check(any())).thenThrow(new PreCheckException(failureReason));
+            when(transactionChecker.syntaxCheck(any())).thenThrow(new PreCheckException(failureReason));
 
             // When the transaction is checked
             assertThatThrownBy(() -> subject.runAllChecks(state, tx))
@@ -210,7 +210,7 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("If some random exception is thrown from TransactionChecker, the exception is bubbled up")
         void randomException() throws PreCheckException {
             // Given a WorkflowOnset that will throw a RuntimeException
-            when(transactionChecker.check(any())).thenThrow(new RuntimeException("check exception"));
+            when(transactionChecker.syntaxCheck(any())).thenThrow(new RuntimeException("check exception"));
 
             // When the transaction is submitted, then the exception is bubbled up
             assertThatThrownBy(() -> subject.runAllChecks(state, tx))
@@ -261,7 +261,7 @@ class IngestCheckerTest extends AppTestBase {
         @ParameterizedTest(name = "Check of account status fails with error code {0}")
         @MethodSource("failureReasons")
         @DisplayName("If the status of the payer account is invalid, the transaction should be rejected")
-        void payerAccountStatusFails(ResponseCodeEnum failureReason) throws PreCheckException {
+        void payerAccountStatusFails(final ResponseCodeEnum failureReason) throws PreCheckException {
             doThrow(new PreCheckException(failureReason)).when(solvencyPreCheck).checkPayerAccountStatus(any(), any());
 
             assertThatThrownBy(() -> subject.runAllChecks(state, tx))
@@ -298,7 +298,7 @@ class IngestCheckerTest extends AppTestBase {
         @ParameterizedTest(name = "Check of payer's balance fails with error code {0}")
         @MethodSource("failureReasons")
         @DisplayName("If the payer has insufficient funds, the transaction should be rejected")
-        void payerAccountStatusFails(ResponseCodeEnum failureReason) throws PreCheckException {
+        void payerAccountStatusFails(final ResponseCodeEnum failureReason) throws PreCheckException {
             doThrow(new InsufficientBalanceException(failureReason, 123L))
                     .when(solvencyPreCheck)
                     .checkSolvencyOfVerifiedPayer(any(), any());

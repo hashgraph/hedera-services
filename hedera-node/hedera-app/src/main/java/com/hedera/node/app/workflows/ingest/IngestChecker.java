@@ -110,7 +110,7 @@ public final class IngestChecker {
     public TransactionInfo runAllChecks(@NonNull final HederaState state, @NonNull final Transaction tx)
             throws PreCheckException {
         // 1. Check the syntax
-        final var txInfo = transactionChecker.check(tx);
+        final var txInfo = transactionChecker.syntaxCheck(tx);
         final var txBody = txInfo.txBody();
         final var functionality = txInfo.functionality();
 
