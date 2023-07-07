@@ -119,8 +119,8 @@ public final class IngestChecker {
         // will convert that to INVALID_TRANSACTION_BODY.
         assert functionality != HederaFunctionality.NONE;
 
-        // 2. Deduplicate
-        // TODO: Integrate solution from preHandle workflow once it is merged
+        // 2. Check transaction duplication
+        transactionChecker.checkDuplicates(txBody);
 
         // 3. Check throttles
         if (throttleAccumulator.shouldThrottle(txInfo.txBody())) {
@@ -187,15 +187,15 @@ public final class IngestChecker {
             if (!verificationResult.passed()) {
                 throw new PreCheckException(INVALID_SIGNATURE);
             }
-        } catch (TimeoutException e) {
+        } catch (final TimeoutException e) {
             // FUTURE: Have an alert and metric in our monitoring tools to make sure we are aware if this happens
             logger.warn("Signature verification timed out during ingest");
             throw new RuntimeException(e);
-        } catch (ExecutionException e) {
+        } catch (final ExecutionException e) {
             // FUTURE: Have an alert and metric in our monitoring tools to make sure we are aware if this happens
             logger.warn("Signature verification failed during ingest", e);
             throw new RuntimeException(e);
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
             // This might not be a warn / error situation, if we were interrupted, it means that someone
             // is trying to shut down the server. So we can just throw and get out of here.
             Thread.currentThread().interrupt();

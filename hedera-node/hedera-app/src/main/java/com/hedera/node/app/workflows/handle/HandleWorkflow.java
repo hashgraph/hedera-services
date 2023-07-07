@@ -52,7 +52,6 @@ import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -79,6 +78,7 @@ public class HandleWorkflow {
     private final ServiceScopeLookup serviceScopeLookup;
     private final ConfigProvider configProvider;
     private final InstantSource instantSource;
+    private final TransactionChecker transactionChecker;
 
     @Inject
     public HandleWorkflow(
@@ -91,7 +91,8 @@ public class HandleWorkflow {
             @NonNull final TransactionChecker checker,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final InstantSource instantSource) {
+            @NonNull final InstantSource instantSource,
+            @NonNull final TransactionChecker transactionChecker) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -102,6 +103,7 @@ public class HandleWorkflow {
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
+        this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
     }
 
     /**
@@ -125,7 +127,7 @@ public class HandleWorkflow {
         }
 
         // Get the consensus timestamp
-        final Instant consensusNow = platformTxn.getConsensusTimestamp();
+        final var consensusNow = platformTxn.getConsensusTimestamp();
 
         // Setup record builder list
         recordManager.startUserTransaction(consensusNow);
@@ -134,13 +136,16 @@ public class HandleWorkflow {
 
         try {
             // Setup configuration
-            var configuration = configProvider.getConfiguration();
+            final var configuration = configProvider.getConfiguration();
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
 
             final var preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
             recordBuilder.transaction(
                     preHandleResult.txInfo().transaction(),
                     preHandleResult.txInfo().signedBytes());
+
+            // Check transaction duplication
+            transactionChecker.checkDuplicates(preHandleResult.txInfo().txBody());
 
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
@@ -277,7 +282,7 @@ public class HandleWorkflow {
 
     private boolean preHandleStillValid(
             @NonNull final VersionedConfiguration configuration, @Nullable final Object metadata) {
-        if (metadata instanceof PreHandleResult preHandleResult) {
+        if (metadata instanceof final PreHandleResult preHandleResult) {
             return preHandleResult.configVersion() == configuration.getVersion();
         }
         return false;
