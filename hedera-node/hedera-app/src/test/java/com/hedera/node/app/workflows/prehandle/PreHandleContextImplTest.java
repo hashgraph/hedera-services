@@ -141,8 +141,7 @@ class PreHandleContextImplTest implements Scenarios {
             final var bob = BOB.accountID();
 
             // when
-            assertThatThrownBy(() -> subject.allKeysForTransaction(null, bob))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.allKeysForTransaction(null, bob)).isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.allKeysForTransaction(TransactionBody.DEFAULT, null))
                     .isInstanceOf(NullPointerException.class);
         }
@@ -151,25 +150,31 @@ class PreHandleContextImplTest implements Scenarios {
         void testAllKeysForTransactionSuccess() throws PreCheckException {
             // given
             doAnswer(invocation -> {
-                final var innerContext = invocation.getArgument(0, PreHandleContext.class);
-                innerContext.requireKey(BOB.account().key());
-                innerContext.optionalKey(CAROL.account().key());
-                return null;
-            }).when(dispatcher).dispatchPreHandle(any());
+                        final var innerContext = invocation.getArgument(0, PreHandleContext.class);
+                        innerContext.requireKey(BOB.account().key());
+                        innerContext.optionalKey(CAROL.account().key());
+                        return null;
+                    })
+                    .when(dispatcher)
+                    .dispatchPreHandle(any());
 
             // when
             final var keys = subject.allKeysForTransaction(TransactionBody.DEFAULT, ERIN.accountID());
 
             // then
             assertThat(keys.payerKey()).isEqualTo(ERIN.account().key());
-            assertThat(keys.requiredNonPayerKeys()).containsExactly(BOB.account().key());
-            assertThat(keys.optionalNonPayerKeys()).containsExactly(CAROL.account().key());
+            assertThat(keys.requiredNonPayerKeys())
+                    .containsExactly(BOB.account().key());
+            assertThat(keys.optionalNonPayerKeys())
+                    .containsExactly(CAROL.account().key());
         }
 
         @Test
         void testAllKeysForTransactionWithFailingPureCheck() throws PreCheckException {
             // given
-            doThrow(new PreCheckException(INVALID_TRANSACTION_BODY)).when(dispatcher).dispatchPureChecks(any());
+            doThrow(new PreCheckException(INVALID_TRANSACTION_BODY))
+                    .when(dispatcher)
+                    .dispatchPureChecks(any());
 
             // then
             assertThatThrownBy(() -> subject.allKeysForTransaction(TransactionBody.DEFAULT, ERIN.accountID()))
@@ -180,7 +185,9 @@ class PreHandleContextImplTest implements Scenarios {
         @Test
         void testAllKeysForTransactionWithFailingPreHandle() throws PreCheckException {
             // given
-            doThrow(new PreCheckException(INSUFFICIENT_ACCOUNT_BALANCE)).when(dispatcher).dispatchPreHandle(any());
+            doThrow(new PreCheckException(INSUFFICIENT_ACCOUNT_BALANCE))
+                    .when(dispatcher)
+                    .dispatchPreHandle(any());
 
             // then
             assertThatThrownBy(() -> subject.allKeysForTransaction(TransactionBody.DEFAULT, ERIN.accountID()))
@@ -188,5 +195,4 @@ class PreHandleContextImplTest implements Scenarios {
                     .has(responseCode(INSUFFICIENT_ACCOUNT_BALANCE));
         }
     }
-
 }
