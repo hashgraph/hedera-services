@@ -42,6 +42,7 @@ import java.time.Instant;
  *     <li>Functionality to dispatch preceding and child transactions</li>
  * </ul>
  */
+@SuppressWarnings("UnusedReturnValue")
 public interface HandleContext {
 
     /**
