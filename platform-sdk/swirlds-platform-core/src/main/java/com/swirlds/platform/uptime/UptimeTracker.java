@@ -235,10 +235,11 @@ public class UptimeTracker {
                 uptimeMetrics.getRoundsSinceLastConsensusEventMetric(id).update(currentRound - lastEventRound);
             }
 
-            final long lastJudgeRound = uptimeData.getLastJudgeRound(id);
-            if (lastJudgeRound != NO_ROUND) {
-                uptimeMetrics.getRoundsSinceLastJudgeMetric(id).update(currentRound - lastJudgeRound);
-            }
+            // Temporarily disabled until we properly detect judges in a round
+//            final long lastJudgeRound = uptimeData.getLastJudgeRound(id);
+//            if (lastJudgeRound != NO_ROUND) {
+//                uptimeMetrics.getRoundsSinceLastJudgeMetric(id).update(currentRound - lastJudgeRound);
+//            }
         }
 
         final double fractionOfNetworkAlive = (double) nonDegradedConsensusWeight / addressBook.getTotalWeight();
