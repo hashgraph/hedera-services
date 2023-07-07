@@ -45,6 +45,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustHbarChangesStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.CustomFeeAssessmentStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
@@ -207,19 +208,24 @@ public class CryptoTransferHandler implements TransactionHandler {
         steps.add(new AssociateTokenRecepientsStep(op));
         // Step 2: Charge custom fees for token transfers. yet to be implemented
         final var customFeeStep = new CustomFeeAssessmentStep(op);
-        final var listOfOps = customFeeStep.assessCustomFees(transferContext);
+        // The below steps should be doe for both custom fee assessed transaction in addition to
+        // original transaction
+        final var customFeeAssessedOp = customFeeStep.assessCustomFees(transferContext);
+        final var opsList = List.of(op, customFeeAssessedOp);
 
-        // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
-        final var assessHbarTransfers = new AdjustHbarChangesStep(op, topLevelPayer);
-        // Step 4: Charge token transfers with an approval. Modify the allowances map on account
-        final var assessFungibleTokenTransfers = new AdjustFungibleTokenChangesStep(op, topLevelPayer);
-        // Step 5: Change NFT owners and also ones with isApproval. Clear the spender on NFT
-        final var changeNftOwners = new NFTOwnersChangeStep(op, topLevelPayer);
-        // Step 6: TODO Pay staking rewards
+        for( final var txn : opsList) {
+            // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
+            final var assessHbarTransfers = new AdjustHbarChangesStep(txn, topLevelPayer);
+            // Step 4: Charge token transfers with an approval. Modify the allowances map on account
+            final var assessFungibleTokenTransfers = new AdjustFungibleTokenChangesStep(txn, topLevelPayer);
+            // Step 5: Change NFT owners and also ones with isApproval. Clear the spender on NFT
+            final var changeNftOwners = new NFTOwnersChangeStep(txn, topLevelPayer);
+            // Step 6: TODO Pay staking rewards
 
-        steps.add(assessHbarTransfers);
-        steps.add(assessFungibleTokenTransfers);
-        steps.add(changeNftOwners);
+            steps.add(assessHbarTransfers);
+            steps.add(assessFungibleTokenTransfers);
+            steps.add(changeNftOwners);
+        }
 
         return steps;
     }

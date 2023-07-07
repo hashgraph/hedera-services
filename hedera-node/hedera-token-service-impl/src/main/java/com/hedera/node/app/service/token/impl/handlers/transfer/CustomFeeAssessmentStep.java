@@ -60,9 +60,8 @@ public class CustomFeeAssessmentStep {
         customFeeAssessor = new CustomFeeAssessor(fixedFeeAssessor, fractionalFeeAssessor, royaltyFeeAssessor, op);
     }
 
-    public CryptoTransferTransactionBody.Builder assessCustomFees(@NonNull final TransferContext transferContext) {
+    public CryptoTransferTransactionBody assessCustomFees(@NonNull final TransferContext transferContext) {
         requireNonNull(transferContext);
-        final var customFeeAssessments = new ArrayList<>();
 
         final var handleContext = transferContext.getHandleContext();
         final var tokenTransfers = op.tokenTransfersOrElse(emptyList());
@@ -88,21 +87,22 @@ public class CustomFeeAssessmentStep {
                 customFeeTokenAdjustmentsLevel1,
                 exemptDebitsLevel1);
 
-        final var nextLevelBuilder =
+        final var level2Builder =
                 buildTransactionFromAdjustments(customFeeHbarAdjustmentsLevel1, customFeeTokenAdjustmentsLevel1);
-        customFeeAssessments.add(nextLevelBuilder);
 
         // There can only be three levels of custom fees. So assess the generated builder again
         // for last level of custom fees
         assessCustomFeesForALevel(
-                nextLevelBuilder.build().tokenTransfers(),
+                level2Builder.build().tokenTransfers(),
                 tokenStore,
                 tokensConfig,
-                customFeeHbarAdjustments,
-                customFeeTokenAdjustments,
-                exemptDebits);
+                customFeeHbarAdjustmentsLevel1,
+                customFeeTokenAdjustmentsLevel1,
+                exemptDebitsLevel1);
 
-        return nextLevelBuilder;
+        final var level3Builder =
+                buildTransactionFromAdjustments(customFeeHbarAdjustmentsLevel1, customFeeTokenAdjustmentsLevel1);
+        return level3Builder.build();
     }
 
     private CryptoTransferTransactionBody.Builder buildTransactionFromAdjustments(
@@ -142,9 +142,11 @@ public class CustomFeeAssessmentStep {
             List<TokenTransferList> tokenTransfers,
             ReadableTokenStore tokenStore,
             TokensConfig tokensConfig,
+            LedgerConfig ledgerConfig,
             Map<AccountID, Long> customFeeHbarAdjustments,
             Map<TokenID, Map<AccountID, Long>> customFeeTokenAdjustments,
             Set<TokenID> exemptDebits) {
+        final int maxTransfersSize = ledgerConfig.xferBalanceChangesMaxLen();
         for (final var xfer : tokenTransfers) {
             final var tokenId = xfer.token();
             final var fungibleTokenTransfers = xfer.transfersOrElse(emptyList());
@@ -168,7 +170,8 @@ public class CustomFeeAssessmentStep {
                                 tokensConfig,
                                 customFeeHbarAdjustments,
                                 customFeeTokenAdjustments,
-                                exemptDebits);
+                                exemptDebits,
+                                maxTransfersSize);
                     }
                 }
             }
@@ -184,7 +187,8 @@ public class CustomFeeAssessmentStep {
                                 tokensConfig,
                                 customFeeHbarAdjustments,
                                 customFeeTokenAdjustments,
-                                exemptDebits);
+                                exemptDebits,
+                                maxTransfersSize);
                     }
                 }
             }
@@ -193,14 +197,18 @@ public class CustomFeeAssessmentStep {
 
     /**
      * Custom fee that is self-denominated is exempt from further custom fee charging.
-     * @param chargingTokenId the token that is being charged
+     *
+     * @param chargingTokenId     the token that is being charged
      * @param denominatingTokenID the token that is being used as denomination to pay the fee
+     * @param exemptDebits
      * @return true if the custom fee is self-denominated
      */
-    private boolean isExemptFromCustomFees(TokenID chargingTokenId, TokenID denominatingTokenID) {
+    private boolean isExemptFromCustomFees(TokenID chargingTokenId,
+                                           TokenID denominatingTokenID,
+                                           final Set<TokenID> exemptDebits) {
         /* But self-denominated fees are exempt from further custom fee charging,
         c.f. https://github.com/hashgraph/hedera-services/issues/1925 */
-        return chargingTokenId.equals(denominatingTokenID);
+        return chargingTokenId.equals(denominatingTokenID)|| exemptDebits.contains(denominatingTokenID);
     }
     /**
      * Checks if the adjustment will trigger a custom fee.
@@ -222,8 +230,7 @@ public class CustomFeeAssessmentStep {
             boolean isFungibleTokenTransfer,
             long adjustment,
             final Set<TokenID> exemptDebits) {
-        if (isExemptFromCustomFees(chargingTokenId, denominatingTokenID)
-                || exemptDebits.contains(denominatingTokenID)) {
+        if (isExemptFromCustomFees(chargingTokenId, denominatingTokenID, exemptDebits)) {
             return false;
         } else {
             return isNftTransfer || (isFungibleTokenTransfer && adjustment < 0);

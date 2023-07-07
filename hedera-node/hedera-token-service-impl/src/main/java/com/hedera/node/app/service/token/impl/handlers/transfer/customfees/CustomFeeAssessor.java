@@ -75,7 +75,8 @@ public class CustomFeeAssessor {
             final TokensConfig tokensConfig,
             final Map<AccountID, Long> hbarAdjustments,
             final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
-            final Set<TokenID> exemptDebits) {
+            final Set<TokenID> exemptDebits,
+            final int maxTransfersSize) {
         // increment the level to create transaction body from all custom fees assessed from original
         // transaction
         levelNum++;
@@ -89,7 +90,6 @@ public class CustomFeeAssessor {
         fixedFeeAssessor.assessFixedFees(feeMeta, sender, hbarAdjustments, htsAdjustments, exemptDebits);
         totalBalanceChanges += hbarAdjustments.size() + htsAdjustments.size();
         validateFalse(totalBalanceChanges > maxTransfersSize, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
-        ;
 
         // A FUNGIBLE_COMMON token can have fractional fees but not royalty fees.
         // A NON_FUNGIBLE_UNIQUE token can have royalty fees but not fractional fees.

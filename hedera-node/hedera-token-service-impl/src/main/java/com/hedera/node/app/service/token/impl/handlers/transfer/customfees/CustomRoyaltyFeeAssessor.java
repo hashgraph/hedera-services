@@ -16,98 +16,17 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
+
+import java.util.Map;
+
 public class CustomRoyaltyFeeAssessor {
     public CustomRoyaltyFeeAssessor() {}
 
-    //    public ResponseCodeEnum assessAllRoyalties(
-    //            final BalanceChange change,
-    //            final CustomFeeMeta customFeeMeta,
-    //            final BalanceChangeManager changeManager,
-    //            final List<AssessedCustomFeeWrapper> accumulator) {
-    //        if (!change.isForNft()) {
-    //            /* This change was denominated in a non-fungible token type---but appeared
-    //             * in the fungible transfer list. Fail now with the appropriate status. */
-    //            return ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
-    //        }
-    //
-    //        final var payer = change.getAccount();
-    //        final var token = change.getToken();
-    //
-    //        /* If the same account sends multiple NFTs of the same type in the
-    //        same transfer, we only charge the royalties once. */
-    //        if (changeManager.isRoyaltyPaid(token, payer)) {
-    //            return OK;
-    //        }
-    //
-    //        final var exchangedValue = changeManager.fungibleCreditsInCurrentLevel(payer);
-    //        for (var fee : customFeeMeta.customFees()) {
-    //            final var collector = fee.getFeeCollectorAsId();
-    //            if (fee.getFeeType() != ROYALTY_FEE) {
-    //                continue;
-    //            }
-    //            final var spec = fee.getRoyaltyFeeSpec();
-    //
-    //            if (exchangedValue.isEmpty()) {
-    //                final var fallback = spec.fallbackFee();
-    //                if (fallback != null) {
-    //                    // A NFT transfer with royalty fees to an unknown alias is not possible, since
-    //                    // the auto-created
-    //                    // account will not have any hbar to pay the fallback fee
-    //                    if (change.hasNonEmptyCounterPartyAlias()) {
-    //                        return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
-    //                    }
-    //                    final var receiver = Id.fromGrpcAccount(change.counterPartyAccountId());
-    //                    final var fallbackFee = FcCustomFee.fixedFee(
-    //                            fallback.getUnitsToCollect(),
-    //                            fallback.getTokenDenomination(),
-    //                            collector.asEntityId(),
-    //                            fee.getAllCollectorsAreExempt());
-    //                    fixedFeeAssessor.assess(
-    //                            receiver, customFeeMeta, fallbackFee, changeManager, accumulator, IS_FALLBACK_FEE);
-    //                }
-    //            } else if (!customFeePayerExemptions.isPayerExempt(customFeeMeta, fee, payer)) {
-    //                final var fractionalValidity =
-    //                        chargeRoyalty(collector, spec, exchangedValue, fungibleAdjuster, changeManager,
-    // accumulator);
-    //                if (fractionalValidity != OK) {
-    //                    return fractionalValidity;
-    //                }
-    //            }
-    //        }
-    //
-    //        /* Note that this account has now paid all royalties for this NFT type */
-    //        changeManager.markRoyaltyPaid(token, payer);
-    //        return OK;
-    //    }
-    //
-    //    private ResponseCodeEnum chargeRoyalty(
-    //            final Id collector,
-    //            final RoyaltyFeeSpec spec,
-    //            final List<BalanceChange> exchangedValue,
-    //            final FungibleAdjuster fungibleAdjuster,
-    //            final BalanceChangeManager changeManager,
-    //            final List<AssessedCustomFeeWrapper> accumulator) {
-    //        for (var exchange : exchangedValue) {
-    //            long value = exchange.originalUnits();
-    //            long royaltyFee = AdjustmentUtils.safeFractionMultiply(spec.numerator(), spec.denominator(), value);
-    //            if (exchange.getAggregatedUnits() < royaltyFee) {
-    //                return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
-    //            }
-    //            exchange.aggregateUnits(-royaltyFee);
-    //            final var denom = exchange.isForHbar() ? MISSING_ID : exchange.getToken();
-    //            /* The id of the charging token is only used here to avoid recursively charging
-    //            on fees charged in the units of their denominating token; but this is a credit,
-    //            hence the id is irrelevant and we can use MISSING_ID. */
-    //            fungibleAdjuster.adjustedChange(collector, MISSING_ID, denom, royaltyFee, changeManager);
-    //            final var effPayerAccountNum =
-    //                    new AccountID[] {exchange.getAccount().asGrpcAccount()};
-    //            final var collectorId = collector.asEntityId();
-    //            final var assessed = exchange.isForHbar()
-    //                    ? new AssessedCustomFeeWrapper(collectorId, royaltyFee, effPayerAccountNum)
-    //                    : new AssessedCustomFeeWrapper(collectorId, denom.asEntityId(), royaltyFee,
-    // effPayerAccountNum);
-    //            accumulator.add(assessed);
-    //        }
-    //        return OK;
-    //    }
+    public void assessRoyaltyFees(final CustomFeeMeta feeMeta,
+                                  final AccountID sender,
+                                  final Map<AccountID, Long> hbarAdjustments,
+                                  final Map<TokenID, Map<AccountID, Long>> htsAdjustments) {
+    }
 }
