@@ -16,6 +16,7 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.AbstractFixedSizeKeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -49,8 +50,7 @@ public final class SmartContractByteCodeMapKeySerializerMerkleDb
      */
     @Override
     public boolean equals(
-            final ByteBuffer buffer, final int dataVersion, final SmartContractByteCodeMapKey keyToCompare)
-            throws IOException {
-        return keyToCompare.equals(buffer, dataVersion);
+            final BufferedData buffer, final SmartContractByteCodeMapKey keyToCompare) throws IOException {
+        return keyToCompare.equals(buffer);
     }
 }

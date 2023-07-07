@@ -25,6 +25,7 @@ import static com.swirlds.merkledb.files.DataFileCommon.fileIndexFromDataLocatio
 import static com.swirlds.merkledb.files.DataFileCommon.isFullyWrittenDataFile;
 import static java.util.Collections.singletonList;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.CASableLongIndex;
@@ -442,9 +443,7 @@ public class DataFileCollection<D> implements Snapshotable {
                 snapshotCompactionLock.acquire();
                 try {
                     final DataFileWriter<D> newFileWriter = currentCompactionWriter.get();
-                    long serializationVersion = reader.getMetadata().getSerializationVersion();
-                    final long newLocation = newFileWriter.writeCopiedDataItem(
-                            serializationVersion, reader.readDataItemBytes(fileOffset));
+                    final long newLocation = newFileWriter.writeCopiedDataItem(reader.readProtoBytes(fileOffset));
                     // update the index
                     index.putIfEqual(path, dataLocation, newLocation);
                 } catch (final IOException z) {
@@ -818,7 +817,7 @@ public class DataFileCollection<D> implements Snapshotable {
     @FunctionalInterface
     public interface LoadedDataCallback {
         /** Add an index entry for the given key and data location and value */
-        void newIndexEntry(long key, long dataLocation, ByteBuffer dataValue);
+        void newIndexEntry(long key, long dataLocation, BufferedData dataValue);
     }
 
     // =================================================================================================================

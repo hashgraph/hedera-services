@@ -70,8 +70,7 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
     }
 
     @Override
-    public void deserialize(final ByteBuffer buffer, final int dataVersion) throws IOException {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+    public void deserialize(final ByteBuffer buffer) throws IOException {
         byte numOfBytes1 = buffer.get();
         byte numOfBytes2 = buffer.get();
         long value1 = 0;
@@ -277,7 +276,7 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
             assert dataVersion == getCurrentDataVersion()
                     : "dataVersion=" + dataVersion + " != getCurrentDataVersion()=" + getCurrentDataVersion();
             final ExampleLongLongKeyVariableSize key = new ExampleLongLongKeyVariableSize();
-            key.deserialize(buffer, (int) dataVersion);
+            key.deserialize(buffer);
             return key;
         }
 

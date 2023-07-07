@@ -16,6 +16,9 @@
 
 package com.swirlds.merkledb.files;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
@@ -67,7 +70,7 @@ public class DataFileReaderHammerTest {
 
         final ExecutorService exec = Executors.newFixedThreadPool(readerThreads);
         final Random rand = new Random();
-        final DataFileMetadata metadata = new DataFileMetadata(0, itemSize, itemCount, 0, Instant.now(), 0);
+        final DataFileMetadata metadata = new DataFileMetadata(itemCount, 0, Instant.now(), 0);
         final DataFileReader<byte[]> dataReader =
                 new DataFileReader<>(tempFile, new TestDataItemSerializer(itemSize), metadata);
         final AtomicInteger activeReaders = new AtomicInteger(readerThreads);
@@ -141,26 +144,20 @@ public class DataFileReaderHammerTest {
         }
 
         @Override
-        public int serialize(byte[] data, ByteBuffer buffer) throws IOException {
-            buffer.put(data);
-            return size;
+        public void serialize(byte[] data, WritableSequentialData out) throws IOException {
+            out.writeBytes(data);
         }
 
         @Override
-        public byte[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+        public byte[] deserialize(ReadableSequentialData in) throws IOException {
             final byte[] r = new byte[size];
-            buffer.get(r);
+            in.readBytes(r);
             return r;
         }
 
         @Override
-        public int getHeaderSize() {
+        public long deserializeKey(BufferedData dataItemData) {
             return 0;
-        }
-
-        @Override
-        public DataItemHeader deserializeHeader(ByteBuffer buffer) {
-            return new DataItemHeader(size, 0);
         }
     }
 }

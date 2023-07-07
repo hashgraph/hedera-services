@@ -26,38 +26,23 @@ class DataFileMetadataTest {
 
     @Test
     void equalsIncorporatesAllFields() {
-        final int fileFormatVersion = 1;
-        final int dataItemValueSize = 2;
         final long dataItemCount = 3;
         final int index = 4;
         final Instant creationDate = Instant.ofEpochSecond(1_234_567L);
         final long serializationVersion = 7;
 
-        final DataFileMetadata base = new DataFileMetadata(
-                fileFormatVersion, dataItemValueSize, dataItemCount, index, creationDate, serializationVersion);
-        final DataFileMetadata differentFormatVersion = new DataFileMetadata(
-                fileFormatVersion + 1, dataItemValueSize, dataItemCount, index, creationDate, serializationVersion);
-        final DataFileMetadata differentValueSize = new DataFileMetadata(
-                fileFormatVersion, dataItemValueSize + 1, dataItemCount, index, creationDate, serializationVersion);
+        final DataFileMetadata base = new DataFileMetadata(dataItemCount, index, creationDate, serializationVersion);
         final DataFileMetadata differentItemCount = new DataFileMetadata(
-                fileFormatVersion, dataItemValueSize, dataItemCount + 1, index, creationDate, serializationVersion);
+                dataItemCount + 1, index, creationDate, serializationVersion);
         final DataFileMetadata differentIndex = new DataFileMetadata(
-                fileFormatVersion, dataItemValueSize, dataItemCount, index + 1, creationDate, serializationVersion);
+                dataItemCount, index + 1, creationDate, serializationVersion);
         final DataFileMetadata differentCreationDate = new DataFileMetadata(
-                fileFormatVersion,
-                dataItemValueSize,
-                dataItemCount,
-                index,
-                creationDate.plusSeconds(1),
-                serializationVersion);
+                dataItemCount, index, creationDate.plusSeconds(1), serializationVersion);
         final DataFileMetadata differentSerVersion = new DataFileMetadata(
-                fileFormatVersion, dataItemValueSize, dataItemCount, index, creationDate, serializationVersion + 1);
-        final DataFileMetadata otherButEqual = new DataFileMetadata(
-                fileFormatVersion, dataItemValueSize, dataItemCount, index, creationDate, serializationVersion);
+                dataItemCount, index, creationDate, serializationVersion + 1);
+        final DataFileMetadata otherButEqual = new DataFileMetadata(dataItemCount, index, creationDate, serializationVersion);
 
         assertEquals(base, otherButEqual, "Equivalent metadata are equal");
-        assertNotEquals(base, differentFormatVersion, "Different format versions are unequal");
-        assertNotEquals(base, differentValueSize, "Different value sizes are unequal");
         assertNotEquals(base, differentItemCount, "Different item counts are unequal");
         assertNotEquals(base, differentIndex, "Different indexes are unequal");
         assertNotEquals(base, differentCreationDate, "Different creation dates are unequal");

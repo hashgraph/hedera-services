@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.reconnect;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.KeySerializer;
@@ -45,11 +46,6 @@ public class TestKeySerializerMerkleDb implements KeySerializer<TestKey> {
     }
 
     @Override
-    public int deserializeKeySize(final ByteBuffer buffer) {
-        return buffer.getInt();
-    }
-
-    @Override
     public void serialize(final SerializableDataOutputStream out) {
         // nop
     }
@@ -60,9 +56,9 @@ public class TestKeySerializerMerkleDb implements KeySerializer<TestKey> {
     }
 
     @Override
-    public TestKey deserialize(final ByteBuffer buffer, final long dataVersion) {
+    public TestKey deserialize(final ByteBuffer buffer) {
         final TestKey key = new TestKey();
-        key.deserialize(buffer, (int) dataVersion);
+        key.deserialize(buffer);
         return key;
     }
 
@@ -73,8 +69,7 @@ public class TestKeySerializerMerkleDb implements KeySerializer<TestKey> {
     }
 
     @Override
-    public boolean equals(final ByteBuffer buffer, final int dataVersion, final TestKey keyToCompare)
-            throws IOException {
-        return buffer.getLong() == keyToCompare.getKeyAsLong();
+    public boolean equals(final BufferedData buffer, final TestKey keyToCompare) throws IOException {
+        return buffer.readLong() == keyToCompare.getKeyAsLong();
     }
 }

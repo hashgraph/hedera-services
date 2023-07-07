@@ -25,6 +25,8 @@ dependencies {
   api(project(":swirlds-platform-core"))
   compileOnly(libs.spotbugs.annotations)
 
+  implementation(libs.bundles.pbj)
+
   // Test Dependencies
   testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
   testImplementation(project(":swirlds-unit-tests:common:swirlds-common-test"))

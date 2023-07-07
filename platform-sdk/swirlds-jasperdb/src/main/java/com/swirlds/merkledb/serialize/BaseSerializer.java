@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.serialize;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -59,22 +60,14 @@ public interface BaseSerializer<T> {
         return getSerializedSize();
     }
 
-    /**
-     * Serialize a data item including header to the byte buffer returning the size of the data
-     * written. Serialization format must be identical to {@link #deserialize(ByteBuffer, long)}.
-     *
-     * @param data The data item to serialize
-     * @param buffer Output buffer to write to
-     * @return Number of bytes written
-     */
-    int serialize(T data, ByteBuffer buffer) throws IOException;
-
-    /**
-     * Deserialize a data item from a byte buffer, that was written with given data version.
-     *
-     * @param buffer The buffer to read from containing the data item including its header
-     * @param dataVersion The serialization version the data item was written with
-     * @return Deserialized data item
-     */
-    T deserialize(ByteBuffer buffer, long dataVersion) throws IOException;
+    default int getSerializedSize(T data) {
+        if (data == null) {
+            throw new NullPointerException();
+        }
+        final int size = getSerializedSize();
+        if (size != VARIABLE_DATA_SIZE) {
+            return size;
+        }
+        throw new RuntimeException("TO IMPLEMENT");
+    }
 }

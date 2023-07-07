@@ -49,4 +49,5 @@ module com.swirlds.demo.platform {
     requires com.swirlds.merkle.test;
     requires java.sql;
     requires com.swirlds.fchashmap;
+    requires com.hedera.pbj.runtime;
 }

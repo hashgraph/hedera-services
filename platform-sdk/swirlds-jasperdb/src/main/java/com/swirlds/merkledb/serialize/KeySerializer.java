@@ -16,6 +16,9 @@
 
 package com.swirlds.merkledb.serialize;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -55,18 +58,9 @@ public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, 
     }
 
     /**
-     * Deserialize key size from the given byte buffer
-     *
-     * @param buffer The byte buffer to read from
-     * @return The number of bytes used to store the key, including for storing the key size if
-     *     needed.
-     */
-    int deserializeKeySize(ByteBuffer buffer);
-
-    /**
      * Serialize a key including header to the byte buffer returning the size of the data written.
      * Bytes written using this method will then be used for deserialization with {@link
-     * #deserialize(ByteBuffer, long)} method.
+     * #deserialize(ByteBuffer)} method.
      *
      * This method returns the number of bytes written to the buffer. For fixed-sized keys the
      * size must be equal to {@link #getSerializedSize()} return value.
@@ -78,17 +72,22 @@ public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, 
      */
     int serialize(K data, ByteBuffer buffer) throws IOException;
 
+    default void serialize(K data, WritableSequentialData out) throws IOException {
+    }
+
     /**
      * Deserialize a key from the byte buffer, where it was previously written using either {@link
      * #serialize(VirtualKey, ByteBuffer)} or {@link #serialize(VirtualKey, ByteBuffer)} method.
      *
      * @param buffer The byte buffer to read from
-     * @param dataVersion The serialization version of the key to read
      * @return A key deserialized from the buffer
      * @throws IOException If there was a problem reading from the buffer
      */
-    @Override
-    K deserialize(ByteBuffer buffer, long dataVersion) throws IOException;
+    K deserialize(ByteBuffer buffer) throws IOException;
+
+    default K deserialize(ReadableSequentialData in) throws IOException {
+        return null;
+    }
 
     /**
      * Compare keyToCompare's data to that contained in the given ByteBuffer. The data in the buffer
@@ -99,12 +98,11 @@ public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, 
      * a match performance is critical.
      *
      * @param buffer The buffer to read from and compare to
-     * @param dataVersion The serialization version of the data in the buffer
      * @param keyToCompare The key to compare with the data in the file.
      * @return true if the content of the buffer matches this class's data
      * @throws IOException If there was a problem reading from the buffer
      */
-    boolean equals(ByteBuffer buffer, int dataVersion, K keyToCompare) throws IOException;
+    boolean equals(BufferedData buffer, K keyToCompare) throws IOException;
 
     /** {@inheritDoc} */
     @Override

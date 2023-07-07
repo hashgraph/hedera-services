@@ -229,9 +229,8 @@ class HalfDiskHashMapTest {
         }
 
         @Override
-        public void deserialize(final ByteBuffer byteBuffer, final int dataVersion) {
-            assertEquals(getVersion(), dataVersion);
-            super.deserialize(byteBuffer, dataVersion);
+        public void deserialize(final ByteBuffer byteBuffer) {
+            super.deserialize(byteBuffer);
         }
 
         @Override

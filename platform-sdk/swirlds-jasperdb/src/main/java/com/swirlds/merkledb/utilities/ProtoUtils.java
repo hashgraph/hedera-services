@@ -1,0 +1,104 @@
+package com.swirlds.merkledb.utilities;
+
+import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
+
+import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.ProtoParserTools;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.base.function.CheckedConsumer;
+import com.swirlds.base.function.CheckedFunction;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+
+public class ProtoUtils {
+
+    // Copied from ProtoConstants
+    public static final int WIRE_TYPE_VARINT = 0;
+
+    // Copied from ProtoConstants
+    public static final int WIRE_TYPE_DELIMITED = 2;
+
+    // Copied from ProtoWriterTools
+    private static final int MAX_VARINT_SIZE = 10;
+
+    // Copied from ProtoWriterTools
+    public static int sizeOfTag(final FieldDefinition field, final int wireType) {
+        return sizeOfVarInt32((field.number() << ProtoParserTools.TAG_FIELD_OFFSET) | wireType);
+    }
+
+    // Copied from ProtoWriterTools
+    public static int sizeOfUnsignedVarInt32(final int value) {
+        if ((value & (~0 << 7)) == 0) return 1;
+        if ((value & (~0 << 14)) == 0) return 2;
+        if ((value & (~0 << 21)) == 0) return 3;
+        if ((value & (~0 << 28)) == 0) return 4;
+        return 5;
+    }
+
+    // Copied from ProtoWriterTools
+    public static int sizeOfVarInt32(final int value) {
+        if (value >= 0) {
+            return sizeOfUnsignedVarInt32(value);
+        } else {
+            // Must sign-extend.
+            return 10; // MAX_VARINT_SIZE;
+        }
+    }
+
+    // Copied from ProtoWriterTools
+    public static int sizeOfUnsignedVarInt64(long value) {
+        // handle two popular special cases up front ...
+        if ((value & (~0L << 7)) == 0L) return 1;
+        if (value < 0L) return 10;
+        // ... leaving us with 8 remaining, which we can divide and conquer
+        int n = 2;
+        if ((value & (~0L << 35)) != 0L) {
+            n += 4;
+            value >>>= 28;
+        }
+        if ((value & (~0L << 21)) != 0L) {
+            n += 2;
+            value >>>= 14;
+        }
+        if ((value & (~0L << 14)) != 0L) {
+            n += 1;
+        }
+        return n;
+    }
+
+    public static void writeTag(final WritableSequentialData out, final FieldDefinition field) {
+        out.writeVarInt((field.number() << TAG_FIELD_OFFSET) | WIRE_TYPE_VARINT, false);
+    }
+
+    // Copied from ProtoWriterTools
+    public static int sizeOfBytes(final FieldDefinition field, final int length) {
+        return Math.toIntExact(sizeOfTag(field, WIRE_TYPE_DELIMITED) + sizeOfVarInt32(length) + length);
+    }
+
+    public static <T extends ReadableSequentialData> int getBytesSize(
+            final T in, final FieldDefinition fieldDef) {
+        final int tag = in.readVarInt(false);
+        final int fieldNum = tag >>> ProtoParserTools.TAG_FIELD_OFFSET;
+        assert fieldDef.number() == fieldNum : "Field number mismatch";
+        return in.readVarInt(false);
+    }
+
+    public static <T extends WritableSequentialData> void writeBytes(
+            final T out, final FieldDefinition field, final int size, final CheckedConsumer<T, IOException> writer)
+        throws IOException {
+        out.writeVarInt(field.number() << ProtoParserTools.TAG_FIELD_OFFSET | WIRE_TYPE_DELIMITED, false);
+        out.writeVarInt(size, false);
+        writer.accept(out);
+    }
+
+    public static <T> T readProtoField(
+            @NonNull final ReadableSequentialData in,
+            @NonNull final FieldDefinition fieldDef,
+            @NonNull final CheckedFunction<ReadableSequentialData, T, IOException> reader) throws IOException {
+        final int tag = in.readVarInt(false);
+        final int fieldNum = tag >>> ProtoParserTools.TAG_FIELD_OFFSET;
+        assert fieldDef.number() == fieldNum : "Field number mismatch";
+        return reader.apply(in);
+    }
+}

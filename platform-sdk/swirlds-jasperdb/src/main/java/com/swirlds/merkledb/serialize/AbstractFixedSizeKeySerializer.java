@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.serialize;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -23,8 +24,8 @@ import java.util.function.Supplier;
 
 /**
  * Utility class to extend by key serializers for fixed-size keys. Delegates serialization and
- * deserialization to the corresponding virtual key class, leaving only {@link #equals(ByteBuffer,
- * int, VirtualKey)} method to implement.
+ * deserialization to the corresponding virtual key class, leaving only {@link #equals(BufferedData,
+ * VirtualKey)} method to implement.
  *
  * @param <K> Virtual key type
  */
@@ -95,18 +96,9 @@ public abstract class AbstractFixedSizeKeySerializer<K extends VirtualKey> imple
 
     /** {@inheritDoc} */
     @Override
-    public int deserializeKeySize(final ByteBuffer buffer) {
-        return serializedKeySize;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public K deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
-        if (dataVersion != serializedKeyVersion) {
-            throw new IllegalArgumentException("Serialization version mismatch");
-        }
+    public K deserialize(final ByteBuffer buffer) throws IOException {
         final K key = newKey();
-        key.deserialize(buffer, (int) dataVersion);
+        key.deserialize(buffer);
         return key;
     }
 }

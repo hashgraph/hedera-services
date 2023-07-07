@@ -18,10 +18,14 @@ package com.swirlds.merkledb.files;
 
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
+import com.swirlds.merkledb.utilities.ProtoUtils;
 import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.IOException;
@@ -53,27 +57,21 @@ public final class DataFileIterator implements AutoCloseable {
 
     /** Input stream this iterator is reading from */
     private final BufferedInputStream inputStream;
+    /** Readable data on top of the input stream */
+    private final ReadableSequentialData in;
     /** The file metadata read from the end of file */
     private final DataFileMetadata metadata;
     /** The path to the file we are iterating over */
     private final Path path;
     /** The serializer used for reading data from the file */
     private final DataItemSerializer dataItemSerializer;
-    /** Taken from the dataItemSerializer, this is the size of the header of each data item */
-    private final int headerSize;
 
     /** Buffer that is reused for reading each data item */
-    private ByteBuffer dataItemBuffer;
-    /** Header for the current data item */
-    private DataItemHeader currentDataItemHeader;
+    private BufferedData dataItemBuffer;
     /** Index of current data item this iterator is reading, zero being the first item, -1 being before start */
     private long currentDataItem = -1;
     /** The offset in bytes from start of file to the beginning of the current item. */
     private long currentDataItemFilePosition = 0;
-    /** The current read position in the file in bytes from the beginning of the file. */
-    private long currentFilePosition = 0;
-    /** The size of the data most recently read */
-    private int dataItemSize = 0;
     /** True if this iterator has been closed */
     private boolean closed = false;
 
@@ -93,10 +91,13 @@ public final class DataFileIterator implements AutoCloseable {
         this.path = path;
         this.metadata = metadata;
         this.dataItemSerializer = dataItemSerializer;
-        this.headerSize = dataItemSerializer.getHeaderSize();
         /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3929 */
         this.inputStream = new BufferedInputStream(
                 Files.newInputStream(path, StandardOpenOption.READ), config.iteratorInputBufferBytes());
+        this.in = new ReadableStreamingData(inputStream);
+
+        // Skip the header
+        this.in.skip(metadata.getHeaderSize());
     }
 
     /**
@@ -141,15 +142,10 @@ public final class DataFileIterator implements AutoCloseable {
             return false;
         }
 
-        // Move the current byte position forward past the last item.
-        // Note: initially dataItemSize is zero, so calling next() for the first time
-        // does not advance the pointer, but on subsequent calls to next(), it will.
-        currentDataItemFilePosition += dataItemSize;
+        currentDataItemFilePosition = in.position();
 
-        // Read data item header to determine the variable length size of the data
-        final ByteBuffer dataBuffer = fillBuffer(headerSize);
-        currentDataItemHeader = dataItemSerializer.deserializeHeader(dataBuffer);
-        dataItemSize = currentDataItemHeader.getSizeBytes();
+        final int dataItemSize = ProtoUtils.getBytesSize(in, DataFileCommon.FIELD_DATAFILE_ITEMS);
+        dataItemBuffer = fillBuffer(dataItemSize);
 
         currentDataItem++;
         return true;
@@ -162,8 +158,8 @@ public final class DataFileIterator implements AutoCloseable {
      * @return ByteBuffer containing the key and value data. This will return null if the iterator has
      * 		been closed, or if the iterator is in the before-first or after-last states.
      */
-    public ByteBuffer getDataItemData() throws IOException {
-        return fillBuffer(dataItemSize);
+    public BufferedData getDataItemData() {
+        return dataItemBuffer;
     }
 
     /**
@@ -181,7 +177,7 @@ public final class DataFileIterator implements AutoCloseable {
      * @return the key for current dataItem
      */
     public long getDataItemsKey() {
-        return currentDataItemHeader.getKey();
+        return dataItemSerializer.deserializeKey(dataItemBuffer);
     }
 
     /**
@@ -193,21 +189,11 @@ public final class DataFileIterator implements AutoCloseable {
         return metadata.getCreationDate();
     }
 
-    /**
-     * Get the index of the data file we are iterating over
-     *
-     * @return data file index
-     */
-    public int getDataFileIndex() {
-        return metadata.getIndex();
-    }
-
     /** toString for debugging */
     @Override
     public String toString() {
         return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
                 .append("fileIndex", metadata.getIndex())
-                .append("currentDataItemHeader", currentDataItemHeader)
                 .append("currentDataItemIndex", currentDataItem)
                 .append("currentDataItemByteOffset", currentDataItemFilePosition)
                 .append("fileName", path.getFileName())
@@ -247,7 +233,7 @@ public final class DataFileIterator implements AutoCloseable {
      * @return ByteBuffer containing requested bytes
      * @throws IOException if request can not be completed
      */
-    private ByteBuffer fillBuffer(int bytesToRead) throws IOException {
+    private BufferedData fillBuffer(int bytesToRead) throws IOException {
         if (bytesToRead <= 0) {
             throw new IOException("Malformed file [" + path + "], data item [" + currentDataItem
                     + "], requested bytes [" + bytesToRead + "]");
@@ -258,24 +244,11 @@ public final class DataFileIterator implements AutoCloseable {
             resizeBuffer(bytesToRead);
         }
 
-        // This only happens if we have advanced currentDataItemFilePosition and need to strip off some bytes
-        // from the buffered input stream to catch up.
-        if (currentFilePosition < currentDataItemFilePosition) {
-            inputStream.skipNBytes(currentDataItemFilePosition - currentFilePosition);
-            currentFilePosition = currentDataItemFilePosition;
-        }
-
-        // Read from the input stream into the byte buffer
-        final int offset = (int) (currentFilePosition - currentDataItemFilePosition);
-        final int bytesRead = inputStream.read(dataItemBuffer.array(), offset, bytesToRead - offset);
-        if (offset + bytesRead != bytesToRead) {
-            throw new EOFException("Was trying to read a data item [" + currentDataItem
-                    + "] but ran out of data in the file [" + path + "].");
-        }
-
-        currentFilePosition += bytesRead;
         dataItemBuffer.position(0);
         dataItemBuffer.limit(bytesToRead);
+        in.readBytes(dataItemBuffer);
+
+        dataItemBuffer.position(0);
         return dataItemBuffer;
     }
 
@@ -287,14 +260,6 @@ public final class DataFileIterator implements AutoCloseable {
      * 		Number of bytes to be able to fit into the buffer.
      */
     private void resizeBuffer(int bytesToRead) {
-        final ByteBuffer newBuffer = ByteBuffer.allocate(bytesToRead);
-        // Copy existing content from the existing buffer IF data has already been read
-        final int offset = (int) (currentFilePosition - currentDataItemFilePosition);
-        if (offset > 0) {
-            // dataItemBuffer cannot be null here because the only way for offset to be > 0 is if
-            // we have already read off some data.
-            System.arraycopy(dataItemBuffer.array(), 0, newBuffer.array(), 0, offset);
-        }
-        dataItemBuffer = newBuffer;
+        dataItemBuffer = BufferedData.allocate(bytesToRead);
     }
 }

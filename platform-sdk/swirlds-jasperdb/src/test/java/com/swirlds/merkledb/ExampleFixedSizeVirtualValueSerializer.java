@@ -16,6 +16,8 @@
 
 package com.swirlds.merkledb;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.ValueSerializer;
@@ -67,19 +69,17 @@ public final class ExampleFixedSizeVirtualValueSerializer implements ValueSerial
     }
 
     @Override
-    public int serialize(final ExampleFixedSizeVirtualValue data, final ByteBuffer buffer) throws IOException {
-        buffer.putInt(data.getId());
-        buffer.put(data.getData());
-        return getSerializedSize();
+    public void serialize(final ExampleFixedSizeVirtualValue data, final WritableSequentialData out) throws IOException {
+        out.writeInt(data.getId());
+        out.writeBytes(data.getData());
     }
 
     @Override
-    public ExampleFixedSizeVirtualValue deserialize(final ByteBuffer buffer, final long dataVersion)
+    public ExampleFixedSizeVirtualValue deserialize(final ReadableSequentialData in)
             throws IOException {
-        assert dataVersion == getCurrentDataVersion();
-        final int id = buffer.getInt();
+        final int id = in.readInt();
         final byte[] bytes = new byte[ExampleFixedSizeVirtualValue.RANDOM_BYTES];
-        buffer.get(bytes);
+        in.readBytes(bytes);
         return new ExampleFixedSizeVirtualValue(id, bytes);
     }
 

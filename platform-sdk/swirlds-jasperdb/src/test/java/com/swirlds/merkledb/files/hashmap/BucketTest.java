@@ -20,6 +20,7 @@ import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.ExampleLongKeyFixedSize;
 import com.swirlds.merkledb.ExampleLongKeyVariableSize;
 import com.swirlds.merkledb.serialize.KeySerializer;
@@ -81,7 +82,6 @@ class BucketTest {
         }
         // create a bucket
         final Bucket<VirtualLongKey> bucket = new Bucket<>(keyType.keySerializer);
-        bucket.setKeySerializationVersion((int) keyType.keySerializer.getCurrentDataVersion());
         assertEquals(0, bucket.getBucketEntryCount(), "Check we start with empty bucket");
         // insert keys and check
         for (int i = 0; i < 10; i++) {
@@ -172,7 +172,6 @@ class BucketTest {
         }
         // create a bucket
         final Bucket<VirtualLongKey> bucket = new Bucket<>(keyType.keySerializer);
-        bucket.setKeySerializationVersion((int) keyType.keySerializer.getCurrentDataVersion());
         assertEquals(0, bucket.getBucketEntryCount(), "Check we start with empty bucket");
         // insert keys and check
         for (int i = 0; i < testKeys.length; i++) {
@@ -198,7 +197,6 @@ class BucketTest {
         }
         // create a bucket
         final Bucket<VirtualLongKey> bucket = new Bucket<>(keyType.keySerializer);
-        bucket.setKeySerializationVersion((int) keyType.keySerializer.getCurrentDataVersion());
         assertEquals(0, bucket.getBucketEntryCount(), "Check we start with empty bucket");
         // insert keys and check
         for (int i = 0; i < testKeys.length; i++) {
@@ -214,23 +212,22 @@ class BucketTest {
         // get raw bytes first to compare to
         final int size = bucket.getSize();
         final byte[] goodBytes = new byte[size];
-        System.arraycopy(bucket.getBucketBuffer().array(), 0, goodBytes, 0, size);
+        final BufferedData bucketData = bucket.getBucketBuffer();
+        bucketData.readBytes(goodBytes);
         final String goodBytesStr = Arrays.toString(goodBytes);
         // now test write to buffer
-        final ByteBuffer bbuf = ByteBuffer.allocate(size);
-        bucket.writeToByteBuffer(bbuf);
+        final BufferedData bbuf = BufferedData.allocate(size);
+        bucket.writeTo(bbuf);
         bbuf.flip();
-        assertEquals(goodBytesStr, Arrays.toString(bbuf.array()), "Expect bytes to match");
+        assertEquals(goodBytesStr, Arrays.toString(bbuf.getBytes(0, bbuf.length()).toByteArray()), "Expect bytes to match");
 
         // create new bucket with good bytes and check it is the same
         final Bucket<VirtualLongKey> bucket2 = new Bucket<>(keyType.keySerializer);
-        bucket2.setKeySerializationVersion((int) keyType.keySerializer.getCurrentDataVersion());
         bucket2.putAllData(ByteBuffer.wrap(goodBytes));
         assertEquals(bucket.toString(), bucket2.toString(), "Expect bucket toStrings to match");
 
         // test clear
         final Bucket<VirtualLongKey> bucket3 = new Bucket<>(keyType.keySerializer);
-        bucket3.setKeySerializationVersion((int) keyType.keySerializer.getCurrentDataVersion());
         bucket.clear();
         assertEquals(bucket3.toString(), bucket.toString(), "Expect bucket toStrings to match");
     }
@@ -239,7 +236,6 @@ class BucketTest {
     void toStringAsExpectedForBucket() {
         final ExampleLongKeyFixedSize.Serializer keySerializer = new ExampleLongKeyFixedSize.Serializer();
         final Bucket<ExampleLongKeyFixedSize> bucket = new Bucket<>(keySerializer);
-        bucket.setKeySerializationVersion((int) keySerializer.getCurrentDataVersion());
 
         final String emptyBucketRepr =
                 "Bucket{bucketIndex=-1, entryCount=0, size=12\n" + "} RAW DATA = FF FF FF FF 00 00 00 0C 00 00 00 00 ";
@@ -248,11 +244,11 @@ class BucketTest {
         final ExampleLongKeyFixedSize key = new ExampleLongKeyFixedSize(2056);
         bucket.putValue(key, 5124);
         bucket.setBucketIndex(0);
-        final String nonEmptyBucketRepr = "Bucket{bucketIndex=0, entryCount=1, size=32\n"
-                + "    ENTRY[0] value= 5124 keyHashCode=2056 keyVer=3054"
+        final String nonEmptyBucketRepr = "Bucket{bucketIndex=0, entryCount=1, size=36\n"
+                + "    ENTRY[0] value= 5124 keyHashCode=2056"
                 + " key=LongVirtualKey{value=2056, hashCode=2056} keySize=8\n"
-                + "} RAW DATA = 00 00 00 00 00 00 00 20 00 00 00 01 00 00 08 08 00 00 00 00 00"
-                + " 00 14 04 00 00 00 00 00 00 08 08 ";
+                + "} RAW DATA = 00 00 00 00 00 00 00 24 00 00 00 01 00 00 08 08 00 00 00 00 00"
+                + " 00 14 04 00 00 00 08 00 00 00 00 00 00 08 08 ";
         assertEquals(nonEmptyBucketRepr, bucket.toString(), "Non-empty bucket represent as expected");
     }
 

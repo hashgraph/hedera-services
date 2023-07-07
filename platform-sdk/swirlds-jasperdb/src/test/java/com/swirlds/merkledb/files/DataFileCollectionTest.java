@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.utility.Units;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.CASableLongIndex;
@@ -38,7 +39,6 @@ import com.swirlds.merkledb.collections.IndexedObject;
 import com.swirlds.merkledb.collections.LongListHeap;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -75,8 +75,6 @@ class DataFileCollectionTest {
     protected static final Instant TEST_START = Instant.now();
     protected static final Map<FilesTestType, DataFileCollection<long[]>> fileCollectionMap = new HashMap<>();
     protected static final Map<FilesTestType, LongListHeap> storedOffsetsMap = new HashMap<>();
-
-    protected static long fixedSizeDataFileSize;
 
     private static final int MAX_TEST_FILE_MB = 16;
 
@@ -195,30 +193,14 @@ class DataFileCollectionTest {
                 // store in file
                 storedOffsets.put(i, fileCollection.storeDataItem(dataValue));
             }
-            fileCollection.endWriting(0, count + 100).setFileCompleted();
+            final DataFileReader<long[]> newFile = fileCollection.endWriting(0, count + 100);
+            newFile.setFileCompleted();
             assertEquals(new KeyRange(0, count + 100), fileCollection.getValidKeyRange(), "Range should be this");
+            assertEquals(Files.size(newFile.getPath()), newFile.getSize());
             count += 100;
         }
         // check 10 files were created
         assertEquals(10, Files.list(tempFileDir.resolve(testType.name())).count(), "unexpected file count");
-    }
-
-    @Order(2)
-    @Test
-    void checkFileSizes() throws Exception {
-        // we can only check for fixed size files easily
-        final FilesTestType testType = FilesTestType.fixed;
-        final long dataWritten = testType.dataItemSerializer.getSerializedSize() * 100L;
-        final int paddingBytesNeeded = (int) (DataFileCommon.PAGE_SIZE - (dataWritten % DataFileCommon.PAGE_SIZE));
-        fixedSizeDataFileSize = dataWritten + paddingBytesNeeded + FOOTER_SIZE;
-        Files.list(tempFileDir.resolve(testType.name())).forEach(file -> {
-            try {
-                assertEquals(fixedSizeDataFileSize, Files.size(file), "unexpected file size");
-            } catch (IOException e) {
-                e.printStackTrace();
-                fail("No exceptional conditions expected here");
-            }
-        });
     }
 
     @Order(3)
@@ -231,7 +213,7 @@ class DataFileCollectionTest {
     @Order(4)
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
-    void checkFilesStates(final FilesTestType testType) {
+    void checkFilesStates(final FilesTestType testType) throws IOException {
         final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
         for (int f = 0; f < 10; f++) {
             final DataFileReader<long[]> dataFileReader = fileCollection.getDataFile(f);
@@ -240,10 +222,7 @@ class DataFileCollectionTest {
             assertTrue(metadata.getCreationDate().isAfter(TEST_START), "Creation dates should go forward in time");
             assertTrue(metadata.getCreationDate().isBefore(Instant.now()), "Creation dates may not be in the future");
             assertEquals(100, metadata.getDataItemCount(), "unexpected DataItemCount");
-            assertEquals(0, dataFileReader.getSize() % DataFileCommon.PAGE_SIZE, "unexpected # DataFileReaders");
-            if (testType == FilesTestType.fixed) {
-                assertEquals(fixedSizeDataFileSize, dataFileReader.getSize(), "unexpected DataFileSize");
-            }
+            assertEquals(Files.size(dataFileReader.getPath()), dataFileReader.getSize(), "unexpected DataFileSize");
         }
     }
 
@@ -738,10 +717,10 @@ class DataFileCollectionTest {
 
     private static class LoadedDataCallbackImpl implements DataFileCollection.LoadedDataCallback {
         public final Map<Long, Long> dataLocationMap = new HashMap<>();
-        public final Map<Long, ByteBuffer> dataValueMap = new HashMap<>();
+        public final Map<Long, BufferedData> dataValueMap = new HashMap<>();
 
         @Override
-        public void newIndexEntry(final long key, final long dataLocation, final ByteBuffer dataValue) {
+        public void newIndexEntry(final long key, final long dataLocation, final BufferedData dataValue) {
             dataLocationMap.put(key, dataLocation);
             dataValueMap.put(key, dataValue);
         }

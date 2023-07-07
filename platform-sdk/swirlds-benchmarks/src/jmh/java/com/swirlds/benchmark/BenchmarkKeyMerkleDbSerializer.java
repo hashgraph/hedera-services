@@ -16,6 +16,9 @@
 
 package com.swirlds.benchmark;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -62,19 +65,26 @@ public class BenchmarkKeyMerkleDbSerializer implements KeySerializer<BenchmarkKe
     }
 
     @Override
-    public int deserializeKeySize(final ByteBuffer buffer) {
-        return getSerializedSize();
+    public void serialize(BenchmarkKey data, WritableSequentialData out) throws IOException {
+        data.serialize(out);
     }
 
     @Override
-    public BenchmarkKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+    public BenchmarkKey deserialize(final ByteBuffer buffer) throws IOException {
         BenchmarkKey key = new BenchmarkKey();
-        key.deserialize(buffer, (int) dataVersion);
+        key.deserialize(buffer);
         return key;
     }
 
     @Override
-    public boolean equals(final ByteBuffer buffer, final int dataVersion, final BenchmarkKey keyToCompare) {
-        return keyToCompare.equals(buffer, dataVersion);
+    public BenchmarkKey deserialize(ReadableSequentialData in) throws IOException {
+        BenchmarkKey key = new BenchmarkKey();
+        key.deserialize(in);
+        return key;
+    }
+
+    @Override
+    public boolean equals(final BufferedData buffer, final BenchmarkKey keyToCompare) {
+        return keyToCompare.equals(buffer);
     }
 }

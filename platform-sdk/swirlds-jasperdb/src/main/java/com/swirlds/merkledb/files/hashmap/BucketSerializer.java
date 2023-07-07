@@ -16,12 +16,13 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
-import com.swirlds.merkledb.serialize.DataItemHeader;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * Serializer for writing buckets into a DataFile.
@@ -77,29 +78,6 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
     }
 
     /**
-     * Get the number of bytes used for data item header
-     *
-     * @return size of header in bytes
-     */
-    @Override
-    public int getHeaderSize() {
-        return Integer.BYTES + Integer.BYTES;
-    }
-
-    /**
-     * Deserialize data item header from the given byte buffer
-     *
-     * @param buffer Buffer to read from
-     * @return The read header
-     */
-    @Override
-    public DataItemHeader deserializeHeader(final ByteBuffer buffer) {
-        int bucketIndex = buffer.getInt();
-        int size = buffer.getInt();
-        return new DataItemHeader(size, bucketIndex);
-    }
-
-    /**
      * Get the number of bytes a data item takes when serialized
      *
      * @return Either a number of bytes or DataFileCommon.VARIABLE_DATA_SIZE if size is variable
@@ -118,26 +96,25 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
         return currentSerializationVersion;
     }
 
-    /**
-     * Deserialize a data item from a byte buffer, that was written with given data version. The
-     * resulting bucket, if not null, must be closed by the caller.
-     *
-     * @param buffer The buffer to read from
-     * @param dataVersion The serialization version the data item was written with
-     * @return Deserialized data item
-     */
     @Override
-    public Bucket<K> deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+    public int getSerializedSize(final Bucket<K> bucket) {
+        return bucket.getSize();
+    }
+
+    @Override
+    public Bucket<K> deserialize(ReadableSequentialData in) throws IOException {
         final Bucket<K> bucket = reusableBucketPool.getBucket();
-        bucket.putAllData(buffer);
-        // split bucketSerializationVersion
-        bucket.setKeySerializationVersion((int) (dataVersion >> LOW_ORDER_BYTES_FOR_NON_KEY_SERIALIZATION_VERSION));
+        bucket.putAllData(in);
         return bucket;
     }
 
-    /** {@inheritDoc} */
     @Override
-    public int serialize(final Bucket<K> bucket, final ByteBuffer buffer) throws IOException {
-        return bucket.writeToByteBuffer(buffer);
+    public long deserializeKey(final BufferedData dataItemData) {
+        return Bucket.extractKey(dataItemData);
+    }
+
+    @Override
+    public void serialize(final Bucket<K> bucket, final WritableSequentialData out) throws IOException {
+        bucket.writeTo(out);
     }
 }

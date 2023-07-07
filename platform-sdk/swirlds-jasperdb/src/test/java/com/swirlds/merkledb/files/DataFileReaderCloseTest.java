@@ -16,6 +16,9 @@
 
 package com.swirlds.merkledb.files;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListOffHeap;
@@ -104,31 +107,25 @@ class DataFileReaderCloseTest {
         }
 
         @Override
-        public int getHeaderSize() {
-            return Long.BYTES;
-        }
-
-        @Override
-        public DataItemHeader deserializeHeader(ByteBuffer buffer) {
-            return new DataItemHeader(getSerializedSize(), buffer.getLong());
-        }
-
-        @Override
         public int getSerializedSize() {
-            return Long.BYTES * 3;
+            return Long.BYTES * 2;
         }
 
         @Override
-        public int serialize(long[] data, ByteBuffer buffer) throws IOException {
+        public void serialize(long[] data, WritableSequentialData out) throws IOException {
             assert data.length == 2;
-            buffer.putLong(data[0]);
-            buffer.putLong(data[1]);
-            return getSerializedSize();
+            out.writeLong(data[0]);
+            out.writeLong(data[1]);
         }
 
         @Override
-        public long[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
-            return new long[] {buffer.getLong(), buffer.getLong()};
+        public long[] deserialize(ReadableSequentialData in) throws IOException {
+            return new long[] {in.readLong(), in.readLong()};
+        }
+
+        @Override
+        public long deserializeKey(BufferedData dataItemData) {
+            return dataItemData.getLong(0);
         }
     }
 }

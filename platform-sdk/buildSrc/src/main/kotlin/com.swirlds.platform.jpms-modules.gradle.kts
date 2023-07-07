@@ -47,5 +47,11 @@ extraJavaModuleInfo {
     automaticModule("com.google.auto.value:auto-value-annotations", "auto.value.annotations")
     automaticModule("com.google.truth:truth", "truth")
     automaticModule("org.awaitility:awaitility", "awaitility")
+
+    automaticModule("org.antlr:antlr4", "antlr4")
+    automaticModule("org.antlr:ST4", "ST4")
+    automaticModule("org.antlr:antlr-runtime", "antlr-runtime")
+    automaticModule("org.abego.treelayout:org.abego.treelayout.core", "org.abego.treelayout.core")
+
 }
 

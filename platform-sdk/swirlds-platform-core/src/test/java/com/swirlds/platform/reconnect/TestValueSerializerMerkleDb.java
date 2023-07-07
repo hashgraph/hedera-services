@@ -16,12 +16,13 @@
 
 package com.swirlds.platform.reconnect;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 public class TestValueSerializerMerkleDb implements ValueSerializer<TestValue> {
 
@@ -57,22 +58,18 @@ public class TestValueSerializerMerkleDb implements ValueSerializer<TestValue> {
     }
 
     @Override
-    public int serialize(final TestValue data, final ByteBuffer buffer) throws IOException {
+    public void serialize(final TestValue data, final WritableSequentialData out) throws IOException {
         final String s = data.getValue();
         final byte[] bytes = CommonUtils.getNormalisedStringBytes(s);
-        buffer.putInt(bytes.length);
-        buffer.put(bytes);
-        return Integer.BYTES + bytes.length;
+        out.writeInt(bytes.length);
+        out.writeBytes(bytes);
     }
 
     @Override
-    public TestValue deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
-        if (dataVersion != getCurrentDataVersion()) {
-            throw new IllegalStateException("Data version mismatch");
-        }
-        final int length = buffer.getInt();
+    public TestValue deserialize(final ReadableSequentialData in) throws IOException {
+        final int length = in.readInt();
         final byte[] bytes = new byte[length];
-        buffer.get(bytes);
+        in.readBytes(bytes);
         final String s = CommonUtils.getNormalisedStringFromBytes(bytes);
         return new TestValue(s);
     }

@@ -16,6 +16,9 @@
 
 package com.swirlds.merkledb.files;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
@@ -25,26 +28,6 @@ import java.nio.ByteBuffer;
  * Very simple DataItem that is fixed size and has a long key and long value. Designed for testing
  */
 public class ExampleFixedSizeDataSerializer implements DataItemSerializer<long[]> {
-    /**
-     * Get the number of bytes used for data item header
-     *
-     * @return size of header in bytes
-     */
-    @Override
-    public int getHeaderSize() {
-        return Long.BYTES;
-    }
-
-    /**
-     * Deserialize data item header from the given byte buffer
-     *
-     * @param buffer Buffer to read from
-     * @return The read header
-     */
-    @Override
-    public DataItemHeader deserializeHeader(ByteBuffer buffer) {
-        return new DataItemHeader(Long.BYTES * 2, buffer.getLong());
-    }
 
     /**
      * Get the number of bytes a data item takes when serialized
@@ -62,22 +45,19 @@ public class ExampleFixedSizeDataSerializer implements DataItemSerializer<long[]
         return 1;
     }
 
-    /**
-     * Deserialize a data item from a byte buffer, that was written with given data version
-     *
-     * @param buffer The buffer to read from containing the data item including its header
-     * @param dataVersion The serialization version the data item was written with
-     * @return Deserialized data item
-     */
     @Override
-    public long[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
-        return new long[] {buffer.getLong(), buffer.getLong()};
+    public long[] deserialize(ReadableSequentialData in) throws IOException {
+        return new long[] {in.readLong(), in.readLong()};
     }
 
     @Override
-    public int serialize(final long[] data, final ByteBuffer buffer) throws IOException {
-        buffer.putLong(data[0]);
-        buffer.putLong(data[1]);
-        return getSerializedSize();
+    public void serialize(final long[] data, final WritableSequentialData out) throws IOException {
+        out.writeLong(data[0]);
+        out.writeLong(data[1]);
+    }
+
+    @Override
+    public long deserializeKey(BufferedData dataItemData) {
+        return dataItemData.getLong(0);
     }
 }

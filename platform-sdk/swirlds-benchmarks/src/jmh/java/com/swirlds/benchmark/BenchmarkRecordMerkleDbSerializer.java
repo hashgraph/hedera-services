@@ -16,6 +16,9 @@
 
 package com.swirlds.benchmark;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
@@ -34,29 +37,20 @@ public class BenchmarkRecordMerkleDbSerializer implements DataItemSerializer<Ben
     }
 
     @Override
-    public BenchmarkRecord deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
-        int size = buffer.getInt();
+    public BenchmarkRecord deserialize(final ReadableSequentialData in) throws IOException {
         BenchmarkRecord data = new BenchmarkRecord();
-        data.deserialize(buffer, (int) dataVersion);
+        data.deserialize(in);
         return data;
     }
 
     @Override
-    public int serialize(BenchmarkRecord data, ByteBuffer buffer) throws IOException {
-        buffer.putInt(getSerializedSize());
-        data.serialize(buffer);
-        return getSerializedSize();
+    public long deserializeKey(BufferedData dataItemData) {
+        return dataItemData.getLong(0);
     }
 
     @Override
-    public int getHeaderSize() {
-        return Integer.BYTES + Long.BYTES;
-    }
-
-    @Override
-    public DataItemHeader deserializeHeader(ByteBuffer buffer) {
-        int size = buffer.getInt();
-        long key = buffer.getLong();
-        return new DataItemHeader(size, key);
+    public void serialize(BenchmarkRecord data, WritableSequentialData out) throws IOException {
+        out.writeInt(getSerializedSize());
+        data.serialize(out);
     }
 }

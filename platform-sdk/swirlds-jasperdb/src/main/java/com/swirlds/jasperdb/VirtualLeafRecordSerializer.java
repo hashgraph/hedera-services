@@ -236,7 +236,7 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
         }
         // deserialize key
         final K key = keyConstructor.get();
-        key.deserialize(buffer, keySerializationVersion);
+        key.deserialize(buffer);
         // deserialize value
         final V value = valueConstructor.get();
         value.deserialize(buffer, valueSerializationVersion);

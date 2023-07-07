@@ -16,38 +16,16 @@
 
 package com.swirlds.merkledb.serialize;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 public interface DataItemSerializer<D> extends BaseSerializer<D> {
 
-    /**
-     * Get the number of bytes used for data item header
-     *
-     * @return size of header in bytes
-     */
-    int getHeaderSize();
+    void serialize(D dataItem, WritableSequentialData out) throws IOException;
 
-    /**
-     * Deserialize data item header from the given byte buffer
-     *
-     * @param buffer Buffer to read from
-     * @return The read header
-     */
-    DataItemHeader deserializeHeader(ByteBuffer buffer);
+    D deserialize(ReadableSequentialData in) throws IOException;
 
-    default int copyItem(
-            final long serializedVersion,
-            final int dataItemSize,
-            final ByteBuffer dataItemData,
-            final ByteBuffer buffer)
-            throws IOException {
-        if (serializedVersion == getCurrentDataVersion()) {
-            buffer.put(dataItemData);
-        } else {
-            // deserialize and reserialize to convert versions
-            return serialize(deserialize(dataItemData, serializedVersion), buffer);
-        }
-        return dataItemSize;
-    }
+    long deserializeKey(BufferedData dataItemData);
 }

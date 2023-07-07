@@ -52,7 +52,7 @@ public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirt
     @Override
     public AccountVirtualMapKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         final AccountVirtualMapKey key = new AccountVirtualMapKey();
-        key.deserialize(buffer, (int) dataVersion);
+        key.deserialize(buffer);
         return key;
     }
 

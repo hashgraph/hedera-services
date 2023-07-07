@@ -16,6 +16,8 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -61,22 +63,19 @@ public final class SmartContractByteCodeMapValueSerializerMerkleDb
     }
 
     @Override
-    public int serialize(final SmartContractByteCodeMapValue data, final ByteBuffer buffer) throws IOException {
+    public void serialize(
+            final SmartContractByteCodeMapValue data, final WritableSequentialData out) throws IOException {
         final int size = data.getSize();
-        buffer.putInt(size);
-        buffer.put(data.getByteCode());
-        return Integer.BYTES + size;
+        out.writeInt(size);
+        out.writeBytes(data.getByteCode());
     }
 
     @Override
-    public SmartContractByteCodeMapValue deserialize(final ByteBuffer buffer, final long dataVersion)
+    public SmartContractByteCodeMapValue deserialize(final ReadableSequentialData in)
             throws IOException {
-        if (dataVersion != getCurrentDataVersion()) {
-            throw new IllegalStateException("Data version mismatch");
-        }
-        final int size = buffer.getInt();
+        final int size = in.readInt();
         final byte[] byteCode = new byte[size];
-        buffer.get(byteCode);
+        in.readBytes(byteCode);
         return new SmartContractByteCodeMapValue(byteCode);
     }
 }

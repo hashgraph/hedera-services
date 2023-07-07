@@ -22,13 +22,15 @@ import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.KEY_HASHCODE_SI
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.VALUE_SIZE;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.utility.Units;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
@@ -71,22 +73,21 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     private static final int BUCKET_HEADER_SIZE = BUCKET_ENTRY_COUNT_OFFSET + BUCKET_ENTRY_COUNT_SIZE;
 
     private static final int ENTRY_VALUE_OFFSET = KEY_HASHCODE_SIZE;
-    private static final int ENTRY_KEY_OFFSET = KEY_HASHCODE_SIZE + VALUE_SIZE;
+    private static final int ENTRY_KEY_SIZE_OFFSET = KEY_HASHCODE_SIZE + VALUE_SIZE;
+    private static final int ENTRY_KEY_SIZE_SIZE = Integer.BYTES;
+    private static final int ENTRY_KEY_OFFSET = ENTRY_KEY_SIZE_OFFSET + ENTRY_KEY_SIZE_SIZE;
 
     /** Keep track of the largest bucket we have ever created for logging */
     private static final AtomicInteger LARGEST_SIZE_OF_BUCKET_CREATED = new AtomicInteger(0);
-
-    private int keySerializationVersion;
 
     /**
      * Byte buffer that holds this bucket data, including bucket index, size in bytes, number of
      * entries, and entry data. Buffer is expanded as needed, when new entries are added. Buffer
      * limit is kept equal to the bucket size in bytes.
      */
-    private ByteBuffer bucketBuffer;
+    private BufferedData bucketBuffer;
 
     private final KeySerializer<K> keySerializer;
-    private ByteBuffer reusableBuffer;
 
     /**
      * Bucket pool this bucket is managed by, optional. If not null, the bucket is
@@ -110,12 +111,9 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
      */
     Bucket(final KeySerializer<K> keySerializer, final ReusableBucketPool<K> bucketPool) {
         this.keySerializer = keySerializer;
-        this.keySerializationVersion = (int) keySerializer.getCurrentDataVersion();
-        bucketBuffer = ByteBuffer.allocate(DEFAULT_BUCKET_BUFFER_SIZE);
+        bucketBuffer = BufferedData.allocate(DEFAULT_BUCKET_BUFFER_SIZE);
         setSize(BUCKET_HEADER_SIZE);
         setBucketIndex(-1);
-        reusableBuffer =
-                keySerializer.isVariableSize() ? ByteBuffer.allocate(keySerializer.getTypicalSerializedSize()) : null;
         this.bucketPool = bucketPool;
     }
 
@@ -151,18 +149,13 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
         // reset size
         setSize(BUCKET_HEADER_SIZE);
         // reset buffer
-        bucketBuffer.clear();
+        bucketBuffer.reset();
         bucketBuffer.limit(getSize());
         return this;
     }
 
     public KeySerializer<K> getKeySerializer() {
         return keySerializer;
-    }
-
-    /** Set the serialization version to use for keys */
-    public void setKeySerializationVersion(int keySerializationVersion) {
-        this.keySerializationVersion = keySerializationVersion;
     }
 
     /** Get the index for this bucket */
@@ -172,7 +165,8 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
 
     /** Set the index for this bucket */
     public void setBucketIndex(int bucketIndex) {
-        this.bucketBuffer.putInt(0, bucketIndex);
+        bucketBuffer.position(0);
+        bucketBuffer.writeInt(bucketIndex);
     }
 
     /** Get the number of entries stored in this bucket */
@@ -182,27 +176,31 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
 
     /** Set the number of entries stored in this bucket */
     public void setBucketEntryCount(int count) {
-        this.bucketBuffer.putInt(BUCKET_ENTRY_COUNT_OFFSET, count);
+        bucketBuffer.position(BUCKET_ENTRY_COUNT_OFFSET);
+        bucketBuffer.writeInt(count);
     }
 
     /** Add one to the number of entries stored in this bucket */
     private void incrementBucketEntryCount() {
-        this.bucketBuffer.putInt(BUCKET_ENTRY_COUNT_OFFSET, bucketBuffer.getInt(BUCKET_ENTRY_COUNT_OFFSET) + 1);
+        bucketBuffer.position(BUCKET_ENTRY_COUNT_OFFSET);
+        bucketBuffer.writeInt(bucketBuffer.getInt(BUCKET_ENTRY_COUNT_OFFSET) + 1);
     }
 
     /** Subtract one to the number of entries stored in this bucket */
     private void decrementBucketEntryCount() {
-        this.bucketBuffer.putInt(BUCKET_ENTRY_COUNT_OFFSET, bucketBuffer.getInt(BUCKET_ENTRY_COUNT_OFFSET) - 1);
+        bucketBuffer.position(BUCKET_ENTRY_COUNT_OFFSET);
+        bucketBuffer.writeInt(bucketBuffer.getInt(BUCKET_ENTRY_COUNT_OFFSET) - 1);
     }
 
     /** Get the size of this bucket in bytes, including header */
     public int getSize() {
-        return this.bucketBuffer.getInt(BUCKET_SIZE_OFFSET);
+        return bucketBuffer.getInt(BUCKET_SIZE_OFFSET);
     }
 
     /** Set the size of this bucket in bytes, including header */
     private void setSize(int size) {
-        this.bucketBuffer.putInt(BUCKET_SIZE_OFFSET, size);
+        bucketBuffer.position(BUCKET_SIZE_OFFSET);
+        bucketBuffer.writeInt(size);
         final int maxSize = LARGEST_SIZE_OF_BUCKET_CREATED.get();
         if (size > maxSize) {
             final int newMaxSize =
@@ -257,13 +255,16 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
                     final int entryCount = getBucketEntryCount();
                     final int currentSize = getSize();
                     // read the key size so we can calculate entry size
-                    final int entrySize = KEY_HASHCODE_SIZE + VALUE_SIZE + getKeySize(result.entryOffset);
+                    final int entrySize = ENTRY_KEY_OFFSET + getKeySize(result.entryOffset);
                     // check if not last entry
                     if (result.entryIndex < (entryCount - 1)) {
                         // move all entries after this one up
                         final int offsetOfNextEntry = result.entryOffset + entrySize;
                         final int sizeOfEntriesToMove = currentSize - offsetOfNextEntry;
-                        bucketBuffer.put(result.entryOffset, bucketBuffer, offsetOfNextEntry, sizeOfEntriesToMove);
+                        // TODO: writeBytes(offset, src, srcOffset, length)
+                        final BufferedData remainder = bucketBuffer.slice(offsetOfNextEntry, sizeOfEntriesToMove);
+                        bucketBuffer.position(result.entryOffset);
+                        bucketBuffer.writeBytes(remainder);
                     }
                     // decrement count
                     decrementBucketEntryCount();
@@ -276,43 +277,21 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
             // handle UPDATE
             if (result.found) {
                 // yay! we found it, so update value
-                bucketBuffer.putLong(result.entryOffset + ENTRY_VALUE_OFFSET, value);
+                bucketBuffer.position(result.entryOffset + ENTRY_VALUE_OFFSET);
+                bucketBuffer.writeLong(value);
                 return;
             }
-            /* We have to serialize a variable-size key to a temp byte buffer to check
-            if there is going to be enough room to store it in this bucket. */
-            if (keySerializer.isVariableSize()) {
-                reusableBuffer.clear();
-                while (true) {
-                    try {
-                        keySerializer.serialize(key, reusableBuffer);
-                        break;
-                    } catch (final BufferOverflowException e) {
-                        // increment reusable buffer size, if needed
-                        reusableBuffer = ByteBuffer.allocate(reusableBuffer.capacity() * 2);
-                    }
-                }
-                final int keySizeBytes = reusableBuffer.position();
-                final int newSize = result.entryOffset + ENTRY_KEY_OFFSET + keySizeBytes;
-                ensureCapacity(newSize);
-                setSize(newSize);
-                // add a new entry
-                bucketBuffer.position(result.entryOffset);
-                bucketBuffer.putInt(keyHashCode);
-                bucketBuffer.putLong(value);
-                // write the key
-                reusableBuffer.flip();
-                bucketBuffer.put(reusableBuffer);
-            } else {
-                final int newSize = result.entryOffset + ENTRY_KEY_OFFSET + keySerializer.getSerializedSize();
-                ensureCapacity(newSize);
-                setSize(newSize);
-                // add a new entry
-                bucketBuffer.position(result.entryOffset);
-                bucketBuffer.putInt(keyHashCode);
-                bucketBuffer.putLong(value);
-                keySerializer.serialize(key, bucketBuffer);
-            }
+            // TODO: may save 4 bytes by not writing key size for fixed-sized keys
+            final int keySize = keySerializer.getSerializedSize(key);
+            final int newSize = result.entryOffset + ENTRY_KEY_OFFSET + keySize;
+            ensureCapacity(newSize);
+            setSize(newSize);
+            // add a new entry
+            bucketBuffer.position(result.entryOffset);
+            bucketBuffer.writeInt(keyHashCode);
+            bucketBuffer.writeLong(value);
+            bucketBuffer.writeInt(keySize);
+            keySerializer.serialize(key, bucketBuffer);
             // increment count
             incrementBucketEntryCount();
         } catch (IOException e) {
@@ -328,18 +307,23 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
      */
     public void putAllData(ByteBuffer dataBuffer) {
         ensureCapacity(dataBuffer.limit());
-        bucketBuffer.rewind().put(dataBuffer);
+        bucketBuffer.position(0);
+        bucketBuffer.writeBytes(dataBuffer);
     }
 
-    /**
-     * Write the complete data bytes for this bucket to a byte buffer
-     *
-     * @param buffer The byte buffer to write to
-     * @return the number of bytes written
-     */
-    public int writeToByteBuffer(final ByteBuffer buffer) {
-        buffer.put(bucketBuffer.rewind());
-        return getSize();
+    public void putAllData(final ReadableSequentialData in) {
+        ensureCapacity(Math.toIntExact(in.limit()));
+        bucketBuffer.position(0);
+        in.readBytes(bucketBuffer);
+    }
+
+    public void writeTo(final WritableSequentialData out) {
+        bucketBuffer.position(0);
+        out.writeBytes(bucketBuffer);
+    }
+
+    public static long extractKey(final BufferedData bucketBytes) {
+        return bucketBytes.getInt(0);
     }
 
     // =================================================================================================================
@@ -350,14 +334,14 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
      * neededSize and sets bucket buffer limit to the requested size.
      */
     private void ensureCapacity(int neededSize) {
-        int capacity = bucketBuffer.capacity();
+        int capacity = (int) bucketBuffer.capacity();
         if (neededSize > capacity) {
             while (capacity < neededSize) {
                 capacity += CAPACITY_INCREMENT;
             }
-            ByteBuffer newBucketBuffer = ByteBuffer.allocate(capacity);
-            bucketBuffer.clear();
-            newBucketBuffer.put(bucketBuffer);
+            final BufferedData newBucketBuffer = BufferedData.allocate(capacity);
+            bucketBuffer.reset();
+            newBucketBuffer.writeBytes(bucketBuffer);
             bucketBuffer = newBucketBuffer;
         }
         bucketBuffer.limit(neededSize);
@@ -378,11 +362,12 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
         int entryOffset = BUCKET_HEADER_SIZE;
         for (int i = 0; i < entryCount; i++) {
             bucketBuffer.position(entryOffset);
-            final int readHashCode = bucketBuffer.getInt();
+            final int readHashCode = bucketBuffer.readInt();
             if (readHashCode == keyHashCode) {
-                final long readValue = bucketBuffer.getLong();
+                final long readValue = bucketBuffer.readLong();
+                final int keySize = bucketBuffer.readInt();
                 // now check the full key
-                if (keySerializer.equals(bucketBuffer, keySerializationVersion, key)) {
+                if (keySerializer.equals(bucketBuffer, key)) {
                     // yay! we found it
                     return new FindResult(entryOffset, i, true, readValue);
                 }
@@ -392,7 +377,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
                 // now read the key size so we can jump
                 int keySize = getKeySize(entryOffset);
                 // move to next entry
-                entryOffset += KEY_HASHCODE_SIZE + VALUE_SIZE + keySize;
+                entryOffset += ENTRY_KEY_OFFSET + keySize;
             }
         }
         // Entry is not found. Return the current size of the buffer as the offset
@@ -406,11 +391,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
      * @return the size of the key in bytes
      */
     private int getKeySize(final int entryOffset) {
-        if (!keySerializer.isVariableSize()) {
-            return keySerializer.getSerializedSize();
-        }
-        bucketBuffer.position(entryOffset + ENTRY_KEY_OFFSET);
-        return keySerializer.deserializeKeySize(bucketBuffer);
+        return bucketBuffer.getInt(entryOffset + ENTRY_KEY_SIZE_OFFSET);
     }
 
     /**
@@ -422,7 +403,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
      */
     private K getKey(int entryOffset) throws IOException {
         bucketBuffer.position(entryOffset + ENTRY_KEY_OFFSET);
-        return keySerializer.deserialize(bucketBuffer, keySerializationVersion);
+        return keySerializer.deserialize(bucketBuffer);
     }
 
     /** toString for debugging */
@@ -438,8 +419,8 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
             for (int i = 0; i < entryCount; i++) {
                 final int keySize = getKeySize(entryOffset);
                 bucketBuffer.position(entryOffset);
-                final int readHash = bucketBuffer.getInt();
-                final long value = bucketBuffer.getLong();
+                final int readHash = bucketBuffer.readInt();
+                final long value = bucketBuffer.readLong();
                 final K key = getKey(entryOffset);
                 sb.append("    ENTRY["
                         + i
@@ -447,23 +428,20 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
                         + value
                         + " keyHashCode="
                         + readHash
-                        + " keyVer="
-                        + keySerializationVersion
                         + " key="
                         + key
                         + " keySize="
                         + keySize
                         + "\n");
-                entryOffset += KEY_HASHCODE_SIZE + VALUE_SIZE + keySize;
+                entryOffset += ENTRY_KEY_OFFSET + keySize;
             }
         } catch (IOException e) {
             logger.error(EXCEPTION.getMarker(), "Failed enumerating bucket entries", e);
         }
-        bucketBuffer.clear();
+        bucketBuffer.reset();
         sb.append("} RAW DATA = ");
-        final byte[] bucketArray = bucketBuffer.array();
         for (int i = 0; i < size; i++) {
-            sb.append(String.format("%02X ", bucketArray[i]).toUpperCase());
+            sb.append(String.format("%02X ", bucketBuffer.getByte(i)).toUpperCase());
         }
         return sb.toString();
     }
@@ -481,7 +459,8 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     private record FindResult(int entryOffset, int entryIndex, boolean found, long entryValue) {}
 
     /** Get bucket buffer for tests */
-    ByteBuffer getBucketBuffer() {
+    BufferedData getBucketBuffer() {
+        bucketBuffer.resetPosition();
         return bucketBuffer;
     }
 }

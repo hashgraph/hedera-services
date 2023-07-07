@@ -25,6 +25,7 @@ dependencies {
   jmhImplementation(project(":swirlds-platform-core"))
   jmhImplementation(project(":swirlds-config-api"))
   jmhImplementation(project(":swirlds-config-impl"))
+  jmhImplementation(libs.bundles.pbj)
 }
 
 fun getListProperty(arg: String): ListProperty<String> {

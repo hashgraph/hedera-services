@@ -68,5 +68,5 @@ public interface VirtualKey extends SelfSerializable {
      * @throws IOException
      * 		If there was a problem reading this classes data from the ByteBuffer
      */
-    void deserialize(ByteBuffer buffer, int version) throws IOException;
+    void deserialize(ByteBuffer buffer) throws IOException;
 }

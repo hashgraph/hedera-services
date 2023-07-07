@@ -16,6 +16,8 @@
 
 package com.swirlds.benchmark;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -79,14 +81,6 @@ public class BenchmarkValue implements VirtualValue {
         buffer.put(valueBytes);
     }
 
-    @Override
-    public void deserialize(ByteBuffer buffer, int dataVersion) throws IOException {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
-        int n = buffer.getInt();
-        valueBytes = new byte[n];
-        buffer.get(valueBytes);
-    }
-
     public static int getSerializedSize() {
         return Integer.BYTES + valueSize;
     }
@@ -95,6 +89,25 @@ public class BenchmarkValue implements VirtualValue {
     public void serialize(SerializableDataOutputStream outputStream) throws IOException {
         outputStream.writeInt(valueBytes.length);
         outputStream.write(valueBytes);
+    }
+
+    public void serialize(final WritableSequentialData out) {
+        out.writeInt(valueBytes.length);
+        out.writeBytes(valueBytes);
+    }
+
+    @Override
+    public void deserialize(ByteBuffer buffer, int dataVersion) throws IOException {
+        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+        int n = buffer.getInt();
+        valueBytes = new byte[n];
+        buffer.get(valueBytes);
+    }
+
+    public void deserialize(final ReadableSequentialData in) {
+        int n = in.readInt();
+        valueBytes = new byte[n];
+        in.readBytes(valueBytes);
     }
 
     @Override

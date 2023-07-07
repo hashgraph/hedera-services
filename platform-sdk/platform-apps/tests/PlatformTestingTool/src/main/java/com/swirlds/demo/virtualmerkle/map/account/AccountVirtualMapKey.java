@@ -99,7 +99,7 @@ public class AccountVirtualMapKey implements VirtualKey {
      * {@inheritDoc}
      */
     @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+    public void deserialize(final ByteBuffer buffer) throws IOException {
         this.realmID = buffer.getLong();
         this.shardId = buffer.getLong();
         this.accountID = buffer.getLong();

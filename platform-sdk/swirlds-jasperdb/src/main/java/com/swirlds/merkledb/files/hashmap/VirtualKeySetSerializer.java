@@ -18,6 +18,7 @@ package com.swirlds.merkledb.files.hashmap;
 
 import static com.swirlds.common.utility.Units.BYTES_PER_LONG;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.merkledb.serialize.AbstractFixedSizeKeySerializer;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -46,14 +47,13 @@ public class VirtualKeySetSerializer extends AbstractFixedSizeKeySerializer<Virt
 
     /** {@inheritDoc} */
     @Override
-    public VirtualLongKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+    public VirtualLongKey deserialize(final ByteBuffer buffer) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override
-    public boolean equals(final ByteBuffer buffer, final int dataVersion, final VirtualLongKey keyToCompare)
-            throws IOException {
-        return buffer.getLong() == keyToCompare.getKeyAsLong();
+    public boolean equals(final BufferedData buffer, final VirtualLongKey keyToCompare) throws IOException {
+        return buffer.readLong() == keyToCompare.getKeyAsLong();
     }
 }

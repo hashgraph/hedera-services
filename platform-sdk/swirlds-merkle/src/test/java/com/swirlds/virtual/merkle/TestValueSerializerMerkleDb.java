@@ -16,6 +16,8 @@
 
 package com.swirlds.virtual.merkle;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.CommonUtils;
@@ -60,23 +62,28 @@ public class TestValueSerializerMerkleDb implements ValueSerializer<TestValue> {
     }
 
     @Override
+    public int getSerializedSize(TestValue data) {
+        final byte[] bytes = CommonUtils.getNormalisedStringBytes(data.getValue());
+        return Integer.BYTES + bytes.length;
+    }
+
+    @Override
     public int getTypicalSerializedSize() {
         return 20; // guesstimation
     }
 
     @Override
-    public int serialize(final TestValue data, final ByteBuffer buffer) throws IOException {
+    public void serialize(final TestValue data, final WritableSequentialData out) throws IOException {
         final byte[] bytes = CommonUtils.getNormalisedStringBytes(data.getValue());
-        buffer.putInt(bytes.length);
-        buffer.put(bytes);
-        return Integer.BYTES + bytes.length;
+        out.writeInt(bytes.length);
+        out.writeBytes(bytes);
     }
 
     @Override
-    public TestValue deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
-        final int size = buffer.getInt();
+    public TestValue deserialize(final ReadableSequentialData in) throws IOException {
+        final int size = in.readInt();
         final byte[] bytes = new byte[size];
-        buffer.get(bytes);
+        in.readBytes(bytes);
         final String value = CommonUtils.getNormalisedStringFromBytes(bytes);
         return new TestValue(value);
     }

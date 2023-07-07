@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.merkledb;
+package com.swirlds.merkledb.files;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -43,40 +43,13 @@ class VirtualHashRecordSerializerTest {
     }
 
     @Test
-    void deserializeEnforcesCurrentVersion() {
-        final ByteBuffer someBuffer = ByteBuffer.allocate(1);
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.deserialize(someBuffer, 123),
-                "Should have rejected attempt to deserialize data not using the current version");
-    }
-
-    @Test
     void serializeEnforcesDefaultDigest() {
         final ByteBuffer bbuf = mock(ByteBuffer.class);
         final Hash nonDefaultHash = new Hash(DigestType.SHA_512);
         final VirtualHashRecord data = new VirtualHashRecord(1L, nonDefaultHash);
-        assertEquals(Long.BYTES, subject.getHeaderSize(), "Header size should be 8 bytes");
         assertEquals(
                 56, subject.getSerializedSize(), "Serialized size should be 8 bytes for header + 48 bytes for digest");
         assertEquals(1L, subject.getCurrentDataVersion(), "Current version should be 1");
-
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.serialize(data, bbuf),
-                "Should have rejected attempt to serialize data with non-default hash digest");
-    }
-
-    @Test
-    void deserializeHappyPath() throws IOException {
-        final ByteBuffer bb = mock(ByteBuffer.class);
-        final Hash validHash = new Hash(DigestType.SHA_384);
-        final VirtualHashRecord expectedData = new VirtualHashRecord(42L, validHash);
-        when(bb.getLong()).thenReturn(42L);
-        when(bb.get(any())).thenReturn(bb);
-        final DataItemHeader expectedHeader = new DataItemHeader(56, 42L);
-        assertEquals(expectedHeader, subject.deserializeHeader(bb), "Deserialized header should match serialized");
-        assertEquals(expectedData, subject.deserialize(bb, 1L), "Deserialized data should match serialized");
     }
 
     @Test

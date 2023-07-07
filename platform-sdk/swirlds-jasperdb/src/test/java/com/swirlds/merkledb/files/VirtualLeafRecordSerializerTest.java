@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.merkledb;
+package com.swirlds.merkledb.files;
 
 import static com.swirlds.jasperdb.utilities.HashTools.DEFAULT_DIGEST;
 import static com.swirlds.merkledb.ExampleFixedSizeVirtualValue.RANDOM_BYTES;
@@ -24,14 +24,20 @@ import static org.apache.commons.lang3.RandomUtils.nextInt;
 import static org.apache.commons.lang3.RandomUtils.nextLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
+import com.swirlds.merkledb.ExampleByteArrayVirtualValue;
+import com.swirlds.merkledb.ExampleFixedSizeVirtualValue;
+import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.TestType;
 import com.swirlds.merkledb.files.VirtualLeafRecordSerializer;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
+import com.swirlds.merkledb.utilities.ProtoUtils;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
@@ -97,59 +103,19 @@ class VirtualLeafRecordSerializerTest {
 
     @ParameterizedTest
     @EnumSource(TestType.class)
-    void testHeaderSize(final TestType testType) {
-        final var serializer = createSerializer(testType);
-        int expectedSerializedSize = testType.fixedSize ? Long.BYTES : Long.BYTES + Integer.BYTES;
-        assertEquals(expectedSerializedSize, serializer.getHeaderSize());
-    }
-
-    @ParameterizedTest
-    @EnumSource(TestType.class)
     void testSerializeDeserialize(final TestType testType) throws IOException {
         final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> record =
                 testType.dataType().createVirtualLeafRecord(nextLong(), nextInt(), nextInt());
 
         final var serializer = createSerializer(testType);
-        final ByteBuffer buffer = ByteBuffer.allocate(2048);
+        final BufferedData buffer = BufferedData.allocate(2048);
         serializer.serialize(record, buffer);
 
         buffer.flip();
 
         final VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> deserializedRecord =
-                serializer.deserialize(buffer, serializer.getCurrentDataVersion());
+                serializer.deserialize(buffer);
         assertEquals(record, deserializedRecord, "Deserialized record did not match original record");
-    }
-
-    /**
-     * This test emulates a record that was serialized with a hash
-     */
-    @Test
-    void testDeserializeWithHash() throws IOException {
-        VirtualLeafRecordSerializer<VirtualLongKey, ExampleByteArrayVirtualValue> serializer =
-                createSerializer(TestType.fixed_fixed);
-
-        // emulate a serialized record
-        final ByteBuffer buffer = ByteBuffer.allocate(1024);
-        final long path = nextLong();
-        final long key = nextLong();
-        // RANDOM_BYTES is the size of ExampleFixedSizeVirtualValue data
-        final String value = randomString(RANDOM_BYTES, new Random());
-        buffer.putLong(path);
-        Hash hash = new HashBuilder(DEFAULT_DIGEST).update(nextInt()).build();
-        buffer.put(hash.getValue());
-        buffer.putLong(key);
-        int id = nextInt();
-        buffer.putInt(id); // value id
-        buffer.put(value.getBytes());
-
-        buffer.flip();
-
-        VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> record =
-                serializer.deserialize(buffer, serializer.getCurrentDataVersion() | 0x1);
-
-        assertEquals(path, record.getPath());
-        assertEquals(key, record.getKey().getKeyAsLong());
-        assertEquals(value, new String(record.getValue().getData()));
     }
 
     @ParameterizedTest

@@ -16,6 +16,9 @@
 
 package com.swirlds.merkledb;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -60,8 +63,7 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
     }
 
     @Override
-    public void deserialize(final ByteBuffer byteBuffer, final int dataVersion) {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+    public void deserialize(final ByteBuffer byteBuffer) {
         setValue(byteBuffer.getLong());
     }
 
@@ -123,18 +125,6 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
         }
 
         /**
-         * Deserialize key size from the given byte buffer
-         *
-         * @param buffer Buffer to read from
-         * @return The number of bytes used to store the key, including for storing the key size if
-         *     needed.
-         */
-        @Override
-        public int deserializeKeySize(final ByteBuffer buffer) {
-            return getSerializedSize();
-        }
-
-        /**
          * Get the number of bytes a data item takes when serialized
          *
          * @return Either a number of bytes or DataFileCommon.VARIABLE_DATA_SIZE if size is variable
@@ -154,14 +144,17 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
          * Deserialize a data item from a byte buffer, that was written with given data version
          *
          * @param buffer The buffer to read from containing the data item including its header
-         * @param dataVersion The serialization version the data item was written with
          * @return Deserialized data item
          */
         @Override
-        public ExampleLongKeyFixedSize deserialize(final ByteBuffer buffer, final long dataVersion) {
-            assert dataVersion == getCurrentDataVersion()
-                    : "dataVersion=" + dataVersion + " != getCurrentDataVersion()=" + getCurrentDataVersion();
+        public ExampleLongKeyFixedSize deserialize(final ByteBuffer buffer) {
             final long value = buffer.getLong();
+            return new ExampleLongKeyFixedSize(value);
+        }
+
+        @Override
+        public ExampleLongKeyFixedSize deserialize(ReadableSequentialData in) throws IOException {
+            final long value = in.readLong();
             return new ExampleLongKeyFixedSize(value);
         }
 
@@ -179,6 +172,11 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
             return Long.BYTES;
         }
 
+        @Override
+        public void serialize(ExampleLongKeyFixedSize data, WritableSequentialData out) throws IOException {
+            out.writeLong(data.getKeyAsLong());
+        }
+
         /**
          * Compare keyToCompare's data to that contained in the given ByteBuffer. The data in the
          * buffer is assumed to be starting at the current buffer position and in the format written
@@ -188,17 +186,14 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
          * a hash map bucket for a match performance is critical.
          *
          * @param buffer The buffer to read from and compare to
-         * @param dataVersion The serialization version of the data in the buffer
          * @param keyToCompare The key to compare with the data in the file.
          * @return true if the content of the buffer matches this class's data
          * @throws IOException If there was a problem reading from the buffer
          */
         @Override
-        public boolean equals(ByteBuffer buffer, int dataVersion, ExampleLongKeyFixedSize keyToCompare)
+        public boolean equals(BufferedData buffer, ExampleLongKeyFixedSize keyToCompare)
                 throws IOException {
-            assert dataVersion == getCurrentDataVersion()
-                    : "dataVersion=" + dataVersion + " != getCurrentDataVersion()=" + getCurrentDataVersion();
-            final long readKey = buffer.getLong();
+            final long readKey = buffer.readLong();
             return readKey == keyToCompare.getKeyAsLong();
         }
 

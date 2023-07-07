@@ -30,6 +30,7 @@ dependencies {
 
   // Bundle Dependencies
   implementation(libs.bundles.logging.impl)
+  implementation(libs.bundles.pbj)
 
   // Test Dependencies
 

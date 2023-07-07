@@ -40,6 +40,7 @@ dependencies {
   implementation(libs.bundles.networking)
   implementation(libs.bundles.picocli)
   implementation(libs.bundles.jackson)
+  implementation(libs.bundles.pbj)
 
   // Test Dependencies
 

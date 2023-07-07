@@ -16,6 +16,8 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.data;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -55,16 +57,15 @@ public final class SmartContractMapValueSerializerMerkleDb implements ValueSeria
     }
 
     @Override
-    public int serialize(final SmartContractMapValue data, final ByteBuffer buffer) throws IOException {
+    public void serialize(final SmartContractMapValue data, final WritableSequentialData out) throws IOException {
         final byte[] value = data.getValue();
-        buffer.put(value);
-        return SmartContractMapValue.getSizeInBytes();
+        out.writeBytes(value);
     }
 
     @Override
-    public SmartContractMapValue deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+    public SmartContractMapValue deserialize(final ReadableSequentialData in) throws IOException {
         final byte[] value = new byte[SmartContractMapValue.getSizeInBytes()];
-        buffer.get(value);
+        in.readBytes(value);
         return new SmartContractMapValue(value);
     }
 }

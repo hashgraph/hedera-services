@@ -16,6 +16,8 @@
 
 package com.swirlds.benchmark;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -58,15 +60,14 @@ public class BenchmarkValueMerkleDbSerializer implements ValueSerializer<Benchma
     }
 
     @Override
-    public int serialize(final BenchmarkValue data, final ByteBuffer buffer) throws IOException {
-        data.serialize(buffer);
-        return getSerializedSize();
+    public void serialize(BenchmarkValue data, WritableSequentialData out) throws IOException {
+        data.serialize(out);
     }
 
     @Override
-    public BenchmarkValue deserialize(final ByteBuffer buffer, final long version) throws IOException {
+    public BenchmarkValue deserialize(ReadableSequentialData in) throws IOException {
         final BenchmarkValue value = new BenchmarkValue();
-        value.deserialize(buffer, (int) version);
+        value.deserialize(in);
         return value;
     }
 }

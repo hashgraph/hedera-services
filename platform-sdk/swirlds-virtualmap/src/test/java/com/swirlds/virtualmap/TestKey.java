@@ -57,7 +57,7 @@ public final class TestKey implements VirtualLongKey {
     }
 
     @Override
-    public void deserialize(final ByteBuffer buffer, final int version) {
+    public void deserialize(final ByteBuffer buffer) {
         k = buffer.getLong();
     }
 

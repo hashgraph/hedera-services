@@ -60,8 +60,7 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
     }
 
     @Override
-    public void deserialize(final ByteBuffer byteBuffer, final int dataVersion) {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
+    public void deserialize(final ByteBuffer byteBuffer) {
         setValue(byteBuffer.getLong());
     }
 

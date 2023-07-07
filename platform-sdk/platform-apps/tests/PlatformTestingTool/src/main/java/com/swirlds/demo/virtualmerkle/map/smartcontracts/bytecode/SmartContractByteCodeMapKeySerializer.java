@@ -55,7 +55,7 @@ public final class SmartContractByteCodeMapKeySerializer implements KeySerialize
     @Override
     public SmartContractByteCodeMapKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         SmartContractByteCodeMapKey smartContractByteCodeMapKey = new SmartContractByteCodeMapKey();
-        smartContractByteCodeMapKey.deserialize(buffer, (int) dataVersion);
+        smartContractByteCodeMapKey.deserialize(buffer);
         return smartContractByteCodeMapKey;
     }
 
@@ -84,7 +84,7 @@ public final class SmartContractByteCodeMapKeySerializer implements KeySerialize
     public boolean equals(
             final ByteBuffer buffer, final int dataVersion, final SmartContractByteCodeMapKey keyToCompare)
             throws IOException {
-        return keyToCompare.equals(buffer, dataVersion);
+        return keyToCompare.equals(buffer);
     }
 
     /**

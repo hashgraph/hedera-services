@@ -63,7 +63,7 @@ public class TestKeySerializer implements KeySerializer<TestKey>, SelfSerializab
     @Override
     public TestKey deserialize(final ByteBuffer buffer, final long dataVersion) {
         final TestKey key = new TestKey();
-        key.deserialize(buffer, (int) dataVersion);
+        key.deserialize(buffer);
         return key;
     }
 

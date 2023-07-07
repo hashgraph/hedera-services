@@ -16,6 +16,9 @@
 
 package com.swirlds.benchmark;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -53,16 +56,19 @@ public class BenchmarkKey implements VirtualLongKey {
         buffer.put(keyBytes);
     }
 
-    @Override
-    public void deserialize(ByteBuffer buffer, int dataVersion) {
-        assert dataVersion == getVersion() : "dataVersion=" + dataVersion + " != getVersion()=" + getVersion();
-        keyBytes = new byte[keySize];
-        buffer.get(keyBytes);
+    public void serialize(final WritableSequentialData out) {
+        out.writeBytes(keyBytes);
     }
 
     @Override
     public void serialize(SerializableDataOutputStream outputStream) throws IOException {
         outputStream.write(keyBytes);
+    }
+
+    @Override
+    public void deserialize(ByteBuffer buffer) {
+        keyBytes = new byte[keySize];
+        buffer.get(keyBytes);
     }
 
     @Override
@@ -73,6 +79,11 @@ public class BenchmarkKey implements VirtualLongKey {
         while (n > 0) {
             n -= inputStream.read(keyBytes, keyBytes.length - n, n);
         }
+    }
+
+    public void deserialize(final ReadableSequentialData in) {
+        keyBytes = new byte[keySize];
+        in.readBytes(keyBytes);
     }
 
     public static int getSerializedSize() {
@@ -105,10 +116,9 @@ public class BenchmarkKey implements VirtualLongKey {
         return Arrays.equals(this.keyBytes, that.keyBytes);
     }
 
-    public boolean equals(ByteBuffer buffer, int dataVersion) {
-        if (dataVersion != VERSION) return false;
+    public boolean equals(BufferedData buffer) {
         for (int i = 0; i < keySize; ++i) {
-            if (buffer.get() != keyBytes[i]) return false;
+            if (buffer.readByte() != keyBytes[i]) return false;
         }
         return true;
     }

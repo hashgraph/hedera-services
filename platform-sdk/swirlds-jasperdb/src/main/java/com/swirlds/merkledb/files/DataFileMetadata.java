@@ -16,15 +16,25 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.merkledb.files.DataFileCommon.FOOTER_SIZE;
-import static com.swirlds.merkledb.serialize.BaseSerializer.VARIABLE_DATA_SIZE;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_CREATION_NANOS;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_CREATION_SECONDS;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_INDEX;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS_COUNT;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEM_VERSION;
+import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_VARINT;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.hedera.pbj.runtime.ProtoParserTools;
+import com.hedera.pbj.runtime.ProtoWriterTools;
+import com.hedera.pbj.runtime.io.SequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
+import com.swirlds.merkledb.utilities.ProtoUtils;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Files;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
@@ -36,17 +46,13 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  */
 @SuppressWarnings("unused")
 public final class DataFileMetadata {
-    /**
-     * The file format version, this is ready in case we need to change file format and support
-     * multiple versions.
-     */
-    private final int fileFormatVersion;
-    /**
-     * The data item value's size, if the file contains fixed size data items then this is the size
-     * in bytes of those items. If the file contains variable size items then this is the constant
-     * VARIABLE_DATA_SIZE.
-     */
-    private final int dataItemValueSize;
+
+    /** The file index, in a data file collection */
+    private final int index;
+
+    /** The creation date of this file */
+    private final Instant creationDate;
+
     /**
      * The number of data items the file contains. When metadata is loaded from a file, the number
      * of items is read directly from there. When metadata is created by {@link DataFileWriter} for
@@ -54,44 +60,36 @@ public final class DataFileMetadata {
      * right before the file is finished writing. For such new files, no code needs their metadata
      * until they are fully written, so wrong (zero) item count shouldn't be an issue.
      */
-    private volatile long dataItemCount;
-    /** The file index, in a data file collection */
-    private final int index;
-    /**
-     * The creation date of this file, this is critical as it is used when merging two files to know
-     * which files data is newer.
-     */
-    private final Instant creationDate;
+    private volatile long itemsCount;
+
     /** Serialization version for data stored in the file */
     private final long serializationVersion;
+
+    /** Header (metadata) size, in bytes */
+    private final int headerSize;
+
+    // Set in writeTo()
+    private long dataItemCountHeaderOffset = 0;
 
     /**
      * Create a new DataFileMetadata with complete set of data
      *
-     * @param fileFormatVersion The file format version, this is ready in case we need to change
-     *     file format and support multiple versions.
-     * @param dataItemValueSize The data item value's size, if the file contains fixed size data
-     *     items then this is the size in bytes of those items. If the file contains variable size
-     *     items then this is the constant VARIABLE_DATA_SIZE.
-     * @param dataItemCount The number of data items the file contains
+     * @param itemsCount The number of data items the file contains
      * @param index The file index, in a data file collection
      * @param creationDate The creation data of this file, this is critical as it is used when
      *     merging two files to know which files data is newer.
      * @param serializationVersion Serialization version for data stored in the file
      */
     public DataFileMetadata(
-            final int fileFormatVersion,
-            final int dataItemValueSize,
-            final long dataItemCount,
+            final long itemsCount,
             final int index,
             final Instant creationDate,
             final long serializationVersion) {
-        this.fileFormatVersion = fileFormatVersion;
-        this.dataItemValueSize = dataItemValueSize;
-        this.dataItemCount = dataItemCount;
+        this.itemsCount = itemsCount;
         this.index = index;
         this.creationDate = creationDate;
         this.serializationVersion = serializationVersion;
+        headerSize = calculateHeaderSize();
     }
 
     /**
@@ -101,62 +99,70 @@ public final class DataFileMetadata {
      * @throws IOException If there was a problem reading metadata footer from the file
      */
     public DataFileMetadata(Path file) throws IOException {
-        try (final SeekableByteChannel channel = Files.newByteChannel(file, StandardOpenOption.READ)) {
-            // read footer from end of file
-            final ByteBuffer buf = ByteBuffer.allocate(FOOTER_SIZE);
-            channel.position(channel.size() - FOOTER_SIZE);
-            MerkleDbFileUtils.completelyRead(channel, buf);
-            buf.rewind();
-            // parse content
-            this.fileFormatVersion = buf.getInt();
-            this.dataItemValueSize = buf.getInt();
-            this.dataItemCount = buf.getLong();
-            this.index = buf.getInt();
-            this.creationDate = Instant.ofEpochSecond(buf.getLong(), buf.getInt());
-            buf.get(); // backwards compatibility: used to be a byte for isMergeFile
-            this.serializationVersion = buf.getLong();
+        MappedByteBuffer readingMmap = null;
+        try (final FileChannel channel = FileChannel.open(file, StandardOpenOption.READ)) {
+            readingMmap = channel.map(MapMode.READ_ONLY, 0, Math.min(1024, channel.size()));
+            final BufferedData readingHeaderPbjData = BufferedData.wrap(readingMmap);
+            this.index = ProtoUtils.readProtoField(
+                    readingHeaderPbjData, FIELD_DATAFILE_INDEX,
+                    o -> o.readVarInt(false));
+            final long creationDataSeconds = ProtoUtils.readProtoField(
+                    readingHeaderPbjData, FIELD_DATAFILE_CREATION_SECONDS,
+                    o -> o.readVarLong(false));
+            final int creationDataNanos = ProtoUtils.readProtoField(
+                    readingHeaderPbjData, FIELD_DATAFILE_CREATION_NANOS,
+                    o -> o.readVarInt(false));
+            this.creationDate = Instant.ofEpochSecond(creationDataSeconds, creationDataNanos);
+            this.itemsCount = ProtoUtils.readProtoField(
+                    readingHeaderPbjData, FIELD_DATAFILE_ITEMS_COUNT,
+                    o -> o.readLong());
+            this.serializationVersion = ProtoUtils.readProtoField(
+                    readingHeaderPbjData, FIELD_DATAFILE_ITEM_VERSION,
+                    o -> o.readVarLong(false));
+            headerSize = calculateHeaderSize();
+        } finally {
+            if (readingMmap != null) {
+                DataFileCommon.closeMmapBuffer(readingMmap);
+            }
         }
     }
 
-    /**
-     * Get the metadata in the form of a one page 4k bytebuffer ready to write at the end of a file.
-     *
-     * @return ByteBuffer containing the metadata
-     */
-    public ByteBuffer getFooterForWriting() {
-        ByteBuffer buf = ByteBuffer.allocate(FOOTER_SIZE);
-        buf.putInt(this.fileFormatVersion);
-        buf.putInt(this.dataItemValueSize);
-        buf.putLong(this.dataItemCount);
-        buf.putInt(this.index);
-        buf.putLong(this.creationDate.getEpochSecond());
-        buf.putInt(this.creationDate.getNano());
-        buf.put((byte) 0); // backwards compatibility: used to be a byte for isMergeFile
-        buf.putLong(this.serializationVersion);
-        buf.rewind();
-        return buf;
+    private int calculateHeaderSize() {
+//        return ProtoWriterTools.sizeOfInteger(FIELD_DATAFILE_INDEX, index) +
+        return ProtoUtils.sizeOfTag(FIELD_DATAFILE_INDEX, WIRE_TYPE_VARINT) +
+                ProtoUtils.sizeOfUnsignedVarInt32(index) +
+//                ProtoWriterTools.sizeOfLong(FIELD_DATAFILE_CREATION_SECONDS, creationDate.getEpochSecond()) +
+                ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_SECONDS, WIRE_TYPE_VARINT) +
+                ProtoUtils.sizeOfUnsignedVarInt64(creationDate.getEpochSecond()) +
+//                ProtoWriterTools.sizeOfInteger(FIELD_DATAFILE_CREATION_NANOS, creationDate.getNano()) +
+                ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_NANOS, WIRE_TYPE_VARINT) +
+                ProtoUtils.sizeOfUnsignedVarInt32(creationDate.getNano()) +
+//                ProtoWriterTools.sizeOfLong(FIELD_DATAFILE_ITEMS_COUNT, itemsCount) +
+                ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEMS_COUNT, WIRE_TYPE_VARINT) +
+                Long.BYTES +
+//                ProtoWriterTools.sizeOfLong(FIELD_DATAFILE_ITEM_VERSION, serializationVersion);
+                ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEM_VERSION, WIRE_TYPE_VARINT) +
+                ProtoUtils.sizeOfUnsignedVarInt64(serializationVersion);
     }
 
-    /**
-     * Get the file format version, this is ready in case we need to change file format and support
-     * multiple versions.
-     */
-    public int getFileFormatVersion() {
-        return fileFormatVersion;
-    }
-
-    /**
-     * Get the data item value's size, if the file contains fixed size data items then this is the
-     * size in bytes of those items. If the file contains variable size items then this is the
-     * constant VARIABLE_DATA_SIZE.
-     */
-    public int getDataItemValueSize() {
-        return dataItemValueSize;
-    }
-
-    /** Get if the file has variable size data */
-    public boolean hasVariableSizeData() {
-        return dataItemValueSize == VARIABLE_DATA_SIZE;
+    void writeTo(final BufferedData out) throws IOException {
+//        ProtoWriterTools.writeInteger(out, FIELD_DATAFILE_INDEX, getIndex());
+        ProtoUtils.writeTag(out, FIELD_DATAFILE_INDEX);
+        out.writeVarInt(getIndex(), false);
+        final Instant creationInstant = getCreationDate();
+//        ProtoWriterTools.writeLong(out, FIELD_DATAFILE_CREATION_SECONDS, creationInstant.getEpochSecond());
+        ProtoUtils.writeTag(out, FIELD_DATAFILE_CREATION_SECONDS);
+        out.writeVarLong(creationInstant.getEpochSecond(), false);
+//        ProtoWriterTools.writeInteger(out, FIELD_DATAFILE_CREATION_NANOS, creationInstant.getNano());
+        ProtoUtils.writeTag(out, FIELD_DATAFILE_CREATION_NANOS);
+        out.writeVarInt(creationInstant.getNano(), false);
+        dataItemCountHeaderOffset = out.position();
+//        ProtoWriterTools.writeLong(out, FIELD_DATAFILE_ITEMS_COUNT, 0); // will be updated later
+        ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEMS_COUNT);
+        out.writeLong(0); // will be updated later
+//        ProtoWriterTools.writeLong(out, FIELD_DATAFILE_ITEM_VERSION, getSerializationVersion());
+        ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEM_VERSION);
+        out.writeVarLong(getSerializationVersion(), false);
     }
 
     /**
@@ -164,15 +170,20 @@ public final class DataFileMetadata {
      * corresponding file is completely written by {@link DataFileWriter}, the return value is 0.
      */
     public long getDataItemCount() {
-        return dataItemCount;
+        return itemsCount;
     }
 
     /**
      * Updates number of data items in the file. This method is called by {@link DataFileWriter}
      * right before the file is finished writing.
      */
-    void setDataItemCount(final long dataItemCount) {
-        this.dataItemCount = dataItemCount;
+    void updateDataItemCount(final BufferedData out, final long count) throws IOException {
+        this.itemsCount = count;
+        assert dataItemCountHeaderOffset != 0;
+        out.position(dataItemCountHeaderOffset);
+//        ProtoWriterTools.writeLong(out, FIELD_DATAFILE_ITEMS_COUNT, count);
+        ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEMS_COUNT);
+        out.writeLong(count); // will be updated later
     }
 
     /** Get the files index, out of a set of data files */
@@ -190,13 +201,16 @@ public final class DataFileMetadata {
         return serializationVersion;
     }
 
+    /** Get header (metadata) size, in bytes */
+    public int getHeaderSize() {
+        return headerSize;
+    }
+
     /** toString for debugging */
     @Override
     public String toString() {
         return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append("fileFormatVersion", fileFormatVersion)
-                .append("dataItemValueSize", dataItemValueSize)
-                .append("dataItemCount", dataItemCount)
+                .append("itemsCount", itemsCount)
                 .append("index", index)
                 .append("creationDate", creationDate)
                 .append("serializationVersion", serializationVersion)
@@ -215,9 +229,7 @@ public final class DataFileMetadata {
             return false;
         }
         final DataFileMetadata that = (DataFileMetadata) o;
-        return fileFormatVersion == that.fileFormatVersion
-                && dataItemValueSize == that.dataItemValueSize
-                && dataItemCount == that.dataItemCount
+        return itemsCount == that.itemsCount
                 && index == that.index
                 && serializationVersion == that.serializationVersion
                 && Objects.equals(this.creationDate, that.creationDate);
@@ -228,7 +240,6 @@ public final class DataFileMetadata {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(
-                fileFormatVersion, dataItemValueSize, dataItemCount, index, creationDate, serializationVersion);
+        return Objects.hash(itemsCount, index, creationDate, serializationVersion);
     }
 }

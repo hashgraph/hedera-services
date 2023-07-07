@@ -47,13 +47,13 @@ public abstract class BaseBench {
     protected static final String RUN_DELIMITER = "--------------------------------";
 
     @Param({"100"})
-    public int numFiles = 100;
+    public int numFiles = 500;
 
     @Param({"100000"})
-    public int numRecords = 100_000;
+    public int numRecords = 10_000;
 
     @Param({"1000000"})
-    public int maxKey = 1_000_000;
+    public int maxKey = 100_000_000;
 
     // 8 - VirtualLongKey, 8+ - generic VirtualKey
     @Param({"8"})

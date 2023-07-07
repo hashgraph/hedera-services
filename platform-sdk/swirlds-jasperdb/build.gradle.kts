@@ -30,6 +30,7 @@ dependencies {
 
   // Bundle Dependencies
   implementation(libs.bundles.eclipse)
+  implementation(libs.bundles.pbj)
 
   // Test Dependencies
   testImplementation(project(":swirlds-config-impl"))

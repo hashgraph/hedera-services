@@ -16,6 +16,8 @@
 
 package com.swirlds.virtual.merkle;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -57,9 +59,17 @@ public final class TestKey implements VirtualLongKey {
         buffer.putLong(k);
     }
 
+    public void serialize(final WritableSequentialData out) {
+        out.writeLong(k);
+    }
+
     @Override
-    public void deserialize(final ByteBuffer buffer, final int version) {
+    public void deserialize(final ByteBuffer buffer) {
         k = buffer.getLong();
+    }
+
+    public void deserialize(final ReadableSequentialData in) {
+        k = in.readLong();
     }
 
     @Override

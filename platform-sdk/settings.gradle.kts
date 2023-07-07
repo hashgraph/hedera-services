@@ -128,6 +128,9 @@ dependencyResolutionManagement {
       version("resource-loader-version", "2.0.1")
       version("jna-version", "5.12.1")
 
+      // PBJ
+      version("pbj-version", "0.6.0")
+
       // Protobuf
       version("protobuf-version", "3.21.5")
 
@@ -152,6 +155,7 @@ dependencyResolutionManagement {
       bundle("networking", listOf("portmapper"))
       bundle("javafx", listOf("javafx-base"))
       bundle("picocli", listOf("picocli"))
+      bundle("pbj", listOf("pbj-runtime"))
 
       // Define the individual libraries
       // Commons Bundle
@@ -207,6 +211,7 @@ dependencyResolutionManagement {
       library("resource-loader", "com.goterl", "resource-loader")
           .versionRef("resource-loader-version")
       library("protobuf", "com.google.protobuf", "protobuf-java").versionRef("protobuf-version")
+      library("pbj-runtime", "com.hedera.pbj", "pbj-runtime").versionRef("pbj-version")
       library("prometheus-httpserver", "io.prometheus", "simpleclient_httpserver")
           .versionRef("prometheus-client")
       // PicoCLI Bundle

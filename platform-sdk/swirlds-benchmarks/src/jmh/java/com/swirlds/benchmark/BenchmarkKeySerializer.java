@@ -40,7 +40,7 @@ public class BenchmarkKeySerializer implements KeySerializer<BenchmarkKey> {
     @Override
     public boolean equals(final ByteBuffer buffer, final int dataVersion, final BenchmarkKey keyToCompare)
             throws IOException {
-        return keyToCompare.equals(buffer, dataVersion);
+        return keyToCompare.equals(buffer);
     }
 
     @Override
@@ -51,7 +51,7 @@ public class BenchmarkKeySerializer implements KeySerializer<BenchmarkKey> {
     @Override
     public BenchmarkKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         BenchmarkKey key = new BenchmarkKey();
-        key.deserialize(buffer, (int) dataVersion);
+        key.deserialize(buffer);
         return key;
     }
 

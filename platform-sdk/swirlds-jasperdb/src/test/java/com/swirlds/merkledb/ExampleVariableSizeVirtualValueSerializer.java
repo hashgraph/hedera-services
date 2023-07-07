@@ -16,8 +16,11 @@
 
 package com.swirlds.merkledb;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.BaseSerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
+import com.swirlds.merkledb.utilities.ProtoUtils;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -58,22 +61,26 @@ public final class ExampleVariableSizeVirtualValueSerializer
     }
 
     @Override
-    public int serialize(final ExampleVariableSizeVirtualValue data, final ByteBuffer buffer) throws IOException {
-        buffer.putInt(data.getId());
-        final int dataLength = data.getDataLength();
-        buffer.putInt(dataLength);
-        buffer.put(data.getData());
-        return Integer.BYTES + Integer.BYTES + dataLength;
+    public int getSerializedSize(ExampleVariableSizeVirtualValue data) {
+        return Integer.BYTES + Integer.BYTES + data.getData().length;
     }
 
     @Override
-    public ExampleVariableSizeVirtualValue deserialize(final ByteBuffer buffer, final long dataVersion)
+    public void serialize(
+            final ExampleVariableSizeVirtualValue data, final WritableSequentialData out) throws IOException {
+        out.writeInt(data.getId());
+        final int dataLength = data.getDataLength();
+        out.writeInt(dataLength);
+        out.writeBytes(data.getData());
+    }
+
+    @Override
+    public ExampleVariableSizeVirtualValue deserialize(final ReadableSequentialData in)
             throws IOException {
-        assert dataVersion == getCurrentDataVersion();
-        final int id = buffer.getInt();
-        final int dataLength = buffer.getInt();
+        final int id = in.readInt();
+        final int dataLength = in.readInt();
         final byte[] bytes = new byte[dataLength];
-        buffer.get(bytes);
+        in.readBytes(bytes);
         return new ExampleVariableSizeVirtualValue(id, bytes);
     }
 

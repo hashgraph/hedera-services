@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package merkledb;
+
+option java_package = "com.swirlds.merkledb.files";
+option java_multiple_files = true;
+
+/*
+message DataItem {
+
+    // Key. Always long
+    sint64 key = 1;
+
+    // Data. Just bytes so far
+    bytes data = 5;
+}
+*/
+
+message DataFile {
+
+    /* File index in its file collection */
+    uint32 index = 1;
+
+    /* Creation timestamp, seconds */
+    uint64 creationDateSeconds = 2;
+
+    /* Creation timestamp, nanos */
+    uint32 creationDateNanos = 3;
+
+    /* Items count */
+    uint64 itemsCount = 4;
+
+    /* Data item version. May not be needed */
+    uint64 itemVersion = 5;
+
+    /* Data items */
+    // repeated DataItem items = 11;
+    repeated bytes items = 11;
+}

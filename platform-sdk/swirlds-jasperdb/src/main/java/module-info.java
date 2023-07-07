@@ -46,5 +46,6 @@ open module com.swirlds.jasperdb {
     requires jdk.management;
     requires jdk.unsupported;
     requires com.swirlds.config;
+    requires com.hedera.pbj.runtime;
     requires static com.github.spotbugs.annotations;
 }
