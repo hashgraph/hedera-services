@@ -16,30 +16,6 @@
 
 package com.hedera.node.app.workflows;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_START;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
-import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
-import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static java.util.stream.Collectors.toList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mockStatic;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Signature;
@@ -63,9 +39,6 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
@@ -76,6 +49,34 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
+
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.stream.Stream;
+
+import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_START;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mockStatic;
 
 final class TransactionCheckerTest extends AppTestBase {
 
@@ -238,7 +239,7 @@ final class TransactionCheckerTest extends AppTestBase {
             // Given a transaction with no bytes at all
             // Then the checker should throw a PreCheckException
             final var transaction = checker.parse(Bytes.EMPTY);
-            assertThatThrownBy(() -> checker.syntaxCheck(transaction))
+            assertThatThrownBy(() -> checker.check(transaction))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INVALID_TRANSACTION_BODY));
         }
@@ -254,7 +255,7 @@ final class TransactionCheckerTest extends AppTestBase {
         void happyPath() throws PreCheckException {
             // Given a valid serialized transaction, when we parseStrict and check
             final var transaction = checker.parse(inputBuffer);
-            final var info = checker.syntaxCheck(transaction);
+            final var info = checker.check(transaction);
 
             // Then the parsed data is as we expected
             assertThat(info.transaction()).isEqualTo(tx);
@@ -284,7 +285,7 @@ final class TransactionCheckerTest extends AppTestBase {
 
             // When we parseStrict and check
             final var transaction = checker.parse(inputBuffer);
-            final var info = checker.syntaxCheck(transaction);
+            final var info = checker.check(transaction);
 
             // Then everything works because the deprecated fields are supported
             assertThat(info.transaction()).isEqualTo(localTx);
@@ -312,7 +313,7 @@ final class TransactionCheckerTest extends AppTestBase {
 
             // When we check, then we get a PreCheckException with INVALID_TRANSACTION_BODY
             final var transaction = checker.parse(inputBuffer);
-            assertThatThrownBy(() -> checker.syntaxCheck(transaction))
+            assertThatThrownBy(() -> checker.check(transaction))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INVALID_TRANSACTION_BODY));
 
@@ -358,7 +359,7 @@ final class TransactionCheckerTest extends AppTestBase {
         @SuppressWarnings("ConstantConditions")
         @DisplayName("`check` requires a transaction")
         void checkWithNull() {
-            assertThatThrownBy(() -> checker.syntaxCheck(null)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> checker.check(null)).isInstanceOf(NullPointerException.class);
         }
 
         @Nested
@@ -374,7 +375,7 @@ final class TransactionCheckerTest extends AppTestBase {
             @DisplayName("A valid transaction passes parseAndCheck with a BufferedData")
             void happyPath() throws PreCheckException {
                 // Given a valid serialized transaction, when we parse and check
-                final var info = checker.syntaxCheck(tx);
+                final var info = checker.check(tx);
 
                 // Then the parsed data is as we expected
                 assertThat(info.transaction()).isEqualTo(tx);
@@ -401,7 +402,7 @@ final class TransactionCheckerTest extends AppTestBase {
                         .build();
 
                 // When we parse and check
-                final var info = checker.syntaxCheck(localTx);
+                final var info = checker.check(localTx);
 
                 // Then everything works because the deprecated fields are supported
                 assertThat(info.transaction()).isEqualTo(localTx);
@@ -427,7 +428,7 @@ final class TransactionCheckerTest extends AppTestBase {
                         .build();
 
                 // When we check, then we get a PreCheckException with INVALID_TRANSACTION_BODY
-                assertThatThrownBy(() -> checker.syntaxCheck(localTx))
+                assertThatThrownBy(() -> checker.check(localTx))
                         .isInstanceOf(PreCheckException.class)
                         .has(responseCode(INVALID_TRANSACTION_BODY));
 
@@ -451,7 +452,7 @@ final class TransactionCheckerTest extends AppTestBase {
                         .build();
 
                 // When we check
-                final var info = checker.syntaxCheck(localTx);
+                final var info = checker.check(localTx);
                 // Then the parsed data is as we expected
                 assertThat(info.transaction()).isEqualTo(localTx);
                 assertThat(info.txBody()).isEqualTo(txBody);
@@ -477,7 +478,7 @@ final class TransactionCheckerTest extends AppTestBase {
                         .build();
 
                 // When we check
-                final var info = checker.syntaxCheck(localTx);
+                final var info = checker.check(localTx);
                 // Then the parsed data is as we expected
                 assertThat(info.transaction()).isEqualTo(localTx);
                 assertThat(info.txBody()).isEqualTo(txBody);
@@ -502,7 +503,7 @@ final class TransactionCheckerTest extends AppTestBase {
                         .build();
 
                 // When we check the transaction, then we find it is invalid
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .has(responseCode(INVALID_TRANSACTION));
 
@@ -522,7 +523,7 @@ final class TransactionCheckerTest extends AppTestBase {
                         .build();
 
                 // Then the checker should throw a PreCheckException
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .has(responseCode(INVALID_TRANSACTION));
 
@@ -575,7 +576,7 @@ final class TransactionCheckerTest extends AppTestBase {
                     txBuilder(signedTxBuilder(txBody, localSignatureMap)).build();
 
                 // When we check the transaction, we find it is invalid due to duplicate prefixes
-                assertThatThrownBy(() -> checker.syntaxCheck(localTx))
+                assertThatThrownBy(() -> checker.check(localTx))
                         .isInstanceOf(PreCheckException.class)
                         .has(responseCode(KEY_PREFIX_MISMATCH));
             }
@@ -593,7 +594,7 @@ final class TransactionCheckerTest extends AppTestBase {
                         .build();
 
                 // When we parse and check, then the parsing fails because this is an INVALID_TRANSACTION
-                assertThatThrownBy(() -> checker.syntaxCheck(localTx))
+                assertThatThrownBy(() -> checker.check(localTx))
                         .isInstanceOf(PreCheckException.class)
                         .has(responseCode(INVALID_TRANSACTION));
             }
@@ -608,7 +609,7 @@ final class TransactionCheckerTest extends AppTestBase {
                         .build();
 
                 // When we parse and check, then the parsing fails because has unknown fields
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .has(responseCode(TRANSACTION_HAS_UNKNOWN_FIELDS));
             }
@@ -632,7 +633,7 @@ final class TransactionCheckerTest extends AppTestBase {
                         .build();
 
                 // When we parse and check, then the parsing fails because has unknown fields
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .has(responseCode(INVALID_TRANSACTION_BODY));
             }
@@ -653,7 +654,7 @@ final class TransactionCheckerTest extends AppTestBase {
                         .build();
 
                 // When we parse and check, then the parsing fails because this is an TRANSACTION_HAS_UNKNOWN_FIELDS
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .has(responseCode(TRANSACTION_HAS_UNKNOWN_FIELDS));
             }
@@ -666,7 +667,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // Then the checker should throw a PreCheckException
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .has(responseCode(INVALID_TRANSACTION_ID));
             }
@@ -681,7 +682,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // When we check the transaction
-                final var info = checker.syntaxCheck(tx);
+                final var info = checker.check(tx);
 
                 // Then we get no errors
                 assertThat(info.transaction()).isEqualTo(tx);
@@ -697,7 +698,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // Then the checker should throw a PreCheckException
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(PAYER_ACCOUNT_NOT_FOUND));
             }
@@ -713,7 +714,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // Then the checker should throw a PreCheckException
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(PAYER_ACCOUNT_NOT_FOUND));
             }
@@ -729,7 +730,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // Then the checker should throw a PreCheckException
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(PAYER_ACCOUNT_NOT_FOUND));
             }
@@ -745,7 +746,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // Then the checker should throw a PreCheckException
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .has(responseCode(INVALID_NODE_ACCOUNT));
             }
@@ -757,7 +758,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // Then the checker should throw a PreCheckException
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .has(responseCode(TRANSACTION_ID_FIELD_NOT_ALLOWED));
             }
@@ -769,7 +770,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // Then the checker should throw a PreCheckException
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .has(responseCode(TRANSACTION_ID_FIELD_NOT_ALLOWED));
             }
@@ -783,7 +784,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // Then the checker should throw a PreCheckException
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", MEMO_TOO_LONG);
             }
@@ -799,7 +800,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // Then the checker should throw a PreCheckException
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_ZERO_BYTE_IN_STRING);
             }
@@ -817,7 +818,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INSUFFICIENT_TX_FEE);
             }
@@ -832,7 +833,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_DURATION);
             }
@@ -847,7 +848,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_DURATION);
             }
@@ -863,7 +864,7 @@ final class TransactionCheckerTest extends AppTestBase {
                         .build();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_EXPIRED);
             }
@@ -879,7 +880,7 @@ final class TransactionCheckerTest extends AppTestBase {
                         .build();
 
                 // When we check the transaction body
-                assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_START);
             }
@@ -896,7 +897,7 @@ final class TransactionCheckerTest extends AppTestBase {
                     hapiUtils.when(() -> HapiUtils.functionOf(eq(txBody))).thenThrow(new UnknownHederaFunctionality());
 
                     // When we parse and check, then the parsing fails due to the exception
-                    assertThatThrownBy(() -> checker.syntaxCheck(tx))
+                    assertThatThrownBy(() -> checker.check(tx))
                         .isInstanceOf(PreCheckException.class)
                         .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_BODY);
                 }
