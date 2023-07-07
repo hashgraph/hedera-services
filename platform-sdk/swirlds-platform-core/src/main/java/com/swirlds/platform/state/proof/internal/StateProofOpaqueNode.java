@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.proof;
+package com.swirlds.platform.state.proof.internal;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
