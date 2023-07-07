@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOU
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
-import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -229,16 +228,12 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     private ExpiryMeta getExpiryMeta(final long consensusTime, @NonNull final TokenCreateTransactionBody op) {
         final var impliedExpiry =
                 consensusTime + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
-        final var accountId = AccountID.newBuilder()
-                .shardNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().shardNum() : NA)
-                .realmNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().realmNum() : NA)
-                .accountNum(op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA)
-                .build();
+
         return new ExpiryMeta(
                 impliedExpiry,
                 op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(),
                 // Shard and realm will be ignored if num is NA
-                accountId);
+                op.autoRenewAccount());
     }
 
     /**
