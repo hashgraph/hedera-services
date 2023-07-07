@@ -20,4 +20,4 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("virtualdatasource")
-public record VirtualdatasourceConfig(@ConfigProperty(defaultValue = "false") boolean jasperdbToMerkledb) {}
+public record VirtualdatasourceConfig(@ConfigProperty(defaultValue = "true") boolean jasperdbToMerkledb) {}
