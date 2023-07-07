@@ -16,12 +16,20 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.utils;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -34,6 +42,20 @@ class FrameUtilsTest {
         for (final var clazz : toBeTested) {
             assertFor(clazz);
         }
+    }
+
+    @Test
+    void checksForAccessorAsExpected() {
+        final var frame = mock(MessageFrame.class);
+        final var tracker = new StorageAccessTracker();
+        given(frame.getContextVariable(FrameUtils.TRACKER_CONTEXT_VARIABLE)).willReturn(tracker);
+        assertSame(tracker, accessTrackerFor(frame));
+    }
+
+    @Test
+    void okIfFrameHasNoTracker() {
+        final var frame = mock(MessageFrame.class);
+        assertNull(accessTrackerFor(frame));
     }
 
     private static final String UNEXPECTED_THROW = "Unexpected `%s` was thrown in `%s` constructor!";

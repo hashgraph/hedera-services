@@ -16,23 +16,19 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import static java.util.Objects.requireNonNull;
+import java.util.List;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.tuweni.units.bigints.UInt256;
-
-public record StorageChange(@NonNull UInt256 key, @NonNull UInt256 oldValue, @NonNull UInt256 newValue) {
-    public StorageChange {
-        requireNonNull(key, "Key cannot be null");
-        requireNonNull(oldValue, "Old value cannot be null");
-        requireNonNull(newValue, "New value cannot be null");
-    }
-
-    public boolean isRemoval() {
-        return newValue.isZero() && !oldValue.isZero();
-    }
-
-    public boolean isInsertion() {
-        return !newValue.isZero() && oldValue.isZero();
+public record StorageAccesses(long contractNumber, List<StorageAccess> accesses) {
+    public StorageSizeChange summarizeSizeEffects() {
+        var numRemovals = 0;
+        var numInsertions = 0;
+        for (final var change : accesses()) {
+            if (change.isRemoval()) {
+                numRemovals++;
+            } else if (change.isInsertion()) {
+                numInsertions++;
+            }
+        }
+        return new StorageSizeChange(contractNumber, numRemovals, numInsertions);
     }
 }

@@ -35,6 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -68,8 +69,10 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -174,6 +177,12 @@ class HederaWorldStateTest {
     void getsProvisionalContractCreations() {
         var provisionalContractCreations = subject.getCreatedContractIds();
         assertEquals(0, provisionalContractCreations.size());
+    }
+
+    @Test
+    void getsContractNonces() {
+        var contractNonces = subject.getContractNonces();
+        assertEquals(0, contractNonces.size());
     }
 
     @Test
@@ -774,6 +783,11 @@ class HederaWorldStateTest {
         final var creations = new ArrayList<ContractID>();
         assertDoesNotThrow(() -> actualSubject.trackIfNewlyCreated(missingId, entityAccess, creations));
         assertTrue(creations.isEmpty());
+
+        final var createdContractNonces =
+                new TreeMap<ContractID, Long>(Comparator.comparingLong(ContractID::getContractNum));
+        assertDoesNotThrow(() -> actualSubject.trackContractNonces(missingId, entityAccess, createdContractNonces));
+        assertTrue(createdContractNonces.isEmpty());
     }
 
     @Test
@@ -806,6 +820,90 @@ class HederaWorldStateTest {
         // then:
         subject.clearProvisionalContractCreations();
         assertEquals(0, subject.getCreatedContractIds().size());
+    }
+
+    @Test
+    void persistCreatedContractNonces() {
+        givenNonNullWorldLedgers();
+        final var newAddress = contract.asEvmAddress();
+        given(dynamicProperties.isContractsNoncesExternalizationEnabled()).willReturn(true);
+        given(worldLedgers.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(newAddress)).willReturn(newAddress);
+        given(worldLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
+        given(accounts.contains(any())).willReturn(true);
+        given(accounts.get(any(), eq(AccountProperty.ETHEREUM_NONCE))).willReturn(1L);
+        given(recordsHistorian.hasThrottleCapacityForChildTransactions()).willReturn(true);
+
+        final var actualSubject = subject.updater();
+        actualSubject.createAccount(newAddress, 1, Wei.of(balance));
+        // NEWLY CREATED CONTRACT NONCES
+        given(entityAccess.isExtant(contract.asEvmAddress())).willReturn(false);
+
+        actualSubject.commit();
+        final var result = subject.getContractNonces();
+
+        verify(entityAccess, atLeast(2)).isExtant(contract.asEvmAddress());
+        assertEquals(1L, result.get(contract.asGrpcContract()).longValue());
+
+        subject.clearContractNonces();
+        assertEquals(0, subject.getContractNonces().size());
+
+        // UPDATE CONTRACT NONCES
+        given(entityAccess.isExtant(contract.asEvmAddress())).willReturn(true);
+
+        actualSubject.commit();
+        final var updateResult = subject.getContractNonces();
+
+        verify(entityAccess, atLeast(2)).isExtant(contract.asEvmAddress());
+        assertEquals(1L, updateResult.get(contract.asGrpcContract()).longValue());
+
+        subject.clearContractNonces();
+        assertEquals(0, subject.getContractNonces().size());
+    }
+
+    @Test
+    void updaterCommitShouldNotTrackContractNoncesWhenAccountIsNotSmartContract() {
+        givenNonNullWorldLedgers();
+        final var newAddress = contract.asEvmAddress();
+        given(dynamicProperties.isContractsNoncesExternalizationEnabled()).willReturn(true);
+        given(worldLedgers.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(newAddress)).willReturn(newAddress);
+        given(worldLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(false);
+        given(accounts.contains(any())).willReturn(true);
+        given(recordsHistorian.hasThrottleCapacityForChildTransactions()).willReturn(true);
+
+        final var actualSubject = subject.updater();
+        actualSubject.createAccount(newAddress, 1, Wei.of(balance));
+
+        actualSubject.commit();
+        final var result = subject.getContractNonces();
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void updaterCommitShouldNotTrackWhenNonceIsNotUpdated() {
+        givenNonNullWorldLedgers();
+        final var newAddress = contract.asEvmAddress();
+        given(dynamicProperties.isContractsNoncesExternalizationEnabled()).willReturn(true);
+        given(worldLedgers.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(newAddress)).willReturn(newAddress);
+        given(worldLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
+        given(accounts.contains(any())).willReturn(true);
+        given(recordsHistorian.hasThrottleCapacityForChildTransactions()).willReturn(true);
+        given(accounts.get(any(), eq(AccountProperty.ETHEREUM_NONCE))).willReturn(1L);
+        given(entityAccess.getNonce(contract.asEvmAddress())).willReturn(1L);
+        given(entityAccess.isExtant(contract.asEvmAddress())).willReturn(true);
+
+        final var actualSubject = subject.updater();
+        actualSubject.createAccount(newAddress, 1, Wei.of(balance));
+
+        actualSubject.commit();
+
+        final var result = subject.getContractNonces();
+        assertEquals(0, result.size());
     }
 
     private void givenNonNullWorldLedgers() {

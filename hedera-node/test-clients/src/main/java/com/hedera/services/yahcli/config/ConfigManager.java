@@ -18,7 +18,9 @@ package com.hedera.services.yahcli.config;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.yahcli.config.ConfigUtils.*;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottlesJsonToGrpcBytes;
@@ -29,11 +31,10 @@ import com.hedera.services.yahcli.config.domain.NodeConfig;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 import picocli.CommandLine;
@@ -153,6 +154,33 @@ public class ConfigManager {
 
     public long fixedFee() {
         return yahcli.getFixedFee();
+    }
+
+    public int numNodesInTargetNet() {
+        assertTargetNetIsKnown();
+        final ConfigManager freshConfig;
+        try {
+            freshConfig = ConfigManager.from(yahcli);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        final var baseNetwork = requireNonNull(freshConfig.global.getNetworks().get(targetName));
+        return baseNetwork.getNodes().size();
+    }
+
+    public Set<Long> nodeIdsInTargetNet() {
+        assertTargetNetIsKnown();
+        final ConfigManager freshConfig;
+        try {
+            freshConfig = ConfigManager.from(yahcli);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        final var baseNetwork = requireNonNull(freshConfig.global.getNetworks().get(targetName));
+        return baseNetwork.getNodes().stream()
+                .map(NodeConfig::getId)
+                .map(i -> (long) i)
+                .collect(toSet());
     }
 
     public void assertNoMissingDefaults() {
