@@ -36,6 +36,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.WorkflowsValidationUtil;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
@@ -69,58 +70,63 @@ import org.apache.logging.log4j.Logger;
  */
 public class HandleWorkflow {
 
-    private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
+  private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
 
-    private final NetworkInfo networkInfo;
-    private final PreHandleWorkflow preHandleWorkflow;
-    private final TransactionDispatcher dispatcher;
-    private final BlockRecordManager blockRecordManager;
-    private final SignatureExpander signatureExpander;
-    private final SignatureVerifier signatureVerifier;
-    private final TransactionChecker checker;
-    private final ServiceScopeLookup serviceScopeLookup;
-    private final ConfigProvider configProvider;
-    private final InstantSource instantSource;
-    private final HederaRecordCache recordCache;
-    private final TransactionChecker transactionChecker;
+  private final NetworkInfo networkInfo;
+  private final PreHandleWorkflow preHandleWorkflow;
+  private final TransactionDispatcher dispatcher;
+  private final BlockRecordManager blockRecordManager;
+  private final SignatureExpander signatureExpander;
+  private final SignatureVerifier signatureVerifier;
+  private final TransactionChecker checker;
+  private final ServiceScopeLookup serviceScopeLookup;
+  private final ConfigProvider configProvider;
+  private final InstantSource instantSource;
+  private final WorkflowsValidationUtil workflowsValidationUtil;
 
-    @Inject
-    public HandleWorkflow(
-        @NonNull final NetworkInfo networkInfo,
-        @NonNull final PreHandleWorkflow preHandleWorkflow,
-        @NonNull final TransactionDispatcher dispatcher,
-        @NonNull final BlockRecordManager blockRecordManager,
-        @NonNull final SignatureExpander signatureExpander,
-        @NonNull final SignatureVerifier signatureVerifier,
-        @NonNull final TransactionChecker checker,
-        @NonNull final ServiceScopeLookup serviceScopeLookup,
-        @NonNull final ConfigProvider configProvider,
-        @NonNull final InstantSource instantSource,
-        @NonNull final HederaRecordCache recordCache,
-        @NonNull final TransactionChecker transactionChecker) {
-        this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
-        this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
-        this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
-        this.blockRecordManager = requireNonNull(blockRecordManager, "recordManager must not be null");
-        this.signatureExpander = requireNonNull(signatureExpander, "signatureExpander must not be null");
-        this.signatureVerifier = requireNonNull(signatureVerifier, "signatureVerifier must not be null");
-        this.checker = requireNonNull(checker, "checker must not be null");
-        this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
-        this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
-        this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
-        this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
-        this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
-    }
+  private final HederaRecordCache recordCache;
+  private final TransactionChecker transactionChecker;
 
-    /**
-     * Handles the next {@link Round}
-     *
-     * @param state the writable {@link HederaState} that this round will work on
-     * @param round the next {@link Round} that needs to be processed
-     */
-    public void handleRound(@NonNull final HederaState state, @NonNull final Round round) {
-        // handle each transaction in the round
-        round.forEachEventTransaction((event, txn) -> {
+  @Inject
+  public HandleWorkflow(
+      @NonNull final NetworkInfo networkInfo,
+      @NonNull final PreHandleWorkflow preHandleWorkflow,
+      @NonNull final TransactionDispatcher dispatcher,
+      @NonNull final BlockRecordManager blockRecordManager,
+      @NonNull final SignatureExpander signatureExpander,
+      @NonNull final SignatureVerifier signatureVerifier,
+      @NonNull final TransactionChecker checker,
+      @NonNull final ServiceScopeLookup serviceScopeLookup,
+      @NonNull final ConfigProvider configProvider,
+      @NonNull final InstantSource instantSource,
+      @NonNull final HederaRecordCache recordCache,
+      @NonNull final TransactionChecker transactionChecker,
+      @NonNull final WorkflowsValidationUtil workflowsValidationUtil) {
+    this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
+    this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
+    this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
+    this.blockRecordManager = requireNonNull(blockRecordManager, "recordManager must not be null");
+    this.signatureExpander = requireNonNull(signatureExpander, "signatureExpander must not be null");
+    this.signatureVerifier = requireNonNull(signatureVerifier, "signatureVerifier must not be null");
+    this.checker = requireNonNull(checker, "checker must not be null");
+    this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
+    this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
+    this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
+    this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
+    this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
+    this.workflowsValidationUtil =
+        requireNonNull(workflowsValidationUtil, "workflowsValidationUtil must not be null");
+  }
+
+  /**
+   * Handles the next {@link Round}
+   *
+   * @param state the writable {@link HederaState} that this round will work on
+   * @param round the next {@link Round} that needs to be processed
+   */
+  public void handleRound(@NonNull final HederaState state, @NonNull final Round round) {
+    // handle each transaction in the round
+    round.forEachEventTransaction((event, txn) -> {
             try {
                 handlePlatformTransaction(state, event, txn);
             } catch (final Throwable e) {
@@ -180,7 +186,7 @@ public class HandleWorkflow {
             }
 
             // Check transaction duplication
-            transactionChecker.checkDuplicates(preHandleResult.txInfo().txBody());
+          workflowsValidationUtil.checkDuplicates(preHandleResult.txInfo().txBody());
 
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
