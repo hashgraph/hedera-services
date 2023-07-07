@@ -77,7 +77,7 @@ extraJavaModuleInfo {
     }
     module("com.github.spotbugs:spotbugs-annotations", "com.github.spotbugs.annotations") {
         exportAllPackages()
-        requires("java.annotation")
+        // no dependencies - see RemoveFindbugsAnnotationsMetadataRule
     }
     module("com.google.protobuf:protobuf-java", "com.google.protobuf") {
         exportAllPackages()
