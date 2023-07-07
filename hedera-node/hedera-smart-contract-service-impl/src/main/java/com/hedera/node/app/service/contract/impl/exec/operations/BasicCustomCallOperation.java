@@ -51,14 +51,14 @@ public interface BasicCustomCallOperation {
      * @param frame the frame in which the call is being made
      * @return the address to which the call is being made
      */
-    Address superTo(@NonNull MessageFrame frame);
+    Address to(@NonNull MessageFrame frame);
 
     /**
      * Returns the gas cost of the {@link org.hyperledger.besu.evm.operation.AbstractCallOperation} being customized.
      * @param frame the frame in which the call is being made
      * @return the gas cost of the call
      */
-    long superCost(@NonNull MessageFrame frame);
+    long cost(@NonNull MessageFrame frame);
 
     /**
      * Executes the {@link org.hyperledger.besu.evm.operation.AbstractCallOperation} being customized.
@@ -67,7 +67,7 @@ public interface BasicCustomCallOperation {
      * @param evm the EVM in which the call is being made
      * @return the result of the call
      */
-    Operation.OperationResult superExecute(@NonNull MessageFrame frame, @NonNull EVM evm);
+    Operation.OperationResult executeUnchecked(@NonNull MessageFrame frame, @NonNull EVM evm);
 
     /**
      * The basic Hedera-specific override of {@link org.hyperledger.besu.evm.operation.AbstractCallOperation#execute(MessageFrame, EVM)}.
@@ -78,15 +78,15 @@ public interface BasicCustomCallOperation {
      * @param evm the EVM in which the call is being made
      * @return the result of the call
      */
-    default Operation.OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
+    default Operation.OperationResult executeChecked(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         requireNonNull(evm);
         requireNonNull(frame);
         try {
-            final var address = superTo(frame);
+            final var address = to(frame);
             if (addressChecks().isNeitherSystemNorPresent(address, frame)) {
-                return new Operation.OperationResult(superCost(frame), MISSING_ADDRESS);
+                return new Operation.OperationResult(cost(frame), MISSING_ADDRESS);
             }
-            return superExecute(frame, evm);
+            return executeUnchecked(frame, evm);
         } catch (FixedStack.UnderflowException ignore) {
             return UNDERFLOW_RESPONSE;
         }

@@ -365,7 +365,7 @@ class ProxyWorldUpdaterTest {
     void delegatesEntropy() {
         givenDispatch();
         given(dispatch.entropy()).willReturn(OUTPUT_DATA);
-        assertSame(OUTPUT_DATA, subject.entropy());
+        assertEquals(pbjToTuweniBytes(OUTPUT_DATA), subject.entropy());
     }
 
     private void givenDispatch() {

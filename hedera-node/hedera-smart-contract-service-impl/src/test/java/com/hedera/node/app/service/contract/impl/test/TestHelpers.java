@@ -59,6 +59,7 @@ public class TestHelpers {
     public static long BESU_MAX_REFUND_QUOTIENT = 2;
     public static long MAX_GAS_ALLOWANCE = 666_666_666;
     public static Bytes CALL_DATA = Bytes.wrap(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    public static Bytes LOG_DATA = Bytes.wrap(new byte[] {6, 6, 6});
     public static Bytes OUTPUT_DATA = Bytes.wrap(new byte[] {9, 8, 7, 6, 5, 4, 3, 2, 1});
     public static Bytes TOPIC = Bytes.wrap(new byte[] {11, 21, 31, 41, 51, 61, 71, 81, 91});
     public static Bytes MAINNET_CHAIN_ID = Bytes.fromHex("0127");

@@ -41,27 +41,22 @@ public class CustomDelegateCallOperation extends DelegateCallOperation implement
     }
 
     @Override
-    public Address superTo(@NonNull MessageFrame frame) {
-        return super.to(frame);
-    }
-
-    @Override
-    public long superCost(@NonNull MessageFrame frame) {
-        return super.cost(frame);
-    }
-
-    @Override
     public AddressChecks addressChecks() {
         return addressChecks;
     }
 
     @Override
-    public OperationResult superExecute(@NonNull MessageFrame frame, @NonNull EVM evm) {
+    public Address to(@NonNull MessageFrame frame) {
+        return super.to(frame);
+    }
+
+    @Override
+    public OperationResult executeUnchecked(@NonNull MessageFrame frame, @NonNull EVM evm) {
         return super.execute(frame, evm);
     }
 
     @Override
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
-        return BasicCustomCallOperation.super.execute(frame, evm);
+        return BasicCustomCallOperation.super.executeChecked(frame, evm);
     }
 }
