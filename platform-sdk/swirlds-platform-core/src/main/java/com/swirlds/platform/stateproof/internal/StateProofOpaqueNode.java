@@ -28,7 +28,7 @@ import java.util.List;
  * A leaf in a state proof tree. Contains data that modifies the hash. Data is opaque, meaning that it is not intended
  * to be interpreted in any meaningful way other than how it modifies the hash.
  */
-public class StateProofOpaqueData implements StateProofNode {
+public class StateProofOpaqueNode implements StateProofNode {
 
     private static final long CLASS_ID = 0x4ab3834aaba6fbbdL;
 
@@ -41,14 +41,14 @@ public class StateProofOpaqueData implements StateProofNode {
     /**
      * Zero arg constructor required by the serialization framework.
      */
-    public StateProofOpaqueData() {}
+    public StateProofOpaqueNode() {}
 
     /**
      * Construct a new leaf node with the given bytes.
      *
      * @param data the opaque data, used only for hash computation
      */
-    public StateProofOpaqueData(@NonNull final byte[] data) {
+    public StateProofOpaqueNode(@NonNull final byte[] data) {
         this.data = data;
     }
 
