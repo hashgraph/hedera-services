@@ -18,6 +18,7 @@ package com.swirlds.common.merkle.proof.internal;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -75,7 +76,8 @@ public class StateProofPayload implements StateProofNode {
      */
     @NonNull
     @Override
-    public byte[] getHashableBytes(@NonNull final Cryptography cryptography) {
+    public byte[] getHashableBytes(@NonNull final Cryptography cryptography, @NonNull final HashBuilder hashBuilder) {
+
         if (!initialized) {
             throw new IllegalStateException("StateProofPayload has not been properly initialized");
         }

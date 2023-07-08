@@ -17,14 +17,16 @@
 package com.swirlds.common.merkle.proof.internal;
 
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * An internal node in a state proof tree.
@@ -47,12 +49,10 @@ public class StateProofInternalNode implements StateProofNode {
     /**
      * Construct a new state proof internal node from the given merkle internal node.
      *
-     * @param node the merkle internal node
+     * @param children the children of the internal node
      */
-    public StateProofInternalNode(@NonNull final MerkleInternal node) { // TODO this is probably the wrong API
-
-        // TODO construct child list
-
+    public StateProofInternalNode(@NonNull final List<StateProofNode> children) {
+        this.children = Objects.requireNonNull(children);
     }
 
     /**
@@ -60,11 +60,18 @@ public class StateProofInternalNode implements StateProofNode {
      */
     @NonNull
     @Override
-    public byte[] getHashableBytes(@NonNull final Cryptography cryptography) {
+    public byte[] getHashableBytes(@NonNull final Cryptography cryptography, @NonNull final HashBuilder hashBuilder) {
         if (children == null) {
             throw new IllegalStateException("StateProofInternalNode has not been properly initialized");
         }
-        return new byte[0]; // TODO
+
+        for (final StateProofNode child : children) {
+            hashBuilder.update(child.getHashableBytes(cryptography, hashBuilder));
+        }
+        final Hash hash = hashBuilder.build();
+        hashBuilder.reset();
+
+        return hash.getValue();
     }
 
     /**

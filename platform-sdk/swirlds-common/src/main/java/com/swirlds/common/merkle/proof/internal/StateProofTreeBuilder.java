@@ -16,6 +16,10 @@
 
 package com.swirlds.common.merkle.proof.internal;
 
+import static com.swirlds.common.utility.ByteUtils.intToByteArray;
+import static com.swirlds.common.utility.ByteUtils.longToByteArray;
+
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
@@ -54,23 +58,6 @@ public final class StateProofTreeBuilder {
             }
         }
 
-        return false;
-    }
-
-    /**
-     * Check if a merkle leaf is one of a list of payloads. The leaf object must actually be present, equality between
-     * different instances are not considered.
-     *
-     * @param payloads the payloads
-     * @param leaf     the leaf to check
-     * @return true if the leaf is one of the payloads, otherwise false
-     */
-    private static boolean isLeafAPayload(@NonNull final List<MerkleLeaf> payloads, @NonNull final MerkleLeaf leaf) {
-        for (final MerkleLeaf payload : payloads) {
-            if (leaf == payload) {
-                return true;
-            }
-        }
         return false;
     }
 
@@ -147,6 +134,7 @@ public final class StateProofTreeBuilder {
     /**
      * Build an internal node in the state proof tree.
      *
+     * @param cryptography provides cryptographic primitives
      * @param node       the node to build the state proof node for
      * @param nodeRoutes the set of routes of all nodes to be included in the state proof tree
      * @param children   a queue containing state proof nodes waiting to be added to their parents
@@ -154,40 +142,85 @@ public final class StateProofTreeBuilder {
      */
     @NonNull
     private static StateProofNode buildStateProofInternalNode(
+            @NonNull final Cryptography cryptography,
             @NonNull final MerkleInternal node,
             @NonNull final Set<MerkleRoute> nodeRoutes,
             @NonNull final Queue<StateProofNode> children) {
-        return null;
+
+        final List<StateProofNode> selfChildren = new ArrayList<>();
+
+        final List<byte[]> byteSegments = new ArrayList<>();
+
+        // First, the class ID and version are append.
+        byteSegments.add(longToByteArray(node.getClassId()));
+        byteSegments.add(intToByteArray(node.getVersion()));
+
+        // Then, the hashes of the children are appended.
+        for (int childIndex = 0; childIndex < node.getNumberOfChildren(); childIndex++) {
+
+            final MerkleNode child = node.getChild(childIndex);
+
+            if (child == null) {
+                // If the child is null, append the null hash.
+                byteSegments.add(cryptography.getNullHash().getValue());
+            } else if (nodeRoutes.contains(child.getRoute())) {
+                // If the child is in the node list, then we add its state proof node.
+
+                if (!byteSegments.isEmpty()) {
+                    // If we have accumulated byte segments, wrap them in an opaque node.
+                    selfChildren.add(new StateProofOpaqueNode(byteSegments));
+                    byteSegments.clear();
+                }
+
+                // The child we need is guaranteed to be the next in the child queue.
+                selfChildren.add(children.remove());
+            } else {
+                // If the child is not in the node list, we append its hash.
+                byteSegments.add(child.getHash().getValue());
+            }
+        }
+
+        if (!byteSegments.isEmpty()) {
+            // If we have remaining byte segments, wrap them in an opaque node.
+            selfChildren.add(new StateProofOpaqueNode(byteSegments));
+        }
+
+        return new StateProofInternalNode(selfChildren);
     }
 
     /**
      * Build the next state proof node and add it to the child queue.
      *
+     * @param cryptography provides cryptographic primitives
      * @param node       the node to build the state proof node for
      * @param nodeRoutes the set of routes of all nodes to be included in the state proof tree
      * @param children   a queue containing state proof nodes waiting to be added to their parents
      */
     private static void buildStateProofNode(
+            @NonNull final Cryptography cryptography,
             @NonNull final MerkleNode node,
             @NonNull final Set<MerkleRoute> nodeRoutes,
             @NonNull final Queue<StateProofNode> children) {
         if (node.isLeaf()) {
             children.add(new StateProofPayload(node.asLeaf()));
         } else {
-            children.add(buildStateProofInternalNode(node.asInternal(), nodeRoutes, children));
+            children.add(buildStateProofInternalNode(cryptography, node.asInternal(), nodeRoutes, children));
         }
     }
 
     /**
      * Build the state proof tree from a merkle tree.
      *
+     * @param cryptography provides cryptographic primitives
      * @param merkleRoot the root of the merkle tree
      * @param payloads   the payloads to build the state proof tree on
      * @return the root of the state proof tree
      */
     @NonNull
     public static StateProofNode buildStateProofTree(
-            @NonNull final MerkleNode merkleRoot, @NonNull final List<MerkleLeaf> payloads) {
+            @NonNull final Cryptography cryptography,
+            @NonNull final MerkleNode merkleRoot,
+            @NonNull final List<MerkleLeaf> payloads) {
 
         final List<MerkleNode> nodes = getMerkleNodesForStateProofTree(merkleRoot, payloads);
         final Set<MerkleRoute> nodeRoutes = getMerkleRouteSet(nodes);
@@ -195,7 +228,7 @@ public final class StateProofTreeBuilder {
 
         final Queue<StateProofNode> children = new LinkedList<>();
         for (final MerkleNode node : nodes) {
-            buildStateProofNode(node, nodeRoutes, children);
+            buildStateProofNode(cryptography, node, nodeRoutes, children);
         }
 
         // When we are done, the queue should contain just the root node of the state proof tree.

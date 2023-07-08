@@ -16,9 +16,11 @@
 
 package com.swirlds.common.merkle.proof;
 
+import static com.swirlds.common.crypto.DigestType.SHA_384;
 import static com.swirlds.common.merkle.proof.internal.StateProofTreeBuilder.buildStateProofTree;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -27,6 +29,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.proof.internal.StateProofNode;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.Threshold;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -76,11 +79,13 @@ public class StateProof implements SelfSerializable {
     /**
      * Create a state proof on the given merkle node.
      *
-     * @param merkleRoot the root of the merkle tree to create a state proof on
-     * @param signatures signatures on the root hash of the merkle tree
-     * @param payloads   one or more leaf nodes to create a state proof on, may not contain null leaves
+     * @param cryptography provides cryptographic primitives
+     * @param merkleRoot   the root of the merkle tree to create a state proof on
+     * @param signatures   signatures on the root hash of the merkle tree
+     * @param payloads     one or more leaf nodes to create a state proof on, may not contain null leaves
      */
     public StateProof(
+            @NonNull final Cryptography cryptography,
             @NonNull final MerkleNode merkleRoot,
             @NonNull final Map<NodeId, Signature> signatures,
             @NonNull final List<MerkleLeaf> payloads) {
@@ -109,39 +114,57 @@ public class StateProof implements SelfSerializable {
         Collections.sort(this.signatures);
 
         Objects.requireNonNull(merkleRoot);
-        root = buildStateProofTree(merkleRoot, payloads);
+        root = buildStateProofTree(cryptography, merkleRoot, payloads);
     }
 
     /**
      * Cryptographically validate this state proof using the {@link Threshold#SUPER_MAJORITY} threshold.
      *
-     * @param addressBook the address book to use to validate the state proof
+     * @param cryptography provides cryptographic primitives
+     * @param addressBook  the address book to use to validate the state proof
      * @return true if this state proof is valid, otherwise false
      * @throws IllegalStateException if this method is called before this object has been fully deserialized
      */
-    public boolean isValid(@NonNull final AddressBook addressBook) {
-        return isValid(addressBook, SUPER_MAJORITY);
+    public boolean isValid(@NonNull final Cryptography cryptography, @NonNull final AddressBook addressBook) {
+        return isValid(cryptography, addressBook, SUPER_MAJORITY);
     }
 
     /**
      * Cryptographically validate this state proof using the provided threshold.
      *
-     * @param addressBook the address book to use to validate the state proof
+     * @param cryptography provides cryptographic primitives
+     * @param addressBook  the address book to use to validate the state proof
      * @return true if this state proof is valid, otherwise false
      * @throws IllegalStateException if this method is called before this object has been fully deserialized
      */
-    public boolean isValid(@NonNull final AddressBook addressBook, @NonNull final Threshold threshold) {
+    public boolean isValid(
+            @NonNull final Cryptography cryptography,
+            @NonNull final AddressBook addressBook,
+            @NonNull final Threshold threshold) {
         Objects.requireNonNull(addressBook);
 
-        // TODO recalculate the root hash
-        long validWeight = 0; // TODO find the weight of the valid signatures
+        final byte[] hashBytes = root.getHashableBytes(cryptography, SHA_384.createHashBuilder());
+
+        long validWeight = 0;
+        for (final NodeSignature nodeSignature : signatures) {
+            if (!addressBook.contains(nodeSignature.nodeId)) {
+                // signature is not in the address book
+                continue;
+            }
+            final Address address = addressBook.getAddress(nodeSignature.nodeId);
+            if (!nodeSignature.signature.verifySignature(hashBytes, address.getSigPublicKey())) {
+                // signature is invalid
+                continue;
+            }
+            validWeight += address.getWeight();
+        }
 
         return threshold.isSatisfiedBy(validWeight, addressBook.getTotalWeight());
     }
 
     /**
      * Get the payloads of this state proof (i.e. the leaf nodes being "proven"). Do not trust the authenticity of these
-     * payloads unless {@link #isValid(AddressBook)} returns true.
+     * payloads unless {@link #isValid(Cryptography, AddressBook, Threshold)} returns true.
      *
      * @return the payloads of this state proof
      * @throws IllegalStateException if this method is called before this object has been fully deserialized
@@ -211,6 +234,7 @@ public class StateProof implements SelfSerializable {
             throw new IOException("root is null");
         }
 
+        // TODO think really long and hard if it's possible to spoof a payload!
         payloads = root.getPayloads();
     }
 }

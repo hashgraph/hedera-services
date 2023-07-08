@@ -17,6 +17,7 @@
 package com.swirlds.common.merkle.proof.internal;
 
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -46,10 +47,24 @@ public class StateProofOpaqueNode implements StateProofNode {
     /**
      * Construct a new leaf node with the given bytes.
      *
-     * @param data the opaque data, used only for hash computation
+     * @param byteSegments the opaque data, used only for hash computation. It is split into multiple byte arrays as an
+     *                     artifact of the way the data is gathered.
      */
-    public StateProofOpaqueNode(@NonNull final byte[] data) {
-        this.data = data;
+    public StateProofOpaqueNode(@NonNull final List<byte[]> byteSegments) {
+
+        int totalSize = 0;
+        for (byte[] segment : byteSegments) {
+            totalSize += segment.length;
+        }
+
+        this.data = new byte[totalSize];
+
+        // Combine the segments into a unified array
+        int offset = 0;
+        for (final byte[] segment : byteSegments) {
+            System.arraycopy(segment, 0, data, offset, segment.length);
+            offset += segment.length;
+        }
     }
 
     /**
@@ -57,7 +72,7 @@ public class StateProofOpaqueNode implements StateProofNode {
      */
     @NonNull
     @Override
-    public byte[] getHashableBytes(@NonNull final Cryptography cryptography) {
+    public byte[] getHashableBytes(@NonNull final Cryptography cryptography, @NonNull final HashBuilder hashBuilder) {
         if (data == null) {
             throw new IllegalStateException("StateProofOpaqueData has not been properly initialized");
         }

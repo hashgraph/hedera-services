@@ -16,6 +16,9 @@
 
 package com.swirlds.common.crypto;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 public enum DigestType {
     /** 384-bit SHA2 message digest meeting current CNSA standards */
     SHA_384(0x58ff811b, "SHA-384", "SUN", 48),
@@ -26,14 +29,10 @@ public enum DigestType {
     /**
      * Enum constructor used to initialize the values with the algorithm characteristics.
      *
-     * @param id
-     * 		a unique integer identifier for this algorithm
-     * @param algorithmName
-     * 		the JCE algorithm name
-     * @param provider
-     * 		the JCE provider name
-     * @param outputLength
-     * 		output length in bytes
+     * @param id            a unique integer identifier for this algorithm
+     * @param algorithmName the JCE algorithm name
+     * @param provider      the JCE provider name
+     * @param outputLength  output length in bytes
      */
     DigestType(final int id, final String algorithmName, final String provider, final int outputLength) {
         this.id = id;
@@ -68,8 +67,7 @@ public enum DigestType {
     private final int outputLength;
 
     /**
-     * @param id
-     * 		the unique identifier
+     * @param id the unique identifier
      * @return a valid DigestType or null if the provided id is not valid
      */
     public static DigestType valueOf(final int id) {
@@ -126,5 +124,18 @@ public enum DigestType {
      */
     public static int getMaxLength() {
         return MAX_LENGTH;
+    }
+
+    /**
+     * Create a new HashBuilder instance for this digest type.
+     *
+     * @return a new HashBuilder instance
+     */
+    public HashBuilder createHashBuilder() {
+        try {
+            return new HashBuilder(MessageDigest.getInstance(algorithmName()));
+        } catch (final NoSuchAlgorithmException e) {
+            throw new RuntimeException("unable to create digest type", e);
+        }
     }
 }

@@ -17,6 +17,7 @@
 package com.swirlds.common.merkle.proof.internal;
 
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.merkle.MerkleLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,12 +31,13 @@ public interface StateProofNode extends SelfSerializable {
     /**
      * Get the bytes that this node contributes to its parent's hash.
      *
-     * @param cryptography provides cryptographic services
+     * @param cryptography provides cryptographic primitives
+     * @param hashBuilder  builds running hashes, if modified must be reset before this method returns
      * @return the bytes that this node contributes to its parent's hash
      * @throws IllegalStateException if this method is called before this object has been fully deserialized
      */
     @NonNull
-    byte[] getHashableBytes(@NonNull final Cryptography cryptography);
+    byte[] getHashableBytes(@NonNull final Cryptography cryptography, @NonNull final HashBuilder hashBuilder);
 
     /**
      * Get all payloads at or below this node.
