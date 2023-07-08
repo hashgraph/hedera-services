@@ -34,11 +34,14 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.Threshold;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A state proof on one or more merkle nodes.
@@ -65,6 +68,11 @@ public class StateProof implements SelfSerializable {
         public int compareTo(final NodeSignature o) {
             return nodeId.compareTo(o.nodeId);
         }
+    }
+
+    @FunctionalInterface
+    interface SignatureValidator {
+        boolean verifySignature(@NonNull Signature signature, @NonNull byte[] bytes, @NonNull PublicKey publicKey);
     }
 
     private List<NodeSignature> signatures;
@@ -141,19 +149,61 @@ public class StateProof implements SelfSerializable {
             @NonNull final Cryptography cryptography,
             @NonNull final AddressBook addressBook,
             @NonNull final Threshold threshold) {
+
+        return isValid(cryptography, addressBook, threshold, Signature::verifySignature);
+    }
+
+    /**
+     * Cryptographically validate this state proof using the provided threshold.
+     * <p>
+     * This method is package private to permit test code to provide custom signature validation.
+     *
+     * @param cryptography       provides cryptographic primitives
+     * @param addressBook        the address book to use to validate the state proof
+     * @param signatureValidator a function that verifies a signature
+     * @return true if this state proof is valid, otherwise false
+     * @throws IllegalStateException if this method is called before this object has been fully deserialized
+     */
+    boolean isValid(
+            @NonNull final Cryptography cryptography,
+            @NonNull final AddressBook addressBook,
+            @NonNull final Threshold threshold,
+            @NonNull final SignatureValidator signatureValidator) {
+
+        Objects.requireNonNull(cryptography);
         Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(threshold);
 
         final byte[] hashBytes = root.getHashableBytes(cryptography, SHA_384.createHashBuilder());
 
+        final Set<NodeId> signingNodes = new HashSet<>();
+
         long validWeight = 0;
         for (final NodeSignature nodeSignature : signatures) {
+            if (!signingNodes.add(nodeSignature.nodeId)) {
+                // Signature is not unique. It does not matter what else is contained by this state
+                // proof. This is very clearly malicious behavior, and so we reject the state proof
+                // outright.
+                return false;
+            }
+
             if (!addressBook.contains(nodeSignature.nodeId)) {
-                // signature is not in the address book
+                // Signature is not in the address book. Not necessarily a sign of malicious behavior,
+                // since this state proof may have been constructed with a legitimate address book from
+                // a different version.
                 continue;
             }
             final Address address = addressBook.getAddress(nodeSignature.nodeId);
-            if (!nodeSignature.signature.verifySignature(hashBytes, address.getSigPublicKey())) {
-                // signature is invalid
+            if (address.getWeight() == 0) {
+                // Don't bother validating the signature of a zero weight node.
+                continue;
+            }
+
+            // nodeSignature.signature.verifySignature(hashBytes, address.getSigPublicKey())
+            if (!signatureValidator.verifySignature(nodeSignature.signature, hashBytes, address.getSigPublicKey())) {
+                // Signature is invalid. Not necessarily a sign of malicious behavior,
+                // since this state proof may have been constructed with a legitimate address book from
+                // a different version.
                 continue;
             }
             validWeight += address.getWeight();
