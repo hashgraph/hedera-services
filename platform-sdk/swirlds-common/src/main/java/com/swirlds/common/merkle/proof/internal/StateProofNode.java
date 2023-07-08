@@ -17,10 +17,10 @@
 package com.swirlds.common.merkle.proof.internal;
 
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.merkle.MerkleLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.MessageDigest;
 import java.util.List;
 
 /**
@@ -29,15 +29,25 @@ import java.util.List;
 public interface StateProofNode extends SelfSerializable {
 
     /**
-     * Get the bytes that this node contributes to its parent's hash.
+     * Compute the bytes that this node contributes to its parent's hash, and store those bytes and return them when
+     * {@link #getHashableBytes()} is called. This method called on each state proof node in a post-ordered depth first
+     * traversal of the state proof tree.
      *
      * @param cryptography provides cryptographic primitives
-     * @param hashBuilder  builds running hashes, if modified must be reset before this method returns
+     * @param digest       builds running hashes
+     * @throws IllegalStateException if this method is called before this object has been fully deserialized
+     */
+    void computeHashableBytes(@NonNull final Cryptography cryptography, @NonNull final MessageDigest digest);
+
+    /**
+     * Get the bytes that this node contributes to its parent's hash. Guaranteed to be called after
+     * {@link #computeHashableBytes(Cryptography, MessageDigest)}.
+     *
      * @return the bytes that this node contributes to its parent's hash
      * @throws IllegalStateException if this method is called before this object has been fully deserialized
      */
     @NonNull
-    byte[] getHashableBytes(@NonNull final Cryptography cryptography, @NonNull final HashBuilder hashBuilder);
+    byte[] getHashableBytes();
 
     /**
      * Get all payloads at or below this node.

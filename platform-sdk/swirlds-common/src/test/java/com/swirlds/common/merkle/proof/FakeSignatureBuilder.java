@@ -19,7 +19,7 @@ package com.swirlds.common.merkle.proof;
 import static com.swirlds.common.crypto.SignatureType.RSA;
 
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.merkle.proof.StateProof.SignatureValidator;
+import com.swirlds.common.merkle.proof.internal.SignatureValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.PublicKey;
 import java.util.Arrays;

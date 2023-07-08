@@ -17,19 +17,19 @@
 package com.swirlds.common.merkle.proof.internal;
 
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.security.MessageDigest;
 import java.util.List;
 
 /**
  * A node in a state proof tree containing a payload.
  */
-public class StateProofPayload implements StateProofNode {
+public class StateProofPayload extends AbstractStateProofNode {
     private static final long CLASS_ID = 0xd21870ecd467b717L;
 
     private static final class ClassVersion {
@@ -73,16 +73,15 @@ public class StateProofPayload implements StateProofNode {
     /**
      * {@inheritDoc}
      */
-    @NonNull
     @Override
-    public byte[] getHashableBytes(@NonNull final Cryptography cryptography, @NonNull final HashBuilder hashBuilder) {
+    public void computeHashableBytes(@NonNull final Cryptography cryptography, @NonNull final MessageDigest digest) {
         if (!initialized) {
             throw new IllegalStateException("StateProofPayload has not been properly initialized");
         }
         if (payload.getHash() == null) {
             cryptography.digestSync(payload);
         }
-        return payload.getHash().getValue();
+        setHashableBytes(payload.getHash().getValue());
     }
 
     /**

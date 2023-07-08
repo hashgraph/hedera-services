@@ -17,19 +17,19 @@
 package com.swirlds.common.merkle.proof.internal;
 
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.security.MessageDigest;
 import java.util.List;
 
 /**
  * A leaf in a state proof tree. Contains data that modifies the hash. Data is opaque, meaning that it is not intended
  * to be interpreted in any meaningful way other than how it modifies the hash.
  */
-public class StateProofOpaqueNode implements StateProofNode {
+public class StateProofOpaqueNode extends AbstractStateProofNode {
 
     private static final long CLASS_ID = 0x4ab3834aaba6fbbdL;
 
@@ -70,14 +70,12 @@ public class StateProofOpaqueNode implements StateProofNode {
     /**
      * {@inheritDoc}
      */
-    @NonNull
     @Override
-    public byte[] getHashableBytes(@NonNull final Cryptography cryptography, @NonNull final HashBuilder hashBuilder) {
+    public void computeHashableBytes(@NonNull final Cryptography cryptography, @NonNull final MessageDigest digest) {
         if (data == null) {
             throw new IllegalStateException("StateProofOpaqueData has not been properly initialized");
         }
-
-        return data;
+        setHashableBytes(data);
     }
 
     /**

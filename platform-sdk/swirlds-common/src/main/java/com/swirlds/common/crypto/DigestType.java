@@ -127,13 +127,13 @@ public enum DigestType {
     }
 
     /**
-     * Create a new HashBuilder instance for this digest type.
+     * Build a digest instance for this algorithm.
      *
-     * @return a new HashBuilder instance
+     * @return a new message digest
      */
-    public HashBuilder createHashBuilder() {
+    public MessageDigest buildDigest() {
         try {
-            return new HashBuilder(MessageDigest.getInstance(algorithmName()));
+            return MessageDigest.getInstance(algorithmName());
         } catch (final NoSuchAlgorithmException e) {
             throw new RuntimeException("unable to create digest type", e);
         }

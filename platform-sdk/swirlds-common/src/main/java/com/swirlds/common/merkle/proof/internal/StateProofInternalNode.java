@@ -17,13 +17,12 @@
 package com.swirlds.common.merkle.proof.internal;
 
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -31,7 +30,7 @@ import java.util.Objects;
 /**
  * An internal node in a state proof tree.
  */
-public class StateProofInternalNode implements StateProofNode {
+public class StateProofInternalNode extends AbstractStateProofNode {
 
     private static final long CLASS_ID = 0x63b15d54dec207dfL;
 
@@ -39,7 +38,12 @@ public class StateProofInternalNode implements StateProofNode {
         public static final int ORIGINAL = 1;
     }
 
+    /**
+     * Child state proof nodes.
+     */
     private List<StateProofNode> children;
+
+    private boolean visited = false;
 
     /**
      * Zero arg constructor required by the serialization framework.
@@ -58,20 +62,18 @@ public class StateProofInternalNode implements StateProofNode {
     /**
      * {@inheritDoc}
      */
-    @NonNull
     @Override
-    public byte[] getHashableBytes(@NonNull final Cryptography cryptography, @NonNull final HashBuilder hashBuilder) {
+    public void computeHashableBytes(@NonNull final Cryptography cryptography, @NonNull final MessageDigest digest) {
         if (children == null) {
             throw new IllegalStateException("StateProofInternalNode has not been properly initialized");
         }
 
         for (final StateProofNode child : children) {
-            hashBuilder.update(child.getHashableBytes(cryptography, hashBuilder));
+            digest.update(child.getHashableBytes());
         }
-        final Hash hash = hashBuilder.build();
-        hashBuilder.reset();
 
-        return hash.getValue();
+        setHashableBytes(digest.digest());
+        digest.reset();
     }
 
     /**
@@ -90,6 +92,35 @@ public class StateProofInternalNode implements StateProofNode {
             payloads.addAll(child.getPayloads());
         }
         return payloads;
+    }
+
+    /**
+     * Get the child state proof nodes.
+     */
+    @NonNull
+    public List<StateProofNode> getChildren() {
+        return children;
+    }
+
+    /**
+     * Mark this node as having been visited during a traversal of the state proof tree. Used during state proof
+     * validation.
+     */
+    public void markAsVisited() {
+        if (visited) {
+            throw new IllegalStateException("Node has already been visited");
+        }
+        visited = true;
+    }
+
+    /**
+     * Check if this node has been visited during a traversal of the state proof tree. Used during state proof
+     * validation.
+     *
+     * @return true if {@link #markAsVisited()} has been called on this node, false otherwise
+     */
+    public boolean hasBeenVisited() {
+        return visited;
     }
 
     /**

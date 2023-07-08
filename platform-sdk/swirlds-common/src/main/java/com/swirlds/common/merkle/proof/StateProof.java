@@ -16,8 +16,11 @@
 
 package com.swirlds.common.merkle.proof;
 
-import static com.swirlds.common.crypto.DigestType.SHA_384;
 import static com.swirlds.common.merkle.proof.internal.StateProofTreeBuilder.buildStateProofTree;
+import static com.swirlds.common.merkle.proof.internal.StateProofTreeBuilder.processSignatures;
+import static com.swirlds.common.merkle.proof.internal.StateProofTreeBuilder.validatePayloads;
+import static com.swirlds.common.merkle.proof.internal.StateProofValidator.computeStateProofTreeHash;
+import static com.swirlds.common.merkle.proof.internal.StateProofValidator.computeValidSignatureWeight;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 
 import com.swirlds.common.crypto.Cryptography;
@@ -27,21 +30,18 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.proof.internal.NodeSignature;
+import com.swirlds.common.merkle.proof.internal.SignatureValidator;
 import com.swirlds.common.merkle.proof.internal.StateProofNode;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.Threshold;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.security.PublicKey;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * A state proof on one or more merkle nodes.
@@ -54,25 +54,6 @@ public class StateProof implements SelfSerializable {
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
-    }
-
-    /**
-     * A signature and the node ID of the signer.
-     *
-     * @param nodeId    the node ID of the signer
-     * @param signature the signature
-     */
-    private record NodeSignature(@NonNull NodeId nodeId, @NonNull Signature signature)
-            implements Comparable<NodeSignature> {
-        @Override
-        public int compareTo(final NodeSignature o) {
-            return nodeId.compareTo(o.nodeId);
-        }
-    }
-
-    @FunctionalInterface
-    interface SignatureValidator {
-        boolean verifySignature(@NonNull Signature signature, @NonNull byte[] bytes, @NonNull PublicKey publicKey);
     }
 
     private List<NodeSignature> signatures;
@@ -106,48 +87,6 @@ public class StateProof implements SelfSerializable {
         this.payloads = validatePayloads(payloads);
         this.signatures = processSignatures(signatures);
         this.root = buildStateProofTree(cryptography, merkleRoot, payloads);
-    }
-
-    /**
-     * Do some basic sanity checks on a provided payload list.
-     *
-     * @param payloads the payloads to validate
-     * @return the payloads
-     */
-    @NonNull
-    private static List<MerkleLeaf> validatePayloads(@NonNull final List<MerkleLeaf> payloads) {
-        if (payloads.isEmpty()) {
-            throw new IllegalArgumentException("payloads must not be empty");
-        }
-        for (final MerkleLeaf leaf : payloads) {
-            if (leaf == null) {
-                throw new IllegalArgumentException("payloads are not permitted to contain null leaves");
-            }
-        }
-        return payloads;
-    }
-
-    /**
-     * Do some basic sanity checks on a provided signature map and convert to a sorted list of {@link NodeSignature}s.
-     *
-     * @param unprocessedSignatures the signatures to process
-     * @return the processed signatures
-     */
-    private static List<NodeSignature> processSignatures(@NonNull final Map<NodeId, Signature> unprocessedSignatures) {
-        if (unprocessedSignatures.isEmpty()) {
-            throw new IllegalArgumentException("signatures must not be empty");
-        }
-
-        final List<NodeSignature> signatures = new ArrayList<>(unprocessedSignatures.size());
-        for (final Map.Entry<NodeId, Signature> entry : unprocessedSignatures.entrySet()) {
-            if (entry.getValue() == null) {
-                throw new IllegalArgumentException("signatures are not permitted to contain null values");
-            }
-            signatures.add(new NodeSignature(entry.getKey(), entry.getValue()));
-        }
-
-        Collections.sort(signatures);
-        return signatures;
     }
 
     /**
@@ -198,42 +137,10 @@ public class StateProof implements SelfSerializable {
         Objects.requireNonNull(cryptography);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(threshold);
+        Objects.requireNonNull(signatureValidator);
 
-        final byte[] hashBytes = root.getHashableBytes(cryptography, SHA_384.createHashBuilder());
-
-        final Set<NodeId> signingNodes = new HashSet<>();
-
-        long validWeight = 0;
-        for (final NodeSignature nodeSignature : signatures) {
-            if (!signingNodes.add(nodeSignature.nodeId)) {
-                // Signature is not unique. It does not matter what else is contained by this state
-                // proof. This is very clearly malicious behavior, and so we reject the state proof
-                // outright.
-                return false;
-            }
-
-            if (!addressBook.contains(nodeSignature.nodeId)) {
-                // Signature is not in the address book. Not necessarily a sign of malicious behavior,
-                // since this state proof may have been constructed with a legitimate address book from
-                // a different version.
-                continue;
-            }
-            final Address address = addressBook.getAddress(nodeSignature.nodeId);
-            if (address.getWeight() == 0) {
-                // Don't bother validating the signature of a zero weight node.
-                continue;
-            }
-
-            // nodeSignature.signature.verifySignature(hashBytes, address.getSigPublicKey())
-            if (!signatureValidator.verifySignature(nodeSignature.signature, hashBytes, address.getSigPublicKey())) {
-                // Signature is invalid. Not necessarily a sign of malicious behavior,
-                // since this state proof may have been constructed with a legitimate address book from
-                // a different version.
-                continue;
-            }
-            validWeight += address.getWeight();
-        }
-
+        final byte[] hashBytes = computeStateProofTreeHash(cryptography, root);
+        long validWeight = computeValidSignatureWeight(addressBook, signatures, signatureValidator, hashBytes);
         return threshold.isSatisfiedBy(validWeight, addressBook.getTotalWeight());
     }
 
@@ -275,8 +182,8 @@ public class StateProof implements SelfSerializable {
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         out.writeInt(signatures.size());
         for (final NodeSignature entry : signatures) {
-            out.writeSerializable(entry.nodeId, false);
-            out.writeSerializable(entry.signature, false);
+            out.writeSerializable(entry.nodeId(), false);
+            out.writeSerializable(entry.signature(), false);
         }
 
         out.writeSerializable(root, true);

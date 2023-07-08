@@ -21,15 +21,19 @@ import static com.swirlds.common.utility.ByteUtils.longToByteArray;
 import static com.swirlds.common.utility.ByteUtils.reverseByteArray;
 
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
+import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
@@ -42,6 +46,49 @@ public final class StateProofTreeBuilder {
     // TODO make these methods package private and unit test them individually
 
     private StateProofTreeBuilder() {}
+
+    /**
+     * Do some basic sanity checks on a provided payload list.
+     *
+     * @param payloads the payloads to validate
+     * @return the payloads
+     */
+    @NonNull
+    public static List<MerkleLeaf> validatePayloads(@NonNull final List<MerkleLeaf> payloads) {
+        if (payloads.isEmpty()) {
+            throw new IllegalArgumentException("payloads must not be empty");
+        }
+        for (final MerkleLeaf leaf : payloads) {
+            if (leaf == null) {
+                throw new IllegalArgumentException("payloads are not permitted to contain null leaves");
+            }
+        }
+        return payloads;
+    }
+
+    /**
+     * Do some basic sanity checks on a provided signature map and convert to a sorted list of {@link NodeSignature}s.
+     *
+     * @param unprocessedSignatures the signatures to process
+     * @return the processed signatures
+     */
+    @NonNull
+    public static List<NodeSignature> processSignatures(@NonNull final Map<NodeId, Signature> unprocessedSignatures) {
+        if (unprocessedSignatures.isEmpty()) {
+            throw new IllegalArgumentException("signatures must not be empty");
+        }
+
+        final List<NodeSignature> signatures = new ArrayList<>(unprocessedSignatures.size());
+        for (final Map.Entry<NodeId, Signature> entry : unprocessedSignatures.entrySet()) {
+            if (entry.getValue() == null) {
+                throw new IllegalArgumentException("signatures are not permitted to contain null values");
+            }
+            signatures.add(new NodeSignature(entry.getKey(), entry.getValue()));
+        }
+
+        Collections.sort(signatures);
+        return signatures;
+    }
 
     /**
      * Check if a merkle node is an ancestor of at least one of the payloads. Merkle nodes are considered to be
