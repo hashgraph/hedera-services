@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.proof.internal;
+package com.swirlds.common.merkle.proof.internal;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.io.SelfSerializable;

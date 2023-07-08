@@ -14,42 +14,45 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.proof.internal;
+package com.swirlds.common.merkle.proof.internal;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A leaf in a state proof tree. Contains data that modifies the hash. Data is opaque, meaning that it is not intended
- * to be interpreted in any meaningful way other than how it modifies the hash.
+ * An internal node in a state proof tree.
  */
-public class StateProofOpaqueNode implements StateProofNode {
+public class StateProofInternalNode implements StateProofNode {
 
-    private static final long CLASS_ID = 0x4ab3834aaba6fbbdL;
+    private static final long CLASS_ID = 0x63b15d54dec207dfL;
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
     }
 
-    private byte[] data;
+    private List<StateProofNode> children;
 
     /**
      * Zero arg constructor required by the serialization framework.
      */
-    public StateProofOpaqueNode() {}
+    public StateProofInternalNode() {}
 
     /**
-     * Construct a new leaf node with the given bytes.
+     * Construct a new state proof internal node from the given merkle internal node.
      *
-     * @param data the opaque data, used only for hash computation
+     * @param node the merkle internal node
      */
-    public StateProofOpaqueNode(@NonNull final byte[] data) {
-        this.data = data;
+    public StateProofInternalNode(@NonNull final MerkleInternal node) { // TODO this is probably the wrong API
+
+        // TODO construct child list
+
     }
 
     /**
@@ -58,11 +61,10 @@ public class StateProofOpaqueNode implements StateProofNode {
     @NonNull
     @Override
     public byte[] getHashableBytes(@NonNull final Cryptography cryptography) {
-        if (data == null) {
-            throw new IllegalStateException("StateProofOpaqueData has not been properly initialized");
+        if (children == null) {
+            throw new IllegalStateException("StateProofInternalNode has not been properly initialized");
         }
-
-        return data;
+        return new byte[0]; // TODO
     }
 
     /**
@@ -71,11 +73,16 @@ public class StateProofOpaqueNode implements StateProofNode {
     @NonNull
     @Override
     public List<MerkleLeaf> getPayloads() {
-        if (data == null) {
-            throw new IllegalStateException("StateProofOpaqueData has not been properly initialized");
+        if (children == null) {
+            throw new IllegalStateException("StateProofInternalNode has not been properly initialized");
         }
-        // no payloads here :)
-        return List.of();
+
+        // Recursively get the payloads of descendants.
+        final List<MerkleLeaf> payloads = new ArrayList<>();
+        for (final StateProofNode child : children) {
+            payloads.addAll(child.getPayloads());
+        }
+        return payloads;
     }
 
     /**
@@ -98,15 +105,24 @@ public class StateProofOpaqueNode implements StateProofNode {
      * {@inheritDoc}
      */
     @Override
-    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        out.writeByteArray(data);
+    public void serialize(@NonNull SerializableDataOutputStream out) throws IOException {
+        out.writeInt(children.size());
+        for (final StateProofNode child : children) {
+            out.writeSerializable(child, true);
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        data = in.readByteArray(Integer.MAX_VALUE); // TODO use sane upper limit
+    public void deserialize(@NonNull SerializableDataInputStream in, int version) throws IOException {
+        final int childCount = in.readInt();
+        // TODO throw if too big
+
+        children = new ArrayList<>(childCount);
+        for (int i = 0; i < childCount; i++) {
+            children.add(in.readSerializable());
+        }
     }
 }

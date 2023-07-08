@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.state.proof;
+package com.swirlds.common.merkle.proof;
 
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 
@@ -24,10 +24,10 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.proof.internal.StateProofNode;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.Threshold;
-import com.swirlds.platform.state.proof.internal.StateProofNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.HashMap;
