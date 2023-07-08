@@ -16,15 +16,14 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
-
-import com.hedera.node.app.service.mono.grpc.marshalling.BalanceChangeManager;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import edu.umd.cs.findbugs.annotations.Nullable;
-
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.hapi.node.transaction.FixedFee;
 import java.math.BigInteger;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class AdjustmentUtils {
     private AdjustmentUtils() {
@@ -40,5 +39,55 @@ public class AdjustmentUtils {
         } else {
             return n * v / d;
         }
+    }
+
+    public static CustomFee asFixedFee(
+            final long unitsToCollect,
+            final TokenID tokenDenomination,
+            final AccountID feeCollector,
+            final boolean allCollectorsAreExempt) {
+        Objects.requireNonNull(feeCollector);
+        final var spec = FixedFee.newBuilder()
+                .denominatingTokenId(tokenDenomination)
+                .amount(unitsToCollect)
+                .build();
+        return CustomFee.newBuilder()
+                .fixedFee(spec)
+                .feeCollectorAccountId(feeCollector)
+                .allCollectorsAreExempt(allCollectorsAreExempt)
+                .build();
+    }
+
+    public static void addOrMergeHtsDebit(
+            final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
+            final AccountID sender,
+            final AccountID collector,
+            final CustomFeeMeta chargingTokenMeta,
+            final long amount,
+            final TokenID denominatingToken,
+            final Set<TokenID> exemptDenoms) {
+        if (amount < 0) {
+            // TODO: Is this correct to aggregate change here ? In mono-service its added
+            //  as new balance change
+            addHtsAdjustment(htsAdjustments, sender, collector, amount, denominatingToken);
+            // self denominated fees are exempt from further fee charging
+            if (chargingTokenMeta.tokenId().equals(denominatingToken)) {
+                exemptDenoms.add(denominatingToken);
+            }
+        } else {
+            addHtsAdjustment(htsAdjustments, sender, collector, amount, denominatingToken);
+        }
+    }
+
+    private static void addHtsAdjustment(
+            final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
+            final AccountID sender,
+            final AccountID collector,
+            final long amount,
+            final TokenID denominatingToken) {
+        final var denominatingTokenMap = htsAdjustments.get(denominatingToken);
+        denominatingTokenMap.merge(sender, -amount, Long::sum);
+        denominatingTokenMap.merge(collector, amount, Long::sum);
+        htsAdjustments.put(denominatingToken, denominatingTokenMap);
     }
 }

@@ -17,9 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -27,7 +25,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.Set;
@@ -72,21 +69,17 @@ public class CustomFeeAssessor {
     public void assess(
             final AccountID sender,
             final CustomFeeMeta feeMeta,
-            final TokensConfig tokensConfig,
+            final Map<TokenID, Map<AccountID, Long>> inputTokenTransfers,
             final Map<AccountID, Long> hbarAdjustments,
             final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
             final Set<TokenID> exemptDebits,
             final int maxTransfersSize) {
-        // increment the level to create transaction body from all custom fees assessed from original
-        // transaction
-        levelNum++;
-        validateTrue(levelNum <= tokensConfig.maxCustomFeeDepth(), CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
-
         // If sender for this adjustment is same as treasury for token
         // then don't charge any custom fee. Since token treasuries are exempt from custom fees
         if (feeMeta.treasuryId().equals(sender)) {
             return;
         }
+
         fixedFeeAssessor.assessFixedFees(feeMeta, sender, hbarAdjustments, htsAdjustments, exemptDebits);
         totalBalanceChanges += hbarAdjustments.size() + htsAdjustments.size();
         validateFalse(totalBalanceChanges > maxTransfersSize, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
@@ -95,7 +88,8 @@ public class CustomFeeAssessor {
         // A NON_FUNGIBLE_UNIQUE token can have royalty fees but not fractional fees.
         // So check token type and do further assessment
         if (feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
-            fractionalFeeAssessor.assessFractionFees(feeMeta, sender, hbarAdjustments, htsAdjustments);
+            fractionalFeeAssessor.assessFractionFees(
+                    feeMeta, sender, inputTokenTransfers, hbarAdjustments, htsAdjustments, exemptDebits);
         } else {
             royaltyFeeAssessor.assessRoyaltyFees(feeMeta, sender, hbarAdjustments, htsAdjustments);
         }

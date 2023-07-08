@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
+import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.addOrMergeHtsDebit;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeExemptions.isPayerExempt;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -30,7 +31,7 @@ import javax.inject.Singleton;
 public class CustomFixedFeeAssessor {
     public CustomFixedFeeAssessor() {}
 
-    void assessFixedFees(
+    public void assessFixedFees(
             @NonNull final CustomFeeMeta feeMeta,
             @NonNull final AccountID sender,
             final Map<AccountID, Long> hbarAdjustments,
@@ -43,20 +44,30 @@ public class CustomFixedFeeAssessor {
             }
             if (fee.fee().kind().equals(CustomFee.FeeOneOfType.FIXED_FEE)) {
                 // This is a top-level fixed fee, not a fallback royalty fee
-                if (isPayerExempt(feeMeta, fee, sender)) {
-                    return;
-                }
-                final var fixedFeeSpec = fee.fixedFeeOrThrow();
-                if (!fixedFeeSpec.hasDenominatingTokenId()) {
-                    assessHbarFees(sender, fee, hbarAdjustments);
-                } else {
-                    assessHtsFees(sender, feeMeta, fee, htsAdjustments, exemptDebits);
-                }
+                assessFixedFee(feeMeta, sender, fee, hbarAdjustments, htsAdjustments, exemptDebits);
             }
         }
     }
 
-    public void assessHbarFees(
+    public void assessFixedFee(
+            final CustomFeeMeta feeMeta,
+            final AccountID sender,
+            final CustomFee fee,
+            final Map<AccountID, Long> hbarAdjustments,
+            final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
+            final Set<TokenID> exemptDebits) {
+        if (isPayerExempt(feeMeta, fee, sender)) {
+            return;
+        }
+        final var fixedFeeSpec = fee.fixedFeeOrThrow();
+        if (!fixedFeeSpec.hasDenominatingTokenId()) {
+            assessHbarFees(sender, fee, hbarAdjustments);
+        } else {
+            assessHtsFees(sender, feeMeta, fee, htsAdjustments, exemptDebits);
+        }
+    }
+
+    private void assessHbarFees(
             final AccountID sender, final CustomFee hbarFee, final Map<AccountID, Long> hbarAdjustments) {
         final var collector = hbarFee.feeCollectorAccountId();
         final var fixedSpec = hbarFee.fixedFee();
@@ -65,7 +76,7 @@ public class CustomFixedFeeAssessor {
         hbarAdjustments.merge(collector, amount, Long::sum);
     }
 
-    public void assessHtsFees(
+    private void assessHtsFees(
             AccountID sender,
             CustomFeeMeta chargingTokenMeta,
             CustomFee htsFee,
@@ -75,29 +86,7 @@ public class CustomFixedFeeAssessor {
         final var fixedFeeSpec = htsFee.fixedFeeOrThrow();
         final var amount = fixedFeeSpec.amount();
         final var denominatingToken = fixedFeeSpec.denominatingTokenId();
-
-        if (amount < 0) {
-            // TODO: Is this correct to aggregate change here ? In mono-service its added
-            //  as new balance change
-            addHtsAdjustment(htsAdjustments, sender, collector, amount, denominatingToken);
-            // self denominated fees are exempt from further fee charging
-            if (chargingTokenMeta.tokenId().equals(denominatingToken)) {
-                exemptDenoms.add(denominatingToken);
-            }
-        } else {
-            addHtsAdjustment(htsAdjustments, sender, collector, amount, denominatingToken);
-        }
-    }
-
-    private void addHtsAdjustment(
-            final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
-            final AccountID sender,
-            final AccountID collector,
-            final long amount,
-            final TokenID denominatingToken) {
-        final var denominatingTokenMap = htsAdjustments.get(denominatingToken);
-        denominatingTokenMap.merge(sender, -amount, Long::sum);
-        denominatingTokenMap.merge(collector, amount, Long::sum);
-        htsAdjustments.put(denominatingToken, denominatingTokenMap);
+        addOrMergeHtsDebit(
+                htsAdjustments, sender, collector, chargingTokenMeta, amount, denominatingToken, exemptDenoms);
     }
 }

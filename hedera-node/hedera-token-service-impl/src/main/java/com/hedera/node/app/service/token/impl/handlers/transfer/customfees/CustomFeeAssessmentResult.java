@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,10 @@ package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import java.util.Map;
+import java.util.Set;
 
-public class CustomRoyaltyFeeAssessor {
-    public CustomRoyaltyFeeAssessor() {}
-
-    public void assessRoyaltyFees(
-            final CustomFeeMeta feeMeta,
-            final AccountID sender,
-            final Map<AccountID, Long> hbarAdjustments,
-            final Map<TokenID, Map<AccountID, Long>> htsAdjustments) {}
-}
+public record CustomFeeAssessmentResult(
+        Map<AccountID, Long> newHbarAdjustments,
+        Map<TokenID, Map<AccountID, Long>> newHtsAdjustments,
+        Map<TokenID, Map<AccountID, Long>> inputTxnAdjustments,
+        Set<TokenID> exemptDebits) {}
