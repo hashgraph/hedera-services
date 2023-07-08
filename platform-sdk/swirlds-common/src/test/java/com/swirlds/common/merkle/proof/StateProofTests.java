@@ -17,10 +17,13 @@
 package com.swirlds.common.merkle.proof;
 
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.RandomUtils.randomHash;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTree;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTreeExtended;
+import static com.swirlds.common.utility.Threshold.STRONG_MINORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -238,6 +241,82 @@ class StateProofTests {
             Collections.shuffle(leafNodes, random);
             final List<MerkleLeaf> payloads = leafNodes.subList(0, payloadCount);
             testWithNPayloads(random, root, cryptography, payloads, threshold);
+        }
+    }
+
+    private void testWithNInvalidPayloads(
+            @NonNull final Random random,
+            @NonNull final MerkleNode root,
+            @NonNull final Cryptography cryptography,
+            @NonNull final List<MerkleLeaf> payloads)
+            throws IOException {
+
+        final FakeSignatureBuilder signatureBuilder = new FakeSignatureBuilder(random);
+
+        // Clear out the tree's hashes
+        root.treeIterator().forEachRemaining(node -> node.setHash(null));
+
+        // Incorrectly set some of the payload hashes
+        final int invalidPayloadCount;
+        if (payloads.size() == 1) {
+            invalidPayloadCount = 1;
+        } else {
+            invalidPayloadCount = random.nextInt(1, payloads.size());
+        }
+        for (int invalidPayloadIndex = 0; invalidPayloadIndex < invalidPayloadCount; invalidPayloadIndex++) {
+            payloads.get(invalidPayloadIndex).setHash(randomHash(random));
+        }
+
+        // Now, rehash the tree using the incorrect leaf hashes.
+        MerkleCryptoFactory.getInstance().digestTreeSync(root);
+
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+                .setSize(random.nextInt(1, 10))
+                .build();
+
+        final Map<NodeId, Signature> signatures =
+                generateThresholdOfSignatures(random, addressBook, signatureBuilder, root.getHash(), STRONG_MINORITY);
+
+        final StateProof stateProof = new StateProof(cryptography, root, signatures, payloads);
+
+        // Make sure we have all the payloads
+        assertEquals(payloads.size(), stateProof.getPayloads().size());
+        for (final MerkleLeaf payload : payloads) {
+            boolean payloadFound = false;
+            for (final MerkleLeaf stateProofPayload : stateProof.getPayloads()) {
+                if (payload == stateProofPayload) {
+                    payloadFound = true;
+                    break;
+                }
+            }
+            assertTrue(payloadFound);
+        }
+
+        // serialize and deserialize to make sure the validator is not using the incorrect hashes
+        final StateProof deserialized = serializeAndDeserialize(stateProof);
+
+        assertFalse(deserialized.isValid(cryptography, addressBook, STRONG_MINORITY, signatureBuilder));
+        // Checking a second time shouldn't cause problems
+        assertFalse(deserialized.isValid(cryptography, addressBook, STRONG_MINORITY, signatureBuilder));
+    }
+
+    /**
+     * Some of the payloads will not have the correct hash.
+     */
+    @Test
+    @DisplayName("Invalid Payload Test")
+    void invalidPayloadTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+        final Cryptography cryptography = CryptographyHolder.get();
+
+        final MerkleNode root = buildLessSimpleTreeExtended();
+        final List<MerkleLeaf> leafNodes = new ArrayList<>();
+        root.treeIterator().setFilter(MerkleType::isLeaf).forEachRemaining(node -> leafNodes.add(node.asLeaf()));
+
+        for (int payloadCount = 1; payloadCount < leafNodes.size(); payloadCount++) {
+            Collections.shuffle(leafNodes, random);
+            final List<MerkleLeaf> payloads = leafNodes.subList(0, payloadCount);
+            testWithNInvalidPayloads(random, root, cryptography, payloads);
         }
     }
 
