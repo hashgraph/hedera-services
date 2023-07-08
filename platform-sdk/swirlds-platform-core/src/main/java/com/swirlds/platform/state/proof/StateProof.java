@@ -16,9 +16,7 @@
 
 package com.swirlds.platform.state.proof;
 
-import static com.swirlds.platform.Utilities.isMajority;
-import static com.swirlds.platform.Utilities.isStrongMinority;
-import static com.swirlds.platform.Utilities.isSuperMajority;
+import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.SelfSerializable;
@@ -28,6 +26,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.state.proof.internal.StateProofNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -85,14 +84,14 @@ public class StateProof implements SelfSerializable {
     }
 
     /**
-     * Cryptographically validate this state proof using the {@link StateProofThreshold#SUPER_MAJORITY} threshold.
+     * Cryptographically validate this state proof using the {@link Threshold#SUPER_MAJORITY} threshold.
      *
      * @param addressBook the address book to use to validate the state proof
      * @return true if this state proof is valid, otherwise false
      * @throws IllegalStateException if this method is called before this object has been fully deserialized
      */
     public boolean isValid(@NonNull final AddressBook addressBook) {
-        return isValid(addressBook, StateProofThreshold.SUPER_MAJORITY);
+        return isValid(addressBook, SUPER_MAJORITY);
     }
 
     /**
@@ -102,17 +101,13 @@ public class StateProof implements SelfSerializable {
      * @return true if this state proof is valid, otherwise false
      * @throws IllegalStateException if this method is called before this object has been fully deserialized
      */
-    public boolean isValid(@NonNull final AddressBook addressBook, @NonNull final StateProofThreshold threshold) {
+    public boolean isValid(@NonNull final AddressBook addressBook, @NonNull final Threshold threshold) {
         Objects.requireNonNull(addressBook);
 
         // TODO recalculate the root hash
         long validWeight = 0; // TODO find the weight of the valid signatures
 
-        return switch (threshold) {
-            case STRONG_MINORITY -> isStrongMinority(validWeight, addressBook.getTotalWeight());
-            case MAJORITY -> isMajority(validWeight, addressBook.getTotalWeight());
-            case SUPER_MAJORITY -> isSuperMajority(validWeight, addressBook.getTotalWeight());
-        };
+        return threshold.isSatisfiedBy(validWeight, addressBook.getTotalWeight());
     }
 
     /**

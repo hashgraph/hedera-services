@@ -289,6 +289,8 @@ public final class Utilities {
         return result;
     }
 
+    // TODO remove these methods and migrate to new API
+
     /**
      * Is the part more than 2/3 of the whole?
      *
