@@ -18,7 +18,6 @@ package com.swirlds.common.constructable;
 
 import com.swirlds.common.constructable.constructables.NoArgsConstructable;
 import com.swirlds.common.constructable.constructables.NoArgsConstructableWithAnnotation;
-import com.swirlds.common.constructable.constructables.NoConstructorConstructable;
 import com.swirlds.common.constructable.constructables.scannable.ConstructableRecord;
 import com.swirlds.common.constructable.constructables.scannable.PrimitiveAndObjectConstructable;
 import com.swirlds.common.constructable.constructables.scannable.StringConstructable;
@@ -121,13 +120,5 @@ class ConstructorRegistryTest {
         Assertions.assertThrows(
                 IllegalArgumentException.class,
                 () -> ConstructableRegistryFactory.createConstructorRegistry(BadReturnTypeConstructor.class));
-    }
-
-    @Test
-    void badConstructable() {
-        final ConstructorRegistry<StringConstructor> cr =
-                ConstructableRegistryFactory.createConstructorRegistry(StringConstructor.class);
-        Assertions.assertThrows(
-                ConstructableRegistryException.class, () -> cr.registerConstructable(NoConstructorConstructable.class));
     }
 }

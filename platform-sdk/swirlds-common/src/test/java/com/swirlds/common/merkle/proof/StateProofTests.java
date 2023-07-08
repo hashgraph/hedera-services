@@ -23,8 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
@@ -50,39 +51,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("StateProof Tests")
 class StateProofTests {
 
-    // TODO
-    //  - serialization
-    //    - integrity is preserved
-    //    - bytes don't change after multiple rounds
-    //    - various byte overflow attacks
-    //  - various edge cases that are expected to throw
-    //  - works with between 1 and many nodes
-    //  - works if it includes whole tree
-    //  - works on tree that is just a leaf
-    //  - well constructed proofs are valid
-    //  - detects invalid proofs
-    //    - change one or more leaf nodes
-    //    - change topology with valid leaf nodes
-    //    - invalid signatures (between all invalid and just some invalid)
-    //    - signatures not in the address book
-    //    - zero stake signatures
-    //    - multiple signatures from the same node
-    //    - real signatures but with wrong node IDs
-    //  - thresholds
-
-    @NonNull
-    private Signature buildSignature(
-            @NonNull final AddressBook addressBook, @NonNull final NodeId nodeId, @NonNull final Hash hash) {
-
-        final Signature signature = mock(Signature.class);
-
-        return signature;
+    @BeforeAll
+    static void beforeAll() throws ConstructableRegistryException {
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
     }
 
     /**
@@ -120,6 +98,7 @@ class StateProofTests {
 
     /**
      * Serialize then deserialize a state proof.
+     *
      * @param stateProof the state proof to serialize and deserialize
      * @return the deserialized state proof
      */
@@ -159,12 +138,14 @@ class StateProofTests {
                 root.getNodeAtRoute(MerkleRouteFactory.buildRoute(2, 0)).asLeaf();
 
         final Map<NodeId, Signature> signatures =
-                generateThresholdOfSignatures(random, addressBook, signatureBuilder, nodeD.getHash(), SUPER_MAJORITY);
+                generateThresholdOfSignatures(random, addressBook, signatureBuilder, root.getHash(), SUPER_MAJORITY);
 
         final StateProof stateProof = new StateProof(cryptography, root, signatures, List.of(nodeD));
 
         assertEquals(1, stateProof.getPayloads().size());
         assertSame(nodeD, stateProof.getPayloads().get(0));
+        assertTrue(stateProof.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        // Checking a second time shouldn't cause problems
         assertTrue(stateProof.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
 
         final StateProof deserialized = serializeAndDeserialize(stateProof);
@@ -172,6 +153,27 @@ class StateProofTests {
         assertEquals(1, stateProof.getPayloads().size());
         assertNotSame(nodeD, deserialized.getPayloads().get(0));
         assertEquals(nodeD, deserialized.getPayloads().get(0));
+        // Checking a second time shouldn't cause problems
         assertTrue(deserialized.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
     }
+
+    // TODO
+    //  - serialization
+    //    - integrity is preserved
+    //    - bytes don't change after multiple rounds
+    //    - various byte overflow attacks
+    //  - various edge cases that are expected to throw
+    //  - works with between 1 and many nodes
+    //  - works if it includes whole tree
+    //  - works on tree that is just a leaf
+    //  - well constructed proofs are valid
+    //  - detects invalid proofs
+    //    - change one or more leaf nodes
+    //    - change topology with valid leaf nodes
+    //    - invalid signatures (between all invalid and just some invalid)
+    //    - signatures not in the address book
+    //    - zero stake signatures
+    //    - multiple signatures from the same node
+    //    - real signatures but with wrong node IDs
+    //  - thresholds
 }

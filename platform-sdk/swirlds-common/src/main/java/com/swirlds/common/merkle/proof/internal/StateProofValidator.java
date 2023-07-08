@@ -24,10 +24,10 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.Set;
 
 /**
@@ -86,11 +86,11 @@ public final class StateProofValidator {
         final MessageDigest digest = SHA_384.buildDigest();
 
         // Walk the state proof tree post-ordered depth first order.
-        final Queue<StateProofNode> queue = new LinkedList<>();
-        queue.add(root);
+        final Deque<StateProofNode> stack = new LinkedList<>();
+        stack.push(root);
 
-        while (!queue.isEmpty()) {
-            final StateProofNode node = queue.remove();
+        while (!stack.isEmpty()) {
+            final StateProofNode node = stack.pop();
 
             if (node instanceof final StateProofInternalNode internal) {
                 if (internal.hasBeenVisited()) {
@@ -100,9 +100,11 @@ public final class StateProofValidator {
                 } else {
                     // The first time we visit an internal node.
                     // We need to visit its descendants before we can compute its hashable bytes.
-                    queue.addAll(internal.getChildren());
+                    stack.push(node);
+                    for (int childIndex = internal.getChildren().size() - 1; childIndex >= 0; childIndex--) {
+                        stack.push(internal.getChildren().get(childIndex));
+                    }
                     internal.markAsVisited();
-                    queue.add(node);
                 }
             } else {
                 node.computeHashableBytes(cryptography, digest);

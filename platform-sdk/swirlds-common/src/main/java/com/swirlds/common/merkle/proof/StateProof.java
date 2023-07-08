@@ -60,6 +60,8 @@ public class StateProof implements SelfSerializable {
     private StateProofNode root;
     private List<MerkleLeaf> payloads;
 
+    private byte[] hashBytes;
+
     /**
      * Zero arg constructor required by the serialization framework.
      */
@@ -139,7 +141,10 @@ public class StateProof implements SelfSerializable {
         Objects.requireNonNull(threshold);
         Objects.requireNonNull(signatureValidator);
 
-        final byte[] hashBytes = computeStateProofTreeHash(cryptography, root);
+        if (hashBytes == null) {
+            // we only need to recompute the hash once
+            hashBytes = computeStateProofTreeHash(cryptography, root);
+        }
         long validWeight = computeValidSignatureWeight(addressBook, signatures, signatureValidator, hashBytes);
         return threshold.isSatisfiedBy(validWeight, addressBook.getTotalWeight());
     }
