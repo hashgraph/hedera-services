@@ -16,6 +16,7 @@
 
 package com.swirlds.common.merkle.proof;
 
+import static com.swirlds.common.merkle.proof.internal.StateProofTreeBuilder.buildStateProofTree;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 
 import com.swirlds.common.crypto.Signature;
@@ -30,7 +31,8 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.Threshold;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -48,7 +50,21 @@ public class StateProof implements SelfSerializable {
         public static final int ORIGINAL = 1;
     }
 
-    private Map<NodeId, Signature> signatures;
+    /**
+     * A signature and the node ID of the signer.
+     *
+     * @param nodeId    the node ID of the signer
+     * @param signature the signature
+     */
+    private record NodeSignature(@NonNull NodeId nodeId, @NonNull Signature signature)
+            implements Comparable<NodeSignature> {
+        @Override
+        public int compareTo(final NodeSignature o) {
+            return nodeId.compareTo(o.nodeId);
+        }
+    }
+
+    private List<NodeSignature> signatures;
     private StateProofNode root;
     private List<MerkleLeaf> payloads;
 
@@ -58,29 +74,42 @@ public class StateProof implements SelfSerializable {
     public StateProof() {}
 
     /**
-     * Create a state proof on the given merkle node(0).
+     * Create a state proof on the given merkle node.
      *
-     * @param root       the root of the merkle tree to create a state proof on
+     * @param merkleRoot the root of the merkle tree to create a state proof on
      * @param signatures signatures on the root hash of the merkle tree
-     * @param payloads   one or more leaf nodes to create a state proof on
+     * @param payloads   one or more leaf nodes to create a state proof on, may not contain null leaves
      */
     public StateProof(
-            @NonNull final MerkleNode root,
+            @NonNull final MerkleNode merkleRoot,
             @NonNull final Map<NodeId, Signature> signatures,
             @NonNull final List<MerkleLeaf> payloads) {
 
-        Objects.requireNonNull(root);
-        this.signatures = Objects.requireNonNull(signatures);
         this.payloads = Objects.requireNonNull(payloads);
-
-        if (signatures.isEmpty()) {
-            throw new IllegalArgumentException("signatures must not be empty");
-        }
         if (payloads.isEmpty()) {
             throw new IllegalArgumentException("payloads must not be empty");
         }
+        for (final MerkleLeaf leaf : payloads) {
+            if (leaf == null) {
+                throw new IllegalArgumentException("payloads are not permitted to contain null leaves");
+            }
+        }
 
-        // TODO starting at root, iterate all ancestors of the payloads and construct the state proof tree
+        Objects.requireNonNull(signatures);
+        this.signatures = new ArrayList<>(signatures.size());
+        if (signatures.isEmpty()) {
+            throw new IllegalArgumentException("signatures must not be empty");
+        }
+        for (final Map.Entry<NodeId, Signature> entry : signatures.entrySet()) {
+            if (entry.getValue() == null) {
+                throw new IllegalArgumentException("signatures are not permitted to contain null values");
+            }
+            this.signatures.add(new NodeSignature(entry.getKey(), entry.getValue()));
+        }
+        Collections.sort(this.signatures);
+
+        Objects.requireNonNull(merkleRoot);
+        root = buildStateProofTree(merkleRoot, payloads);
     }
 
     /**
@@ -146,12 +175,10 @@ public class StateProof implements SelfSerializable {
      */
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-
-        // TODO we need to make sure we write signatures in a deterministic order
         out.writeInt(signatures.size());
-        for (final Map.Entry<NodeId, Signature> entry : signatures.entrySet()) {
-            out.writeSerializable(entry.getKey(), false);
-            out.writeSerializable(entry.getValue(), false);
+        for (final NodeSignature entry : signatures) {
+            out.writeSerializable(entry.nodeId, false);
+            out.writeSerializable(entry.signature, false);
         }
 
         out.writeSerializable(root, true);
@@ -163,12 +190,19 @@ public class StateProof implements SelfSerializable {
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         final int numSignatures = in.readInt();
-        signatures = new HashMap<>(numSignatures);
         // TODO throw if there are too many signatures
+        signatures = new ArrayList<>(numSignatures);
         for (int i = 0; i < numSignatures; i++) {
             final NodeId nodeId = in.readSerializable(false, NodeId::new);
+            if (nodeId == null) {
+                throw new IOException("nodeId is null");
+            }
             final Signature signature = in.readSerializable(false, Signature::new);
-            signatures.put(nodeId, signature);
+            if (signature == null) {
+                throw new IOException("signature is null");
+            }
+
+            signatures.add(new NodeSignature(nodeId, signature));
         }
 
         // TODO limit max number of nodes read... or perhaps limit max bytes
