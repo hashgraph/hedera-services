@@ -243,7 +243,7 @@ class StaticEntityAccessTest {
     @Test
     void infoForNftToken() {
         final var nftId = NftID.newBuilder()
-                .setTokenID(nft.tokenId())
+                .setTokenId(nft.tokenId())
                 .setSerialNumber(nft.serialNo())
                 .build();
         given(nfts.get(EntityNumPair.fromNftId(nft))).willReturn(treasuryOwned);

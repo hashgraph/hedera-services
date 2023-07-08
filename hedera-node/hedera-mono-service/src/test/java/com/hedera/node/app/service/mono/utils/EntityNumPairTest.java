@@ -84,13 +84,13 @@ class EntityNumPairTest {
     @Test
     void grpcNftIdFactoryWorks() {
         final var notOkId = NftID.newBuilder()
-                .setTokenID(
+                .setTokenId(
                         TokenID.newBuilder().setShardNum(1).setTokenNum(1234).build())
                 .setSerialNumber(1)
                 .build();
         assertSame(MISSING_NUM_PAIR, EntityNumPair.fromGrpcNftId(notOkId));
         final var okId = NftID.newBuilder()
-                .setTokenID(TokenID.newBuilder().setTokenNum(1234).build())
+                .setTokenId(TokenID.newBuilder().setTokenNum(1234).build())
                 .setSerialNumber(1)
                 .build();
         assertEquals(EntityNumPair.fromLongs(1234L, 1L), EntityNumPair.fromGrpcNftId(okId));

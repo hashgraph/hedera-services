@@ -97,7 +97,7 @@ public class IdUtils {
     public static NftID asNftID(final String v, final long serialNum) {
         final var tokenID = asToken(v);
 
-        return NftID.newBuilder().setTokenID(tokenID).setSerialNumber(serialNum).build();
+        return NftID.newBuilder().setTokenId(tokenID).setSerialNumber(serialNum).build();
     }
 
     public static String asAccountString(final AccountID account) {

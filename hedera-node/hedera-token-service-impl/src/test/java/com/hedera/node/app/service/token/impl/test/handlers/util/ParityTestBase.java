@@ -22,9 +22,9 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KE
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
@@ -118,7 +118,7 @@ public class ParityTestBase {
     }
 
     protected WritableNftStore newWritableStoreWithNfts(Nft... nfts) {
-        final var nftStateBuilder = MapWritableKVState.<UniqueTokenId, Nft>builder(TokenServiceImpl.NFTS_KEY);
+        final var nftStateBuilder = MapWritableKVState.<NftID, Nft>builder(TokenServiceImpl.NFTS_KEY);
         for (final Nft nft : nfts) {
             nftStateBuilder.value(nft.id(), nft);
         }

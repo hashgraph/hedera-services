@@ -18,9 +18,9 @@ package com.hedera.node.app.service.mono.state.migration;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
@@ -36,7 +36,7 @@ public final class NftStateTranslator {
 
     @NonNull
     /**
-     * Converts a {@link com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken} and to {@link Nft}.
+     * Converts a {@link com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken} to {@link Nft}.
      * @param merkleUniqueToken the {@link com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken}
      * @return the {@link Nft} converted from the {@link com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken}
      */
@@ -45,7 +45,7 @@ public final class NftStateTranslator {
         requireNonNull(merkleUniqueToken);
         final var builder = Nft.newBuilder();
         final var nftIdPair = merkleUniqueToken.getKey().asNftNumPair();
-        builder.id(merkelUniqueTokenToUniqueTokenId(nftIdPair));
+        builder.id(nftNumPairToNftID(nftIdPair));
 
         builder.ownerId(PbjConverter.toPbj(merkleUniqueToken.getOwner().toGrpcAccountId()))
                 .spenderId(PbjConverter.toPbj(merkleUniqueToken.getSpender().toGrpcAccountId()))
@@ -56,18 +56,18 @@ public final class NftStateTranslator {
                 .metadata(Bytes.wrap(merkleUniqueToken.getMetadata()));
 
         final var nftPrevIdPair = merkleUniqueToken.getPrev();
-        builder.ownerPreviousNftId(merkelUniqueTokenToUniqueTokenId(nftPrevIdPair));
+        builder.ownerPreviousNftId(nftNumPairToNftID(nftPrevIdPair));
 
         final var nftNextIdPair = merkleUniqueToken.getNext();
-        builder.ownerNextNftId(merkelUniqueTokenToUniqueTokenId(nftNextIdPair));
+        builder.ownerNextNftId(nftNumPairToNftID(nftNextIdPair));
 
         return builder.build();
     }
 
-    private static @NonNull UniqueTokenId merkelUniqueTokenToUniqueTokenId(@NonNull NftNumPair merkleUniqueToken) {
-        final var tokenTypeNumber = merkleUniqueToken.tokenNum();
-        final var serialNumber = merkleUniqueToken.serialNum();
-        return UniqueTokenId.newBuilder()
+    private static @NonNull NftID nftNumPairToNftID(@NonNull NftNumPair nftNumPair) {
+        final var tokenTypeNumber = nftNumPair.tokenNum();
+        final var serialNumber = nftNumPair.serialNum();
+        return NftID.newBuilder()
                 .tokenId(TokenID.newBuilder().tokenNum(tokenTypeNumber).build())
                 .serialNumber(serialNumber)
                 .build();
@@ -76,13 +76,13 @@ public final class NftStateTranslator {
     @NonNull
     /**
      * Converts a {@link com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken} to a {@link Nft}.
-     *  @param tokenID the {@link UniqueTokenId}
+     *  @param tokenID the {@link NftID}
      *  @param tokenID the {@link ReadableNftStore}
      *
      *
      */
     public static com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken merkleUniqueTokenFromNft(
-            @NonNull UniqueTokenId tokenID, @NonNull ReadableNftStore readableNftStore) {
+            @NonNull NftID tokenID, @NonNull ReadableNftStore readableNftStore) {
         requireNonNull(tokenID);
         requireNonNull(readableNftStore);
         final var optionalNFT = readableNftStore.get(tokenID);

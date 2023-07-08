@@ -17,9 +17,9 @@
 package com.hedera.node.app.service.token.impl.test.handlers.util;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
@@ -58,12 +58,12 @@ public class StateBuilderUtil {
     }
 
     @NonNull
-    protected MapReadableKVState.Builder<UniqueTokenId, Nft> emptyReadableNftStateBuilder() {
+    protected MapReadableKVState.Builder<NftID, Nft> emptyReadableNftStateBuilder() {
         return MapReadableKVState.builder(NFTS);
     }
 
     @NonNull
-    protected MapWritableKVState.Builder<UniqueTokenId, Nft> emptyWritableNftStateBuilder() {
+    protected MapWritableKVState.Builder<NftID, Nft> emptyWritableNftStateBuilder() {
         return MapWritableKVState.builder(NFTS);
     }
 

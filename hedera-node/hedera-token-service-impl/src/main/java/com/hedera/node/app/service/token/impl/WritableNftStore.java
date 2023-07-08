@@ -18,8 +18,8 @@ package com.hedera.node.app.service.token.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.spi.state.WritableKVState;
@@ -38,7 +38,7 @@ import java.util.Set;
  */
 public class WritableNftStore extends ReadableNftStoreImpl {
     /** The underlying data storage class that holds the NFT data. */
-    private final WritableKVState<UniqueTokenId, Nft> nftState;
+    private final WritableKVState<NftID, Nft> nftState;
 
     /**
      * Create a new {@link WritableNftStore} instance.
@@ -67,7 +67,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * @param id - the number of the unique token id to be retrieved.
      */
     @Nullable
-    public Nft getForModify(final UniqueTokenId id) {
+    public Nft getForModify(final NftID id) {
         return nftState.getForModify(requireNonNull(id));
     }
 
@@ -79,10 +79,8 @@ public class WritableNftStore extends ReadableNftStoreImpl {
     @Nullable
     public Nft getForModify(final TokenID tokenId, final long serialNumber) {
         requireNonNull(tokenId);
-        return nftState.getForModify(UniqueTokenId.newBuilder()
-                .tokenId(tokenId)
-                .serialNumber(serialNumber)
-                .build());
+        return nftState.getForModify(
+                NftID.newBuilder().tokenId(tokenId).serialNumber(serialNumber).build());
     }
 
     /**
@@ -98,7 +96,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * @return the set of nfts modified in existing state
      */
     @NonNull
-    public Set<UniqueTokenId> modifiedNfts() {
+    public Set<NftID> modifiedNfts() {
         return nftState.modifiedKeys();
     }
 
@@ -107,7 +105,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      *
      * @param serialNum - the combined unique ID of the NFT to remove
      */
-    public void remove(final @NonNull UniqueTokenId serialNum) {
+    public void remove(final @NonNull NftID serialNum) {
         nftState.remove(requireNonNull(serialNum));
     }
 
@@ -118,9 +116,6 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * @param serialNum - the serial number of the NFT to remove
      */
     public void remove(final @NonNull TokenID tokenId, final long serialNum) {
-        remove(UniqueTokenId.newBuilder()
-                .tokenId(tokenId)
-                .serialNumber(serialNum)
-                .build());
+        remove(NftID.newBuilder().tokenId(tokenId).serialNumber(serialNum).build());
     }
 }

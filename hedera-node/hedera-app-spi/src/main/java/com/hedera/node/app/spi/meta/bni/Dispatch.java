@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.spi.meta.bni;
 
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
@@ -53,8 +53,7 @@ public interface Dispatch {
      * @return the NFT, or {@code null} if no such NFT exists
      */
     @Nullable
-    Nft getNftAndExternalizeResult(
-            UniqueTokenId id, long callingContractNumber, @NonNull ResultTranslator<Nft> translator);
+    Nft getNftAndExternalizeResult(NftID id, long callingContractNumber, @NonNull ResultTranslator<Nft> translator);
 
     /**
      * Returns the {@link Token} with the given number, and also externalizes the result of the state read
@@ -311,7 +310,7 @@ public interface Dispatch {
      * @return the NFT, or {@code null} if no such NFT exists
      */
     @Nullable
-    Nft getNft(@NonNull UniqueTokenId id);
+    Nft getNft(@NonNull NftID id);
 
     // --- (SECTION V) Miscellaneous methods
     /**
