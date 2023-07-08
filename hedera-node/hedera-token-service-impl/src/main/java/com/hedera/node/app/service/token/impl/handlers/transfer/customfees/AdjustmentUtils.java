@@ -21,6 +21,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -89,5 +90,37 @@ public class AdjustmentUtils {
         denominatingTokenMap.merge(sender, -amount, Long::sum);
         denominatingTokenMap.merge(collector, amount, Long::sum);
         htsAdjustments.put(denominatingToken, denominatingTokenMap);
+    }
+
+    public static Map<AccountID, Long> getFungibleTokenCredits(final Map<AccountID, Long> tokenIdChanges) {
+        final var credits = new HashMap<AccountID, Long>();
+        for (final var entry : tokenIdChanges.entrySet()) {
+            final var account = entry.getKey();
+            final var amount = entry.getValue();
+            if (amount > 0) {
+                credits.put(account, amount);
+            }
+        }
+        return credits;
+    }
+
+    public static Map<AccountID, Long> getFungibleCredits(
+            final Map<AccountID, Long> tokenIdChanges, Map<AccountID, Long> hbarChanges, final AccountID beneficiary) {
+        final var credits = new HashMap<AccountID, Long>();
+        for (final var entry : tokenIdChanges.entrySet()) {
+            final var account = entry.getKey();
+            final var amount = entry.getValue();
+            if (amount > 0 && account.equals(beneficiary)) {
+                credits.put(account, amount);
+            }
+        }
+        for (final var entry : hbarChanges.entrySet()) {
+            final var account = entry.getKey();
+            final var amount = entry.getValue();
+            if (amount > 0 && account.equals(beneficiary)) {
+                credits.put(account, amount);
+            }
+        }
+        return credits;
     }
 }

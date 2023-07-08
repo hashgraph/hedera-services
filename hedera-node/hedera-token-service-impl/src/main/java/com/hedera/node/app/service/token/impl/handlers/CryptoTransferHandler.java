@@ -207,7 +207,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         // auto association slots open
         steps.add(new AssociateTokenRecepientsStep(op));
         // Step 2: Charge custom fees for token transfers. yet to be implemented
-        final var customFeeStep = new CustomFeeAssessmentStep(op);
+        final var customFeeStep = new CustomFeeAssessmentStep(op, transferContext);
         // The below steps should be doe for both custom fee assessed transaction in addition to
         // original transaction
         final var customFeeAssessedOp = customFeeStep.assessCustomFees(transferContext);

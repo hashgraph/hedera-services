@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.asFixedFee;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.getFungibleTokenCredits;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.safeFractionMultiply;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeExemptions.isPayerExempt;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -52,7 +53,7 @@ public class CustomFractionalFeeAssessor {
             final Set<TokenID> exemptDebits) {
         final var tokenId = feeMeta.tokenId();
         var unitsLeft = -inputTokenTransfers.get(tokenId).get(sender);
-        final var creditsForToken = getCreditsForToken(inputTokenTransfers.get(tokenId));
+        final var creditsForToken = getFungibleTokenCredits(inputTokenTransfers.get(tokenId));
         for (final var fee : feeMeta.customFees()) {
             final var collector = fee.feeCollectorAccountId();
             // If the collector 0.0.C for a fractional fee is trying to send X units to
@@ -102,18 +103,6 @@ public class CustomFractionalFeeAssessor {
             }
         }
         return !filteredCredits.isEmpty() ? filteredCredits : creditsForToken;
-    }
-
-    private Map<AccountID, Long> getCreditsForToken(final Map<AccountID, Long> tokenIdChanges) {
-        final var credits = new HashMap<AccountID, Long>();
-        for (final var entry : tokenIdChanges.entrySet()) {
-            final var account = entry.getKey();
-            final var amount = entry.getValue();
-            if (amount > 0) {
-                credits.put(account, amount);
-            }
-        }
-        return credits;
     }
 
     private long amountOwedGiven(long initialUnits, FractionalFee fractionalFee) {

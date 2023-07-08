@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.lang3.tuple.Pair;
 
 @Singleton
 public class CustomFeeAssessor {
@@ -73,7 +74,9 @@ public class CustomFeeAssessor {
             final Map<AccountID, Long> hbarAdjustments,
             final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
             final Set<TokenID> exemptDebits,
-            final int maxTransfersSize) {
+            final int maxTransfersSize,
+            final Set<Pair<AccountID, TokenID>> royaltiesPaid,
+            final AccountID receiver) {
         // If sender for this adjustment is same as treasury for token
         // then don't charge any custom fee. Since token treasuries are exempt from custom fees
         if (feeMeta.treasuryId().equals(sender)) {
@@ -91,7 +94,8 @@ public class CustomFeeAssessor {
             fractionalFeeAssessor.assessFractionFees(
                     feeMeta, sender, inputTokenTransfers, hbarAdjustments, htsAdjustments, exemptDebits);
         } else {
-            royaltyFeeAssessor.assessRoyaltyFees(feeMeta, sender, hbarAdjustments, htsAdjustments);
+            royaltyFeeAssessor.assessRoyaltyFees(
+                    feeMeta, sender, receiver, hbarAdjustments, htsAdjustments, exemptDebits, royaltiesPaid);
         }
     }
 }

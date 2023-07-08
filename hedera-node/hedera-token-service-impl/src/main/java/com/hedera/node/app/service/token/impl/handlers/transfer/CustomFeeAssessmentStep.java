@@ -44,6 +44,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Charges custom fees for the crypto transfer operation. This is yet to be implemented
@@ -56,11 +57,12 @@ public class CustomFeeAssessmentStep {
     private final CustomRoyaltyFeeAssessor royaltyFeeAssessor;
     private int levelNum = 0;
 
-    public CustomFeeAssessmentStep(@NonNull final CryptoTransferTransactionBody op) {
+    public CustomFeeAssessmentStep(
+            @NonNull final CryptoTransferTransactionBody op, final TransferContextImpl transferContext) {
         this.op = op;
         fixedFeeAssessor = new CustomFixedFeeAssessor();
-        fractionalFeeAssessor = new CustomFractionalFeeAssessor();
-        royaltyFeeAssessor = new CustomRoyaltyFeeAssessor();
+        fractionalFeeAssessor = new CustomFractionalFeeAssessor(fixedFeeAssessor);
+        royaltyFeeAssessor = new CustomRoyaltyFeeAssessor(fixedFeeAssessor, transferContext);
         customFeeAssessor = new CustomFeeAssessor(fixedFeeAssessor, fractionalFeeAssessor, royaltyFeeAssessor, op);
     }
 
@@ -161,6 +163,7 @@ public class CustomFeeAssessmentStep {
         final Map<AccountID, Long> newCustomFeeHbarAdjustments = new HashMap<>();
         // Any debits in this set should not trigger custom fee charging again
         final Set<TokenID> exemptDebits = new HashSet<>();
+        final Set<Pair<AccountID, TokenID>> royaltiesPaid = new HashSet<>();
         final Map<TokenID, Map<AccountID, Long>> inputTokenTransfers = buildTokenTransferMap(tokenTransfers);
 
         for (final var xfer : tokenTransfers) {
@@ -187,7 +190,9 @@ public class CustomFeeAssessmentStep {
                                 newCustomFeeHbarAdjustments,
                                 newCustomFeeTokenAdjustments,
                                 exemptDebits,
-                                maxTransfersSize);
+                                maxTransfersSize,
+                                royaltiesPaid,
+                                null);
                     }
                 }
             }
@@ -204,7 +209,9 @@ public class CustomFeeAssessmentStep {
                                 newCustomFeeHbarAdjustments,
                                 newCustomFeeTokenAdjustments,
                                 exemptDebits,
-                                maxTransfersSize);
+                                maxTransfersSize,
+                                royaltiesPaid,
+                                nftTransfer.receiverAccountID());
                     }
                 }
             }
