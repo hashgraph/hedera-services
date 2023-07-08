@@ -253,6 +253,7 @@ public class Hash implements Comparable<Hash>, SelfSerializable, Serializable {
     @Override
     public String toString() {
         return (value == null) ? null : hex(value);
+        //        return Mnemonics.generateMnemonic(value, 4); // TODO
     }
 
     /**

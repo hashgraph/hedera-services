@@ -18,6 +18,7 @@ package com.swirlds.common.merkle.proof.internal;
 
 import static com.swirlds.common.utility.ByteUtils.intToByteArray;
 import static com.swirlds.common.utility.ByteUtils.longToByteArray;
+import static com.swirlds.common.utility.ByteUtils.reverseByteArray;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 
@@ -53,7 +55,7 @@ public final class StateProofTreeBuilder {
             @NonNull final MerkleNode potentialAncestor, @NonNull final List<MerkleLeaf> payloads) {
 
         for (final MerkleLeaf payload : payloads) {
-            if (payload.getRoute().isAncestorOf(potentialAncestor.getRoute())) {
+            if (potentialAncestor.getRoute().isAncestorOf(payload.getRoute())) {
                 return true;
             }
         }
@@ -114,7 +116,7 @@ public final class StateProofTreeBuilder {
         for (final MerkleLeaf leaf : payloads) {
             if (!nodeRoutes.contains(leaf.getRoute())) {
                 throw new IllegalStateException("Payloads are inconsistent with merkle tree. Payloads contain "
-                        + "leaf " + leaf + " which is not in the merkle tree.");
+                        + "leaf at " + leaf.getRoute() + " which is not in the merkle tree.");
             }
         }
 
@@ -151,9 +153,11 @@ public final class StateProofTreeBuilder {
 
         final List<byte[]> byteSegments = new ArrayList<>();
 
-        // First, the class ID and version are append.
-        byteSegments.add(longToByteArray(node.getClassId()));
-        byteSegments.add(intToByteArray(node.getVersion()));
+        // First, the class ID and version are appended.
+        // Though happenstance, our hash builder implementation ingests integers and longs
+        // in reverse order, and it's too late to change how that works now.
+        byteSegments.add(reverseByteArray(longToByteArray(node.getClassId())));
+        byteSegments.add(reverseByteArray(intToByteArray(node.getVersion())));
 
         // Then, the hashes of the children are appended.
         for (int childIndex = 0; childIndex < node.getNumberOfChildren(); childIndex++) {
@@ -221,6 +225,10 @@ public final class StateProofTreeBuilder {
             @NonNull final Cryptography cryptography,
             @NonNull final MerkleNode merkleRoot,
             @NonNull final List<MerkleLeaf> payloads) {
+
+        Objects.requireNonNull(cryptography);
+        Objects.requireNonNull(merkleRoot);
+        Objects.requireNonNull(payloads);
 
         final List<MerkleNode> nodes = getMerkleNodesForStateProofTree(merkleRoot, payloads);
         final Set<MerkleRoute> nodeRoutes = getMerkleRouteSet(nodes);

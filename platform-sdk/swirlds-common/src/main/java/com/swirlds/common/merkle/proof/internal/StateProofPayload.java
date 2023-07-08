@@ -17,7 +17,6 @@
 package com.swirlds.common.merkle.proof.internal;
 
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -77,12 +76,13 @@ public class StateProofPayload implements StateProofNode {
     @NonNull
     @Override
     public byte[] getHashableBytes(@NonNull final Cryptography cryptography, @NonNull final HashBuilder hashBuilder) {
-
         if (!initialized) {
             throw new IllegalStateException("StateProofPayload has not been properly initialized");
         }
-        final Hash hash = cryptography.digestSync(payload);
-        return hash.getValue();
+        if (payload.getHash() == null) {
+            cryptography.digestSync(payload);
+        }
+        return payload.getHash().getValue();
     }
 
     /**

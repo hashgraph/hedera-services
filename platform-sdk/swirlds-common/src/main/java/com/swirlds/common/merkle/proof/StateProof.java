@@ -98,7 +98,24 @@ public class StateProof implements SelfSerializable {
             @NonNull final Map<NodeId, Signature> signatures,
             @NonNull final List<MerkleLeaf> payloads) {
 
-        this.payloads = Objects.requireNonNull(payloads);
+        Objects.requireNonNull(cryptography);
+        Objects.requireNonNull(merkleRoot);
+        Objects.requireNonNull(signatures);
+        Objects.requireNonNull(payloads);
+
+        this.payloads = validatePayloads(payloads);
+        this.signatures = processSignatures(signatures);
+        this.root = buildStateProofTree(cryptography, merkleRoot, payloads);
+    }
+
+    /**
+     * Do some basic sanity checks on a provided payload list.
+     *
+     * @param payloads the payloads to validate
+     * @return the payloads
+     */
+    @NonNull
+    private static List<MerkleLeaf> validatePayloads(@NonNull final List<MerkleLeaf> payloads) {
         if (payloads.isEmpty()) {
             throw new IllegalArgumentException("payloads must not be empty");
         }
@@ -107,22 +124,30 @@ public class StateProof implements SelfSerializable {
                 throw new IllegalArgumentException("payloads are not permitted to contain null leaves");
             }
         }
+        return payloads;
+    }
 
-        Objects.requireNonNull(signatures);
-        this.signatures = new ArrayList<>(signatures.size());
-        if (signatures.isEmpty()) {
+    /**
+     * Do some basic sanity checks on a provided signature map and convert to a sorted list of {@link NodeSignature}s.
+     *
+     * @param unprocessedSignatures the signatures to process
+     * @return the processed signatures
+     */
+    private static List<NodeSignature> processSignatures(@NonNull final Map<NodeId, Signature> unprocessedSignatures) {
+        if (unprocessedSignatures.isEmpty()) {
             throw new IllegalArgumentException("signatures must not be empty");
         }
-        for (final Map.Entry<NodeId, Signature> entry : signatures.entrySet()) {
+
+        final List<NodeSignature> signatures = new ArrayList<>(unprocessedSignatures.size());
+        for (final Map.Entry<NodeId, Signature> entry : unprocessedSignatures.entrySet()) {
             if (entry.getValue() == null) {
                 throw new IllegalArgumentException("signatures are not permitted to contain null values");
             }
-            this.signatures.add(new NodeSignature(entry.getKey(), entry.getValue()));
+            signatures.add(new NodeSignature(entry.getKey(), entry.getValue()));
         }
-        Collections.sort(this.signatures);
 
-        Objects.requireNonNull(merkleRoot);
-        root = buildStateProofTree(cryptography, merkleRoot, payloads);
+        Collections.sort(signatures);
+        return signatures;
     }
 
     /**
