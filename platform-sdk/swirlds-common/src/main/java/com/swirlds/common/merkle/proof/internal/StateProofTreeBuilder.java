@@ -25,17 +25,18 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.iterators.MerkleIterationOrder;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.Set;
 
 /**
@@ -112,7 +113,7 @@ public final class StateProofTreeBuilder {
 
     /**
      * Given a merkle root and a list of payloads, extract a list of merkle nodes that are ancestors of at least one of
-     * the payloads. Nodes are returned in post-ordered depth first traversal order.
+     * the payloads. Nodes are returned in reverse post-ordered depth first traversal order.
      *
      * @param merkleRoot the merkle root
      * @param payloads   the payloads
@@ -122,9 +123,14 @@ public final class StateProofTreeBuilder {
     private static List<MerkleNode> getMerkleNodesForStateProofTree(
             @NonNull final MerkleNode merkleRoot, @NonNull final List<MerkleLeaf> payloads) {
 
+        // Note: we use a reverse post-ordered depth first traversal here intentionally. This cause a node's children
+        // to be popped off the top of a stack in left-to-right order (as opposed to a standard DFS traversal,
+        // which will pop them off in right-to-left order).
+
         final List<MerkleNode> nodes = new ArrayList<>();
         merkleRoot
                 .treeIterator()
+                .setOrder(MerkleIterationOrder.REVERSE_POST_ORDERED_DEPTH_FIRST)
                 .ignoreNull(true)
                 .setFilter(node -> isAncestorOfPayload(node, payloads))
                 .setDescendantFilter(node -> isAncestorOfPayload(node, payloads))
@@ -184,9 +190,9 @@ public final class StateProofTreeBuilder {
      * Build an internal node in the state proof tree.
      *
      * @param cryptography provides cryptographic primitives
-     * @param node       the node to build the state proof node for
-     * @param nodeRoutes the set of routes of all nodes to be included in the state proof tree
-     * @param children   a queue containing state proof nodes waiting to be added to their parents
+     * @param node         the node to build the state proof node for
+     * @param nodeRoutes   the set of routes of all nodes to be included in the state proof tree
+     * @param children     a stack containing state proof nodes waiting to be added to their parents
      * @return the state proof node
      */
     @NonNull
@@ -194,7 +200,7 @@ public final class StateProofTreeBuilder {
             @NonNull final Cryptography cryptography,
             @NonNull final MerkleInternal node,
             @NonNull final Set<MerkleRoute> nodeRoutes,
-            @NonNull final Queue<StateProofNode> children) {
+            @NonNull final Deque<StateProofNode> children) {
 
         final List<StateProofNode> selfChildren = new ArrayList<>();
 
@@ -223,8 +229,9 @@ public final class StateProofTreeBuilder {
                     byteSegments.clear();
                 }
 
-                // The child we need is guaranteed to be the next in the child queue.
-                selfChildren.add(children.remove());
+                // Because we are using a reverse DFS ordering, when popping we are
+                // guaranteed to encounter our children in left-to-right order.
+                selfChildren.add(children.pop());
             } else {
                 // If the child is not in the node list, we append its hash.
                 byteSegments.add(child.getHash().getValue());
@@ -243,19 +250,19 @@ public final class StateProofTreeBuilder {
      * Build the next state proof node and add it to the child queue.
      *
      * @param cryptography provides cryptographic primitives
-     * @param node       the node to build the state proof node for
-     * @param nodeRoutes the set of routes of all nodes to be included in the state proof tree
-     * @param children   a queue containing state proof nodes waiting to be added to their parents
+     * @param node         the node to build the state proof node for
+     * @param nodeRoutes   the set of routes of all nodes to be included in the state proof tree
+     * @param children     a stack containing state proof nodes waiting to be added to their parents
      */
     private static void buildStateProofNode(
             @NonNull final Cryptography cryptography,
             @NonNull final MerkleNode node,
             @NonNull final Set<MerkleRoute> nodeRoutes,
-            @NonNull final Queue<StateProofNode> children) {
+            @NonNull final Deque<StateProofNode> children) {
         if (node.isLeaf()) {
-            children.add(new StateProofPayload(node.asLeaf()));
+            children.push(new StateProofPayload(node.asLeaf()));
         } else {
-            children.add(buildStateProofInternalNode(cryptography, node.asInternal(), nodeRoutes, children));
+            children.push(buildStateProofInternalNode(cryptography, node.asInternal(), nodeRoutes, children));
         }
     }
 
@@ -263,8 +270,8 @@ public final class StateProofTreeBuilder {
      * Build the state proof tree from a merkle tree.
      *
      * @param cryptography provides cryptographic primitives
-     * @param merkleRoot the root of the merkle tree
-     * @param payloads   the payloads to build the state proof tree on
+     * @param merkleRoot   the root of the merkle tree
+     * @param payloads     the payloads to build the state proof tree on
      * @return the root of the state proof tree
      */
     @NonNull
@@ -281,7 +288,7 @@ public final class StateProofTreeBuilder {
         final Set<MerkleRoute> nodeRoutes = getMerkleRouteSet(nodes);
         validatePayloads(nodes, nodeRoutes, payloads);
 
-        final Queue<StateProofNode> children = new LinkedList<>();
+        final Deque<StateProofNode> children = new LinkedList<>();
         for (final MerkleNode node : nodes) {
             buildStateProofNode(cryptography, node, nodeRoutes, children);
         }
@@ -292,6 +299,6 @@ public final class StateProofTreeBuilder {
                     + "but found " + children.size() + " nodes.");
         }
 
-        return children.remove();
+        return children.pop();
     }
 }

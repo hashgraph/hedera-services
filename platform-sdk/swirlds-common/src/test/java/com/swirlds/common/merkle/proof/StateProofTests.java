@@ -18,6 +18,7 @@ package com.swirlds.common.merkle.proof;
 
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTree;
+import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTreeExtended;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -35,6 +36,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.interfaces.MerkleType;
 import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
@@ -54,6 +56,8 @@ import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("StateProof Tests")
 class StateProofTests {
@@ -155,6 +159,86 @@ class StateProofTests {
         assertEquals(nodeD, deserialized.getPayloads().get(0));
         // Checking a second time shouldn't cause problems
         assertTrue(deserialized.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+    }
+
+    private void testWithNPayloads(
+            @NonNull final Random random,
+            @NonNull final MerkleNode root,
+            @NonNull final Cryptography cryptography,
+            @NonNull final List<MerkleLeaf> payloads,
+            @NonNull final Threshold threshold)
+            throws IOException {
+
+        final FakeSignatureBuilder signatureBuilder = new FakeSignatureBuilder(random);
+
+        MerkleCryptoFactory.getInstance().digestTreeSync(root);
+
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+                .setSize(random.nextInt(1, 10))
+                .build();
+
+        final Map<NodeId, Signature> signatures =
+                generateThresholdOfSignatures(random, addressBook, signatureBuilder, root.getHash(), threshold);
+
+        final StateProof stateProof = new StateProof(cryptography, root, signatures, payloads);
+
+        // Make sure we have all the payloads
+        assertEquals(payloads.size(), stateProof.getPayloads().size());
+        for (final MerkleLeaf payload : payloads) {
+            boolean payloadFound = false;
+            for (final MerkleLeaf stateProofPayload : stateProof.getPayloads()) {
+                if (payload == stateProofPayload) {
+                    payloadFound = true;
+                    break;
+                }
+            }
+            assertTrue(payloadFound);
+        }
+
+        assertTrue(stateProof.isValid(cryptography, addressBook, threshold, signatureBuilder));
+        // Checking a second time shouldn't cause problems
+        assertTrue(stateProof.isValid(cryptography, addressBook, threshold, signatureBuilder));
+
+        final StateProof deserialized = serializeAndDeserialize(stateProof);
+
+        // We should have all the payloads, but they should be new instances since they were deserialized
+        assertEquals(payloads.size(), deserialized.getPayloads().size());
+        for (final MerkleLeaf payload : payloads) {
+            boolean payloadFound = false;
+            for (final MerkleLeaf stateProofPayload : deserialized.getPayloads()) {
+                if (payload.equals(stateProofPayload)) {
+                    assertNotSame(payload, stateProofPayload);
+                    payloadFound = true;
+                    break;
+                }
+            }
+            assertTrue(payloadFound);
+        }
+
+        assertTrue(deserialized.isValid(cryptography, addressBook, threshold, signatureBuilder));
+        // Checking a second time shouldn't cause problems
+        assertTrue(deserialized.isValid(cryptography, addressBook, threshold, signatureBuilder));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 2})
+    @DisplayName("Multi Payload Test")
+    void multiPayloadTest(final int thresholdOrdinal) throws IOException {
+        final Random random = getRandomPrintSeed();
+        final Cryptography cryptography = CryptographyHolder.get();
+
+        final Threshold threshold = Threshold.values()[thresholdOrdinal];
+
+        final MerkleNode root = buildLessSimpleTreeExtended();
+        MerkleCryptoFactory.getInstance().digestTreeSync(root);
+        final List<MerkleLeaf> leafNodes = new ArrayList<>();
+        root.treeIterator().setFilter(MerkleType::isLeaf).forEachRemaining(node -> leafNodes.add(node.asLeaf()));
+
+        for (int payloadCount = 1; payloadCount < leafNodes.size(); payloadCount++) {
+            Collections.shuffle(leafNodes, random);
+            final List<MerkleLeaf> payloads = leafNodes.subList(0, payloadCount);
+            testWithNPayloads(random, root, cryptography, payloads, threshold);
+        }
     }
 
     // TODO
