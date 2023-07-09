@@ -27,13 +27,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Nft;
-import com.hedera.hapi.node.token.NftID;
 import com.hedera.hapi.node.token.TokenGetNftInfoQuery;
 import com.hedera.hapi.node.token.TokenGetNftInfoResponse;
 import com.hedera.hapi.node.token.TokenNftInfo;
@@ -71,7 +70,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void extractsHeader() {
-        final var query = createTokenGetNftInfoQuery(uniqueTokenIdSl1);
+        final var query = createTokenGetNftInfoQuery(nftIdSl1);
         final var header = subject.extractHeader(query);
         final var op = query.tokenGetNftInfoOrThrow();
         assertEquals(op.header(), header);
@@ -91,7 +90,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void validatesQueryWhenValidNft() {
-        final var query = createTokenGetNftInfoQuery(uniqueTokenIdSl1);
+        final var query = createTokenGetNftInfoQuery(nftIdSl1);
         given(context.query()).willReturn(query);
         given(context.createStore(ReadableNftStore.class)).willReturn(readableNftStore);
 
@@ -100,11 +99,11 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void validatesQueryIfInvalidNft() {
-        final var state = MapReadableKVState.<UniqueTokenId, Nft>builder(NFTS).build();
-        given(readableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(state);
+        final var state = MapReadableKVState.<NftID, Nft>builder(NFTS).build();
+        given(readableStates.<NftID, Nft>get(NFTS)).willReturn(state);
         final var store = new ReadableNftStoreImpl(readableStates);
 
-        final var query = createTokenGetNftInfoQuery(uniqueTokenIdSl1);
+        final var query = createTokenGetNftInfoQuery(nftIdSl1);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableNftStore.class)).thenReturn(store);
 
@@ -115,7 +114,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void validatesQueryIfInvalidNftTokenId() {
-        final var query = createTokenGetNftInfoQueryInvalidTokenId(uniqueTokenIdSl1);
+        final var query = createTokenGetNftInfoQueryInvalidTokenId(nftIdSl1);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableNftStore.class)).thenReturn(readableNftStore);
 
@@ -126,7 +125,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void validatesQueryIfInvalidNftSerialNumb() {
-        final var query = createTokenGetNftInfoQueryInvalidSerialNum(uniqueTokenIdSl1);
+        final var query = createTokenGetNftInfoQueryInvalidSerialNum(nftIdSl1);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableNftStore.class)).thenReturn(readableNftStore);
 
@@ -137,8 +136,8 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void validatesQueryIfInvalidNftInTrans() {
-        final var state = MapReadableKVState.<UniqueTokenId, Nft>builder(NFTS).build();
-        given(readableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(state);
+        final var state = MapReadableKVState.<NftID, Nft>builder(NFTS).build();
+        given(readableStates.<NftID, Nft>get(NFTS)).willReturn(state);
         final var store = new ReadableNftStoreImpl(readableStates);
 
         final var query = createEmptyTokenGetNftInfoQuery();
@@ -154,7 +153,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
                 .build();
 
-        final var query = createTokenGetNftInfoQuery(uniqueTokenIdSl1);
+        final var query = createTokenGetNftInfoQuery(nftIdSl1);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableNftStore.class)).thenReturn(readableNftStore);
 
@@ -170,15 +169,15 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void getsResponseIfInvalidNft() {
-        final var state = MapReadableKVState.<UniqueTokenId, Nft>builder(NFTS).build();
-        given(readableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(state);
+        final var state = MapReadableKVState.<NftID, Nft>builder(NFTS).build();
+        given(readableStates.<NftID, Nft>get(NFTS)).willReturn(state);
         final var store = new ReadableNftStoreImpl(readableStates);
 
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
 
-        final var query = createTokenGetNftInfoQuery(uniqueTokenIdSl1);
+        final var query = createTokenGetNftInfoQuery(nftIdSl1);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableNftStore.class)).thenReturn(store);
 
@@ -205,10 +204,10 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .mintTime(consensusTimestamp)
                 .metadata(Bytes.wrap(evmAddress))
                 .build();
-        final var state = MapReadableKVState.<UniqueTokenId, Nft>builder(NFTS)
-                .value(uniqueTokenIdSl1, nftSl1)
+        final var state = MapReadableKVState.<NftID, Nft>builder(NFTS)
+                .value(nftIdSl1, nftSl1)
                 .build();
-        given(readableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(state);
+        given(readableStates.<NftID, Nft>get(NFTS)).willReturn(state);
         final var store = new ReadableNftStoreImpl(readableStates);
 
         checkResponse(responseHeader, expectedInfo, store);
@@ -226,10 +225,10 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .mintTime(consensusTimestamp)
                 .metadata(Bytes.wrap(evmAddress))
                 .build();
-        final var state = MapReadableKVState.<UniqueTokenId, Nft>builder(NFTS)
-                .value(uniqueTokenIdSl1, nftSl1)
+        final var state = MapReadableKVState.<NftID, Nft>builder(NFTS)
+                .value(nftIdSl1, nftSl1)
                 .build();
-        given(readableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(state);
+        given(readableStates.<NftID, Nft>get(NFTS)).willReturn(state);
         final var store = new ReadableNftStoreImpl(readableStates);
 
         checkResponse(responseHeader, expectedInfo, store);
@@ -237,7 +236,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     private void checkResponse(
             final ResponseHeader responseHeader, final TokenNftInfo expectedInfo, ReadableNftStore ReadableNftStore) {
-        final var query = createTokenGetNftInfoQuery(uniqueTokenIdSl1);
+        final var query = createTokenGetNftInfoQuery(nftIdSl1);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableNftStore.class)).thenReturn(ReadableNftStore);
 
@@ -255,9 +254,9 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
         return TokenNftInfo.newBuilder()
                 .ledgerId(new BytesConverter().convert("0x03"))
                 .nftID(NftID.newBuilder()
-                        .tokenID(TokenID.newBuilder()
-                                .tokenNum(uniqueTokenIdSl1.tokenId().tokenNum()))
-                        .serialNumber(uniqueTokenIdSl1.serialNumber()))
+                        .tokenId(
+                                TokenID.newBuilder().tokenNum(nftIdSl1.tokenId().tokenNum()))
+                        .serialNumber(nftIdSl1.serialNumber()))
                 .accountID(ownerId)
                 .creationTime(consensusTimestamp)
                 .metadata(Bytes.wrap(evmAddress))
@@ -265,27 +264,27 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
     }
 
-    private Query createTokenGetNftInfoQuery(final UniqueTokenId uniqueTokenId) {
+    private Query createTokenGetNftInfoQuery(final NftID tokenID) {
         final var data = TokenGetNftInfoQuery.newBuilder()
-                .nftID(NftID.newBuilder().tokenID(uniqueTokenId.tokenId()).serialNumber(uniqueTokenId.serialNumber()))
+                .nftID(NftID.newBuilder().tokenId(tokenID.tokenId()).serialNumber(tokenID.serialNumber()))
                 .header(QueryHeader.newBuilder().build())
                 .build();
 
         return Query.newBuilder().tokenGetNftInfo(data).build();
     }
 
-    private Query createTokenGetNftInfoQueryInvalidTokenId(final UniqueTokenId uniqueTokenId) {
+    private Query createTokenGetNftInfoQueryInvalidTokenId(final NftID tokenID) {
         final var data = TokenGetNftInfoQuery.newBuilder()
-                .nftID(NftID.newBuilder().serialNumber(uniqueTokenId.serialNumber()))
+                .nftID(NftID.newBuilder().serialNumber(tokenID.serialNumber()))
                 .header(QueryHeader.newBuilder().build())
                 .build();
 
         return Query.newBuilder().tokenGetNftInfo(data).build();
     }
 
-    private Query createTokenGetNftInfoQueryInvalidSerialNum(final UniqueTokenId uniqueTokenId) {
+    private Query createTokenGetNftInfoQueryInvalidSerialNum(final NftID tokenID) {
         final var data = TokenGetNftInfoQuery.newBuilder()
-                .nftID(NftID.newBuilder().tokenID(uniqueTokenId.tokenId()).serialNumber(-1L))
+                .nftID(NftID.newBuilder().tokenId(tokenID.tokenId()).serialNumber(-1L))
                 .header(QueryHeader.newBuilder().build())
                 .build();
 
