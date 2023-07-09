@@ -45,7 +45,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustHbarChangesStep;
-import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecepientsStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.CustomFeeAssessmentStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
@@ -205,13 +205,13 @@ public class CryptoTransferHandler implements TransactionHandler {
         final List<TransferStep> steps = new ArrayList<>();
         // Step 1: associate any token recipients that are not already associated and have
         // auto association slots open
-        steps.add(new AssociateTokenRecepientsStep(op));
+        steps.add(new AssociateTokenRecipientsStep(op));
         // Step 2: Charge custom fees for token transfers. yet to be implemented
         final var customFeeStep = new CustomFeeAssessmentStep(op, transferContext);
         // The below steps should be doe for both custom fee assessed transaction in addition to
         // original transaction
-        final var customFeeAssessedOp = customFeeStep.assessCustomFees(transferContext);
-        final var opsList = List.of(op, customFeeAssessedOp);
+        final var customFeeAssessedOps = customFeeStep.assessCustomFees(transferContext);
+        final var opsList = List.of(op, customFeeAssessedOps);
 
         for (final var txn : opsList) {
             // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account

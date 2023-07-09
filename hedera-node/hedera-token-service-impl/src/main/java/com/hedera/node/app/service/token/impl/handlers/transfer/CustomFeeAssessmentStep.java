@@ -52,17 +52,14 @@ import org.apache.commons.lang3.tuple.Pair;
 public class CustomFeeAssessmentStep {
     private final CryptoTransferTransactionBody op;
     private final CustomFeeAssessor customFeeAssessor;
-    private final CustomFixedFeeAssessor fixedFeeAssessor;
-    private final CustomFractionalFeeAssessor fractionalFeeAssessor;
-    private final CustomRoyaltyFeeAssessor royaltyFeeAssessor;
     private int levelNum = 0;
 
     public CustomFeeAssessmentStep(
             @NonNull final CryptoTransferTransactionBody op, final TransferContextImpl transferContext) {
         this.op = op;
-        fixedFeeAssessor = new CustomFixedFeeAssessor();
-        fractionalFeeAssessor = new CustomFractionalFeeAssessor(fixedFeeAssessor);
-        royaltyFeeAssessor = new CustomRoyaltyFeeAssessor(fixedFeeAssessor, transferContext);
+        final var fixedFeeAssessor = new CustomFixedFeeAssessor();
+        final var fractionalFeeAssessor = new CustomFractionalFeeAssessor(fixedFeeAssessor);
+        final var royaltyFeeAssessor = new CustomRoyaltyFeeAssessor(fixedFeeAssessor, transferContext);
         customFeeAssessor = new CustomFeeAssessor(fixedFeeAssessor, fractionalFeeAssessor, royaltyFeeAssessor, op);
     }
 
@@ -116,10 +113,10 @@ public class CustomFeeAssessmentStep {
         return List.of(level2Builder.build(), level3Builder.build());
     }
 
-    private boolean allResultsEmpty(final CustomFeeAssessmentResult resultLevel1) {
-        return resultLevel1.newHbarAdjustments().isEmpty()
-                && resultLevel1.newHtsAdjustments().isEmpty()
-                && resultLevel1.inputTxnAdjustments().isEmpty();
+    private boolean allResultsEmpty(final CustomFeeAssessmentResult result) {
+        return result.newHbarAdjustments().isEmpty()
+                && result.newHtsAdjustments().isEmpty()
+                && result.inputTxnAdjustments().isEmpty();
     }
 
     private CryptoTransferTransactionBody.Builder buildTransactionFromAdjustments(
@@ -217,7 +214,8 @@ public class CustomFeeAssessmentStep {
             }
         }
         return new CustomFeeAssessmentResult(
-                newCustomFeeHbarAdjustments, newCustomFeeTokenAdjustments, inputTokenTransfers, exemptDebits);
+                newCustomFeeHbarAdjustments, newCustomFeeTokenAdjustments,
+                inputTokenTransfers, exemptDebits);
     }
 
     private Map<TokenID, Map<AccountID, Long>> buildTokenTransferMap(final List<TokenTransferList> tokenTransfers) {
