@@ -20,8 +20,6 @@ import com.swirlds.common.merkle.MerkleInternal;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.ObjIntConsumer;
 
-// TODO test
-
 /**
  * Iteration algorithm for
  * {@link com.swirlds.common.merkle.iterators.MerkleIterationOrder#REVERSE_POST_ORDERED_DEPTH_FIRST
