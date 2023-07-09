@@ -16,6 +16,8 @@
 
 package com.swirlds.common.merkle.proof.tree;
 
+import static com.swirlds.common.merkle.proof.StateProofConstants.MAX_OPAQUE_DATA_SIZE;
+
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -99,6 +101,9 @@ public class StateProofOpaqueNode extends AbstractStateProofNode implements Self
      */
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
+        if (data.length > MAX_OPAQUE_DATA_SIZE) {
+            throw new IllegalStateException("StateProofOpaqueData is too large to serialize");
+        }
         out.writeByteArray(data);
     }
 
@@ -107,6 +112,6 @@ public class StateProofOpaqueNode extends AbstractStateProofNode implements Self
      */
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        data = in.readByteArray(Integer.MAX_VALUE); // TODO use sane upper limit
+        data = in.readByteArray(MAX_OPAQUE_DATA_SIZE);
     }
 }

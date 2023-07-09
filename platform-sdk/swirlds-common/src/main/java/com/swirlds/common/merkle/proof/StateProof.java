@@ -26,8 +26,6 @@ import static com.swirlds.common.merkle.proof.algorithms.StateProofTreeBuilder.p
 import static com.swirlds.common.merkle.proof.algorithms.StateProofTreeBuilder.validatePayloads;
 import static com.swirlds.common.merkle.proof.algorithms.StateProofValidator.computeStateProofTreeHash;
 import static com.swirlds.common.merkle.proof.algorithms.StateProofValidator.computeValidSignatureWeight;
-import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
-import static com.swirlds.common.units.DataUnit.UNIT_MEGABYTES;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Signature;
@@ -60,23 +58,6 @@ public class StateProof implements SelfSerializable {
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
     }
-
-    /**
-     * The maximum number of signatures supported by deserialization.
-     */
-    public static final int MAX_SIGNATURE_COUNT = 1024;
-
-    /**
-     * The maximum number of children a state proof node is permitted to have.
-     */
-    public static final int MAX_CHILD_COUNT = 64;
-
-    /**
-     * The maximum size of the state proof tree supported by deserialization, in bytes. This constant is chosen to be
-     * sufficiently large as to be unlikely to be reached in practice, but small enough to prevent memory exhaustion in
-     * the event of an attack.
-     */
-    public static final long MAX_STATE_PROOF_TREE_SIZE = (long) UNIT_MEGABYTES.convertTo(64, UNIT_BYTES);
 
     private List<NodeSignature> signatures;
     private StateProofNode root;

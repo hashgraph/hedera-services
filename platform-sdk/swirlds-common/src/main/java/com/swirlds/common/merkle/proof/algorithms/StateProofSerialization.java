@@ -16,9 +16,9 @@
 
 package com.swirlds.common.merkle.proof.algorithms;
 
-import static com.swirlds.common.merkle.proof.StateProof.MAX_CHILD_COUNT;
-import static com.swirlds.common.merkle.proof.StateProof.MAX_SIGNATURE_COUNT;
-import static com.swirlds.common.merkle.proof.StateProof.MAX_STATE_PROOF_TREE_SIZE;
+import static com.swirlds.common.merkle.proof.StateProofConstants.MAX_CHILD_COUNT;
+import static com.swirlds.common.merkle.proof.StateProofConstants.MAX_SIGNATURE_COUNT;
+import static com.swirlds.common.merkle.proof.StateProofConstants.MAX_STATE_PROOF_TREE_SIZE;
 
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.SelfSerializable;
@@ -28,7 +28,6 @@ import com.swirlds.common.io.extendable.extensions.MaxSizeStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
-import com.swirlds.common.merkle.proof.StateProof;
 import com.swirlds.common.merkle.proof.tree.StateProofInternalNode;
 import com.swirlds.common.merkle.proof.tree.StateProofNode;
 import com.swirlds.common.merkle.proof.tree.StateProofPayload;
@@ -199,8 +198,8 @@ public final class StateProofSerialization {
                     addToParent(queue, next);
                 }
                 final int childCount = limitedStream.readInt();
-                if (childCount > StateProof.MAX_CHILD_COUNT) {
-                    throw new IOException("Child count exceeds maximum allowed value of " + StateProof.MAX_CHILD_COUNT);
+                if (childCount > MAX_CHILD_COUNT) {
+                    throw new IOException("Child count exceeds maximum allowed value of " + MAX_CHILD_COUNT);
                 }
 
                 queue.add(new ParentAwaitingChildren((StateProofInternalNode) next, childCount));
@@ -225,6 +224,7 @@ public final class StateProofSerialization {
 
     /**
      * Walk a state proof tree and find the payloads.
+     *
      * @param root the root of the tree
      * @return the payloads in the tree
      */
