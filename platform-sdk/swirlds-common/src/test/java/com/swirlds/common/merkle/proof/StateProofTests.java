@@ -22,6 +22,7 @@ import static com.swirlds.common.test.RandomUtils.randomSignature;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTree;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTreeExtended;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildSizeOneTree;
+import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.STRONG_MINORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -446,15 +447,308 @@ class StateProofTests {
         assertArrayEquals(bytesA, bytesB);
     }
 
-    // TODO
-    //  - serialization
-    //    - various byte overflow attacks
-    //  - detects invalid proofs
-    //    - change topology with valid leaf nodes
-    //    - invalid signatures (between all invalid and just some invalid)
-    //    - signatures not in the address book
-    //    - zero stake signatures
-    //    - multiple signatures from the same node
-    //    - real signatures but with wrong node IDs
-    //  - thresholds
+    @Test
+    @DisplayName("Zero Weight Signature Test")
+    void zeroWeightSignatureTest() {
+        final Random random = getRandomPrintSeed();
+        final Cryptography cryptography = CryptographyHolder.get();
+
+        final FakeSignatureBuilder signatureBuilder = new FakeSignatureBuilder(random);
+
+        final MerkleNode root = buildLessSimpleTree();
+        MerkleCryptoFactory.getInstance().digestTreeSync(root);
+
+        // For this test, there will be 9 total weight,
+        // with the node at index 9 having 0 stake, and all others having a weight of 1.
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(10).build();
+        for (int index = 0; index < 10; index++) {
+            final NodeId nodeId = addressBook.getNodeId(index);
+            if (index == 9) {
+                addressBook.add(addressBook.getAddress(nodeId).copySetWeight(0));
+            } else {
+                addressBook.add(addressBook.getAddress(nodeId).copySetWeight(1));
+            }
+        }
+
+        final MerkleLeaf nodeD =
+                root.getNodeAtRoute(MerkleRouteFactory.buildRoute(2, 0)).asLeaf();
+
+        // Add 6 signatures. Not quite enough to reach super majority.
+        final Map<NodeId, Signature> signatures = new HashMap<>();
+        for (int index = 0; index < 6; index++) {
+            final NodeId nodeId = addressBook.getNodeId(index);
+            final Address address = addressBook.getAddress(nodeId);
+            final Signature signature = signatureBuilder.fakeSign(root.getHash().getValue(), address.getSigPublicKey());
+            signatures.put(nodeId, signature);
+        }
+
+        final StateProof stateProofA = new StateProof(cryptography, root, signatures, List.of(nodeD));
+
+        // We don't quite have the right threshold
+        assertFalse(stateProofA.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+
+        // Adding the zero weight signature should not change the result.
+        final NodeId nodeId = addressBook.getNodeId(9);
+        final Address address = addressBook.getAddress(nodeId);
+        final Signature signature = signatureBuilder.fakeSign(root.getHash().getValue(), address.getSigPublicKey());
+        signatures.put(nodeId, signature);
+
+        final StateProof stateProofB = new StateProof(cryptography, root, signatures, List.of(nodeD));
+        assertFalse(stateProofB.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+
+        // Adding another non-zero weight signature should do the trick.
+
+        final NodeId nodeId2 = addressBook.getNodeId(8);
+        final Address address2 = addressBook.getAddress(nodeId2);
+        final Signature signature2 = signatureBuilder.fakeSign(root.getHash().getValue(), address2.getSigPublicKey());
+        signatures.put(nodeId2, signature2);
+
+        final StateProof stateProofC = new StateProof(cryptography, root, signatures, List.of(nodeD));
+        assertTrue(stateProofC.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+    }
+
+    @Test
+    @DisplayName("Signature Not In Address Book Test")
+    void signatureNotInAddressBookTest() {
+        final Random random = getRandomPrintSeed();
+        final Cryptography cryptography = CryptographyHolder.get();
+
+        final FakeSignatureBuilder signatureBuilder = new FakeSignatureBuilder(random);
+
+        final MerkleNode root = buildLessSimpleTree();
+        MerkleCryptoFactory.getInstance().digestTreeSync(root);
+
+        // For this test, there will be 9 total weight, with each node having a weight of 1.
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(9).build();
+        for (int index = 0; index < 9; index++) {
+            final NodeId nodeId = addressBook.getNodeId(index);
+            addressBook.add(addressBook.getAddress(nodeId).copySetWeight(1));
+        }
+
+        final MerkleLeaf nodeD =
+                root.getNodeAtRoute(MerkleRouteFactory.buildRoute(2, 0)).asLeaf();
+
+        // Add 6 signatures. Not quite enough to reach super majority.
+        final Map<NodeId, Signature> signatures = new HashMap<>();
+        for (int index = 0; index < 6; index++) {
+            final NodeId nodeId = addressBook.getNodeId(index);
+            final Address address = addressBook.getAddress(nodeId);
+            final Signature signature = signatureBuilder.fakeSign(root.getHash().getValue(), address.getSigPublicKey());
+            signatures.put(nodeId, signature);
+        }
+
+        final StateProof stateProofA = new StateProof(cryptography, root, signatures, List.of(nodeD));
+
+        // We don't quite have the right threshold
+        assertFalse(stateProofA.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+
+        // Adding a signature for a node not in the address book should not change the result.
+        final NodeId nodeId = new NodeId(10000000);
+        assertFalse(addressBook.contains(nodeId));
+        final Signature signature = randomSignature(random);
+        signatures.put(nodeId, signature);
+
+        final StateProof stateProofB = new StateProof(cryptography, root, signatures, List.of(nodeD));
+        assertFalse(stateProofB.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+
+        // Adding another real signature should do the trick.
+
+        final NodeId nodeId2 = addressBook.getNodeId(7);
+        final Address address2 = addressBook.getAddress(nodeId2);
+        final Signature signature2 = signatureBuilder.fakeSign(root.getHash().getValue(), address2.getSigPublicKey());
+        signatures.put(nodeId2, signature2);
+
+        final StateProof stateProofC = new StateProof(cryptography, root, signatures, List.of(nodeD));
+        assertTrue(stateProofC.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+    }
+
+    private final class DummyNodeId extends NodeId {
+        public DummyNodeId(final long id) {
+            super(id);
+        }
+
+        @Override
+        public int hashCode() {
+            return super.hashCode() + 1;
+        }
+    }
+
+    @Test
+    @DisplayName("Duplicate Signatures Test")
+    void duplicateSignaturesTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+        final Cryptography cryptography = CryptographyHolder.get();
+
+        final FakeSignatureBuilder signatureBuilder = new FakeSignatureBuilder(random);
+
+        final MerkleNode root = buildLessSimpleTree();
+        MerkleCryptoFactory.getInstance().digestTreeSync(root);
+
+        // For this test, there will be 9 total weight, with each node having a weight of 1.
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(9).build();
+        for (int index = 0; index < 9; index++) {
+            final NodeId nodeId = addressBook.getNodeId(index);
+            addressBook.add(addressBook.getAddress(nodeId).copySetWeight(1));
+        }
+
+        final MerkleLeaf nodeD =
+                root.getNodeAtRoute(MerkleRouteFactory.buildRoute(2, 0)).asLeaf();
+
+        // Add 6 signatures. Not quite enough to reach super majority.
+        final Map<NodeId, Signature> signatures = new HashMap<>();
+        for (int index = 0; index < 6; index++) {
+            final NodeId nodeId = addressBook.getNodeId(index);
+            final Address address = addressBook.getAddress(nodeId);
+            final Signature signature = signatureBuilder.fakeSign(root.getHash().getValue(), address.getSigPublicKey());
+            signatures.put(nodeId, signature);
+        }
+
+        final StateProof stateProofA = new StateProof(cryptography, root, signatures, List.of(nodeD));
+
+        // We don't quite have the right threshold
+        assertFalse(stateProofA.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+
+        // Adding duplicate signatures should not change the result.
+        // We can force the logic to accept duplicate signatures by playing games with hash codes,
+        // which will cause the hash map to see them as non-colliding objects.
+        final Map<NodeId, Signature> duplicateSignatures = new HashMap<>();
+        for (final Map.Entry<NodeId, Signature> entry : signatures.entrySet()) {
+            final NodeId nodeId = new DummyNodeId(entry.getKey().id());
+            duplicateSignatures.put(nodeId, entry.getValue());
+        }
+        signatures.putAll(duplicateSignatures);
+        assertEquals(12, signatures.size());
+
+        final StateProof stateProofB = new StateProof(cryptography, root, signatures, List.of(nodeD));
+        assertFalse(stateProofB.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+
+        // Serialize and deserialize. This will get rid of any hash code games. Should still not be valid.
+        final StateProof deserialized = serializeAndDeserialize(stateProofB);
+        assertFalse(deserialized.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+
+        // Adding another non-duplicate signature should do the trick.
+
+        final NodeId nodeId2 = addressBook.getNodeId(7);
+        final Address address2 = addressBook.getAddress(nodeId2);
+        final Signature signature2 = signatureBuilder.fakeSign(root.getHash().getValue(), address2.getSigPublicKey());
+        signatures.put(nodeId2, signature2);
+
+        final StateProof stateProofC = new StateProof(cryptography, root, signatures, List.of(nodeD));
+        assertTrue(stateProofC.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+    }
+
+    @Test
+    @DisplayName("Real Signatures Wrong IDs Test")
+    void realSignaturesWrongIdsTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+        final Cryptography cryptography = CryptographyHolder.get();
+
+        final FakeSignatureBuilder signatureBuilder = new FakeSignatureBuilder(random);
+
+        final MerkleNode root = buildLessSimpleTree();
+        MerkleCryptoFactory.getInstance().digestTreeSync(root);
+
+        // For this test, there will be 9 total weight, with each node having a weight of 1.
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(9).build();
+        for (int index = 0; index < 9; index++) {
+            final NodeId nodeId = addressBook.getNodeId(index);
+            addressBook.add(addressBook.getAddress(nodeId).copySetWeight(1));
+        }
+
+        final MerkleLeaf nodeD =
+                root.getNodeAtRoute(MerkleRouteFactory.buildRoute(2, 0)).asLeaf();
+
+        // Add 7 signatures, enough to make the proof valid if we use the right IDs.
+        final Map<NodeId, Signature> signatures = new HashMap<>();
+        for (int index = 0; index < 7; index++) {
+            final NodeId nodeId = addressBook.getNodeId(index);
+            final Address address = addressBook.getAddress(nodeId);
+            final Signature signature = signatureBuilder.fakeSign(root.getHash().getValue(), address.getSigPublicKey());
+            signatures.put(nodeId, signature);
+        }
+
+        final StateProof stateProofA = new StateProof(cryptography, root, signatures, List.of(nodeD));
+        assertTrue(stateProofA.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+
+        // Using the same signatures with the wrong node IDs should not work.
+        final Map<NodeId, Signature> wrongSignatures = new HashMap<>();
+        final List<NodeId> nodeIds = new ArrayList<>(signatures.keySet());
+        final List<Signature> signatureList = new ArrayList<>(signatures.values());
+        for (final Map.Entry<NodeId, Signature> entry : signatures.entrySet()) {
+            nodeIds.add(entry.getKey());
+            signatureList.add(entry.getValue());
+        }
+        // Map each signature to the node ID to "the right"
+        for (int index = 0; index < nodeIds.size(); index++) {
+            final NodeId nodeId = nodeIds.get((index + 1) % nodeIds.size());
+            final Signature signature = signatureList.get(index);
+            wrongSignatures.put(nodeId, signature);
+        }
+
+        final StateProof stateProofB = new StateProof(cryptography, root, wrongSignatures, List.of(nodeD));
+        assertFalse(stateProofB.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+
+        // serialization shouldn't change anything
+        final StateProof deserialized = serializeAndDeserialize(stateProofB);
+        assertFalse(deserialized.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+    }
+
+    @Test
+    @DisplayName("Threshold Test")
+    void thresholdTest() {
+        final Random random = getRandomPrintSeed();
+        final Cryptography cryptography = CryptographyHolder.get();
+
+        final FakeSignatureBuilder signatureBuilder = new FakeSignatureBuilder(random);
+
+        final MerkleNode root = buildLessSimpleTree();
+        MerkleCryptoFactory.getInstance().digestTreeSync(root);
+
+        // For this test, there will be 12 total weight, with each node having a weight of 1.
+        // 12 is chosen because it is divisible by both 2 and 3.
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(12).build();
+        for (int index = 0; index < 12; index++) {
+            final NodeId nodeId = addressBook.getNodeId(index);
+            addressBook.add(addressBook.getAddress(nodeId).copySetWeight(1));
+        }
+
+        final MerkleLeaf nodeD =
+                root.getNodeAtRoute(MerkleRouteFactory.buildRoute(2, 0)).asLeaf();
+
+        final Map<NodeId, Signature> signatures = new HashMap<>();
+        for (int index = 0; index < 12; index++) {
+
+            final NodeId nextId = addressBook.getNodeId(index);
+            final Address address = addressBook.getAddress(nextId);
+            final Signature signature = signatureBuilder.fakeSign(root.getHash().getValue(), address.getSigPublicKey());
+            signatures.put(nextId, signature);
+
+            int weight = index + 1;
+
+            final StateProof stateProof = new StateProof(cryptography, root, signatures, List.of(nodeD));
+
+            if (weight >= 4) { // >= 1/3
+                assertTrue(stateProof.isValid(cryptography, addressBook, STRONG_MINORITY, signatureBuilder));
+            } else {
+                assertFalse(stateProof.isValid(cryptography, addressBook, STRONG_MINORITY, signatureBuilder));
+            }
+
+            if (weight > 6) { // > 1/2
+                assertTrue(stateProof.isValid(cryptography, addressBook, MAJORITY, signatureBuilder));
+            } else {
+                assertFalse(stateProof.isValid(cryptography, addressBook, MAJORITY, signatureBuilder));
+            }
+
+            if (weight > 8) { // > 2/3
+                assertTrue(stateProof.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+            } else {
+                assertFalse(stateProof.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+            }
+        }
+    }
 }
