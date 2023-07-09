@@ -17,12 +17,9 @@
 package com.swirlds.common.merkle.iterators.internal;
 
 import com.swirlds.common.merkle.MerkleInternal;
-import com.swirlds.common.merkle.MerkleNode;
-import java.util.ArrayList;
-import java.util.List;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.ObjIntConsumer;
 
-// TODO nullity annotation
 // TODO test
 
 /**
@@ -30,56 +27,14 @@ import java.util.function.ObjIntConsumer;
  * {@link com.swirlds.common.merkle.iterators.MerkleIterationOrder#REVERSE_POST_ORDERED_DEPTH_FIRST
  * REVERSE_POST_ORDERED_DEPTH_FIRST}.
  */
-public class ReversePostOrderedDepthFirstAlgorithm implements MerkleIterationAlgorithm {
-
-    /**
-     * The initial capacity for the array implementing the stack. It's much better to choose something a bit larger than
-     * to pay the penalty of resizing the array list.
-     */
-    private static final int INITIAL_STACK_CAPACITY = 1024;
-
-    /**
-     * This list is used to implement a stack.
-     */
-    private final List<MerkleNode> stack = new ArrayList<>(INITIAL_STACK_CAPACITY);
+public class ReversePostOrderedDepthFirstAlgorithm extends PostOrderedDepthFirstAlgorithm {
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void push(final MerkleNode node) {
-        stack.add(node);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public MerkleNode pop() {
-        return stack.remove(stack.size() - 1);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public MerkleNode peek() {
-        return stack.get(stack.size() - 1);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int size() {
-        return stack.size();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void pushChildren(final MerkleInternal parent, final ObjIntConsumer<MerkleInternal> pushNode) {
+    public void pushChildren(
+            @NonNull final MerkleInternal parent, @NonNull final ObjIntConsumer<MerkleInternal> pushNode) {
         final int childCount = parent.getNumberOfChildren();
         for (int childIndex = 0; childIndex < childCount; childIndex++) {
             pushNode.accept(parent, childIndex);
