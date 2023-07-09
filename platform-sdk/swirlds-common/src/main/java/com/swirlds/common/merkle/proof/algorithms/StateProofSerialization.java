@@ -16,6 +16,7 @@
 
 package com.swirlds.common.merkle.proof.algorithms;
 
+import static com.swirlds.common.merkle.proof.StateProof.MAX_CHILD_COUNT;
 import static com.swirlds.common.merkle.proof.StateProof.MAX_SIGNATURE_COUNT;
 import static com.swirlds.common.merkle.proof.StateProof.MAX_STATE_PROOF_TREE_SIZE;
 
@@ -56,6 +57,11 @@ public final class StateProofSerialization {
     public static void serializeSignatures(
             @NonNull final SerializableDataOutputStream out, @NonNull final List<NodeSignature> signatures)
             throws IOException {
+
+        // Better to fail early than to fail whenever somebody attempts to deserialize.
+        if (signatures.size() > MAX_SIGNATURE_COUNT) {
+            throw new IOException("too many signatures: " + signatures.size() + ", limit: " + MAX_SIGNATURE_COUNT);
+        }
 
         out.writeInt(signatures.size());
         for (final NodeSignature entry : signatures) {
@@ -119,6 +125,13 @@ public final class StateProofSerialization {
 
             if (next instanceof final StateProofInternalNode internal) {
                 limitedStream.writeBoolean(true);
+
+                // Better to fail early than to fail whenever somebody attempts to deserialize.
+                if (internal.getChildren().size() > MAX_CHILD_COUNT) {
+                    throw new IOException(
+                            "too many children: " + internal.getChildren().size() + ", limit: " + MAX_CHILD_COUNT);
+                }
+
                 limitedStream.writeInt(internal.getChildren().size());
                 queue.addAll(internal.getChildren());
             } else {
