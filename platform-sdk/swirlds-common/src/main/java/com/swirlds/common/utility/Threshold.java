@@ -16,8 +16,6 @@
 
 package com.swirlds.common.utility;
 
-// TODO convert unit tests to use this class
-
 /**
  * Describes various mathematically important thresholds.
  */
