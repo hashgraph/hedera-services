@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.merkle.proof.internal;
+package com.swirlds.common.merkle.proof.tree;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;

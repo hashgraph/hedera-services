@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.merkle.proof.internal;
+package com.swirlds.common.merkle.proof.algorithms;
 
 import static com.swirlds.common.merkle.proof.StateProof.MAX_SIGNATURE_COUNT;
 import static com.swirlds.common.merkle.proof.StateProof.MAX_STATE_PROOF_TREE_SIZE;
@@ -28,6 +28,9 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.proof.StateProof;
+import com.swirlds.common.merkle.proof.tree.StateProofInternalNode;
+import com.swirlds.common.merkle.proof.tree.StateProofNode;
+import com.swirlds.common.merkle.proof.tree.StateProofPayload;
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;

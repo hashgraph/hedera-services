@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.merkle.proof.internal;
+package com.swirlds.common.merkle.proof.tree;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.io.SelfSerializable;

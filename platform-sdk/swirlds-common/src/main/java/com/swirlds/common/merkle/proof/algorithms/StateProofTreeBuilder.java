@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.merkle.proof.internal;
+package com.swirlds.common.merkle.proof.algorithms;
 
 import static com.swirlds.common.utility.ByteUtils.intToByteArray;
 import static com.swirlds.common.utility.ByteUtils.longToByteArray;
@@ -26,6 +26,10 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.iterators.MerkleIterationOrder;
+import com.swirlds.common.merkle.proof.tree.StateProofInternalNode;
+import com.swirlds.common.merkle.proof.tree.StateProofNode;
+import com.swirlds.common.merkle.proof.tree.StateProofOpaqueNode;
+import com.swirlds.common.merkle.proof.tree.StateProofPayload;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;

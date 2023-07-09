@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.merkle.proof.internal;
+package com.swirlds.common.merkle.proof.algorithms;
 
 import static com.swirlds.common.crypto.DigestType.SHA_384;
 
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.merkle.proof.tree.StateProofInternalNode;
+import com.swirlds.common.merkle.proof.tree.StateProofNode;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;

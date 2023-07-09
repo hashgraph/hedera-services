@@ -16,16 +16,16 @@
 
 package com.swirlds.common.merkle.proof;
 
-import static com.swirlds.common.merkle.proof.internal.StateProofSerialization.deserializeSignatures;
-import static com.swirlds.common.merkle.proof.internal.StateProofSerialization.deserializeStateProofTree;
-import static com.swirlds.common.merkle.proof.internal.StateProofSerialization.extractPayloads;
-import static com.swirlds.common.merkle.proof.internal.StateProofSerialization.serializeSignatures;
-import static com.swirlds.common.merkle.proof.internal.StateProofSerialization.serializeStateProofTree;
-import static com.swirlds.common.merkle.proof.internal.StateProofTreeBuilder.buildStateProofTree;
-import static com.swirlds.common.merkle.proof.internal.StateProofTreeBuilder.processSignatures;
-import static com.swirlds.common.merkle.proof.internal.StateProofTreeBuilder.validatePayloads;
-import static com.swirlds.common.merkle.proof.internal.StateProofValidator.computeStateProofTreeHash;
-import static com.swirlds.common.merkle.proof.internal.StateProofValidator.computeValidSignatureWeight;
+import static com.swirlds.common.merkle.proof.algorithms.StateProofSerialization.deserializeSignatures;
+import static com.swirlds.common.merkle.proof.algorithms.StateProofSerialization.deserializeStateProofTree;
+import static com.swirlds.common.merkle.proof.algorithms.StateProofSerialization.extractPayloads;
+import static com.swirlds.common.merkle.proof.algorithms.StateProofSerialization.serializeSignatures;
+import static com.swirlds.common.merkle.proof.algorithms.StateProofSerialization.serializeStateProofTree;
+import static com.swirlds.common.merkle.proof.algorithms.StateProofTreeBuilder.buildStateProofTree;
+import static com.swirlds.common.merkle.proof.algorithms.StateProofTreeBuilder.processSignatures;
+import static com.swirlds.common.merkle.proof.algorithms.StateProofTreeBuilder.validatePayloads;
+import static com.swirlds.common.merkle.proof.algorithms.StateProofValidator.computeStateProofTreeHash;
+import static com.swirlds.common.merkle.proof.algorithms.StateProofValidator.computeValidSignatureWeight;
 import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
 import static com.swirlds.common.units.DataUnit.UNIT_MEGABYTES;
 
@@ -36,9 +36,9 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.proof.internal.NodeSignature;
-import com.swirlds.common.merkle.proof.internal.SignatureValidator;
-import com.swirlds.common.merkle.proof.internal.StateProofNode;
+import com.swirlds.common.merkle.proof.algorithms.NodeSignature;
+import com.swirlds.common.merkle.proof.algorithms.SignatureValidator;
+import com.swirlds.common.merkle.proof.tree.StateProofNode;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.Threshold;

@@ -14,25 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.merkle.proof.internal;
+package com.swirlds.common.merkle.proof.algorithms;
 
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.security.PublicKey;
 
 /**
- * A method that verifies a signature.
+ * A signature and the node ID of the signer.
+ *
+ * @param nodeId    the node ID of the signer
+ * @param signature the signature
  */
-@FunctionalInterface
-public interface SignatureValidator {
+public record NodeSignature(@NonNull NodeId nodeId, @NonNull Signature signature) implements Comparable<NodeSignature> {
 
-    /**
-     * Check if a signature is valid.
-     *
-     * @param signature the signature to check
-     * @param bytes     the data that was signed
-     * @param publicKey the public key corresponding to the private key that signed the data
-     * @return true if the signature is valid, false otherwise
-     */
-    boolean verifySignature(@NonNull Signature signature, @NonNull byte[] bytes, @NonNull PublicKey publicKey);
+    @Override
+    public int compareTo(@NonNull final NodeSignature o) {
+        return nodeId.compareTo(o.nodeId);
+    }
 }
