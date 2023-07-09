@@ -22,11 +22,13 @@ import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToShort;
 import static com.swirlds.common.utility.ByteUtils.intToByteArray;
 import static com.swirlds.common.utility.ByteUtils.longToByteArray;
+import static com.swirlds.common.utility.ByteUtils.reverseByteArray;
 import static com.swirlds.common.utility.ByteUtils.shortToByteArray;
 import static com.swirlds.common.utility.Units.BYTES_PER_INT;
 import static com.swirlds.common.utility.Units.BYTES_PER_LONG;
 import static com.swirlds.common.utility.Units.BYTES_PER_SHORT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
@@ -140,6 +142,27 @@ class ByteUtilsTest {
             final short partialValue = byteArrayToShort(bytes, position);
             final short expectedValue = (short) ((position == 2) ? 0 : (value << (position * 8)));
             assertEquals(expectedValue, partialValue, "resulting value should match");
+        }
+    }
+
+    @Test
+    @DisplayName("Reverse Array Test")
+    void reverseArrayTest() {
+        final Random random = getRandomPrintSeed();
+        for (int arrayLength = 0; arrayLength < 100; arrayLength++) {
+            final byte[] array = new byte[arrayLength];
+            random.nextBytes(array);
+
+            final byte[] arrayCopy = new byte[arrayLength];
+            System.arraycopy(array, 0, arrayCopy, 0, arrayLength);
+
+            final byte[] reversedArray = reverseByteArray(array);
+            // same object should be returned
+            assertSame(array, reversedArray);
+
+            for (int i = 0; i < arrayLength; i++) {
+                assertEquals(arrayCopy[arrayLength - i - 1], reversedArray[i]);
+            }
         }
     }
 }

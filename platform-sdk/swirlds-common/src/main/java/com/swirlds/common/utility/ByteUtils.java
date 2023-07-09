@@ -229,8 +229,6 @@ public final class ByteUtils {
         return (((long) left) << INT_BITS) | (right & 0xffffffffL);
     }
 
-    // TODO test
-
     /**
      * Reverse the order of a byte array. The first element becomes the last, the last becomes the first, and so on.
      *
