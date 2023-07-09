@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.tipset;
 
-import static com.swirlds.platform.Utilities.isSuperMajority;
+import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.platform.event.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 
 import com.swirlds.common.context.PlatformContext;
@@ -177,7 +177,7 @@ public class TipsetWeightCalculator {
 
         final TipsetAdvancementWeight advancementWeightImprovement = advancementWeight.minus(previousAdvancementWeight);
 
-        if (isSuperMajority(advancementWeight.advancementWeight() + selfWeight, totalWeight)) {
+        if (SUPER_MAJORITY.isSatisfiedBy(advancementWeight.advancementWeight() + selfWeight, totalWeight)) {
             snapshot = eventTipset;
             snapshotHistory.add(snapshot);
             if (snapshotHistory.size() > maxSnapshotHistorySize) {

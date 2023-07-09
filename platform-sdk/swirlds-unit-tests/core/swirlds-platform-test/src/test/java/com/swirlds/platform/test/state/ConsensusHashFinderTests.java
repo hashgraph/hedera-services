@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.state;
 
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.platform.Utilities.isMajority;
+import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.platform.state.iss.internal.ConsensusHashStatus.CATASTROPHIC_ISS;
 import static com.swirlds.platform.state.iss.internal.ConsensusHashStatus.DECIDED;
 import static com.swirlds.platform.state.iss.internal.ConsensusHashStatus.UNDECIDED;
@@ -149,7 +149,7 @@ class ConsensusHashFinderTests {
 
         // Add weight up until >1/2, but as soon as we meet or exceed 1/2 exit the loop
         NodeId nextNodeId = new NodeId(0L);
-        while (!isMajority(hashFinder.getHashReportedWeight(), totalWeight)) {
+        while (!MAJORITY.isSatisfiedBy(hashFinder.getHashReportedWeight(), totalWeight)) {
             assertEquals(UNDECIDED, hashFinder.getStatus(), "status should not yet be decided");
 
             final long nextNodeWeight =

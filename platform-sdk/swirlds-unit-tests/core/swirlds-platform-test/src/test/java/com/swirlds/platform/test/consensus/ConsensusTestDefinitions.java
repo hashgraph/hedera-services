@@ -17,6 +17,8 @@
 package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.common.test.RandomUtils.initRandom;
+import static com.swirlds.common.utility.Threshold.STRONG_MINORITY;
+import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.platform.test.consensus.ConsensusUtils.applyEventsToConsensus;
 import static com.swirlds.platform.test.consensus.ConsensusUtils.buildSimpleConsensus;
 import static com.swirlds.platform.test.consensus.ConsensusUtils.isRestartConsensusEquivalent;
@@ -46,7 +48,6 @@ import com.swirlds.common.test.WeightGenerator;
 import com.swirlds.common.test.WeightGenerators;
 import com.swirlds.common.threading.utility.AtomicDouble;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.Utilities;
 import com.swirlds.platform.eventhandling.SignedStateEventsAndGenerations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -192,7 +193,7 @@ public final class ConsensusTestDefinitions {
             int forkingNodeId = -1;
             for (int i = 0; i < nodeWeights.size(); i++) {
                 final long weight = nodeWeights.get(i);
-                if (!Utilities.isStrongMinority(weight, totalWeight)) {
+                if (!STRONG_MINORITY.isSatisfiedBy(weight, totalWeight)) {
                     forkingNodeId = i;
                     break;
                 }
@@ -484,12 +485,12 @@ public final class ConsensusTestDefinitions {
         long partitionedWeight = 0L;
         for (int i = 0; i < nodeWeights.size(); i++) {
             // If we have enough partitioned nodes to make a strong minority, stop and return
-            if (Utilities.isStrongMinority(partitionedWeight, totalWeight)) {
+            if (STRONG_MINORITY.isSatisfiedBy(partitionedWeight, totalWeight)) {
                 break;
             }
             // If adding this node to the partition would give the partition a super majority, skip this node because
             // the remaining group of nodes would not have a strong minority
-            if (Utilities.isSuperMajority(partitionedWeight + nodeWeights.get(i), totalWeight)) {
+            if (SUPER_MAJORITY.isSatisfiedBy(partitionedWeight + nodeWeights.get(i), totalWeight)) {
                 continue;
             }
             partitionedNodes.add(i);
@@ -522,7 +523,7 @@ public final class ConsensusTestDefinitions {
             }
             // If adding this node to the partition would give the partition a strong minority, skip this node because
             // the remaining group of nodes would not have a super majority
-            if (Utilities.isStrongMinority(partitionedWeight + nodeWeights.get(i), totalWeight)) {
+            if (STRONG_MINORITY.isSatisfiedBy(partitionedWeight + nodeWeights.get(i), totalWeight)) {
                 continue;
             }
             partitionedNodes.add(i);

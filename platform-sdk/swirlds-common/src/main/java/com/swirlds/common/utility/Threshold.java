@@ -45,16 +45,6 @@ public enum Threshold {
      *                                  whole
      */
     public boolean isSatisfiedBy(final long part, final long whole) {
-        if (part < 0) {
-            throw new IllegalArgumentException("part must be non-negative");
-        }
-        if (whole <= 0) {
-            throw new IllegalArgumentException("whole must be positive non-zero");
-        }
-        if (part > whole) {
-            throw new IllegalArgumentException("part must be less than or equal to whole");
-        }
-
         return switch (this) {
             case STRONG_MINORITY -> isStrongMinority(part, whole);
             case MAJORITY -> isMajority(part, whole);
