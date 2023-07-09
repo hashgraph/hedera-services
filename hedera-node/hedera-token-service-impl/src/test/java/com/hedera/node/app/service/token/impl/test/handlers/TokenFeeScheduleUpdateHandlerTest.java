@@ -96,7 +96,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         final var expectedToken = writableTokenStore.get(fungibleTokenId);
         assertThat(expectedToken.customFees()).hasSize(2);
         assertThat(expectedToken.customFees())
-                .hasSameElementsAs(List.of(withFractionalFee(fractionalFee), withFixedFee(fixedFee)));
+                .hasSameElementsAs(List.of(withFractionalFee(fractionalFee), withFixedFee(hbarFixedFee)));
     }
 
     @Test

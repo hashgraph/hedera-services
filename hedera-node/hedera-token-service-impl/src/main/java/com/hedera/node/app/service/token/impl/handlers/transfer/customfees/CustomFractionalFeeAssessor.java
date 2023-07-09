@@ -59,7 +59,7 @@ public class CustomFractionalFeeAssessor {
             // If the collector 0.0.C for a fractional fee is trying to send X units to
             // a receiver 0.0.R, then we want to let all X units go to 0.0.R, instead of
             // reclaiming some fraction of them
-            if (fee.fee().kind().equals(CustomFee.FeeOneOfType.FRACTIONAL_FEE) || sender.equals(collector)) {
+            if (!fee.fee().kind().equals(CustomFee.FeeOneOfType.FRACTIONAL_FEE) || sender.equals(collector)) {
                 continue;
             }
             final var fractionalFee = fee.fractionalFee();
@@ -85,7 +85,7 @@ public class CustomFractionalFeeAssessor {
                 assessedAmount -= exemptAmount;
                 unitsLeft -= assessedAmount;
                 validateTrue(unitsLeft >= 0, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
-                final var map = htsAdjustments.get(tokenId);
+                final var map = htsAdjustments.getOrDefault(tokenId, new HashMap<>());
                 map.merge(collector, assessedAmount, Long::sum);
                 htsAdjustments.put(tokenId, map);
             }

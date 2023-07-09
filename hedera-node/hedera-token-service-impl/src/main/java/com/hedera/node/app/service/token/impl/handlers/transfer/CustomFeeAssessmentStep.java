@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeAssessmentResult;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeAssessor;
@@ -182,7 +183,8 @@ public class CustomFeeAssessmentStep {
             for (final var aa : ftTransfers) {
                 final var adjustment = aa.amount();
                 for (final var fee : feeMeta.customFees()) {
-                    final var denomToken = fee.fixedFee().denominatingTokenId();
+                    final var denomToken =
+                            fee.fixedFeeOrElse(FixedFee.DEFAULT).denominatingTokenIdOrElse(TokenID.DEFAULT);
                     if (couldTriggerCustomFees(tokenId, denomToken, false, true, adjustment, exemptDebits)) {
                         customFeeAssessor.assess(
                                 aa.accountID(),
@@ -201,7 +203,8 @@ public class CustomFeeAssessmentStep {
             for (final var nftTransfer : nftTransfers) {
                 final var adjustment = nftTransfer.serialNumber();
                 for (final var fee : feeMeta.customFees()) {
-                    final var denomToken = fee.fixedFee().denominatingTokenId();
+                    final var denomToken =
+                            fee.fixedFeeOrElse(FixedFee.DEFAULT).denominatingTokenIdOrElse(TokenID.DEFAULT);
                     if (couldTriggerCustomFees(tokenId, denomToken, true, false, adjustment, exemptDebits)) {
                         customFeeAssessor.assess(
                                 nftTransfer.senderAccountID(),
@@ -245,10 +248,11 @@ public class CustomFeeAssessmentStep {
      * @return true if the custom fee is self-denominated
      */
     private boolean isExemptFromCustomFees(
-            TokenID chargingTokenId, TokenID denominatingTokenID, final Set<TokenID> exemptDebits) {
+            TokenID chargingTokenId, @NonNull TokenID denominatingTokenID, final Set<TokenID> exemptDebits) {
         /* But self-denominated fees are exempt from further custom fee charging,
         c.f. https://github.com/hashgraph/hedera-services/issues/1925 */
-        return chargingTokenId.equals(denominatingTokenID) || exemptDebits.contains(denominatingTokenID);
+        return denominatingTokenID != TokenID.DEFAULT && chargingTokenId.equals(denominatingTokenID)
+                || exemptDebits.contains(denominatingTokenID);
     }
     /**
      * Checks if the adjustment will trigger a custom fee.

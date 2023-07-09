@@ -161,7 +161,8 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
         final List<CustomFee> feeWithRoyalty = new ArrayList<>();
         final var nftDenom = royaltyFee
                 .copyBuilder()
-                .fallbackFee(fixedFee.copyBuilder()
+                .fallbackFee(hbarFixedFee
+                        .copyBuilder()
                         .denominatingTokenId(TokenID.newBuilder()
                                 .tokenNum(nonFungibleTokenId.tokenNum())
                                 .build()))
@@ -214,7 +215,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     void fixedFeeIsAllowedForNonFungibleTokenOnFeeScheduleUpdate() {
         refreshWritableStores();
         final List<CustomFee> feeWithFixed = new ArrayList<>();
-        feeWithFixed.add(withFixedFee(fixedFee));
+        feeWithFixed.add(withFixedFee(hbarFixedFee));
         assertThatNoException()
                 .isThrownBy(() -> subject.validateForFeeScheduleUpdate(
                         nonFungibleToken,
@@ -237,7 +238,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         readableAccountStore,
                         readableTokenRelStore,
                         writableTokenStore,
-                        List.of(withFixedFee(fixedFee))))
+                        List.of(withFixedFee(hbarFixedFee))))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR));
     }
@@ -264,7 +265,8 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @DisplayName("token denomination should be fungible common for fixed fee on fee schedule update")
     void validateTokenDenominationForFixedFeeOnFeeScheduleUpdate() {
         refreshWritableStores();
-        final var newFee = fixedFee.copyBuilder()
+        final var newFee = hbarFixedFee
+                .copyBuilder()
                 .denominatingTokenId(TokenID.newBuilder()
                         .tokenNum(nonFungibleTokenId.tokenNum())
                         .build())
@@ -323,11 +325,12 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("Custom fee validation for TokenCreate with self denominating tokenId")
     void validateCustomFeeForCreationWithSelfDenomination() {
-        final var fixesFeeWithSelfDenomination = fixedFee.copyBuilder()
+        final var fixesFeeWithSelfDenomination = hbarFixedFee
+                .copyBuilder()
                 .denominatingTokenId(TokenID.newBuilder().tokenNum(0).build())
                 .build();
         final var expectedFeeWithNewToken =
-                fixedFee.copyBuilder().denominatingTokenId(fungibleTokenId).build();
+                hbarFixedFee.copyBuilder().denominatingTokenId(fungibleTokenId).build();
         final var fees = List.of(withFixedFee(fixesFeeWithSelfDenomination), withFractionalFee(fractionalFee));
         final var requireAutoAssociation = subject.validateForCreation(
                 fungibleToken, readableAccountStore, readableTokenRelStore, writableTokenStore, fees);
@@ -439,7 +442,8 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
         final List<CustomFee> feeWithRoyalty = new ArrayList<>();
         final var nftDenom = royaltyFee
                 .copyBuilder()
-                .fallbackFee(fixedFee.copyBuilder()
+                .fallbackFee(hbarFixedFee
+                        .copyBuilder()
                         .denominatingTokenId(nonFungibleTokenId)
                         .build())
                 .build();
@@ -491,7 +495,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     void fixedFeeIsAllowedForNonFungibleTokenOnTokenCreate() {
         refreshWritableStores();
         final List<CustomFee> feeWithFixed = new ArrayList<>();
-        feeWithFixed.add(withFixedFee(fixedFee));
+        feeWithFixed.add(withFixedFee(hbarFixedFee));
         assertThatNoException()
                 .isThrownBy(() -> subject.validateForCreation(
                         nonFungibleToken,
@@ -513,7 +517,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         readableAccountStore,
                         readableTokenRelStore,
                         writableTokenStore,
-                        List.of(withFixedFee(fixedFee))))
+                        List.of(withFixedFee(hbarFixedFee))))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR));
     }
@@ -522,8 +526,10 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @DisplayName("token denomination should be fungible common for fixed fee")
     void validateTokenDenominationForFixedFeeOnTokenCreate() {
         refreshWritableStores();
-        final var newFee =
-                fixedFee.copyBuilder().denominatingTokenId(nonFungibleTokenId).build();
+        final var newFee = hbarFixedFee
+                .copyBuilder()
+                .denominatingTokenId(nonFungibleTokenId)
+                .build();
         assertThatThrownBy(() -> subject.validateForCreation(
                         fungibleToken,
                         readableAccountStore,

@@ -164,7 +164,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(token.name()).isEqualTo("TestToken");
         assertThat(token.symbol()).isEqualTo("TT");
         assertThat(token.memo()).isEqualTo("test token");
-        assertThat(token.customFees()).isEqualTo(List.of(withFixedFee(fixedFee), withFractionalFee(fractionalFee)));
+        assertThat(token.customFees()).isEqualTo(List.of(withFixedFee(hbarFixedFee), withFractionalFee(fractionalFee)));
 
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNotNull();
         final var tokenRel = writableTokenRelStore.get(treasuryId, newTokenId);
@@ -184,7 +184,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     void handleWorksForFungibleCreateWithSelfDenominatedToken() {
         setUpTxnContext();
         final var customFees = List.of(
-                withFixedFee(fixedFee.copyBuilder()
+                withFixedFee(hbarFixedFee
+                        .copyBuilder()
                         .denominatingTokenId(TokenID.newBuilder().tokenNum(0L).build())
                         .build()),
                 withFractionalFee(fractionalFee));
@@ -293,7 +294,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     void failsIfAssociationLimitExceededWhileAssociatingCollector() {
         setUpTxnContext();
         final var customFees = List.of(
-                withFixedFee(fixedFee.copyBuilder()
+                withFixedFee(hbarFixedFee
+                        .copyBuilder()
                         .denominatingTokenId(TokenID.newBuilder().tokenNum(0L).build())
                         .build()),
                 withFractionalFee(fractionalFee));
@@ -319,7 +321,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     void failsIfAssociationAlreadyExistsWhileAssociatingCollector() {
         setUpTxnContext();
         final var customFees = List.of(
-                withFixedFee(fixedFee.copyBuilder()
+                withFixedFee(hbarFixedFee
+                        .copyBuilder()
                         .denominatingTokenId(TokenID.newBuilder().tokenNum(0L).build())
                         .build()),
                 withFractionalFee(fractionalFee));
@@ -789,7 +792,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         private int decimals = 0;
         private long initialSupply = 1000L;
         private boolean freezeDefault = false;
-        private List<CustomFee> customFees = List.of(withFixedFee(fixedFee), withFractionalFee(fractionalFee));
+        private List<CustomFee> customFees = List.of(withFixedFee(hbarFixedFee), withFractionalFee(fractionalFee));
 
         private TokenCreateBuilder() {}
 

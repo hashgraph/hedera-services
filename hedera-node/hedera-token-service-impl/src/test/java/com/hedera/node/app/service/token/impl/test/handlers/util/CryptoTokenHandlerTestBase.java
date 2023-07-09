@@ -114,6 +114,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
     protected final AccountID spenderId =
             AccountID.newBuilder().accountNum(12345).build();
+    protected final AccountID feeCollectorId = delegatingSpenderId;
 
     /* ---------- Account Numbers ---------- */
     protected final Long accountNum = payerId.accountNum();
@@ -194,21 +195,23 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             .delegatingSpender(delegatingSpenderId)
             .build();
     /* ---------- Fees ------------------ */
-    protected FixedFee fixedFee = FixedFee.newBuilder()
-            .amount(1_000L)
-            .denominatingTokenId(TokenID.newBuilder().tokenNum(1L).build())
+    protected FixedFee hbarFixedFee = FixedFee.newBuilder().amount(1_000L).build();
+    protected FixedFee htsFixedFee = FixedFee.newBuilder()
+            .amount(10L)
+            .denominatingTokenId(fungibleTokenId)
             .build();
     protected FractionalFee fractionalFee = FractionalFee.newBuilder()
-            .maximumAmount(1_000L)
+            .maximumAmount(100L)
             .minimumAmount(1L)
-            .fractionalAmount(Fraction.newBuilder().numerator(1).denominator(2).build())
+            .fractionalAmount(
+                    Fraction.newBuilder().numerator(1).denominator(100).build())
+            .netOfTransfers(false)
             .build();
     protected RoyaltyFee royaltyFee = RoyaltyFee.newBuilder()
             .exchangeValueFraction(
                     Fraction.newBuilder().numerator(1).denominator(2).build())
-            .fallbackFee(fixedFee)
             .build();
-    protected List<CustomFee> customFees = List.of(withFixedFee(fixedFee), withFractionalFee(fractionalFee));
+    protected List<CustomFee> customFees = List.of(withFixedFee(hbarFixedFee), withFractionalFee(fractionalFee));
 
     /* ---------- Misc ---------- */
     protected final Timestamp consensusTimestamp =
@@ -575,7 +578,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 paused,
                 accountsFrozenByDefault,
                 accountsKycGrantedByDefault,
-                Collections.emptyList());
+                customFees);
     }
 
     protected Token givenValidNonFungibleToken() {
@@ -584,7 +587,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .copyBuilder()
                 .tokenId(nonFungibleTokenId)
                 .treasuryAccountId(treasuryId)
-                .customFees(List.of())
+                .customFees(
+                        List.of(CustomFee.newBuilder().royaltyFee(royaltyFee).build()))
                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                 .build();
     }

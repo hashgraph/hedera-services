@@ -27,6 +27,7 @@ import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
@@ -54,7 +55,8 @@ public class CustomRoyaltyFeeAssessor {
         if (royaltiesPaid.contains(Pair.of(sender, tokenId))) {
             return;
         }
-        final var exchangedValue = getFungibleCredits(htsAdjustments.get(tokenId), hbarAdjustments, sender);
+        final var exchangedValue =
+                getFungibleCredits(htsAdjustments.getOrDefault(tokenId, new HashMap<>()), hbarAdjustments, sender);
         for (final var fee : feeMeta.customFees()) {
             final var collector = fee.feeCollectorAccountId();
             if (!fee.fee().kind().equals(CustomFee.FeeOneOfType.ROYALTY_FEE)) {
