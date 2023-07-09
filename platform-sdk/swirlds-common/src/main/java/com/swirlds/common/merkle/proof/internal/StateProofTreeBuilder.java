@@ -44,8 +44,6 @@ import java.util.Set;
  */
 public final class StateProofTreeBuilder {
 
-    // TODO make these methods package private and unit test them individually
-
     private StateProofTreeBuilder() {}
 
     /**

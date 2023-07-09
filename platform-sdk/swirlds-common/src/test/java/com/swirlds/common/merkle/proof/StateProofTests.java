@@ -18,10 +18,13 @@ package com.swirlds.common.merkle.proof;
 
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.RandomUtils.randomSignature;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTree;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTreeExtended;
+import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildSizeOneTree;
 import static com.swirlds.common.utility.Threshold.STRONG_MINORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -52,10 +55,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -160,6 +165,40 @@ class StateProofTests {
         assertEquals(1, stateProof.getPayloads().size());
         assertNotSame(nodeD, deserialized.getPayloads().get(0));
         assertEquals(nodeD, deserialized.getPayloads().get(0));
+        // Checking a second time shouldn't cause problems
+        assertTrue(deserialized.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+    }
+
+    @Test
+    @DisplayName("Leaf Tree Test")
+    void leafTreeTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+        final Cryptography cryptography = CryptographyHolder.get();
+
+        final FakeSignatureBuilder signatureBuilder = new FakeSignatureBuilder(random);
+
+        final MerkleNode root = buildSizeOneTree();
+        MerkleCryptoFactory.getInstance().digestTreeSync(root);
+
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(10).build();
+
+        final Map<NodeId, Signature> signatures =
+                generateThresholdOfSignatures(random, addressBook, signatureBuilder, root.getHash(), SUPER_MAJORITY);
+
+        final StateProof stateProof = new StateProof(cryptography, root, signatures, List.of(root.asLeaf()));
+
+        assertEquals(1, stateProof.getPayloads().size());
+        assertSame(root, stateProof.getPayloads().get(0));
+        assertTrue(stateProof.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+        // Checking a second time shouldn't cause problems
+        assertTrue(stateProof.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
+
+        final StateProof deserialized = serializeAndDeserialize(stateProof);
+
+        assertEquals(1, stateProof.getPayloads().size());
+        assertNotSame(root, deserialized.getPayloads().get(0));
+        assertEquals(root, deserialized.getPayloads().get(0));
         // Checking a second time shouldn't cause problems
         assertTrue(deserialized.isValid(cryptography, addressBook, SUPER_MAJORITY, signatureBuilder));
     }
@@ -320,18 +359,97 @@ class StateProofTests {
         }
     }
 
+    @Test
+    @DisplayName("Deterministic Serialization Test")
+    void deterministicSerializationTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+        final Cryptography cryptography = CryptographyHolder.get();
+
+        final MerkleNode root = buildLessSimpleTreeExtended();
+        MerkleCryptoFactory.getInstance().digestTreeSync(root);
+        final List<MerkleLeaf> leafNodes = new ArrayList<>();
+        root.treeIterator().setFilter(MerkleType::isLeaf).forEachRemaining(node -> leafNodes.add(node.asLeaf()));
+        Collections.shuffle(leafNodes, random);
+
+        final int payloadCount = random.nextInt(1, leafNodes.size());
+        final int signatureCount = random.nextInt(10, 20);
+
+        final List<MerkleLeaf> payloads = leafNodes.subList(0, payloadCount);
+        final Map<NodeId, Signature> signatures = new HashMap<>();
+        for (int i = 0; i < signatureCount; i++) {
+            final NodeId nodeId = new NodeId(random.nextLong(1, 1000));
+            final Signature signature = randomSignature(random);
+            signatures.put(nodeId, signature);
+        }
+
+        final List<MerkleLeaf> payloadsAlternateOrder = new ArrayList<>(payloads);
+        Collections.shuffle(payloadsAlternateOrder, random);
+
+        final Map<NodeId, Signature> signaturesAlternateOrder = new TreeMap<>(Comparator.reverseOrder());
+        signaturesAlternateOrder.putAll(signatures);
+
+        final StateProof stateProofA = new StateProof(cryptography, root, signatures, payloads);
+        final StateProof stateProofB =
+                new StateProof(cryptography, root, signaturesAlternateOrder, payloadsAlternateOrder);
+
+        final ByteArrayOutputStream byteOutA = new ByteArrayOutputStream();
+        final ByteArrayOutputStream byteOutB = new ByteArrayOutputStream();
+
+        final SerializableDataOutputStream outA = new SerializableDataOutputStream(byteOutA);
+        final SerializableDataOutputStream outB = new SerializableDataOutputStream(byteOutB);
+
+        outA.writeSerializable(stateProofA, true);
+        outB.writeSerializable(stateProofB, true);
+
+        final byte[] bytesA = byteOutA.toByteArray();
+        final byte[] bytesB = byteOutB.toByteArray();
+
+        assertArrayEquals(bytesA, bytesB);
+    }
+
+    @Test
+    @DisplayName("Round Trip Serialization Test")
+    void roundTripSerializationTest() throws IOException {
+        final Random random = getRandomPrintSeed();
+        final Cryptography cryptography = CryptographyHolder.get();
+
+        final MerkleNode root = buildLessSimpleTreeExtended();
+        MerkleCryptoFactory.getInstance().digestTreeSync(root);
+        final List<MerkleLeaf> leafNodes = new ArrayList<>();
+        root.treeIterator().setFilter(MerkleType::isLeaf).forEachRemaining(node -> leafNodes.add(node.asLeaf()));
+        Collections.shuffle(leafNodes, random);
+
+        final int payloadCount = random.nextInt(1, leafNodes.size());
+        final int signatureCount = random.nextInt(10, 20);
+
+        final List<MerkleLeaf> payloads = leafNodes.subList(0, payloadCount);
+        final Map<NodeId, Signature> signatures = new HashMap<>();
+        for (int i = 0; i < signatureCount; i++) {
+            final NodeId nodeId = new NodeId(random.nextLong(1, 1000));
+            final Signature signature = randomSignature(random);
+            signatures.put(nodeId, signature);
+        }
+
+        final StateProof stateProofA = new StateProof(cryptography, root, signatures, payloads);
+        final ByteArrayOutputStream byteOutA = new ByteArrayOutputStream();
+        final SerializableDataOutputStream outA = new SerializableDataOutputStream(byteOutA);
+        outA.writeSerializable(stateProofA, true);
+        final byte[] bytesA = byteOutA.toByteArray();
+        final SerializableDataInputStream in = new SerializableDataInputStream(new ByteArrayInputStream(bytesA));
+
+        final StateProof stateProofB = in.readSerializable();
+        final ByteArrayOutputStream byteOutB = new ByteArrayOutputStream();
+        final SerializableDataOutputStream outB = new SerializableDataOutputStream(byteOutB);
+        outB.writeSerializable(stateProofB, true);
+        final byte[] bytesB = byteOutB.toByteArray();
+
+        assertArrayEquals(bytesA, bytesB);
+    }
+
     // TODO
     //  - serialization
-    //    - integrity is preserved
-    //    - bytes don't change after multiple rounds
     //    - various byte overflow attacks
-    //  - various edge cases that are expected to throw
-    //  - works with between 1 and many nodes
-    //  - works if it includes whole tree
-    //  - works on tree that is just a leaf
-    //  - well constructed proofs are valid
     //  - detects invalid proofs
-    //    - change one or more leaf nodes
     //    - change topology with valid leaf nodes
     //    - invalid signatures (between all invalid and just some invalid)
     //    - signatures not in the address book

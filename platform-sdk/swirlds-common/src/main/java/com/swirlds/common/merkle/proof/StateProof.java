@@ -21,7 +21,6 @@ import static com.swirlds.common.merkle.proof.internal.StateProofTreeBuilder.pro
 import static com.swirlds.common.merkle.proof.internal.StateProofTreeBuilder.validatePayloads;
 import static com.swirlds.common.merkle.proof.internal.StateProofValidator.computeStateProofTreeHash;
 import static com.swirlds.common.merkle.proof.internal.StateProofValidator.computeValidSignatureWeight;
-import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Signature;
@@ -89,18 +88,6 @@ public class StateProof implements SelfSerializable {
         this.payloads = validatePayloads(payloads);
         this.signatures = processSignatures(signatures);
         this.root = buildStateProofTree(cryptography, merkleRoot, payloads);
-    }
-
-    /**
-     * Cryptographically validate this state proof using the {@link Threshold#SUPER_MAJORITY} threshold.
-     *
-     * @param cryptography provides cryptographic primitives
-     * @param addressBook  the address book to use to validate the state proof
-     * @return true if this state proof is valid, otherwise false
-     * @throws IllegalStateException if this method is called before this object has been fully deserialized
-     */
-    public boolean isValid(@NonNull final Cryptography cryptography, @NonNull final AddressBook addressBook) {
-        return isValid(cryptography, addressBook, SUPER_MAJORITY);
     }
 
     /**
