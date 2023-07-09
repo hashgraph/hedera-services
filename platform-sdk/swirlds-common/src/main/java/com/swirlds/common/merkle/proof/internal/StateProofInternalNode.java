@@ -17,11 +17,7 @@
 package com.swirlds.common.merkle.proof.internal;
 
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,12 +27,6 @@ import java.util.Objects;
  * An internal node in a state proof tree.
  */
 public class StateProofInternalNode extends AbstractStateProofNode {
-
-    private static final long CLASS_ID = 0x63b15d54dec207dfL;
-
-    private static final class ClassVersion {
-        public static final int ORIGINAL = 1;
-    }
 
     /**
      * Child state proof nodes.
@@ -77,28 +67,13 @@ public class StateProofInternalNode extends AbstractStateProofNode {
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public List<MerkleLeaf> getPayloads() {
-        if (children == null) {
-            throw new IllegalStateException("StateProofInternalNode has not been properly initialized");
-        }
-
-        // Recursively get the payloads of descendants.
-        final List<MerkleLeaf> payloads = new ArrayList<>();
-        for (final StateProofNode child : children) {
-            payloads.addAll(child.getPayloads());
-        }
-        return payloads;
-    }
-
-    /**
      * Get the child state proof nodes.
      */
     @NonNull
     public List<StateProofNode> getChildren() {
+        if (children == null) {
+            children = new ArrayList<>();
+        }
         return children;
     }
 
@@ -121,46 +96,5 @@ public class StateProofInternalNode extends AbstractStateProofNode {
      */
     public boolean hasBeenVisited() {
         return visited;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getVersion() {
-        return ClassVersion.ORIGINAL;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(@NonNull SerializableDataOutputStream out) throws IOException {
-        out.writeInt(children.size());
-        for (final StateProofNode child : children) {
-            out.writeSerializable(child, true);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(@NonNull SerializableDataInputStream in, int version) throws IOException {
-        final int childCount = in.readInt();
-        // TODO throw if too big
-
-        children = new ArrayList<>(childCount);
-        for (int i = 0; i < childCount; i++) {
-            children.add(in.readSerializable());
-        }
     }
 }

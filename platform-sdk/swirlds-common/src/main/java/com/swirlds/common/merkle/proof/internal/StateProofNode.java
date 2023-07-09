@@ -17,16 +17,13 @@
 package com.swirlds.common.merkle.proof.internal;
 
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.merkle.MerkleLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
-import java.util.List;
 
 /**
  * A node in a state proof tree.
  */
-public interface StateProofNode extends SelfSerializable {
+public interface StateProofNode {
 
     /**
      * Compute the bytes that this node contributes to its parent's hash, and store those bytes and return them when
@@ -48,13 +45,4 @@ public interface StateProofNode extends SelfSerializable {
      */
     @NonNull
     byte[] getHashableBytes();
-
-    /**
-     * Get all payloads at or below this node.
-     *
-     * @return all payloads at or below this node
-     * @throws IllegalStateException if this method is called before this object has been fully deserialized
-     */
-    @NonNull
-    List<MerkleLeaf> getPayloads();
 }

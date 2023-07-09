@@ -17,6 +17,7 @@
 package com.swirlds.common.merkle.proof.internal;
 
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -24,12 +25,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.security.MessageDigest;
-import java.util.List;
 
 /**
  * A node in a state proof tree containing a payload.
  */
-public class StateProofPayload extends AbstractStateProofNode {
+public class StateProofPayload extends AbstractStateProofNode implements SelfSerializable {
     private static final long CLASS_ID = 0xd21870ecd467b717L;
 
     private static final class ClassVersion {
@@ -59,15 +59,13 @@ public class StateProofPayload extends AbstractStateProofNode {
     }
 
     /**
-     * {@inheritDoc}
+     * Get the payload merkle leaf.
+     *
+     * @return the payload merkle leaf
      */
     @NonNull
-    @Override
-    public List<MerkleLeaf> getPayloads() {
-        if (!initialized) {
-            throw new IllegalStateException("StateProofPayload has not been properly initialized");
-        }
-        return List.of(payload);
+    public MerkleLeaf getPayload() {
+        return payload;
     }
 
     /**

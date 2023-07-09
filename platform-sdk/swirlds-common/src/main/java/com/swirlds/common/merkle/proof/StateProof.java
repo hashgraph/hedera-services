@@ -16,11 +16,18 @@
 
 package com.swirlds.common.merkle.proof;
 
+import static com.swirlds.common.merkle.proof.internal.StateProofSerialization.deserializeSignatures;
+import static com.swirlds.common.merkle.proof.internal.StateProofSerialization.deserializeStateProofTree;
+import static com.swirlds.common.merkle.proof.internal.StateProofSerialization.extractPayloads;
+import static com.swirlds.common.merkle.proof.internal.StateProofSerialization.serializeSignatures;
+import static com.swirlds.common.merkle.proof.internal.StateProofSerialization.serializeStateProofTree;
 import static com.swirlds.common.merkle.proof.internal.StateProofTreeBuilder.buildStateProofTree;
 import static com.swirlds.common.merkle.proof.internal.StateProofTreeBuilder.processSignatures;
 import static com.swirlds.common.merkle.proof.internal.StateProofTreeBuilder.validatePayloads;
 import static com.swirlds.common.merkle.proof.internal.StateProofValidator.computeStateProofTreeHash;
 import static com.swirlds.common.merkle.proof.internal.StateProofValidator.computeValidSignatureWeight;
+import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
+import static com.swirlds.common.units.DataUnit.UNIT_MEGABYTES;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Signature;
@@ -37,7 +44,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.Threshold;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,6 +60,23 @@ public class StateProof implements SelfSerializable {
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
     }
+
+    /**
+     * The maximum number of signatures supported by deserialization.
+     */
+    public static final int MAX_SIGNATURE_COUNT = 1024;
+
+    /**
+     * The maximum number of children a state proof node is permitted to have.
+     */
+    public static final int MAX_CHILD_COUNT = 64;
+
+    /**
+     * The maximum size of the state proof tree supported by deserialization, in bytes. This constant is chosen to be
+     * sufficiently large as to be unlikely to be reached in practice, but small enough to prevent memory exhaustion in
+     * the event of an attack.
+     */
+    public static final long MAX_STATE_PROOF_TREE_SIZE = (long) UNIT_MEGABYTES.convertTo(64, UNIT_BYTES);
 
     private List<NodeSignature> signatures;
     private StateProofNode root;
@@ -172,13 +195,8 @@ public class StateProof implements SelfSerializable {
      */
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        out.writeInt(signatures.size());
-        for (final NodeSignature entry : signatures) {
-            out.writeSerializable(entry.nodeId(), false);
-            out.writeSerializable(entry.signature(), false);
-        }
-
-        out.writeSerializable(root, true);
+        serializeSignatures(out, signatures);
+        serializeStateProofTree(out, root);
     }
 
     /**
@@ -186,29 +204,8 @@ public class StateProof implements SelfSerializable {
      */
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        final int numSignatures = in.readInt();
-        // TODO throw if there are too many signatures
-        signatures = new ArrayList<>(numSignatures);
-        for (int i = 0; i < numSignatures; i++) {
-            final NodeId nodeId = in.readSerializable(false, NodeId::new);
-            if (nodeId == null) {
-                throw new IOException("nodeId is null");
-            }
-            final Signature signature = in.readSerializable(false, Signature::new);
-            if (signature == null) {
-                throw new IOException("signature is null");
-            }
-
-            signatures.add(new NodeSignature(nodeId, signature));
-        }
-
-        // TODO limit max number of nodes read... or perhaps limit max bytes
-        root = in.readSerializable();
-        if (root == null) {
-            throw new IOException("root is null");
-        }
-
-        // TODO think really long and hard if it's possible to spoof a payload!
-        payloads = root.getPayloads();
+        signatures = deserializeSignatures(in);
+        root = deserializeStateProofTree(in);
+        payloads = extractPayloads(root);
     }
 }

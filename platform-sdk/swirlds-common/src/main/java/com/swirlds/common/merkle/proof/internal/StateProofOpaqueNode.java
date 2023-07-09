@@ -17,9 +17,9 @@
 package com.swirlds.common.merkle.proof.internal;
 
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.MerkleLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.security.MessageDigest;
@@ -29,7 +29,7 @@ import java.util.List;
  * A leaf in a state proof tree. Contains data that modifies the hash. Data is opaque, meaning that it is not intended
  * to be interpreted in any meaningful way other than how it modifies the hash.
  */
-public class StateProofOpaqueNode extends AbstractStateProofNode {
+public class StateProofOpaqueNode extends AbstractStateProofNode implements SelfSerializable {
 
     private static final long CLASS_ID = 0x4ab3834aaba6fbbdL;
 
@@ -76,19 +76,6 @@ public class StateProofOpaqueNode extends AbstractStateProofNode {
             throw new IllegalStateException("StateProofOpaqueData has not been properly initialized");
         }
         setHashableBytes(data);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public List<MerkleLeaf> getPayloads() {
-        if (data == null) {
-            throw new IllegalStateException("StateProofOpaqueData has not been properly initialized");
-        }
-        // no payloads here :)
-        return List.of();
     }
 
     /**
