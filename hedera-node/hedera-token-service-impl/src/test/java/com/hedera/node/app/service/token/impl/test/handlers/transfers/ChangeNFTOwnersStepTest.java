@@ -30,6 +30,7 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
@@ -54,7 +55,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecepientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         transferContext = new TransferContextImpl(handleContext);
     }
 
@@ -64,7 +65,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         final var replacedOp = getReplacedOp();
         changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, payerId);
 
-        final var nft = writableNftStore.get(uniqueTokenIdSl1);
+        final var nft = writableNftStore.get(nftIdSl1);
         assertThat(nft.ownerId()).isEqualTo(ownerId);
 
         final var senderAccount = writableAccountStore.get(ownerId);
@@ -89,7 +90,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         changeNFTOwnersStep.doIn(transferContext);
 
         // owner Id on NFT should change to receiver
-        final var nftChanged = writableNftStore.get(uniqueTokenIdSl1);
+        final var nftChanged = writableNftStore.get(nftIdSl1);
         assertThat(nftChanged.ownerId()).isEqualTo(receiver);
 
         // see numPositiveBalances and numOwnedNfts change
@@ -127,7 +128,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         givenTxn(body, spenderId);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecepientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         transferContext = new TransferContextImpl(handleContext);
 
         final var replacedOp = getReplacedOp();
@@ -153,14 +154,14 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         givenTxn(body, spenderId);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecepientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         transferContext = new TransferContextImpl(handleContext);
 
         final var receiver = asAccount(tokenReceiver);
         final var replacedOp = getReplacedOp();
         changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, spenderId);
 
-        final var nft = writableNftStore.get(uniqueTokenIdSl1);
+        final var nft = writableNftStore.get(nftIdSl1);
         assertThat(nft.ownerId()).isEqualTo(ownerId);
 
         final var senderAccount = writableAccountStore.get(ownerId);
@@ -185,7 +186,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         changeNFTOwnersStep.doIn(transferContext);
 
         // owner Id on NFT should change to receiver
-        final var nftChanged = writableNftStore.get(uniqueTokenIdSl1);
+        final var nftChanged = writableNftStore.get(nftIdSl1);
         assertThat(nftChanged.ownerId()).isEqualTo(receiver);
 
         // see numPositiveBalances and numOwnedNfts change
@@ -222,7 +223,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         givenTxn(body, spenderId);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecepientsStep(body);
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         transferContext = new TransferContextImpl(handleContext);
 
         final var replacedOp = getReplacedOp();

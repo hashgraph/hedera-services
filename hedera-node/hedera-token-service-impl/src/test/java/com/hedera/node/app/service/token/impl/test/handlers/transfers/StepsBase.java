@@ -42,6 +42,7 @@ import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustHbarChangesStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
@@ -89,7 +90,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected ExpiryValidator expiryValidator;
     protected EnsureAliasesStep ensureAliasesStep;
     protected ReplaceAliasesWithIDsInOp replaceAliasesWithIDsInOp;
-    protected AssociateTokenRecepientsStep associateTokenRecepientsStep;
+    protected AssociateTokenRecipientsStep associateTokenRecepientsStep;
     protected NFTOwnersChangeStep changeNFTOwnersStep;
     protected AdjustHbarChangesStep adjustHbarChangesStep;
     protected AdjustFungibleTokenChangesStep adjustFungibleTokenChangesStep;

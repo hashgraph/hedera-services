@@ -82,34 +82,38 @@ public class CustomFeeAssessmentStep {
         final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
         final var tokensConfig = handleContext.configuration().getConfigData(TokensConfig.class);
         final var maxTransfersDepth = ledgerConfig.xferBalanceChangesMaxLen();
+        final var maxCustomFeeDepth = tokensConfig.maxCustomFeeDepth();
 
         // Assess custom fees for given op and produce a next level transaction body builder
         // that needs to be assessed again for custom fees. This is because a custom fee balance
         // change can trigger custom fees again
-        final var resultLevel1 = assessCustomFeesForALevel(tokenTransfers, tokenStore, maxTransfersDepth);
+        final var resultLevel1 = assessCustomFeesFrom(tokenTransfers, tokenStore, maxTransfersDepth);
 
         // If there are no custom fees charged for the given transaction, return the original transaction
         if (allResultsEmpty(resultLevel1)) {
             return List.of(op);
         }
+
+        //        final var level0Builder = buildBodyFromAdjustments(resultLevel1.inputTxnAdjustments());
         // increment the level to create transaction body from all custom fees assessed from original
         // transaction
-        validateTrue(++levelNum <= tokensConfig.maxCustomFeeDepth(), CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
+        validateTrue(++levelNum <= maxCustomFeeDepth, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
 
         final var level2Builder =
-                buildTransactionFromAdjustments(resultLevel1.newHbarAdjustments(), resultLevel1.newHtsAdjustments());
+                buildBodyFromAdjustments(resultLevel1.newHbarAdjustments(), resultLevel1.newHtsAdjustments());
 
         // There can only be three levels of custom fees. So assess the generated builder again
         // for last level of custom fees
         final var resultLevel2 =
-                assessCustomFeesForALevel(level2Builder.build().tokenTransfers(), tokenStore, maxTransfersDepth);
+                assessCustomFeesFrom(level2Builder.build().tokenTransfers(), tokenStore, maxTransfersDepth);
         // increment the level to create transaction body from all custom fees assessed from original
         // transaction
         levelNum++;
-        validateTrue(levelNum <= tokensConfig.maxCustomFeeDepth(), CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
+        validateTrue(levelNum <= maxCustomFeeDepth, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
 
         final var level3Builder =
-                buildTransactionFromAdjustments(resultLevel2.newHbarAdjustments(), resultLevel2.newHtsAdjustments());
+                buildBodyFromAdjustments(resultLevel2.newHbarAdjustments(), resultLevel2.newHtsAdjustments());
+
         return List.of(level2Builder.build(), level3Builder.build());
     }
 
@@ -119,7 +123,7 @@ public class CustomFeeAssessmentStep {
                 && result.inputTxnAdjustments().isEmpty();
     }
 
-    private CryptoTransferTransactionBody.Builder buildTransactionFromAdjustments(
+    private CryptoTransferTransactionBody.Builder buildBodyFromAdjustments(
             final Map<AccountID, Long> customFeeHbarAdjustments,
             final Map<TokenID, Map<AccountID, Long>> customFeeTokenAdjustments) {
         final var newBuilder = CryptoTransferTransactionBody.newBuilder();
@@ -152,12 +156,12 @@ public class CustomFeeAssessmentStep {
         return newBuilder;
     }
 
-    private CustomFeeAssessmentResult assessCustomFeesForALevel(
+    private CustomFeeAssessmentResult assessCustomFeesFrom(
             List<TokenTransferList> tokenTransfers, ReadableTokenStore tokenStore, final int maxTransfersSize) {
-        final Map<TokenID, Map<AccountID, Long>> newCustomFeeTokenAdjustments = new HashMap<>();
+        final Map<TokenID, Map<AccountID, Long>> newTokenAdjustments = new HashMap<>();
         // two maps to aggregate all custom fee balance changes. These two maps are used
         // to construct a transaction body that needs to be assessed again for custom fees
-        final Map<AccountID, Long> newCustomFeeHbarAdjustments = new HashMap<>();
+        final Map<AccountID, Long> newHbarAdjustments = new HashMap<>();
         // Any debits in this set should not trigger custom fee charging again
         final Set<TokenID> exemptDebits = new HashSet<>();
         final Set<Pair<AccountID, TokenID>> royaltiesPaid = new HashSet<>();
@@ -165,7 +169,7 @@ public class CustomFeeAssessmentStep {
 
         for (final var xfer : tokenTransfers) {
             final var tokenId = xfer.token();
-            final var fungibleTokenTransfers = xfer.transfersOrElse(emptyList());
+            final var ftTransfers = xfer.transfersOrElse(emptyList());
             final var nftTransfers = xfer.nftTransfersOrElse(emptyList());
 
             final var token = getIfUsable(tokenId, tokenStore);
@@ -175,7 +179,7 @@ public class CustomFeeAssessmentStep {
                 continue;
             }
 
-            for (final var aa : fungibleTokenTransfers) {
+            for (final var aa : ftTransfers) {
                 final var adjustment = aa.amount();
                 for (final var fee : feeMeta.customFees()) {
                     final var denomToken = fee.fixedFee().denominatingTokenId();
@@ -184,8 +188,8 @@ public class CustomFeeAssessmentStep {
                                 aa.accountID(),
                                 feeMeta,
                                 inputTokenTransfers,
-                                newCustomFeeHbarAdjustments,
-                                newCustomFeeTokenAdjustments,
+                                newHbarAdjustments,
+                                newTokenAdjustments,
                                 exemptDebits,
                                 maxTransfersSize,
                                 royaltiesPaid,
@@ -203,8 +207,8 @@ public class CustomFeeAssessmentStep {
                                 nftTransfer.senderAccountID(),
                                 feeMeta,
                                 inputTokenTransfers,
-                                newCustomFeeHbarAdjustments,
-                                newCustomFeeTokenAdjustments,
+                                newHbarAdjustments,
+                                newTokenAdjustments,
                                 exemptDebits,
                                 maxTransfersSize,
                                 royaltiesPaid,
@@ -214,7 +218,7 @@ public class CustomFeeAssessmentStep {
             }
         }
         return new CustomFeeAssessmentResult(
-                newCustomFeeHbarAdjustments, newCustomFeeTokenAdjustments,
+                newHbarAdjustments, newTokenAdjustments,
                 inputTokenTransfers, exemptDebits);
     }
 
