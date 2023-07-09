@@ -16,9 +16,9 @@
 
 package com.swirlds.common.merkle.proof.algorithms;
 
-import static com.swirlds.common.merkle.proof.StateProofConstants.MAX_CHILD_COUNT;
-import static com.swirlds.common.merkle.proof.StateProofConstants.MAX_SIGNATURE_COUNT;
-import static com.swirlds.common.merkle.proof.StateProofConstants.MAX_STATE_PROOF_TREE_SIZE;
+import static com.swirlds.common.merkle.proof.algorithms.StateProofConstants.MAX_CHILD_COUNT;
+import static com.swirlds.common.merkle.proof.algorithms.StateProofConstants.MAX_SIGNATURE_COUNT;
+import static com.swirlds.common.merkle.proof.algorithms.StateProofConstants.MAX_STATE_PROOF_TREE_SIZE;
 
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.SelfSerializable;

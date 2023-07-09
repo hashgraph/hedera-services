@@ -16,7 +16,7 @@
 
 package com.swirlds.common.merkle.proof.tree;
 
-import static com.swirlds.common.merkle.proof.StateProofConstants.MAX_OPAQUE_DATA_SIZE;
+import static com.swirlds.common.merkle.proof.algorithms.StateProofConstants.MAX_OPAQUE_DATA_SIZE;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.io.SelfSerializable;
