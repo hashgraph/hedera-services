@@ -47,6 +47,7 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRe
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
@@ -73,7 +74,8 @@ public class SingleTransactionRecordBuilder
                 CryptoCreateRecordBuilder,
                 PrngRecordBuilder,
                 TokenMintRecordBuilder,
-                TokenCreateRecordBuilder {
+                TokenCreateRecordBuilder,
+                CryptoTransferRecordBuilder {
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes;
@@ -235,6 +237,8 @@ public class SingleTransactionRecordBuilder
         return this;
     }
 
+    @NonNull
+    @Override
     public SingleTransactionRecordBuilder assessedCustomFees(List<AssessedCustomFee> assessedCustomFees) {
         this.assessedCustomFees = assessedCustomFees;
         return this;

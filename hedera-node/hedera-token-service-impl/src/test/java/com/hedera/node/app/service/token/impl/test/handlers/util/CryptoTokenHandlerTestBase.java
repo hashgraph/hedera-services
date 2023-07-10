@@ -114,7 +114,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
     protected final AccountID spenderId =
             AccountID.newBuilder().accountNum(12345).build();
-    protected final AccountID feeCollectorId = delegatingSpenderId;
+    protected final AccountID feeCollectorId = transferAccountId;
 
     /* ---------- Account Numbers ---------- */
     protected final Long accountNum = payerId.accountNum();
@@ -210,6 +210,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected RoyaltyFee royaltyFee = RoyaltyFee.newBuilder()
             .exchangeValueFraction(
                     Fraction.newBuilder().numerator(1).denominator(2).build())
+            .fallbackFee(hbarFixedFee)
             .build();
     protected List<CustomFee> customFees = List.of(withFixedFee(hbarFixedFee), withFractionalFee(fractionalFee));
 
@@ -531,6 +532,10 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .copyBuilder()
                 .accountNumber(delegatingSpenderId.accountNum())
                 .build();
+        transferAccount = givenValidAccount()
+                .copyBuilder()
+                .accountNumber(transferAccountId.accountNum())
+                .build();
         treasuryAccount = givenValidAccount()
                 .copyBuilder()
                 .accountNumber(treasuryId.accountNum())
@@ -587,8 +592,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .copyBuilder()
                 .tokenId(nonFungibleTokenId)
                 .treasuryAccountId(treasuryId)
-                .customFees(
-                        List.of(CustomFee.newBuilder().royaltyFee(royaltyFee).build()))
+                .customFees(List.of(withRoyaltyFee(royaltyFee)))
                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                 .build();
     }
@@ -663,8 +667,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     protected CustomFee withFixedFee(final FixedFee fixedFee) {
         return CustomFee.newBuilder()
-                .feeCollectorAccountId(
-                        AccountID.newBuilder().accountNum(accountNum).build())
+                .feeCollectorAccountId(feeCollectorId)
                 .fixedFee(fixedFee)
                 .build();
     }
@@ -672,16 +675,14 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected CustomFee withFractionalFee(final FractionalFee fractionalFee) {
         return CustomFee.newBuilder()
                 .fractionalFee(fractionalFee)
-                .feeCollectorAccountId(
-                        AccountID.newBuilder().accountNum(accountNum).build())
+                .feeCollectorAccountId(feeCollectorId)
                 .build();
     }
 
     protected CustomFee withRoyaltyFee(final RoyaltyFee royaltyFee) {
         return CustomFee.newBuilder()
                 .royaltyFee(royaltyFee)
-                .feeCollectorAccountId(
-                        AccountID.newBuilder().accountNum(accountNum).build())
+                .feeCollectorAccountId(feeCollectorId)
                 .build();
     }
 

@@ -26,6 +26,7 @@ import static com.hedera.node.app.service.token.impl.handlers.transfer.customfee
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FractionalFee;
@@ -89,18 +90,20 @@ public class CustomFractionalFeeAssessor {
                         asFixedFee(assessedAmount, denom, fee.feeCollectorAccountId(), fee.allCollectorsAreExempt());
                 fixedFeeAssessor.assessFixedFee(feeMeta, sender, addedFee, result);
             } else {
-                // amount that can be deducted from the credits to token
+                // amount that should be deducted from the credits to token
+                // Inside this reclaim there will be debits to the input transaction
                 final long exemptAmount = reclaim(assessedAmount, filteredCredits);
+                // debits from the input transaction should be adjusted
+                adjustInputTokenTransfersWithReclaimAmounts(result.getInputTokenAdjustments(), denom, filteredCredits);
 
                 assessedAmount -= exemptAmount;
                 unitsLeft -= assessedAmount;
                 validateTrue(unitsLeft >= 0, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
-                final var map = result.getHtsAdjustments().getOrDefault(denom, new HashMap<>());
+                // make credit to the collector
+                final var map = result.getInputTokenAdjustments().getOrDefault(denom, new HashMap<>());
                 map.merge(collector, assessedAmount, Long::sum);
-                result.getHtsAdjustments().put(denom, map);
-
-                // TODO: How to deduct from all payer accounts ?
+                result.getInputTokenAdjustments().put(denom, map);
 
                 final var finalEffPayerNums =
                         (filteredCredits == creditsForToken) ? effectivePayerAccounts : filteredCredits.keySet();
@@ -115,6 +118,20 @@ public class CustomFractionalFeeAssessor {
                         .build());
             }
         }
+    }
+
+    private void adjustInputTokenTransfersWithReclaimAmounts(
+            final Map<TokenID, Map<AccountID, Long>> inputTokenAdjustments,
+            final TokenID denom,
+            final Map<AccountID, Long> filteredCredits) {
+        // if we reached here it means there are credits for the token
+        final var map = inputTokenAdjustments.get(denom);
+        for (final var entry : filteredCredits.entrySet()) {
+            final var account = entry.getKey();
+            final var amount = entry.getValue();
+            map.put(account, amount);
+        }
+        inputTokenAdjustments.put(denom, map);
     }
 
     private Map<AccountID, Long> filteredByExemptions(

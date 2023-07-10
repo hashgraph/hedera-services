@@ -27,12 +27,14 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeAssessor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFixedFeeAssessor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFractionalFeeAssessor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomRoyaltyFeeAssessor;
+import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
@@ -81,6 +83,8 @@ public class CustomFeeAssessmentStep {
         final var maxTransfersDepth = ledgerConfig.xferBalanceChangesMaxLen();
         final var maxCustomFeeDepth = tokensConfig.maxCustomFeeDepth();
 
+        final List<AssessedCustomFee> customFeesAssessed = new ArrayList<>();
+
         // Assess custom fees for given op and produce a next level transaction body builder
         // that needs to be assessed again for custom fees. This is because a custom fee balance
         // change can trigger custom fees again
@@ -88,6 +92,7 @@ public class CustomFeeAssessmentStep {
         assessCustomFeesFrom(result, tokenTransfers, tokenStore, maxTransfersDepth);
 
         final var level0Builder = changedInputTxn(op, result);
+        customFeesAssessed.addAll(result.getAssessedCustomFees());
         if (!result.haveAssessedChanges()) {
             return List.of(level0Builder.build());
         }
@@ -107,6 +112,7 @@ public class CustomFeeAssessmentStep {
 
         assessCustomFeesFrom(result2, level1Builder.build().tokenTransfers(), tokenStore, maxTransfersDepth);
 
+        customFeesAssessed.addAll(result2.getAssessedCustomFees());
         if (!result2.haveAssessedChanges()) {
             return List.of(level0Builder.build(), level1Builder.build());
         }
@@ -115,6 +121,10 @@ public class CustomFeeAssessmentStep {
         // transaction
         validateTrue(++levelNum <= maxCustomFeeDepth, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
         final var level2Builder = buildBodyFromAdjustments(result2);
+
+        // add all assessed fees to record builder
+        final var recordBuilder = handleContext.recordBuilder(CryptoTransferRecordBuilder.class);
+        recordBuilder.assessedCustomFees(customFeesAssessed);
 
         return List.of(level0Builder.build(), level1Builder.build(), level2Builder.build());
     }
