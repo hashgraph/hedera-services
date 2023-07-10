@@ -56,7 +56,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatus;
-import com.swirlds.common.system.status.PlatformStatusComponent;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.common.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.common.system.status.actions.StartedReplayingEventsAction;
@@ -263,7 +263,7 @@ public class SwirldsPlatform implements Platform, Startable {
     /**
      * Manages the status of the platform.
      */
-    private final PlatformStatusComponent platformStatusComponent;
+    private final PlatformStatusManager platformStatusManager;
 
     /**
      * Responsible for transmitting and receiving events from the network.
@@ -334,8 +334,8 @@ public class SwirldsPlatform implements Platform, Startable {
 
         this.eventMapper = new EventMapper(platformContext.getMetrics(), selfId);
 
-        platformStatusComponent =
-                components.add(new PlatformStatusComponent(platformContext, time, threadManager, notificationEngine));
+        platformStatusManager =
+                components.add(new PlatformStatusManager(platformContext, time, threadManager, notificationEngine));
 
         this.metrics = platformContext.getMetrics();
 
@@ -343,7 +343,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 "PlatformStatus",
                 Metrics.PLATFORM_CATEGORY,
                 PlatformStatus.values(),
-                platformStatusComponent::getCurrentStatus));
+                platformStatusManager::getCurrentStatus));
 
         registerAddressBookMetrics(metrics, initialAddressBook, selfId);
 
@@ -382,7 +382,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 this::haltRequested,
                 appCommunicationComponent,
                 preconsensusEventWriter,
-                platformStatusComponent);
+                platformStatusManager);
         wiring.registerComponents(components);
 
         final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
@@ -432,7 +432,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 selfId,
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
-                platformStatusComponent,
+                platformStatusManager,
                 freezeManager::isFreezeStarted,
                 initialState.getState(),
                 appVersion);
@@ -453,7 +453,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 stateHashSignQueue,
                 preconsensusEventWriter::waitUntilDurable,
                 freezeManager::freezeStarted,
-                platformStatusComponent,
+                platformStatusManager,
                 stateManagementComponent::roundAppliedToState,
                 appVersion));
 
@@ -553,11 +553,11 @@ public class SwirldsPlatform implements Platform, Startable {
                 swirldStateManager.getTransactionPool(),
                 intakeQueue,
                 eventObserverDispatcher,
-                platformStatusComponent::getCurrentStatus,
+                platformStatusManager::getCurrentStatus,
                 startUpEventFrozenManager);
 
         transactionSubmitter = new SwirldTransactionSubmitter(
-                platformStatusComponent::getCurrentStatus,
+                platformStatusManager::getCurrentStatus,
                 transactionConfig,
                 swirldStateManager::submitTransaction,
                 new TransactionMetrics(metrics));
@@ -587,7 +587,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventMapper,
                 eventIntakeMetrics,
                 eventLinker,
-                platformStatusComponent,
+                platformStatusManager,
                 this::loadReconnectState,
                 this::clearAllPipelines);
 
@@ -877,7 +877,7 @@ public class SwirldsPlatform implements Platform, Startable {
         }
 
         gossip.resetFallenBehind();
-        platformStatusComponent.processStatusAction(new ReconnectCompleteAction(signedState.getRound()));
+        platformStatusManager.processStatusAction(new ReconnectCompleteAction(signedState.getRound()));
     }
 
     /**
@@ -1036,12 +1036,12 @@ public class SwirldsPlatform implements Platform, Startable {
                     consensusRoundHandler,
                     stateHashSignQueue,
                     stateManagementComponent,
-                    platformStatusComponent,
+                    platformStatusManager,
                     initialMinimumGenerationNonAncient);
         } else {
             // if preconsensus events aren't being replayed, advance through that part of the state machine anyway
-            platformStatusComponent.processStatusAction(new StartedReplayingEventsAction());
-            platformStatusComponent.processStatusAction(
+            platformStatusManager.processStatusAction(new StartedReplayingEventsAction());
+            platformStatusManager.processStatusAction(
                     new DoneReplayingEventsAction(Time.getCurrent().now()));
         }
     }

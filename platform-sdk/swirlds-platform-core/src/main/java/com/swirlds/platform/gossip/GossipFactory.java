@@ -24,7 +24,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatusComponent;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -90,7 +90,7 @@ public final class GossipFactory {
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
      * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
-     * @param platformStatusComponent       manages the platform status
+     * @param platformStatusManager         manages the platform status
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @return the gossip engine
@@ -118,7 +118,7 @@ public final class GossipFactory {
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final EventLinker eventLinker,
-            @NonNull final PlatformStatusComponent platformStatusComponent,
+            @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
 
@@ -143,7 +143,7 @@ public final class GossipFactory {
         Objects.requireNonNull(eventMapper);
         Objects.requireNonNull(eventIntakeMetrics);
         Objects.requireNonNull(eventLinker);
-        Objects.requireNonNull(platformStatusComponent);
+        Objects.requireNonNull(platformStatusManager);
         Objects.requireNonNull(loadReconnectState);
         Objects.requireNonNull(clearAllPipelinesForReconnect);
 
@@ -175,7 +175,7 @@ public final class GossipFactory {
                     eventMapper,
                     eventIntakeMetrics,
                     eventLinker,
-                    platformStatusComponent,
+                    platformStatusManager,
                     loadReconnectState,
                     clearAllPipelinesForReconnect);
         } else if (syncConfig.syncAsProtocolEnabled()) {
@@ -198,7 +198,7 @@ public final class GossipFactory {
                         eventObserverDispatcher,
                         eventMapper,
                         eventIntakeMetrics,
-                        platformStatusComponent,
+                        platformStatusManager,
                         loadReconnectState,
                         clearAllPipelinesForReconnect);
             } else {
@@ -224,7 +224,7 @@ public final class GossipFactory {
                         eventObserverDispatcher,
                         eventMapper,
                         eventIntakeMetrics,
-                        platformStatusComponent,
+                        platformStatusManager,
                         loadReconnectState,
                         clearAllPipelinesForReconnect);
             }
@@ -248,7 +248,7 @@ public final class GossipFactory {
                     eventObserverDispatcher,
                     eventMapper,
                     eventIntakeMetrics,
-                    platformStatusComponent,
+                    platformStatusManager,
                     loadReconnectState,
                     clearAllPipelinesForReconnect);
         }

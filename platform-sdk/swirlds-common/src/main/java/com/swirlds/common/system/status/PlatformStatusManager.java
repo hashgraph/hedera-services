@@ -35,7 +35,7 @@ import java.util.Objects;
  * <p>
  * This object wraps a {@link PlatformStatusStateMachine}, which contains the actual state machine logic.
  */
-public class PlatformStatusComponent implements PlatformStatusGetter, Startable, Stoppable {
+public class PlatformStatusManager implements PlatformStatusGetter, Startable, Stoppable {
     /**
      * A source of time
      */
@@ -59,7 +59,7 @@ public class PlatformStatusComponent implements PlatformStatusGetter, Startable,
      * @param threadManager      the thread manager
      * @param notificationEngine the notification engine
      */
-    public PlatformStatusComponent(
+    public PlatformStatusManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final Time time,
             @NonNull final ThreadManager threadManager,

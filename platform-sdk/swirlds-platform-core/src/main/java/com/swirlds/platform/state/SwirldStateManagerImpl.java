@@ -26,7 +26,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatusComponent;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
@@ -125,7 +125,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
      * @param preConsensusSystemTransactionManager  the manager for pre-consensus system transactions
      * @param postConsensusSystemTransactionManager the manager for post-consensus system transactions
      * @param swirldStateMetrics                    metrics related to SwirldState
-     * @param platformStatusComponent               manages platform status
+     * @param platformStatusManager                 manages platform status
      * @param inFreeze                              indicates if the system is currently in a freeze
      * @param state                                 the genesis state
      * @param softwareVersion                       the current software version
@@ -137,7 +137,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
             @NonNull final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
             @NonNull final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
             @NonNull final SwirldStateMetrics swirldStateMetrics,
-            @NonNull final PlatformStatusComponent platformStatusComponent,
+            @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final BooleanSupplier inFreeze,
             @NonNull final State state,
             @NonNull final SoftwareVersion softwareVersion) {
@@ -148,7 +148,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
         this.preConsensusSystemTransactionManager = Objects.requireNonNull(preConsensusSystemTransactionManager);
         this.postConsensusSystemTransactionManager = Objects.requireNonNull(postConsensusSystemTransactionManager);
         this.stats = Objects.requireNonNull(swirldStateMetrics);
-        Objects.requireNonNull(platformStatusComponent);
+        Objects.requireNonNull(platformStatusManager);
         Objects.requireNonNull(inFreeze);
         Objects.requireNonNull(state);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
@@ -159,7 +159,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
                 inFreeze);
         this.transactionHandler = new TransactionHandler(selfId, stats);
         this.uptimeTracker =
-                new UptimeTracker(platformContext, addressBook, platformStatusComponent, selfId, Time.getCurrent());
+                new UptimeTracker(platformContext, addressBook, platformStatusManager, selfId, Time.getCurrent());
         initialState(state);
     }
 

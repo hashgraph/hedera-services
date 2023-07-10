@@ -38,7 +38,7 @@ import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.status.PlatformStatusComponent;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
@@ -133,7 +133,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     /**
      * Manages the platform status.
      */
-    private final PlatformStatusComponent platformStatusComponent;
+    private final PlatformStatusManager platformStatusManager;
 
     private boolean addedFirstRoundInFreeze = false;
 
@@ -177,7 +177,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      *                                 self-signed states
      * @param waitForEventDurability   a method that blocks until an event becomes durable.
      * @param enterFreezePeriod        puts the system in a freeze state when executed
-     * @param platformStatusComponent  manages the platform status
+     * @param platformStatusManager    manages the platform status
      * @param softwareVersion          the current version of the software
      */
     public ConsensusRoundHandler(
@@ -190,7 +190,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
             @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
             @NonNull final Runnable enterFreezePeriod,
-            @NonNull final PlatformStatusComponent platformStatusComponent,
+            @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
 
@@ -201,7 +201,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         this.consensusHandlingMetrics = consensusHandlingMetrics;
         this.eventStreamManager = eventStreamManager;
         this.stateHashSignQueue = stateHashSignQueue;
-        this.platformStatusComponent = Objects.requireNonNull(platformStatusComponent);
+        this.platformStatusManager = Objects.requireNonNull(platformStatusManager);
 
         this.softwareVersion = softwareVersion;
         this.enterFreezePeriod = enterFreezePeriod;
@@ -347,7 +347,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         if (!addedFirstRoundInFreeze && isRoundInFreezePeriod(consensusRound)) {
             addedFirstRoundInFreeze = true;
             enterFreezePeriod.run();
-            platformStatusComponent.processStatusAction(new FreezePeriodEnteredAction(consensusRound.getRoundNum()));
+            platformStatusManager.processStatusAction(new FreezePeriodEnteredAction(consensusRound.getRoundNum()));
         }
 
         addConsensusRound(consensusRound);

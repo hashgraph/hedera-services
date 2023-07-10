@@ -21,7 +21,7 @@ import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatusComponent;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.status.actions.FallenBehindAction;
 import com.swirlds.platform.network.RandomGraph;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,7 +58,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
     /**
      * Manages the platform status
      */
-    private final PlatformStatusComponent platformStatusComponent;
+    private final PlatformStatusManager platformStatusManager;
 
     /**
      * Called when the status becomes fallen behind
@@ -75,7 +75,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final RandomGraph connectionGraph,
-            @NonNull final PlatformStatusComponent platformStatusComponent,
+            @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Runnable fallenBehindCallback,
             @NonNull final ReconnectConfig config) {
         Objects.requireNonNull(addressBook, "addressBook");
@@ -91,7 +91,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
         for (final int neighbor : neighbors) {
             allNeighbors.add(addressBook.getNodeId(neighbor));
         }
-        this.platformStatusComponent = Objects.requireNonNull(platformStatusComponent);
+        this.platformStatusManager = Objects.requireNonNull(platformStatusManager);
         this.fallenBehindCallback =
                 Objects.requireNonNull(fallenBehindCallback, "fallenBehindCallback must not be null");
         this.config = Objects.requireNonNull(config, "config must not be null");
@@ -110,7 +110,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
             notYetReportFallenBehind.remove(id);
             numReportFallenBehind++;
             if (!previouslyFallenBehind && hasFallenBehind()) {
-                platformStatusComponent.processStatusAction(new FallenBehindAction());
+                platformStatusManager.processStatusAction(new FallenBehindAction());
                 fallenBehindCallback.run();
             }
         }

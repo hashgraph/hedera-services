@@ -31,7 +31,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatusComponent;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -105,7 +105,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     /**
      * Manages the platform status
      */
-    protected final PlatformStatusComponent platformStatusComponent;
+    protected final PlatformStatusManager platformStatusManager;
 
     protected final List<Startable> thingsToStart = new ArrayList<>();
 
@@ -131,7 +131,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
-     * @param platformStatusComponent       manages the platform status
+     * @param platformStatusManager         manages the platform status
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
@@ -150,14 +150,14 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
-            @NonNull final PlatformStatusComponent platformStatusComponent,
+            @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
-        this.platformStatusComponent = Objects.requireNonNull(platformStatusComponent);
+        this.platformStatusManager = Objects.requireNonNull(platformStatusManager);
 
         threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         criticalQuorum = buildCriticalQuorum();

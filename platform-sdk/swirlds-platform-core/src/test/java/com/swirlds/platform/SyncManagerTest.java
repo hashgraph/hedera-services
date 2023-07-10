@@ -40,7 +40,7 @@ import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEvent;
-import com.swirlds.common.system.status.PlatformStatusComponent;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
@@ -142,7 +142,7 @@ public class SyncManagerTest {
                             addressBook,
                             selfId,
                             connectionGraph,
-                            mock(PlatformStatusComponent.class),
+                            mock(PlatformStatusManager.class),
                             () -> {},
                             reconnectConfig),
                     eventConfig);

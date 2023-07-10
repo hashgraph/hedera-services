@@ -29,7 +29,7 @@ import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatusComponent;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.payloads.InsufficientSignaturesPayload;
@@ -161,7 +161,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      *                                           complete
      * @param issConsumer                        consumer to invoke when an ISS is detected
      * @param fatalErrorConsumer                 consumer to invoke when a fatal error has occurred
-     * @param platformStatusComponent            manages the platform status
+     * @param platformStatusManager              manages the platform status
      */
     public DefaultStateManagementComponent(
             @NonNull final PlatformContext platformContext,
@@ -180,7 +180,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
             @NonNull final HaltRequestedConsumer haltRequestedConsumer,
             @NonNull final FatalErrorConsumer fatalErrorConsumer,
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
-            @NonNull final PlatformStatusComponent platformStatusComponent) {
+            @NonNull final PlatformStatusManager platformStatusManager) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -198,11 +198,10 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         Objects.requireNonNull(haltRequestedConsumer);
         Objects.requireNonNull(fatalErrorConsumer);
         Objects.requireNonNull(preconsensusEventWriter);
-        Objects.requireNonNull(platformStatusComponent);
+        Objects.requireNonNull(platformStatusManager);
 
         this.signer = signer;
-        this.signatureTransmitter =
-                new SignatureTransmitter(prioritySystemTransactionSubmitter, platformStatusComponent);
+        this.signatureTransmitter = new SignatureTransmitter(prioritySystemTransactionSubmitter, platformStatusManager);
         this.signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
         this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
@@ -227,7 +226,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 swirldName,
                 stateToDiskEventConsumer,
                 preconsensusEventWriter::setMinimumGenerationToStore,
-                platformStatusComponent);
+                platformStatusManager);
 
         final StateHasEnoughSignaturesConsumer combinedStateHasEnoughSignaturesConsumer = ss -> {
             stateHasEnoughSignatures(ss);

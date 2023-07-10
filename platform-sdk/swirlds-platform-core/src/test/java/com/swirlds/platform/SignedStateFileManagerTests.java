@@ -45,7 +45,7 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.status.PlatformStatusComponent;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -202,7 +202,7 @@ class SignedStateFileManagerTests {
                 SWIRLD_NAME,
                 consumer,
                 x -> {},
-                mock(PlatformStatusComponent.class));
+                mock(PlatformStatusManager.class));
         manager.start();
 
         manager.saveSignedStateToDisk(signedState);
@@ -249,7 +249,7 @@ class SignedStateFileManagerTests {
                 SWIRLD_NAME,
                 consumer,
                 x -> {},
-                mock(PlatformStatusComponent.class));
+                mock(PlatformStatusManager.class));
         manager.start();
 
         final Thread thread = new ThreadConfiguration(getStaticThreadManager())
@@ -300,7 +300,7 @@ class SignedStateFileManagerTests {
                 SWIRLD_NAME,
                 consumer,
                 x -> {},
-                mock(PlatformStatusComponent.class));
+                mock(PlatformStatusManager.class));
         manager.start();
 
         manager.dumpState(signedState, "iss", false);
@@ -397,7 +397,7 @@ class SignedStateFileManagerTests {
                 SWIRLD_NAME,
                 consumer,
                 x -> {},
-                mock(PlatformStatusComponent.class));
+                mock(PlatformStatusManager.class));
         manager.start();
 
         final List<SignedState> states = new ArrayList<>();
@@ -473,7 +473,7 @@ class SignedStateFileManagerTests {
                     assertTrue(x > minimumGenerationNonAncientSetByCallback.get());
                     minimumGenerationNonAncientSetByCallback.set(x);
                 },
-                mock(PlatformStatusComponent.class));
+                mock(PlatformStatusManager.class));
         manager.start();
 
         Instant timestamp;
@@ -606,7 +606,7 @@ class SignedStateFileManagerTests {
                 SWIRLD_NAME,
                 (ssw, path, success) -> {},
                 x -> {},
-                mock(PlatformStatusComponent.class));
+                mock(PlatformStatusManager.class));
         manager.start();
 
         final Path statesDirectory =

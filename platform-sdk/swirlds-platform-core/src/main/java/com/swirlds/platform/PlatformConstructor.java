@@ -27,7 +27,7 @@ import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatusComponent;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
@@ -158,7 +158,7 @@ public final class PlatformConstructor {
      * @param selfId                                this node's id
      * @param preConsensusSystemTransactionManager  the manager which handles system transactions pre-consensus
      * @param postConsensusSystemTransactionManager the manager which handles system transactions post-consensus
-     * @param platformStatusComponent               manages platform status
+     * @param platformStatusManager                 manages platform status
      * @param initialState                          the initial state
      * @param softwareVersion                       the software version
      * @return the newly constructed instance of {@link SwirldStateManager}
@@ -169,7 +169,7 @@ public final class PlatformConstructor {
             @NonNull final NodeId selfId,
             @NonNull final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
             @NonNull final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
-            @NonNull final PlatformStatusComponent platformStatusComponent,
+            @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final BooleanSupplier inFreezeChecker,
             @NonNull final State initialState,
             @NonNull final SoftwareVersion softwareVersion) {
@@ -179,7 +179,7 @@ public final class PlatformConstructor {
         Objects.requireNonNull(selfId);
         Objects.requireNonNull(preConsensusSystemTransactionManager);
         Objects.requireNonNull(postConsensusSystemTransactionManager);
-        Objects.requireNonNull(platformStatusComponent);
+        Objects.requireNonNull(platformStatusManager);
         Objects.requireNonNull(inFreezeChecker);
         Objects.requireNonNull(initialState);
         Objects.requireNonNull(softwareVersion);
@@ -191,7 +191,7 @@ public final class PlatformConstructor {
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 new SwirldStateMetrics(platformContext.getMetrics()),
-                platformStatusComponent,
+                platformStatusManager,
                 inFreezeChecker,
                 initialState,
                 softwareVersion);
@@ -208,7 +208,7 @@ public final class PlatformConstructor {
      * @param stateHashSignQueue          the queue for signed states that need signatures collected
      * @param waitForEventDurability      a method that blocks until an event becomes durable.
      * @param enterFreezePeriod           a runnable executed when a freeze is entered
-     * @param platformStatusComponent     manages platform status
+     * @param platformStatusManager       manages platform status
      * @param roundAppliedToStateConsumer the consumer to invoke when a round has just been applied to the state
      * @param softwareVersion             the software version of the application
      * @return the newly constructed instance of {@link ConsensusRoundHandler}
@@ -223,7 +223,7 @@ public final class PlatformConstructor {
             @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
             @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
             @NonNull final Runnable enterFreezePeriod,
-            @NonNull final PlatformStatusComponent platformStatusComponent,
+            @NonNull final PlatformStatusManager platformStatusManager,
             @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
 
@@ -237,7 +237,7 @@ public final class PlatformConstructor {
                 stateHashSignQueue,
                 waitForEventDurability,
                 enterFreezePeriod,
-                platformStatusComponent,
+                platformStatusManager,
                 roundAppliedToStateConsumer,
                 softwareVersion);
     }

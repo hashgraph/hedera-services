@@ -32,7 +32,7 @@ import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatusComponent;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.threading.framework.QueueThread;
@@ -128,7 +128,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 stateHashSignQueue,
                 e -> {},
                 () -> {},
-                mock(PlatformStatusComponent.class),
+                mock(PlatformStatusManager.class),
                 (round) -> {},
                 new BasicSoftwareVersion(1));
 
@@ -174,10 +174,8 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
     /**
      * Verifies that {@link EventStreamManager#addEvents(List)} is called the desired number of times.
      *
-     * @param eventStreamManager
-     * 		the instance of {@link EventStreamManager} used by {@link ConsensusRoundHandler}
-     * @param roundConsumer
-     * 		the round consumer to test
+     * @param eventStreamManager the instance of {@link EventStreamManager} used by {@link ConsensusRoundHandler}
+     * @param roundConsumer      the round consumer to test
      */
     private void testEventStream(
             final EventStreamManager<EventImpl> eventStreamManager, final Consumer<ConsensusRound> roundConsumer) {
@@ -217,7 +215,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
-                mock(PlatformStatusComponent.class),
+                mock(PlatformStatusManager.class),
                 () -> false,
                 state,
                 new BasicSoftwareVersion(1));
@@ -232,7 +230,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 stateHashSignQueue,
                 e -> {},
                 () -> {},
-                mock(PlatformStatusComponent.class),
+                mock(PlatformStatusManager.class),
                 (round) -> {},
                 new BasicSoftwareVersion(1));
         consensusRoundHandler.start();

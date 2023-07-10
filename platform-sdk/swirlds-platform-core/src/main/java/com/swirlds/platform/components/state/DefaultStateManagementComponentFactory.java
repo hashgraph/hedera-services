@@ -21,7 +21,7 @@ import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatusComponent;
+import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
@@ -61,7 +61,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     /**
      * Manages the platform status
      */
-    private final PlatformStatusComponent platformStatusComponent;
+    private final PlatformStatusManager platformStatusManager;
 
     public DefaultStateManagementComponentFactory(
             @NonNull final PlatformContext context,
@@ -71,7 +71,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
             @NonNull final String mainClassName,
             @NonNull final NodeId selfId,
             @NonNull final String swirldName,
-            @NonNull final PlatformStatusComponent platformStatusComponent) {
+            @NonNull final PlatformStatusManager platformStatusManager) {
 
         this.context = Objects.requireNonNull(context);
         this.threadManager = Objects.requireNonNull(threadManager);
@@ -80,7 +80,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
         this.mainClassName = Objects.requireNonNull(mainClassName);
         this.selfId = Objects.requireNonNull(selfId);
         this.swirldName = Objects.requireNonNull(swirldName);
-        this.platformStatusComponent = Objects.requireNonNull(platformStatusComponent);
+        this.platformStatusManager = Objects.requireNonNull(platformStatusManager);
     }
 
     @Override
@@ -160,7 +160,7 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 preconsensusEventWriter,
-                platformStatusComponent);
+                platformStatusManager);
     }
 
     private void verifyInputs() {
