@@ -32,7 +32,7 @@ import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.common.stream.StreamType;
 import com.swirlds.common.stream.internal.LinkedObjectStreamValidateUtils;
 import com.swirlds.common.stream.internal.StreamValidationResult;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

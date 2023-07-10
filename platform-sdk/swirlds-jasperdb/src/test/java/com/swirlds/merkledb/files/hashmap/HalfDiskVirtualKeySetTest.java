@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.files.hashmap;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
 import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;

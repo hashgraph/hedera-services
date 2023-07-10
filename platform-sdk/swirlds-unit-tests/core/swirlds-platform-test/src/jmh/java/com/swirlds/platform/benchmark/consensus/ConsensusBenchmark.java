@@ -18,7 +18,7 @@ package com.swirlds.platform.benchmark.consensus;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.test.WeightGenerators;
+import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;

@@ -45,7 +45,7 @@ import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.test.dummy.Key;
 import com.swirlds.common.test.dummy.Value;
-import com.swirlds.common.test.io.InputOutputStream;
+import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;

@@ -16,7 +16,7 @@
 
 package com.swirlds.common.test.utility;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.units.UnitConstants.BYTES_PER_INT;
 import static com.swirlds.common.units.UnitConstants.BYTES_PER_LONG;
 import static com.swirlds.common.units.UnitConstants.BYTES_PER_SHORT;

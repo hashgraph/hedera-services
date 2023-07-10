@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.recovery;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.common.test.RandomUtils.randomHash;
-import static com.swirlds.common.test.RandomUtils.randomSignature;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
