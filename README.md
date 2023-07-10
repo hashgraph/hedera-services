@@ -11,7 +11,7 @@ Implementation of the Platform and the [services offered](https://github.com/has
 nodes in the [Hedera public network](https://hedera.com).
 
 ## Overview of child modules
-* platform-sdk/_ - the basic Platform.
+* _platform-sdk/_ - the basic Platform.
 * _hedera-node/_ - implementation of Hedera services on the Platform.
 
 ## JVM
