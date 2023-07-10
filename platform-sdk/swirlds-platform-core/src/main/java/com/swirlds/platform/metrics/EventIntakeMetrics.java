@@ -23,7 +23,7 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Counter;

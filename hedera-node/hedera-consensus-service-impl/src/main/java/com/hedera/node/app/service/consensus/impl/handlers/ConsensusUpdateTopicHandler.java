@@ -156,7 +156,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, topic);
         builder.expiry(resolvedExpiryMeta.expiry());
         builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
-        builder.autoRenewAccountNumber(resolvedExpiryMeta.autoRenewNum());
+        builder.autoRenewAccountId(resolvedExpiryMeta.autoRenewAccountId());
     }
 
     private void validateMaybeNewAttributes(
@@ -180,14 +180,9 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
             @NonNull final Topic topic) {
-        final var currentMeta = new ExpiryMeta(topic.expiry(), topic.autoRenewPeriod(), topic.autoRenewAccountNumber());
+        final var currentMeta = new ExpiryMeta(topic.expiry(), topic.autoRenewPeriod(), topic.autoRenewAccountId());
         if (updatesExpiryMeta(op)) {
-            final var updateMeta = new ExpiryMeta(
-                    effExpiryOf(op),
-                    effAutoRenewPeriodOf(op),
-                    effAutoRenewShardOf(op),
-                    effAutoRenewRealmOf(op),
-                    effAutoRenewNumOf(op));
+            final var updateMeta = new ExpiryMeta(effExpiryOf(op), effAutoRenewPeriodOf(op), op.autoRenewAccount());
             return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);
         } else {
             return currentMeta;
@@ -200,18 +195,6 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
     private long effAutoRenewPeriodOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return op.hasAutoRenewPeriod() ? op.autoRenewPeriodOrThrow().seconds() : NA;
-    }
-
-    private long effAutoRenewShardOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
-        return op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow().shardNum() : NA;
-    }
-
-    private long effAutoRenewRealmOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
-        return op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow().realmNum() : NA;
-    }
-
-    private long effAutoRenewNumOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
-        return op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow().accountNumOrElse(NA) : NA;
     }
 
     private boolean updatesExpiryMeta(@NonNull final ConsensusUpdateTopicTransactionBody op) {

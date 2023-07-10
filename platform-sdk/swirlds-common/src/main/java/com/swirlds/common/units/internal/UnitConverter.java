@@ -14,25 +14,23 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.units;
+package com.swirlds.common.units.internal;
+
+import com.swirlds.common.units.Unit;
 
 /**
  * Boilerplate code for converting between units of the same type.
  *
- * @param <T>
- * 		the type of the unit
+ * @param <T> the type of the unit
  */
 public class UnitConverter<T extends Unit<T>> {
 
     /**
      * Describes a unit with respect to the previous unit in the unit sequence.
      *
-     * @param type
-     * 		the type identifier for this unit
-     * @param factor
-     * 		the number which the previous unit must be multiplied by in order to reach this unit
-     * @param <T>
-     * 		the unit family type for this unit
+     * @param type   the type identifier for this unit
+     * @param factor the number which the previous unit must be multiplied by in order to reach this unit
+     * @param <T>    the unit family type for this unit
      */
     public record UnitConversion<T>(T type, long factor) {}
 
@@ -49,8 +47,7 @@ public class UnitConverter<T extends Unit<T>> {
     /**
      * Create a new unit converter.
      *
-     * @param units
-     * 		an in-order array of units
+     * @param units an in-order array of units
      */
     @SuppressWarnings("unchecked")
     public UnitConverter(final T... units) {
@@ -80,10 +77,8 @@ public class UnitConverter<T extends Unit<T>> {
     /**
      * Get the index in {@link #factors} for a particular conversion pair.
      *
-     * @param to
-     * 		the starting unit
-     * @param from
-     * 		the resulting unit
+     * @param to   the starting unit
+     * @param from the resulting unit
      * @return the factor that should be multiplied or divided for the conversion
      */
     private int getConversionFactorIndex(final Unit<T> to, final Unit<T> from) {
@@ -93,10 +88,8 @@ public class UnitConverter<T extends Unit<T>> {
     /**
      * Simplify a quantity to the best unit.
      *
-     * @param quantity
-     * 		the quantity
-     * @param unit
-     * 		the original unit
+     * @param quantity the quantity
+     * @param unit     the original unit
      * @return the new unit
      */
     public Unit.SimplifiedQuantity<T> simplify(final double quantity, final T unit) {
@@ -119,12 +112,9 @@ public class UnitConverter<T extends Unit<T>> {
     /**
      * Convert from one unit to another.
      *
-     * @param quantity
-     * 		the original quantity
-     * @param from
-     * 		the original unit
-     * @param to
-     * 		the new unit
+     * @param quantity the original quantity
+     * @param from     the original unit
+     * @param to       the new unit
      * @return the new quantity
      */
     public double convertTo(final double quantity, final T from, final T to) {
@@ -144,12 +134,9 @@ public class UnitConverter<T extends Unit<T>> {
     /**
      * Convert from one unit to another.
      *
-     * @param quantity
-     * 		the original quantity
-     * @param from
-     * 		the original unit
-     * @param to
-     * 		the new unit
+     * @param quantity the original quantity
+     * @param from     the original unit
+     * @param to       the new unit
      * @return the new quantity
      */
     public double convertTo(final long quantity, final T from, final T to) {

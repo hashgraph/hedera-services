@@ -38,5 +38,6 @@ dependencies {
     testImplementation(testFixtures(project(":swirlds-common")))
     testImplementation(testLibs.bundles.junit)
     testImplementation(testLibs.bundles.mocking)
+    testImplementation(testFixtures(project(":swirlds-config-api")))
     testImplementation(libs.log4j.core)
 }

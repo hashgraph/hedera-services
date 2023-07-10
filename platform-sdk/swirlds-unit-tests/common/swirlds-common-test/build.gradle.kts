@@ -50,4 +50,5 @@ dependencies {
         exclude("io.prometheus", "simpleclient_tracer_otel")
         exclude("io.prometheus", "simpleclient_tracer_otel_agent")
     }
+    testImplementation(testFixtures(project(":swirlds-config-api")))
 }
