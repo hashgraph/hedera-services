@@ -20,6 +20,7 @@ import static com.swirlds.common.system.status.logic.StatusLogicTestUtils.trigge
 import static com.swirlds.common.system.status.logic.StatusLogicTestUtils.triggerActionAndAssertNoTransition;
 import static com.swirlds.common.system.status.logic.StatusLogicTestUtils.triggerActionAndAssertTransition;
 
+import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.common.system.status.actions.CatastrophicFailureAction;
@@ -31,7 +32,6 @@ import com.swirlds.common.system.status.actions.SelfEventReachedConsensusAction;
 import com.swirlds.common.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.system.status.actions.TimeElapsedAction;
-import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import org.junit.jupiter.api.BeforeEach;

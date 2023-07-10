@@ -107,7 +107,7 @@ public class LocalConnection implements Connection {
      * Does nothing, since there is no timout for this connection
      */
     @Override
-    public void setTimeout(final int timeoutMillis) {}
+    public void setTimeout(final long timeoutMillis) {}
 
     @Override
     public void initForSync() {}

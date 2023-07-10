@@ -52,6 +52,7 @@ dependencies {
     testImplementation(testLibs.bundles.mocking)
     testImplementation(testLibs.bundles.utils)
     testImplementation(project(":swirlds-config-impl"))
+    testImplementation(testFixtures(project(":swirlds-base")))
     testImplementation(testFixtures(project(":swirlds-common")))
     testImplementation(testFixtures(project(":swirlds-config-api")))
 }

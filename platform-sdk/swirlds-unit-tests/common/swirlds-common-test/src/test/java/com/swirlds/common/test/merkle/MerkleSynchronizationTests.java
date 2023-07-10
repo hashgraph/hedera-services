@@ -64,7 +64,7 @@ public class MerkleSynchronizationTests {
         new TestConfigBuilder()
                 .withValue("reconnect.active", "true")
                 // This is lower than the default, helps test that is supposed to fail to finish faster.
-                .withValue("reconnect.asyncStreamTimeoutMilliseconds", "500")
+                .withValue("reconnect.asyncStreamTimeout", "500ms")
                 .getOrCreateConfig();
     }
 
