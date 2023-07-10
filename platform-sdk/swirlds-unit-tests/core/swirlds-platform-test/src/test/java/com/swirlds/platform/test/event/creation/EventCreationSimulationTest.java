@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.test.event.creation;
 
+import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.utility.DurationUtils;
 import com.swirlds.platform.test.consensus.TestIntake;
