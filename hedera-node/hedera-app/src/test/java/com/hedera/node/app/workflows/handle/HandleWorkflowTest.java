@@ -16,18 +16,6 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.AppTestBase;
@@ -48,7 +36,6 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
-import com.hedera.node.app.workflows.WorkflowsValidationUtil;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -62,12 +49,6 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
-import java.time.InstantSource;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -76,6 +57,25 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+import java.time.InstantSource;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class HandleWorkflowTest extends AppTestBase {
@@ -149,6 +149,9 @@ class HandleWorkflowTest extends AppTestBase {
   private HandleWorkflow workflow;
 
   @Mock(strictness = LENIENT)
+  private HederaRecordCache hederaRecordCache;
+
+  @Mock(strictness = LENIENT)
   private WorkflowsValidationUtil workflowsValidationUtil;
 
   @BeforeEach
@@ -181,6 +184,7 @@ class HandleWorkflowTest extends AppTestBase {
                 .when(dispatcher)
                 .dispatchHandle(any());
 
+
     workflow = new HandleWorkflow(
         networkInfo,
         preHandleWorkflow,
@@ -192,11 +196,9 @@ class HandleWorkflowTest extends AppTestBase {
         serviceLookup,
         configProvider,
         instantSource,
-        recordCache,
-        workflowsValidationUtil);
+        hederaRecordCache);
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Test
     void testContructorWithInvalidArguments() {
         final var instantSource = InstantSource.system();
@@ -211,149 +213,124 @@ class HandleWorkflowTest extends AppTestBase {
             serviceLookup,
             configProvider,
             instantSource,
-            recordCache,
-            workflowsValidationUtil))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-            networkInfo,
-            null,
-            dispatcher,
-            blockRecordManager,
-            signatureExpander,
-            signatureVerifier,
-            checker,
-            serviceLookup,
-            configProvider,
-            instantSource,
-            recordCache,
-            workflowsValidationUtil))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-            networkInfo,
-            preHandleWorkflow,
-            null,
-            blockRecordManager,
-            signatureExpander,
-            signatureVerifier,
-            checker,
-            serviceLookup,
-            configProvider,
-            instantSource,
-            recordCache,
-            workflowsValidationUtil))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-            networkInfo,
-            preHandleWorkflow,
-            dispatcher,
-            null,
-            signatureExpander,
-            signatureVerifier,
-            checker,
-            serviceLookup,
-            configProvider,
-            instantSource,
-            recordCache,
-            workflowsValidationUtil))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-            networkInfo,
-            preHandleWorkflow,
-            dispatcher,
-            blockRecordManager,
-            null,
-            signatureVerifier,
-            checker,
-            serviceLookup,
-            configProvider,
-            instantSource,
-            recordCache,
-            workflowsValidationUtil))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-            networkInfo,
-            preHandleWorkflow,
-            dispatcher,
-            blockRecordManager,
-            signatureExpander,
-            null,
-            checker,
-            serviceLookup,
-            configProvider,
-            instantSource,
-            recordCache,
-            workflowsValidationUtil))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-            networkInfo,
-            preHandleWorkflow,
-            dispatcher,
-            blockRecordManager,
-            signatureExpander,
-            signatureVerifier,
-            null,
-            serviceLookup,
-            configProvider,
-            instantSource,
-            recordCache,
-            workflowsValidationUtil))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-            networkInfo,
-            preHandleWorkflow,
-            dispatcher,
-            blockRecordManager,
-            signatureExpander,
-            signatureVerifier,
-            checker,
-            null,
-            configProvider,
-            instantSource,
-            recordCache,
-            workflowsValidationUtil))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-            networkInfo,
-            preHandleWorkflow,
-            dispatcher,
-            blockRecordManager,
-            signatureExpander,
-            signatureVerifier,
-            checker,
-            serviceLookup,
-            null,
-            instantSource,
-            recordCache,
-            workflowsValidationUtil))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-            networkInfo,
-            preHandleWorkflow,
-            dispatcher,
-            blockRecordManager,
-            signatureExpander,
-            signatureVerifier,
-            checker,
-            serviceLookup,
-            configProvider,
-            null,
-            recordCache,
-            workflowsValidationUtil))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-            networkInfo,
-            preHandleWorkflow,
-            dispatcher,
-            blockRecordManager,
-            signatureExpander,
-            signatureVerifier,
-            checker,
-            serviceLookup,
-            configProvider,
-            instantSource,
-            null,
-            workflowsValidationUtil))
-                .isInstanceOf(NullPointerException.class);
+            hederaRecordCache))
+            .isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> new HandleWorkflow(
+          networkInfo,
+          null,
+          dispatcher,
+          blockRecordManager,
+          signatureExpander,
+          signatureVerifier,
+          checker,
+          serviceLookup,
+          configProvider,
+          instantSource,
+          hederaRecordCache))
+          .isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> new HandleWorkflow(
+          networkInfo,
+          preHandleWorkflow,
+          null,
+          blockRecordManager,
+          signatureExpander,
+          signatureVerifier,
+          checker,
+          serviceLookup,
+          configProvider,
+          instantSource,
+          hederaRecordCache))
+          .isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> new HandleWorkflow(
+          networkInfo,
+          preHandleWorkflow,
+          dispatcher,
+          null,
+          signatureExpander,
+          signatureVerifier,
+          checker,
+          serviceLookup,
+          configProvider,
+          instantSource,
+          hederaRecordCache))
+          .isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> new HandleWorkflow(
+          networkInfo,
+          preHandleWorkflow,
+          dispatcher,
+          blockRecordManager,
+          null,
+          signatureVerifier,
+          checker,
+          serviceLookup,
+          configProvider,
+          instantSource,
+          hederaRecordCache))
+          .isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> new HandleWorkflow(
+          networkInfo,
+          preHandleWorkflow,
+          dispatcher,
+          blockRecordManager,
+          signatureExpander,
+          null,
+          checker,
+          serviceLookup,
+          configProvider,
+          instantSource,
+          hederaRecordCache))
+          .isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> new HandleWorkflow(
+          networkInfo,
+          preHandleWorkflow,
+          dispatcher,
+          blockRecordManager,
+          signatureExpander,
+          signatureVerifier,
+          null,
+          serviceLookup,
+          configProvider,
+          instantSource,
+          hederaRecordCache))
+          .isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> new HandleWorkflow(
+          networkInfo,
+          preHandleWorkflow,
+          dispatcher,
+          blockRecordManager,
+          signatureExpander,
+          signatureVerifier,
+          checker,
+          null,
+          configProvider,
+          instantSource,
+          hederaRecordCache))
+          .isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> new HandleWorkflow(
+          networkInfo,
+          preHandleWorkflow,
+          dispatcher,
+          blockRecordManager,
+          signatureExpander,
+          signatureVerifier,
+          checker,
+          serviceLookup,
+          null,
+          instantSource,
+          hederaRecordCache))
+          .isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> new HandleWorkflow(
+          networkInfo,
+          preHandleWorkflow,
+          dispatcher,
+          blockRecordManager,
+          signatureExpander,
+          signatureVerifier,
+          checker,
+          serviceLookup,
+          configProvider,
+          null,
+          hederaRecordCache));
     }
 
     @Test
