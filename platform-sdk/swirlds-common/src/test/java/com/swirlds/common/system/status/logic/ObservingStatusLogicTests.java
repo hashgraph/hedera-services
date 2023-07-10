@@ -33,7 +33,7 @@ import com.swirlds.common.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.system.status.actions.TimeElapsedAction;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
