@@ -21,8 +21,8 @@ import static com.swirlds.platform.test.event.EventUtils.staticDynamicValue;
 import static com.swirlds.platform.test.event.RandomEventUtils.randomEventWithTimestamp;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.TransactionGenerator;
-import com.swirlds.common.test.TransactionUtils;
+import com.swirlds.common.test.fixtures.TransactionGenerator;
+import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.test.event.DynamicValue;
 import com.swirlds.platform.test.event.DynamicValueGenerator;
 import com.swirlds.platform.test.event.IndexedEvent;

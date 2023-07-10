@@ -16,19 +16,17 @@
 
 package com.swirlds.platform.test.event.tipset;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomSignature;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -41,6 +39,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
@@ -70,9 +69,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 class TipsetEventCreatorImplTests {
 
     /**
-     * @param nodeId                the node ID of the simulated node
-     * @param tipsetTracker         tracks tipsets of events
-     * @param tipsetEventCreator    the event creator for the simulated node
+     * @param nodeId                 the node ID of the simulated node
+     * @param tipsetTracker          tracks tipsets of events
+     * @param tipsetEventCreator     the event creator for the simulated node
      * @param tipsetWeightCalculator used to sanity check event creation logic
      */
     private record SimulatedNode(

@@ -52,7 +52,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.AssertionUtils;
+import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;

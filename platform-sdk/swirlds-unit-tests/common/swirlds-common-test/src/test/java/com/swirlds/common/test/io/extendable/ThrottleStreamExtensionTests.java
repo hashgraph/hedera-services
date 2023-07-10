@@ -18,7 +18,7 @@ package com.swirlds.common.test.io.extendable;
 
 import static com.swirlds.common.io.extendable.ExtendableInputStream.extendInputStream;
 import static com.swirlds.common.io.extendable.ExtendableOutputStream.extendOutputStream;
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
