@@ -764,7 +764,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
         return TokenNftInfo.newBuilder()
                 .setLedgerId(fromString("0x03"))
                 .setNftID(NftID.newBuilder()
-                        .setTokenID(tokenId)
+                        .setTokenId(tokenId)
                         .setSerialNumber(1L)
                         .build())
                 .setAccountID(ownerId)
