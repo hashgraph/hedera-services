@@ -32,6 +32,7 @@ dependencies {
     // These should not be implementation() based deps, but this requires refactoring to eliminate.
     implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
     implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
+    implementation(testFixtures(project(":swirlds-common")))
     implementation(testLibs.junit.jupiter.api)
 
     testImplementation(libs.commons.io)

@@ -20,7 +20,7 @@ import static com.swirlds.platform.test.components.TransactionHandlingTestUtils.
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.swirlds.common.test.DummySystemTransaction;
+import com.swirlds.common.test.fixtures.DummySystemTransaction;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionHandler;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManagerFactory;

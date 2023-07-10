@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.consensus;
 
-import com.swirlds.common.test.WeightGenerator;
+import com.swirlds.common.test.fixtures.WeightGenerator;
 
 public record ConsensusTestParams(int numNodes, WeightGenerator weightGenerator, String weightDesc, long... seeds) {
     @Override

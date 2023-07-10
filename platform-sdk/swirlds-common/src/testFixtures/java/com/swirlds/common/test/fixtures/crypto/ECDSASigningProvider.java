@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.crypto;
+package com.swirlds.common.test.fixtures.crypto;
 
-import static com.swirlds.common.test.crypto.EcdsaUtils.asRawEcdsaSecp256k1Key;
-import static com.swirlds.common.test.crypto.EcdsaUtils.signDigestWithEcdsaSecp256k1;
+import static com.swirlds.common.test.fixtures.crypto.EcdsaUtils.asRawEcdsaSecp256k1Key;
+import static com.swirlds.common.test.fixtures.crypto.EcdsaUtils.signDigestWithEcdsaSecp256k1;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyPair;

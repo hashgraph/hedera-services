@@ -31,7 +31,7 @@ import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

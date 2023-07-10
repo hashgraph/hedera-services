@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.common.test.RandomUtils.initRandom;
+import static com.swirlds.common.test.fixtures.RandomUtils.initRandom;
 import static com.swirlds.platform.test.consensus.ConsensusUtils.applyEventsToConsensus;
 import static com.swirlds.platform.test.consensus.ConsensusUtils.buildSimpleConsensus;
 import static com.swirlds.platform.test.consensus.ConsensusUtils.isRestartConsensusEquivalent;
@@ -41,9 +41,9 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.WeightGenerator;
-import com.swirlds.common.test.WeightGenerators;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.WeightGenerator;
+import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.common.threading.utility.AtomicDouble;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Utilities;

@@ -22,7 +22,7 @@ import static com.swirlds.platform.test.event.RandomEventUtils.DEFAULT_FIRST_EVE
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.test.event.DynamicValue;
 import com.swirlds.platform.test.event.DynamicValueGenerator;
 import com.swirlds.platform.test.event.IndexedEvent;

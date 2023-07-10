@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTree;
 import static com.swirlds.platform.state.signed.SignedStateComparison.mismatchedNodeIterator;
 import static com.swirlds.platform.state.signed.SignedStateComparison.printMismatchedNodes;

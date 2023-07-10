@@ -19,7 +19,7 @@ package com.swirlds.platform.test.consensus;
 import static com.swirlds.platform.test.event.source.EventSourceFactory.newStandardEventSources;
 
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.WeightGenerator;
+import com.swirlds.common.test.fixtures.WeightGenerator;
 import com.swirlds.platform.test.event.TestSequence;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.event.emitter.EventEmitterGenerator;

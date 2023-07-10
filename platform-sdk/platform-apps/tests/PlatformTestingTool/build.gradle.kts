@@ -37,6 +37,7 @@ dependencies {
     implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
     implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
     implementation(project(":swirlds-unit-tests:structures:swirlds-merkle-test"))
+    implementation(testFixtures(project(":swirlds-common")))
 
     testImplementation(testLibs.bundles.junit)
     testImplementation(testLibs.bundles.mocking)

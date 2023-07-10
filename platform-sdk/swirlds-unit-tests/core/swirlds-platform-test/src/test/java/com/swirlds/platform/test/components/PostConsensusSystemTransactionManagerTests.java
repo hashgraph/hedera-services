@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.common.test.DummySystemTransaction;
+import com.swirlds.common.test.fixtures.DummySystemTransaction;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionHandler;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;

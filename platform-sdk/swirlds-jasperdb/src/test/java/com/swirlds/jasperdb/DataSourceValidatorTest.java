@@ -16,7 +16,7 @@
 
 package com.swirlds.jasperdb;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.jasperdb.VirtualDataSourceJasperDBTest.createDataSource;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

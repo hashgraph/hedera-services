@@ -16,7 +16,7 @@
 
 package com.swirlds.common.test.utility;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.utility.Mnemonics.generateMnemonic;
 import static com.swirlds.common.utility.Mnemonics.generateMnemonicWords;
 import static com.swirlds.common.utility.Mnemonics.getWord;

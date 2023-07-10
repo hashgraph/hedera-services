@@ -20,7 +20,7 @@ import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
 import static com.swirlds.common.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.common.system.status.PlatformStatus.CHECKING;
 import static com.swirlds.common.system.status.PlatformStatus.FREEZING;
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

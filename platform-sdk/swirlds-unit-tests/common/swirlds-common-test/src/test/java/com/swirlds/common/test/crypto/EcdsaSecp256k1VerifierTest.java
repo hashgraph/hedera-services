@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.engine.EcdsaSecp256k1Verifier;
+import com.swirlds.common.test.fixtures.crypto.EcdsaUtils;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.test.framework.TestQualifierTags;
 import java.nio.charset.StandardCharsets;
