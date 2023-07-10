@@ -130,4 +130,21 @@ public interface SwirldState extends MerkleNode {
      */
     @Override
     SwirldState copy();
+
+    /**
+     * This method is called on the first round that reaches consensus after an upgrade. This method is called on that
+     * round before {@link #handleConsensusRound(Round, SwirldDualState)} is called. After this method is called,
+     * {@link #handleConsensusRound(Round, SwirldDualState)} will be called without first making a copy of the state.
+     *
+     * @param addressBook             the current address book
+     * @param dualState               the dual state for this round
+     * @param previousSoftwareVersion the previous version of the software (i.e. the version that created the software
+     *                                version that was read from disk)
+     */
+    default void onSoftwareUpgrade(
+            @NonNull final AddressBook addressBook,
+            @NonNull final SwirldDualState dualState,
+            @NonNull final SoftwareVersion previousSoftwareVersion) {
+        // override if needed
+    }
 }

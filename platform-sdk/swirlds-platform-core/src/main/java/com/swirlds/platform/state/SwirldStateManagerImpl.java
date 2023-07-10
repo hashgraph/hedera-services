@@ -17,6 +17,7 @@
 package com.swirlds.platform.state;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
+import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 
 import com.swirlds.base.time.Time;
@@ -24,6 +25,7 @@ import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
+import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
@@ -91,6 +93,18 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
      * The current software version.
      */
     private final SoftwareVersion softwareVersion;
+
+    /**
+     * The previous software version, i.e. the version of the software that was running on this node before it was last
+     * rebooted. If we are at an upgrade boundary, this is expected to be lower than the current software version.
+     */
+    private SoftwareVersion previousSoftwareVersion;
+
+    /**
+     * If true, we need to call {@link SwirldState#onSoftwareUpgrade(AddressBook, SwirldDualState, SoftwareVersion)}
+     * when we handle the next consensus round.
+     */
+    private boolean upgradeCallbackRequired = false;
 
     // Used for creating mock instances in unit testing
     public SwirldStateManagerImpl() {
@@ -190,10 +204,25 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     public void handleConsensusRound(final ConsensusRound round) {
         final State state = stateRef.get();
 
+        if (upgradeCallbackRequired) {
+            logger.info(
+                    STARTUP.getMarker(),
+                    "Handling first consensus round after a software update ({} to {}), calling onSoftwareUpgrade()",
+                    previousSoftwareVersion,
+                    softwareVersion);
+            upgradeCallbackRequired = false;
+            state.getSwirldState()
+                    .onSoftwareUpgrade(
+                            state.getPlatformState().getAddressBook(),
+                            state.getSwirldDualState(),
+                            previousSoftwareVersion);
+        }
+
         uptimeTracker.handleRound(
                 round,
                 state.getPlatformDualState().getMutableUptimeData(),
                 state.getPlatformState().getAddressBook());
+
         transactionHandler.handleRound(round, state);
         postConsensusSystemTransactionManager.handleRound(state, round);
         updateEpoch();
@@ -267,6 +296,11 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
 
         if (stateRef.get() != null) {
             throw new IllegalStateException("Attempt to set initial state when there is already a state reference.");
+        }
+
+        previousSoftwareVersion = state.getPlatformState().getPlatformData().getCreationSoftwareVersion();
+        if (!Objects.equals(previousSoftwareVersion, softwareVersion)) {
+            upgradeCallbackRequired = true;
         }
 
         // Create a fast copy so there is always an immutable state to
