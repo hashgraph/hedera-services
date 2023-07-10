@@ -34,4 +34,8 @@ public record HederaEvmContext(long gasPrice, boolean staticCall, HederaEvmCode 
     public BlockValues blockValuesOf(final long gasLimit) {
         return blocks.blockValuesOf(gasLimit);
     }
+
+    public boolean isNoopGasContext() {
+        return staticCall || gasPrice == 0;
+    }
 }

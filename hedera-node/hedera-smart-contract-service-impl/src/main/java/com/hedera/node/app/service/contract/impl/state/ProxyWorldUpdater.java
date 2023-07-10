@@ -192,8 +192,8 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public Address setupCreate(@NonNull final Address receiver) {
-        setupPendingCreation(receiver, null);
+    public Address setupCreate(@NonNull final Address origin) {
+        setupPendingCreation(origin, null);
         return requireNonNull(pendingCreation).address();
     }
 
@@ -201,8 +201,8 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public void setupAliasedCreate(@NonNull final Address receiver, @NonNull final Address alias) {
-        setupPendingCreation(receiver, alias);
+    public void setupAliasedCreate(@NonNull final Address origin, @NonNull final Address alias) {
+        setupPendingCreation(origin, alias);
     }
 
     /**
@@ -211,6 +211,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public void finalizeHollowAccount(@NonNull final Address alias) {
         evmFrameState.finalizeHollowAccount(alias);
+    }
+
+    @Override
+    public @NonNull List<StorageAccesses> pendingStorageUpdates() {
+        return evmFrameState.getStorageChanges();
     }
 
     /**
@@ -300,7 +305,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public @NonNull WorldUpdater updater() {
-        return new ProxyWorldUpdater(scope, evmFrameStateFactory, this);
+        return new ProxyWorldUpdater(scope.begin(), evmFrameStateFactory, this);
     }
 
     /**

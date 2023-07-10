@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.statistics;
+package com.swirlds.common.metrics.statistics;
 
-import com.swirlds.common.statistics.internal.StatsBuffer;
+import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 
 /**
  * A statistic such as StatsSpeedometer or StatsRunningAverage should implement this if it will

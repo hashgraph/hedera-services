@@ -316,7 +316,7 @@ public class StaticEntityAccess implements EntityAccess {
 
     public Optional<TokenNftInfo> infoForNft(final NftID target) {
         final var nft = nfts.get(NftId.withDefaultShardRealm(
-                EntityNum.fromTokenId(target.getTokenID()).longValue(), target.getSerialNumber()));
+                EntityNum.fromTokenId(target.getTokenId()).longValue(), target.getSerialNumber()));
         validateTrueOrRevert(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
         return view.infoForNft(target);
     }

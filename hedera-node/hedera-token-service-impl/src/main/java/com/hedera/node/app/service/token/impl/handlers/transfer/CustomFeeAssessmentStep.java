@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.state;
+package com.hedera.node.app.service.token.impl.handlers.transfer;
 
-import java.util.List;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 
-public record StorageChanges(long contractNumber, List<StorageChange> changes) {
-    public StorageSizeChange summarizeSizeEffects() {
-        var numRemovals = 0;
-        var numInsertions = 0;
-        for (final var change : changes()) {
-            if (change.isRemoval()) {
-                numRemovals++;
-            } else if (change.isInsertion()) {
-                numInsertions++;
-            }
-        }
-        return new StorageSizeChange(contractNumber, numRemovals, numInsertions);
-    }
+/**
+ * Charges custom fees for the crypto transfer operation. This is yet to be implemented
+ */
+public class CustomFeeAssessmentStep {
+    public CustomFeeAssessmentStep(final CryptoTransferTransactionBody op) {}
+
+    //    public List<TransactionBody.Builder> assessCustomFees(final CryptoTransferTransactionBody op);
+    // TODO : This will be implemented in next PR
 }

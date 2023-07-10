@@ -26,9 +26,11 @@ import static com.swirlds.merkledb.collections.LongListOffHeap.DEFAULT_RESERVED_
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.utility.Units;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -50,6 +52,7 @@ class MerkleDbDataSourceMetricsTest {
     public static final String TABLE_NAME = "test";
     // default number of longs per chunk
     private static final int COUNT = 1_048_576;
+    private static final int HASHES_RAM_THRESHOLD = COUNT / 2;
     private static Path testDirectory;
     private MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource;
     private Metrics metrics;
@@ -66,7 +69,7 @@ class MerkleDbDataSourceMetricsTest {
         assertEventuallyEquals(
                 0L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected no open dbs");
         // create db
-        dataSource = createDataSource(testDirectory, TABLE_NAME, fixed_fixed, COUNT, COUNT / 2);
+        dataSource = createDataSource(testDirectory, TABLE_NAME, fixed_fixed, COUNT, HASHES_RAM_THRESHOLD);
 
         metrics = createMetrics();
         dataSource.registerMetrics(metrics);
@@ -93,7 +96,7 @@ class MerkleDbDataSourceMetricsTest {
                 Stream.empty());
 
         // one 8 MB memory chunk
-        assertMetricValue("offHeapInternalMb", 8);
+        assertMetricValue("ds_offheap_hashesIndexMb_" + TABLE_NAME, 8);
         assertNoMemoryForLeafAndKeyToPathLists();
 
         // create more internal nodes
@@ -105,8 +108,17 @@ class MerkleDbDataSourceMetricsTest {
                 Stream.empty());
 
         // two 8 MB memory chunks
-        assertMetricValue("offHeapInternalMb", 16);
-        assertMetricValue("offHeapDataSourceMb", 16);
+        final int expectedHashesIndexSize = 16;
+        assertMetricValue("ds_offheap_hashesIndexMb_" + TABLE_NAME, expectedHashesIndexSize);
+        // Hash list bucket is 1_000_000
+        final int hashListBucketSize = 1_000_000;
+        final int expectedHashListBuckets = (HASHES_RAM_THRESHOLD + hashListBucketSize - 1) / hashListBucketSize;
+        final int expectedHashesListSize = (int) (expectedHashListBuckets
+                * hashListBucketSize
+                * DigestType.SHA_384.digestLength()
+                * Units.BYTES_TO_MEBIBYTES);
+        assertMetricValue("ds_offheap_hashesListMb_" + TABLE_NAME, expectedHashesListSize);
+        assertMetricValue("ds_offheap_dataSourceMb_" + TABLE_NAME, expectedHashesIndexSize + expectedHashesListSize);
         assertNoMemoryForLeafAndKeyToPathLists();
     }
 
@@ -128,9 +140,11 @@ class MerkleDbDataSourceMetricsTest {
                 Stream.empty());
 
         // only one 8 MB memory is reserved despite the fact that leaves reside in [COUNT, COUNT * 2] interval
-        assertMetricValue("offHeapLeafMb", 8);
-        assertMetricValue("offHeapKeyToPathMb", 8);
-        assertMetricValue("offHeapDataSourceMb", 16);
+        assertMetricValue("ds_offheap_leavesIndexMb_" + TABLE_NAME, 8);
+        assertMetricValue("ds_offheap_longKeysIndexMb_" + TABLE_NAME, 8);
+        // no leaf keys store in long keys mode
+        assertMetricValue("ds_offheap_objectKeyBucketsIndexMb_" + TABLE_NAME, 0);
+        assertMetricValue("ds_offheap_dataSourceMb_" + TABLE_NAME, 16);
         assertNoMemoryForInternalList();
 
         dataSource.saveRecords(
@@ -142,9 +156,9 @@ class MerkleDbDataSourceMetricsTest {
                 Stream.empty());
 
         // reserved additional memory chunk for a value that didn't fit into the previous chunk
-        assertMetricValue("offHeapLeafMb", 16);
-        assertMetricValue("offHeapKeyToPathMb", 16);
-        assertMetricValue("offHeapDataSourceMb", 32);
+        assertMetricValue("ds_offheap_leavesIndexMb_" + TABLE_NAME, 16);
+        assertMetricValue("ds_offheap_longKeysIndexMb_" + TABLE_NAME, 16);
+        assertMetricValue("ds_offheap_dataSourceMb_" + TABLE_NAME, 32);
         assertNoMemoryForInternalList();
 
         dataSource.saveRecords(
@@ -157,11 +171,11 @@ class MerkleDbDataSourceMetricsTest {
                 Stream.empty());
 
         // shrink the list by one chunk
-        assertMetricValue("offHeapLeafMb", 8);
+        assertMetricValue("ds_offheap_leavesIndexMb_" + TABLE_NAME, 8);
 
         // longKeyToPath list doesn't shrink
-        assertMetricValue("offHeapKeyToPathMb", 16);
-        assertMetricValue("offHeapDataSourceMb", 24);
+        assertMetricValue("ds_offheap_longKeysIndexMb_" + TABLE_NAME, 16);
+        assertMetricValue("ds_offheap_dataSourceMb_" + TABLE_NAME, 24);
         assertNoMemoryForInternalList();
     }
 
@@ -181,12 +195,13 @@ class MerkleDbDataSourceMetricsTest {
     // Helper Methods
 
     private void assertNoMemoryForInternalList() {
-        assertMetricValue("offHeapInternalMb", 0);
+        assertMetricValue("ds_offheap_hashesIndexMb_" + TABLE_NAME, 0);
     }
 
     private void assertNoMemoryForLeafAndKeyToPathLists() {
-        assertMetricValue("offHeapLeafMb", 0);
-        assertMetricValue("offHeapKeyToPathMb", 0);
+        assertMetricValue("ds_offheap_leavesIndexMb_" + TABLE_NAME, 0);
+        assertMetricValue("ds_offheap_longKeysIndexMb_" + TABLE_NAME, 0);
+        assertMetricValue("ds_offheap_objectKeyBucketsIndexMb_" + TABLE_NAME, 0);
     }
 
     private void assertMetricValue(final String metricPattern, final int expectedValue) {

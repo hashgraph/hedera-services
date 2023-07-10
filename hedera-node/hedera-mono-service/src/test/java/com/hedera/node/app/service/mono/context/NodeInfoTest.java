@@ -33,6 +33,7 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import org.junit.jupiter.api.BeforeEach;
@@ -180,14 +181,16 @@ class NodeInfoTest {
     private void givenEntryWithWeight(long id, long weight) {
         given(address.getWeight()).willReturn(weight);
         given(address.getMemo()).willReturn("0.0." + (3 + id));
-        given(book.getAddress(id)).willReturn(address);
+        given(book.getNodeId((int) id)).willReturn(new NodeId(id));
+        given(book.getAddress(new NodeId(id))).willReturn(address);
         given(book.getSize()).willReturn(1);
     }
 
     private void givenEntryWithMemoAndWeight(long id, String memo, long weight) {
         given(address.getWeight()).willReturn(weight);
         given(address.getMemo()).willReturn(memo);
-        given(book.getAddress(id)).willReturn(address);
+        given(book.getNodeId((int) id)).willReturn(new NodeId(id));
+        given(book.getAddress(new NodeId(id))).willReturn(address);
         given(book.getSize()).willReturn(1);
     }
 }
