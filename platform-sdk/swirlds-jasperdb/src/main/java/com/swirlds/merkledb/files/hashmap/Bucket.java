@@ -22,7 +22,7 @@ import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.KEY_HASHCODE_SI
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.SPECIAL_DELETE_ME_VALUE;
 import static com.swirlds.merkledb.files.hashmap.HalfDiskHashMap.VALUE_SIZE;
 
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.Closeable;
@@ -60,7 +60,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
     /** When increasing the capacity of a bucket, increase it by this many bytes. */
     private static final int CAPACITY_INCREMENT = 1024;
     /** We assume 8KB will be enough for now for most buckets. */
-    private static final int DEFAULT_BUCKET_BUFFER_SIZE = 8 * Units.KIBIBYTES_TO_BYTES;
+    private static final int DEFAULT_BUCKET_BUFFER_SIZE = 8 * UnitConstants.KIBIBYTES_TO_BYTES;
 
     private static final int BUCKET_INDEX_SIZE = Integer.BYTES;
     private static final int BUCKET_SIZE_OFFSET = BUCKET_INDEX_SIZE;

@@ -17,9 +17,9 @@
 package com.swirlds.common.threading.framework.internal;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.retryIfInterrupted;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MILLISECONDS;
 import static com.swirlds.common.utility.CompareTo.isGreaterThan;
 import static com.swirlds.common.utility.StackTrace.getStackTrace;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MILLISECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.THREADS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -45,8 +45,7 @@ import org.apache.logging.log4j.Logger;
  * Implements the concept of a thread that can be gracefully stopped. Once stopped this instance can no longer be used
  * and must be recreated.
  *
- * @param <T>
- * 		the type of instance that will do work
+ * @param <T> the type of instance that will do work
  */
 public class StoppableThreadImpl<T extends InterruptableRunnable> implements TypedStoppableThread<T> {
 
@@ -65,8 +64,8 @@ public class StoppableThreadImpl<T extends InterruptableRunnable> implements Typ
     private final Stoppable.StopBehavior stopBehavior;
 
     /**
-     * The amount of time in milliseconds to wait after setting the thread status to {@link Status#DYING}
-     * before interrupting the thread if {@link #stopBehavior} is
+     * The amount of time in milliseconds to wait after setting the thread status to {@link Status#DYING} before
+     * interrupting the thread if {@link #stopBehavior} is
      * {@link com.swirlds.common.threading.framework.Stoppable.StopBehavior#INTERRUPTABLE INTERRUPTABLE}.
      */
     private final int joinWaitMs;
@@ -88,8 +87,8 @@ public class StoppableThreadImpl<T extends InterruptableRunnable> implements Typ
     private final AtomicReference<CountDownLatch> pauseCompletedLatch = new AtomicReference<>(new CountDownLatch(1));
 
     /**
-     * The minimum amount of time that a cycle is permitted to take. If a cycle completes in less time,
-     * then sleep until the minimum period has been met.
+     * The minimum amount of time that a cycle is permitted to take. If a cycle completes in less time, then sleep until
+     * the minimum period has been met.
      */
     private final Duration minimumPeriod;
 
@@ -124,15 +123,15 @@ public class StoppableThreadImpl<T extends InterruptableRunnable> implements Typ
     private final CountDownLatch started = new CountDownLatch(1);
 
     /**
-     * This latch is when joining a thread that was injected as a seed. When a seed is injected,
-     * the thread may live after the stoppable thread finishes, and so join shouldn't wait for
-     * the thread to actually die. Ignored if this thread was not injected.
+     * This latch is when joining a thread that was injected as a seed. When a seed is injected, the thread may live
+     * after the stoppable thread finishes, and so join shouldn't wait for the thread to actually die. Ignored if this
+     * thread was not injected.
      */
     private final CountDownLatch finished = new CountDownLatch(1);
 
     /**
-     * If a thread is requested to stop but does not it is considered to be hanging after this
-     * period. If 0 then thread is never considered to be hanging.
+     * If a thread is requested to stop but does not it is considered to be hanging after this period. If 0 then thread
+     * is never considered to be hanging.
      */
     private final Duration hangingThreadDuration;
 
@@ -272,9 +271,8 @@ public class StoppableThreadImpl<T extends InterruptableRunnable> implements Typ
     }
 
     /**
-     * Get the current thread. Blocks until the thread has been started.
-     * This method is not interruptable, so calling this method before
-     * the thread is started is a big commitment.
+     * Get the current thread. Blocks until the thread has been started. This method is not interruptable, so calling
+     * this method before the thread is started is a big commitment.
      *
      * @return the thread
      */
@@ -289,9 +287,8 @@ public class StoppableThreadImpl<T extends InterruptableRunnable> implements Typ
     }
 
     /**
-     * Get the current thread. Blocks until the thread has been started.
-     * This method is not interruptable, so calling this method before
-     * the thread is started is a big commitment.
+     * Get the current thread. Blocks until the thread has been started. This method is not interruptable, so calling
+     * this method before the thread is started is a big commitment.
      *
      * @return the thread
      */
@@ -363,8 +360,7 @@ public class StoppableThreadImpl<T extends InterruptableRunnable> implements Typ
      * Blocks waiting for a thread to pause
      *
      * @return true if the thread has paused
-     * @throws InterruptedException
-     * 		if this thread is interrupted waiting for the pause started latch
+     * @throws InterruptedException if this thread is interrupted waiting for the pause started latch
      */
     private boolean waitForThreadToPause() throws InterruptedException {
         return pauseStartedLatch
@@ -552,8 +548,7 @@ public class StoppableThreadImpl<T extends InterruptableRunnable> implements Typ
     /**
      * Indicate that the thread has started.
      *
-     * @param thread
-     * 		the thread that is being used
+     * @param thread the thread that is being used
      */
     protected void markAsStarted(final Thread thread) {
         this.thread.set(thread);
@@ -564,8 +559,7 @@ public class StoppableThreadImpl<T extends InterruptableRunnable> implements Typ
     /**
      * Closes the thread with a certain behavior
      *
-     * @param stopBehavior
-     * 		the type of behavior to use when closing the thread
+     * @param stopBehavior the type of behavior to use when closing the thread
      */
     private void close(final StopBehavior stopBehavior) throws InterruptedException {
         if (stopBehavior == StopBehavior.BLOCKING) {
@@ -615,8 +609,7 @@ public class StoppableThreadImpl<T extends InterruptableRunnable> implements Typ
     /**
      * Attempt to do some work.
      *
-     * @throws InterruptedException
-     * 		if the thread running the work is interrupted
+     * @throws InterruptedException if the thread running the work is interrupted
      */
     private void doWork() throws InterruptedException {
         work.run();
@@ -626,8 +619,7 @@ public class StoppableThreadImpl<T extends InterruptableRunnable> implements Typ
      * Perform the last cycle of work. Only called if {@link #stopBehavior} is
      * {@link com.swirlds.common.threading.framework.Stoppable.StopBehavior#BLOCKING BLOCKING}.
      *
-     * @throws InterruptedException
-     * 		if the thread running the work is interrupted
+     * @throws InterruptedException if the thread running the work is interrupted
      */
     private void doFinalCycleWork() throws InterruptedException {
         if (finalCycleWork != null) {

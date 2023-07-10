@@ -16,7 +16,7 @@
 
 package com.swirlds.base.test.fixtures;
 
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MILLISECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MILLISECONDS;
 
 import com.swirlds.base.time.Time;
 import java.time.Duration;
@@ -58,8 +58,7 @@ public class FakeTime implements Time {
     /**
      * Create a fake clock starting now.
      *
-     * @param autoIncrement
-     * 		the {@link Duration} the clock will auto-increment by each time it is observed.
+     * @param autoIncrement the {@link Duration} the clock will auto-increment by each time it is observed.
      */
     public FakeTime(final Duration autoIncrement) {
         this(Instant.now(), autoIncrement);
@@ -68,10 +67,8 @@ public class FakeTime implements Time {
     /**
      * Create a fake clock that starts at a particular time.
      *
-     * @param start
-     * 		the starting timestamp relative to the epoch
-     * @param autoIncrement
-     * 		the {@link Duration} the clock will auto-increment by each time it is observed.
+     * @param start         the starting timestamp relative to the epoch
+     * @param autoIncrement the {@link Duration} the clock will auto-increment by each time it is observed.
      */
     public FakeTime(final Instant start, final Duration autoIncrement) {
         this.start = start;
@@ -132,14 +129,13 @@ public class FakeTime implements Time {
      * </p>
      *
      * <p>
-     * WARNING: this method can cause the clock to go backwards in time. This is impossible for a "real"
-     * implementation that will be used in production environments.
+     * WARNING: this method can cause the clock to go backwards in time. This is impossible for a "real" implementation
+     * that will be used in production environments.
      * </p>
      *
-     * @param elapsedSinceStart
-     * 		the time that has elapsed since the chronometer has started
-     * @deprecated it's really easy to do things with this method that can never happen in reality,
-     * 		don't use this method for new tests
+     * @param elapsedSinceStart the time that has elapsed since the chronometer has started
+     * @deprecated it's really easy to do things with this method that can never happen in reality, don't use this
+     * method for new tests
      */
     @Deprecated
     public void set(final Duration elapsedSinceStart) {
@@ -152,8 +148,8 @@ public class FakeTime implements Time {
      * </p>
      *
      * <p>
-     * WARNING: this method can cause the clock to go backwards in time. This is impossible for a "real"
-     * implementation that will be used in production environments.
+     * WARNING: this method can cause the clock to go backwards in time. This is impossible for a "real" implementation
+     * that will be used in production environments.
      * </p>
      */
     public void reset() {
