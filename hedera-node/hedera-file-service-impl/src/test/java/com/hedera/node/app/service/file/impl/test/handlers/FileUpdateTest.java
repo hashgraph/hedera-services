@@ -59,7 +59,7 @@ class FileUpdateTest extends FileTestBase {
 
     private final FileUpdateTransactionBody.Builder OP_BUILDER = FileUpdateTransactionBody.newBuilder();
 
-    private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(expirationTime, NA, NA);
+    private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(expirationTime, NA, null);
 
     @Mock
     private ReadableAccountStore accountStore;

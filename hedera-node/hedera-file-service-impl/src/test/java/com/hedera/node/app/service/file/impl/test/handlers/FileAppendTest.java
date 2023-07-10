@@ -55,7 +55,7 @@ class FileAppendTest extends FileTestBase {
 
     private final FileAppendTransactionBody.Builder OP_BUILDER = FileAppendTransactionBody.newBuilder();
 
-    private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(expirationTime, NA, NA);
+    private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(expirationTime, NA, null);
 
     @Mock
     private Account account;

@@ -92,7 +92,7 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
                 .id(topic.id())
                 .adminKey(topic.adminKey())
                 .submitKey(topic.submitKey())
-                .autoRenewAccountNumber(topic.autoRenewAccountNumber())
+                .autoRenewAccountId(topic.autoRenewAccountId())
                 .autoRenewPeriod(topic.autoRenewPeriod())
                 .expiry(topic.expiry())
                 .memo(topic.memo())

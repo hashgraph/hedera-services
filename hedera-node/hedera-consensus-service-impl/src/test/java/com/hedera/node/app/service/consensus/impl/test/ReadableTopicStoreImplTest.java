@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
@@ -55,7 +56,7 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
         assertEquals(adminKey.toString(), topic.submitKey().toString());
         assertEquals(this.topic.sequenceNumber(), topic.sequenceNumber());
         assertEquals(this.topic.autoRenewPeriod(), topic.autoRenewPeriod());
-        assertEquals(autoRenewId.accountNum(), topic.autoRenewAccountNumber());
+        assertEquals(autoRenewId, topic.autoRenewAccountId());
         assertEquals(memo, topic.memo());
         assertFalse(topic.deleted());
         assertArrayEquals(runningHash, asBytes(topic.runningHash()));
@@ -63,7 +64,8 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
 
     @Test
     void getsTopicIfTopicExistsWithNoAutoRenewAccount() {
-        givenValidTopic(0L);
+        final var accountId = AccountID.newBuilder().accountNum(0L).build();
+        givenValidTopic(accountId);
         readableTopicState = readableTopicState();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
@@ -78,7 +80,7 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
         assertEquals(adminKey.toString(), topic.submitKey().toString());
         assertEquals(this.topic.sequenceNumber(), topic.sequenceNumber());
         assertEquals(this.topic.autoRenewPeriod(), topic.autoRenewPeriod());
-        assertEquals(0L, topic.autoRenewAccountNumber());
+        assertEquals(accountId, topic.autoRenewAccountId());
         assertEquals(memo, topic.memo());
         assertFalse(topic.deleted());
         assertArrayEquals(runningHash, asBytes(topic.runningHash()));

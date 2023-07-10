@@ -247,7 +247,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                 .willReturn(new ExpiryMeta(
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
-                        op.autoRenewAccount().accountNum()));
+                        op.autoRenewAccount()));
         given(handleContext.newEntityNum()).willReturn(1_234L);
 
         subject.handle(handleContext);
@@ -263,7 +263,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(submitKey, actualTopic.submitKey());
         assertEquals(1234667, actualTopic.expiry());
         assertEquals(op.autoRenewPeriod().seconds(), actualTopic.autoRenewPeriod());
-        assertEquals(autoRenewId.accountNum(), actualTopic.autoRenewAccountNumber());
+        assertEquals(autoRenewId, actualTopic.autoRenewAccountId());
         final var topicID = TopicID.newBuilder().topicNum(1_234L).build();
         verify(recordBuilder).topicID(topicID);
         assertTrue(topicStore.get(TopicID.newBuilder().topicNum(1_234L).build()).isPresent());
@@ -283,7 +283,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                 .willReturn(new ExpiryMeta(
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
-                        op.autoRenewAccount().accountNumOrElse(0L)));
+                        op.autoRenewAccount()));
         given(handleContext.newEntityNum()).willReturn(1_234L);
 
         subject.handle(handleContext);
@@ -299,7 +299,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertNull(actualTopic.submitKey());
         assertEquals(1_234_567L + op.autoRenewPeriod().seconds(), actualTopic.expiry());
         assertEquals(op.autoRenewPeriod().seconds(), actualTopic.autoRenewPeriod());
-        assertEquals(autoRenewId.accountNum(), actualTopic.autoRenewAccountNumber());
+        assertEquals(autoRenewId, actualTopic.autoRenewAccountId());
         final var topicID = TopicID.newBuilder().topicNum(1_234L).build();
         verify(recordBuilder).topicID(topicID);
         assertTrue(topicStore.get(TopicID.newBuilder().topicNum(1_234L).build()).isPresent());
