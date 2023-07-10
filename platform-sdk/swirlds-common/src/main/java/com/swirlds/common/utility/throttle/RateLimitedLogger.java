@@ -105,6 +105,10 @@ public class RateLimitedLogger {
             @NonNull final String message,
             @Nullable final Object... varargs) {
 
+        Objects.requireNonNull(level);
+        Objects.requireNonNull(logMarker);
+        Objects.requireNonNull(message);
+
         try (final Locked l = lock.lock()) {
             final long deniedRequests = rateLimiter.getDeniedRequests();
             if (rateLimiter.requestAndTrigger()) {
