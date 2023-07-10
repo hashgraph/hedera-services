@@ -43,7 +43,8 @@ public interface Dispatch {
     // --- from the returned state via a given {@link ResultTranslator}
 
     /**
-     * Returns the all the bytes of entropy available in this scope.
+     * Returns the entropy available in this scope. See <a href="https://hips.hedera.com/hip/hip-351">HIP-351</a>
+     * for details on how the Hedera node implements this.
      *
      * @return the available entropy
      */

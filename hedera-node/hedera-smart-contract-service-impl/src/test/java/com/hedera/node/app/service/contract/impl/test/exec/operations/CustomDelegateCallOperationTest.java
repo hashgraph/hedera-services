@@ -17,8 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REQUIRED_GAS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSameResult;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -77,18 +76,18 @@ class CustomDelegateCallOperationTest {
     @Test
     void rejectsMissingNonSystemAddress() {
         doCallRealMethod().when(addressChecks).isNeitherSystemNorPresent(any(), any());
-        givenWellKnownFrameWith(1L, Address.fromHexString("0x123"), 2L);
-        final var expected = new Operation.OperationResult(123L, MISSING_ADDRESS);
+        givenWellKnownFrameWith(1L, NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
+        final var expected = new Operation.OperationResult(REQUIRED_GAS, MISSING_ADDRESS);
         assertSameResult(expected, subject.execute(frame, evm));
     }
 
     @Test
     void permitsSystemAddress() {
         doCallRealMethod().when(addressChecks).isNeitherSystemNorPresent(any(), any());
-        given(addressChecks.isSystemAccount(Address.fromHexString("0x123"))).willReturn(true);
-        givenWellKnownFrameWith(1L, Address.fromHexString("0x123"), 2L);
+        given(addressChecks.isSystemAccount(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(true);
+        givenWellKnownFrameWith(1L, NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
         given(frame.stackSize()).willReturn(6);
-        final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
+        final var expected = new Operation.OperationResult(REQUIRED_GAS, INSUFFICIENT_GAS);
         assertSameResult(expected, subject.execute(frame, evm));
     }
 

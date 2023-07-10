@@ -26,7 +26,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.SStoreOperation;
 
 /**
@@ -34,61 +33,31 @@ import org.hyperledger.besu.evm.operation.SStoreOperation;
  * value if {@link FeatureFlags#isSidecarEnabled(MessageFrame, SidecarType)} returns true for the
  * {@link SidecarType#CONTRACT_STATE_CHANGE} type.
  */
-public class CustomSStoreOperation implements Operation {
+public class CustomSStoreOperation extends DelegatingOperation {
     private final FeatureFlags featureFlags;
-    private final SStoreOperation delegate;
 
     public CustomSStoreOperation(@NonNull final FeatureFlags featureFlags, @NonNull final SStoreOperation delegate) {
+        super(delegate);
         this.featureFlags = featureFlags;
-        this.delegate = delegate;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         requireNonNull(evm);
         requireNonNull(frame);
 
         final var key = frame.getStackItem(0);
-        final var result = delegate.execute(frame, evm);
+        final var result = super.execute(frame, evm);
         if (result.getHaltReason() == null && featureFlags.isSidecarEnabled(frame, CONTRACT_STATE_CHANGE)) {
-            // We have to explicitly get the original value before the write
+            // We have to explicitly get the original value before this store operation
             final var account = frame.getWorldUpdater().get(frame.getRecipientAddress());
             final var slotKey = UInt256.fromBytes(key);
             final var slotValue = account.getOriginalStorageValue(slotKey);
             maybeTrackReadIn(frame, slotKey, slotValue);
         }
         return result;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getOpcode() {
-        return delegate.getOpcode();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getName() {
-        return delegate.getName();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getStackItemsConsumed() {
-        return delegate.getStackItemsConsumed();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getStackItemsProduced() {
-        return delegate.getStackItemsProduced();
     }
 }
