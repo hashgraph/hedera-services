@@ -16,43 +16,6 @@
 
 package com.hedera.node.app.workflows.ingest;
 
-import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.transaction.SignedTransaction;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
-import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.info.CurrentPlatformStatus;
-import com.hedera.node.app.signature.SignatureExpander;
-import com.hedera.node.app.signature.SignatureVerificationFuture;
-import com.hedera.node.app.signature.SignatureVerifier;
-import com.hedera.node.app.solvency.SolvencyPreCheck;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.workflows.TransactionChecker;
-import com.hedera.node.app.workflows.TransactionInfo;
-import com.swirlds.common.system.status.PlatformStatus;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Map;
-import java.util.stream.Stream;
-
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_FEE;
@@ -76,6 +39,43 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
+import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.info.CurrentPlatformStatus;
+import com.hedera.node.app.signature.SignatureExpander;
+import com.hedera.node.app.signature.SignatureVerificationFuture;
+import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.solvency.SolvencyPreCheck;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.WorkflowsValidationUtil;
+import com.swirlds.common.system.status.PlatformStatus;
+import java.util.Map;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
 class IngestCheckerTest extends AppTestBase {
     private static final SignatureMap MOCK_SIGNATURE_MAP =
@@ -98,6 +98,9 @@ class IngestCheckerTest extends AppTestBase {
 
     @Mock(strictness = LENIENT)
     private SolvencyPreCheck solvencyPreCheck;
+
+    @Mock(strictness = LENIENT)
+    private WorkflowsValidationUtil workflowsValidationUtil;
 
     private TransactionBody txBody;
     private Transaction tx;
@@ -132,7 +135,8 @@ class IngestCheckerTest extends AppTestBase {
                 throttleAccumulator,
                 solvencyPreCheck,
                 signatureExpander,
-                signatureVerifier);
+                signatureVerifier,
+                workflowsValidationUtil);
     }
 
     @Nested
