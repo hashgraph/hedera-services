@@ -18,7 +18,7 @@ package com.swirlds.platform.test.event.preconsensus;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
-import static com.swirlds.common.test.io.FileManipulation.writeRandomBytes;
+import static com.swirlds.common.test.fixtures.io.FileManipulation.writeRandomBytes;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.EVENT_FILE_SEPARATOR;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.MAXIMUM_GENERATION_PREFIX;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.MINIMUM_GENERATION_PREFIX;

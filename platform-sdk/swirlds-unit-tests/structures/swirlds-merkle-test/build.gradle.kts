@@ -37,4 +37,5 @@ dependencies {
 
     testImplementation(libs.commons.io)
     testImplementation(testLibs.bundles.junit)
+    testImplementation(testFixtures(project(":swirlds-common")))
 }

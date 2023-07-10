@@ -41,6 +41,7 @@ dependencies {
 
     testImplementation(testLibs.bundles.junit)
     testImplementation(testLibs.bundles.mocking)
+    testImplementation(testFixtures(project(":swirlds-common")))
 }
 
 tasks.withType<Javadoc>() { enabled = false }

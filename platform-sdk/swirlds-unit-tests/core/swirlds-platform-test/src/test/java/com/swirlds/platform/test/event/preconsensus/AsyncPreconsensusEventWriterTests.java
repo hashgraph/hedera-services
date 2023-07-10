@@ -43,7 +43,7 @@ import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
-import com.swirlds.common.test.io.FileManipulation;
+import com.swirlds.common.test.fixtures.io.FileManipulation;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.preconsensus.AsyncPreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;

@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
-import static com.swirlds.common.test.io.FileManipulation.corruptFile;
-import static com.swirlds.common.test.io.FileManipulation.truncateFile;
+import static com.swirlds.common.test.fixtures.io.FileManipulation.corruptFile;
+import static com.swirlds.common.test.fixtures.io.FileManipulation.truncateFile;
 import static com.swirlds.platform.test.event.preconsensus.AsyncPreconsensusEventWriterTests.assertEventsAreEqual;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
