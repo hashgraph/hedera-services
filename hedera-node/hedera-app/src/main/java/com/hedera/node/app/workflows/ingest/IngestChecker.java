@@ -17,6 +17,8 @@
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
@@ -28,6 +30,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.info.CurrentPlatformStatus;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
@@ -35,11 +38,11 @@ import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.solvency.SolvencyPreCheck;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.WorkflowsValidationUtil;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
@@ -62,7 +65,7 @@ public final class IngestChecker {
     private final SolvencyPreCheck solvencyPreCheck;
     private final SignatureVerifier signatureVerifier;
     private final SignatureExpander signatureExpander;
-    private final WorkflowsValidationUtil workflowsValidationUtil;
+    private final HederaRecordCache hederaRecordCache;
 
     /**
      * Constructor of the {@code IngestChecker}
@@ -83,14 +86,14 @@ public final class IngestChecker {
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final SignatureExpander signatureExpander,
             @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final WorkflowsValidationUtil workflowsValidationUtil) {
+            @NonNull final HederaRecordCache hederaRecordCache) {
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.solvencyPreCheck = solvencyPreCheck;
         this.signatureVerifier = requireNonNull(signatureVerifier);
         this.signatureExpander = requireNonNull(signatureExpander);
-        this.workflowsValidationUtil = requireNonNull(workflowsValidationUtil);
+        this.hederaRecordCache = requireNonNull(hederaRecordCache);
     }
 
     /**
@@ -124,7 +127,7 @@ public final class IngestChecker {
         assert functionality != HederaFunctionality.NONE;
 
         // 2. Check transaction duplication
-        workflowsValidationUtil.checkDuplicates(txBody);
+        checkDuplicates(txBody);
 
         // 3. Check throttles
         if (throttleAccumulator.shouldThrottle(txInfo.txBody())) {
@@ -144,6 +147,17 @@ public final class IngestChecker {
         verifyPayerSignature(state, txInfo, payerId);
 
         return txInfo;
+    }
+
+    public void checkDuplicates(final TransactionBody txBody) throws PreCheckException {
+        if (txBody == null) {
+            throw new PreCheckException(EMPTY_TRANSACTION_BODY);
+        }
+
+        final var foundTransactionRecord = hederaRecordCache.getRecord(txBody.transactionIDOrThrow());
+        if (foundTransactionRecord != null) {
+            throw new PreCheckException(DUPLICATE_TRANSACTION);
+        }
     }
 
     private void verifyPayerSignature(

@@ -72,6 +72,8 @@ public interface HandleWorkflowInjectionModule {
     @Singleton
     AttributeValidator bindAttributeValidator(StandardizedAttributeValidator attributeValidator);
 
+    // TODO: where is the best place to put the binding? Since it's used both in HandleWorkflow and Ingest I should put
+    // it in a common Module
     @Binds
     @Singleton
     HederaRecordCache bindHederaRecordCache(RecordCacheImpl recordCache);

@@ -57,10 +57,10 @@ import com.hedera.node.app.solvency.SolvencyPreCheck;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.WorkflowsValidationUtil;
 import com.swirlds.common.system.status.PlatformStatus;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -100,7 +100,7 @@ class IngestCheckerTest extends AppTestBase {
     private SolvencyPreCheck solvencyPreCheck;
 
     @Mock(strictness = LENIENT)
-    private WorkflowsValidationUtil workflowsValidationUtil;
+    private HederaRecordCache hederaRecordCache;
 
     private TransactionBody txBody;
     private Transaction tx;
@@ -136,7 +136,7 @@ class IngestCheckerTest extends AppTestBase {
                 solvencyPreCheck,
                 signatureExpander,
                 signatureVerifier,
-                workflowsValidationUtil);
+                hederaRecordCache);
     }
 
     @Nested

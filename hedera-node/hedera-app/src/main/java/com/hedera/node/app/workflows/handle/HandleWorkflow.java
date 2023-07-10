@@ -16,11 +16,14 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TRANSACTION_BODY;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.records.RecordManager;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
@@ -34,9 +37,9 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
-import com.hedera.node.app.workflows.WorkflowsValidationUtil;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -79,7 +82,7 @@ public class HandleWorkflow {
     private final ServiceScopeLookup serviceScopeLookup;
     private final ConfigProvider configProvider;
     private final InstantSource instantSource;
-    private final WorkflowsValidationUtil workflowsValidationUtil;
+    private final HederaRecordCache hederaRecordCache;
 
     @Inject
     public HandleWorkflow(
@@ -93,7 +96,7 @@ public class HandleWorkflow {
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ConfigProvider configProvider,
             @NonNull final InstantSource instantSource,
-            @NonNull final WorkflowsValidationUtil workflowsValidationUtil) {
+            @NonNull final HederaRecordCache hederaRecordCache) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -104,8 +107,7 @@ public class HandleWorkflow {
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
-        this.workflowsValidationUtil =
-                requireNonNull(workflowsValidationUtil, "workflowsValidationUtil must not be null");
+        this.hederaRecordCache = requireNonNull(hederaRecordCache, "hederaRecordCache must not be null");
     }
 
     /**
@@ -147,7 +149,7 @@ public class HandleWorkflow {
                     preHandleResult.txInfo().signedBytes());
 
             // Check transaction duplication
-            workflowsValidationUtil.checkDuplicates(preHandleResult.txInfo().txBody());
+            checkDuplicates(preHandleResult.txInfo().txBody());
 
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
@@ -216,6 +218,17 @@ public class HandleWorkflow {
 
         // store all records at once
         recordManager.endUserTransaction(recordListBuilder.build());
+    }
+
+    private void checkDuplicates(final TransactionBody txBody) throws PreCheckException {
+        if (txBody == null) {
+            throw new PreCheckException(EMPTY_TRANSACTION_BODY);
+        }
+
+        final var foundTransactionRecord = hederaRecordCache.getRecord(txBody.transactionIDOrThrow());
+        if (foundTransactionRecord != null) {
+            throw new PreCheckException(DUPLICATE_TRANSACTION);
+        }
     }
 
     private void recordFailedTransaction(
