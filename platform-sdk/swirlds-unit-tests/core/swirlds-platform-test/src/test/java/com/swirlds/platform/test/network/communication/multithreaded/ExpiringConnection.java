@@ -72,7 +72,7 @@ public class ExpiringConnection implements Connection {
     }
 
     @Override
-    public void setTimeout(final int timeoutMillis) throws SocketException {
+    public void setTimeout(final long timeoutMillis) throws SocketException {
         connection.setTimeout(timeoutMillis);
     }
 

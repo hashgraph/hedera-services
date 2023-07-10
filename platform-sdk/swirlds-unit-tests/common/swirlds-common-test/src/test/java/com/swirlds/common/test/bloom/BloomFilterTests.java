@@ -16,7 +16,7 @@
 
 package com.swirlds.common.test.bloom;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,7 +31,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.SerializableLong;
-import com.swirlds.common.test.ResettableRandom;
+import com.swirlds.common.test.fixtures.ResettableRandom;
 import com.swirlds.test.framework.TestQualifierTags;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

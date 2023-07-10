@@ -96,13 +96,15 @@ public class MerkleDbTest {
     @Test
     @DisplayName("MerkleDb data source paths")
     public void testDataSourcePaths() throws IOException {
-        final MerkleDb instance = MerkleDb.getDefaultInstance();
+        final Path tempDir = TemporaryFileBuilder.buildTemporaryFile();
+        final MerkleDb instance = MerkleDb.getInstance(tempDir);
+        final Path dbDir = instance.getStorageDir();
         final String tableName = "tabley";
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
                 instance.createDataSource(tableName, tableConfig, false);
         Assertions.assertNotNull(dataSource);
-        final Path dbDir = instance.getStorageDir();
+        Assertions.assertTrue(Files.exists(dbDir.resolve("metadata.mdb")));
         final int tableId = dataSource.getTableId();
         Assertions.assertEquals(dbDir.resolve("tables/" + tableName + "-" + tableId), dataSource.getStorageDir());
         Assertions.assertEquals(
