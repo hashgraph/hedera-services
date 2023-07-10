@@ -22,10 +22,27 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
 
+/**
+ * Utilities for generating documentation based on a given {@link ConfigDataRecordDefinition}.
+ * Its methods should be accessed statically, and it should not be instantiated.
+ */
 public class DocumentationFactory {
 
     private DocumentationFactory() {}
 
+    /**
+     * Writes the documentation of the given {@link ConfigDataRecordDefinition} to a file.
+     * <p>
+     * The documentation includes the name, type, default value, and description of each property of the given record.
+     * The file to write to is determined by the {@code configDocumentationFile} parameter.
+     * Existing contents of the file are not overwritten; new contents are appended.
+     *
+     * @param configDataRecordDefinition The record definition to document. Must not be {@code null}.
+     * @param configDocumentationFile The file to which the documentation should be written. Must not be {@code null}.
+     *
+     * @throws IOException If an I/O error occurs while writing to the file.
+     * @throws RuntimeException If an error occurs while writing a property's documentation.
+     */
     public static void doWork(
             @NonNull final ConfigDataRecordDefinition configDataRecordDefinition,
             @NonNull final Path configDocumentationFile)

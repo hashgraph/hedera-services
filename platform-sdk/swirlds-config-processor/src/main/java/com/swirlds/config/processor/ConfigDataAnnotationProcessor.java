@@ -45,7 +45,8 @@ import javax.tools.StandardLocation;
 public class ConfigDataAnnotationProcessor extends AbstractProcessor {
 
     @Override
-    public boolean process(final @NonNull Set<? extends TypeElement> annotations, final @NonNull RoundEnvironment roundEnv) {
+    public boolean process(
+            final @NonNull Set<? extends TypeElement> annotations, final @NonNull RoundEnvironment roundEnv) {
         Objects.requireNonNull(roundEnv, "annotations must not be null");
         Objects.requireNonNull(roundEnv, "roundEnv must not be null");
 
@@ -104,7 +105,9 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
 
     @NonNull
     private JavaFileObject getConstantSourceFile(
-            @NonNull final String packageName, @NonNull final String simpleClassName, @NonNull final TypeElement originatingElement)
+            @NonNull final String packageName,
+            @NonNull final String simpleClassName,
+            @NonNull final TypeElement originatingElement)
             throws IOException {
         Objects.requireNonNull(packageName, "packageName must not be null");
         Objects.requireNonNull(simpleClassName, "simpleClassName must not be null");

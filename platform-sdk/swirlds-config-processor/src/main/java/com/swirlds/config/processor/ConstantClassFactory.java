@@ -26,10 +26,22 @@ import javax.tools.JavaFileObject;
 import org.jboss.forge.roaster.Roaster;
 import org.jboss.forge.roaster.model.source.JavaClassSource;
 
+/**
+ * Utilities for creating constant class files from {@link ConfigDataRecordDefinition} instances.
+ * Its methods should be accessed statically, and it should not be instantiated.
+ */
 public class ConstantClassFactory {
 
     private ConstantClassFactory() {}
 
+    /**
+     * Processes a given {@link ConfigDataRecordDefinition} and writes a corresponding constant class file.
+     *
+     * @param configDataRecordDefinition The record definition to be processed. Must not be {@code null}.
+     * @param constantsSourceFile The Java file object where the constant class should be written. Must not be {@code null}.
+     *
+     * @throws IOException If an error occurs while writing the constant class.
+     */
     public static void doWork(
             @NonNull final ConfigDataRecordDefinition configDataRecordDefinition,
             @NonNull final JavaFileObject constantsSourceFile)
@@ -73,6 +85,13 @@ public class ConstantClassFactory {
         }
     }
 
+    /**
+     * Converts a property name into a constant name. The conversion is based on changing from camel case to snake case
+     *
+     * @param propertyName The property name to be converted. Must not be {@code null}.
+     *
+     * @return The converted constant name. Never {@code null}.
+     */
     @NonNull
     public static String toConstantName(@NonNull final String propertyName) {
         Objects.requireNonNull(propertyName, "propertyName must not be null");
