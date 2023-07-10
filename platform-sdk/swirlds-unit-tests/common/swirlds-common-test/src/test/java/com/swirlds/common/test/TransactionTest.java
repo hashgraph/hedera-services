@@ -26,7 +26,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.common.test.io.InputOutputStream;
+import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

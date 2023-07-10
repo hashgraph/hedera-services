@@ -30,6 +30,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.test.TransactionUtils;
+import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import java.io.ByteArrayOutputStream;

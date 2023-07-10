@@ -25,7 +25,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.test.dummy.Key;
 import com.swirlds.common.test.dummy.Value;
-import com.swirlds.common.test.merkle.util.MerkleSerializeUtils;
+import com.swirlds.common.test.fixtures.merkle.util.MerkleSerializeUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.map.test.util.KeyValueProvider;
 import com.swirlds.test.framework.TestComponentTags;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.merkle.util;
+package com.swirlds.common.test.fixtures.merkle.util;
 
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.test.io.InputOutputStream;
+import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 
