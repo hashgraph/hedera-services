@@ -42,9 +42,9 @@ public class PlatformStatusManager implements PlatformStatusGetter, Startable, S
     private final Time time;
 
     /**
-     * The thread to handle incoming {@link PlatformStatusAction}s
+     * The queue to handle incoming {@link PlatformStatusAction}s
      */
-    private final QueueThread<PlatformStatusAction> handleThread;
+    private final QueueThread<PlatformStatusAction> queue;
 
     /**
      * The platform status state machine that is being wrapped by this asynchronous component
@@ -73,7 +73,7 @@ public class PlatformStatusManager implements PlatformStatusGetter, Startable, S
                 platformContext.getConfiguration().getConfigData(PlatformStatusConfig.class);
         this.stateMachine = new PlatformStatusStateMachine(time, config, notificationEngine);
 
-        this.handleThread = new QueueThreadConfiguration<PlatformStatusAction>(threadManager)
+        this.queue = new QueueThreadConfiguration<PlatformStatusAction>(threadManager)
                 .setComponent("platform-status")
                 .setThreadName("platform-status-state-machine")
                 .setHandler(this::processStatusAction)
@@ -89,7 +89,7 @@ public class PlatformStatusManager implements PlatformStatusGetter, Startable, S
      */
     @Override
     public void start() {
-        handleThread.start();
+        queue.start();
     }
 
     /**
@@ -97,7 +97,7 @@ public class PlatformStatusManager implements PlatformStatusGetter, Startable, S
      */
     @Override
     public void stop() {
-        handleThread.stop();
+        queue.stop();
     }
 
     /**
@@ -107,7 +107,7 @@ public class PlatformStatusManager implements PlatformStatusGetter, Startable, S
      */
     public void registerStatusAction(@NonNull final PlatformStatusAction action) {
         Objects.requireNonNull(action);
-        handleThread.add(action);
+        queue.add(action);
     }
 
     /**
