@@ -97,25 +97,15 @@ public class TransactionChecker {
     private static final String COUNTER_RECEIVED_SUPER_DEPRECATED_DESC =
             "number of super-deprecated txns (body, sigs) received";
 
-    /**
-     * The maximum number of bytes that can exist in the transaction
-     */
+    /** The maximum number of bytes that can exist in the transaction */
     private final int maxSignedTxnSize;
-    /**
-     * The {@link ConfigProvider} used to get properties needed for these checks.
-     */
+    /** The {@link ConfigProvider} used to get properties needed for these checks. */
     private final ConfigProvider props;
-    /**
-     * The {@link Counter} used to track the number of deprecated transactions (bodyBytes, sigMap) received.
-     */
+    /** The {@link Counter} used to track the number of deprecated transactions (bodyBytes, sigMap) received. */
     private final Counter deprecatedCounter;
-    /**
-     * The {@link Counter} used to track the number of super deprecated transactions (body, sigs) received.
-     */
+    /** The {@link Counter} used to track the number of super deprecated transactions (body, sigs) received. */
     private final Counter superDeprecatedCounter;
-    /**
-     * The account ID of the node running this software
-     */
+    /** The account ID of the node running this software */
     private final AccountID nodeAccount;
 
     // TODO We need to incorporate the check for "TRANSACTION_TOO_MANY_LAYERS". "maxProtoMessageDepth" is a property
@@ -126,9 +116,9 @@ public class TransactionChecker {
      * Create a new {@link TransactionChecker}
      *
      * @param maxSignedTxnSize the maximum transaction size
-     * @param configProvider   access to configuration
-     * @param metrics          metrics related to workflows
-     * @throws NullPointerException     if one of the arguments is {@code null}
+     * @param configProvider access to configuration
+     * @param metrics metrics related to workflows
+     * @throws NullPointerException if one of the arguments is {@code null}
      * @throws IllegalArgumentException if {@code maxSignedTxnSize} is not positive
      */
     @Inject
@@ -144,9 +134,11 @@ public class TransactionChecker {
         this.nodeAccount = requireNonNull(nodeAccount);
         this.maxSignedTxnSize = maxSignedTxnSize;
         props = requireNonNull(configProvider);
-        deprecatedCounter = metrics.getOrCreate(new Counter.Config("app", COUNTER_DEPRECATED_TXNS_NAME)
+        deprecatedCounter = metrics.getOrCreate(
+            new Counter.Config("app", COUNTER_DEPRECATED_TXNS_NAME)
                 .withDescription(COUNTER_RECEIVED_DEPRECATED_DESC));
-        superDeprecatedCounter = metrics.getOrCreate(new Counter.Config("app", COUNTER_SUPER_DEPRECATED_TXNS_NAME)
+        superDeprecatedCounter = metrics.getOrCreate(
+            new Counter.Config("app", COUNTER_SUPER_DEPRECATED_TXNS_NAME)
                 .withDescription(COUNTER_RECEIVED_SUPER_DEPRECATED_DESC));
     }
 
@@ -171,7 +163,7 @@ public class TransactionChecker {
      *
      * @param buffer the {@code ByteBuffer} with the serialized transaction
      * @return an {@link TransactionInfo} with the parsed and checked entities
-     * @throws PreCheckException    if the data is not valid
+     * @throws PreCheckException if the data is not valid
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @NonNull

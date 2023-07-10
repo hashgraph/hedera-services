@@ -84,13 +84,9 @@ final class TransactionCheckerTest extends AppTestBase {
     private static final long MAX_DURATION = 120L;
     private static final long MIN_DURATION = 10L;
     private static final int MIN_VALIDITY_BUFFER = 2;
-    /**
-     * Value for {@link TransactionBody#memo()} for most tests
-     */
+    /** Value for {@link TransactionBody#memo()} for most tests */
     private static final Bytes CONTENT = Bytes.wrap("Hello world!");
-    /**
-     * The standard {@link TransactionBody#transactionValidDuration()} for most tests
-     */
+    /** The standard {@link TransactionBody#transactionValidDuration()} for most tests */
     private static final Duration ONE_MINUTE = Duration.newBuilder().seconds(60).build();
 
     private ConfigProvider props;
@@ -189,7 +185,6 @@ final class TransactionCheckerTest extends AppTestBase {
     @DisplayName("Constructor Tests")
     class ConstructorTest {
         @Test
-        @SuppressWarnings("ConstantConditions")
         @DisplayName("Constructor throws on illegal arguments")
         void testConstructorWithIllegalArguments() {
             assertThatThrownBy(() -> new TransactionChecker(-1, nodeSelfAccountId, props, metrics))
@@ -212,7 +207,6 @@ final class TransactionCheckerTest extends AppTestBase {
     @DisplayName("Tests for Parsing")
     class ParseTest {
         @Test
-        @SuppressWarnings("ConstantConditions")
         @DisplayName("`parseAndCheck` requires Bytes")
         void parseAndCheck() {
             assertThatThrownBy(() -> checker.parse(null)).isInstanceOf(NullPointerException.class);
@@ -300,7 +294,6 @@ final class TransactionCheckerTest extends AppTestBase {
 
         @Test
         @DisplayName("A transaction with super deprecated fields alone will throw")
-        @SuppressWarnings("deprecation")
         void parseAndCheckWithSuperDeprecatedFields() throws PreCheckException {
             // Given a transaction using the super deprecated fields
             final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
@@ -355,7 +348,6 @@ final class TransactionCheckerTest extends AppTestBase {
     @DisplayName("Check Tests")
     class CheckTest {
         @Test
-        @SuppressWarnings("ConstantConditions")
         @DisplayName("`check` requires a transaction")
         void checkWithNull() {
             assertThatThrownBy(() -> checker.check(null)).isInstanceOf(NullPointerException.class);
@@ -417,7 +409,6 @@ final class TransactionCheckerTest extends AppTestBase {
 
             @Test
             @DisplayName("A transaction with super deprecated fields alone will throw")
-            @SuppressWarnings("deprecation")
             void happyWithSuperDeprecatedFields() {
                 // Given a transaction using the super deprecated fields
                 final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
@@ -440,7 +431,6 @@ final class TransactionCheckerTest extends AppTestBase {
             @Test
             @DisplayName(
                     "A transaction with super deprecated fields and signedTransactionBytes ignores super deprecated fields")
-            @SuppressWarnings("deprecation")
             void checkWithSuperDeprecatedFieldsAndSignedTransactionBytes() throws PreCheckException {
                 // Given a transaction using the super deprecated fields and signedTransactionBytes
                 final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
@@ -465,7 +455,6 @@ final class TransactionCheckerTest extends AppTestBase {
             @Test
             @DisplayName(
                     "A transaction with super deprecated fields and deprecated fields ignores super deprecated fields")
-            @SuppressWarnings("deprecation")
             void checkWithSuperDeprecatedFieldsAndDeprecatedFields() throws PreCheckException {
                 // Given a transaction using the super deprecated fields and signedTransactionBytes
                 final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
