@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.test.io.SerializationUtils;
+import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.common.utility.InvalidSemanticVersionException;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.common.utility.SemanticVersion;

@@ -38,6 +38,7 @@ import com.swirlds.platform.state.signed.SignedStateValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.SocketException;
+import java.time.Duration;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,7 +55,7 @@ public class ReconnectLearner {
     private final Connection connection;
     private final AddressBook addressBook;
     private final State currentState;
-    private final int reconnectSocketTimeout;
+    private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics statistics;
     private final SignedStateValidationData stateValidationData;
     private SigSet sigSet;
@@ -86,7 +87,7 @@ public class ReconnectLearner {
             @NonNull final Connection connection,
             @NonNull final AddressBook addressBook,
             @NonNull final State currentState,
-            final int reconnectSocketTimeout,
+            @NonNull final Duration reconnectSocketTimeout,
             @NonNull final ReconnectMetrics statistics) {
 
         currentState.throwIfImmutable("Can not perform reconnect with immutable state");
@@ -97,7 +98,7 @@ public class ReconnectLearner {
         this.connection = Objects.requireNonNull(connection);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.currentState = Objects.requireNonNull(currentState);
-        this.reconnectSocketTimeout = reconnectSocketTimeout;
+        this.reconnectSocketTimeout = Objects.requireNonNull(reconnectSocketTimeout);
         this.statistics = Objects.requireNonNull(statistics);
 
         // Save some of the current state data for validation
@@ -112,7 +113,7 @@ public class ReconnectLearner {
     private void increaseSocketTimeout() throws ReconnectException {
         try {
             originalSocketTimeout = connection.getTimeout();
-            connection.setTimeout(reconnectSocketTimeout);
+            connection.setTimeout(reconnectSocketTimeout.toMillis());
         } catch (final SocketException e) {
             throw new ReconnectException(e);
         }
