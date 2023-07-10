@@ -25,7 +25,7 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.platform.event.EventDescriptor;
 import java.io.IOException;

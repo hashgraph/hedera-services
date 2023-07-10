@@ -16,8 +16,8 @@
 
 package com.swirlds.common.test.sequence;
 
-import static com.swirlds.common.test.AssertionUtils.completeBeforeTimeout;
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;

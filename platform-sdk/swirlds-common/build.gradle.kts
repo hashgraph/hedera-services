@@ -52,4 +52,5 @@ dependencies {
 
     // Test Fixtures
     testFixturesImplementation(testLibs.bundles.junit)
+    testFixturesCompileOnly(libs.spotbugs.annotations)
 }
