@@ -250,7 +250,7 @@ public class SyncGossip extends AbstractGossip {
                                             emergencyRecoveryManager,
                                             reconnectThrottle,
                                             stateManagementComponent,
-                                            reconnectConfig.asyncStreamTimeoutMilliseconds(),
+                                            reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,
                                             reconnectController,
                                             fallenBehindManager),
@@ -260,7 +260,7 @@ public class SyncGossip extends AbstractGossip {
                                             reconnectThrottle,
                                             () -> stateManagementComponent.getLatestSignedState(
                                                     "SwirldsPlatform: ReconnectProtocol"),
-                                            reconnectConfig.asyncStreamTimeoutMilliseconds(),
+                                            reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,
                                             reconnectController,
                                             new DefaultSignedStateValidator(),

@@ -40,6 +40,8 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.LongStream;
@@ -130,7 +132,7 @@ public class ReconnectProtocolTests {
                 PEER_ID,
                 mock(ReconnectThrottle.class),
                 () -> null,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(SignedStateValidator.class),
@@ -165,7 +167,7 @@ public class ReconnectProtocolTests {
                 PEER_ID,
                 teacherThrottle,
                 () -> reservedSignedState,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
@@ -188,7 +190,7 @@ public class ReconnectProtocolTests {
                 PEER_ID,
                 mock(ReconnectThrottle.class),
                 () -> null,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(SignedStateValidator.class),
@@ -233,7 +235,7 @@ public class ReconnectProtocolTests {
                 node1,
                 reconnectThrottle,
                 () -> null,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
@@ -250,7 +252,7 @@ public class ReconnectProtocolTests {
                 node2,
                 reconnectThrottle,
                 () -> reservedSignedState,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
@@ -289,7 +291,7 @@ public class ReconnectProtocolTests {
                 new NodeId(0),
                 mock(ReconnectThrottle.class),
                 () -> null,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(SignedStateValidator.class),
@@ -328,7 +330,7 @@ public class ReconnectProtocolTests {
                 new NodeId(0),
                 reconnectThrottle,
                 () -> reservedSignedState,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
@@ -360,7 +362,7 @@ public class ReconnectProtocolTests {
                 new NodeId(0),
                 reconnectThrottle,
                 ReservedSignedState::createNullReservation,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
