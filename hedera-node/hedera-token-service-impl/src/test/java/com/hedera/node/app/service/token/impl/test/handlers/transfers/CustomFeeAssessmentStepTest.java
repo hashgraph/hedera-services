@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.transfers;
 
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -54,9 +56,26 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     }
 
     @Test
-    void assessCustomFees() {
+    void chargesFixedAndFractionalFeesForFungible() {
+        final var hbarsReceiver = asAccount(hbarReceiver);
+        final var tokensReceiver = asAccount(tokenReceiver);
+
         givenTxn();
+        final var collectorBalance = writableAccountStore.get(feeCollectorId).tinybarBalance();
+        final var senderBalance = writableAccountStore.get(ownerId).tinybarBalance();
+
         subject.assessCustomFees(transferContext);
+
+        final var expectedCollectorBalance = collectorBalance + 10;
+        final var expectedSenderBalance = senderBalance - 1000L - 10L;
+        final var receiverBalance = writableAccountStore.get(hbarsReceiver).tinybarBalance();
+
+        final var realSenderBalance = writableAccountStore.get(ownerId).tinybarBalance();
+        final var realCollectorBalance =
+                writableAccountStore.get(feeCollectorId).tinybarBalance();
+        assertThat(realSenderBalance).isEqualTo(expectedSenderBalance);
+        assertThat(realCollectorBalance).isEqualTo(expectedCollectorBalance);
+        assertThat(receiverBalance).isEqualTo(1000L);
     }
 
     CryptoTransferTransactionBody getReplacedOp() {

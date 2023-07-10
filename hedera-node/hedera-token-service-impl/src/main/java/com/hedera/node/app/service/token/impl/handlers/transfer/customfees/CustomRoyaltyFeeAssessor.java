@@ -17,67 +17,130 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.adjustHbarFees;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.adjustHtsFees;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.asFixedFee;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.getFungibleCredits;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.safeFractionMultiply;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeExemptions.isPayerExempt;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import java.util.HashMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
-import java.util.Set;
+import javax.inject.Inject;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class CustomRoyaltyFeeAssessor {
-    private HandleContext handleContext;
     private CustomFixedFeeAssessor fixedFeeAssessor;
 
-    public CustomRoyaltyFeeAssessor(
-            final CustomFixedFeeAssessor fixedFeeAssessor, final TransferContextImpl transferContext) {
-        this.handleContext = transferContext.getHandleContext();
+    @Inject
+    public CustomRoyaltyFeeAssessor(final CustomFixedFeeAssessor fixedFeeAssessor) {
         this.fixedFeeAssessor = fixedFeeAssessor;
     }
 
     public void assessRoyaltyFees(
-            final CustomFeeMeta feeMeta,
-            final AccountID sender,
-            final AccountID receiver,
-            final Map<AccountID, Long> hbarAdjustments,
-            final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
-            final Set<TokenID> exemptDebits,
-            final Set<Pair<AccountID, TokenID>> royaltiesPaid) {
+            @NonNull final CustomFeeMeta feeMeta,
+            @NonNull final AccountID sender,
+            @NonNull final AccountID receiver,
+            @NonNull final AssessmentResult result,
+            @NonNull final HandleContext handleContext) {
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
+
         final var tokenId = feeMeta.tokenId();
-        if (royaltiesPaid.contains(Pair.of(sender, tokenId))) {
+        if (result.getRoyaltiesPaid().contains(Pair.of(sender, tokenId))) {
             return;
         }
-        final var exchangedValue =
-                getFungibleCredits(htsAdjustments.getOrDefault(tokenId, new HashMap<>()), hbarAdjustments, sender);
+
+        // get all hbar and fungible token changes from given input to the current level
+        final var exchangedValue = getFungibleCredits(result, tokenId, sender);
         for (final var fee : feeMeta.customFees()) {
             final var collector = fee.feeCollectorAccountId();
             if (!fee.fee().kind().equals(CustomFee.FeeOneOfType.ROYALTY_FEE)) {
                 continue;
             }
             final var royaltyFee = fee.royaltyFeeOrThrow();
+            // If there are no fungible units to the receiver, then  if there is a fallback fee
+            // then receiver should pay the fallback fee
             if (exchangedValue.isEmpty()) {
                 if (!royaltyFee.hasFallbackFee()) {
-                    return;
+                    continue;
                 }
-                final var fallback = royaltyFee.fallbackFee();
+                final var fallback = royaltyFee.fallbackFeeOrThrow();
                 // A NFT transfer with royalty fees to an unknown alias is not possible, since
-                // the auto-created
-                // account will not have any hbar to pay the fallback fee
+                // the auto-created account will not have any hbar to pay the fallback fee
+                // Validate the account balance is greater than zero
                 validateTrue(
                         accountStore.get(receiver).tinybarBalance() != 0,
                         INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
                 final var fallbackFee = asFixedFee(
                         fallback.amount(), fallback.denominatingTokenId(), collector, fee.allCollectorsAreExempt());
-                fixedFeeAssessor.assessFixedFee(
-                        feeMeta, receiver, fallbackFee, hbarAdjustments, htsAdjustments, exemptDebits);
+                fixedFeeAssessor.assessFixedFee(feeMeta, receiver, fallbackFee, result);
+            } else {
+                if (!isPayerExempt(feeMeta, fee, sender)) {
+                    chargeRoyalty(exchangedValue, feeMeta, fee, result);
+                }
+            }
+        }
+    }
+
+    private void chargeRoyalty(
+            @NonNull Map<AccountID, Pair<Long, TokenID>> exchangedValues,
+            @NonNull final CustomFeeMeta feeMeta,
+            @NonNull final CustomFee fee,
+            @NonNull final AssessmentResult result) {
+        for (final var exchange : exchangedValues.entrySet()) {
+            final var account = exchange.getKey();
+            final var value = exchange.getValue();
+            final var amount = value.getLeft();
+            final var tokenId = value.getRight();
+
+            final var royaltySpec = fee.royaltyFeeOrThrow();
+            final var feeCollector = fee.feeCollectorAccountIdOrThrow();
+
+            final var royalty = safeFractionMultiply(
+                    royaltySpec.exchangeValueFraction().numerator(),
+                    royaltySpec.exchangeValueFraction().denominator(),
+                    amount);
+            validateTrue(royalty <= amount, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+
+            final var denom = tokenId == null ? null : tokenId;
+            /* The id of the charging token is only used here to avoid recursively charging
+            on fees charged in the units of their denominating token; but this is a credit,
+            hence the id is irrelevant and we can use MISSING_ID. */
+            if (denom == null) {
+                // exchange is for hbar
+                adjustHbarFees(result, account, fee);
+            } else {
+                // exchange is for token
+                adjustHtsFees(
+                        result.getHtsAdjustments(),
+                        account,
+                        feeCollector,
+                        feeMeta,
+                        amount,
+                        denom,
+                        result.getExemptDebits());
+            }
+            /* Note that this account has now paid all royalties for this NFT type */
+            result.addToRoyaltiesPaid(Pair.of(account, tokenId));
+
+            final var assessedCustomFeeBuilder = AssessedCustomFee.newBuilder()
+                    .amount(royalty)
+                    .feeCollectorAccountId(feeCollector)
+                    .effectivePayerAccountId(account);
+            if (denom == null) {
+                // exchange is for hbar
+                result.addAssessedCustomFee(assessedCustomFeeBuilder.build());
+            } else {
+                // exchange is for token
+                result.addAssessedCustomFee(
+                        assessedCustomFeeBuilder.tokenId(denom).build());
             }
         }
     }

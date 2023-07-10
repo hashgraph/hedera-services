@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class AdjustmentUtils {
     private AdjustmentUtils() {
@@ -59,7 +60,7 @@ public class AdjustmentUtils {
                 .build();
     }
 
-    public static void addOrMergeHtsDebit(
+    public static void adjustHtsFees(
             final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
             final AccountID sender,
             final AccountID collector,
@@ -68,8 +69,7 @@ public class AdjustmentUtils {
             final TokenID denominatingToken,
             final Set<TokenID> exemptDenoms) {
         if (amount < 0) {
-            // TODO: Is this correct to aggregate change here ? In mono-service its added
-            //  as new balance change
+            // Always add a new change for an HTS debit since it could trigger another assessed fee
             addHtsAdjustment(htsAdjustments, sender, collector, amount, denominatingToken);
             // self denominated fees are exempt from further fee charging
             if (chargingTokenMeta.tokenId().equals(denominatingToken)) {
@@ -104,23 +104,33 @@ public class AdjustmentUtils {
         return credits;
     }
 
-    public static Map<AccountID, Long> getFungibleCredits(
-            final Map<AccountID, Long> tokenIdChanges, Map<AccountID, Long> hbarChanges, final AccountID beneficiary) {
-        final var credits = new HashMap<AccountID, Long>();
-        for (final var entry : tokenIdChanges.entrySet()) {
+    public static Map<AccountID, Pair<Long, TokenID>> getFungibleCredits(
+            final AssessmentResult result, final TokenID tokenId, final AccountID beneficiary) {
+        final var tokenChanges = result.getInputTokenAdjustments().getOrDefault(tokenId, new HashMap<>());
+        final var credits = new HashMap<AccountID, Pair<Long, TokenID>>();
+        for (final var entry : tokenChanges.entrySet()) {
             final var account = entry.getKey();
             final var amount = entry.getValue();
             if (amount > 0 && account.equals(beneficiary)) {
-                credits.put(account, amount);
+                credits.put(account, Pair.of(amount, tokenId));
             }
         }
-        for (final var entry : hbarChanges.entrySet()) {
+        for (final var entry : result.getInputHbarAdjustments().entrySet()) {
             final var account = entry.getKey();
             final var amount = entry.getValue();
             if (amount > 0 && account.equals(beneficiary)) {
-                credits.put(account, amount);
+                credits.put(account, Pair.of(amount, null));
             }
         }
         return credits;
+    }
+
+    public static void adjustHbarFees(final AssessmentResult result, final AccountID sender, final CustomFee hbarFee) {
+        final var hbarAdjustments = result.getHbarAdjustments();
+        final var collector = hbarFee.feeCollectorAccountId();
+        final var fixedSpec = hbarFee.fixedFee();
+        final var amount = fixedSpec.amount();
+        hbarAdjustments.merge(sender, -amount, Long::sum);
+        hbarAdjustments.merge(collector, amount, Long::sum);
     }
 }

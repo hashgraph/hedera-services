@@ -16,27 +16,24 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
-import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.addOrMergeHtsDebit;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.adjustHbarFees;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.adjustHtsFees;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeExemptions.isPayerExempt;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFee;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
-import java.util.Set;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class CustomFixedFeeAssessor {
+    @Inject
     public CustomFixedFeeAssessor() {}
 
     public void assessFixedFees(
-            @NonNull final CustomFeeMeta feeMeta,
-            @NonNull final AccountID sender,
-            final Map<AccountID, Long> hbarAdjustments,
-            final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
-            final Set<TokenID> exemptDebits) {
+            @NonNull final CustomFeeMeta feeMeta, @NonNull final AccountID sender, final AssessmentResult result) {
         for (final var fee : feeMeta.customFees()) {
             final var collector = fee.feeCollectorAccountId();
             if (sender.equals(collector)) {
@@ -44,49 +41,58 @@ public class CustomFixedFeeAssessor {
             }
             if (fee.fee().kind().equals(CustomFee.FeeOneOfType.FIXED_FEE)) {
                 // This is a top-level fixed fee, not a fallback royalty fee
-                assessFixedFee(feeMeta, sender, fee, hbarAdjustments, htsAdjustments, exemptDebits);
+                assessFixedFee(feeMeta, sender, fee, result);
             }
         }
     }
 
     public void assessFixedFee(
-            final CustomFeeMeta feeMeta,
-            final AccountID sender,
-            final CustomFee fee,
-            final Map<AccountID, Long> hbarAdjustments,
-            final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
-            final Set<TokenID> exemptDebits) {
+            final CustomFeeMeta feeMeta, final AccountID sender, final CustomFee fee, final AssessmentResult result) {
         if (isPayerExempt(feeMeta, fee, sender)) {
             return;
         }
         final var fixedFeeSpec = fee.fixedFeeOrThrow();
         if (!fixedFeeSpec.hasDenominatingTokenId()) {
-            assessHbarFees(sender, fee, hbarAdjustments);
+            assessHbarFees(sender, fee, result);
         } else {
-            assessHtsFees(sender, feeMeta, fee, htsAdjustments, exemptDebits);
+            assessHtsFees(sender, feeMeta, fee, result);
         }
     }
 
     private void assessHbarFees(
-            final AccountID sender, final CustomFee hbarFee, final Map<AccountID, Long> hbarAdjustments) {
+            @NonNull final AccountID sender, @NonNull final CustomFee hbarFee, @NonNull final AssessmentResult result) {
         final var collector = hbarFee.feeCollectorAccountId();
         final var fixedSpec = hbarFee.fixedFee();
         final var amount = fixedSpec.amount();
-        hbarAdjustments.merge(sender, -amount, Long::sum);
-        hbarAdjustments.merge(collector, amount, Long::sum);
+
+        adjustHbarFees(result, sender, hbarFee);
+
+        result.addAssessedCustomFee(AssessedCustomFee.newBuilder()
+                .effectivePayerAccountId(sender)
+                .amount(amount)
+                .feeCollectorAccountId(collector)
+                .build());
     }
 
     private void assessHtsFees(
-            AccountID sender,
-            CustomFeeMeta chargingTokenMeta,
-            CustomFee htsFee,
-            final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
-            final Set<TokenID> exemptDenoms) {
+            @NonNull final AccountID sender,
+            @NonNull final CustomFeeMeta chargingTokenMeta,
+            @NonNull final CustomFee htsFee,
+            @NonNull final AssessmentResult result) {
+        final var htsAdjustments = result.getHtsAdjustments();
+        final var exemptDenoms = result.getExemptDebits();
+
         final var collector = htsFee.feeCollectorAccountIdOrThrow();
         final var fixedFeeSpec = htsFee.fixedFeeOrThrow();
         final var amount = fixedFeeSpec.amount();
-        final var denominatingToken = fixedFeeSpec.denominatingTokenId();
-        addOrMergeHtsDebit(
-                htsAdjustments, sender, collector, chargingTokenMeta, amount, denominatingToken, exemptDenoms);
+        final var denominatingToken = fixedFeeSpec.denominatingTokenIdOrThrow();
+        adjustHtsFees(htsAdjustments, sender, collector, chargingTokenMeta, amount, denominatingToken, exemptDenoms);
+
+        result.addAssessedCustomFee(AssessedCustomFee.newBuilder()
+                .effectivePayerAccountId(sender)
+                .amount(amount)
+                .feeCollectorAccountId(collector)
+                .tokenId(fixedFeeSpec.denominatingTokenId())
+                .build());
     }
 }

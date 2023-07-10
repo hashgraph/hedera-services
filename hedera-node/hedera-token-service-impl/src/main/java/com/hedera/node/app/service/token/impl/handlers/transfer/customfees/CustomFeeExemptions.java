@@ -19,7 +19,26 @@ package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.CustomFee;
 
+/**
+ * Our policy for payer exemptions is the following:
+ *
+ * <ul>
+ *   <li>A token's treasury is exempt from all its custom fees.
+ *   <li>A fee collection account is exempt from any fee for which it would be the collector.
+ *   <li>A fee collection account is exempt from any of its token's fees with {@code
+ *       all_collectors_are_exempt=true}.
+ * </ul>
+ */
 public class CustomFeeExemptions {
+    /**
+     * Given the fee metadata for a token, and one of this token's custom fees, returns whether the
+     * given payer is exempt from the specific custom fee provided.
+     *
+     * @param feeMeta metadata for the token that "owns" the specific custom fee
+     * @param fee the fee to check for a payer exemption
+     * @param sender the potential fee payer
+     * @return whether the payer is exempt from the fee
+     */
     public static boolean isPayerExempt(final CustomFeeMeta feeMeta, final CustomFee fee, final AccountID sender) {
         if (feeMeta.treasuryId().equals(sender)) {
             return true;

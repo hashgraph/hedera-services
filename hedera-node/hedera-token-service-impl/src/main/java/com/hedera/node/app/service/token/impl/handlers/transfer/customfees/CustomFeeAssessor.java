@@ -21,25 +21,20 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.lang3.tuple.Pair;
 
 @Singleton
 public class CustomFeeAssessor {
     private final CustomFixedFeeAssessor fixedFeeAssessor;
     private final CustomFractionalFeeAssessor fractionalFeeAssessor;
     private final CustomRoyaltyFeeAssessor royaltyFeeAssessor;
-    private int numberOfCustomFeesCharged = 0;
     private int totalBalanceChanges = 0;
-    private int levelNum = 0;
 
     @Inject
     public CustomFeeAssessor(
@@ -70,32 +65,27 @@ public class CustomFeeAssessor {
     public void assess(
             final AccountID sender,
             final CustomFeeMeta feeMeta,
-            final Map<TokenID, Map<AccountID, Long>> inputTokenTransfers,
-            final Map<AccountID, Long> hbarAdjustments,
-            final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
-            final Set<TokenID> exemptDebits,
             final int maxTransfersSize,
-            final Set<Pair<AccountID, TokenID>> royaltiesPaid,
-            final AccountID receiver) {
-        // If sender for this adjustment is same as treasury for token
-        // then don't charge any custom fee. Since token treasuries are exempt from custom fees
-        if (feeMeta.treasuryId().equals(sender)) {
-            return;
-        }
-
-        fixedFeeAssessor.assessFixedFees(feeMeta, sender, hbarAdjustments, htsAdjustments, exemptDebits);
-        totalBalanceChanges += hbarAdjustments.size() + htsAdjustments.size();
-        validateFalse(totalBalanceChanges > maxTransfersSize, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
+            final AccountID receiver,
+            final AssessmentResult result,
+            final HandleContext ctx) {
+        fixedFeeAssessor.assessFixedFees(feeMeta, sender, result);
+        validateBalanceChanges(result, maxTransfersSize);
 
         // A FUNGIBLE_COMMON token can have fractional fees but not royalty fees.
         // A NON_FUNGIBLE_UNIQUE token can have royalty fees but not fractional fees.
         // So check token type and do further assessment
         if (feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
-            fractionalFeeAssessor.assessFractionFees(
-                    feeMeta, sender, inputTokenTransfers, hbarAdjustments, htsAdjustments, exemptDebits);
+            fractionalFeeAssessor.assessFractionalFees(feeMeta, sender, result);
         } else {
-            royaltyFeeAssessor.assessRoyaltyFees(
-                    feeMeta, sender, receiver, hbarAdjustments, htsAdjustments, exemptDebits, royaltiesPaid);
+            royaltyFeeAssessor.assessRoyaltyFees(feeMeta, sender, receiver, result, ctx);
         }
+        validateBalanceChanges(result, maxTransfersSize);
+    }
+
+    private void validateBalanceChanges(final AssessmentResult result, final int maxTransfersSize) {
+        totalBalanceChanges +=
+                result.getHbarAdjustments().size() + result.getHtsAdjustments().size();
+        validateFalse(totalBalanceChanges > maxTransfersSize, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
     }
 }

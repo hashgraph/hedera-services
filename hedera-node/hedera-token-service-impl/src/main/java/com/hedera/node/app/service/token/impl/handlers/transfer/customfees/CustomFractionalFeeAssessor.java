@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.asFixedFee;
@@ -25,13 +26,13 @@ import static com.hedera.node.app.service.token.impl.handlers.transfer.customfee
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.node.app.spi.workflows.HandleException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -44,16 +45,23 @@ public class CustomFractionalFeeAssessor {
         this.fixedFeeAssessor = fixedFeeAssessor;
     }
 
-    public void assessFractionFees(
-            final CustomFeeMeta feeMeta,
-            final AccountID sender,
-            final Map<TokenID, Map<AccountID, Long>> inputTokenTransfers,
-            final Map<AccountID, Long> hbarAdjustments,
-            final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
-            final Set<TokenID> exemptDebits) {
-        final var tokenId = feeMeta.tokenId();
-        var unitsLeft = -inputTokenTransfers.get(tokenId).get(sender);
-        final var creditsForToken = getFungibleTokenCredits(inputTokenTransfers.get(tokenId));
+    public void assessFractionalFees(
+            @NonNull final CustomFeeMeta feeMeta,
+            @NonNull final AccountID sender,
+            @NonNull final AssessmentResult result) {
+        final var denom = feeMeta.tokenId();
+        final var inputTokenTransfers = result.getInputTokenAdjustments();
+
+        // get the initial units for this token change from given input.
+        // This is needed to see the fraction of the adjustment to be charged as custom fee
+        final var initialAdjustment = inputTokenTransfers.get(denom).get(sender);
+        // custom fees can't be assessed for credits
+        validateTrue(initialAdjustment < 0, CUSTOM_FEE_MUST_BE_POSITIVE);
+
+        var unitsLeft = -initialAdjustment;
+        final var creditsForToken = getFungibleTokenCredits(inputTokenTransfers.get(denom));
+        final var effectivePayerAccounts = creditsForToken.keySet();
+
         for (final var fee : feeMeta.customFees()) {
             final var collector = fee.feeCollectorAccountId();
             // If the collector 0.0.C for a fractional fee is trying to send X units to
@@ -62,32 +70,42 @@ public class CustomFractionalFeeAssessor {
             if (!fee.fee().kind().equals(CustomFee.FeeOneOfType.FRACTIONAL_FEE) || sender.equals(collector)) {
                 continue;
             }
-            final var fractionalFee = fee.fractionalFee();
+            final var fractionalFee = fee.fractionalFeeOrThrow();
             final var filteredCredits = filteredByExemptions(creditsForToken, feeMeta, fee);
             if (filteredCredits.isEmpty()) {
                 continue;
             }
-            var assessedAmount = 0L;
-            try {
-                assessedAmount = amountOwedGiven(unitsLeft, fractionalFee);
-            } catch (ArithmeticException ignore) {
-                throw new HandleException(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE);
-            }
+            // calculate amount that should be paid for fractional custom fee
+            var assessedAmount = amountOwed(unitsLeft, fractionalFee);
 
+            // If it is netOfTransfers the sender will pay the fee, otherwise the receiver will pay the fee
             if (fractionalFee.netOfTransfers()) {
                 final var addedFee =
-                        asFixedFee(assessedAmount, tokenId, fee.feeCollectorAccountId(), fee.allCollectorsAreExempt());
-                fixedFeeAssessor.assessFixedFee(
-                        feeMeta, sender, addedFee, hbarAdjustments, htsAdjustments, exemptDebits);
+                        asFixedFee(assessedAmount, denom, fee.feeCollectorAccountId(), fee.allCollectorsAreExempt());
+                fixedFeeAssessor.assessFixedFee(feeMeta, sender, addedFee, result);
             } else {
-                long exemptAmount = reclaim(assessedAmount, filteredCredits);
+                // amount that can be deducted from the credits to token
+                final long exemptAmount = reclaim(assessedAmount, filteredCredits);
 
                 assessedAmount -= exemptAmount;
                 unitsLeft -= assessedAmount;
                 validateTrue(unitsLeft >= 0, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
-                final var map = htsAdjustments.getOrDefault(tokenId, new HashMap<>());
+
+                final var map = result.getHtsAdjustments().getOrDefault(denom, new HashMap<>());
                 map.merge(collector, assessedAmount, Long::sum);
-                htsAdjustments.put(tokenId, map);
+                result.getHtsAdjustments().put(denom, map);
+
+                final var finalEffPayerNums =
+                        (filteredCredits == creditsForToken) ? effectivePayerAccounts : filteredCredits.keySet();
+                final var finalEffPayerNumsArray = new AccountID[finalEffPayerNums.size()];
+
+                // Add assessed custom fees to the result. This is needed to build transaction record
+                result.addAssessedCustomFee(AssessedCustomFee.newBuilder()
+                        .effectivePayerAccountId(finalEffPayerNums.toArray(finalEffPayerNumsArray))
+                        .feeCollectorAccountId(collector)
+                        .tokenId(denom)
+                        .amount(assessedAmount)
+                        .build());
             }
         }
     }
@@ -105,11 +123,15 @@ public class CustomFractionalFeeAssessor {
         return !filteredCredits.isEmpty() ? filteredCredits : creditsForToken;
     }
 
-    private long amountOwedGiven(long initialUnits, FractionalFee fractionalFee) {
+    private long amountOwed(final long initialUnits, @NonNull final FractionalFee fractionalFee) {
         final var numerator = fractionalFee.fractionalAmount().numerator();
         final var denominator = fractionalFee.fractionalAmount().denominator();
-
-        final var nominalFee = safeFractionMultiply(numerator, denominator, initialUnits);
+        var nominalFee = 0L;
+        try {
+            nominalFee = safeFractionMultiply(numerator, denominator, initialUnits);
+        } catch (final ArithmeticException e) {
+            throw new HandleException(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE);
+        }
         long effectiveFee = Math.max(nominalFee, fractionalFee.minimumAmount());
         if (fractionalFee.maximumAmount() > 0) {
             effectiveFee = Math.min(effectiveFee, fractionalFee.maximumAmount());
@@ -121,9 +143,7 @@ public class CustomFractionalFeeAssessor {
         var availableToReclaim = 0L;
         for (final var entry : credits.entrySet()) {
             availableToReclaim += entry.getValue();
-            if (availableToReclaim < 0L) {
-                throw new HandleException(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE);
-            }
+            validateTrue(availableToReclaim >= 0, CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE);
         }
 
         var amountReclaimed = 0L;

@@ -34,6 +34,5 @@ class CustomFeeAssessorTest extends StepsBase {
     private final TransferContextImpl transferContext = new TransferContextImpl(handleContext);
     private final CustomFixedFeeAssessor fixedFeeAssessor = new CustomFixedFeeAssessor();
     private final CustomFractionalFeeAssessor fractionalFeeAssessor = new CustomFractionalFeeAssessor(fixedFeeAssessor);
-    private final CustomRoyaltyFeeAssessor royaltyFeeAssessor =
-            new CustomRoyaltyFeeAssessor(fixedFeeAssessor, transferContext);
+    private final CustomRoyaltyFeeAssessor royaltyFeeAssessor = new CustomRoyaltyFeeAssessor(fixedFeeAssessor);
 }
