@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

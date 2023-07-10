@@ -10,5 +10,6 @@ open module com.swirlds.platform.test {
     requires org.apache.logging.log4j;
     requires java.desktop;
     requires static com.github.spotbugs.annotations;
+    requires com.swirlds.config.api.test.fixtures;
     requires com.swirlds.common.test.fixtures;
 }

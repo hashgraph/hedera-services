@@ -17,9 +17,9 @@
 package com.swirlds.virtual.merkle.reconnect;
 
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.jasperdb.files.hashmap.HalfDiskVirtualKeySet;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestKeySerializer;
 import com.swirlds.virtual.merkle.TestValue;
