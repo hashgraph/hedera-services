@@ -25,7 +25,9 @@ import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.workflows.handle.validation.MonoExpiryValidator;
 import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
 import com.swirlds.common.system.Platform;
@@ -59,12 +61,16 @@ public interface HandleWorkflowInjectionModule {
     @Singleton
     AttributeValidator bindAttributeValidator(StandardizedAttributeValidator attributeValidator);
 
+    @Binds
+    @Singleton
+    HederaRecordCache bindHederaRecordCache(RecordCacheImpl recordCache);
+
     @Provides
     @SuppressWarnings({"unchecked", "rawtypes"})
     static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(@NonNull final Platform platform) {
         // Always return the latest immutable state until we support state proofs
         return () ->
-                (AutoCloseableWrapper) platform.getLatestImmutableState(HandleWorkflowInjectionModule.class.getName());
+            (AutoCloseableWrapper) platform.getLatestImmutableState(HandleWorkflowInjectionModule.class.getName());
     }
 
     @Provides
