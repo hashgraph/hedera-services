@@ -171,6 +171,13 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
+    public AccountInfoAsserts approxBalance(final long amount, final long epsilon) {
+        registerProvider((spec, o) -> assertTrue(
+                Math.abs(((AccountInfo) o).getBalance() - amount) <= epsilon,
+                "Bad balance, expected " + amount + " +/- " + epsilon + ", but was " + ((AccountInfo) o).getBalance()));
+        return this;
+    }
+
     public AccountInfoAsserts expectedBalanceWithChargedUsd(
             final long amount, final double expectedUsdToSubtract, final double allowedPercentDiff) {
         registerProvider((spec, o) -> {
