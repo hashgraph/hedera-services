@@ -33,7 +33,6 @@ import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.merkledb.MerkleDbStatistics;
 import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import java.util.concurrent.ScheduledExecutorService;
 import org.junit.jupiter.api.BeforeEach;
