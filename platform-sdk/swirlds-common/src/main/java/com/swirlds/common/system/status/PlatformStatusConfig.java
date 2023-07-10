@@ -26,8 +26,14 @@ import java.time.Duration;
  * @param observingStatusDelay the amount of wall clock time to wait before transitioning out of the OBSERVING status
  * @param activeStatusDelay    the amount of wall clock time that the status will remain ACTIVE without seeing any self
  *                             events reach consensus
+ * @param waitForWorkDuration  the amount of wall clock time the {@link PlatformStatusManager} will wait with an empty
+ *                             queue for new
+ *                             {@link com.swirlds.common.system.status.actions.PlatformStatusAction PlatformStatusAction}s
+ *                             before executing its idle callback, which triggers a
+ *                             {@link com.swirlds.common.system.status.actions.TimeElapsedAction TimeElapsedAction
  */
 @ConfigData("platformStatus")
 public record PlatformStatusConfig(
         @ConfigProperty(defaultValue = "10s") Duration observingStatusDelay,
-        @ConfigProperty(defaultValue = "10s") Duration activeStatusDelay) {}
+        @ConfigProperty(defaultValue = "10s") Duration activeStatusDelay,
+        @ConfigProperty(defaultValue = "100ms") Duration waitForWorkDuration) {}

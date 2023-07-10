@@ -78,6 +78,7 @@ public class PlatformStatusManager implements PlatformStatusGetter, Startable, S
                 .setThreadName("platform-status-state-machine")
                 .setHandler(this::processStatusAction)
                 .setIdleCallback(this::triggerTimeElapsed)
+                .setWaitForWorkDuration(config.waitForWorkDuration())
                 .setMetricsConfiguration(
                         new QueueThreadMetricsConfiguration(platformContext.getMetrics()).enableBusyTimeMetric())
                 .build();
