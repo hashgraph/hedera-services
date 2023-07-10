@@ -154,9 +154,16 @@ public final class IngestChecker {
             throw new PreCheckException(EMPTY_TRANSACTION_BODY);
         }
 
+        // TODO: not sure if this is how it should be implemented
+        // We are throwing an error only if the transactionId is in the cache and if the
+        // submitter is the creator of the transaction
         final var foundTransactionRecord = hederaRecordCache.getRecord(txBody.transactionIDOrThrow());
         if (foundTransactionRecord != null) {
-            throw new PreCheckException(DUPLICATE_TRANSACTION);
+            if (txBody.nodeAccountID() != null
+                    && txBody.nodeAccountID()
+                            .equals(txBody.transactionIDOrThrow().accountID())) {
+                throw new PreCheckException(DUPLICATE_TRANSACTION);
+            }
         }
     }
 
