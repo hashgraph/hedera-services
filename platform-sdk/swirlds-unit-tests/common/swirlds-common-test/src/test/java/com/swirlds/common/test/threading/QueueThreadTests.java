@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.base.state.MutabilityException;
+import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsFactory;
@@ -44,7 +45,6 @@ import com.swirlds.common.metrics.platform.DefaultIntegerAccumulator;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
-import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.ThreadSeed;
