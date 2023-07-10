@@ -43,6 +43,7 @@ dependencies {
     testImplementation(libs.classgraph)
     testImplementation(testLibs.bundles.junit)
     testImplementation(testLibs.bundles.utils)
+    testImplementation(testFixtures(project(":swirlds-base")))
     testImplementation(testFixtures(project(":swirlds-common")))
 
     testImplementation(project(":swirlds-config-impl"))
