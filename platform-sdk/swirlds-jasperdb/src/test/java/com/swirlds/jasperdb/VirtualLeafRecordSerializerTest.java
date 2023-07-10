@@ -16,7 +16,7 @@
 
 package com.swirlds.jasperdb;
 
-import static com.swirlds.common.test.RandomUtils.randomString;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomString;
 import static com.swirlds.jasperdb.ExampleFixedSizeVirtualValue.RANDOM_BYTES;
 import static com.swirlds.jasperdb.VirtualLeafRecordSerializer.ClassVersion.ORIGINAL;
 import static com.swirlds.jasperdb.VirtualLeafRecordSerializer.ClassVersion.REMOVED_LEAF_HASHES;

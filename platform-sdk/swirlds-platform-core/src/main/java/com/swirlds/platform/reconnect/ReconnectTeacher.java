@@ -36,6 +36,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.net.SocketException;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import org.apache.logging.log4j.LogManager;
@@ -51,7 +52,7 @@ public class ReconnectTeacher {
     private static final Logger logger = LogManager.getLogger(ReconnectTeacher.class);
 
     private final Connection connection;
-    private final int reconnectSocketTimeout;
+    private final Duration reconnectSocketTimeout;
 
     private final NodeId selfId;
     private final NodeId otherId;
@@ -85,7 +86,7 @@ public class ReconnectTeacher {
     public ReconnectTeacher(
             @NonNull final ThreadManager threadManager,
             @NonNull final Connection connection,
-            final int reconnectSocketTimeout,
+            @NonNull final Duration reconnectSocketTimeout,
             @NonNull final NodeId selfId,
             @NonNull final NodeId otherId,
             final long lastRoundReceived,
@@ -111,7 +112,7 @@ public class ReconnectTeacher {
     private void increaseSocketTimeout() throws ReconnectException {
         try {
             originalSocketTimeout = connection.getTimeout();
-            connection.setTimeout(reconnectSocketTimeout);
+            connection.setTimeout(reconnectSocketTimeout.toMillis());
         } catch (final SocketException e) {
             throw new ReconnectException(e);
         }

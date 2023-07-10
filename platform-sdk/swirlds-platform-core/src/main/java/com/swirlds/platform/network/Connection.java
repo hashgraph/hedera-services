@@ -86,7 +86,7 @@ public interface Connection {
      * @throws SocketException
      * 		if there is an error in the underlying protocol, such as a TCP error.
      */
-    void setTimeout(final int timeoutMillis) throws SocketException;
+    void setTimeout(final long timeoutMillis) throws SocketException;
 
     /**
      * Initialize {@code this} instance for a gossip session.

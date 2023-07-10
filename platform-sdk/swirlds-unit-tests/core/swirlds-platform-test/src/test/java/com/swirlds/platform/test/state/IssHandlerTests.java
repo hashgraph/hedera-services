@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.test.DispatchBuilderUtils.getDefaultDispatchConfiguration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

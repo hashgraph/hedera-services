@@ -37,9 +37,11 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -117,7 +119,7 @@ public class PrecompileMintThrottlingCheck extends HapiSuite {
                         contractCreate(MINT_NFT_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .contractSupplyKey(MINT_NFT_CONTRACT)
+                                .contractKey(Set.of(TokenKeyType.SUPPLY_KEY), MINT_NFT_CONTRACT)
                                 .initialSupply(0)
                                 .exposingAddressTo(mintContractAddress::set),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).logged());

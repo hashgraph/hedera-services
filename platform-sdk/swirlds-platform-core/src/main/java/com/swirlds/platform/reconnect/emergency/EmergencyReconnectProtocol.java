@@ -34,6 +34,7 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.SignedStateFinder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,7 +48,7 @@ public class EmergencyReconnectProtocol implements Protocol {
     private final EmergencyRecoveryManager emergencyRecoveryManager;
     private final ReconnectThrottle teacherThrottle;
     private final SignedStateFinder stateFinder;
-    private final int reconnectSocketTimeout;
+    private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics reconnectMetrics;
     private final ReconnectController reconnectController;
     private InitiatedBy initiatedBy = InitiatedBy.NO_ONE;
@@ -84,7 +85,7 @@ public class EmergencyReconnectProtocol implements Protocol {
             final EmergencyRecoveryManager emergencyRecoveryManager,
             final ReconnectThrottle teacherThrottle,
             final SignedStateFinder stateFinder,
-            final int reconnectSocketTimeout,
+            final Duration reconnectSocketTimeout,
             final ReconnectMetrics reconnectMetrics,
             final ReconnectController reconnectController,
             @NonNull final FallenBehindManager fallenBehindManager) {

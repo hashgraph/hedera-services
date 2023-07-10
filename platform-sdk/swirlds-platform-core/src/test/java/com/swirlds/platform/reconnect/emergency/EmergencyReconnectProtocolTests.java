@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
@@ -41,7 +41,9 @@ import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.signed.SignedStateFinder;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -106,7 +108,7 @@ public class EmergencyReconnectProtocolTests {
                 emergencyRecoveryManager,
                 mock(ReconnectThrottle.class),
                 mock(SignedStateManager.class),
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 fallenBehindManager);
@@ -131,7 +133,7 @@ public class EmergencyReconnectProtocolTests {
                 mock(EmergencyRecoveryManager.class),
                 teacherThrottle,
                 mock(SignedStateManager.class),
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 fallenBehindManager);
@@ -161,7 +163,7 @@ public class EmergencyReconnectProtocolTests {
                 emergencyRecoveryManager,
                 teacherThrottle,
                 mock(SignedStateFinder.class),
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 fallenBehindManager);
@@ -212,7 +214,7 @@ public class EmergencyReconnectProtocolTests {
                 mock(EmergencyRecoveryManager.class),
                 teacherThrottle,
                 mock(SignedStateFinder.class),
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 fallenBehindManager);
