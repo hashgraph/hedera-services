@@ -44,8 +44,13 @@ import java.util.Objects;
  *     <li>memo field (optional)</li>
  * </ul>
  * Example: `address, 22, node22, node22, 1, 10.10.11.12, 5060, 212.25.36.123, 5060, memo for node 22`
+ *
+ * The last line of the config.txt address book contains the nextNodeId value in the form of: `nextnodeid, 23`
  */
 public class AddressBookUtils {
+
+    public static String ADDRESS_KEYWORD = "address";
+    public static String NEXT_NODE_ID_KEYWORD = "nextnodeid";
 
     private AddressBookUtils() {}
 
@@ -76,7 +81,10 @@ public class AddressBookUtils {
                     address.getPortExternalIpv4() + (hasMemo ? "," : ""),
                     memo);
         }
-        return table.render();
+        final String addresses = table.render();
+        final String addressBookConfigText =
+                addresses + "\n" + NEXT_NODE_ID_KEYWORD + ", " + addressBook.getNextNodeId();
+        return addressBookConfigText;
     }
 
     /**
@@ -90,13 +98,75 @@ public class AddressBookUtils {
     public static AddressBook parseAddressBookText(@NonNull final String addressBookText) throws ParseException {
         Objects.requireNonNull(addressBookText, "The addressBookText must not be null.");
         final AddressBook addressBook = new AddressBook();
-        for (final String addressLine : addressBookText.split("\\r?\\n")) {
-            final Address address = parseAddressText(addressLine);
-            if (address != null) {
-                addressBook.add(address);
+        boolean nextNodeIdParsed = false;
+        for (final String line : addressBookText.split("\\r?\\n")) {
+            final String trimmedLine = line.trim();
+            if (trimmedLine.isEmpty() || trimmedLine.startsWith("#")) {
+                continue;
+            }
+            if (trimmedLine.startsWith(ADDRESS_KEYWORD)) {
+                final Address address = parseAddressText(trimmedLine);
+                if (address != null) {
+                    addressBook.add(address);
+                }
+            } else if (trimmedLine.startsWith(NEXT_NODE_ID_KEYWORD)) {
+                final NodeId nodeId = parseNextAvailableNodeId(trimmedLine);
+                addressBook.setNextNodeId(nodeId);
+                nextNodeIdParsed = true;
+            } else {
+                throw new ParseException(
+                        "The line [%s] does not start with `address` or `nextAvailableNodeId`."
+                                .formatted(line.substring(0, 30)),
+                        0);
             }
         }
+        if (!nextNodeIdParsed) {
+            throw new ParseException("The address book text does not contain a `nextAvailableNodeId` line.", 0);
+        }
         return addressBook;
+    }
+
+    /**
+     * Parse the next available node id from a single line of text.  The line must start with the keyword
+     * `nextAvailableNodeId` followed by a comma and then the node id.  The node id must be a positive integer greater
+     * than all nodeIds in the address book.
+     *
+     * @param nextAvailableNodeIdText the text to parse.
+     * @return the parsed node id.
+     * @throws ParseException if there is any problem with parsing the node id.
+     */
+    @NonNull
+    public static NodeId parseNextAvailableNodeId(@NonNull final String nextAvailableNodeIdText) throws ParseException {
+        Objects.requireNonNull(nextAvailableNodeIdText, "The nextAvailableNodeIdText must not be null.");
+        final String[] parts = nextAvailableNodeIdText.split(",");
+        if (parts.length != 2) {
+            throw new ParseException(
+                    "The nextAvailableNodeIdText [%s] does not have exactly 2 comma separated parts."
+                            .formatted(nextAvailableNodeIdText),
+                    0);
+        }
+        if (!parts[0].trim().equals(NEXT_NODE_ID_KEYWORD)) {
+            throw new ParseException(
+                    "The nextAvailableNodeIdText [%s] does not start with the keyword `nextAvailableNodeId`."
+                            .formatted(nextAvailableNodeIdText),
+                    0);
+        }
+        final String nodeIdText = parts[1].trim();
+        try {
+            final long nodeId = Long.parseLong(nodeIdText);
+            if (nodeId < 0) {
+                throw new ParseException(
+                        "The nextAvailableNodeIdText [%s] does not have a positive integer node id."
+                                .formatted(nextAvailableNodeIdText),
+                        1);
+            }
+            return new NodeId(nodeId);
+        } catch (final NumberFormatException e) {
+            throw new ParseException(
+                    "The nextAvailableNodeIdText [%s] does not have a positive integer node id."
+                            .formatted(nextAvailableNodeIdText),
+                    1);
+        }
     }
 
     /**
@@ -127,7 +197,7 @@ public class AddressBookUtils {
         for (int i = 0; i < parts.length; i++) {
             parts[i] = parts[i].trim();
         }
-        if (!parts[0].equals("address")) {
+        if (!parts[0].equals(ADDRESS_KEYWORD)) {
             throw new ParseException("The address line must start with 'address' and not '" + parts[0] + "'", 0);
         }
         final NodeId nodeId;
@@ -180,5 +250,33 @@ public class AddressBookUtils {
                 externalIp.getAddress(),
                 externalPort,
                 memoToUse);
+    }
+
+    /**
+     * Determine a new next node id value from an address book and the old next node id value.
+     *
+     * @param addressBook   the address book to use
+     * @param oldNextNodeId the old next node id value
+     * @return the new next node id value
+     */
+    @NonNull
+    public static NodeId determineNewNextNodeId(
+            @NonNull final AddressBook addressBook, @Nullable final NodeId oldNextNodeId) {
+        final int addressBookSize = addressBook.getSize();
+        if (addressBookSize <= 0) {
+            if (oldNextNodeId == null) {
+                return NodeId.FIRST_NODE_ID;
+            } else {
+                return oldNextNodeId;
+            }
+        }
+        final NodeId lastNodeId = addressBook.getNodeId(addressBookSize - 1);
+        if (oldNextNodeId != null && lastNodeId.compareTo(oldNextNodeId) < 0) {
+            // the last node id in the address book is not higher than the old NextNodeId
+            return oldNextNodeId;
+        } else {
+            // the last node id in the address book is high enough to bump the next node id value.
+            return lastNodeId.getOffset(1);
+        }
     }
 }

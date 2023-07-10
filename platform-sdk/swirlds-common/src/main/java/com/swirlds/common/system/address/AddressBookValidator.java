@@ -20,6 +20,8 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
@@ -90,6 +92,66 @@ public final class AddressBookValidator {
         }
 
         return true;
+    }
+
+    /**
+     * Validate that the new next node id is greater than or equal to the old next node id, and that all nodes that are
+     * in the new address book and not in the old address book are greater than or equal to the old next node id and
+     * less than the new next node id.
+     *
+     * @param newNextNodeId  the new next node id
+     * @param oldNextNodeId  the old next node id
+     * @param oldAddressBook the old address book
+     * @param newAddressBook the new address book
+     * @throws IllegalStateException if the new next node id is less than or equal to the old next node id, or if there
+     *                               are any new nodes in the new address book that are less than the old next node id
+     *                               or greater than or equal to the new node id.
+     */
+    public static void validateNewAddressBook(
+            @NonNull final NodeId newNextNodeId,
+            @NonNull final NodeId oldNextNodeId,
+            @NonNull final AddressBook oldAddressBook,
+            @NonNull final AddressBook newAddressBook) {
+        Objects.requireNonNull(newNextNodeId, "The newNextNodeId must not be null.");
+        Objects.requireNonNull(oldNextNodeId, "The oldNextNodeId must not be null.");
+        Objects.requireNonNull(oldAddressBook, "The oldAddressBook must not be null.");
+        Objects.requireNonNull(newAddressBook, "The newAddressBook must not be null.");
+
+        if (newNextNodeId.compareTo(oldNextNodeId) < 0) {
+            throw new IllegalStateException("The newNextNodeId must be greater than or equal to the oldNextNodeId.");
+        }
+
+        final int oldSize = oldAddressBook.getSize();
+        final int newSize = newAddressBook.getSize();
+
+        // Verify that the old next node id is greater than the highest node id in the old address book.
+        final NodeId oldLastNodeId = oldSize > 0 ? oldAddressBook.getNodeId(oldSize - 1) : null;
+        if (oldLastNodeId != null && oldLastNodeId.compareTo(oldNextNodeId) > 0) {
+            throw new IllegalStateException(
+                    "The oldNextNodeId must be greater than the highest node id in the old address book.");
+        }
+
+        // Determine the new node ids that are in the new address book and not in the old address book.
+        final List<NodeId> newNodes = new ArrayList<>();
+        for (int i = 0; i < newSize; i++) {
+            final NodeId newNodeId = newAddressBook.getNodeId(i);
+            if (!oldAddressBook.contains(newNodeId)) {
+                newNodes.add(newNodeId);
+            }
+        }
+
+        // verify that all new nodes are greater than or equal to the old next node id and less than the new next node
+        // id.
+        for (final NodeId nodeId : newNodes) {
+            if (nodeId.compareTo(oldNextNodeId) < 0) {
+                throw new IllegalStateException(
+                        "The new node " + nodeId + " is less than the oldNextNodeId " + oldNextNodeId);
+            }
+            if (nodeId.compareTo(newNextNodeId) >= 0) {
+                throw new IllegalStateException(
+                        "The new node " + nodeId + " is greater than or equal to the newNextNodeId " + newNextNodeId);
+            }
+        }
     }
 
     /**

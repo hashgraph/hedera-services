@@ -19,6 +19,7 @@ package com.swirlds.platform.config.legacy;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.internal.ConfigurationException;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookUtils;
@@ -50,6 +51,7 @@ public final class LegacyConfigPropertiesLoader {
 
     private static final String APP_PROPERTY_NAME = "app";
     private static final String ADDRESS_PROPERTY_NAME = "address";
+    private static final String NEXT_NODE_ID_PROPERTY_NAME = "nextnodeid";
     private static final String SWIRLD_PROPERTY_NAME = "swirld";
     private static final String GENESIS_FREEZE_TIME_PROPERTY_NAME = "genesisfreezetime";
 
@@ -63,6 +65,8 @@ public final class LegacyConfigPropertiesLoader {
     public static final String ERROR_ADDRESS_NOT_ENOUGH_PARAMETERS = "'address' needs a minimum of 7 parameters";
     public static final String ERROR_PROPERTY_NOT_KNOWN =
             "'%s' in config.txt isn't a recognized first parameter for a line";
+    public static final String ERROR_NEXT_NODE_NOT_GREATER_THAN_HIGHEST_ADDRESS =
+            "The next node ID must be greater than the highest node ID used for addresses";
     private static final Logger logger = LogManager.getLogger(LegacyConfigPropertiesLoader.class);
 
     private LegacyConfigPropertiesLoader() {}
@@ -80,6 +84,7 @@ public final class LegacyConfigPropertiesLoader {
 
         try (final Scanner scanner = new Scanner(configPath, StandardCharsets.UTF_8)) {
             final AddressBook addressBook = new AddressBook();
+            boolean nextNodeIdParsed = false;
             while (scanner.hasNextLine()) {
                 final String line = readNextLine(scanner);
                 if (!line.isEmpty()) {
@@ -117,9 +122,24 @@ public final class LegacyConfigPropertiesLoader {
                         case GENESIS_FREEZE_TIME_PROPERTY_NAME -> {
                             setGenesisFreezeTime(configurationProperties, lineParameters.length, pars[1]);
                         }
+                        case NEXT_NODE_ID_PROPERTY_NAME -> {
+                            try {
+                                final NodeId nextNodeId = new NodeId(Long.parseLong(pars[1]));
+                                if (nextNodeId.compareTo(addressBook.getNextNodeId()) < 0) {
+                                    onError(ERROR_NEXT_NODE_NOT_GREATER_THAN_HIGHEST_ADDRESS);
+                                }
+                                addressBook.setNextNodeId(nextNodeId);
+                                nextNodeIdParsed = true;
+                            } catch (final NumberFormatException ex) {
+                                onError(ERROR_NO_PARAMETER.formatted(NEXT_NODE_ID_PROPERTY_NAME));
+                            }
+                        }
                         default -> onError(ERROR_PROPERTY_NOT_KNOWN.formatted(pars[0]));
                     }
                 }
+            }
+            if (!nextNodeIdParsed) {
+                onError(ERROR_NO_PARAMETER.formatted(NEXT_NODE_ID_PROPERTY_NAME));
             }
             if (addressBook.getSize() > 0) {
                 configurationProperties.setAddressBook(addressBook);

@@ -20,8 +20,10 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.address.AddressBookUtils;
 import com.swirlds.common.system.address.AddressBookValidator;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.signed.SignedState;
@@ -126,6 +128,26 @@ public class AddressBookInitializer {
         this.maxNumFiles = addressBookConfig.maxRecordedAddressBookFiles();
 
         initialAddressBook = initialize();
+        if (!useConfigAddressBook) {
+            determineNextNodeIdAndValidate(initialAddressBook);
+        }
+    }
+
+    /**
+     * Determines the nextNodeId and validates the integrity of the address book change from the state address book to
+     * the new address book.
+     *
+     * @param initialAddressBook The address book to use in the platform.
+     */
+    private void determineNextNodeIdAndValidate(@NonNull final AddressBook initialAddressBook) {
+        // Determine the next node id value, validate it and the new address book against the state address book.
+        final NodeId oldNextNodeId = stateAddressBook.getNextNodeId();
+        final NodeId newNextNodeId = AddressBookUtils.determineNewNextNodeId(initialAddressBook, oldNextNodeId);
+        if (oldNextNodeId != null) {
+            AddressBookValidator.validateNewAddressBook(
+                    newNextNodeId, oldNextNodeId, stateAddressBook, initialAddressBook);
+        }
+        initialAddressBook.setNextNodeId(newNextNodeId);
     }
 
     /**
