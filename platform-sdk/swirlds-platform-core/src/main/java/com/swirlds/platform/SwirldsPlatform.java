@@ -877,7 +877,7 @@ public class SwirldsPlatform implements Platform, Startable {
         }
 
         gossip.resetFallenBehind();
-        platformStatusManager.registerStatusAction(new ReconnectCompleteAction(signedState.getRound()));
+        platformStatusManager.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
     }
 
     /**
@@ -1040,8 +1040,8 @@ public class SwirldsPlatform implements Platform, Startable {
                     initialMinimumGenerationNonAncient);
         } else {
             // if preconsensus events aren't being replayed, advance through that part of the state machine anyway
-            platformStatusManager.registerStatusAction(new StartedReplayingEventsAction());
-            platformStatusManager.registerStatusAction(
+            platformStatusManager.submitStatusAction(new StartedReplayingEventsAction());
+            platformStatusManager.submitStatusAction(
                     new DoneReplayingEventsAction(Time.getCurrent().now()));
         }
     }

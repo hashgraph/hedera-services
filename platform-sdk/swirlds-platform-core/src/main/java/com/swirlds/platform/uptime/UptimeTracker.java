@@ -197,7 +197,7 @@ public class UptimeTracker {
                 lastSelfEventTime.set(lastSelfEventConsensusTimestamp);
 
                 // the action receives the wall clock time, NOT the consensus timestamp
-                platformStatusManager.registerStatusAction(new SelfEventReachedConsensusAction(time.now()));
+                statusActionSubmitter.submitStatusAction(new SelfEventReachedConsensusAction(time.now()));
             }
         }
     }

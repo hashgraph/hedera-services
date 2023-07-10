@@ -102,11 +102,11 @@ public class PlatformStatusManager implements PlatformStatusGetter, Startable, S
     }
 
     /**
-     * Register a status action, which will be added to a queue and processed in the order received
+     * Submit a status action, which will be added to a queue and processed in the order received
      *
-     * @param action the action to register
+     * @param action the action to submit
      */
-    public void registerStatusAction(@NonNull final PlatformStatusAction action) {
+    public void submitStatusAction(@NonNull final PlatformStatusAction action) {
         Objects.requireNonNull(action);
         queue.add(action);
     }

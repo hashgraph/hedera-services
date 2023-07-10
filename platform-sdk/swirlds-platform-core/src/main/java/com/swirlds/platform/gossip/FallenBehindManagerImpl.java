@@ -110,7 +110,7 @@ public class FallenBehindManagerImpl implements FallenBehindManager, EventCreati
             notYetReportFallenBehind.remove(id);
             numReportFallenBehind++;
             if (!previouslyFallenBehind && hasFallenBehind()) {
-                platformStatusManager.registerStatusAction(new FallenBehindAction());
+                platformStatusManager.submitStatusAction(new FallenBehindAction());
                 fallenBehindCallback.run();
             }
         }
