@@ -30,7 +30,7 @@ import java.time.Duration;
  *                             queue for new
  *                             {@link com.swirlds.common.system.status.actions.PlatformStatusAction PlatformStatusAction}s
  *                             before executing its idle callback, which triggers a
- *                             {@link com.swirlds.common.system.status.actions.TimeElapsedAction TimeElapsedAction
+ *                             {@link com.swirlds.common.system.status.actions.TimeElapsedAction TimeElapsedAction}
  */
 @ConfigData("platformStatus")
 public record PlatformStatusConfig(

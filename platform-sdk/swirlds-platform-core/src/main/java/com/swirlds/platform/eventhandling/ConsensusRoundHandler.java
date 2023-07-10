@@ -347,7 +347,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         if (!addedFirstRoundInFreeze && isRoundInFreezePeriod(consensusRound)) {
             addedFirstRoundInFreeze = true;
             enterFreezePeriod.run();
-            platformStatusManager.processStatusAction(new FreezePeriodEnteredAction(consensusRound.getRoundNum()));
+            platformStatusManager.registerStatusAction(new FreezePeriodEnteredAction(consensusRound.getRoundNum()));
         }
 
         addConsensusRound(consensusRound);

@@ -99,7 +99,7 @@ public final class PreconsensusEventReplayWorkflow {
                 initialMinimumGenerationNonAncient);
 
         try {
-            platformStatusManager.processStatusAction(new StartedReplayingEventsAction());
+            platformStatusManager.registerStatusAction(new StartedReplayingEventsAction());
             final Instant start = time.now();
 
             final IOIterator<EventImpl> iterator =
@@ -126,7 +126,7 @@ public final class PreconsensusEventReplayWorkflow {
             Thread.currentThread().interrupt();
             throw new RuntimeException("interrupted while replaying preconsensus event stream", e);
         } finally {
-            platformStatusManager.processStatusAction(new DoneReplayingEventsAction(time.now()));
+            platformStatusManager.registerStatusAction(new DoneReplayingEventsAction(time.now()));
         }
     }
 
