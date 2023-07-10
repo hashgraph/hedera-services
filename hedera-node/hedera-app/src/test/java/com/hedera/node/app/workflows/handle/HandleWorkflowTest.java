@@ -47,6 +47,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
+import com.hedera.node.app.workflows.WorkflowsValidationUtil;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -89,7 +90,8 @@ class HandleWorkflowTest extends AppTestBase {
     private static final PreHandleResult DUE_DILIGENCE_RESULT = PreHandleResult.nodeDueDiligenceFailure(
             NODE_1.nodeAccountID(), ResponseCodeEnum.INVALID_TRANSACTION, new TransactionScenarioBuilder().txInfo());
 
-    private static PreHandleResult createPreHandleResult(@NonNull Status status, @NonNull ResponseCodeEnum code) {
+    private static PreHandleResult createPreHandleResult(
+            @NonNull final Status status, @NonNull final ResponseCodeEnum code) {
         final var key = ALICE.account().keyOrThrow();
         return new PreHandleResult(
                 ALICE.accountID(),
@@ -141,8 +143,11 @@ class HandleWorkflowTest extends AppTestBase {
 
     private HandleWorkflow workflow;
 
+    @Mock(strictness = LENIENT)
+    private WorkflowsValidationUtil workflowsValidationUtil;
+
     @BeforeEach
-    void setup(@Mock InstantSource instantSource) {
+    void setup(@Mock final InstantSource instantSource) {
         setupStandardStates();
 
         when(platformTxn.getConsensusTimestamp()).thenReturn(CONSENSUS_NOW);
@@ -181,7 +186,8 @@ class HandleWorkflowTest extends AppTestBase {
                 checker,
                 serviceLookup,
                 configProvider,
-                instantSource);
+                instantSource,
+                workflowsValidationUtil);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -198,7 +204,8 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource))
+                        instantSource,
+                        workflowsValidationUtil))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -210,7 +217,8 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource))
+                        instantSource,
+                        workflowsValidationUtil))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -222,7 +230,8 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource))
+                        instantSource,
+                        workflowsValidationUtil))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -234,7 +243,8 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource))
+                        instantSource,
+                        workflowsValidationUtil))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -246,7 +256,8 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource))
+                        instantSource,
+                        workflowsValidationUtil))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -258,7 +269,8 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        instantSource))
+                        instantSource,
+                        workflowsValidationUtil))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -270,7 +282,8 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         serviceLookup,
                         configProvider,
-                        instantSource))
+                        instantSource,
+                        workflowsValidationUtil))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -282,7 +295,8 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         null,
                         configProvider,
-                        instantSource))
+                        instantSource,
+                        workflowsValidationUtil))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -294,7 +308,8 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         null,
-                        instantSource))
+                        instantSource,
+                        workflowsValidationUtil))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -306,7 +321,8 @@ class HandleWorkflowTest extends AppTestBase {
                         checker,
                         serviceLookup,
                         configProvider,
-                        null))
+                        null,
+                        workflowsValidationUtil))
                 .isInstanceOf(NullPointerException.class);
     }
 
