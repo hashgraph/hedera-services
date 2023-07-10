@@ -222,7 +222,8 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
 
         final long mergedFilesSize = getSizeOfFilesByPath(newFilesCreated);
         if (reportSavedSpaceMetricFunction != null) {
-            reportSavedSpaceMetricFunction.accept((filesToMergeSize - mergedFilesSize) * UnitConstants.BYTES_TO_MEBIBYTES);
+            reportSavedSpaceMetricFunction.accept(
+                    (filesToMergeSize - mergedFilesSize) * UnitConstants.BYTES_TO_MEBIBYTES);
         }
 
         logMergeStats(storeName, tookMillis, filesToMerge, filesToMergeSize, newFilesCreated, fileCollection);

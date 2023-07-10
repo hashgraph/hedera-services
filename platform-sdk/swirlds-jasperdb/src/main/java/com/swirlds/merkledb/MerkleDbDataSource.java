@@ -1233,7 +1233,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         if (hasDiskStoreForHashes) {
             final DataFileReader<VirtualHashRecord> newHashesFile = hashStoreDisk.endWriting();
             statistics.setFlushHashesStoreFileSizeMb(
-                    newHashesFile == null ? 0 : newHashesFile.getSize() * Units.BYTES_TO_MEBIBYTES);
+                    newHashesFile == null ? 0 : newHashesFile.getSize() * BYTES_TO_MEBIBYTES);
         }
     }
 
@@ -1301,11 +1301,11 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         // end writing
         final DataFileReader<VirtualLeafRecord<K, V>> newLeavesFile = pathToKeyValue.endWriting();
         statistics.setFlushLeavesStoreFileSizeMb(
-                newLeavesFile == null ? 0 : newLeavesFile.getSize() * Units.BYTES_TO_MEBIBYTES);
+                newLeavesFile == null ? 0 : newLeavesFile.getSize() * BYTES_TO_MEBIBYTES);
         if (!isLongKeyMode) {
             final DataFileReader<Bucket<K>> newLeafKeysFile = objectKeyToPath.endWriting();
             statistics.setFlushLeafKeysStoreFileSizeMb(
-                    newLeafKeysFile == null ? 0 : newLeafKeysFile.getSize() * Units.BYTES_TO_MEBIBYTES);
+                    newLeafKeysFile == null ? 0 : newLeafKeysFile.getSize() * BYTES_TO_MEBIBYTES);
         }
     }
 
@@ -1412,51 +1412,9 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     savedSpace -> statistics.setLeavesStoreCompactionSavedSpaceMb(compactionType, savedSpace));
             totalFileSizeMb += updateLeavesStoreFileStats();
 
-            // determine how long each of the sub-merges took.
-            final Duration firstMergeDuration = Duration.between(now, afterInternalHashStoreDiskMerge);
-            final Duration secondMergeDuration =
-                    Duration.between(afterInternalHashStoreDiskMerge, afterObjectKeyToPathMerge);
-            final Duration thirdMergeDuration = Duration.between(afterObjectKeyToPathMerge, afterPathToKeyValueMerge);
-
-            // update the 3 appropriate "Merge" statistics, based on
-            // isSmallMerge/isMediumMerge/isLargeMerge
-            if (isSmallMerge) {
-                if (hasDiskStoreForHashes) {
-                    statistics.setInternalHashesStoreSmallMergeTime(firstMergeDuration.toSeconds()
-                            + firstMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
-                }
-                if (!isLongKeyMode) {
-                    statistics.setLeafKeyToPathStoreSmallMergeTime(secondMergeDuration.toSeconds()
-                            + secondMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
-                }
-                statistics.setLeafPathToHashKeyValueStoreSmallMergeTime(thirdMergeDuration.toSeconds()
-                        + thirdMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
-            } else if (isMediumMerge) {
-                if (hasDiskStoreForHashes) {
-                    statistics.setInternalHashesStoreMediumMergeTime(firstMergeDuration.toSeconds()
-                            + firstMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
-                }
-                if (!isLongKeyMode) {
-                    statistics.setLeafKeyToPathStoreMediumMergeTime(secondMergeDuration.toSeconds()
-                            + secondMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
-                }
-                statistics.setLeafPathToHashKeyValueStoreMediumMergeTime(thirdMergeDuration.toSeconds()
-                        + thirdMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
-            } else if (isLargeMerge) {
-                if (hasDiskStoreForHashes) {
-                    statistics.setInternalHashesStoreLargeMergeTime(firstMergeDuration.toSeconds()
-                            + firstMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
-                }
-                if (!isLongKeyMode) {
-                    statistics.setLeafKeyToPathStoreLargeMergeTime(secondMergeDuration.toSeconds()
-                            + secondMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
-                }
-                statistics.setLeafPathToHashKeyValueStoreLargeMergeTime(thirdMergeDuration.toSeconds()
-                        + thirdMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
-            }
-            // update file stats (those statistics don't care about small vs medium vs large merge size)
-            updateFileStats();
-            // update off-heap usage statistic
+            // Update total file size stat
+            statistics.setTotalFileSizeMb(totalFileSizeMb);
+            // Update off-heap usage stat
             updateOffHeapStats();
             logger.info(MERKLE_DB.getMarker(), "[{}] Finished compaction", tableName);
             return true;

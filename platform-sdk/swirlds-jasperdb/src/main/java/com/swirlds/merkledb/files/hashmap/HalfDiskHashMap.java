@@ -313,7 +313,8 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
 
         final long mergedFilesSize = getSizeOfFilesByPath(newFilesCreated);
         if (reportSavedSpaceMetricFunction != null) {
-            reportSavedSpaceMetricFunction.accept((filesToMergeSize - mergedFilesSize) * UnitConstants.BYTES_TO_MEBIBYTES);
+            reportSavedSpaceMetricFunction.accept(
+                    (filesToMergeSize - mergedFilesSize) * UnitConstants.BYTES_TO_MEBIBYTES);
         }
 
         logMergeStats(storeName, tookMillis, filesToMerge, filesToMergeSize, newFilesCreated, fileCollection);
