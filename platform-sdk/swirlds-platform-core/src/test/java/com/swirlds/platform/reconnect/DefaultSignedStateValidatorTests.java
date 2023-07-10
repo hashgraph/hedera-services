@@ -17,6 +17,7 @@
 package com.swirlds.platform.reconnect;
 
 import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,7 +30,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.RandomAddressBookGenerator;
 import com.swirlds.common.test.RandomUtils;
-import com.swirlds.platform.Utilities;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
@@ -273,7 +273,7 @@ class DefaultSignedStateValidatorTests {
         final long totalWeight = getTotalWeight(nodes);
         final long signingWeight = getValidSignatureWeight(signingNodes);
 
-        return Utilities.isMajority(signingWeight, totalWeight);
+        return MAJORITY.isSatisfiedBy(signingWeight, totalWeight);
     }
 
     private static long getTotalWeight(final List<Node> nodes) {

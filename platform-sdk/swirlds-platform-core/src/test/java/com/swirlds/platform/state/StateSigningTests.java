@@ -19,7 +19,7 @@ package com.swirlds.platform.state;
 import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.RandomUtils.randomHash;
 import static com.swirlds.common.test.RandomUtils.randomSignature;
-import static com.swirlds.platform.Utilities.isMajority;
+import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -127,7 +127,8 @@ class StateSigningTests {
                 assertFalse(signedState.addSignature(address.getNodeId(), signature));
             }
 
-            assertEquals(isMajority(expectedWeight, addressBook.getTotalWeight()), signedState.isComplete());
+            assertEquals(
+                    MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()), signedState.isComplete());
             assertEquals(expectedWeight, signedState.getSigningWeight());
             assertEquals(count, sigSet.size());
 
@@ -226,7 +227,8 @@ class StateSigningTests {
                 assertFalse(signedState.addSignature(address.getNodeId(), signature));
             }
 
-            assertEquals(isMajority(expectedWeight, addressBook.getTotalWeight()), signedState.isComplete());
+            assertEquals(
+                    MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()), signedState.isComplete());
             assertEquals(expectedWeight, signedState.getSigningWeight());
             assertEquals(count, sigSet.size());
 
