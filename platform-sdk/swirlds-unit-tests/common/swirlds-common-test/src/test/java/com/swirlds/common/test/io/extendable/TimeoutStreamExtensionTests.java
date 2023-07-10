@@ -18,7 +18,7 @@ package com.swirlds.common.test.io.extendable;
 
 import static com.swirlds.common.io.extendable.extensions.TimeoutStreamExtension.buildTimeoutStreamExtension;
 import static com.swirlds.common.io.extendable.extensions.internal.StreamTimeoutManager.getMonitoredStreamCount;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;

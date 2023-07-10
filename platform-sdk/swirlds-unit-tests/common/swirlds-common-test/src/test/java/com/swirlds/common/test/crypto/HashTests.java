@@ -32,7 +32,7 @@ import com.swirlds.common.crypto.EmptyHashValueException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.common.crypto.ImmutableHash;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.common.utility.Mnemonics;
