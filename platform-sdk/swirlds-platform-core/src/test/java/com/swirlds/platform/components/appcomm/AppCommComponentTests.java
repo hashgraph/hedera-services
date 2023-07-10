@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.components.appcomm;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -27,7 +27,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import java.nio.file.Path;

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.common.test.WeightGenerators.BALANCED;
+import static com.swirlds.common.test.fixtures.WeightGenerators.BALANCED;
 
 import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.test.framework.TestComponentTags;

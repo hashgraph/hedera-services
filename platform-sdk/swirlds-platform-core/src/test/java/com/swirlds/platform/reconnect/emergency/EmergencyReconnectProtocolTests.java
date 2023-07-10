@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.gossip.FallenBehindManager;

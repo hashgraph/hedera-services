@@ -19,7 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.common.system.EventCreationRuleResponse.CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.DONT_CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
