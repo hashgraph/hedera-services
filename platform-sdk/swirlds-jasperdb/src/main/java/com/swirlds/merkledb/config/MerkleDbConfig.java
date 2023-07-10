@@ -108,7 +108,7 @@ import java.time.temporal.ChronoUnit;
 @ConfigData("merkleDb")
 public record MerkleDbConfig(
         @Positive @ConfigProperty(defaultValue = "500000000") long maxNumOfKeys,
-        @Min(0) @ConfigProperty(defaultValue = "0") long hashesRamToDiskThreshold,
+        @Min(0) @ConfigProperty(defaultValue = "8388608") long hashesRamToDiskThreshold,
         @ConfigProperty(defaultValue = "10240") int mediumMergeCutoffMb,
         @ConfigProperty(defaultValue = "3072") int smallMergeCutoffMb,
         @ConfigProperty(defaultValue = "MINUTES") ChronoUnit mergePeriodUnit,
