@@ -24,7 +24,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.TransactionUtils;
-import com.swirlds.common.test.io.SerializationUtils;
+import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.test.event.RandomEventUtils;
 import com.swirlds.test.framework.TestTypeTags;

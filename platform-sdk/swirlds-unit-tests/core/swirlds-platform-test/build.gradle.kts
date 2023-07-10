@@ -36,6 +36,7 @@ dependencies {
     implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
     implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
     implementation(testFixtures(project(":swirlds-config-api")))
+    implementation(testFixtures(project(":swirlds-common")))
 
     testImplementation(project(":swirlds-merkle"))
     testImplementation(project(":swirlds-sign-tool")) // TODO: should be removed in future

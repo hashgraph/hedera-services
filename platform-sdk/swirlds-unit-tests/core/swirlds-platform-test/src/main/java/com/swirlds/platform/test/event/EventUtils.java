@@ -23,7 +23,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.merkle.util.MerkleSerializeUtils;
+import com.swirlds.common.test.fixtures.merkle.util.MerkleSerializeUtils;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.eventhandling.SignedStateEventsAndGenerations;
 import com.swirlds.platform.internal.EventImpl;

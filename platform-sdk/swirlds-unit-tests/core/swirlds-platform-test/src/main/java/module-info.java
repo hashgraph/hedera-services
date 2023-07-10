@@ -11,4 +11,5 @@ open module com.swirlds.platform.test {
     requires java.desktop;
     requires static com.github.spotbugs.annotations;
     requires com.swirlds.config.api.test.fixtures;
+    requires com.swirlds.common.test.fixtures;
 }
