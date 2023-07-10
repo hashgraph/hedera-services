@@ -60,6 +60,7 @@ import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -232,7 +233,7 @@ public class EmergencyReconnectTests {
                         TestPlatformContextBuilder.create().build(),
                         getStaticThreadManager(),
                         addressBook,
-                        100_000,
+                        Duration.of(100_000, ChronoUnit.MILLIS),
                         mock(ReconnectMetrics.class)));
 
         return new ReconnectController(getStaticThreadManager(), helper, () -> {});
@@ -270,7 +271,7 @@ public class EmergencyReconnectTests {
                 null,
                 reconnectThrottle,
                 signedStateManager,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(FallenBehindManager.class));
@@ -290,7 +291,7 @@ public class EmergencyReconnectTests {
                 emergencyRecoveryManager,
                 mock(ReconnectThrottle.class),
                 mock(SignedStateManager.class),
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(FallenBehindManager.class));

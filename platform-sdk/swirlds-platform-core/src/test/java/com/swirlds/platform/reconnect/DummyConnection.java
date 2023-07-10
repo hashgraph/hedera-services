@@ -112,8 +112,8 @@ public class DummyConnection extends SocketConnection {
     }
 
     @Override
-    public void setTimeout(final int timeoutMillis) throws SocketException {
-        socket.setSoTimeout(timeoutMillis);
+    public void setTimeout(final long timeoutMillis) throws SocketException {
+        socket.setSoTimeout(timeoutMillis > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) timeoutMillis);
     }
 
     @Override

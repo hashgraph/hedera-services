@@ -47,11 +47,11 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Async Stream Test")
 class AsyncStreamTest {
 
-    private void configureAsyncStreamSettings(final int bufferSize, final int timeoutMilliseconds) {
+    private void configureAsyncStreamSettings() {
         new TestConfigBuilder()
-                .withValue("reconnect.asyncOutputStreamFlushMilliseconds", timeoutMilliseconds)
-                .withValue("reconnect.asyncStreamBufferSize", bufferSize)
-                .withValue("reconnect.asyncOutputStreamFlushMilliseconds", "50")
+                .withValue("reconnect.asyncOutputStream", 10000)
+                .withValue("reconnect.asyncStreamBufferSize", 100)
+                .withValue("reconnect.asyncOutputStreamFlush", "50ms")
                 .getOrCreateConfig();
     }
 
@@ -132,7 +132,7 @@ class AsyncStreamTest {
     void maxOutputQueueSize() throws InterruptedException, IOException {
 
         final int bufferSize = 100;
-        configureAsyncStreamSettings(bufferSize, 10_000);
+        configureAsyncStreamSettings();
 
         final int count = 1_000;
 
@@ -199,7 +199,7 @@ class AsyncStreamTest {
     void maxInputQueueSize() throws IOException, InterruptedException {
 
         final int bufferSize = 100;
-        configureAsyncStreamSettings(bufferSize, 10_000);
+        configureAsyncStreamSettings();
 
         final int count = 1_000;
         final StandardWorkGroup workGroup = new StandardWorkGroup(getStaticThreadManager(), "test", null);

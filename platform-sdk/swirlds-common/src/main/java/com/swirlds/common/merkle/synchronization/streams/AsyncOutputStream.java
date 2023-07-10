@@ -25,6 +25,7 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -71,7 +72,7 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
     /**
      * The maximum amount of time that is permitted to pass without a flush being attempted.
      */
-    private final int flushIntervalMs;
+    private final Duration flushInterval;
 
     /**
      * If this becomes false then this object's worker thread will stop transmitting messages.
@@ -86,7 +87,7 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
     /**
      * The maximum amount of time to wait when writing a message.
      */
-    private final int timeoutMs;
+    private final Duration timeout;
 
     private final StandardWorkGroup workGroup;
 
@@ -107,8 +108,8 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
         this.alive = true;
         this.timeSinceLastFlush = new StopWatch();
         this.timeSinceLastFlush.start();
-        this.flushIntervalMs = config.asyncOutputStreamFlushMilliseconds();
-        this.timeoutMs = config.asyncStreamTimeoutMilliseconds();
+        this.flushInterval = config.asyncOutputStreamFlush();
+        this.timeout = config.asyncStreamTimeout();
     }
 
     /**
@@ -116,15 +117,6 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
      */
     public void start() {
         workGroup.execute("async-output-stream", this::run);
-    }
-
-    /**
-     * Returns the maximum time (in milliseconds) allowed to elapse before a flush is required.
-     *
-     * @return the maximum time (in milliseconds) allowed to elapse before a flush is required
-     */
-    public int getFlushIntervalMs() {
-        return flushIntervalMs;
     }
 
     /**
@@ -177,7 +169,7 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
             throw new MerkleSynchronizationException("Messages can not be sent after close has been called.");
         }
 
-        final boolean success = outgoingMessages.offer(message, timeoutMs, TimeUnit.MILLISECONDS);
+        final boolean success = outgoingMessages.offer(message, timeout.toMillis(), TimeUnit.MILLISECONDS);
 
         if (!success) {
             try {
@@ -241,7 +233,7 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
      * Flush the stream if necessary.
      */
     private void flushIfRequired() {
-        if (timeSinceLastFlush.getTime(TimeUnit.MILLISECONDS) > flushIntervalMs) {
+        if (timeSinceLastFlush.getTime(TimeUnit.MILLISECONDS) > flushInterval.toMillis()) {
             flush();
         }
     }
