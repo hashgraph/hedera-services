@@ -168,30 +168,37 @@ class TransactionHandlingHistoryTests {
 
         final ConsistencyTestingToolRound round1 = new ConsistencyTestingToolRound(1, 1, List.of(1L, 2L, 3L));
         final ConsistencyTestingToolRound round2 = new ConsistencyTestingToolRound(2, 22, List.of(6L, 5L, 4L));
+        final ConsistencyTestingToolRound round3 = new ConsistencyTestingToolRound(3, 33, List.of());
 
         assertTrue(history.processRound(round1).isEmpty(), "No errors should have occurred");
         assertTrue(history.processRound(round2).isEmpty(), "No errors should have occurred");
+        assertTrue(history.processRound(round3).isEmpty(), "No errors should have occurred");
 
-        assertEquals(2, getLogFileContents().lines().count(), "Log file should have 2 rounds recorded");
+        assertEquals(3, getLogFileContents().lines().count(), "Log file should have 3 rounds recorded");
 
         final TransactionHandlingHistory parsedHistory = new TransactionHandlingHistory();
         parsedHistory.init(logFilePath);
 
-        // new rounds can be recorded
-        final ConsistencyTestingToolRound round3 = new ConsistencyTestingToolRound(3, 33, List.of(7L, 8L, 9L));
-
-        assertTrue(parsedHistory.processRound(round3).isEmpty(), "No errors should have occurred");
-        assertEquals(3, getLogFileContents().lines().count(), "Log file should have 3 rounds recorded");
-
         // rounds matching historical rounds are handled correctly
         final ConsistencyTestingToolRound round2Duplicate = new ConsistencyTestingToolRound(2, 22, List.of(6L, 5L, 4L));
         assertTrue(parsedHistory.processRound(round2Duplicate).isEmpty(), "No errors should have occurred");
-        assertEquals(3, getLogFileContents().lines().count(), "Log file should have 3 rounds recorded");
+        assertEquals(3, getLogFileContents().lines().count(), "Log file should have 4 rounds recorded");
 
         // rounds that don't match historical rounds are handled correctly
         final ConsistencyTestingToolRound incorrectRound1Duplicate =
                 new ConsistencyTestingToolRound(1, 65, List.of(1L, 2L, 3L));
         assertEquals(1, parsedHistory.processRound(incorrectRound1Duplicate).size(), "An error should have occurred");
-        assertEquals(3, getLogFileContents().lines().count(), "Log file should have 3 rounds recorded");
+        assertEquals(3, getLogFileContents().lines().count(), "Log file should have 4 rounds recorded");
+
+        final ConsistencyTestingToolRound incorrectRound3Duplicate =
+                new ConsistencyTestingToolRound(3, 33, List.of(1L, 2L, 3L));
+        assertEquals(1, parsedHistory.processRound(incorrectRound3Duplicate).size(), "An error should have occurred");
+        assertEquals(3, getLogFileContents().lines().count(), "Log file should have 4 rounds recorded");
+
+        // new rounds can be recorded
+        final ConsistencyTestingToolRound round4 = new ConsistencyTestingToolRound(4, 44, List.of(7L, 8L, 9L));
+
+        assertTrue(parsedHistory.processRound(round4).isEmpty(), "No errors should have occurred");
+        assertEquals(4, getLogFileContents().lines().count(), "Log file should have 4 rounds recorded");
     }
 }
