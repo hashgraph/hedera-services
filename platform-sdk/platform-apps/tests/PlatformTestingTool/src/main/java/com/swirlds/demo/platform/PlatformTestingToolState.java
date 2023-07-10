@@ -254,8 +254,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
         setConfig(sourceState.getConfig().copy());
 
-        setNextSeqCons(new NextSeqConsList(sourceState.getNextSeqCons()));
-        if (platform != null) {
+        if (platform != null && sourceState.getNextSeqCons() != null) {
+            setNextSeqCons(new NextSeqConsList(sourceState.getNextSeqCons()));
+
             // If nextSeqCons is shorter than the address book then add 0s until the sizes match
             for (int index = getNextSeqCons().size();
                     index < platform.getAddressBook().getSize();
@@ -303,7 +304,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         this.progressCfg = sourceState.progressCfg;
         this.roundCounter = sourceState.roundCounter;
 
-        if (platform != null) {
+        if (platform != null && sourceState.getTransactionCounter() != null) {
             setTransactionCounter(
                     new TransactionCounterList(platform.getAddressBook().getSize()));
             for (int id = 0; id < platform.getAddressBook().getSize(); id++) {
@@ -1084,8 +1085,25 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             throw new IllegalStateException("handleConsensusRound() called before init()");
         }
         delay();
+        updateTransactionCounters();
         round.forEachEventTransaction((event, transaction) ->
                 handleConsensusTransaction(event, transaction, swirldDualState, round.getRoundNum()));
+    }
+
+    /**
+     * If the size of the address book has changed, zero out the transaction counters and resize, as needed.
+     */
+    private void updateTransactionCounters() {
+        if (getTransactionCounter() == null
+                || getTransactionCounter().size() != platform.getAddressBook().getSize()) {
+            setNextSeqCons(new NextSeqConsList(platform.getAddressBook().getSize()));
+
+            setTransactionCounter(
+                    new TransactionCounterList(platform.getAddressBook().getSize()));
+            for (int id = 0; id < platform.getAddressBook().getSize(); id++) {
+                getTransactionCounter().add(new TransactionCounter(id));
+            }
+        }
     }
 
     private void handleConsensusTransaction(
@@ -1284,16 +1302,6 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
                         trigger.toString(),
                         Objects.toString(previousSoftwareVersion))
                 .toString());
-
-        if (trigger != InitTrigger.RECONNECT) {
-            setNextSeqCons(new NextSeqConsList(platform.getAddressBook().getSize()));
-
-            setTransactionCounter(
-                    new TransactionCounterList(platform.getAddressBook().getSize()));
-            for (int id = 0; id < platform.getAddressBook().getSize(); id++) {
-                getTransactionCounter().add(new TransactionCounter(id));
-            }
-        }
 
         if (trigger == InitTrigger.GENESIS) {
             genesisInit();

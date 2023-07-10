@@ -33,8 +33,8 @@ import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDbStatistics;
+import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import java.util.concurrent.ScheduledExecutorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -97,13 +97,13 @@ class JasperDbStatisticsTest {
 
     @Test
     void testConstructorWithNullParameter() {
-        assertThrows(IllegalArgumentException.class, () -> new MerkleDbStatistics(null, true));
+        assertThrows(IllegalArgumentException.class, () -> new JasperDbStatistics(null, false));
     }
 
     @Test
     void testRegisterWithNullParameter() {
         // given
-        final MerkleDbStatistics statistics = new MerkleDbStatistics(LABEL, false);
+        final JasperDbStatistics statistics = new JasperDbStatistics(LABEL, false);
 
         // then
         assertThrows(IllegalArgumentException.class, () -> statistics.registerMetrics(null));
