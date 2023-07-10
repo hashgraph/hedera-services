@@ -17,7 +17,7 @@
 package com.swirlds.common.stream;
 
 import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
-import static com.swirlds.common.utility.Units.SECONDS_TO_MILLISECONDS;
+import static com.swirlds.common.units.UnitConstants.SECONDS_TO_MILLISECONDS;
 import static com.swirlds.logging.LogMarker.EVENT_STREAM;
 
 import com.swirlds.common.context.PlatformContext;
@@ -86,7 +86,6 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
      * @param eventsLogDir             eventStream files will be generated in this directory
      * @param eventsLogPeriod          period of generating eventStream file
      * @param isLastEventInFreezeCheck a predicate which checks whether this event is the last event before restart
-     *
      */
     public EventStreamManager(
             @NonNull final PlatformContext platformContext,
