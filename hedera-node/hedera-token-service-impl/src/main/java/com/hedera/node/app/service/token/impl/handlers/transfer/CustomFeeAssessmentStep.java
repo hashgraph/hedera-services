@@ -24,11 +24,9 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeAssessor;
@@ -41,7 +39,6 @@ import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Charges custom fees for the crypto transfer operation. This is yet to be implemented
@@ -50,7 +47,7 @@ public class CustomFeeAssessmentStep {
     private final CryptoTransferTransactionBody op;
     private final CustomFeeAssessor customFeeAssessor;
     private int levelNum = 0;
-    private HandleContext context;
+    private final HandleContext context;
 
     public CustomFeeAssessmentStep(
             @NonNull final CryptoTransferTransactionBody op, final TransferContextImpl transferContext) {
@@ -196,90 +193,29 @@ public class CustomFeeAssessmentStep {
 
             for (final var aa : ftTransfers) {
                 final var adjustment = aa.amount();
-                for (final var fee : feeMeta.customFees()) {
-                    final var denom = fee.fixedFeeOrElse(FixedFee.DEFAULT).denominatingTokenIdOrElse(TokenID.DEFAULT);
-                    if (couldTriggerCustomFees(tokenId, denom, false, true, adjustment, result.getExemptDebits())) {
-                        // If sender for this adjustment is same as treasury for token
-                        // then don't charge any custom fee. Since token treasuries are exempt from custom fees
-                        if (feeMeta.treasuryId().equals(aa.accountID())) {
-                            break;
-                        }
-                        customFeeAssessor.assess(aa.accountID(), feeMeta, maxTransfersSize, null, result, context);
+                if (adjustment < 0) {
+                    final var sender = aa.accountID();
+                    // If sender for this adjustment is same as treasury for token
+                    // then don't charge any custom fee. Since token treasuries are exempt from custom fees
+                    if (feeMeta.treasuryId().equals(sender)) {
+                        continue;
                     }
+                    customFeeAssessor.assess(sender, feeMeta, maxTransfersSize, null, result, context);
                 }
             }
 
             for (final var nftTransfer : nftTransfers) {
-                final var adjustment = nftTransfer.serialNumber();
-                for (final var fee : feeMeta.customFees()) {
-                    final var denomToken =
-                            fee.fixedFeeOrElse(FixedFee.DEFAULT).denominatingTokenIdOrElse(TokenID.DEFAULT);
-                    if (couldTriggerCustomFees(
-                            tokenId, denomToken, true, false, adjustment, result.getExemptDebits())) {
-                        // If sender for this adjustment is same as treasury for token
-                        // then don't charge any custom fee. Since token treasuries are exempt from custom fees
-                        if (feeMeta.treasuryId().equals(nftTransfer.senderAccountID())) {
-                            break;
-                        }
-                        customFeeAssessor.assess(
-                                nftTransfer.senderAccountID(),
-                                feeMeta,
-                                maxTransfersSize,
-                                nftTransfer.receiverAccountID(),
-                                result,
-                                context);
-                    }
+                if (feeMeta.treasuryId().equals(nftTransfer.senderAccountID())) {
+                    break;
                 }
+                customFeeAssessor.assess(
+                        nftTransfer.senderAccountID(),
+                        feeMeta,
+                        maxTransfersSize,
+                        nftTransfer.receiverAccountID(),
+                        result,
+                        context);
             }
-        }
-    }
-
-    /**
-     * Custom fee that is self-denominated is exempt from further custom fee charging.
-     *
-     * @param chargingTokenId     the token that is being charged
-     * @param denominatingTokenID the token that is being used as denomination to pay the fee
-     * @param exemptDebits
-     * @return true if the custom fee is self-denominated
-     */
-    private boolean isExemptFromCustomFees(
-            @NonNull final TokenID chargingTokenId,
-            @NonNull final TokenID denominatingTokenID,
-            @NonNull final Set<TokenID> exemptDebits) {
-        /* But self-denominated fees are exempt from further custom fee charging,
-        c.f. https://github.com/hashgraph/hedera-services/issues/1925 */
-
-        // Exempt debits will have the denominating token Ids from previous custom fee charging
-        // So if the denominating tokenId is in the exempt debits, then it is self-denominated
-
-        return denominatingTokenID != TokenID.DEFAULT && chargingTokenId.equals(denominatingTokenID)
-                || exemptDebits.contains(denominatingTokenID);
-    }
-    /**
-     * Checks if the adjustment will trigger a custom fee.
-     * Custom fee is triggered if the fee is not self-denominated and the transfer is not a hbar transfer
-     * and the adjustment is a debit.
-     *
-     * @param chargingTokenId         the token that is being charged
-     * @param denominatingTokenID     the token that is being used as denomination to pay the fee
-     * @param isNftTransfer           true if the transfer is an NFT transfer
-     * @param isFungibleTokenTransfer true if the transfer is a fungible token transfer
-     * @param adjustment              the amount of the transfer
-     * @param exemptDebits            the set of tokens that are exempt from custom fee charging, due to being self
-     *                                denominated in previous level of custom fee assessment
-     * @return true if the adjustment will trigger a custom fee. False otherwise.
-     */
-    private boolean couldTriggerCustomFees(
-            @NonNull final TokenID chargingTokenId,
-            @NonNull final TokenID denominatingTokenID,
-            final boolean isNftTransfer,
-            final boolean isFungibleTokenTransfer,
-            final long adjustment,
-            @NonNull final Set<TokenID> exemptDebits) {
-        if (isExemptFromCustomFees(chargingTokenId, denominatingTokenID, exemptDebits)) {
-            return false;
-        } else {
-            return isNftTransfer || (isFungibleTokenTransfer && adjustment < 0);
         }
     }
 }

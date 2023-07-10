@@ -62,6 +62,11 @@ public class CustomFractionalFeeAssessor {
         final var creditsForToken = getFungibleTokenCredits(inputTokenTransfers.get(denom));
         final var effectivePayerAccounts = creditsForToken.keySet();
 
+        // If the custom fee exempted
+        if (result.getExemptDebits().contains(denom)) {
+            return;
+        }
+
         for (final var fee : feeMeta.customFees()) {
             final var collector = fee.feeCollectorAccountId();
             // If the collector 0.0.C for a fractional fee is trying to send X units to
@@ -94,6 +99,8 @@ public class CustomFractionalFeeAssessor {
                 final var map = result.getHtsAdjustments().getOrDefault(denom, new HashMap<>());
                 map.merge(collector, assessedAmount, Long::sum);
                 result.getHtsAdjustments().put(denom, map);
+
+                // TODO: How to deduct from all payer accounts ?
 
                 final var finalEffPayerNums =
                         (filteredCredits == creditsForToken) ? effectivePayerAccounts : filteredCredits.keySet();

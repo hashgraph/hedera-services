@@ -64,7 +64,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         final var collectorBalance = writableAccountStore.get(feeCollectorId).tinybarBalance();
         final var senderBalance = writableAccountStore.get(ownerId).tinybarBalance();
 
-        subject.assessCustomFees(transferContext);
+        final var listOfOps = subject.assessCustomFees(transferContext);
+        assertThat(listOfOps).hasSize(2);
 
         final var expectedCollectorBalance = collectorBalance + 10;
         final var expectedSenderBalance = senderBalance - 1000L - 10L;

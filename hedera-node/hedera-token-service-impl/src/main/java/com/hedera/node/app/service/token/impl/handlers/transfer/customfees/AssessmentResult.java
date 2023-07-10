@@ -49,37 +49,26 @@ public class AssessmentResult {
 
     public AssessmentResult(
             final List<TokenTransferList> inputTokenTransfers, final List<AccountAmount> inputHbarTransfers) {
+        inputTokenAdjustments = buildTokenTransferMap(inputTokenTransfers);
+        inputHbarAdjustments = buildHbarTransferMap(inputHbarTransfers);
+
         htsAdjustments = new HashMap<>();
         hbarAdjustments = new HashMap<>();
         exemptDebits = new HashSet<>();
         royaltiesPaid = new HashSet<>();
         assessedCustomFees = new ArrayList<>();
-        inputTokenAdjustments = buildTokenTransferMap(inputTokenTransfers);
-        inputHbarAdjustments = buildHbarTransferMap(inputHbarTransfers);
     }
 
     public Map<TokenID, Map<AccountID, Long>> getInputTokenAdjustments() {
         return inputTokenAdjustments;
     }
 
-    public void setInputTokenAdjustments(final Map<TokenID, Map<AccountID, Long>> inputTokenAdjustments) {
-        this.inputTokenAdjustments = inputTokenAdjustments;
-    }
-
     public Map<AccountID, Long> getHbarAdjustments() {
         return hbarAdjustments;
     }
 
-    public void setHbarAdjustments(final Map<AccountID, Long> hbarAdjustments) {
-        this.hbarAdjustments = hbarAdjustments;
-    }
-
     public Map<TokenID, Map<AccountID, Long>> getHtsAdjustments() {
         return htsAdjustments;
-    }
-
-    public void setHtsAdjustments(final Map<TokenID, Map<AccountID, Long>> htsAdjustments) {
-        this.htsAdjustments = htsAdjustments;
     }
 
     public Set<TokenID> getExemptDebits() {
@@ -131,16 +120,19 @@ public class AssessmentResult {
             for (final var aa : fungibleTokenTransfers) {
                 tokenTransferMap.put(aa.accountID(), aa.amount());
             }
-            fungibleTransfersMap.put(tokenId, tokenTransferMap);
+            if (!tokenTransferMap.isEmpty()) {
+                fungibleTransfersMap.put(tokenId, tokenTransferMap);
+            }
         }
         return fungibleTransfersMap;
     }
 
     private Map<AccountID, Long> buildHbarTransferMap(@NonNull final List<AccountAmount> hbarTransfers) {
+        final var adjustments = new HashMap<AccountID, Long>();
         for (final var aa : hbarTransfers) {
-            hbarAdjustments.put(aa.accountID(), aa.amount());
+            adjustments.put(aa.accountID(), aa.amount());
         }
-        return hbarAdjustments;
+        return adjustments;
     }
 
     public boolean haveAssessedChanges() {
