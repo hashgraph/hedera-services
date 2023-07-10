@@ -16,8 +16,8 @@
 
 package com.swirlds.virtual.merkle.reconnect;
 
-import static com.swirlds.common.utility.Units.BYTES_TO_BITS;
-import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
+import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
+import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 
 import com.swirlds.merkledb.files.hashmap.HalfDiskVirtualKeySet;
 import com.swirlds.virtual.merkle.TestKey;

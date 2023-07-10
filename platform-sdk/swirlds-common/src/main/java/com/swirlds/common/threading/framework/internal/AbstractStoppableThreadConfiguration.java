@@ -16,8 +16,8 @@
 
 package com.swirlds.common.threading.framework.internal;
 
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
-import static com.swirlds.common.utility.Units.SECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.ThreadSeed;
@@ -29,10 +29,8 @@ import java.time.Duration;
 /**
  * Boilerplate getters, setters, and configuration for stoppable configuration.
  *
- * @param <C>
- * 		the type of the class extending this class
- * @param <T>
- * 		the type of the object that provides a run method
+ * @param <C> the type of the class extending this class
+ * @param <T> the type of the object that provides a run method
  */
 public abstract class AbstractStoppableThreadConfiguration<
                 C extends AbstractStoppableThreadConfiguration<C, T>, T extends InterruptableRunnable>
@@ -54,8 +52,8 @@ public abstract class AbstractStoppableThreadConfiguration<
     private int joinWaitMs = DEFAULT_JOIN_WAIT_MS;
 
     /**
-     * The amount of time to wait for the thread to pause before logging a stack trace. A value of
-     * {@link Duration#ZERO} means never log.
+     * The amount of time to wait for the thread to pause before logging a stack trace. A value of {@link Duration#ZERO}
+     * means never log.
      */
     private Duration logAfterPauseDuration = DEFAULT_LOG_AFTER_PAUSE_DURATION;
 
@@ -75,8 +73,8 @@ public abstract class AbstractStoppableThreadConfiguration<
     private InterruptableRunnable finalCycleWork;
 
     /**
-     * If a thread is requested to stop but does not it is considered to be a hanging thread after this
-     * period. If 0 then thread is never considered to be a hanging thread.
+     * If a thread is requested to stop but does not it is considered to be a hanging thread after this period. If 0
+     * then thread is never considered to be a hanging thread.
      */
     private Duration hangingThreadPeriod = DEFAULT_HANGING_PERIOD;
 
@@ -87,8 +85,7 @@ public abstract class AbstractStoppableThreadConfiguration<
     /**
      * Copy constructor.
      *
-     * @param that
-     * 		the configuration to copy.
+     * @param that the configuration to copy.
      */
     protected AbstractStoppableThreadConfiguration(final AbstractStoppableThreadConfiguration<C, T> that) {
         super(that);
@@ -110,8 +107,7 @@ public abstract class AbstractStoppableThreadConfiguration<
     /**
      * Build a stoppable thread using the current configuration.
      *
-     * @param start
-     * 		if true then start the thread
+     * @param start if true then start the thread
      * @return a stoppable thread
      */
     protected TypedStoppableThread<T> buildStoppableThread(final boolean start) {
@@ -127,8 +123,7 @@ public abstract class AbstractStoppableThreadConfiguration<
     /**
      * Build a seed for a stoppable thread.
      *
-     * @param stoppableThread
-     * 		the stoppable thread to build a seed from
+     * @param stoppableThread the stoppable thread to build a seed from
      * @return an injectable seed
      */
     protected ThreadSeed buildStoppableThreadSeed(final StoppableThreadImpl<T> stoppableThread) {
@@ -212,8 +207,7 @@ public abstract class AbstractStoppableThreadConfiguration<
     /**
      * Set the minimum amount of time that a single cycle is allowed to take, or null if no such minimum is defined.
      *
-     * @param minimumPeriod
-     * 		the minimum cycle time
+     * @param minimumPeriod the minimum cycle time
      * @return this object
      */
     @SuppressWarnings("unchecked")
@@ -239,8 +233,7 @@ public abstract class AbstractStoppableThreadConfiguration<
     /**
      * Set the maximum rate in cycles per second that this operation is permitted to run at.
      *
-     * @param hz
-     * 		the rate, in hertz
+     * @param hz the rate, in hertz
      * @return this object
      */
     @SuppressWarnings("unchecked")
@@ -275,18 +268,16 @@ public abstract class AbstractStoppableThreadConfiguration<
     }
 
     /**
-     * Get the period of time that must elapse after a stop request before this
-     * thread is considered to be a hanging thread. A value of 0 means that the thread will never be considered
-     * to be a hanging thread.
+     * Get the period of time that must elapse after a stop request before this thread is considered to be a hanging
+     * thread. A value of 0 means that the thread will never be considered to be a hanging thread.
      */
     public Duration getHangingThreadPeriod() {
         return hangingThreadPeriod;
     }
 
     /**
-     * Set the period of time that must elapse after a stop request before this
-     * thread is considered to be a hanging thread. A value of 0 means that the thread will never be considered
-     * to be a hanging thread.
+     * Set the period of time that must elapse after a stop request before this thread is considered to be a hanging
+     * thread. A value of 0 means that the thread will never be considered to be a hanging thread.
      *
      * @return this object
      */
@@ -298,8 +289,8 @@ public abstract class AbstractStoppableThreadConfiguration<
     }
 
     /**
-     * Get the amount of time to wait for the thread to pause before logging a stack trace. A value of
-     * * {@link Duration#ZERO} means never log.
+     * Get the amount of time to wait for the thread to pause before logging a stack trace. A value of *
+     * {@link Duration#ZERO} means never log.
      */
     public Duration getLogAfterPauseDuration() {
         return logAfterPauseDuration;

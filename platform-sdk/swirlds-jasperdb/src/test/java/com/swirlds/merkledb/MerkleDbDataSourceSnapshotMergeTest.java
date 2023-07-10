@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -78,8 +78,8 @@ class MerkleDbDataSourceSnapshotMergeTest {
         assertTrue(
                 checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
                 "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
-                        + (directMemoryUsedAtStart * Units.BYTES_TO_MEBIBYTES) + "MB and is now "
-                        + (getDirectMemoryUsedBytes() * Units.BYTES_TO_MEBIBYTES)
+                        + (directMemoryUsedAtStart * UnitConstants.BYTES_TO_MEBIBYTES) + "MB and is now "
+                        + (getDirectMemoryUsedBytes() * UnitConstants.BYTES_TO_MEBIBYTES)
                         + "MB");
         // check db count
         assertEquals(0, MerkleDbDataSource.getCountOfOpenDatabases(), "Expected no open dbs");

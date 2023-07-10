@@ -20,8 +20,8 @@ import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTr
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
-import static com.swirlds.common.utility.Units.SECONDS_TO_NANOSECONDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 

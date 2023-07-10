@@ -24,8 +24,8 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.RandomAccessDeque;
-import com.swirlds.common.utility.Units;
 import com.swirlds.common.utility.ValueReference;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -604,11 +604,11 @@ public class PreconsensusEventFileManager {
     private void updateFileSizeMetrics() {
         metrics.getPreconsensusEventFileCount().set(files.size());
 
-        metrics.getPreconsensusEventFileTotalSizeGB().set(totalFileByteCount * Units.BYTES_TO_GIBIBYTES);
+        metrics.getPreconsensusEventFileTotalSizeGB().set(totalFileByteCount * UnitConstants.BYTES_TO_GIBIBYTES);
 
         if (files.size() > 0) {
             metrics.getPreconsensusEventFileAverageSizeMB()
-                    .set(((double) totalFileByteCount) / files.size() * Units.BYTES_TO_MEBIBYTES);
+                    .set(((double) totalFileByteCount) / files.size() * UnitConstants.BYTES_TO_MEBIBYTES);
         }
     }
 }

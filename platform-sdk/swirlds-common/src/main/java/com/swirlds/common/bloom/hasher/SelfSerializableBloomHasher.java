@@ -16,9 +16,9 @@
 
 package com.swirlds.common.bloom.hasher;
 
+import static com.swirlds.common.units.UnitConstants.BYTES_PER_LONG;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash64;
-import static com.swirlds.common.utility.Units.BYTES_PER_LONG;
 
 import com.swirlds.common.bloom.BloomHasher;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -31,8 +31,7 @@ import java.io.IOException;
 /**
  * This class hashes {@link SelfSerializable} objects for a bloom filter.
  *
- * @param <T>
- * 		the type of the object
+ * @param <T> the type of the object
  */
 public class SelfSerializableBloomHasher<T extends SelfSerializable> implements BloomHasher<T> {
 

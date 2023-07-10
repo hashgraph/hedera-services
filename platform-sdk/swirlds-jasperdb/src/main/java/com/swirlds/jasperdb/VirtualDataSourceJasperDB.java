@@ -29,7 +29,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.jasperdb.collections.HashList;
 import com.swirlds.jasperdb.collections.HashListByteBuffer;
 import com.swirlds.jasperdb.collections.LongList;
@@ -1025,7 +1025,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
                     JASPER_DB.getMarker(),
                     "[{}] Snapshot all finished in {} seconds",
                     label,
-                    (System.currentTimeMillis() - START) * Units.MILLISECONDS_TO_SECONDS);
+                    (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS);
         } finally {
             snapshotInProgress.set(false);
             // unpause merging
@@ -1092,16 +1092,18 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
         if (pathToHashDisk != null) {
             final LongSummaryStatistics hashesFileSizeStats = pathToHashDisk.getFilesSizeStatistics();
             statistics.setPathToHashStoreFileCount((int) hashesFileSizeStats.getCount());
-            statistics.setPathToHashTotalFileSizeInMB(hashesFileSizeStats.getSum() * Units.BYTES_TO_MEBIBYTES);
+            statistics.setPathToHashTotalFileSizeInMB(hashesFileSizeStats.getSum() * UnitConstants.BYTES_TO_MEBIBYTES);
         }
         if (!isLongKeyMode) {
             final LongSummaryStatistics leafKeyFileSizeStats = objectKeyToPath.getFilesSizeStatistics();
             statistics.setLeafKeyToPathStoreFileCount((int) leafKeyFileSizeStats.getCount());
-            statistics.setLeafKeyToPathStoreTotalFileSizeInMB(leafKeyFileSizeStats.getSum() * Units.BYTES_TO_MEBIBYTES);
+            statistics.setLeafKeyToPathStoreTotalFileSizeInMB(
+                    leafKeyFileSizeStats.getSum() * UnitConstants.BYTES_TO_MEBIBYTES);
         }
         final LongSummaryStatistics leafDataFileSizeStats = pathToKeyValue.getFilesSizeStatistics();
         statistics.setPathToKeyValueStoreFileCount((int) leafDataFileSizeStats.getCount());
-        statistics.setPathToKeyValueStoreTotalFileSizeInMB(leafDataFileSizeStats.getSum() * Units.BYTES_TO_MEBIBYTES);
+        statistics.setPathToKeyValueStoreTotalFileSizeInMB(
+                leafDataFileSizeStats.getSum() * UnitConstants.BYTES_TO_MEBIBYTES);
     }
 
     /**
@@ -1155,7 +1157,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
                             "[{}] Snapshot {} complete in {} seconds",
                             label,
                             taskName,
-                            (System.currentTimeMillis() - START) * Units.MILLISECONDS_TO_SECONDS);
+                            (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS);
                     return true; // turns this into a callable, so it can throw checked exceptions
                 } finally {
                     countDownLatch.countDown();
@@ -1380,36 +1382,36 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
             if (isSmallMerge) {
                 if (hasDiskStoreForHashes) {
                     statistics.setPathToHashSmallMergeTime(firstMergeDuration.toSeconds()
-                            + firstMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
+                            + firstMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
                 if (!isLongKeyMode) {
                     statistics.setLeafKeyToPathStoreSmallMergeTime(secondMergeDuration.toSeconds()
-                            + secondMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
+                            + secondMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
-                statistics.setPathToKeyValueStoreSmallMergeTime(
-                        thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
+                statistics.setPathToKeyValueStoreSmallMergeTime(thirdMergeDuration.toSeconds()
+                        + thirdMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
             } else if (isMediumMerge) {
                 if (hasDiskStoreForHashes) {
                     statistics.setPathToHashMediumMergeTime(firstMergeDuration.toSeconds()
-                            + firstMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
+                            + firstMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
                 if (!isLongKeyMode) {
                     statistics.setLeafKeyToPathStoreMediumMergeTime(secondMergeDuration.toSeconds()
-                            + secondMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
+                            + secondMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
-                statistics.setPathToKeyValueStoreMediumMergeTime(
-                        thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
+                statistics.setPathToKeyValueStoreMediumMergeTime(thirdMergeDuration.toSeconds()
+                        + thirdMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
             } else if (isLargeMerge) {
                 if (hasDiskStoreForHashes) {
                     statistics.setPathToHashLargeMergeTime(firstMergeDuration.toSeconds()
-                            + firstMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
+                            + firstMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
                 if (!isLongKeyMode) {
                     statistics.setLeafKeyToPathStoreLargeMergeTime(secondMergeDuration.toSeconds()
-                            + secondMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
+                            + secondMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
                 }
-                statistics.setPathToKeyValueStoreLargeMergeTime(
-                        thirdMergeDuration.toSeconds() + thirdMergeDuration.getNano() * Units.NANOSECONDS_TO_SECONDS);
+                statistics.setPathToKeyValueStoreLargeMergeTime(thirdMergeDuration.toSeconds()
+                        + thirdMergeDuration.getNano() * UnitConstants.NANOSECONDS_TO_SECONDS);
             }
             // update file stats (those statistics don't care about small vs medium vs large merge size)
             updateFileStats();

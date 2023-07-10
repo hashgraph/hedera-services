@@ -30,9 +30,9 @@ import com.sun.management.OperatingSystemMXBean;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
-import com.swirlds.common.utility.Units;
 import com.swirlds.platform.state.signed.SignedState;
 import java.io.File;
 import java.lang.management.BufferPoolMXBean;
@@ -223,7 +223,7 @@ public final class RuntimeMetrics {
                 // just use the present value, namely Runtime.getRuntime().maxMemory().
             }
         }
-        return maxDirectMemoryInBytes * Units.BYTES_TO_MEBIBYTES;
+        return maxDirectMemoryInBytes * UnitConstants.BYTES_TO_MEBIBYTES;
     }
 
     private void update() {
@@ -248,7 +248,7 @@ public final class RuntimeMetrics {
             }
             return;
         }
-        final double megabytesUsed = bytesUsed * Units.BYTES_TO_MEBIBYTES;
+        final double megabytesUsed = bytesUsed * UnitConstants.BYTES_TO_MEBIBYTES;
         directMemInMB.update(megabytesUsed);
         if (maximumDirectMemSizeInMB > 0) {
             directMemPercent.update(megabytesUsed * WHOLE_PERCENT / maximumDirectMemSizeInMB);

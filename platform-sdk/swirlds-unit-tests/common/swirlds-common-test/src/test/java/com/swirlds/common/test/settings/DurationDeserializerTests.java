@@ -17,13 +17,13 @@
 package com.swirlds.common.test.settings;
 
 import static com.swirlds.common.settings.ParsingUtils.parseDuration;
-import static com.swirlds.common.utility.Units.DAYS_TO_HOURS;
-import static com.swirlds.common.utility.Units.HOURS_TO_MINUTES;
-import static com.swirlds.common.utility.Units.MICROSECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.utility.Units.MILLISECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.utility.Units.MINUTES_TO_SECONDS;
-import static com.swirlds.common.utility.Units.SECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.utility.Units.WEEKS_TO_DAYS;
+import static com.swirlds.common.units.UnitConstants.DAYS_TO_HOURS;
+import static com.swirlds.common.units.UnitConstants.HOURS_TO_MINUTES;
+import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.MINUTES_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.WEEKS_TO_DAYS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

@@ -16,17 +16,29 @@
 
 package com.swirlds.common.units;
 
+import static com.swirlds.common.units.UnitConstants.DAYS_TO_HOURS;
+import static com.swirlds.common.units.UnitConstants.HOURS_TO_MINUTES;
+import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_MICROSECONDS;
+import static com.swirlds.common.units.UnitConstants.MILLISECOND_UNIT;
+import static com.swirlds.common.units.UnitConstants.MINUTES_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECOND_UNIT;
+import static com.swirlds.common.units.UnitConstants.SECONDS_TO_MILLISECONDS;
+import static com.swirlds.common.units.UnitConstants.SECOND_UNIT;
+
+import com.swirlds.common.units.internal.UnitConverter;
+
 /**
  * Units for measurements of time.
  */
 public enum TimeUnit implements Unit<TimeUnit> {
-    UNIT_NANOSECONDS(1, "nanosecond", "ns"),
-    UNIT_MICROSECONDS(1000, "microsecond", "us"),
-    UNIT_MILLISECONDS(1000, "millisecond", "ms"),
-    UNIT_SECONDS(1000, "second", "s"),
-    UNIT_MINUTES(60, "minute", "m"),
-    UNIT_HOURS(60, "hour", "h"),
-    UNIT_DAYS(24, "day", "d");
+    UNIT_NANOSECONDS(1, "nanosecond", NANOSECOND_UNIT),
+    UNIT_MICROSECONDS(MICROSECONDS_TO_NANOSECONDS, "microsecond", "us"),
+    UNIT_MILLISECONDS(MILLISECONDS_TO_MICROSECONDS, "millisecond", MILLISECOND_UNIT),
+    UNIT_SECONDS(SECONDS_TO_MILLISECONDS, "second", SECOND_UNIT),
+    UNIT_MINUTES(MINUTES_TO_SECONDS, "minute", "m"),
+    UNIT_HOURS(HOURS_TO_MINUTES, "hour", "h"),
+    UNIT_DAYS(DAYS_TO_HOURS, "day", "d");
 
     private static final UnitConverter<TimeUnit> converter = new UnitConverter<>(TimeUnit.values());
 

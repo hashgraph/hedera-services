@@ -16,29 +16,29 @@
 
 package com.swirlds.common.utility.throttle;
 
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
 /**
- * Each instance of this class can be used to throttle some kind of flow, to allow only a certain number of
- * transactions per second or bytes per second or events per second etc.
- *
- * For throttling transactions per second, the instance remembers how many transactions have occurred recently, and
- * will then answer whether a new transaction is allowed, or should be blocked.  This also works for sets of
- * transactions, where the entire set is either accepted or rejected.  So, to limit a flow of bytes per second, each
- * byte can be treated as a "transaction", and a block of 1kB can be considered a set of 1024 transactions.
- *
- * Given the number of transactions per second (tps) and the max number of seconds worth of transactions that could
- * ever come in a single burst (burstPeriod), this uses a leaky bucket model to throttle it. Each allowed transaction
+ * Each instance of this class can be used to throttle some kind of flow, to allow only a certain number of transactions
+ * per second or bytes per second or events per second etc.
+ * <p>
+ * For throttling transactions per second, the instance remembers how many transactions have occurred recently, and will
+ * then answer whether a new transaction is allowed, or should be blocked.  This also works for sets of transactions,
+ * where the entire set is either accepted or rejected.  So, to limit a flow of bytes per second, each byte can be
+ * treated as a "transaction", and a block of 1kB can be considered a set of 1024 transactions.
+ * <p>
+ * Given the number of transactions per second (tps) and the max number of seconds worth of transactions that could ever
+ * come in a single burst (burstPeriod), this uses a leaky bucket model to throttle it. Each allowed transaction
  * increases the contents of the bucket by 1. Each nanosecond decreases the contents of the bucket by a billionth of
  * tps.  If the next transaction or block of transactions would fill the bucket to more than tps * burstPeriod, then
  * that transaction or block is disallowed.
- *
+ * <p>
  * For example, to throttle smart contract calls to 1.5 per second on this computer, it would be instantiated as:
  *
  * <pre>{@code
  * Throttle contractThrottle = new Throttle(1.5);   //throttle to 1.5 tps for this node
  * }</pre>
- *
+ * <p>
  * and then when a transaction is received, do this:
  *
  * <pre>{@code
@@ -66,8 +66,7 @@ public class Throttle {
      * Start throttling a new flow, allowing tps transactions per second, and bursts of at most tps transactions at
      * once.
      *
-     * @param tps
-     * 		the max transactions per second (on average) that is allowed (negative values treated as 0)
+     * @param tps the max transactions per second (on average) that is allowed (negative values treated as 0)
      */
     public Throttle(double tps) {
         this(tps, 1);
@@ -77,10 +76,9 @@ public class Throttle {
      * Start throttling a new flow, allowing tps transactions per second, and bursts of at most tps * burstPeriod
      * transactions at once.
      *
-     * @param tps
-     * 		the max transactions per second (on average) that is allowed (negative values treated as 0)
-     * @param burstPeriod
-     * 		bursts can allow at most this many seconds' worth of transactions at once (negative values treated as 0)
+     * @param tps         the max transactions per second (on average) that is allowed (negative values treated as 0)
+     * @param burstPeriod bursts can allow at most this many seconds' worth of transactions at once (negative values
+     *                    treated as 0)
      */
     public Throttle(double tps, double burstPeriod) {
         this.tps = Math.max(0, tps);
@@ -107,8 +105,7 @@ public class Throttle {
     /**
      * Set max transactions per second allowed, on average.
      *
-     * @param tps
-     * 		max transactions per second (negative values will be treated as 0)
+     * @param tps max transactions per second (negative values will be treated as 0)
      */
     public synchronized void setTps(double tps) {
         this.tps = Math.max(0, tps);
@@ -123,8 +120,8 @@ public class Throttle {
     /**
      * set the number of seconds worth of traffic that can occur in a single burst
      *
-     * @param burstPeriod
-     * 		bursts can allow at most this many seconds' worth of transactions at once (negative values treated as 0)
+     * @param burstPeriod bursts can allow at most this many seconds' worth of transactions at once (negative values
+     *                    treated as 0)
      */
     public synchronized void setBurstPeriod(double burstPeriod) {
         this.burstPeriod = Math.max(0, burstPeriod);
@@ -132,8 +129,8 @@ public class Throttle {
     }
 
     /**
-     * Can one more transaction be allowed right now?  If so, return true, and record that it was allowed
-     * (which will reduce the number allowed in the near future)
+     * Can one more transaction be allowed right now?  If so, return true, and record that it was allowed (which will
+     * reduce the number allowed in the near future)
      *
      * @return can this number of transactions be allowed right now?
      */
@@ -145,8 +142,7 @@ public class Throttle {
      * Can the given number of transactions be allowed right now?  If so, return true, and record that they were allowed
      * (which will reduce the number allowed in the near future)
      *
-     * @param amount
-     * 		the number of transactions in the block (must be nonnegative)
+     * @param amount the number of transactions in the block (must be nonnegative)
      * @return can this number of transactions be allowed right now?
      */
     public synchronized boolean allow(double amount) {

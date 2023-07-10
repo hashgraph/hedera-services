@@ -16,8 +16,8 @@
 
 package com.swirlds.common.merkle.synchronization;
 
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_SECONDS;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-import static com.swirlds.common.utility.Units.MILLISECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
@@ -91,20 +91,13 @@ public class LearningSynchronizer implements ReconnectNodeCount {
     /**
      * Create a new learning synchronizer.
      *
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param in
-     * 		the input stream
-     * @param out
-     * 		the output stream
-     * @param root
-     * 		the root of the tree
-     * @param breakConnection
-     * 		a method that breaks the connection. Used iff
-     * 		an exception is encountered. Prevents deadlock
-     * 		if there is a thread stuck on a blocking IO
-     * 		operation that will never finish due to a
-     * 		failure.
+     * @param threadManager   responsible for managing thread lifecycles
+     * @param in              the input stream
+     * @param out             the output stream
+     * @param root            the root of the tree
+     * @param breakConnection a method that breaks the connection. Used iff an exception is encountered. Prevents
+     *                        deadlock if there is a thread stuck on a blocking IO operation that will never finish due
+     *                        to a failure.
      */
     public LearningSynchronizer(
             final ThreadManager threadManager,
@@ -239,8 +232,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
     /**
      * Receive a tree (or subtree) from the teacher
      *
-     * @param root
-     * 		the root of the tree (or subtree) that is already possessed
+     * @param root the root of the tree (or subtree) that is already possessed
      * @return the root of the reconstructed tree
      */
     @SuppressWarnings("unchecked")

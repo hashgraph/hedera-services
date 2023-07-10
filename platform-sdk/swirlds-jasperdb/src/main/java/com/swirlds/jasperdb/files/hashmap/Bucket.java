@@ -23,7 +23,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.jasperdb.files.DataFileOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
@@ -60,7 +60,7 @@ public final class Bucket<K extends VirtualKey> {
      */
     private static final int CAPACITY_INCREMENT = 1024;
     /** We assume 8KB will be enough for now for most buckets. */
-    private static final int DEFAULT_BUCKET_BUFFER_SIZE = 8 * Units.KIBIBYTES_TO_BYTES;
+    private static final int DEFAULT_BUCKET_BUFFER_SIZE = 8 * UnitConstants.KIBIBYTES_TO_BYTES;
 
     private static final int BUCKET_INDEX_SIZE = Integer.BYTES;
     private static final int BUCKET_SIZE_OFFSET = BUCKET_INDEX_SIZE;

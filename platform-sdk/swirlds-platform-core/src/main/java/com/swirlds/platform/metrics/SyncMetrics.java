@@ -16,7 +16,12 @@
 
 package com.swirlds.platform.metrics;
 
-import static com.swirlds.common.metrics.FloatFormats.*;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_14_7;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_15_3;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_5_3;
+import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 
@@ -24,7 +29,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.system.PlatformStatNames;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
@@ -265,7 +270,7 @@ public class SyncMetrics {
         avgSyncDuration5.update(timing.getTimePoint(4), timing.getTimePoint(5));
 
         avgSyncDuration.update(timing.getTimePoint(0), timing.getTimePoint(5));
-        final double syncDurationSec = timing.getPointDiff(5, 0) * Units.NANOSECONDS_TO_SECONDS;
+        final double syncDurationSec = timing.getPointDiff(5, 0) * UnitConstants.NANOSECONDS_TO_SECONDS;
         final double speed = Math.max(
                         conn.getDis().getSyncByteCounter().getCount(),
                         conn.getDos().getSyncByteCounter().getCount())

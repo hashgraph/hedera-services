@@ -26,7 +26,7 @@ import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFilesByPath;
 import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
 import static com.swirlds.merkledb.files.DataFileCommon.printDataLinkValidation;
 
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.CASableLongIndex;
@@ -222,7 +222,8 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
 
         final long mergedFilesSize = getSizeOfFilesByPath(newFilesCreated);
         if (reportSavedSpaceMetricFunction != null) {
-            reportSavedSpaceMetricFunction.accept((filesToMergeSize - mergedFilesSize) * Units.BYTES_TO_MEBIBYTES);
+            reportSavedSpaceMetricFunction.accept(
+                    (filesToMergeSize - mergedFilesSize) * UnitConstants.BYTES_TO_MEBIBYTES);
         }
 
         logMergeStats(storeName, tookMillis, filesToMerge, filesToMergeSize, newFilesCreated, fileCollection);

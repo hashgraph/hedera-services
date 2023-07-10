@@ -17,8 +17,8 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.common.utility.Units.BYTES_TO_BITS;
-import static com.swirlds.common.utility.Units.BYTES_TO_MEBIBYTES;
+import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
+import static com.swirlds.common.units.UnitConstants.BYTES_TO_MEBIBYTES;
 import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
@@ -32,7 +32,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.collections.HashList;
 import com.swirlds.merkledb.collections.HashListByteBuffer;
 import com.swirlds.merkledb.collections.LongList;
@@ -902,7 +902,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     MERKLE_DB.getMarker(),
                     "[{}] Snapshot all finished in {} seconds",
                     tableName,
-                    (System.currentTimeMillis() - START) * Units.MILLISECONDS_TO_SECONDS);
+                    (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS);
         } finally {
             snapshotInProgress.set(false);
         }
@@ -1191,7 +1191,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                             "[{}] Snapshot {} complete in {} seconds",
                             tableName,
                             taskName,
-                            (System.currentTimeMillis() - START) * Units.MILLISECONDS_TO_SECONDS);
+                            (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS);
                     return true; // turns this into a callable, so it can throw checked
                     // exceptions
                 } finally {
@@ -1233,7 +1233,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         if (hasDiskStoreForHashes) {
             final DataFileReader<VirtualHashRecord> newHashesFile = hashStoreDisk.endWriting();
             statistics.setFlushHashesStoreFileSizeMb(
-                    newHashesFile == null ? 0 : newHashesFile.getSize() * Units.BYTES_TO_MEBIBYTES);
+                    newHashesFile == null ? 0 : newHashesFile.getSize() * BYTES_TO_MEBIBYTES);
         }
     }
 
@@ -1301,11 +1301,11 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         // end writing
         final DataFileReader<VirtualLeafRecord<K, V>> newLeavesFile = pathToKeyValue.endWriting();
         statistics.setFlushLeavesStoreFileSizeMb(
-                newLeavesFile == null ? 0 : newLeavesFile.getSize() * Units.BYTES_TO_MEBIBYTES);
+                newLeavesFile == null ? 0 : newLeavesFile.getSize() * BYTES_TO_MEBIBYTES);
         if (!isLongKeyMode) {
             final DataFileReader<Bucket<K>> newLeafKeysFile = objectKeyToPath.endWriting();
             statistics.setFlushLeafKeysStoreFileSizeMb(
-                    newLeafKeysFile == null ? 0 : newLeafKeysFile.getSize() * Units.BYTES_TO_MEBIBYTES);
+                    newLeafKeysFile == null ? 0 : newLeafKeysFile.getSize() * BYTES_TO_MEBIBYTES);
         }
     }
 

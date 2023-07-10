@@ -138,6 +138,11 @@ module com.swirlds.common {
             com.fasterxml.jackson.databind;
 
     exports com.swirlds.common.metrics.extensions;
+    exports com.swirlds.common.units.internal;
+
+    opens com.swirlds.common.units.internal to
+            com.fasterxml.jackson.databind;
+
     exports com.swirlds.common.system.status;
     exports com.swirlds.common.system.status.actions;
     exports com.swirlds.common.metrics.statistics;
