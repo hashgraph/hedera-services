@@ -26,13 +26,14 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
+import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.InitTrigger;
@@ -41,6 +42,8 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.config.api.Configuration;
 import java.time.InstantSource;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,9 +55,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class IngestComponentTest {
     @Mock
     private Platform platform;
-
-    @Mock
-    private Cryptography cryptography;
 
     private HederaInjectionComponent app;
     private SelfNodeInfo selfNodeInfo;
@@ -95,9 +95,17 @@ class IngestComponentTest {
     void objectGraphRootsAreAvailable() {
         given(platform.getSelfId()).willReturn(new NodeId(0L));
 
-        final IngestInjectionComponent subject =
-                app.ingestComponentFactory().get().create();
+        final var subject = app.ingestComponentFactory().get().create();
+        final var fakeHederaState = generateFakeHederaState();
+        app.workingStateAccessor().setHederaState(fakeHederaState);
 
         assertNotNull(subject.ingestWorkflow());
+    }
+
+    private static FakeHederaState generateFakeHederaState() {
+        final var fakeHederaState = new FakeHederaState();
+        fakeHederaState.addService(
+            RecordCacheService.NAME, Map.of(RecordCacheService.TXN_RECORD_QUEUE, new LinkedList<>()));
+        return fakeHederaState;
     }
 }
