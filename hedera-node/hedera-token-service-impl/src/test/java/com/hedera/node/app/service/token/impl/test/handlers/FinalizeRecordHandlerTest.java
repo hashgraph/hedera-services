@@ -26,11 +26,11 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -430,10 +430,8 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(ACCOUNT_1212);
         readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(existingTokenRel);
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(existingTokenRel);
-        final var nft = givenNft(UniqueTokenId.newBuilder()
-                        .tokenId(TOKEN_321)
-                        .serialNumber(1)
-                        .build())
+        final var nft = givenNft(
+                        NftID.newBuilder().tokenId(TOKEN_321).serialNumber(1).build())
                 .copyBuilder()
                 .ownerId(ACCOUNT_1212_ID)
                 .build();
@@ -475,10 +473,8 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
         readableNftStore = TestStoreFactory.newReadableStoreWithNfts(); // Intentionally empty
         writableNftStore = TestStoreFactory.newWritableStoreWithNfts(); // Intentionally empty
         // Simulate the NFT being created and transferred to the receiver's account (ACCOUNT_3434)
-        final var newNft = givenNft(UniqueTokenId.newBuilder()
-                        .tokenId(TOKEN_321)
-                        .serialNumber(1)
-                        .build())
+        final var newNft = givenNft(
+                        NftID.newBuilder().tokenId(TOKEN_321).serialNumber(1).build())
                 .copyBuilder()
                 .ownerId(ACCOUNT_1212_ID)
                 .build();
@@ -503,12 +499,12 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
         // This test case handles successfully transferring NFTs only
 
         // Set up NFTs for token ID 531 (serials 111, 112)
-        final var uniqueId111 =
-                UniqueTokenId.newBuilder().tokenId(TOKEN_321).serialNumber(111).build();
+        final var nftId111 =
+                NftID.newBuilder().tokenId(TOKEN_321).serialNumber(111).build();
         final var nft111 =
-                Nft.newBuilder().id(uniqueId111).ownerId(ACCOUNT_1212_ID).build();
+                Nft.newBuilder().id(nftId111).ownerId(ACCOUNT_1212_ID).build();
         final var nft112 = nft111.copyBuilder()
-                .id(uniqueId111.copyBuilder().serialNumber(112).build())
+                .id(nftId111.copyBuilder().serialNumber(112).build())
                 .build();
         final var acct1212tokenRel1 = givenNonFungibleTokenRelation()
                 .copyBuilder()
@@ -521,12 +517,12 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         // Set up NFTs for token ID 246 (serials 222, 223)
         final var token246Id = asToken(246);
-        final var uniqueId222 =
-                UniqueTokenId.newBuilder().tokenId(token246Id).serialNumber(222).build();
+        final var nftId222 =
+                NftID.newBuilder().tokenId(token246Id).serialNumber(222).build();
         final var nft222 =
-                nft111.copyBuilder().id(uniqueId222).ownerId(ACCOUNT_3434_ID).build();
+                nft111.copyBuilder().id(nftId222).ownerId(ACCOUNT_3434_ID).build();
         final var nft223 = nft222.copyBuilder()
-                .id(uniqueId222.copyBuilder().serialNumber(223).build())
+                .id(nftId222.copyBuilder().serialNumber(223).build())
                 .build();
         final var acct1212tokenRel2 = givenNonFungibleTokenRelation()
                 .copyBuilder()
@@ -609,10 +605,8 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(ACCOUNT_1212, ACCOUNT_3434, ACCOUNT_5656);
         readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(token321Rel, token654Rel);
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(token321Rel, token654Rel);
-        final var nft = givenNft(UniqueTokenId.newBuilder()
-                        .tokenId(token654Id)
-                        .serialNumber(2)
-                        .build())
+        final var nft = givenNft(
+                        NftID.newBuilder().tokenId(token654Id).serialNumber(2).build())
                 .copyBuilder()
                 .ownerId(ACCOUNT_5656_ID)
                 .build();

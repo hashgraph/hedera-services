@@ -21,9 +21,9 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KE
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
@@ -131,8 +131,8 @@ public final class TestStoreFactory {
         return new MapWritableKVState<>(TOKENS_KEY, backingMap);
     }
 
-    private static MapWritableKVState<UniqueTokenId, Nft> newNftStateFromNfts(Nft... nfts) {
-        final var backingMap = new HashMap<UniqueTokenId, Nft>();
+    private static MapWritableKVState<NftID, Nft> newNftStateFromNfts(Nft... nfts) {
+        final var backingMap = new HashMap<NftID, Nft>();
         for (final Nft nft : nfts) {
             backingMap.put(nft.id(), nft);
         }

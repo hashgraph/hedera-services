@@ -25,12 +25,12 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -204,7 +204,7 @@ public class FinalizeRecordHandler implements TransactionHandler {
     private List<TokenTransferList> calculateNftChanges(
             @NonNull final WritableNftStore writableNftStore, @NonNull final ReadableNftStore readableNftStore) {
         final var nftChanges = new HashMap<TokenID, List<NftTransfer>>();
-        for (final UniqueTokenId nftId : writableNftStore.modifiedNfts()) {
+        for (final NftID nftId : writableNftStore.modifiedNfts()) {
             final var modifiedNft = writableNftStore.get(nftId);
             final var persistedNft = readableNftStore.get(nftId);
 
