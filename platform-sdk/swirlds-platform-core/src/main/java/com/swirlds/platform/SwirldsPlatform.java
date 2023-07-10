@@ -685,29 +685,29 @@ public class SwirldsPlatform implements Platform, Startable {
         }
 
         final State initialState = signedState.getState();
-        final Hash initialHash = initialState.getSwirldState().getHash();
+
+        // Although the state from disk / genesis state is initially hashed, we are actually dealing with a copy
+        // of that state here. That copy should have caused the hash to be cleared.
+        if (initialState.getHash() != null) {
+            throw new IllegalStateException("Expected initial state to be unhashed");
+        }
+        if (initialState.getSwirldState().getHash() != null) {
+            throw new IllegalStateException("Expected initial swirld state to be unhashed");
+        }
 
         initialState.getSwirldState().init(this, initialState.getSwirldDualState(), trigger, previousSoftwareVersion);
 
-        final Hash currentHash = initialState.getSwirldState().getHash();
-
-        // If the current hash is null, we must hash the state
-        // It's also possible that the application modified the state and hashed itself in init(), if so we need to
-        // rehash the state as a whole.
-        if (currentHash == null || !Objects.equals(initialHash, currentHash)) {
-            initialState.invalidateHash();
-            abortAndThrowIfInterrupted(
-                    () -> {
-                        try {
-                            MerkleCryptoFactory.getInstance()
-                                    .digestTreeAsync(initialState)
-                                    .get();
-                        } catch (final ExecutionException e) {
-                            throw new RuntimeException(e);
-                        }
-                    },
-                    "interrupted while attempting to hash the state");
-        }
+        abortAndThrowIfInterrupted(
+                () -> {
+                    try {
+                        MerkleCryptoFactory.getInstance()
+                                .digestTreeAsync(initialState)
+                                .get();
+                    } catch (final ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
+                },
+                "interrupted while attempting to hash the state");
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         logger.info(

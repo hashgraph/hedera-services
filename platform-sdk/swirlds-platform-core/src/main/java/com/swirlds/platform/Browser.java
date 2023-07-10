@@ -738,6 +738,25 @@ public class Browser {
     }
 
     /**
+     * Create a copy of the initial signed state. There are currently data structures that become immutable after
+     * construction, and we need to make a copy to force it to be mutable again.
+     *
+     * @param platformContext    the platform's context
+     * @param initialSignedState the initial signed state
+     * @return a copy of the initial signed state
+     */
+    private static ReservedSignedState copyInitialSignedState(
+            @NonNull final PlatformContext platformContext, @NonNull final SignedState initialSignedState) {
+
+        final State stateCopy = initialSignedState.getState().copy();
+        final SignedState signedStateCopy =
+                new SignedState(platformContext, stateCopy, "Browser create new copy of initial state");
+        signedStateCopy.setSigSet(initialSignedState.getSigSet());
+
+        return signedStateCopy.reserve("Browser copied initial state");
+    }
+
+    /**
      * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
      * only transactions will be capable of modifying the address book.
      *
@@ -804,22 +823,23 @@ public class Browser {
                 configAddressBook,
                 emergencyRecoveryManager);
 
-        if (loadedState.isNotNull()) {
-            logger.info(
-                    STARTUP.getMarker(),
-                    new SavedStateLoadedPayload(
-                            loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
-            return loadedState;
+        try (loadedState) {
+            if (loadedState.isNotNull()) {
+                logger.info(
+                        STARTUP.getMarker(),
+                        new SavedStateLoadedPayload(
+                                loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
+
+                return copyInitialSignedState(platformContext, loadedState.get());
+            }
         }
 
-        // Not strictly necessary to close a null reservation, but it's nice to be consistent.
-        loadedState.close();
-
-        final State genesisState =
+        final ReservedSignedState genesisState =
                 buildGenesisState(platformContext, configAddressBook, appMain.getSoftwareVersion(), appMain.newState());
 
-        final SignedState signedState = new SignedState(platformContext, genesisState, "genesis state");
-        return signedState.reserve("genesis state");
+        try (genesisState) {
+            return copyInitialSignedState(platformContext, genesisState.get());
+        }
     }
 
     /**
