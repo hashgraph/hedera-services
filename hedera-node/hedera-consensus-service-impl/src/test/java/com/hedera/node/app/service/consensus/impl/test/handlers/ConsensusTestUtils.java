@@ -87,7 +87,7 @@ public final class ConsensusTestUtils {
                 -1L,
                 0L,
                 -1L,
-                1234567L,
+                AccountID.newBuilder().accountNum(1234567L).build(),
                 false,
                 null,
                 "memo",
