@@ -17,11 +17,13 @@
 package com.hedera.services.bdd.suites.leaky;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
+import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
-import static com.hedera.services.bdd.spec.HapiSpec.*;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -178,6 +180,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_N
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static org.hyperledger.besu.datatypes.Address.contractAddress;
+import static org.hyperledger.besu.datatypes.Address.fromHexString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -212,6 +216,7 @@ import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
@@ -1292,7 +1297,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         sourcing(() -> contractCall(
                                         createIndirectly, "makeOpaquely", asHeadlongAddress(toyMakerMirror.get()))
                                 .payingWith(longLivedPayer)))
-                .then(overriding(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, "" + DEFAULT_MAX_AUTO_RENEW_PERIOD));
+                .then(overriding(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, DEFAULT_MAX_AUTO_RENEW_PERIOD));
     }
 
     private HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
@@ -1495,10 +1500,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var adminKey = "adminKey";
         final var entityMemo = "JUST DO IT";
         final var customAutoRenew = 7776001L;
-        final AtomicReference<String> firstLiteralId = new AtomicReference<>();
-        final AtomicReference<String> secondLiteralId = new AtomicReference<>();
-        final AtomicReference<ByteString> expectedFirstAddress = new AtomicReference<>();
-        final AtomicReference<ByteString> expectedSecondAddress = new AtomicReference<>();
+        final AtomicReference<String> childLiteralId = new AtomicReference<>();
+        final AtomicReference<String> grandChildLiteralId = new AtomicReference<>();
+        final AtomicReference<ByteString> expectedChildAddress = new AtomicReference<>();
+        final AtomicReference<ByteString> expectedParentAddress = new AtomicReference<>();
 
         return defaultHapiSpec("PropagatesNestedCreations")
                 .given(
@@ -1514,27 +1519,54 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(
                         withOpContext((spec, opLog) -> {
                             final var parentNum = spec.registry().getContractId(contract);
-                            final var firstId = ContractID.newBuilder()
+
+                            final var expectedParentContractAddress = asHeadlongAddress(
+                                            asEvmAddress(parentNum.getContractNum()))
+                                    .toString()
+                                    .toLowerCase()
+                                    .substring(2);
+                            expectedParentAddress.set(
+                                    ByteString.copyFrom(CommonUtils.unhex(expectedParentContractAddress)));
+
+                            final var expectedChildContractAddress =
+                                    contractAddress(fromHexString(expectedParentContractAddress), 1L);
+                            final var expectedGrandChildContractAddress =
+                                    contractAddress(expectedChildContractAddress, 1L);
+
+                            final var childId = ContractID.newBuilder()
                                     .setContractNum(parentNum.getContractNum() + 1L)
                                     .build();
-                            firstLiteralId.set(HapiPropertySource.asContractString(firstId));
-                            expectedFirstAddress.set(ByteString.copyFrom(asSolidityAddress(firstId)));
-                            final var secondId = ContractID.newBuilder()
+                            childLiteralId.set(HapiPropertySource.asContractString(childId));
+                            expectedChildAddress.set(ByteString.copyFrom(expectedChildContractAddress.toArray()));
+                            final var grandChildId = ContractID.newBuilder()
                                     .setContractNum(parentNum.getContractNum() + 2L)
                                     .build();
-                            secondLiteralId.set(HapiPropertySource.asContractString(secondId));
-                            expectedSecondAddress.set(ByteString.copyFrom(asSolidityAddress(secondId)));
+                            grandChildLiteralId.set(HapiPropertySource.asContractString(grandChildId));
+
+                            final var parentContractInfo = getContractInfo(contract)
+                                    .has(contractWith().addressOrAlias(expectedParentContractAddress));
+                            final var childContractInfo = getContractInfo(childLiteralId.get())
+                                    .has(contractWith()
+                                            .addressOrAlias(expectedChildContractAddress.toUnprefixedHexString()));
+                            final var grandChildContractInfo = getContractInfo(grandChildLiteralId.get())
+                                    .has(contractWith()
+                                            .addressOrAlias(expectedGrandChildContractAddress.toUnprefixedHexString()))
+                                    .logged();
+
+                            allRunFor(spec, parentContractInfo, childContractInfo, grandChildContractInfo);
                         }),
                         sourcing(() -> childRecordsCheck(
                                 call,
                                 SUCCESS,
                                 recordWith()
-                                        .contractCreateResult(resultWith().evmAddress(expectedFirstAddress.get()))
+                                        .contractCreateResult(
+                                                resultWith().create1EvmAddress(expectedParentAddress.get(), 1L))
                                         .status(SUCCESS),
                                 recordWith()
-                                        .contractCreateResult(resultWith().evmAddress(expectedSecondAddress.get()))
+                                        .contractCreateResult(
+                                                resultWith().create1EvmAddress(expectedChildAddress.get(), 1L))
                                         .status(SUCCESS))),
-                        sourcing(() -> getContractInfo(firstLiteralId.get())
+                        sourcing(() -> getContractInfo(childLiteralId.get())
                                 .has(contractWith().propertiesInheritedFrom(contract))));
     }
 
@@ -2014,7 +2046,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN))
                 .when(
                         sourcing(() -> overriding(
-                                CONTRACTS_PERMITTED_DELEGATE_CALLERS, "" + whitelistedCalleeMirrorNum.get())),
+                                CONTRACTS_PERMITTED_DELEGATE_CALLERS,
+                                String.valueOf(whitelistedCalleeMirrorNum.get()))),
                         sourcing(() -> contractCall(
                                         PRETEND_PAIR,
                                         CALL_TO,
@@ -2073,7 +2106,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN))
                 .when(
                         sourcing(() -> overriding(
-                                CONTRACTS_PERMITTED_DELEGATE_CALLERS, "" + whitelistedCalleeMirrorNum.get())),
+                                CONTRACTS_PERMITTED_DELEGATE_CALLERS,
+                                String.valueOf(whitelistedCalleeMirrorNum.get()))),
                         sourcing(() -> contractCall(
                                         PRETEND_PAIR,
                                         CALL_TO,
@@ -2167,7 +2201,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var committedInnerCreationTx = "committedInnerCreationTx";
         final var revertedInnerCreationTx = "revertedInnerCreationTx";
 
-        return onlyPropertyPreservingHapiSpec("contractCreateFollowedByContractCallNoncesExternalization")
+        return propertyPreservingHapiSpec("contractCreateFollowedByContractCallNoncesExternalization")
                 .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
                 .given(
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
@@ -2257,7 +2291,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var contract = "NoncesExternalization";
         final var payer = "payer";
 
-        return onlyPropertyPreservingHapiSpec("shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled")
+        return propertyPreservingHapiSpec("shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled")
                 .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
                 .given(
                         overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "false"),

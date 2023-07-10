@@ -19,7 +19,7 @@ package com.swirlds.common.test.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.test.io.SerializationUtils;
+import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
