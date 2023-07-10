@@ -297,20 +297,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith({LogCaptureExtension.class})
 class BootstrapPropertiesTest {
-    @LoggingTarget
-    private LogCaptor logCaptor;
-
-    @LoggingSubject
-    private BootstrapProperties subject = new BootstrapProperties();
-
     private static final String STD_PROPS_RESOURCE = "bootstrap/standard.properties";
     private static final String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";
     private static final String UNREADABLE_PROPS_RESOURCE = "bootstrap/unreadable.properties";
     private static final String INCOMPLETE_STD_PROPS_RESOURCE = "bootstrap/incomplete.properties";
-
     private static final String OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/override.properties";
     private static final String EMPTY_OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/empty-override.properties";
-
     private static final Map<String, Object> expectedProps = Map.ofEntries(
             entry(BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE, "feeSchedules.json"),
             entry(BOOTSTRAP_GENESIS_PUBLIC_KEY, "0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"),
@@ -392,7 +384,7 @@ class BootstrapPropertiesTest {
             entry(DEV_ONLY_DEFAULT_NODE_LISTENS, true),
             entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, true),
             entry(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED, true),
-            entry(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, false),
+            entry(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, true),
             entry(DEV_DEFAULT_LISTENING_NODE_ACCOUNT, "0.0.3"),
             entry(ENTITIES_MAX_LIFETIME, 3153600000L),
             entry(ENTITIES_SYSTEM_DELETABLE, EnumSet.of(EntityType.FILE)),
@@ -563,6 +555,12 @@ class BootstrapPropertiesTest {
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, 30),
             entry(CONFIG_VERSION, 10),
             entry(RECORDS_USE_CONSOLIDATED_FCQ, false));
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private BootstrapProperties subject = new BootstrapProperties();
 
     @Test
     void containsProperty() {
