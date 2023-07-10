@@ -33,11 +33,9 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.system.status.PlatformStatusManager;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
@@ -170,9 +168,6 @@ class PreconsensusEventReplayWorkflowTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final PlatformStatusManager platformStatusManager = new PlatformStatusManager(
-                platformContext, Time.getCurrent(), mock(ThreadManager.class), mock(NotificationEngine.class));
-
         replayPreconsensusEvents(
                 platformContext,
                 AdHocThreadManager.getStaticThreadManager(),
@@ -184,7 +179,7 @@ class PreconsensusEventReplayWorkflowTests {
                 consensusRoundHandler,
                 stateHashSignQueue,
                 stateManagementComponent,
-                platformStatusManager,
+                mock(StatusActionSubmitter.class),
                 minimumGenerationNonAncient);
 
         assertEquals(TestPhase.TEST_FINISHED, phase.get());

@@ -41,7 +41,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatusManager;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
@@ -623,7 +623,7 @@ class EventFlowTests {
                 preConsensusSystemTransactionManager,
                 postConsensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
-                mock(PlatformStatusManager.class),
+                mock(StatusActionSubmitter.class),
                 () -> false,
                 state,
                 new BasicSoftwareVersion(1));
@@ -651,7 +651,7 @@ class EventFlowTests {
                 signedStateTracker,
                 e -> {},
                 () -> {},
-                mock(PlatformStatusManager.class),
+                mock(StatusActionSubmitter.class),
                 (round) -> {},
                 SoftwareVersion.NO_VERSION);
     }

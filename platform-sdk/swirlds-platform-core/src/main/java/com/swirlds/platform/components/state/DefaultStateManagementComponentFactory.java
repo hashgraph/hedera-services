@@ -21,7 +21,8 @@ import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatusManager;
+import com.swirlds.common.system.status.PlatformStatusGetter;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
@@ -59,9 +60,14 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
     private PreconsensusEventWriter preconsensusEventWriter;
 
     /**
-     * Manages the platform status
+     * Gets the current platform status
      */
-    private final PlatformStatusManager platformStatusManager;
+    private final PlatformStatusGetter platformStatusGetter;
+
+    /**
+     * Enables submitting platform status actions
+     */
+    private final StatusActionSubmitter statusActionSubmitter;
 
     public DefaultStateManagementComponentFactory(
             @NonNull final PlatformContext context,
@@ -71,7 +77,8 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
             @NonNull final String mainClassName,
             @NonNull final NodeId selfId,
             @NonNull final String swirldName,
-            @NonNull final PlatformStatusManager platformStatusManager) {
+            @NonNull final PlatformStatusGetter platformStatusGetter,
+            @NonNull final StatusActionSubmitter statusActionSubmitter) {
 
         this.context = Objects.requireNonNull(context);
         this.threadManager = Objects.requireNonNull(threadManager);
@@ -80,7 +87,8 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
         this.mainClassName = Objects.requireNonNull(mainClassName);
         this.selfId = Objects.requireNonNull(selfId);
         this.swirldName = Objects.requireNonNull(swirldName);
-        this.platformStatusManager = Objects.requireNonNull(platformStatusManager);
+        this.platformStatusGetter = Objects.requireNonNull(platformStatusGetter);
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
     }
 
     @Override
@@ -160,7 +168,8 @@ public class DefaultStateManagementComponentFactory implements StateManagementCo
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 preconsensusEventWriter,
-                platformStatusManager);
+                platformStatusGetter,
+                statusActionSubmitter);
     }
 
     private void verifyInputs() {

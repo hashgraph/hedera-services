@@ -35,7 +35,7 @@ import java.util.Objects;
  * <p>
  * This object wraps a {@link PlatformStatusStateMachine}, which contains the actual state machine logic.
  */
-public class PlatformStatusManager implements PlatformStatusGetter, Startable, Stoppable {
+public class PlatformStatusManager implements PlatformStatusGetter, StatusActionSubmitter, Startable, Stoppable {
     /**
      * A source of time
      */
@@ -102,10 +102,9 @@ public class PlatformStatusManager implements PlatformStatusGetter, Startable, S
     }
 
     /**
-     * Submit a status action, which will be added to a queue and processed in the order received
-     *
-     * @param action the action to submit
+     * {@inheritDoc}
      */
+    @Override
     public void submitStatusAction(@NonNull final PlatformStatusAction action) {
         Objects.requireNonNull(action);
         queue.add(action);

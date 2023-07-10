@@ -25,7 +25,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.system.status.PlatformStatusManager;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.common.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.common.threading.framework.QueueThread;
@@ -64,7 +64,7 @@ public final class PreconsensusEventReplayWorkflow {
      * @param consensusRoundHandler              the object responsible for applying transactions to consensus rounds
      * @param stateHashSignQueue                 the queue thread for hashing and signing states
      * @param stateManagementComponent           manages various copies of the state
-     * @param platformStatusManager              manages the platform status
+     * @param statusActionSubmitter              enables submitting platform status actions
      * @param initialMinimumGenerationNonAncient the minimum generation of events to replay
      */
     public static void replayPreconsensusEvents(
@@ -78,7 +78,7 @@ public final class PreconsensusEventReplayWorkflow {
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final PlatformStatusManager platformStatusManager,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             final long initialMinimumGenerationNonAncient) {
 
         Objects.requireNonNull(platformContext);
@@ -91,7 +91,7 @@ public final class PreconsensusEventReplayWorkflow {
         Objects.requireNonNull(consensusRoundHandler);
         Objects.requireNonNull(stateHashSignQueue);
         Objects.requireNonNull(stateManagementComponent);
-        Objects.requireNonNull(platformStatusManager);
+        Objects.requireNonNull(statusActionSubmitter);
 
         logger.info(
                 STARTUP.getMarker(),
@@ -99,7 +99,7 @@ public final class PreconsensusEventReplayWorkflow {
                 initialMinimumGenerationNonAncient);
 
         try {
-            platformStatusManager.submitStatusAction(new StartedReplayingEventsAction());
+            statusActionSubmitter.submitStatusAction(new StartedReplayingEventsAction());
             final Instant start = time.now();
 
             final IOIterator<EventImpl> iterator =
@@ -126,7 +126,7 @@ public final class PreconsensusEventReplayWorkflow {
             Thread.currentThread().interrupt();
             throw new RuntimeException("interrupted while replaying preconsensus event stream", e);
         } finally {
-            platformStatusManager.submitStatusAction(new DoneReplayingEventsAction(time.now()));
+            statusActionSubmitter.submitStatusAction(new DoneReplayingEventsAction(time.now()));
         }
     }
 

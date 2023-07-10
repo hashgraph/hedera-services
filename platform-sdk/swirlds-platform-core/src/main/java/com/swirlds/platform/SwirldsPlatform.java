@@ -382,7 +382,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 this::haltRequested,
                 appCommunicationComponent,
                 preconsensusEventWriter,
-                platformStatusManager);
+                platformStatusManager::getCurrentStatus,
+                platformStatusManager::submitStatusAction);
         wiring.registerComponents(components);
 
         final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =

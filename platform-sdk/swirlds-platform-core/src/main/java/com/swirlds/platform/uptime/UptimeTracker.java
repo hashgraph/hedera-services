@@ -27,7 +27,7 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
-import com.swirlds.common.system.status.PlatformStatusManager;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.system.status.actions.SelfEventReachedConsensusAction;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -59,30 +59,30 @@ public class UptimeTracker {
     private final AtomicReference<Instant> lastSelfEventTime = new AtomicReference<>();
 
     /**
-     * Manages the platform status.
+     * Enables submitting platform status actions.
      */
-    private final PlatformStatusManager platformStatusManager;
+    private final StatusActionSubmitter statusActionSubmitter;
 
     /**
      * Construct a new uptime detector.
      *
      * @param platformContext       the platform context
      * @param addressBook           the address book
-     * @param platformStatusManager manages platform status
+     * @param statusActionSubmitter enables submitting platform status actions
      * @param selfId                the ID of this node
      * @param time                  a source of time
      */
     public UptimeTracker(
             @NonNull PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
-            @NonNull final PlatformStatusManager platformStatusManager,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final NodeId selfId,
             @NonNull final Time time) {
 
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
         this.time = Objects.requireNonNull(time);
         this.addressBook = Objects.requireNonNull(addressBook);
-        this.platformStatusManager = Objects.requireNonNull(platformStatusManager);
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.degradationThreshold = platformContext
                 .getConfiguration()
                 .getConfigData(UptimeConfig.class)
