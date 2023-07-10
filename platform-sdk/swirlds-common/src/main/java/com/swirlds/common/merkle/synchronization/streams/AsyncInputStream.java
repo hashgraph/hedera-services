@@ -27,6 +27,7 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -64,7 +65,7 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
     /**
      * The maximum amount of time to wait when reading a message.
      */
-    private final int pollTimeoutMs;
+    private final Duration pollTimeout;
 
     /**
      * Becomes 0 when the input thread is finished.
@@ -95,7 +96,7 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
         this.inputStream = inputStream;
         this.workGroup = workGroup;
         this.messageFactory = messageFactory;
-        this.pollTimeoutMs = config.asyncStreamTimeoutMilliseconds();
+        this.pollTimeout = config.asyncStreamTimeout();
         this.anticipatedMessages = new AtomicInteger(0);
         this.receivedMessages = new LinkedBlockingQueue<>(config.asyncStreamBufferSize());
         this.finishedLatch = new CountDownLatch(1);
@@ -206,12 +207,12 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
     }
 
     /**
-     * Read a message. Will throw an exception if time equal to {@link #pollTimeoutMs} passes without a message becoming
+     * Read a message. Will throw an exception if time equal to {@link #pollTimeout} passes without a message becoming
      * available.
      */
     @SuppressWarnings("unchecked")
     private T asyncRead() throws InterruptedException {
-        T data = (T) receivedMessages.poll(pollTimeoutMs, MILLISECONDS);
+        T data = (T) receivedMessages.poll(pollTimeout.toMillis(), MILLISECONDS);
         if (data == null) {
             try {
                 // An interrupt may not stop the thread if the thread is blocked on a stream read operation.

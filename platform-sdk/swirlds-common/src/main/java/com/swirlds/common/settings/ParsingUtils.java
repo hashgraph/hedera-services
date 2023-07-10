@@ -44,6 +44,11 @@ public final class ParsingUtils {
      */
     private static final Pattern durationRegex = Pattern.compile("^\\s*(\\d*\\.?\\d*)\\s*([a-zA-Z]+)\\s*$");
 
+    /**
+     * Regular expression for parsing a single number.
+     */
+    private static final Pattern numberRegex = Pattern.compile("\\d+");
+
     private ParsingUtils() {}
 
     /**
@@ -66,6 +71,8 @@ public final class ParsingUtils {
      * For large durations (i.e. when the number of nanoseconds exceeds {@link Long#MAX_VALUE}), the duration returned
      * will be rounded unless the duration is written using {@link Duration#toString()}. Rounding process is
      * deterministic.
+     * <p>
+     * If a string containing a single number is passed in, it will be interpreted as a number of milliseconds.
      * <p>
      * This parser currently utilizes a regex which may have superlinear time complexity for arbitrary input. Until that
      * is addressed, do not use this parser on untrusted strings.
@@ -174,6 +181,11 @@ public final class ParsingUtils {
             return Duration.ofNanos((long) totalNanoseconds);
 
         } else {
+            final Matcher integerMatcher = numberRegex.matcher(str);
+            if (integerMatcher.matches()) {
+                return Duration.ofMillis(Long.parseLong(str));
+            }
+
             final Duration duration = attemptDefaultDurationDeserialization(str);
             if (duration == null) {
                 throw new SettingsException("Invalid duration format, unable to parse \"" + str + "\"");
