@@ -29,12 +29,12 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
@@ -160,14 +160,10 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             .accountId(treasuryId)
             .tokenId(nonFungibleTokenId)
             .build();
-    protected final UniqueTokenId uniqueTokenIdSl1 = UniqueTokenId.newBuilder()
-            .tokenId(nonFungibleTokenId)
-            .serialNumber(1L)
-            .build();
-    protected final UniqueTokenId uniqueTokenIdSl2 = UniqueTokenId.newBuilder()
-            .tokenId(nonFungibleTokenId)
-            .serialNumber(2L)
-            .build();
+    protected final NftID nftIdSl1 =
+            NftID.newBuilder().tokenId(nonFungibleTokenId).serialNumber(1L).build();
+    protected final NftID nftIdSl2 =
+            NftID.newBuilder().tokenId(nonFungibleTokenId).serialNumber(2L).build();
 
     /* ---------- Allowances --------------- */
     protected final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
@@ -233,8 +229,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected MapWritableKVState<TokenID, Token> writableTokenState;
     protected MapReadableKVState<EntityIDPair, TokenRelation> readableTokenRelState;
     protected MapWritableKVState<EntityIDPair, TokenRelation> writableTokenRelState;
-    protected MapReadableKVState<UniqueTokenId, Nft> readableNftState;
-    protected MapWritableKVState<UniqueTokenId, Nft> writableNftState;
+    protected MapReadableKVState<NftID, Nft> readableNftState;
+    protected MapWritableKVState<NftID, Nft> writableNftState;
 
     /* ---------- Stores */
 
@@ -395,19 +391,19 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     private void givenReadableNftStore() {
         readableNftState = emptyReadableNftStateBuilder()
-                .value(uniqueTokenIdSl1, nftSl1)
-                .value(uniqueTokenIdSl2, nftSl2)
+                .value(nftIdSl1, nftSl1)
+                .value(nftIdSl2, nftSl2)
                 .build();
-        given(readableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(readableNftState);
+        given(readableStates.<NftID, Nft>get(NFTS)).willReturn(readableNftState);
         readableNftStore = new ReadableNftStoreImpl(readableStates);
     }
 
     private void givenWritableNftStore() {
         writableNftState = emptyWritableNftStateBuilder()
-                .value(uniqueTokenIdSl1, nftSl1)
-                .value(uniqueTokenIdSl2, nftSl2)
+                .value(nftIdSl1, nftSl1)
+                .value(nftIdSl2, nftSl2)
                 .build();
-        given(writableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(writableNftState);
+        given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
         writableNftStore = new WritableNftStore(writableStates);
     }
 
@@ -499,8 +495,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     private void givenValidTokens() {
         fungibleToken = givenValidFungibleToken();
         nonFungibleToken = givenValidNonFungibleToken();
-        nftSl1 = givenNft(uniqueTokenIdSl1);
-        nftSl2 = givenNft(uniqueTokenIdSl2);
+        nftSl1 = givenNft(nftIdSl1);
+        nftSl2 = givenNft(nftIdSl2);
     }
 
     private void givenValidAccounts() {
@@ -657,8 +653,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .build();
     }
 
-    protected Nft givenNft(UniqueTokenId uniqueTokenId) {
-        return Nft.newBuilder().ownerId(ownerId).id(uniqueTokenId).build();
+    protected Nft givenNft(NftID tokenID) {
+        return Nft.newBuilder().ownerId(ownerId).id(tokenID).build();
     }
 
     protected CustomFee withFixedFee(final FixedFee fixedFee) {

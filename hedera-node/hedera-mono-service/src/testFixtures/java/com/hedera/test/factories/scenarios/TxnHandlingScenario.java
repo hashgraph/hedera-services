@@ -594,18 +594,18 @@ public interface TxnHandlingScenario {
     AccountID TOKEN_RECEIVER = asAccount(TOKEN_RECEIVER_ID);
 
     NftID KNOWN_TOKEN_NFT = NftID.newBuilder()
-            .setTokenID(KNOWN_TOKEN_WITH_WIPE)
+            .setTokenId(KNOWN_TOKEN_WITH_WIPE)
             .setSerialNumber(1L)
             .build();
     NftID ROYALTY_TOKEN_NFT = NftID.newBuilder()
-            .setTokenID(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK)
+            .setTokenId(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK)
             .setSerialNumber(1L)
             .build();
 
     String UNKNOWN_TOKEN_ID = "0.0.666";
     TokenID MISSING_TOKEN = asToken(UNKNOWN_TOKEN_ID);
     NftID MISSING_TOKEN_NFT =
-            NftID.newBuilder().setTokenID(MISSING_TOKEN).setSerialNumber(1L).build();
+            NftID.newBuilder().setTokenId(MISSING_TOKEN).setSerialNumber(1L).build();
 
     KeyTree FIRST_TOKEN_SENDER_KT = withRoot(ed25519());
     KeyTree SECOND_TOKEN_SENDER_KT = withRoot(ed25519());

@@ -64,7 +64,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         final var replacedOp = getReplacedOp();
         changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, payerId);
 
-        final var nft = writableNftStore.get(uniqueTokenIdSl1);
+        final var nft = writableNftStore.get(nftIdSl1);
         assertThat(nft.ownerId()).isEqualTo(ownerId);
 
         final var senderAccount = writableAccountStore.get(ownerId);
@@ -89,7 +89,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         changeNFTOwnersStep.doIn(transferContext);
 
         // owner Id on NFT should change to receiver
-        final var nftChanged = writableNftStore.get(uniqueTokenIdSl1);
+        final var nftChanged = writableNftStore.get(nftIdSl1);
         assertThat(nftChanged.ownerId()).isEqualTo(receiver);
 
         // see numPositiveBalances and numOwnedNfts change
@@ -134,7 +134,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         final var replacedOp = getReplacedOp();
         changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, spenderId);
 
-        final var nft = writableNftStore.get(uniqueTokenIdSl1);
+        final var nft = writableNftStore.get(nftIdSl1);
         assertThat(nft.ownerId()).isEqualTo(ownerId);
 
         final var senderAccount = writableAccountStore.get(ownerId);
@@ -159,7 +159,7 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         changeNFTOwnersStep.doIn(transferContext);
 
         // owner Id on NFT should change to receiver
-        final var nftChanged = writableNftStore.get(uniqueTokenIdSl1);
+        final var nftChanged = writableNftStore.get(nftIdSl1);
         assertThat(nftChanged.ownerId()).isEqualTo(receiver);
 
         // see numPositiveBalances and numOwnedNfts change
