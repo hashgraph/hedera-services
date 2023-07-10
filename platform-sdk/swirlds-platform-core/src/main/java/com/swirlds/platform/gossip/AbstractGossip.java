@@ -237,7 +237,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                         platformContext,
                         threadManager,
                         addressBook,
-                        reconnectConfig.asyncStreamTimeoutMilliseconds(),
+                        reconnectConfig.asyncStreamTimeout(),
                         reconnectMetrics));
     }
 
